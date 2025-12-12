@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
+import 'package:taskly_bloc/features/tasks/widgets/task_item.dart';
 
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
 
@@ -24,7 +25,6 @@ class TasksPage extends StatelessWidget {
         tooltip: 'Add', // used by assistive technologies
         onPressed: null,
         child: Icon(Icons.add),
-        
       ),
     );
   }
@@ -57,8 +57,8 @@ class TasksView extends StatelessWidget {
               itemCount: state.tasks.length,
               itemBuilder: (context, index) {
                 final task = state.tasks[index];
-                //  return TaskListTile(task: task, key: super.key);
                 return TaskListTile(task: task, key: super.key);
+                //return TaskItem(task: task, key: super.key);
               },
             );
           case TasksError():

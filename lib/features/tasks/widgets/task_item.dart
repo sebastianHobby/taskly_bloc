@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/data/models/tasks/task_model.dart';
 import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
 
@@ -15,35 +16,51 @@ class TaskItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     // final captionColor = theme.textTheme.bodySmall?.color;
-    bool completed = task.completed;
-    return ListTile(
-      //    onTap: onTap,
-      title: Text(
-        task.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: Text(
-        task.description!,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      leading: Checkbox(
-        shape: const ContinuousRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
-        value: completed,
-        onChanged: (bool? newValue) {
-          completed = newValue ?? false;
-          final updatedTask = task.copyWith(completed: completed);
-          // Create event to update task with new completed status
-          context.read<TasksBloc>().add(
-            TasksEvent.updateTask(
-              initialTask: task,
-              updatedTask: updatedTask,
+    final GlobalKey<FormBuilderState> formKey = GlobalKey<FormBuilderState>();
+    // Todo update with fields required for task and validations
+    return FormBuilder(
+      child: FormBuilder(
+        key: formKey,
+        child: Column(
+          children: [
+            FormBuilderTextField(
+              name: 'email',
+              decoration: const InputDecoration(labelText: 'Email'),
             ),
-          );
-        },
+            const SizedBox(height: 10),
+            FormBuilderDropdown(
+              name: 'gender',
+              decoration: const InputDecoration(labelText: 'Gender'),
+              items: ['Male', 'Female', 'Other']
+                  .map(
+                    (gender) => DropdownMenuItem(
+                      value: gender,
+                      child: Text(gender),
+                    ),
+                  )
+                  .toList(),
+            ),
+            const SizedBox(height: 10),
+            FormBuilderDateTimePicker(
+              name: 'birthdate',
+              decoration: const InputDecoration(labelText: 'Birthdate'),
+              inputType: InputType.date,
+              initialDate: DateTime.now(),
+              initialValue: DateTime.now(),
+              firstDate: DateTime(1900),
+              lastDate: DateTime.now(),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.saveAndValidate()) {
+                  print(formKey.currentState!.value.entries.toList());
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
       ),
       //   trailing: onTap == null ? null : const Icon(Icons.chevron_right),
     );
