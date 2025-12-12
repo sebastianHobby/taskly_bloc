@@ -8,6 +8,4 @@ sealed class TasksState with _$TasksState {
     required List<TaskModel> tasks,
   }) = TasksLoaded;
   const factory TasksState.error({required String message}) = TasksError;
-
-
 }

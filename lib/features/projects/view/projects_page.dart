@@ -13,6 +13,9 @@ class ProjectsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final projectRepository = getIt<ProjectRepository>();
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Projects'),
+      ),
       body: BlocProvider(
         create: (_) => ProjectsBloc(projectRepository: projectRepository),
         child: const ProjectsView(),

@@ -8,6 +8,4 @@ sealed class ProjectsState with _$ProjectsState {
     required List<ProjectModel> projects,
   }) = ProjectsLoaded;
   const factory ProjectsState.error({required String message}) = ProjectsError;
-
-
 }

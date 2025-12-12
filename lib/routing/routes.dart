@@ -1,9 +1,12 @@
 class Routes {
   Routes._();
 
-  static const splash = '/';
-  // static const register = '/register';
-  // static const login = '/login';
+  static const home = '/';
+  static const login = '/login';
+  static const projects = '/projects';
+  static const tasks = '/tasks';
+  static const register = '/register';
+  
   // static const otp = '/otp';
   // static const onboarding = '/onboarding';
   // static const main = '/main';

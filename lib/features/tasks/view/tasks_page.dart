@@ -13,9 +13,18 @@ class TasksPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final taskRepository = getIt<TaskRepository>();
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tasks'),
+      ),
       body: BlocProvider(
         create: (_) => TasksBloc(taskRepository: taskRepository),
         child: const TasksView(),
+      ),
+      floatingActionButton: const FloatingActionButton(
+        tooltip: 'Add', // used by assistive technologies
+        onPressed: null,
+        child: Icon(Icons.add),
+        
       ),
     );
   }
@@ -23,10 +32,12 @@ class TasksPage extends StatelessWidget {
 
 class TasksView extends StatelessWidget {
   const TasksView({super.key});
-  // final l10n = context.l10n;
 
   @override
   Widget build(BuildContext context) {
+    //Todo add localization - just a shell so easy to add in future
+    //final l10n = context.l10n;
+
     // Send event to request data stream subscription
     return BlocBuilder<TasksBloc, TasksState>(
       builder: (context, state) {

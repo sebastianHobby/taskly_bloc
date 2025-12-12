@@ -1,30 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/models/projects/project_model.dart';
-import 'package:taskly_bloc/features/projects/bloc/projects_bloc.dart';
+import 'package:taskly_bloc/data/models/tasks/task_model.dart';
+import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
 
-class ProjectItem extends StatelessWidget {
-  const ProjectItem({
-    required this.project,
+class TaskItem extends StatelessWidget {
+  const TaskItem({
+    required this.task,
     super.key,
   });
 
-  final ProjectModel project;
+  final TaskModel task;
   //  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     // final captionColor = theme.textTheme.bodySmall?.color;
-    bool completed = project.completed;
+    bool completed = task.completed;
     return ListTile(
       //    onTap: onTap,
       title: Text(
-        project.name,
+        task.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        project.description!,
+        task.description!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -35,12 +35,12 @@ class ProjectItem extends StatelessWidget {
         value: completed,
         onChanged: (bool? newValue) {
           completed = newValue ?? false;
-          final updatedProject = project.copyWith(completed: completed);
-          // Create event to update project with new completed status
-          context.read<ProjectsBloc>().add(
-            ProjectsEvent.updateProject(
-              initialProject: project,
-              updatedProject: updatedProject,
+          final updatedTask = task.copyWith(completed: completed);
+          // Create event to update task with new completed status
+          context.read<TasksBloc>().add(
+            TasksEvent.updateTask(
+              initialTask: task,
+              updatedTask: updatedTask,
             ),
           );
         },
