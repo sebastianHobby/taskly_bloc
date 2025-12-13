@@ -5,7 +5,7 @@ sealed class TasksState with _$TasksState {
   const factory TasksState.initial() = TasksInitial;
   const factory TasksState.loading() = TasksLoading;
   const factory TasksState.loaded({
-    required List<TaskModel> tasks,
+    required List<TaskDto> tasks,
   }) = TasksLoaded;
   const factory TasksState.error({required String message}) = TasksError;
 }

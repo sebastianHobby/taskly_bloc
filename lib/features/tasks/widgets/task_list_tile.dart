@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/models/tasks/task_model.dart';
+import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
 import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
+import 'package:taskly_bloc/features/tasks/models/task_models.dart';
 
 class TaskListTile extends StatelessWidget {
   const TaskListTile({
@@ -9,7 +10,7 @@ class TaskListTile extends StatelessWidget {
     super.key,
   });
 
-  final TaskModel task;
+  final TaskDto task;
   //  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
@@ -35,13 +36,16 @@ class TaskListTile extends StatelessWidget {
         value: completed,
         onChanged: (bool? newValue) {
           completed = newValue ?? false;
-          final updatedTask = task.copyWith(completed: completed);
+          final TaskUpdateRequest updateRequest = TaskUpdateRequest(
+            id: task.id,
+            name: task.name,
+            completed: completed,
+            description: task.description,
+          );
           // Create event to update task with new completed status
+
           context.read<TasksBloc>().add(
-            TasksEvent.updateTask(
-              initialTask: task,
-              updatedTask: updatedTask,
-            ),
+            TasksEvent.updateTask(updateRequest: updateRequest),
           );
         },
       ),

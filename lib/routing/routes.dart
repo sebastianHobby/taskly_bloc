@@ -6,7 +6,7 @@ class Routes {
   static const projects = '/projects';
   static const tasks = '/tasks';
   static const register = '/register';
-  
+  static const editTaskModal = '/editTask';
   // static const otp = '/otp';
   // static const onboarding = '/onboarding';
   // static const main = '/main';

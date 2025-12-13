@@ -128,13 +128,13 @@ return createProject(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( ProjectModel initialProject,  ProjectModel updatedProject)?  updateProject,TResult Function( ProjectModel project)?  deleteProject,TResult Function( ProjectModel project)?  createProject,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( ProjectUpdateRequest updateRequest)?  updateProject,TResult Function( ProjectDeleteRequest deleteRequest)?  deleteProject,TResult Function( ProjectCreateRequest createRequest)?  createProject,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectsSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectsUpdateProject() when updateProject != null:
-return updateProject(_that.initialProject,_that.updatedProject);case ProjectsDeleteProject() when deleteProject != null:
-return deleteProject(_that.project);case ProjectsCreateProject() when createProject != null:
-return createProject(_that.project);case _:
+return updateProject(_that.updateRequest);case ProjectsDeleteProject() when deleteProject != null:
+return deleteProject(_that.deleteRequest);case ProjectsCreateProject() when createProject != null:
+return createProject(_that.createRequest);case _:
   return orElse();
 
 }
@@ -152,13 +152,13 @@ return createProject(_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( ProjectModel initialProject,  ProjectModel updatedProject)  updateProject,required TResult Function( ProjectModel project)  deleteProject,required TResult Function( ProjectModel project)  createProject,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( ProjectUpdateRequest updateRequest)  updateProject,required TResult Function( ProjectDeleteRequest deleteRequest)  deleteProject,required TResult Function( ProjectCreateRequest createRequest)  createProject,}) {final _that = this;
 switch (_that) {
 case ProjectsSubscriptionRequested():
 return projectsSubscriptionRequested();case ProjectsUpdateProject():
-return updateProject(_that.initialProject,_that.updatedProject);case ProjectsDeleteProject():
-return deleteProject(_that.project);case ProjectsCreateProject():
-return createProject(_that.project);case _:
+return updateProject(_that.updateRequest);case ProjectsDeleteProject():
+return deleteProject(_that.deleteRequest);case ProjectsCreateProject():
+return createProject(_that.createRequest);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -175,13 +175,13 @@ return createProject(_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( ProjectModel initialProject,  ProjectModel updatedProject)?  updateProject,TResult? Function( ProjectModel project)?  deleteProject,TResult? Function( ProjectModel project)?  createProject,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( ProjectUpdateRequest updateRequest)?  updateProject,TResult? Function( ProjectDeleteRequest deleteRequest)?  deleteProject,TResult? Function( ProjectCreateRequest createRequest)?  createProject,}) {final _that = this;
 switch (_that) {
 case ProjectsSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectsUpdateProject() when updateProject != null:
-return updateProject(_that.initialProject,_that.updatedProject);case ProjectsDeleteProject() when deleteProject != null:
-return deleteProject(_that.project);case ProjectsCreateProject() when createProject != null:
-return createProject(_that.project);case _:
+return updateProject(_that.updateRequest);case ProjectsDeleteProject() when deleteProject != null:
+return deleteProject(_that.deleteRequest);case ProjectsCreateProject() when createProject != null:
+return createProject(_that.createRequest);case _:
   return null;
 
 }
@@ -225,11 +225,10 @@ String toString() {
 
 
 class ProjectsUpdateProject implements ProjectsEvent {
-  const ProjectsUpdateProject({required this.initialProject, required this.updatedProject});
+  const ProjectsUpdateProject({required this.updateRequest});
   
 
- final  ProjectModel initialProject;
- final  ProjectModel updatedProject;
+ final  ProjectUpdateRequest updateRequest;
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +240,16 @@ $ProjectsUpdateProjectCopyWith<ProjectsUpdateProject> get copyWith => _$Projects
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsUpdateProject&&(identical(other.initialProject, initialProject) || other.initialProject == initialProject)&&(identical(other.updatedProject, updatedProject) || other.updatedProject == updatedProject));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsUpdateProject&&const DeepCollectionEquality().equals(other.updateRequest, updateRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,initialProject,updatedProject);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(updateRequest));
 
 @override
 String toString() {
-  return 'ProjectsEvent.updateProject(initialProject: $initialProject, updatedProject: $updatedProject)';
+  return 'ProjectsEvent.updateProject(updateRequest: $updateRequest)';
 }
 
 
@@ -261,11 +260,11 @@ abstract mixin class $ProjectsUpdateProjectCopyWith<$Res> implements $ProjectsEv
   factory $ProjectsUpdateProjectCopyWith(ProjectsUpdateProject value, $Res Function(ProjectsUpdateProject) _then) = _$ProjectsUpdateProjectCopyWithImpl;
 @useResult
 $Res call({
- ProjectModel initialProject, ProjectModel updatedProject
+ ProjectUpdateRequest updateRequest
 });
 
 
-$ProjectModelCopyWith<$Res> get initialProject;$ProjectModelCopyWith<$Res> get updatedProject;
+
 
 }
 /// @nodoc
@@ -278,43 +277,24 @@ class _$ProjectsUpdateProjectCopyWithImpl<$Res>
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? initialProject = null,Object? updatedProject = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? updateRequest = freezed,}) {
   return _then(ProjectsUpdateProject(
-initialProject: null == initialProject ? _self.initialProject : initialProject // ignore: cast_nullable_to_non_nullable
-as ProjectModel,updatedProject: null == updatedProject ? _self.updatedProject : updatedProject // ignore: cast_nullable_to_non_nullable
-as ProjectModel,
+updateRequest: freezed == updateRequest ? _self.updateRequest : updateRequest // ignore: cast_nullable_to_non_nullable
+as ProjectUpdateRequest,
   ));
 }
 
-/// Create a copy of ProjectsEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectModelCopyWith<$Res> get initialProject {
-  
-  return $ProjectModelCopyWith<$Res>(_self.initialProject, (value) {
-    return _then(_self.copyWith(initialProject: value));
-  });
-}/// Create a copy of ProjectsEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectModelCopyWith<$Res> get updatedProject {
-  
-  return $ProjectModelCopyWith<$Res>(_self.updatedProject, (value) {
-    return _then(_self.copyWith(updatedProject: value));
-  });
-}
+
 }
 
 /// @nodoc
 
 
 class ProjectsDeleteProject implements ProjectsEvent {
-  const ProjectsDeleteProject({required this.project});
+  const ProjectsDeleteProject({required this.deleteRequest});
   
 
- final  ProjectModel project;
+ final  ProjectDeleteRequest deleteRequest;
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -326,16 +306,16 @@ $ProjectsDeleteProjectCopyWith<ProjectsDeleteProject> get copyWith => _$Projects
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsDeleteProject&&(identical(other.project, project) || other.project == project));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsDeleteProject&&const DeepCollectionEquality().equals(other.deleteRequest, deleteRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,project);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(deleteRequest));
 
 @override
 String toString() {
-  return 'ProjectsEvent.deleteProject(project: $project)';
+  return 'ProjectsEvent.deleteProject(deleteRequest: $deleteRequest)';
 }
 
 
@@ -346,11 +326,11 @@ abstract mixin class $ProjectsDeleteProjectCopyWith<$Res> implements $ProjectsEv
   factory $ProjectsDeleteProjectCopyWith(ProjectsDeleteProject value, $Res Function(ProjectsDeleteProject) _then) = _$ProjectsDeleteProjectCopyWithImpl;
 @useResult
 $Res call({
- ProjectModel project
+ ProjectDeleteRequest deleteRequest
 });
 
 
-$ProjectModelCopyWith<$Res> get project;
+
 
 }
 /// @nodoc
@@ -363,33 +343,24 @@ class _$ProjectsDeleteProjectCopyWithImpl<$Res>
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? project = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? deleteRequest = freezed,}) {
   return _then(ProjectsDeleteProject(
-project: null == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
-as ProjectModel,
+deleteRequest: freezed == deleteRequest ? _self.deleteRequest : deleteRequest // ignore: cast_nullable_to_non_nullable
+as ProjectDeleteRequest,
   ));
 }
 
-/// Create a copy of ProjectsEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectModelCopyWith<$Res> get project {
-  
-  return $ProjectModelCopyWith<$Res>(_self.project, (value) {
-    return _then(_self.copyWith(project: value));
-  });
-}
+
 }
 
 /// @nodoc
 
 
 class ProjectsCreateProject implements ProjectsEvent {
-  const ProjectsCreateProject({required this.project});
+  const ProjectsCreateProject({required this.createRequest});
   
 
- final  ProjectModel project;
+ final  ProjectCreateRequest createRequest;
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -401,16 +372,16 @@ $ProjectsCreateProjectCopyWith<ProjectsCreateProject> get copyWith => _$Projects
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsCreateProject&&(identical(other.project, project) || other.project == project));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectsCreateProject&&const DeepCollectionEquality().equals(other.createRequest, createRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,project);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(createRequest));
 
 @override
 String toString() {
-  return 'ProjectsEvent.createProject(project: $project)';
+  return 'ProjectsEvent.createProject(createRequest: $createRequest)';
 }
 
 
@@ -421,11 +392,11 @@ abstract mixin class $ProjectsCreateProjectCopyWith<$Res> implements $ProjectsEv
   factory $ProjectsCreateProjectCopyWith(ProjectsCreateProject value, $Res Function(ProjectsCreateProject) _then) = _$ProjectsCreateProjectCopyWithImpl;
 @useResult
 $Res call({
- ProjectModel project
+ ProjectCreateRequest createRequest
 });
 
 
-$ProjectModelCopyWith<$Res> get project;
+
 
 }
 /// @nodoc
@@ -438,23 +409,14 @@ class _$ProjectsCreateProjectCopyWithImpl<$Res>
 
 /// Create a copy of ProjectsEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? project = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? createRequest = freezed,}) {
   return _then(ProjectsCreateProject(
-project: null == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
-as ProjectModel,
+createRequest: freezed == createRequest ? _self.createRequest : createRequest // ignore: cast_nullable_to_non_nullable
+as ProjectCreateRequest,
   ));
 }
 
-/// Create a copy of ProjectsEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectModelCopyWith<$Res> get project {
-  
-  return $ProjectModelCopyWith<$Res>(_self.project, (value) {
-    return _then(_self.copyWith(project: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -571,7 +533,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<ProjectModel> projects)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<ProjectDto> projects)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectsInitial() when initial != null:
 return initial();case ProjectsLoading() when loading != null:
@@ -595,7 +557,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<ProjectModel> projects)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<ProjectDto> projects)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case ProjectsInitial():
 return initial();case ProjectsLoading():
@@ -615,7 +577,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<ProjectModel> projects)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<ProjectDto> projects)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case ProjectsInitial() when initial != null:
 return initial();case ProjectsLoading() when loading != null:
@@ -697,11 +659,11 @@ String toString() {
 
 
 class ProjectsLoaded implements ProjectsState {
-  const ProjectsLoaded({required final  List<ProjectModel> projects}): _projects = projects;
+  const ProjectsLoaded({required final  List<ProjectDto> projects}): _projects = projects;
   
 
- final  List<ProjectModel> _projects;
- List<ProjectModel> get projects {
+ final  List<ProjectDto> _projects;
+ List<ProjectDto> get projects {
   if (_projects is EqualUnmodifiableListView) return _projects;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_projects);
@@ -738,7 +700,7 @@ abstract mixin class $ProjectsLoadedCopyWith<$Res> implements $ProjectsStateCopy
   factory $ProjectsLoadedCopyWith(ProjectsLoaded value, $Res Function(ProjectsLoaded) _then) = _$ProjectsLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<ProjectModel> projects
+ List<ProjectDto> projects
 });
 
 
@@ -758,7 +720,7 @@ class _$ProjectsLoadedCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? projects = null,}) {
   return _then(ProjectsLoaded(
 projects: null == projects ? _self._projects : projects // ignore: cast_nullable_to_non_nullable
-as List<ProjectModel>,
+as List<ProjectDto>,
   ));
 }
 

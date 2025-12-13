@@ -1,7 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/data/models/tasks/task_model.dart';
+import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/features/tasks/models/task_models.dart';
 
 part 'tasks_event.dart';
 part 'tasks_state.dart';
@@ -28,7 +29,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
 
     // For each TaskModel we receive in the stream emit the data loaded
     // state so UI can update or error state if there is an error
-    await emit.forEach<List<TaskModel>>(
+    await emit.forEach<List<TaskDto>>(
       _taskRepository.getTasks(),
       onData: (tasks) => TasksLoaded(tasks: tasks),
       onError: (error, stackTrace) =>
@@ -40,10 +41,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TasksUpdateTask event,
     Emitter<TasksState> emit,
   ) async {
-    _taskRepository.updateTask(
-      event.initialTask,
-      event.updatedTask,
-    );
+    _taskRepository.updateTask(event.updateRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 
@@ -51,7 +49,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TasksDeleteTask event,
     Emitter<TasksState> emit,
   ) async {
-    _taskRepository.deleteTask(event.task);
+    _taskRepository.deleteTask(event.deleteRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 
@@ -59,7 +57,7 @@ class TasksBloc extends Bloc<TasksEvent, TasksState> {
     TasksCreateTask event,
     Emitter<TasksState> emit,
   ) async {
-    _taskRepository.createTask(event.task);
+    _taskRepository.createTask(event.createRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 }

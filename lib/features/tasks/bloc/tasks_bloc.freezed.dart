@@ -128,13 +128,13 @@ return createTask(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  tasksSubscriptionRequested,TResult Function( TaskModel initialTask,  TaskModel updatedTask)?  updateTask,TResult Function( TaskModel task)?  deleteTask,TResult Function( TaskModel task)?  createTask,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  tasksSubscriptionRequested,TResult Function( TaskUpdateRequest updateRequest)?  updateTask,TResult Function( TaskDeleteRequest deleteRequest)?  deleteTask,TResult Function( TaskCreateRequest createRequest)?  createTask,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TasksSubscriptionRequested() when tasksSubscriptionRequested != null:
 return tasksSubscriptionRequested();case TasksUpdateTask() when updateTask != null:
-return updateTask(_that.initialTask,_that.updatedTask);case TasksDeleteTask() when deleteTask != null:
-return deleteTask(_that.task);case TasksCreateTask() when createTask != null:
-return createTask(_that.task);case _:
+return updateTask(_that.updateRequest);case TasksDeleteTask() when deleteTask != null:
+return deleteTask(_that.deleteRequest);case TasksCreateTask() when createTask != null:
+return createTask(_that.createRequest);case _:
   return orElse();
 
 }
@@ -152,13 +152,13 @@ return createTask(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  tasksSubscriptionRequested,required TResult Function( TaskModel initialTask,  TaskModel updatedTask)  updateTask,required TResult Function( TaskModel task)  deleteTask,required TResult Function( TaskModel task)  createTask,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  tasksSubscriptionRequested,required TResult Function( TaskUpdateRequest updateRequest)  updateTask,required TResult Function( TaskDeleteRequest deleteRequest)  deleteTask,required TResult Function( TaskCreateRequest createRequest)  createTask,}) {final _that = this;
 switch (_that) {
 case TasksSubscriptionRequested():
 return tasksSubscriptionRequested();case TasksUpdateTask():
-return updateTask(_that.initialTask,_that.updatedTask);case TasksDeleteTask():
-return deleteTask(_that.task);case TasksCreateTask():
-return createTask(_that.task);case _:
+return updateTask(_that.updateRequest);case TasksDeleteTask():
+return deleteTask(_that.deleteRequest);case TasksCreateTask():
+return createTask(_that.createRequest);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -175,13 +175,13 @@ return createTask(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  tasksSubscriptionRequested,TResult? Function( TaskModel initialTask,  TaskModel updatedTask)?  updateTask,TResult? Function( TaskModel task)?  deleteTask,TResult? Function( TaskModel task)?  createTask,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  tasksSubscriptionRequested,TResult? Function( TaskUpdateRequest updateRequest)?  updateTask,TResult? Function( TaskDeleteRequest deleteRequest)?  deleteTask,TResult? Function( TaskCreateRequest createRequest)?  createTask,}) {final _that = this;
 switch (_that) {
 case TasksSubscriptionRequested() when tasksSubscriptionRequested != null:
 return tasksSubscriptionRequested();case TasksUpdateTask() when updateTask != null:
-return updateTask(_that.initialTask,_that.updatedTask);case TasksDeleteTask() when deleteTask != null:
-return deleteTask(_that.task);case TasksCreateTask() when createTask != null:
-return createTask(_that.task);case _:
+return updateTask(_that.updateRequest);case TasksDeleteTask() when deleteTask != null:
+return deleteTask(_that.deleteRequest);case TasksCreateTask() when createTask != null:
+return createTask(_that.createRequest);case _:
   return null;
 
 }
@@ -225,11 +225,10 @@ String toString() {
 
 
 class TasksUpdateTask implements TasksEvent {
-  const TasksUpdateTask({required this.initialTask, required this.updatedTask});
+  const TasksUpdateTask({required this.updateRequest});
   
 
- final  TaskModel initialTask;
- final  TaskModel updatedTask;
+ final  TaskUpdateRequest updateRequest;
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +240,16 @@ $TasksUpdateTaskCopyWith<TasksUpdateTask> get copyWith => _$TasksUpdateTaskCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksUpdateTask&&(identical(other.initialTask, initialTask) || other.initialTask == initialTask)&&(identical(other.updatedTask, updatedTask) || other.updatedTask == updatedTask));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksUpdateTask&&const DeepCollectionEquality().equals(other.updateRequest, updateRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,initialTask,updatedTask);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(updateRequest));
 
 @override
 String toString() {
-  return 'TasksEvent.updateTask(initialTask: $initialTask, updatedTask: $updatedTask)';
+  return 'TasksEvent.updateTask(updateRequest: $updateRequest)';
 }
 
 
@@ -261,11 +260,11 @@ abstract mixin class $TasksUpdateTaskCopyWith<$Res> implements $TasksEventCopyWi
   factory $TasksUpdateTaskCopyWith(TasksUpdateTask value, $Res Function(TasksUpdateTask) _then) = _$TasksUpdateTaskCopyWithImpl;
 @useResult
 $Res call({
- TaskModel initialTask, TaskModel updatedTask
+ TaskUpdateRequest updateRequest
 });
 
 
-$TaskModelCopyWith<$Res> get initialTask;$TaskModelCopyWith<$Res> get updatedTask;
+
 
 }
 /// @nodoc
@@ -278,43 +277,24 @@ class _$TasksUpdateTaskCopyWithImpl<$Res>
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? initialTask = null,Object? updatedTask = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? updateRequest = freezed,}) {
   return _then(TasksUpdateTask(
-initialTask: null == initialTask ? _self.initialTask : initialTask // ignore: cast_nullable_to_non_nullable
-as TaskModel,updatedTask: null == updatedTask ? _self.updatedTask : updatedTask // ignore: cast_nullable_to_non_nullable
-as TaskModel,
+updateRequest: freezed == updateRequest ? _self.updateRequest : updateRequest // ignore: cast_nullable_to_non_nullable
+as TaskUpdateRequest,
   ));
 }
 
-/// Create a copy of TasksEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TaskModelCopyWith<$Res> get initialTask {
-  
-  return $TaskModelCopyWith<$Res>(_self.initialTask, (value) {
-    return _then(_self.copyWith(initialTask: value));
-  });
-}/// Create a copy of TasksEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TaskModelCopyWith<$Res> get updatedTask {
-  
-  return $TaskModelCopyWith<$Res>(_self.updatedTask, (value) {
-    return _then(_self.copyWith(updatedTask: value));
-  });
-}
+
 }
 
 /// @nodoc
 
 
 class TasksDeleteTask implements TasksEvent {
-  const TasksDeleteTask({required this.task});
+  const TasksDeleteTask({required this.deleteRequest});
   
 
- final  TaskModel task;
+ final  TaskDeleteRequest deleteRequest;
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -326,16 +306,16 @@ $TasksDeleteTaskCopyWith<TasksDeleteTask> get copyWith => _$TasksDeleteTaskCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksDeleteTask&&(identical(other.task, task) || other.task == task));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksDeleteTask&&const DeepCollectionEquality().equals(other.deleteRequest, deleteRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(deleteRequest));
 
 @override
 String toString() {
-  return 'TasksEvent.deleteTask(task: $task)';
+  return 'TasksEvent.deleteTask(deleteRequest: $deleteRequest)';
 }
 
 
@@ -346,11 +326,11 @@ abstract mixin class $TasksDeleteTaskCopyWith<$Res> implements $TasksEventCopyWi
   factory $TasksDeleteTaskCopyWith(TasksDeleteTask value, $Res Function(TasksDeleteTask) _then) = _$TasksDeleteTaskCopyWithImpl;
 @useResult
 $Res call({
- TaskModel task
+ TaskDeleteRequest deleteRequest
 });
 
 
-$TaskModelCopyWith<$Res> get task;
+
 
 }
 /// @nodoc
@@ -363,33 +343,24 @@ class _$TasksDeleteTaskCopyWithImpl<$Res>
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? task = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? deleteRequest = freezed,}) {
   return _then(TasksDeleteTask(
-task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
-as TaskModel,
+deleteRequest: freezed == deleteRequest ? _self.deleteRequest : deleteRequest // ignore: cast_nullable_to_non_nullable
+as TaskDeleteRequest,
   ));
 }
 
-/// Create a copy of TasksEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TaskModelCopyWith<$Res> get task {
-  
-  return $TaskModelCopyWith<$Res>(_self.task, (value) {
-    return _then(_self.copyWith(task: value));
-  });
-}
+
 }
 
 /// @nodoc
 
 
 class TasksCreateTask implements TasksEvent {
-  const TasksCreateTask({required this.task});
+  const TasksCreateTask({required this.createRequest});
   
 
- final  TaskModel task;
+ final  TaskCreateRequest createRequest;
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -401,16 +372,16 @@ $TasksCreateTaskCopyWith<TasksCreateTask> get copyWith => _$TasksCreateTaskCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksCreateTask&&(identical(other.task, task) || other.task == task));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TasksCreateTask&&const DeepCollectionEquality().equals(other.createRequest, createRequest));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(createRequest));
 
 @override
 String toString() {
-  return 'TasksEvent.createTask(task: $task)';
+  return 'TasksEvent.createTask(createRequest: $createRequest)';
 }
 
 
@@ -421,11 +392,11 @@ abstract mixin class $TasksCreateTaskCopyWith<$Res> implements $TasksEventCopyWi
   factory $TasksCreateTaskCopyWith(TasksCreateTask value, $Res Function(TasksCreateTask) _then) = _$TasksCreateTaskCopyWithImpl;
 @useResult
 $Res call({
- TaskModel task
+ TaskCreateRequest createRequest
 });
 
 
-$TaskModelCopyWith<$Res> get task;
+
 
 }
 /// @nodoc
@@ -438,23 +409,14 @@ class _$TasksCreateTaskCopyWithImpl<$Res>
 
 /// Create a copy of TasksEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? task = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? createRequest = freezed,}) {
   return _then(TasksCreateTask(
-task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
-as TaskModel,
+createRequest: freezed == createRequest ? _self.createRequest : createRequest // ignore: cast_nullable_to_non_nullable
+as TaskCreateRequest,
   ));
 }
 
-/// Create a copy of TasksEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TaskModelCopyWith<$Res> get task {
-  
-  return $TaskModelCopyWith<$Res>(_self.task, (value) {
-    return _then(_self.copyWith(task: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -571,7 +533,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<TaskModel> tasks)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<TaskDto> tasks)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TasksInitial() when initial != null:
 return initial();case TasksLoading() when loading != null:
@@ -595,7 +557,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<TaskModel> tasks)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<TaskDto> tasks)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case TasksInitial():
 return initial();case TasksLoading():
@@ -615,7 +577,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<TaskModel> tasks)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<TaskDto> tasks)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case TasksInitial() when initial != null:
 return initial();case TasksLoading() when loading != null:
@@ -697,11 +659,11 @@ String toString() {
 
 
 class TasksLoaded implements TasksState {
-  const TasksLoaded({required final  List<TaskModel> tasks}): _tasks = tasks;
+  const TasksLoaded({required final  List<TaskDto> tasks}): _tasks = tasks;
   
 
- final  List<TaskModel> _tasks;
- List<TaskModel> get tasks {
+ final  List<TaskDto> _tasks;
+ List<TaskDto> get tasks {
   if (_tasks is EqualUnmodifiableListView) return _tasks;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_tasks);
@@ -738,7 +700,7 @@ abstract mixin class $TasksLoadedCopyWith<$Res> implements $TasksStateCopyWith<$
   factory $TasksLoadedCopyWith(TasksLoaded value, $Res Function(TasksLoaded) _then) = _$TasksLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<TaskModel> tasks
+ List<TaskDto> tasks
 });
 
 
@@ -758,7 +720,7 @@ class _$TasksLoadedCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? tasks = null,}) {
   return _then(TasksLoaded(
 tasks: null == tasks ? _self._tasks : tasks // ignore: cast_nullable_to_non_nullable
-as List<TaskModel>,
+as List<TaskDto>,
   ));
 }
 

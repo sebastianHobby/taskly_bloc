@@ -5,13 +5,12 @@ class TasksEvent with _$TasksEvent {
   const factory TasksEvent.tasksSubscriptionRequested() =
       TasksSubscriptionRequested;
   const factory TasksEvent.updateTask({
-    required TaskModel initialTask,
-    required TaskModel updatedTask,
+    required TaskUpdateRequest updateRequest,
   }) = TasksUpdateTask;
   const factory TasksEvent.deleteTask({
-    required TaskModel task,
+    required TaskDeleteRequest deleteRequest,
   }) = TasksDeleteTask;
   const factory TasksEvent.createTask({
-    required TaskModel task,
+    required TaskCreateRequest createRequest,
   }) = TasksCreateTask;
 }

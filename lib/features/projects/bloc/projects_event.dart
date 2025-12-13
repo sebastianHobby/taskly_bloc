@@ -5,13 +5,12 @@ class ProjectsEvent with _$ProjectsEvent {
   const factory ProjectsEvent.projectsSubscriptionRequested() =
       ProjectsSubscriptionRequested;
   const factory ProjectsEvent.updateProject({
-    required ProjectModel initialProject,
-    required ProjectModel updatedProject,
+    required ProjectUpdateRequest updateRequest,
   }) = ProjectsUpdateProject;
   const factory ProjectsEvent.deleteProject({
-    required ProjectModel project,
+    required ProjectDeleteRequest deleteRequest,
   }) = ProjectsDeleteProject;
   const factory ProjectsEvent.createProject({
-    required ProjectModel project,
+    required ProjectCreateRequest createRequest,
   }) = ProjectsCreateProject;
 }

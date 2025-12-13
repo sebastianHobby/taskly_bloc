@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
-import 'package:taskly_bloc/features/tasks/widgets/task_item.dart';
 
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/routing/routes.dart';
 
 class TasksPage extends StatelessWidget {
   const TasksPage({super.key});
-
   @override
   Widget build(BuildContext context) {
     final taskRepository = getIt<TaskRepository>();
@@ -21,13 +21,24 @@ class TasksPage extends StatelessWidget {
         create: (_) => TasksBloc(taskRepository: taskRepository),
         child: const TasksView(),
       ),
-      floatingActionButton: const FloatingActionButton(
-        tooltip: 'Add', // used by assistive technologies
-        onPressed: null,
-        child: Icon(Icons.add),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add',
+        onPressed: () {
+          context.push(
+            Routes.editTaskModal,
+          );
+        }, // used by assistive technologies
+        child: const Icon(Icons.add),
       ),
     );
   }
+
+  // Future<void> addTask() async {
+  //   final task = await showTaskEditor(context);
+  //   if (task != null) {
+  //     //_todoList.add(todo);
+  //   }
+  // }
 }
 
 class TasksView extends StatelessWidget {
@@ -58,7 +69,6 @@ class TasksView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final task = state.tasks[index];
                 return TaskListTile(task: task, key: super.key);
-                //return TaskItem(task: task, key: super.key);
               },
             );
           case TasksError():

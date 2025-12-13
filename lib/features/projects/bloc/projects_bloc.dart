@@ -1,7 +1,8 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/data/models/projects/project_model.dart';
+import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/features/projects/models/project_models.dart';
 
 part 'projects_event.dart';
 part 'projects_state.dart';
@@ -28,7 +29,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
 
     // For each ProjectModel we receive in the stream emit the data loaded
     // state so UI can update or error state if there is an error
-    await emit.forEach<List<ProjectModel>>(
+    await emit.forEach<List<ProjectDto>>(
       _projectRepository.getProjects(),
       onData: (projects) => ProjectsLoaded(projects: projects),
       onError: (error, stackTrace) =>
@@ -40,10 +41,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     ProjectsUpdateProject event,
     Emitter<ProjectsState> emit,
   ) async {
-    _projectRepository.updateProject(
-      event.initialProject,
-      event.updatedProject,
-    );
+    _projectRepository.updateProject(event.updateRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 
@@ -51,7 +49,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     ProjectsDeleteProject event,
     Emitter<ProjectsState> emit,
   ) async {
-    _projectRepository.deleteProject(event.project);
+    _projectRepository.deleteProject(event.deleteRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 
@@ -59,7 +57,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
     ProjectsCreateProject event,
     Emitter<ProjectsState> emit,
   ) async {
-    _projectRepository.createProject(event.project);
+    _projectRepository.createProject(event.createRequest);
     // No need to call refresh as the stream subscription will handle it
   }
 }
