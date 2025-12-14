@@ -7,6 +7,8 @@ analyzer:
     omit_local_variable_types: ignore
     invalid_annotation_target: ignore
     prefer_const_constructors: ignore
+    avoid_catches_without_on_clauses: ignore
+    avoid_positional_boolean_parameters: ignore
   exclude:
     - lib/l10n/gen/*
 linter:

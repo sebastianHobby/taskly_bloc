@@ -8,49 +8,94 @@ import 'package:uuid/uuid.dart';
 class ProjectRepository {
   /// If [syncDb] is null, fall back to the global PowerSync [db].
   ProjectRepository({PowerSyncDatabase? syncDb}) : _syncDb = syncDb ?? db;
+
   final _uuid = Uuid();
   final PowerSyncDatabase _syncDb;
 
+  /// Stream of all projects in the database. Live updates.
   Stream<List<ProjectDto>> getProjects() {
-    // Note this returns generated Project class created by drift
-    // Future<List<Project>> results = driftDb.managers.projects.get();
-    return _syncDb.watch('SELECT * FROM projects').map((resultSet) {
+    return _syncDb.watch('SELECT * FROM  projects').map((resultSet) {
       return resultSet.map(ProjectDto.fromJson).toList();
     });
   }
 
-  Future<void> updateProject(
-    ProjectUpdateRequest updateRequest,
-  ) async {
-    const String updateQuery =
-        'UPDATE projects SET name = ?, description = ?, completed = ? WHERE id = ?';
-
-    await _syncDb.execute(updateQuery, [
-      updateRequest.name,
-      updateRequest.description ?? '',
-      updateRequest.completed,
-      updateRequest.id,
-    ]);
+  Future<ProjectDto?> getProjectById(String id) async {
+    final resultSet = await _syncDb.execute(
+      'SELECT * FROM  projects WHERE id = ?',
+      [id],
+    );
+    if (resultSet.isEmpty) {
+      return null;
+    }
+    return ProjectDto.fromJson(resultSet.first);
   }
 
-  Future<void> deleteProject(
-    ProjectDeleteRequest deleteRequest,
+  Future<void> updateProject(
+    ProjectActionRequestUpdate updateRequest,
   ) async {
-    const String deleteQuery = 'DELETE FROM projects WHERE id = ?';
-    await _syncDb.execute(deleteQuery, [deleteRequest.id]);
+    // Ensure the project exists first
+    final existing = await getProjectById(updateRequest.projectToUpdate.id);
+    if (existing == null) {
+      throw StateError(
+        'Project not found: ${updateRequest.projectToUpdate.id}',
+      );
+    }
+    // Create updated  projectDto based on provided fields and existing data
+    // Note: only fields provided in updateRequest will be changed
+    final projectToUpdate = existing.copyWith(
+      name: updateRequest.name ?? existing.name,
+      description: updateRequest.description ?? existing.description,
+      completed: updateRequest.completed ?? existing.completed,
+      updatedAt: DateTime.now(),
+    );
+
+    try {
+      const String updateQuery =
+          'UPDATE  projects SET name = ?, description = ?, completed = ? WHERE id = ?';
+      await _syncDb.execute(updateQuery, [
+        projectToUpdate.name,
+        projectToUpdate.description,
+        projectToUpdate.completed,
+        projectToUpdate.id,
+      ]);
+    } catch (error) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteProject(ProjectActionRequestDelete deleteRequest) async {
+    // validate input similar to update project: ensure a  project to delete with a valid id
+    final existing = await getProjectById(deleteRequest.projectToDelete.id);
+    if (existing == null) {
+      throw StateError(
+        'Project not found: ${deleteRequest.projectToDelete.id}',
+      );
+    }
+
+    try {
+      const String deleteQuery = 'DELETE FROM  projects WHERE id = ?';
+      await _syncDb.execute(deleteQuery, [existing.id]);
+    } catch (error) {
+      rethrow;
+    }
   }
 
   Future<void> createProject(
-    ProjectCreateRequest createRequest,
+    ProjectActionRequestCreate createRequest,
   ) async {
-    const String insertQuery =
-        'INSERT INTO projects (id, name, description, completed) VALUES (?, ?, ?, ?)';
-
-    await _syncDb.execute(insertQuery, [
-      _uuid.v4(),
-      createRequest.name,
-      createRequest.description ?? '',
-      createRequest.completed ?? false,
-    ]);
+    try {
+      const String insertQuery =
+          'INSERT INTO  projects (id, name, description, completed,created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?)';
+      await _syncDb.execute(insertQuery, [
+        _uuid.v4(),
+        createRequest.name,
+        createRequest.description ?? '',
+        createRequest.completed ?? false,
+        DateTime.now().toIso8601String(),
+        DateTime.now().toIso8601String(),
+      ]);
+    } catch (error) {
+      rethrow;
+    }
   }
 }

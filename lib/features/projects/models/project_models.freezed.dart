@@ -12,7 +12,7 @@ part of 'project_models.dart';
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
-mixin _$ProjectModel {
+mixin _$ProjectActionRequest {
 
 
 
@@ -20,7 +20,7 @@ mixin _$ProjectModel {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectModel);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectActionRequest);
 }
 
 
@@ -29,20 +29,20 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProjectModel()';
+  return 'ProjectActionRequest()';
 }
 
 
 }
 
 /// @nodoc
-class $ProjectModelCopyWith<$Res>  {
-$ProjectModelCopyWith(ProjectModel _, $Res Function(ProjectModel) __);
+class $ProjectActionRequestCopyWith<$Res>  {
+$ProjectActionRequestCopyWith(ProjectActionRequest _, $Res Function(ProjectActionRequest) __);
 }
 
 
-/// Adds pattern-matching-related methods to [ProjectModel].
-extension ProjectModelPatterns on ProjectModel {
+/// Adds pattern-matching-related methods to [ProjectActionRequest].
+extension ProjectActionRequestPatterns on ProjectActionRequest {
 /// A variant of `map` that fallback to returning `orElse`.
 ///
 /// It is equivalent to doing:
@@ -55,12 +55,12 @@ extension ProjectModelPatterns on ProjectModel {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectCreateRequest value)?  create,TResult Function( ProjectUpdateRequest value)?  update,TResult Function( ProjectDeleteRequest value)?  delete,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectActionRequestCreate value)?  create,TResult Function( ProjectActionRequestUpdate value)?  update,TResult Function( ProjectActionRequestDelete value)?  delete,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case ProjectCreateRequest() when create != null:
-return create(_that);case ProjectUpdateRequest() when update != null:
-return update(_that);case ProjectDeleteRequest() when delete != null:
+case ProjectActionRequestCreate() when create != null:
+return create(_that);case ProjectActionRequestUpdate() when update != null:
+return update(_that);case ProjectActionRequestDelete() when delete != null:
 return delete(_that);case _:
   return orElse();
 
@@ -79,12 +79,12 @@ return delete(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectCreateRequest value)  create,required TResult Function( ProjectUpdateRequest value)  update,required TResult Function( ProjectDeleteRequest value)  delete,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectActionRequestCreate value)  create,required TResult Function( ProjectActionRequestUpdate value)  update,required TResult Function( ProjectActionRequestDelete value)  delete,}){
 final _that = this;
 switch (_that) {
-case ProjectCreateRequest():
-return create(_that);case ProjectUpdateRequest():
-return update(_that);case ProjectDeleteRequest():
+case ProjectActionRequestCreate():
+return create(_that);case ProjectActionRequestUpdate():
+return update(_that);case ProjectActionRequestDelete():
 return delete(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -99,12 +99,12 @@ return delete(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectCreateRequest value)?  create,TResult? Function( ProjectUpdateRequest value)?  update,TResult? Function( ProjectDeleteRequest value)?  delete,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectActionRequestCreate value)?  create,TResult? Function( ProjectActionRequestUpdate value)?  update,TResult? Function( ProjectActionRequestDelete value)?  delete,}){
 final _that = this;
 switch (_that) {
-case ProjectCreateRequest() when create != null:
-return create(_that);case ProjectUpdateRequest() when update != null:
-return update(_that);case ProjectDeleteRequest() when delete != null:
+case ProjectActionRequestCreate() when create != null:
+return create(_that);case ProjectActionRequestUpdate() when update != null:
+return update(_that);case ProjectActionRequestDelete() when delete != null:
 return delete(_that);case _:
   return null;
 
@@ -122,12 +122,12 @@ return delete(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name,  bool? completed,  String? description)?  create,TResult Function( String id,  String name,  bool completed,  String? description)?  update,TResult Function( String id)?  delete,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String name,  bool? completed,  String? description)?  create,TResult Function( ProjectDto projectToUpdate,  String? name,  bool? completed,  String? description)?  update,TResult Function( ProjectDto projectToDelete)?  delete,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case ProjectCreateRequest() when create != null:
-return create(_that.name,_that.completed,_that.description);case ProjectUpdateRequest() when update != null:
-return update(_that.id,_that.name,_that.completed,_that.description);case ProjectDeleteRequest() when delete != null:
-return delete(_that.id);case _:
+case ProjectActionRequestCreate() when create != null:
+return create(_that.name,_that.completed,_that.description);case ProjectActionRequestUpdate() when update != null:
+return update(_that.projectToUpdate,_that.name,_that.completed,_that.description);case ProjectActionRequestDelete() when delete != null:
+return delete(_that.projectToDelete);case _:
   return orElse();
 
 }
@@ -145,12 +145,12 @@ return delete(_that.id);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name,  bool? completed,  String? description)  create,required TResult Function( String id,  String name,  bool completed,  String? description)  update,required TResult Function( String id)  delete,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String name,  bool? completed,  String? description)  create,required TResult Function( ProjectDto projectToUpdate,  String? name,  bool? completed,  String? description)  update,required TResult Function( ProjectDto projectToDelete)  delete,}) {final _that = this;
 switch (_that) {
-case ProjectCreateRequest():
-return create(_that.name,_that.completed,_that.description);case ProjectUpdateRequest():
-return update(_that.id,_that.name,_that.completed,_that.description);case ProjectDeleteRequest():
-return delete(_that.id);}
+case ProjectActionRequestCreate():
+return create(_that.name,_that.completed,_that.description);case ProjectActionRequestUpdate():
+return update(_that.projectToUpdate,_that.name,_that.completed,_that.description);case ProjectActionRequestDelete():
+return delete(_that.projectToDelete);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -164,12 +164,12 @@ return delete(_that.id);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name,  bool? completed,  String? description)?  create,TResult? Function( String id,  String name,  bool completed,  String? description)?  update,TResult? Function( String id)?  delete,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String name,  bool? completed,  String? description)?  create,TResult? Function( ProjectDto projectToUpdate,  String? name,  bool? completed,  String? description)?  update,TResult? Function( ProjectDto projectToDelete)?  delete,}) {final _that = this;
 switch (_that) {
-case ProjectCreateRequest() when create != null:
-return create(_that.name,_that.completed,_that.description);case ProjectUpdateRequest() when update != null:
-return update(_that.id,_that.name,_that.completed,_that.description);case ProjectDeleteRequest() when delete != null:
-return delete(_that.id);case _:
+case ProjectActionRequestCreate() when create != null:
+return create(_that.name,_that.completed,_that.description);case ProjectActionRequestUpdate() when update != null:
+return update(_that.projectToUpdate,_that.name,_that.completed,_that.description);case ProjectActionRequestDelete() when delete != null:
+return delete(_that.projectToDelete);case _:
   return null;
 
 }
@@ -180,25 +180,25 @@ return delete(_that.id);case _:
 /// @nodoc
 
 
-class ProjectCreateRequest implements ProjectModel {
-  const ProjectCreateRequest({required this.name, this.completed, this.description});
+class ProjectActionRequestCreate implements ProjectActionRequest {
+  const ProjectActionRequestCreate({required this.name, this.completed, this.description});
   
 
  final  String name;
  final  bool? completed;
  final  String? description;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProjectCreateRequestCopyWith<ProjectCreateRequest> get copyWith => _$ProjectCreateRequestCopyWithImpl<ProjectCreateRequest>(this, _$identity);
+$ProjectActionRequestCreateCopyWith<ProjectActionRequestCreate> get copyWith => _$ProjectActionRequestCreateCopyWithImpl<ProjectActionRequestCreate>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectCreateRequest&&(identical(other.name, name) || other.name == name)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectActionRequestCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.description, description) || other.description == description));
 }
 
 
@@ -207,15 +207,15 @@ int get hashCode => Object.hash(runtimeType,name,completed,description);
 
 @override
 String toString() {
-  return 'ProjectModel.create(name: $name, completed: $completed, description: $description)';
+  return 'ProjectActionRequest.create(name: $name, completed: $completed, description: $description)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProjectCreateRequestCopyWith<$Res> implements $ProjectModelCopyWith<$Res> {
-  factory $ProjectCreateRequestCopyWith(ProjectCreateRequest value, $Res Function(ProjectCreateRequest) _then) = _$ProjectCreateRequestCopyWithImpl;
+abstract mixin class $ProjectActionRequestCreateCopyWith<$Res> implements $ProjectActionRequestCopyWith<$Res> {
+  factory $ProjectActionRequestCreateCopyWith(ProjectActionRequestCreate value, $Res Function(ProjectActionRequestCreate) _then) = _$ProjectActionRequestCreateCopyWithImpl;
 @useResult
 $Res call({
  String name, bool? completed, String? description
@@ -226,17 +226,17 @@ $Res call({
 
 }
 /// @nodoc
-class _$ProjectCreateRequestCopyWithImpl<$Res>
-    implements $ProjectCreateRequestCopyWith<$Res> {
-  _$ProjectCreateRequestCopyWithImpl(this._self, this._then);
+class _$ProjectActionRequestCreateCopyWithImpl<$Res>
+    implements $ProjectActionRequestCreateCopyWith<$Res> {
+  _$ProjectActionRequestCreateCopyWithImpl(this._self, this._then);
 
-  final ProjectCreateRequest _self;
-  final $Res Function(ProjectCreateRequest) _then;
+  final ProjectActionRequestCreate _self;
+  final $Res Function(ProjectActionRequestCreate) _then;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? name = null,Object? completed = freezed,Object? description = freezed,}) {
-  return _then(ProjectCreateRequest(
+  return _then(ProjectActionRequestCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,completed: freezed == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
 as bool?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -250,139 +250,157 @@ as String?,
 /// @nodoc
 
 
-class ProjectUpdateRequest implements ProjectModel {
-  const ProjectUpdateRequest({required this.id, required this.name, required this.completed, required this.description});
+class ProjectActionRequestUpdate implements ProjectActionRequest {
+  const ProjectActionRequestUpdate({required this.projectToUpdate, required this.name, required this.completed, required this.description});
   
 
- final  String id;
- final  String name;
- final  bool completed;
+ final  ProjectDto projectToUpdate;
+ final  String? name;
+ final  bool? completed;
  final  String? description;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProjectUpdateRequestCopyWith<ProjectUpdateRequest> get copyWith => _$ProjectUpdateRequestCopyWithImpl<ProjectUpdateRequest>(this, _$identity);
+$ProjectActionRequestUpdateCopyWith<ProjectActionRequestUpdate> get copyWith => _$ProjectActionRequestUpdateCopyWithImpl<ProjectActionRequestUpdate>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectUpdateRequest&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectActionRequestUpdate&&(identical(other.projectToUpdate, projectToUpdate) || other.projectToUpdate == projectToUpdate)&&(identical(other.name, name) || other.name == name)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.description, description) || other.description == description));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,completed,description);
+int get hashCode => Object.hash(runtimeType,projectToUpdate,name,completed,description);
 
 @override
 String toString() {
-  return 'ProjectModel.update(id: $id, name: $name, completed: $completed, description: $description)';
+  return 'ProjectActionRequest.update(projectToUpdate: $projectToUpdate, name: $name, completed: $completed, description: $description)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProjectUpdateRequestCopyWith<$Res> implements $ProjectModelCopyWith<$Res> {
-  factory $ProjectUpdateRequestCopyWith(ProjectUpdateRequest value, $Res Function(ProjectUpdateRequest) _then) = _$ProjectUpdateRequestCopyWithImpl;
+abstract mixin class $ProjectActionRequestUpdateCopyWith<$Res> implements $ProjectActionRequestCopyWith<$Res> {
+  factory $ProjectActionRequestUpdateCopyWith(ProjectActionRequestUpdate value, $Res Function(ProjectActionRequestUpdate) _then) = _$ProjectActionRequestUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, bool completed, String? description
+ ProjectDto projectToUpdate, String? name, bool? completed, String? description
 });
 
 
-
+$ProjectDtoCopyWith<$Res> get projectToUpdate;
 
 }
 /// @nodoc
-class _$ProjectUpdateRequestCopyWithImpl<$Res>
-    implements $ProjectUpdateRequestCopyWith<$Res> {
-  _$ProjectUpdateRequestCopyWithImpl(this._self, this._then);
+class _$ProjectActionRequestUpdateCopyWithImpl<$Res>
+    implements $ProjectActionRequestUpdateCopyWith<$Res> {
+  _$ProjectActionRequestUpdateCopyWithImpl(this._self, this._then);
 
-  final ProjectUpdateRequest _self;
-  final $Res Function(ProjectUpdateRequest) _then;
+  final ProjectActionRequestUpdate _self;
+  final $Res Function(ProjectActionRequestUpdate) _then;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? completed = null,Object? description = freezed,}) {
-  return _then(ProjectUpdateRequest(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,completed: null == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
-as bool,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+@pragma('vm:prefer-inline') $Res call({Object? projectToUpdate = null,Object? name = freezed,Object? completed = freezed,Object? description = freezed,}) {
+  return _then(ProjectActionRequestUpdate(
+projectToUpdate: null == projectToUpdate ? _self.projectToUpdate : projectToUpdate // ignore: cast_nullable_to_non_nullable
+as ProjectDto,name: freezed == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String?,completed: freezed == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
+as bool?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
 
-
+/// Create a copy of ProjectActionRequest
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ProjectDtoCopyWith<$Res> get projectToUpdate {
+  
+  return $ProjectDtoCopyWith<$Res>(_self.projectToUpdate, (value) {
+    return _then(_self.copyWith(projectToUpdate: value));
+  });
+}
 }
 
 /// @nodoc
 
 
-class ProjectDeleteRequest implements ProjectModel {
-  const ProjectDeleteRequest({required this.id});
+class ProjectActionRequestDelete implements ProjectActionRequest {
+  const ProjectActionRequestDelete({required this.projectToDelete});
   
 
- final  String id;
+ final  ProjectDto projectToDelete;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-$ProjectDeleteRequestCopyWith<ProjectDeleteRequest> get copyWith => _$ProjectDeleteRequestCopyWithImpl<ProjectDeleteRequest>(this, _$identity);
+$ProjectActionRequestDeleteCopyWith<ProjectActionRequestDelete> get copyWith => _$ProjectActionRequestDeleteCopyWithImpl<ProjectActionRequestDelete>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDeleteRequest&&(identical(other.id, id) || other.id == id));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectActionRequestDelete&&(identical(other.projectToDelete, projectToDelete) || other.projectToDelete == projectToDelete));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id);
+int get hashCode => Object.hash(runtimeType,projectToDelete);
 
 @override
 String toString() {
-  return 'ProjectModel.delete(id: $id)';
+  return 'ProjectActionRequest.delete(projectToDelete: $projectToDelete)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class $ProjectDeleteRequestCopyWith<$Res> implements $ProjectModelCopyWith<$Res> {
-  factory $ProjectDeleteRequestCopyWith(ProjectDeleteRequest value, $Res Function(ProjectDeleteRequest) _then) = _$ProjectDeleteRequestCopyWithImpl;
+abstract mixin class $ProjectActionRequestDeleteCopyWith<$Res> implements $ProjectActionRequestCopyWith<$Res> {
+  factory $ProjectActionRequestDeleteCopyWith(ProjectActionRequestDelete value, $Res Function(ProjectActionRequestDelete) _then) = _$ProjectActionRequestDeleteCopyWithImpl;
 @useResult
 $Res call({
- String id
+ ProjectDto projectToDelete
 });
 
 
-
+$ProjectDtoCopyWith<$Res> get projectToDelete;
 
 }
 /// @nodoc
-class _$ProjectDeleteRequestCopyWithImpl<$Res>
-    implements $ProjectDeleteRequestCopyWith<$Res> {
-  _$ProjectDeleteRequestCopyWithImpl(this._self, this._then);
+class _$ProjectActionRequestDeleteCopyWithImpl<$Res>
+    implements $ProjectActionRequestDeleteCopyWith<$Res> {
+  _$ProjectActionRequestDeleteCopyWithImpl(this._self, this._then);
 
-  final ProjectDeleteRequest _self;
-  final $Res Function(ProjectDeleteRequest) _then;
+  final ProjectActionRequestDelete _self;
+  final $Res Function(ProjectActionRequestDelete) _then;
 
-/// Create a copy of ProjectModel
+/// Create a copy of ProjectActionRequest
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
-  return _then(ProjectDeleteRequest(
-id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,
+@pragma('vm:prefer-inline') $Res call({Object? projectToDelete = null,}) {
+  return _then(ProjectActionRequestDelete(
+projectToDelete: null == projectToDelete ? _self.projectToDelete : projectToDelete // ignore: cast_nullable_to_non_nullable
+as ProjectDto,
   ));
 }
 
-
+/// Create a copy of ProjectActionRequest
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ProjectDtoCopyWith<$Res> get projectToDelete {
+  
+  return $ProjectDtoCopyWith<$Res>(_self.projectToDelete, (value) {
+    return _then(_self.copyWith(projectToDelete: value));
+  });
+}
 }
 
 // dart format on

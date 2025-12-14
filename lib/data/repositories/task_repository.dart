@@ -2,7 +2,7 @@
 import 'package:powersync/powersync.dart';
 import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
 import 'package:taskly_bloc/data/powersync/powersync.dart';
-import 'package:taskly_bloc/features/tasks/models/task_models.dart';
+import 'package:taskly_bloc/features/tasks/bloc/task_action_request.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskRepository {
@@ -13,47 +13,77 @@ class TaskRepository {
   final PowerSyncDatabase _syncDb;
 
   Stream<List<TaskDto>> getTasks() {
-    // Note this returns generated Task class created by drift
-    // Future<List<Task>> results = driftDb.managers.tasks.get();
     return _syncDb.watch('SELECT * FROM tasks').map((resultSet) {
       return resultSet.map(TaskDto.fromJson).toList();
     });
   }
 
   Future<void> updateTask(
-    TaskUpdateRequest updateRequest,
+    TaskActionRequestUpdate updateRequest,
   ) async {
-    const String updateQuery =
-        'UPDATE tasks SET name = ?, description = ?, completed = ? WHERE id = ?';
+    // Create updated TaskDto based on provided fields and existing data
+    final taskToUpdate = TaskDto(
+      id: updateRequest.taskToUpdate.id,
+      name: updateRequest.name ?? updateRequest.taskToUpdate.name,
+      description:
+          updateRequest.description ??
+          updateRequest.taskToUpdate.description ??
+          '',
+      completed:
+          updateRequest.completed ?? updateRequest.taskToUpdate.completed,
+      createdAt: updateRequest.taskToUpdate.createdAt,
+      updatedAt: DateTime.now(),
+    );
 
-    await _syncDb.execute(updateQuery, [
-      updateRequest.name,
-      updateRequest.description ?? '',
-      updateRequest.completed ?? false,
-      updateRequest.id,
-    ]);
+    try {
+      const String updateQuery =
+          'UPDATE tasks SET name = ?, description = ?, completed = ? WHERE id = ?';
+      await _syncDb.execute(updateQuery, [
+        taskToUpdate.name,
+        taskToUpdate.description,
+        taskToUpdate.completed,
+        taskToUpdate.id,
+      ]);
+    } catch (error) {
+      rethrow;
+    }
   }
 
-  Future<void> deleteTask(
-    TaskDeleteRequest deleteRequest,
-  ) async {
-    const String deleteQuery = 'DELETE FROM tasks WHERE id = ?';
-    await _syncDb.execute(deleteQuery, [deleteRequest.id]);
+  Future<void> deleteTask(TaskActionRequestDelete deleteRequest) async {
+    // validate input similar to updateTask: ensure a task to delete with a valid id
+    final taskToDelete = deleteRequest.taskToDelete;
+    if (taskToDelete.id.isEmpty) {
+      throw ArgumentError.value(
+        deleteRequest,
+        'deleteRequest',
+        'taskToDelete must be provided and contain a valid id.',
+      );
+    }
+
+    try {
+      const String deleteQuery = 'DELETE FROM tasks WHERE id = ?';
+      await _syncDb.execute(deleteQuery, [taskToDelete.id]);
+    } catch (error) {
+      rethrow;
+    }
   }
 
   Future<void> createTask(
-    TaskCreateRequest createRequest,
+    TaskActionRequestCreate createRequest,
   ) async {
-    const String insertQuery =
-        'INSERT INTO tasks (id, name, description, completed,created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?)';
-
-    await _syncDb.execute(insertQuery, [
-      _uuid.v4(),
-      createRequest.name,
-      createRequest.description ?? '',
-      createRequest.completed ?? false,
-      DateTime.now().toIso8601String(),
-      DateTime.now().toIso8601String(),
-    ]);
+    try {
+      const String insertQuery =
+          'INSERT INTO tasks (id, name, description, completed,created_at,updated_at) VALUES (?, ?, ?, ?, ?, ?)';
+      await _syncDb.execute(insertQuery, [
+        _uuid.v4(),
+        createRequest.name,
+        createRequest.description ?? '',
+        createRequest.completed ?? false,
+        DateTime.now().toIso8601String(),
+        DateTime.now().toIso8601String(),
+      ]);
+    } catch (error) {
+      rethrow;
+    }
   }
 }

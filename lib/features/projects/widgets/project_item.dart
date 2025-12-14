@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
-import 'package:taskly_bloc/features/projects/bloc/projects_bloc.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/models/project_models.dart';
 
 class ProjectItem extends StatelessWidget {
@@ -11,7 +11,6 @@ class ProjectItem extends StatelessWidget {
   });
 
   final ProjectDto project;
-  //  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
@@ -36,19 +35,19 @@ class ProjectItem extends StatelessWidget {
         value: completed,
         onChanged: (bool? newValue) {
           completed = newValue ?? false;
-          final ProjectUpdateRequest updateRequest = ProjectUpdateRequest(
-            id: project.id,
-            name: project.name,
-            completed: completed,
-            description: project.description,
-          );
+          final ProjectActionRequestUpdate updateRequest =
+              ProjectActionRequestUpdate(
+                name: project.name,
+                completed: completed,
+                description: project.description,
+                projectToUpdate: project,
+              );
           // Create event to update project with new completed status
-          context.read<ProjectsBloc>().add(
-            ProjectsEvent.updateProject(updateRequest: updateRequest),
+          context.read<ProjectDetailBloc>().add(
+            ProjectDetailEvent.updateProject(updateRequest: updateRequest),
           );
         },
       ),
-      //   trailing: onTap == null ? null : const Icon(Icons.chevron_right),
     );
   }
 }

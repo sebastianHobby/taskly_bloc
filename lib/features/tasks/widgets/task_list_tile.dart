@@ -1,31 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
-import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
-import 'package:taskly_bloc/features/tasks/models/task_models.dart';
+import 'package:taskly_bloc/features/tasks/tasks.dart.dart';
 
 class TaskListTile extends StatelessWidget {
   const TaskListTile({
-    required this.task,
+    required this.taskDto,
+    required this.onTap,
     super.key,
   });
 
-  final TaskDto task;
-  //  final VoidCallback? onTap;
+  final TaskDto taskDto;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     // final captionColor = theme.textTheme.bodySmall?.color;
-    bool completed = task.completed;
+    final bool completed = taskDto.completed;
     return ListTile(
-      //    onTap: onTap,
+      onTap: onTap, // invoke the passed-in method when tapped
       title: Text(
-        task.name,
+        taskDto.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        task.description!,
+        taskDto.description!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -35,21 +35,11 @@ class TaskListTile extends StatelessWidget {
         ),
         value: completed,
         onChanged: (bool? newValue) {
-          completed = newValue ?? false;
-          final TaskUpdateRequest updateRequest = TaskUpdateRequest(
-            id: task.id,
-            name: task.name,
-            completed: completed,
-            description: task.description,
-          );
-          // Create event to update task with new completed status
-
-          context.read<TasksBloc>().add(
-            TasksEvent.updateTask(updateRequest: updateRequest),
+          context.read<TaskListBloc>().add(
+            TaskListEvent.toggleTaskCompletion(taskDto: taskDto),
           );
         },
       ),
-      //   trailing: onTap == null ? null : const Icon(Icons.chevron_right),
     );
   }
 }

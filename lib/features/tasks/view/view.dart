@@ -1,2 +1,2 @@
-export 'tasks_edit_modal_page.dart';
-export 'tasks_page.dart';
+export 'task_detail_view.dart';
+export 'tasks_list_view.dart';

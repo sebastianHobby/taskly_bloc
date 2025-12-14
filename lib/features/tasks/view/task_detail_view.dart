@@ -1,13 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
-import 'package:taskly_bloc/features/tasks/models/task_models.dart';
-import 'package:uuid/uuid.dart';
+import 'package:taskly_bloc/features/tasks/bloc/task_action_request.dart';
+import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 
 enum Priority {
   high(displayName: 'High Priority', color: Colors.red),
@@ -24,32 +22,71 @@ enum Priority {
   final Color? color;
 }
 
-class TaskEditorPage extends StatelessWidget {
-  TaskEditorPage({super.key});
+class TaskDetailPage extends StatelessWidget {
+  TaskDetailPage({super.key, this.taskDto});
   final TaskRepository taskRepository = getIt<TaskRepository>();
-
+  final TaskDto? taskDto;
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => TasksBloc(taskRepository: taskRepository),
-      child: const TaskEditorView(),
+      create: (_) => TaskDetailBloc(taskRepository: taskRepository),
+      child: TaskDetailView(
+        taskDto: taskDto,
+      ),
     );
   }
 }
 
-class TaskEditorView extends StatefulWidget {
-  const TaskEditorView({super.key});
+class TaskDetailView extends StatefulWidget {
+  const TaskDetailView({super.key, this.taskDto});
+  final TaskDto? taskDto;
+
   @override
-  State<TaskEditorView> createState() => _TaskEditorViewState();
+  State<TaskDetailView> createState() => _TaskDetailViewState();
 }
 
-class _TaskEditorViewState extends State<TaskEditorView> {
+class _TaskDetailViewState extends State<TaskDetailView> {
   // Create a global key that uniquely identifies the Form widget
   // and allows validation of the form.
   //
   // Note: This is a `GlobalKey<FormState>`,
   // not a GlobalKey<MyCustomFormState>.
   final _formKey = GlobalKey<FormState>();
+  TaskDto? get _taskDto => widget.taskDto;
+
+  // Controllers and local state for detecting changes
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  late bool _completed;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: _taskDto?.name ?? '');
+    _descriptionController = TextEditingController(
+      text: _taskDto?.description ?? '',
+    );
+    _completed = _taskDto?.completed ?? false;
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  /// Returns true if the current form values differ from the initial values.
+  bool _hasFormChanged() {
+    final initialName = _taskDto?.name ?? '';
+    final initialDescription = _taskDto?.description ?? '';
+    final initialCompleted = _taskDto?.completed ?? false;
+
+    if (_nameController.text.trim() != initialName.trim()) return true;
+    if (_descriptionController.text != initialDescription) return true;
+    if (_completed != initialCompleted) return true;
+    return false;
+  }
 
   String? requiredValidator(String? value) {
     if (value == null || value.isEmpty) {
@@ -58,16 +95,17 @@ class _TaskEditorViewState extends State<TaskEditorView> {
     return null;
   }
 
+  TaskDto? get taskDto => widget.taskDto;
+
   Future<void> onPopInvoked(bool didPop, Object? result) async {
     if (didPop) {
       // Already popped.
       return;
     }
-    // } else if (!controller.canCompose.value) {
-    //   // Dismiss immediately if there are no unsaved changes.
-    //   Navigator.pop(context);
-    //   return;
-    // }
+    if (!_hasFormChanged()) {
+      Navigator.pop(context);
+      return;
+    }
 
     // Show a confirmation dialog.
     final shouldPop = await showDialog<bool?>(
@@ -97,29 +135,28 @@ class _TaskEditorViewState extends State<TaskEditorView> {
   @override
   Widget build(BuildContext context) {
     final taskNameInput = TextFormField(
+      controller: _nameController,
       autofocus: true,
       style: Theme.of(context).textTheme.titleLarge,
       textInputAction: TextInputAction.next,
-      autovalidateMode: AutovalidateMode.always,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: const InputDecoration(
         hintText: 'Title',
         border: InputBorder.none,
       ),
       validator: requiredValidator,
-      controller: TextEditingController(),
     );
 
     final taskDescriptionInput = TextFormField(
+      controller: _descriptionController,
       style: Theme.of(context).textTheme.bodyLarge,
       textInputAction: TextInputAction.next,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       decoration: const InputDecoration(
         hintText: 'Description',
         border: InputBorder.none,
       ),
-      controller: TextEditingController(),
     );
-
-    // Todo define new widgets as per old example - but get date etc working
 
     // Build a Form widget using the _formKey created above.
     final body = SingleChildScrollView(
@@ -137,25 +174,42 @@ class _TaskEditorViewState extends State<TaskEditorView> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: taskDescriptionInput,
             ),
+            // Example usage: show a small indicator if form changed (optional)
+            // Padding(
+            //   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            //   child: Text(_hasFormChanged() ? 'Unsaved changes' : 'No changes'),
+            // ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: ElevatedButton(
                 onPressed: () {
                   // Validate returns true if the form is valid, or false otherwise.
                   if (_formKey.currentState!.validate()) {
-                    // If the form is valid, display a snackbar. In the real world,
-                    // you'd often call a server or save the information in a database.
-                    // TOdo complete this with fields
                     _formKey.currentState!.save();
-                    final TaskCreateRequest createRequest = TaskCreateRequest(
-                      name: taskNameInput.controller!.text,
-                      completed: false,
-                      description: taskDescriptionInput.controller?.text,
-                    );
 
-                    context.read<TasksBloc>().add(
-                      TasksEvent.createTask(createRequest: createRequest),
-                    );
+                    // If taskDto exists then this is an update else create new task
+                    if (_taskDto != null) {
+                      final TaskActionRequestUpdate updateRequest =
+                          TaskActionRequestUpdate(
+                            taskToUpdate: _taskDto!,
+                            name: _nameController.text,
+                            description: _descriptionController.text,
+                            completed: _taskDto!.completed,
+                          );
+                      context.read<TaskDetailBloc>().add(
+                        TaskDetailEvent.updateTask(updateRequest: updateRequest),
+                      );
+                    } else {
+                      final TaskActionRequestCreate createRequest =
+                          TaskActionRequestCreate(
+                            name: _nameController.text,
+                            completed: false,
+                            description: _descriptionController.text,
+                          );
+                      context.read<TaskDetailBloc>().add(
+                        TaskDetailEvent.createTask(createRequest: createRequest),
+                      );
+                    }
                   }
                 },
                 child: const Text('Submit'),

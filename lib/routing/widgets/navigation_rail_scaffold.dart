@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
   const ScaffoldWithNavigationBar({
-    super.key,
     required this.body,
     required this.selectedIndex,
     required this.onDestinationSelected,
+    super.key,
   });
   final Widget body;
   final int selectedIndex;

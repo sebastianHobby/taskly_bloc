@@ -3,8 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/features/tasks/bloc/tasks_bloc.dart';
-
+import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
@@ -18,13 +17,13 @@ class TasksPage extends StatelessWidget {
         title: const Text('Tasks'),
       ),
       body: BlocProvider(
-        create: (_) => TasksBloc(taskRepository: taskRepository),
-        child: const TasksView(),
+        create: (_) => TaskListBloc(taskRepository: taskRepository),
+        child: const TasksListView(),
       ),
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add',
-        onPressed: () {
-          context.push(
+        onPressed: () async {
+          await context.push(
             Routes.editTaskModal,
           );
         }, // used by assistive technologies
@@ -32,17 +31,10 @@ class TasksPage extends StatelessWidget {
       ),
     );
   }
-
-  // Future<void> addTask() async {
-  //   final task = await showTaskEditor(context);
-  //   if (task != null) {
-  //     //_todoList.add(todo);
-  //   }
-  // }
 }
 
-class TasksView extends StatelessWidget {
-  const TasksView({super.key});
+class TasksListView extends StatelessWidget {
+  const TasksListView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -50,31 +42,37 @@ class TasksView extends StatelessWidget {
     //final l10n = context.l10n;
 
     // Send event to request data stream subscription
-    return BlocBuilder<TasksBloc, TasksState>(
+    return BlocBuilder<TaskListBloc, TaskListState>(
       builder: (context, state) {
-        switch (state) {
-          case TasksInitial():
-            context.read<TasksBloc>().add(
-              const TasksSubscriptionRequested(),
+        return state.when(
+          initial: () {
+            context.read<TaskListBloc>().add(
+              const TaskListEvent.subscriptionRequested(),
             );
-
-          case TasksLoading():
             return const Center(child: CircularProgressIndicator());
-          case TasksLoaded():
-            if (state.tasks.isEmpty) {
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          loaded: (tasks) {
+            if (tasks.isEmpty) {
               return const Center(child: Text('No tasks found.'));
             }
             return ListView.builder(
-              itemCount: state.tasks.length,
+              itemCount: tasks.length,
               itemBuilder: (context, index) {
-                final task = state.tasks[index];
-                return TaskListTile(task: task, key: super.key);
+                final task = tasks[index];
+                return TaskListTile(
+                  taskDto: task,
+                  key: super.key,
+                  // navigate to editTaskModal and pass the TaskDto as extra
+                  onTap: () async {
+                    await context.push(Routes.editTaskModal, extra: task);
+                  },
+                );
               },
             );
-          case TasksError():
-        }
-
-        return const SizedBox();
+          },
+          error: (message, stacktrace) => Center(child: Text(message)),
+        );
       },
     );
   }

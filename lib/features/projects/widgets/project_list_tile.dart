@@ -1,31 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
-import 'package:taskly_bloc/features/projects/bloc/projects_bloc.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/projects.dart';
 
 class ProjectListTile extends StatelessWidget {
   const ProjectListTile({
-    required this.project,
+    required this.projectDto,
     super.key,
+    this.onTap, // added callback
   });
 
-  final ProjectDto project;
-  //  final VoidCallback? onTap;
+  final ProjectDto projectDto;
+  final VoidCallback? onTap; // added field
+
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-    // final captionColor = theme.textTheme.bodySmall?.color;
-    bool completed = project.completed;
     return ListTile(
-      //    onTap: onTap,
+      onTap: onTap,
       title: Text(
-        project.name,
+        projectDto.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
-        project.description!,
+        projectDto.description!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -33,18 +31,11 @@ class ProjectListTile extends StatelessWidget {
         shape: const ContinuousRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
-        value: completed,
+        value: projectDto.completed,
         onChanged: (bool? newValue) {
-          completed = newValue ?? false;
-          final ProjectUpdateRequest updateRequest = ProjectUpdateRequest(
-            id: project.id,
-            name: project.name,
-            completed: completed,
-            description: project.description,
-          );
           // Create event to update project with new completed status
-          context.read<ProjectsBloc>().add(
-            ProjectsEvent.updateProject(updateRequest: updateRequest),
+          context.read<ProjectListBloc>().add(
+            ProjectListEvent.toggleProjectCompletion(projectDto: projectDto),
           );
         },
       ),

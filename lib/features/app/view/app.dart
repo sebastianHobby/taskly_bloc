@@ -7,11 +7,15 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    //Todo get all the widgets using this theme
+    final colorScheme = ColorScheme.fromSeed(seedColor: Colors.blue);
     return MaterialApp.router(
       theme: ThemeData(
-        appBarTheme: AppBarTheme(
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
+        colorScheme: colorScheme,
+        primaryColor: colorScheme.primary,
+        // appBarTheme: AppBarTheme(
+        //   backgroundColor: colorScheme.inversePrimary,
+        // ),
         useMaterial3: true,
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
