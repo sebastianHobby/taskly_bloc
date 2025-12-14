@@ -99,7 +99,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
 
   ProjectDto? get projectDto => widget.projectDto;
 
-  Future<void> onPopInvokedWithResult(bool didPop, Object? result) async {
+  Future<void> onPopInvoked(bool didPop, Object? result) async {
     if (didPop) {
       // Already popped.
       return;
@@ -177,54 +177,64 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
               child: projectDescriptionInput,
             ),
 
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              child: ElevatedButton(
-                onPressed: () {
-                  // Validate returns true if the form is valid, or false otherwise.
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
-
-                    // If projectDto exists then this is an update else create new project
-                    if (_projectDto != null) {
-                      final ProjectActionRequestUpdate updateRequest =
-                          ProjectActionRequestUpdate(
-                            projectToUpdate: _projectDto!,
-                            name: _nameController.text,
-                            description: _descriptionController.text,
-                            completed: _projectDto!.completed,
-                          );
-                      context.read<ProjectDetailBloc>().add(
-                        ProjectDetailEvent.updateProject(
-                          updateRequest: updateRequest,
-                        ),
-                      );
-                    } else {
-                      final ProjectActionRequestCreate createRequest =
-                          ProjectActionRequestCreate(
-                            name: _nameController.text,
-                            completed: false,
-                            description: _descriptionController.text,
-                          );
-                      context.read<ProjectDetailBloc>().add(
-                        ProjectDetailEvent.createProject(
-                          createRequest: createRequest,
-                        ),
-                      );
-                    }
-                  }
-                },
-                child: const Text('Submit'),
-              ),
-            ),
+            // Submit moved to bottom bar (see _onSubmit).
           ],
+        ),
+      ),
+    );
+
+    void onSubmit() {
+      if (_formKey.currentState?.validate() ?? false) {
+        final name = _nameController.text.trim();
+        final description = _descriptionController.text.trim();
+
+        if (projectDto != null) {
+          final updateRequest = ProjectActionRequestUpdate(
+            projectToUpdate: projectDto!,
+            name: name,
+            description: description,
+            completed: _completed,
+          );
+          context.read<ProjectDetailBloc>().add(
+            ProjectDetailEvent.updateProject(updateRequest: updateRequest),
+          );
+        } else {
+          final createRequest = ProjectActionRequestCreate(
+            name: name,
+            description: description,
+            completed: _completed,
+          );
+          context.read<ProjectDetailBloc>().add(
+            ProjectDetailEvent.createProject(createRequest: createRequest),
+          );
+        }
+
+        Navigator.pop(context);
+      }
+    }
+
+    final bottomBar = Material(
+      color: Theme.of(context).colorScheme.secondaryContainer,
+      child: SafeArea(
+        top: false,
+        child: SizedBox.fromSize(
+          size: const Size.fromHeight(kToolbarHeight),
+          child: Row(
+            children: [
+              IconButton.filled(
+                icon: const Icon(Icons.arrow_upward),
+                tooltip: 'Submit',
+                onPressed: onSubmit,
+              ),
+            ],
+          ),
         ),
       ),
     );
 
     return PopScope(
       canPop: false,
-      onPopInvokedWithResult: onPopInvokedWithResult,
+      onPopInvokedWithResult: onPopInvoked,
       child: SheetKeyboardDismissible(
         dismissBehavior: const SheetKeyboardDismissBehavior.onDragDown(
           isContentScrollAware: true,
@@ -245,7 +255,7 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
             //   ignoreBottomInset: true,
             // ),
             body: body,
-            // bottomBar: bottomBar,
+            bottomBar: bottomBar,
           ),
         ),
       ),
