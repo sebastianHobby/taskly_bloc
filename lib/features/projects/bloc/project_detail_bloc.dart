@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 part 'project_detail_bloc.freezed.dart';
 
 // Events

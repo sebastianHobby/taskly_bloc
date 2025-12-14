@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 
 class ProjectItem extends StatelessWidget {
   const ProjectItem({

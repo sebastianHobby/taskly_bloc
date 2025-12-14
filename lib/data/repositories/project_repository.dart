@@ -2,7 +2,7 @@
 import 'package:powersync/powersync.dart';
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
 import 'package:taskly_bloc/data/powersync/powersync.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 import 'package:uuid/uuid.dart';
 
 class ProjectRepository {

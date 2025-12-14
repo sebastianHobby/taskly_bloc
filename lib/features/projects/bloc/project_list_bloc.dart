@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 part 'project_list_bloc.freezed.dart';
 
 // Define the various events that ProjectsBloc will handle

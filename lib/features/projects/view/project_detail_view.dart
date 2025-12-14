@@ -7,7 +7,7 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/features/projects/models/project_models.dart';
+import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 
 enum Priority {
   high(displayName: 'High Priority', color: Colors.red),
