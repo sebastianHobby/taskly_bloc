@@ -21,8 +21,7 @@
   "words": [
     "Contador",
     "localizable",
-    "mostrado",
-    "página",
+    "mostrado", "página",
     "Texto",
     "taskly",
     "tasklybloc",
