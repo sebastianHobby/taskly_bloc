@@ -21,12 +21,13 @@ class ProjectsPage extends StatelessWidget {
         child: const ProjectsListView(),
       ),
       floatingActionButton: FloatingActionButton(
-        tooltip: 'Add',
+        tooltip: 'Add project',
         onPressed: () async {
           await context.push(
             Routes.editProjectModal,
           );
-        }, // used by assistive technologies
+        },
+        heroTag: 'add_project_fab', // used by assistive technologies
         child: const Icon(Icons.add),
       ),
     );
