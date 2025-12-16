@@ -1,47 +1,35 @@
-// ignore_for_file: avoid_positional_boolean_parameters
-
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
+import 'package:taskly_bloc/features/projects/widgets/project_form_item.dart';
 
-enum Priority {
-  high(displayName: 'High Priority', color: Colors.red),
-  medium(displayName: 'Medium Priority', color: Colors.orange),
-  low(displayName: 'Low Priority', color: Colors.blue),
-  none(displayName: 'No Priority');
-
-  const Priority({
-    required this.displayName,
-    this.color,
-  });
-
-  final String displayName;
-  final Color? color;
-}
+enum ProjectDetailMode { create, edit }
 
 class ProjectDetailPage extends StatelessWidget {
-  ProjectDetailPage({super.key, this.projectDto});
+  ProjectDetailPage({this.projectId, super.key});
   final ProjectRepository projectRepository = getIt<ProjectRepository>();
-  final ProjectDto? projectDto;
+  final String? projectId;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProjectDetailBloc(projectRepository: projectRepository),
-      child: ProjectDetailView(
-        projectDto: projectDto,
+      create: (_) => ProjectDetailBloc(
+        projectRepository: projectRepository,
+        projectId: projectId,
       ),
+      child: ProjectDetailView(),
     );
   }
 }
 
 class ProjectDetailView extends StatefulWidget {
-  const ProjectDetailView({super.key, this.projectDto});
-  final ProjectDto? projectDto;
+  const ProjectDetailView({super.key});
 
   @override
   State<ProjectDetailView> createState() => _ProjectDetailViewState();
@@ -49,67 +37,31 @@ class ProjectDetailView extends StatefulWidget {
 
 class _ProjectDetailViewState extends State<ProjectDetailView> {
   // Create a global key that uniquely identifies the Form widget
-  // and allows validation of the form.
-  //
-  // Note: This is a `GlobalKey<FormState>`,
-  // not a GlobalKey<MyCustomFormState>.
-  final _formKey = GlobalKey<FormState>();
-  ProjectDto? get _projectDto => widget.projectDto;
+  final _formKey = GlobalKey<FormBuilderState>();
 
-  // Controllers and local state for detecting changes
-  late final TextEditingController _nameController;
-  late final TextEditingController _descriptionController;
-  late bool _completed;
+  // cache initial values derived from the companion
+  late final Map<String, dynamic> _initialValues;
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: _projectDto?.name ?? '');
-    _descriptionController = TextEditingController(
-      text: _projectDto?.description ?? '',
-    );
-    _completed = _projectDto?.completed ?? false;
+  Map<String, dynamic> _companionToInitialFormValues(
+    ProjectTableCompanion companion,
+  ) {
+    return <String, dynamic>{
+      'name': companion.name.present ? companion.name.value : '',
+      'description': companion.description.present
+          ? companion.description.value
+          : '',
+      'completed': companion.completed.present && companion.completed.value,
+    };
   }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  /// Returns true if the current form values differ from the initial values.
-  bool _hasFormChanged() {
-    final initialName = _projectDto?.name ?? '';
-    final initialDescription = _projectDto?.description ?? '';
-    final initialCompleted = _projectDto?.completed ?? false;
-
-    if (_nameController.text.trim() != initialName.trim()) return true;
-    if (_descriptionController.text != initialDescription) return true;
-    if (_completed != initialCompleted) return true;
-    return false;
-  }
-
-  String? requiredValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Required';
-    }
-    return null;
-  }
-
-  ProjectDto? get projectDto => widget.projectDto;
 
   Future<void> onPopInvoked(bool didPop, Object? result) async {
-    if (didPop) {
-      // Already popped.
-      return;
-    }
-    if (!_hasFormChanged()) {
+    if (didPop) return;
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.isDirty) {
       Navigator.pop(context);
       return;
     }
 
-    // Show a confirmation dialog.
     final shouldPop = await showDialog<bool?>(
       context: context,
       builder: (context) {
@@ -134,101 +86,63 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final projectNameInput = TextFormField(
-      controller: _nameController,
-      autofocus: true,
-      style: Theme.of(context).textTheme.titleLarge,
-      textInputAction: TextInputAction.next,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: const InputDecoration(
-        hintText: 'Title',
-        border: InputBorder.none,
-      ),
-      validator: requiredValidator,
-    );
+  Widget _buildLoading() => const Center(child: CircularProgressIndicator());
 
-    final projectDescriptionInput = TextFormField(
-      controller: _descriptionController,
-      style: Theme.of(context).textTheme.bodyLarge,
-      textInputAction: TextInputAction.next,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: const InputDecoration(
-        hintText: 'Description',
-        border: InputBorder.none,
-      ),
-    );
-
-    // Build a Form widget using the _formKey created above.
-    final body = SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Form(
-        key: _formKey,
+  Widget _buildError(String message, StackTrace stacktrace) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: projectNameInput,
+            const Icon(Icons.error, size: 48, color: Colors.red),
+            const SizedBox(height: 12),
+            Text('Error: $message', textAlign: TextAlign.center),
+            const SizedBox(height: 8),
+            Text(
+              stacktrace.toString(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: projectDescriptionInput,
-            ),
-
-            // Submit moved to bottom bar (see _onSubmit).
           ],
         ),
       ),
     );
+  }
 
-    void onSubmit() {
-      if (_formKey.currentState?.validate() ?? false) {
-        final name = _nameController.text.trim();
-        final description = _descriptionController.text.trim();
+  Widget _buildCreate() {
+    void onSubmitCreate() {
+      final formState = _formKey.currentState;
+      if (formState == null) return;
+      if (formState.saveAndValidate()) {
+        final name = (formState.value['name'] as String?)?.trim() ?? '';
+        final description =
+            (formState.value['description'] as String?)?.trim() ?? '';
+        final completed = formState.value['completed'] as bool? ?? false;
 
-        if (projectDto != null) {
-          final updateRequest = ProjectActionRequestUpdate(
-            projectToUpdate: projectDto!,
-            name: name,
-            description: description,
-            completed: _completed,
-          );
-          context.read<ProjectDetailBloc>().add(
-            ProjectDetailEvent.updateProject(updateRequest: updateRequest),
-          );
-        } else {
-          final createRequest = ProjectActionRequestCreate(
-            name: name,
-            description: description,
-            completed: _completed,
-          );
-          context.read<ProjectDetailBloc>().add(
-            ProjectDetailEvent.createProject(createRequest: createRequest),
-          );
-        }
+        final createCompanion = ProjectTableCompanion(
+          name: Value(name),
+          description: Value(description),
+          completed: Value(completed),
+          createdAt: Value(DateTime.now()),
+          updatedAt: Value(DateTime.now()),
+        );
+
+        context.read<ProjectDetailBloc>().add(
+          ProjectDetailEvent.createProject(createCompanion: createCompanion),
+        );
 
         Navigator.pop(context);
       }
     }
 
-    final bottomBar = Material(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: SafeArea(
-        top: false,
-        child: SizedBox.fromSize(
-          size: const Size.fromHeight(kToolbarHeight),
-          child: Row(
-            children: [
-              IconButton.filled(
-                icon: const Icon(Icons.arrow_upward),
-                tooltip: 'Submit',
-                onPressed: onSubmit,
-              ),
-            ],
-          ),
-        ),
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: FormBuilder(
+        key: _formKey,
+        initialValue: _initialValues,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        child: ProjectFormItem(initialValues: _initialValues),
       ),
     );
 
@@ -250,15 +164,44 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
             ),
           ),
           child: SheetContentScaffold(
-            // bottomBarVisibility: const BottomBarVisibility.always(
-            //   // Make the bottom bar visible when the keyboard is open.
-            //   ignoreBottomInset: true,
-            // ),
             body: body,
-            bottomBar: bottomBar,
+            bottomBar: Material(
+              color: Theme.of(context).colorScheme.secondaryContainer,
+              child: SafeArea(
+                top: false,
+                child: SizedBox.fromSize(
+                  size: const Size.fromHeight(kToolbarHeight),
+                  child: Row(
+                    children: [
+                      IconButton.filled(
+                        icon: const Icon(Icons.check),
+                        tooltip: 'Submit',
+                        onPressed: onSubmitCreate,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEdit() => const Center(child: CircularProgressIndicator());
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProjectDetailBloc, ProjectDetailState>(
+      builder: (context, state) {
+        return state.when(
+          loading: _buildLoading,
+          createProject: _buildCreate,
+          editProject: _buildEdit,
+          error: _buildError,
+        );
+      },
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_list_tile.dart';
@@ -23,9 +24,7 @@ class ProjectsPage extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         tooltip: 'Add project',
         onPressed: () async {
-          await context.push(
-            Routes.editProjectModal,
-          );
+          await context.push(Routes.createProjectModal);
         },
         heroTag: 'add_project_fab', // used by assistive technologies
         child: const Icon(Icons.add),
@@ -57,16 +56,24 @@ class ProjectsListView extends StatelessWidget {
             if (projects.isEmpty) {
               return const Center(child: Text('No projects found.'));
             }
+
             return ListView.builder(
               itemCount: projects.length,
               itemBuilder: (context, index) {
                 final project = projects[index];
                 return ProjectListTile(
-                  projectDto: project,
-                  key: super.key,
-                  // navigate to editProjectModal and pass the ProjectDto as extra
-                  onTap: () async {
-                    await context.push(Routes.editProjectModal, extra: project);
+                  project: project,
+                  onCheckboxChanged: (project, _) {
+                    context.read<ProjectListBloc>().add(
+                      ProjectListEvent.toggleProjectCompletion(
+                        projectData: project,
+                      ),
+                    );
+                  },
+                  onTap: (project) async {
+                    context.go(
+                      '/editProject/${project.id}',
+                    );
                   },
                 );
               },

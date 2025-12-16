@@ -1,113 +1,72 @@
+import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/features/tasks/bloc/task_action_request.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 
-enum Priority {
-  high(displayName: 'High Priority', color: Colors.red),
-  medium(displayName: 'Medium Priority', color: Colors.orange),
-  low(displayName: 'Low Priority', color: Colors.blue),
-  none(displayName: 'No Priority');
-
-  const Priority({
-    required this.displayName,
-    this.color,
-  });
-
-  final String displayName;
-  final Color? color;
-}
-
 class TaskDetailPage extends StatelessWidget {
-  TaskDetailPage({super.key, this.taskDto});
+  TaskDetailPage({required this.taskCompanion, super.key});
   final TaskRepository taskRepository = getIt<TaskRepository>();
-  final TaskDto? taskDto;
+  final TaskTableCompanion taskCompanion;
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => TaskDetailBloc(taskRepository: taskRepository),
       child: TaskDetailView(
-        taskDto: taskDto,
+        taskCompanion: taskCompanion,
       ),
     );
   }
 }
 
 class TaskDetailView extends StatefulWidget {
-  const TaskDetailView({super.key, this.taskDto});
-  final TaskDto? taskDto;
+  const TaskDetailView({required this.taskCompanion, super.key});
+  final TaskTableCompanion taskCompanion;
 
   @override
   State<TaskDetailView> createState() => _TaskDetailViewState();
 }
 
 class _TaskDetailViewState extends State<TaskDetailView> {
-  // Create a global key that uniquely identifies the Form widget
-  // and allows validation of the form.
-  //
-  // Note: This is a `GlobalKey<FormState>`,
-  // not a GlobalKey<MyCustomFormState>.
-  final _formKey = GlobalKey<FormState>();
-  TaskDto? get _taskDto => widget.taskDto;
+  final _formKey = GlobalKey<FormBuilderState>();
 
-  // Controllers and local state for detecting changes
-  late final TextEditingController _nameController;
-  late final TextEditingController _descriptionController;
-  late bool _completed;
+  TaskTableCompanion get _taskCompanion => widget.taskCompanion;
+
+  late final Map<String, dynamic> _initialValues;
+
+  Map<String, dynamic> _companionToInitialFormValues(
+    TaskTableCompanion companion,
+  ) {
+    return <String, dynamic>{
+      'name': companion.name.present ? companion.name.value : '',
+      'description': companion.description.present
+          ? companion.description.value
+          : '',
+      'completed': companion.completed.present && companion.completed.value,
+    };
+  }
+
+  TaskTableCompanion get initialCompanionValue => widget.taskCompanion;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: _taskDto?.name ?? '');
-    _descriptionController = TextEditingController(
-      text: _taskDto?.description ?? '',
-    );
-    _completed = _taskDto?.completed ?? false;
+    _initialValues = _companionToInitialFormValues(widget.taskCompanion);
   }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  /// Returns true if the current form values differ from the initial values.
-  bool _hasFormChanged() {
-    final initialName = _taskDto?.name ?? '';
-    final initialDescription = _taskDto?.description ?? '';
-    final initialCompleted = _taskDto?.completed ?? false;
-
-    if (_nameController.text.trim() != initialName.trim()) return true;
-    if (_descriptionController.text != initialDescription) return true;
-    if (_completed != initialCompleted) return true;
-    return false;
-  }
-
-  String? requiredValidator(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Required';
-    }
-    return null;
-  }
-
-  TaskDto? get taskDto => widget.taskDto;
 
   Future<void> onPopInvoked(bool didPop, Object? result) async {
-    if (didPop) {
-      // Already popped.
-      return;
-    }
-    if (!_hasFormChanged()) {
+    if (didPop) return;
+    final formState = _formKey.currentState;
+    if (formState == null || !formState.isDirty) {
       Navigator.pop(context);
       return;
     }
 
-    // Show a confirmation dialog.
     final shouldPop = await showDialog<bool?>(
       context: context,
       builder: (context) {
@@ -132,84 +91,101 @@ class _TaskDetailViewState extends State<TaskDetailView> {
     }
   }
 
-  void _onSubmit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final name = _nameController.text.trim();
-      final description = _descriptionController.text.trim();
-
-      if (taskDto != null) {
-        // Update existing task
-        final updateRequest = TaskActionRequestUpdate(
-          taskToUpdate: taskDto!,
-          name: name,
-          description: description,
-          completed: _completed,
-        );
-        context.read<TaskDetailBloc>().add(
-          TaskDetailEvent.updateTask(updateRequest: updateRequest),
-        );
-      } else {
-        // Create new task
-        final createRequest = TaskActionRequestCreate(
-          name: name,
-          description: description,
-          completed: _completed,
-        );
-        context.read<TaskDetailBloc>().add(
-          TaskDetailEvent.createTask(createRequest: createRequest),
-        );
-      }
-
-      Navigator.pop(context);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final taskNameInput = TextFormField(
-      controller: _nameController,
-      autofocus: true,
-      style: Theme.of(context).textTheme.titleLarge,
-      textInputAction: TextInputAction.next,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: const InputDecoration(
-        hintText: 'Title',
-        border: InputBorder.none,
-      ),
-      validator: requiredValidator,
-    );
-
-    final taskDescriptionInput = TextFormField(
-      controller: _descriptionController,
-      style: Theme.of(context).textTheme.bodyLarge,
-      textInputAction: TextInputAction.next,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      decoration: const InputDecoration(
-        hintText: 'Description',
-        border: InputBorder.none,
-      ),
-    );
-
-    // Build a Form widget using the _formKey created above.
     final body = SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Form(
+      child: FormBuilder(
         key: _formKey,
+        initialValue: _initialValues,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: taskNameInput,
+              child: FormBuilderTextField(
+                name: 'name',
+                textInputAction: TextInputAction.next,
+                decoration: const InputDecoration(
+                  hintText: 'Task Name',
+                  border: InputBorder.none,
+                ),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: 'Name is required',
+                  ),
+                  FormBuilderValidators.minLength(
+                    1,
+                    errorText: 'Name must not be empty',
+                  ),
+                ]),
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: taskDescriptionInput,
+              child: FormBuilderTextField(
+                name: 'description',
+                textInputAction: TextInputAction.newline,
+                decoration: const InputDecoration(
+                  hintText: 'Description',
+                  border: InputBorder.none,
+                ),
+                maxLines: null,
+                validator: FormBuilderValidators.maxLength(
+                  150,
+                  errorText: 'Description is too long',
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: FormBuilderCheckbox(
+                name: 'completed',
+                title: const Text('Completed'),
+                initialValue: _initialValues['completed'] as bool? ?? false,
+              ),
             ),
           ],
         ),
       ),
     );
+
+    void onSubmit() {
+      final formState = _formKey.currentState;
+      if (formState == null) return;
+      if (formState.isDirty && formState.saveAndValidate()) {
+        final name = (formState.value['name'] as String?)?.trim() ?? '';
+        final description = (formState.value['description'] as String?)?.trim();
+        final completed = formState.value['completed'] as bool? ?? false;
+
+        if (initialCompanionValue.id.present) {
+          final updateCompanion = TaskTableCompanion(
+            id: initialCompanionValue.id,
+            name: Value(name),
+            description: Value(description),
+            completed: Value(completed),
+            updatedAt: Value(DateTime.now()),
+          );
+          context.read<TaskDetailBloc>().add(
+            TaskDetailEvent.updateTask(updateRequest: updateCompanion),
+          );
+        } else {
+          final createCompanion = TaskTableCompanion(
+            name: Value(name),
+            description: Value(description),
+            completed: Value(completed),
+            createdAt: Value(DateTime.now()),
+            updatedAt: Value(DateTime.now()),
+          );
+          context.read<TaskDetailBloc>().add(
+            TaskDetailEvent.createTask(createRequest: createCompanion),
+          );
+        }
+
+        Navigator.pop(context);
+      }
+    }
 
     final bottomBar = Material(
       color: Theme.of(context).colorScheme.secondaryContainer,
@@ -222,8 +198,7 @@ class _TaskDetailViewState extends State<TaskDetailView> {
               IconButton.filled(
                 icon: const Icon(Icons.arrow_upward),
                 tooltip: 'Submit',
-                onPressed: _onSubmit,
-                
+                onPressed: onSubmit,
               ),
             ],
           ),
@@ -249,10 +224,6 @@ class _TaskDetailViewState extends State<TaskDetailView> {
             ),
           ),
           child: SheetContentScaffold(
-            bottomBarVisibility: const BottomBarVisibility.always(
-              // Make the bottom bar visible when the keyboard is open.
-              ignoreBottomInset: true,
-            ),
             body: body,
             bottomBar: bottomBar,
           ),

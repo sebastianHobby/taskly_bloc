@@ -1,7 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:smooth_sheets/smooth_sheets.dart';
-import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
-import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 import 'package:taskly_bloc/features/projects/view/project_list_view.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
@@ -49,7 +48,9 @@ final router = GoRouter(
             dismissalOffset: SheetOffset.proportionalToViewport(0.4),
           ),
           // You don't need a SheetViewport for the modal sheet.
-          child: TaskDetailPage(taskDto: state.extra as TaskDto?),
+          child: TaskDetailPage(
+            taskCompanion: state.extra! as TaskTableCompanion,
+          ),
         );
       },
     ),
@@ -67,7 +68,9 @@ final router = GoRouter(
             dismissalOffset: SheetOffset.proportionalToViewport(0.4),
           ),
           // You don't need a SheetViewport for the modal sheet.
-          child: ProjectDetailPage(projectDto: state.extra as ProjectDto?),
+          child: ProjectDetailPage(
+            projectId: state.pathParameters['projectId'],
+          ),
         );
       },
     ),

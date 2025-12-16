@@ -1,8 +1,8 @@
 import 'package:bloc/bloc.dart';
+import 'package:drift/drift.dart' hide JsonKey;
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/data/dtos/projects/project_dto.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/features/projects/bloc/project_action_request.dart';
 part 'project_list_bloc.freezed.dart';
 
 // Define the various events that ProjectsBloc will handle
@@ -10,7 +10,9 @@ part 'project_list_bloc.freezed.dart';
 sealed class ProjectListEvent with _$ProjectListEvent {
   const factory ProjectListEvent.projectsSubscriptionRequested() =
       ProjectListSubscriptionRequested;
-  const factory ProjectListEvent.toggleProjectCompletion({required ProjectDto projectDto}) = ProjectListToggleProjectCompletion;
+  const factory ProjectListEvent.toggleProjectCompletion({
+    required ProjectTableData projectData,
+  }) = ProjectListToggleProjectCompletion;
 }
 
 // Define the various states that ProjectsBloc can emit
@@ -19,7 +21,7 @@ sealed class ProjectListState with _$ProjectListState {
   const factory ProjectListState.initial() = ProjectListInitial;
   const factory ProjectListState.loading() = ProjectListLoading;
   const factory ProjectListState.loaded({
-    required List<ProjectDto> projects,
+    required List<ProjectTableData> projects,
   }) = ProjectListLoaded;
   const factory ProjectListState.error({required String message}) =
       ProjectListError;
@@ -43,8 +45,8 @@ class ProjectListBloc extends Bloc<ProjectListEvent, ProjectListState> {
     emit(const ProjectListLoading());
     // For each ProjectModel we receive in the stream emit the data loaded
     // state so UI can update or error state if there is an error
-    await emit.forEach<List<ProjectDto>>(
-      _projectRepository.getProjects(),
+    await emit.forEach<List<ProjectTableData>>(
+      _projectRepository.getProjects,
       onData: (projects) => ProjectListLoaded(projects: projects),
       onError: (error, stackTrace) =>
           const ProjectListError(message: 'todo error handling'),
@@ -55,17 +57,13 @@ class ProjectListBloc extends Bloc<ProjectListEvent, ProjectListState> {
     ProjectListToggleProjectCompletion event,
     Emitter<ProjectListState> emit,
   ) async {
-    final updatedProject = event.projectDto.copyWith(
-      completed: !event.projectDto.completed,
+    ProjectTableCompanion updateCompanion = event.projectData.toCompanion(true);
+    updateCompanion = updateCompanion.copyWith(
+      completed: Value(!event.projectData.completed),
+      updatedAt: Value(DateTime.now()),
     );
-    final updateRequest = ProjectActionRequestUpdate(
-      name: updatedProject.name,
-      completed: updatedProject.completed,
-      description: updatedProject.description, projectToUpdate: updatedProject,
-    );
-    await _projectRepository.updateProject(updateRequest);
+
+    await _projectRepository.updateProject(updateCompanion);
     // No need to call refresh as the stream subscription will handle it
   }
-
-
 }

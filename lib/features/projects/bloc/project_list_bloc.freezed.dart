@@ -119,11 +119,11 @@ return toggleProjectCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( ProjectDto projectDto)?  toggleProjectCompletion,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( ProjectTableData projectData)?  toggleProjectCompletion,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectListSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectListToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that.projectDto);case _:
+return toggleProjectCompletion(_that.projectData);case _:
   return orElse();
 
 }
@@ -141,11 +141,11 @@ return toggleProjectCompletion(_that.projectDto);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( ProjectDto projectDto)  toggleProjectCompletion,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( ProjectTableData projectData)  toggleProjectCompletion,}) {final _that = this;
 switch (_that) {
 case ProjectListSubscriptionRequested():
 return projectsSubscriptionRequested();case ProjectListToggleProjectCompletion():
-return toggleProjectCompletion(_that.projectDto);}
+return toggleProjectCompletion(_that.projectData);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -159,11 +159,11 @@ return toggleProjectCompletion(_that.projectDto);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( ProjectDto projectDto)?  toggleProjectCompletion,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( ProjectTableData projectData)?  toggleProjectCompletion,}) {final _that = this;
 switch (_that) {
 case ProjectListSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectListToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that.projectDto);case _:
+return toggleProjectCompletion(_that.projectData);case _:
   return null;
 
 }
@@ -207,10 +207,10 @@ String toString() {
 
 
 class ProjectListToggleProjectCompletion implements ProjectListEvent {
-  const ProjectListToggleProjectCompletion({required this.projectDto});
+  const ProjectListToggleProjectCompletion({required this.projectData});
   
 
- final  ProjectDto projectDto;
+ final  ProjectTableData projectData;
 
 /// Create a copy of ProjectListEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -222,16 +222,16 @@ $ProjectListToggleProjectCompletionCopyWith<ProjectListToggleProjectCompletion> 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectListToggleProjectCompletion&&(identical(other.projectDto, projectDto) || other.projectDto == projectDto));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectListToggleProjectCompletion&&const DeepCollectionEquality().equals(other.projectData, projectData));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,projectDto);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(projectData));
 
 @override
 String toString() {
-  return 'ProjectListEvent.toggleProjectCompletion(projectDto: $projectDto)';
+  return 'ProjectListEvent.toggleProjectCompletion(projectData: $projectData)';
 }
 
 
@@ -242,11 +242,11 @@ abstract mixin class $ProjectListToggleProjectCompletionCopyWith<$Res> implement
   factory $ProjectListToggleProjectCompletionCopyWith(ProjectListToggleProjectCompletion value, $Res Function(ProjectListToggleProjectCompletion) _then) = _$ProjectListToggleProjectCompletionCopyWithImpl;
 @useResult
 $Res call({
- ProjectDto projectDto
+ ProjectTableData projectData
 });
 
 
-$ProjectDtoCopyWith<$Res> get projectDto;
+
 
 }
 /// @nodoc
@@ -259,23 +259,14 @@ class _$ProjectListToggleProjectCompletionCopyWithImpl<$Res>
 
 /// Create a copy of ProjectListEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? projectDto = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? projectData = freezed,}) {
   return _then(ProjectListToggleProjectCompletion(
-projectDto: null == projectDto ? _self.projectDto : projectDto // ignore: cast_nullable_to_non_nullable
-as ProjectDto,
+projectData: freezed == projectData ? _self.projectData : projectData // ignore: cast_nullable_to_non_nullable
+as ProjectTableData,
   ));
 }
 
-/// Create a copy of ProjectListEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectDtoCopyWith<$Res> get projectDto {
-  
-  return $ProjectDtoCopyWith<$Res>(_self.projectDto, (value) {
-    return _then(_self.copyWith(projectDto: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -392,7 +383,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<ProjectDto> projects)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<ProjectTableData> projects)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectListInitial() when initial != null:
 return initial();case ProjectListLoading() when loading != null:
@@ -416,7 +407,7 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<ProjectDto> projects)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<ProjectTableData> projects)  loaded,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case ProjectListInitial():
 return initial();case ProjectListLoading():
@@ -436,7 +427,7 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<ProjectDto> projects)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<ProjectTableData> projects)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case ProjectListInitial() when initial != null:
 return initial();case ProjectListLoading() when loading != null:
@@ -518,11 +509,11 @@ String toString() {
 
 
 class ProjectListLoaded implements ProjectListState {
-  const ProjectListLoaded({required final  List<ProjectDto> projects}): _projects = projects;
+  const ProjectListLoaded({required final  List<ProjectTableData> projects}): _projects = projects;
   
 
- final  List<ProjectDto> _projects;
- List<ProjectDto> get projects {
+ final  List<ProjectTableData> _projects;
+ List<ProjectTableData> get projects {
   if (_projects is EqualUnmodifiableListView) return _projects;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_projects);
@@ -559,7 +550,7 @@ abstract mixin class $ProjectListLoadedCopyWith<$Res> implements $ProjectListSta
   factory $ProjectListLoadedCopyWith(ProjectListLoaded value, $Res Function(ProjectListLoaded) _then) = _$ProjectListLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<ProjectDto> projects
+ List<ProjectTableData> projects
 });
 
 
@@ -579,7 +570,7 @@ class _$ProjectListLoadedCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? projects = null,}) {
   return _then(ProjectListLoaded(
 projects: null == projects ? _self._projects : projects // ignore: cast_nullable_to_non_nullable
-as List<ProjectDto>,
+as List<ProjectTableData>,
   ));
 }
 

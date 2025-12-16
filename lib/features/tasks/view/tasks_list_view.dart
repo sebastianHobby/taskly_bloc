@@ -5,6 +5,7 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
 class TasksPage extends StatelessWidget {
@@ -61,10 +62,13 @@ class TasksListView extends StatelessWidget {
               itemBuilder: (context, index) {
                 final task = tasks[index];
                 return TaskListTile(
-                  taskDto: task,
-                  key: super.key,
-                  // navigate to editTaskModal and pass the TaskDto as extra
-                  onTap: () async {
+                  task: task,
+                  onCheckboxChanged: (task, _) {
+                    context.read<TaskListBloc>().add(
+                      TaskListEvent.toggleTaskCompletion(taskData: task),
+                    );
+                  },
+                  onTap: (task) async {
                     await context.push(Routes.editTaskModal, extra: task);
                   },
                 );

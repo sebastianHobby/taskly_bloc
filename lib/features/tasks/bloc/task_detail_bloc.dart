@@ -1,22 +1,24 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/features/tasks/bloc/task_action_request.dart';
+
 part 'task_detail_bloc.freezed.dart';
 
 //Events (the input to bloc)
 @freezed
 sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.updateTask({
-    required TaskActionRequestUpdate updateRequest,
+    required TaskTableCompanion updateRequest,
   }) = _TaskDetailUpdate;
 
   const factory TaskDetailEvent.deleteTask({
-    required TaskActionRequestDelete deleteRequest,
+    required TaskTableCompanion deleteRequest,
   }) = _TaskDetailDelete;
 
   const factory TaskDetailEvent.createTask({
-    required TaskActionRequestCreate createRequest,
+    required TaskTableCompanion createRequest,
   }) = _TaskDetailCreate;
 }
 
@@ -32,8 +34,8 @@ sealed class TaskDetailState with _$TaskDetailState {
 
 class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   TaskDetailBloc({
-    required TaskRepository taskRepository,
-  }) : _taskRepository = taskRepository,
+    TaskRepository? taskRepository,
+  }) : _taskRepository = taskRepository ?? getIt<TaskRepository>(),
        super(TaskDetailState.initial()) {
     // use `when` to map union cases to handlers
     on<TaskDetailEvent>((event, emit) async {
@@ -48,7 +50,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   final TaskRepository _taskRepository;
 
   Future<void> _onUpdate(
-    TaskActionRequestUpdate updateRequest,
+    TaskTableCompanion updateRequest,
     Emitter<TaskDetailState> emit,
   ) async {
     try {
@@ -64,7 +66,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   }
 
   Future<void> _onDelete(
-    TaskActionRequestDelete deleteRequest,
+    TaskTableCompanion deleteRequest,
     Emitter<TaskDetailState> emit,
   ) async {
     try {
@@ -80,7 +82,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   }
 
   Future<void> _onCreate(
-    TaskActionRequestCreate createRequest,
+    TaskTableCompanion createRequest,
     Emitter<TaskDetailState> emit,
   ) async {
     try {

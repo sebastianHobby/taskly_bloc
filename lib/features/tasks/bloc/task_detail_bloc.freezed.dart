@@ -122,7 +122,7 @@ return createTask(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TaskActionRequestUpdate updateRequest)?  updateTask,TResult Function( TaskActionRequestDelete deleteRequest)?  deleteTask,TResult Function( TaskActionRequestCreate createRequest)?  createTask,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( TaskTableCompanion updateRequest)?  updateTask,TResult Function( TaskTableCompanion deleteRequest)?  deleteTask,TResult Function( TaskTableCompanion createRequest)?  createTask,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when updateTask != null:
 return updateTask(_that.updateRequest);case _TaskDetailDelete() when deleteTask != null:
@@ -145,7 +145,7 @@ return createTask(_that.createRequest);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TaskActionRequestUpdate updateRequest)  updateTask,required TResult Function( TaskActionRequestDelete deleteRequest)  deleteTask,required TResult Function( TaskActionRequestCreate createRequest)  createTask,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( TaskTableCompanion updateRequest)  updateTask,required TResult Function( TaskTableCompanion deleteRequest)  deleteTask,required TResult Function( TaskTableCompanion createRequest)  createTask,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
 return updateTask(_that.updateRequest);case _TaskDetailDelete():
@@ -164,7 +164,7 @@ return createTask(_that.createRequest);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TaskActionRequestUpdate updateRequest)?  updateTask,TResult? Function( TaskActionRequestDelete deleteRequest)?  deleteTask,TResult? Function( TaskActionRequestCreate createRequest)?  createTask,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( TaskTableCompanion updateRequest)?  updateTask,TResult? Function( TaskTableCompanion deleteRequest)?  deleteTask,TResult? Function( TaskTableCompanion createRequest)?  createTask,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when updateTask != null:
 return updateTask(_that.updateRequest);case _TaskDetailDelete() when deleteTask != null:
@@ -184,7 +184,7 @@ class _TaskDetailUpdate implements TaskDetailEvent {
   const _TaskDetailUpdate({required this.updateRequest});
   
 
- final  TaskActionRequestUpdate updateRequest;
+ final  TaskTableCompanion updateRequest;
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -216,7 +216,7 @@ abstract mixin class _$TaskDetailUpdateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailUpdateCopyWith(_TaskDetailUpdate value, $Res Function(_TaskDetailUpdate) _then) = __$TaskDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- TaskActionRequestUpdate updateRequest
+ TaskTableCompanion updateRequest
 });
 
 
@@ -236,7 +236,7 @@ class __$TaskDetailUpdateCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? updateRequest = freezed,}) {
   return _then(_TaskDetailUpdate(
 updateRequest: freezed == updateRequest ? _self.updateRequest : updateRequest // ignore: cast_nullable_to_non_nullable
-as TaskActionRequestUpdate,
+as TaskTableCompanion,
   ));
 }
 
@@ -250,7 +250,7 @@ class _TaskDetailDelete implements TaskDetailEvent {
   const _TaskDetailDelete({required this.deleteRequest});
   
 
- final  TaskActionRequestDelete deleteRequest;
+ final  TaskTableCompanion deleteRequest;
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -282,7 +282,7 @@ abstract mixin class _$TaskDetailDeleteCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailDeleteCopyWith(_TaskDetailDelete value, $Res Function(_TaskDetailDelete) _then) = __$TaskDetailDeleteCopyWithImpl;
 @useResult
 $Res call({
- TaskActionRequestDelete deleteRequest
+ TaskTableCompanion deleteRequest
 });
 
 
@@ -302,7 +302,7 @@ class __$TaskDetailDeleteCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? deleteRequest = freezed,}) {
   return _then(_TaskDetailDelete(
 deleteRequest: freezed == deleteRequest ? _self.deleteRequest : deleteRequest // ignore: cast_nullable_to_non_nullable
-as TaskActionRequestDelete,
+as TaskTableCompanion,
   ));
 }
 
@@ -316,7 +316,7 @@ class _TaskDetailCreate implements TaskDetailEvent {
   const _TaskDetailCreate({required this.createRequest});
   
 
- final  TaskActionRequestCreate createRequest;
+ final  TaskTableCompanion createRequest;
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -348,7 +348,7 @@ abstract mixin class _$TaskDetailCreateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailCreateCopyWith(_TaskDetailCreate value, $Res Function(_TaskDetailCreate) _then) = __$TaskDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- TaskActionRequestCreate createRequest
+ TaskTableCompanion createRequest
 });
 
 
@@ -368,7 +368,7 @@ class __$TaskDetailCreateCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? createRequest = freezed,}) {
   return _then(_TaskDetailCreate(
 createRequest: freezed == createRequest ? _self.createRequest : createRequest // ignore: cast_nullable_to_non_nullable
-as TaskActionRequestCreate,
+as TaskTableCompanion,
   ));
 }
 

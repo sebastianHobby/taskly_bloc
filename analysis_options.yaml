@@ -11,6 +11,9 @@ analyzer:
     avoid_positional_boolean_parameters: ignore
   exclude:
     - lib/l10n/gen/*
+    - lib/*/*.g.dart
+    - lib/*/*/*.freezed.dart
 linter:
   rules:
     public_member_api_docs: false
+    

@@ -1,44 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/dtos/tasks/task_dto.dart';
-import 'package:taskly_bloc/features/tasks/tasks.dart.dart';
 
+import 'package:taskly_bloc/data/drift/drift_database.dart';
+
+/// A single list tile representing a TaskTableData.
 class TaskListTile extends StatelessWidget {
   const TaskListTile({
-    required this.taskDto,
+    required this.task,
+    required this.onCheckboxChanged,
     required this.onTap,
     super.key,
   });
 
-  final TaskDto taskDto;
-  final VoidCallback onTap;
+  final TaskTableData task;
+  final void Function(TaskTableData, bool?) onCheckboxChanged;
+  final void Function(TaskTableData) onTap;
+
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-    // final captionColor = theme.textTheme.bodySmall?.color;
-    final bool completed = taskDto.completed;
     return ListTile(
-      onTap: onTap, // invoke the passed-in method when tapped
+      onTap: () => onTap(task),
       title: Text(
-        taskDto.name,
+        task.name,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      subtitle: Text(
-        taskDto.description!,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
+      subtitle: (task.description == null || task.description!.isEmpty)
+          ? null
+          : Text(
+              task.description!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
       leading: Checkbox(
         shape: const ContinuousRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
         ),
-        value: completed,
-        onChanged: (bool? newValue) {
-          context.read<TaskListBloc>().add(
-            TaskListEvent.toggleTaskCompletion(taskDto: taskDto),
-          );
-        },
+        value: task.completed,
+        onChanged: (value) => onCheckboxChanged(task, value),
       ),
     );
   }

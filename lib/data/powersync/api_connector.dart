@@ -159,7 +159,7 @@ Future<String> getDatabasePath() async {
   return join(dir.path, dbFilename);
 }
 
-Future<void> openDatabase() async {
+Future<PowerSyncDatabase> openDatabase() async {
   // Open the local database
   db = PowerSyncDatabase(
     schema: schema,
@@ -167,8 +167,6 @@ Future<void> openDatabase() async {
     logger: attachedLogger,
   );
   await db.initialize();
-
-
 
   SupabaseConnector? currentConnector;
 
@@ -194,9 +192,7 @@ Future<void> openDatabase() async {
       await currentConnector?.prefetchCredentials();
     }
   });
-
-  // Demo using SQLite Full-Text Search with PowerSync.
-  // See https://docs.powersync.com/usage-examples/full-text-search for more details
+  return db;
 }
 
 /// Explicit sign out - clear database and log out.
