@@ -55,14 +55,14 @@ extension ProjectDetailEventPatterns on ProjectDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  updateProject,TResult Function( _ProjectDetailDelete value)?  deleteProject,TResult Function( _ProjectDetailCreate value)?  createProject,TResult Function( _ProjectDetailGet value)?  getProject,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  update,TResult Function( _ProjectDetailDelete value)?  delete,TResult Function( _ProjectDetailCreate value)?  create,TResult Function( _ProjectDetailGet value)?  get,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _ProjectDetailUpdate() when updateProject != null:
-return updateProject(_that);case _ProjectDetailDelete() when deleteProject != null:
-return deleteProject(_that);case _ProjectDetailCreate() when createProject != null:
-return createProject(_that);case _ProjectDetailGet() when getProject != null:
-return getProject(_that);case _:
+case _ProjectDetailUpdate() when update != null:
+return update(_that);case _ProjectDetailDelete() when delete != null:
+return delete(_that);case _ProjectDetailCreate() when create != null:
+return create(_that);case _ProjectDetailGet() when get != null:
+return get(_that);case _:
   return orElse();
 
 }
@@ -80,14 +80,14 @@ return getProject(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  updateProject,required TResult Function( _ProjectDetailDelete value)  deleteProject,required TResult Function( _ProjectDetailCreate value)  createProject,required TResult Function( _ProjectDetailGet value)  getProject,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  update,required TResult Function( _ProjectDetailDelete value)  delete,required TResult Function( _ProjectDetailCreate value)  create,required TResult Function( _ProjectDetailGet value)  get,}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
-return updateProject(_that);case _ProjectDetailDelete():
-return deleteProject(_that);case _ProjectDetailCreate():
-return createProject(_that);case _ProjectDetailGet():
-return getProject(_that);}
+return update(_that);case _ProjectDetailDelete():
+return delete(_that);case _ProjectDetailCreate():
+return create(_that);case _ProjectDetailGet():
+return get(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -101,14 +101,14 @@ return getProject(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  updateProject,TResult? Function( _ProjectDetailDelete value)?  deleteProject,TResult? Function( _ProjectDetailCreate value)?  createProject,TResult? Function( _ProjectDetailGet value)?  getProject,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  update,TResult? Function( _ProjectDetailDelete value)?  delete,TResult? Function( _ProjectDetailCreate value)?  create,TResult? Function( _ProjectDetailGet value)?  get,}){
 final _that = this;
 switch (_that) {
-case _ProjectDetailUpdate() when updateProject != null:
-return updateProject(_that);case _ProjectDetailDelete() when deleteProject != null:
-return deleteProject(_that);case _ProjectDetailCreate() when createProject != null:
-return createProject(_that);case _ProjectDetailGet() when getProject != null:
-return getProject(_that);case _:
+case _ProjectDetailUpdate() when update != null:
+return update(_that);case _ProjectDetailDelete() when delete != null:
+return delete(_that);case _ProjectDetailCreate() when create != null:
+return create(_that);case _ProjectDetailGet() when get != null:
+return get(_that);case _:
   return null;
 
 }
@@ -125,13 +125,13 @@ return getProject(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( ProjectTableCompanion updateCompanion)?  updateProject,TResult Function( ProjectTableCompanion deleteCompanion)?  deleteProject,TResult Function( ProjectTableCompanion createCompanion)?  createProject,TResult Function( String projectId)?  getProject,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String description,  bool completed)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String description)?  create,TResult Function( String projectId)?  get,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _ProjectDetailUpdate() when updateProject != null:
-return updateProject(_that.updateCompanion);case _ProjectDetailDelete() when deleteProject != null:
-return deleteProject(_that.deleteCompanion);case _ProjectDetailCreate() when createProject != null:
-return createProject(_that.createCompanion);case _ProjectDetailGet() when getProject != null:
-return getProject(_that.projectId);case _:
+case _ProjectDetailUpdate() when update != null:
+return update(_that.id,_that.name,_that.description,_that.completed);case _ProjectDetailDelete() when delete != null:
+return delete(_that.id);case _ProjectDetailCreate() when create != null:
+return create(_that.name,_that.description);case _ProjectDetailGet() when get != null:
+return get(_that.projectId);case _:
   return orElse();
 
 }
@@ -149,13 +149,13 @@ return getProject(_that.projectId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( ProjectTableCompanion updateCompanion)  updateProject,required TResult Function( ProjectTableCompanion deleteCompanion)  deleteProject,required TResult Function( ProjectTableCompanion createCompanion)  createProject,required TResult Function( String projectId)  getProject,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String description,  bool completed)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String description)  create,required TResult Function( String projectId)  get,}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
-return updateProject(_that.updateCompanion);case _ProjectDetailDelete():
-return deleteProject(_that.deleteCompanion);case _ProjectDetailCreate():
-return createProject(_that.createCompanion);case _ProjectDetailGet():
-return getProject(_that.projectId);}
+return update(_that.id,_that.name,_that.description,_that.completed);case _ProjectDetailDelete():
+return delete(_that.id);case _ProjectDetailCreate():
+return create(_that.name,_that.description);case _ProjectDetailGet():
+return get(_that.projectId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -169,13 +169,13 @@ return getProject(_that.projectId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( ProjectTableCompanion updateCompanion)?  updateProject,TResult? Function( ProjectTableCompanion deleteCompanion)?  deleteProject,TResult? Function( ProjectTableCompanion createCompanion)?  createProject,TResult? Function( String projectId)?  getProject,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String description,  bool completed)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String description)?  create,TResult? Function( String projectId)?  get,}) {final _that = this;
 switch (_that) {
-case _ProjectDetailUpdate() when updateProject != null:
-return updateProject(_that.updateCompanion);case _ProjectDetailDelete() when deleteProject != null:
-return deleteProject(_that.deleteCompanion);case _ProjectDetailCreate() when createProject != null:
-return createProject(_that.createCompanion);case _ProjectDetailGet() when getProject != null:
-return getProject(_that.projectId);case _:
+case _ProjectDetailUpdate() when update != null:
+return update(_that.id,_that.name,_that.description,_that.completed);case _ProjectDetailDelete() when delete != null:
+return delete(_that.id);case _ProjectDetailCreate() when create != null:
+return create(_that.name,_that.description);case _ProjectDetailGet() when get != null:
+return get(_that.projectId);case _:
   return null;
 
 }
@@ -187,10 +187,13 @@ return getProject(_that.projectId);case _:
 
 
 class _ProjectDetailUpdate implements ProjectDetailEvent {
-  const _ProjectDetailUpdate({required this.updateCompanion});
+  const _ProjectDetailUpdate({required this.id, required this.name, required this.description, required this.completed});
   
 
- final  ProjectTableCompanion updateCompanion;
+ final  String id;
+ final  String name;
+ final  String description;
+ final  bool completed;
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -202,16 +205,16 @@ _$ProjectDetailUpdateCopyWith<_ProjectDetailUpdate> get copyWith => __$ProjectDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailUpdate&&const DeepCollectionEquality().equals(other.updateCompanion, updateCompanion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(updateCompanion));
+int get hashCode => Object.hash(runtimeType,id,name,description,completed);
 
 @override
 String toString() {
-  return 'ProjectDetailEvent.updateProject(updateCompanion: $updateCompanion)';
+  return 'ProjectDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed)';
 }
 
 
@@ -222,7 +225,7 @@ abstract mixin class _$ProjectDetailUpdateCopyWith<$Res> implements $ProjectDeta
   factory _$ProjectDetailUpdateCopyWith(_ProjectDetailUpdate value, $Res Function(_ProjectDetailUpdate) _then) = __$ProjectDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- ProjectTableCompanion updateCompanion
+ String id, String name, String description, bool completed
 });
 
 
@@ -239,10 +242,13 @@ class __$ProjectDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? updateCompanion = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = null,Object? completed = null,}) {
   return _then(_ProjectDetailUpdate(
-updateCompanion: freezed == updateCompanion ? _self.updateCompanion : updateCompanion // ignore: cast_nullable_to_non_nullable
-as ProjectTableCompanion,
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,completed: null == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -253,10 +259,10 @@ as ProjectTableCompanion,
 
 
 class _ProjectDetailDelete implements ProjectDetailEvent {
-  const _ProjectDetailDelete({required this.deleteCompanion});
+  const _ProjectDetailDelete({required this.id});
   
 
- final  ProjectTableCompanion deleteCompanion;
+ final  String id;
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -268,16 +274,16 @@ _$ProjectDetailDeleteCopyWith<_ProjectDetailDelete> get copyWith => __$ProjectDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailDelete&&const DeepCollectionEquality().equals(other.deleteCompanion, deleteCompanion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailDelete&&(identical(other.id, id) || other.id == id));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(deleteCompanion));
+int get hashCode => Object.hash(runtimeType,id);
 
 @override
 String toString() {
-  return 'ProjectDetailEvent.deleteProject(deleteCompanion: $deleteCompanion)';
+  return 'ProjectDetailEvent.delete(id: $id)';
 }
 
 
@@ -288,7 +294,7 @@ abstract mixin class _$ProjectDetailDeleteCopyWith<$Res> implements $ProjectDeta
   factory _$ProjectDetailDeleteCopyWith(_ProjectDetailDelete value, $Res Function(_ProjectDetailDelete) _then) = __$ProjectDetailDeleteCopyWithImpl;
 @useResult
 $Res call({
- ProjectTableCompanion deleteCompanion
+ String id
 });
 
 
@@ -305,10 +311,10 @@ class __$ProjectDetailDeleteCopyWithImpl<$Res>
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? deleteCompanion = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
   return _then(_ProjectDetailDelete(
-deleteCompanion: freezed == deleteCompanion ? _self.deleteCompanion : deleteCompanion // ignore: cast_nullable_to_non_nullable
-as ProjectTableCompanion,
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -319,10 +325,11 @@ as ProjectTableCompanion,
 
 
 class _ProjectDetailCreate implements ProjectDetailEvent {
-  const _ProjectDetailCreate({required this.createCompanion});
+  const _ProjectDetailCreate({required this.name, required this.description});
   
 
- final  ProjectTableCompanion createCompanion;
+ final  String name;
+ final  String description;
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -334,16 +341,16 @@ _$ProjectDetailCreateCopyWith<_ProjectDetailCreate> get copyWith => __$ProjectDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailCreate&&const DeepCollectionEquality().equals(other.createCompanion, createCompanion));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(createCompanion));
+int get hashCode => Object.hash(runtimeType,name,description);
 
 @override
 String toString() {
-  return 'ProjectDetailEvent.createProject(createCompanion: $createCompanion)';
+  return 'ProjectDetailEvent.create(name: $name, description: $description)';
 }
 
 
@@ -354,7 +361,7 @@ abstract mixin class _$ProjectDetailCreateCopyWith<$Res> implements $ProjectDeta
   factory _$ProjectDetailCreateCopyWith(_ProjectDetailCreate value, $Res Function(_ProjectDetailCreate) _then) = __$ProjectDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- ProjectTableCompanion createCompanion
+ String name, String description
 });
 
 
@@ -371,10 +378,11 @@ class __$ProjectDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? createCompanion = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = null,}) {
   return _then(_ProjectDetailCreate(
-createCompanion: freezed == createCompanion ? _self.createCompanion : createCompanion // ignore: cast_nullable_to_non_nullable
-as ProjectTableCompanion,
+name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String,
   ));
 }
 
@@ -409,7 +417,7 @@ int get hashCode => Object.hash(runtimeType,projectId);
 
 @override
 String toString() {
-  return 'ProjectDetailEvent.getProject(projectId: $projectId)';
+  return 'ProjectDetailEvent.get(projectId: $projectId)';
 }
 
 
@@ -441,6 +449,266 @@ class __$ProjectDetailGetCopyWithImpl<$Res>
   return _then(_ProjectDetailGet(
 projectId: null == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+mixin _$ProjectDetailError {
+
+ String get message; StackTrace? get stackTrace;
+/// Create a copy of ProjectDetailError
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectDetailErrorCopyWith<ProjectDetailError> get copyWith => _$ProjectDetailErrorCopyWithImpl<ProjectDetailError>(this as ProjectDetailError, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailError&&(identical(other.message, message) || other.message == message)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message,stackTrace);
+
+@override
+String toString() {
+  return 'ProjectDetailError(message: $message, stackTrace: $stackTrace)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectDetailErrorCopyWith<$Res>  {
+  factory $ProjectDetailErrorCopyWith(ProjectDetailError value, $Res Function(ProjectDetailError) _then) = _$ProjectDetailErrorCopyWithImpl;
+@useResult
+$Res call({
+ String message, StackTrace? stackTrace
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectDetailErrorCopyWithImpl<$Res>
+    implements $ProjectDetailErrorCopyWith<$Res> {
+  _$ProjectDetailErrorCopyWithImpl(this._self, this._then);
+
+  final ProjectDetailError _self;
+  final $Res Function(ProjectDetailError) _then;
+
+/// Create a copy of ProjectDetailError
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? message = null,Object? stackTrace = freezed,}) {
+  return _then(_self.copyWith(
+message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [ProjectDetailError].
+extension ProjectDetailErrorPatterns on ProjectDetailError {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProjectDetailError value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ProjectDetailError() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProjectDetailError value)  $default,){
+final _that = this;
+switch (_that) {
+case _ProjectDetailError():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProjectDetailError value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ProjectDetailError() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String message,  StackTrace? stackTrace)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ProjectDetailError() when $default != null:
+return $default(_that.message,_that.stackTrace);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String message,  StackTrace? stackTrace)  $default,) {final _that = this;
+switch (_that) {
+case _ProjectDetailError():
+return $default(_that.message,_that.stackTrace);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String message,  StackTrace? stackTrace)?  $default,) {final _that = this;
+switch (_that) {
+case _ProjectDetailError() when $default != null:
+return $default(_that.message,_that.stackTrace);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class _ProjectDetailError implements ProjectDetailError {
+  const _ProjectDetailError({required this.message, this.stackTrace});
+  
+
+@override final  String message;
+@override final  StackTrace? stackTrace;
+
+/// Create a copy of ProjectDetailError
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProjectDetailErrorCopyWith<_ProjectDetailError> get copyWith => __$ProjectDetailErrorCopyWithImpl<_ProjectDetailError>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailError&&(identical(other.message, message) || other.message == message)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message,stackTrace);
+
+@override
+String toString() {
+  return 'ProjectDetailError(message: $message, stackTrace: $stackTrace)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProjectDetailErrorCopyWith<$Res> implements $ProjectDetailErrorCopyWith<$Res> {
+  factory _$ProjectDetailErrorCopyWith(_ProjectDetailError value, $Res Function(_ProjectDetailError) _then) = __$ProjectDetailErrorCopyWithImpl;
+@override @useResult
+$Res call({
+ String message, StackTrace? stackTrace
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProjectDetailErrorCopyWithImpl<$Res>
+    implements _$ProjectDetailErrorCopyWith<$Res> {
+  __$ProjectDetailErrorCopyWithImpl(this._self, this._then);
+
+  final _ProjectDetailError _self;
+  final $Res Function(_ProjectDetailError) _then;
+
+/// Create a copy of ProjectDetailError
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? message = null,Object? stackTrace = freezed,}) {
+  return _then(_ProjectDetailError(
+message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace?,
   ));
 }
 
@@ -491,14 +759,15 @@ extension ProjectDetailStatePatterns on ProjectDetailState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailLoading value)?  loading,TResult Function( _ProjectDetailNewProject value)?  createProject,TResult Function( _ProjectDetailEditProject value)?  editProject,TResult Function( _ProjectDetailError value)?  error,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectDetailInitial value)?  initial,TResult Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult Function( ProjectDetailOperationFailure value)?  operationFailure,TResult Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult Function( ProjectDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case _ProjectDetailLoading() when loading != null:
-return loading(_that);case _ProjectDetailNewProject() when createProject != null:
-return createProject(_that);case _ProjectDetailEditProject() when editProject != null:
-return editProject(_that);case _ProjectDetailError() when error != null:
-return error(_that);case _:
+case ProjectDetailInitial() when initial != null:
+return initial(_that);case ProjectDetailOperationSuccess() when operationSuccess != null:
+return operationSuccess(_that);case ProjectDetailOperationFailure() when operationFailure != null:
+return operationFailure(_that);case ProjectDetailLoadInProgress() when loadInProgress != null:
+return loadInProgress(_that);case ProjectDetailLoadSuccess() when loadSuccess != null:
+return loadSuccess(_that);case _:
   return orElse();
 
 }
@@ -516,14 +785,18 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailLoading value)  loading,required TResult Function( _ProjectDetailNewProject value)  createProject,required TResult Function( _ProjectDetailEditProject value)  editProject,required TResult Function( _ProjectDetailError value)  error,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectDetailInitial value)  initial,required TResult Function( ProjectDetailOperationSuccess value)  operationSuccess,required TResult Function( ProjectDetailOperationFailure value)  operationFailure,required TResult Function( ProjectDetailLoadInProgress value)  loadInProgress,required TResult Function( ProjectDetailLoadSuccess value)  loadSuccess,}){
 final _that = this;
 switch (_that) {
-case _ProjectDetailLoading():
-return loading(_that);case _ProjectDetailNewProject():
-return createProject(_that);case _ProjectDetailEditProject():
-return editProject(_that);case _ProjectDetailError():
-return error(_that);}
+case ProjectDetailInitial():
+return initial(_that);case ProjectDetailOperationSuccess():
+return operationSuccess(_that);case ProjectDetailOperationFailure():
+return operationFailure(_that);case ProjectDetailLoadInProgress():
+return loadInProgress(_that);case ProjectDetailLoadSuccess():
+return loadSuccess(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -537,14 +810,15 @@ return error(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailLoading value)?  loading,TResult? Function( _ProjectDetailNewProject value)?  createProject,TResult? Function( _ProjectDetailEditProject value)?  editProject,TResult? Function( _ProjectDetailError value)?  error,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectDetailInitial value)?  initial,TResult? Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult? Function( ProjectDetailOperationFailure value)?  operationFailure,TResult? Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult? Function( ProjectDetailLoadSuccess value)?  loadSuccess,}){
 final _that = this;
 switch (_that) {
-case _ProjectDetailLoading() when loading != null:
-return loading(_that);case _ProjectDetailNewProject() when createProject != null:
-return createProject(_that);case _ProjectDetailEditProject() when editProject != null:
-return editProject(_that);case _ProjectDetailError() when error != null:
-return error(_that);case _:
+case ProjectDetailInitial() when initial != null:
+return initial(_that);case ProjectDetailOperationSuccess() when operationSuccess != null:
+return operationSuccess(_that);case ProjectDetailOperationFailure() when operationFailure != null:
+return operationFailure(_that);case ProjectDetailLoadInProgress() when loadInProgress != null:
+return loadInProgress(_that);case ProjectDetailLoadSuccess() when loadSuccess != null:
+return loadSuccess(_that);case _:
   return null;
 
 }
@@ -561,13 +835,14 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  loading,TResult Function()?  createProject,TResult Function()?  editProject,TResult Function( String message,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( ProjectDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( ProjectTableData project)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case _ProjectDetailLoading() when loading != null:
-return loading();case _ProjectDetailNewProject() when createProject != null:
-return createProject();case _ProjectDetailEditProject() when editProject != null:
-return editProject();case _ProjectDetailError() when error != null:
-return error(_that.message,_that.stacktrace);case _:
+case ProjectDetailInitial() when initial != null:
+return initial();case ProjectDetailOperationSuccess() when operationSuccess != null:
+return operationSuccess(_that.message);case ProjectDetailOperationFailure() when operationFailure != null:
+return operationFailure(_that.errorDetails);case ProjectDetailLoadInProgress() when loadInProgress != null:
+return loadInProgress();case ProjectDetailLoadSuccess() when loadSuccess != null:
+return loadSuccess(_that.project);case _:
   return orElse();
 
 }
@@ -585,13 +860,17 @@ return error(_that.message,_that.stacktrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  loading,required TResult Function()  createProject,required TResult Function()  editProject,required TResult Function( String message,  StackTrace stacktrace)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( ProjectDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( ProjectTableData project)  loadSuccess,}) {final _that = this;
 switch (_that) {
-case _ProjectDetailLoading():
-return loading();case _ProjectDetailNewProject():
-return createProject();case _ProjectDetailEditProject():
-return editProject();case _ProjectDetailError():
-return error(_that.message,_that.stacktrace);}
+case ProjectDetailInitial():
+return initial();case ProjectDetailOperationSuccess():
+return operationSuccess(_that.message);case ProjectDetailOperationFailure():
+return operationFailure(_that.errorDetails);case ProjectDetailLoadInProgress():
+return loadInProgress();case ProjectDetailLoadSuccess():
+return loadSuccess(_that.project);case _:
+  throw StateError('Unexpected subclass');
+
+}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -605,13 +884,14 @@ return error(_that.message,_that.stacktrace);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  loading,TResult? Function()?  createProject,TResult? Function()?  editProject,TResult? Function( String message,  StackTrace stacktrace)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( ProjectDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( ProjectTableData project)?  loadSuccess,}) {final _that = this;
 switch (_that) {
-case _ProjectDetailLoading() when loading != null:
-return loading();case _ProjectDetailNewProject() when createProject != null:
-return createProject();case _ProjectDetailEditProject() when editProject != null:
-return editProject();case _ProjectDetailError() when error != null:
-return error(_that.message,_that.stacktrace);case _:
+case ProjectDetailInitial() when initial != null:
+return initial();case ProjectDetailOperationSuccess() when operationSuccess != null:
+return operationSuccess(_that.message);case ProjectDetailOperationFailure() when operationFailure != null:
+return operationFailure(_that.errorDetails);case ProjectDetailLoadInProgress() when loadInProgress != null:
+return loadInProgress();case ProjectDetailLoadSuccess() when loadSuccess != null:
+return loadSuccess(_that.project);case _:
   return null;
 
 }
@@ -622,8 +902,8 @@ return error(_that.message,_that.stacktrace);case _:
 /// @nodoc
 
 
-class _ProjectDetailLoading implements ProjectDetailState {
-  const _ProjectDetailLoading();
+class ProjectDetailInitial implements ProjectDetailState {
+  const ProjectDetailInitial();
   
 
 
@@ -633,7 +913,7 @@ class _ProjectDetailLoading implements ProjectDetailState {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailLoading);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailInitial);
 }
 
 
@@ -642,7 +922,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ProjectDetailState.loading()';
+  return 'ProjectDetailState.initial()';
 }
 
 
@@ -654,108 +934,43 @@ String toString() {
 /// @nodoc
 
 
-class _ProjectDetailNewProject implements ProjectDetailState {
-  const _ProjectDetailNewProject();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailNewProject);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'ProjectDetailState.createProject()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class _ProjectDetailEditProject implements ProjectDetailState {
-  const _ProjectDetailEditProject();
-  
-
-
-
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailEditProject);
-}
-
-
-@override
-int get hashCode => runtimeType.hashCode;
-
-@override
-String toString() {
-  return 'ProjectDetailState.editProject()';
-}
-
-
-}
-
-
-
-
-/// @nodoc
-
-
-class _ProjectDetailError implements ProjectDetailState {
-  const _ProjectDetailError({required this.message, required this.stacktrace});
+class ProjectDetailOperationSuccess implements ProjectDetailState {
+  const ProjectDetailOperationSuccess({required this.message});
   
 
  final  String message;
- final  StackTrace stacktrace;
 
 /// Create a copy of ProjectDetailState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProjectDetailErrorCopyWith<_ProjectDetailError> get copyWith => __$ProjectDetailErrorCopyWithImpl<_ProjectDetailError>(this, _$identity);
+$ProjectDetailOperationSuccessCopyWith<ProjectDetailOperationSuccess> get copyWith => _$ProjectDetailOperationSuccessCopyWithImpl<ProjectDetailOperationSuccess>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailError&&(identical(other.message, message) || other.message == message)&&(identical(other.stacktrace, stacktrace) || other.stacktrace == stacktrace));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailOperationSuccess&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,stacktrace);
+int get hashCode => Object.hash(runtimeType,message);
 
 @override
 String toString() {
-  return 'ProjectDetailState.error(message: $message, stacktrace: $stacktrace)';
+  return 'ProjectDetailState.operationSuccess(message: $message)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProjectDetailErrorCopyWith<$Res> implements $ProjectDetailStateCopyWith<$Res> {
-  factory _$ProjectDetailErrorCopyWith(_ProjectDetailError value, $Res Function(_ProjectDetailError) _then) = __$ProjectDetailErrorCopyWithImpl;
+abstract mixin class $ProjectDetailOperationSuccessCopyWith<$Res> implements $ProjectDetailStateCopyWith<$Res> {
+  factory $ProjectDetailOperationSuccessCopyWith(ProjectDetailOperationSuccess value, $Res Function(ProjectDetailOperationSuccess) _then) = _$ProjectDetailOperationSuccessCopyWithImpl;
 @useResult
 $Res call({
- String message, StackTrace stacktrace
+ String message
 });
 
 
@@ -763,20 +978,192 @@ $Res call({
 
 }
 /// @nodoc
-class __$ProjectDetailErrorCopyWithImpl<$Res>
-    implements _$ProjectDetailErrorCopyWith<$Res> {
-  __$ProjectDetailErrorCopyWithImpl(this._self, this._then);
+class _$ProjectDetailOperationSuccessCopyWithImpl<$Res>
+    implements $ProjectDetailOperationSuccessCopyWith<$Res> {
+  _$ProjectDetailOperationSuccessCopyWithImpl(this._self, this._then);
 
-  final _ProjectDetailError _self;
-  final $Res Function(_ProjectDetailError) _then;
+  final ProjectDetailOperationSuccess _self;
+  final $Res Function(ProjectDetailOperationSuccess) _then;
 
 /// Create a copy of ProjectDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,Object? stacktrace = null,}) {
-  return _then(_ProjectDetailError(
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(ProjectDetailOperationSuccess(
 message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,stacktrace: null == stacktrace ? _self.stacktrace : stacktrace // ignore: cast_nullable_to_non_nullable
-as StackTrace,
+as String,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ProjectDetailOperationFailure implements ProjectDetailState {
+  const ProjectDetailOperationFailure({required this.errorDetails});
+  
+
+ final  ProjectDetailError errorDetails;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectDetailOperationFailureCopyWith<ProjectDetailOperationFailure> get copyWith => _$ProjectDetailOperationFailureCopyWithImpl<ProjectDetailOperationFailure>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailOperationFailure&&(identical(other.errorDetails, errorDetails) || other.errorDetails == errorDetails));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,errorDetails);
+
+@override
+String toString() {
+  return 'ProjectDetailState.operationFailure(errorDetails: $errorDetails)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectDetailOperationFailureCopyWith<$Res> implements $ProjectDetailStateCopyWith<$Res> {
+  factory $ProjectDetailOperationFailureCopyWith(ProjectDetailOperationFailure value, $Res Function(ProjectDetailOperationFailure) _then) = _$ProjectDetailOperationFailureCopyWithImpl;
+@useResult
+$Res call({
+ ProjectDetailError errorDetails
+});
+
+
+$ProjectDetailErrorCopyWith<$Res> get errorDetails;
+
+}
+/// @nodoc
+class _$ProjectDetailOperationFailureCopyWithImpl<$Res>
+    implements $ProjectDetailOperationFailureCopyWith<$Res> {
+  _$ProjectDetailOperationFailureCopyWithImpl(this._self, this._then);
+
+  final ProjectDetailOperationFailure _self;
+  final $Res Function(ProjectDetailOperationFailure) _then;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? errorDetails = null,}) {
+  return _then(ProjectDetailOperationFailure(
+errorDetails: null == errorDetails ? _self.errorDetails : errorDetails // ignore: cast_nullable_to_non_nullable
+as ProjectDetailError,
+  ));
+}
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ProjectDetailErrorCopyWith<$Res> get errorDetails {
+  
+  return $ProjectDetailErrorCopyWith<$Res>(_self.errorDetails, (value) {
+    return _then(_self.copyWith(errorDetails: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class ProjectDetailLoadInProgress implements ProjectDetailState {
+  const ProjectDetailLoadInProgress();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailLoadInProgress);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'ProjectDetailState.loadInProgress()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class ProjectDetailLoadSuccess implements ProjectDetailState {
+  const ProjectDetailLoadSuccess({required this.project});
+  
+
+ final  ProjectTableData project;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectDetailLoadSuccessCopyWith<ProjectDetailLoadSuccess> get copyWith => _$ProjectDetailLoadSuccessCopyWithImpl<ProjectDetailLoadSuccess>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailLoadSuccess&&const DeepCollectionEquality().equals(other.project, project));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(project));
+
+@override
+String toString() {
+  return 'ProjectDetailState.loadSuccess(project: $project)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectDetailLoadSuccessCopyWith<$Res> implements $ProjectDetailStateCopyWith<$Res> {
+  factory $ProjectDetailLoadSuccessCopyWith(ProjectDetailLoadSuccess value, $Res Function(ProjectDetailLoadSuccess) _then) = _$ProjectDetailLoadSuccessCopyWithImpl;
+@useResult
+$Res call({
+ ProjectTableData project
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectDetailLoadSuccessCopyWithImpl<$Res>
+    implements $ProjectDetailLoadSuccessCopyWith<$Res> {
+  _$ProjectDetailLoadSuccessCopyWithImpl(this._self, this._then);
+
+  final ProjectDetailLoadSuccess _self;
+  final $Res Function(ProjectDetailLoadSuccess) _then;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? project = freezed,}) {
+  return _then(ProjectDetailLoadSuccess(
+project: freezed == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
+as ProjectTableData,
   ));
 }
 

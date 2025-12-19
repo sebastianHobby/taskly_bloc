@@ -1,5 +1,4 @@
 import 'package:drift/drift.dart';
-import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:powersync/powersync.dart' show uuid;
 
 part 'drift_database.g.dart';
@@ -42,7 +41,7 @@ class TaskTable extends Table {
       text().nullable().named('project_id').references(ProjectTable, #id)();
   TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get repeatIcalRrule =>
-      text().withDefault(const Constant('')).named('repeat_ical_rrule')();
+      text().nullable().named('repeat_ical_rrule')();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -7,10 +7,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
+import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/supabase/supabase.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -31,7 +31,6 @@ Future<void> setupDependencies() async {
 
   // db variable is set by the openDatabase function. Someday improve this
   // so it's not a global variable ...
-  final db = syncDb;
 
   // Create and register the Drift AppDatabase backed by the PowerSync DB
   final appDatabase = AppDatabase(

@@ -1,234 +1,135 @@
-import 'package:drift/drift.dart' hide Column;
+// drift types are provided by the generated database import below
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
+import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
-class TaskDetailPage extends StatelessWidget {
-  TaskDetailPage({required this.taskCompanion, super.key});
-  final TaskRepository taskRepository = getIt<TaskRepository>();
-  final TaskTableCompanion taskCompanion;
+class TaskDetailSheetPage extends StatelessWidget {
+  const TaskDetailSheetPage({
+    this.taskId,
+    this.onSuccess,
+    this.onError,
+    super.key,
+  });
+
+  final String? taskId;
+  final void Function(String message)? onSuccess;
+  final void Function(String message)? onError;
+
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => TaskDetailBloc(taskRepository: taskRepository),
-      child: TaskDetailView(
-        taskCompanion: taskCompanion,
+    final taskRepository = getIt<TaskRepository>();
+    return Scaffold(
+      body: BlocProvider(
+        create: (context) {
+          final bloc = TaskDetailBloc(taskRepository: taskRepository);
+          if (taskId != null) bloc.add(TaskDetailEvent.get(taskId: taskId!));
+          return bloc;
+        },
+        lazy: false,
+        child: TaskDetailSheetView(
+          taskId: taskId,
+          onSuccess: onSuccess,
+          onError: onError,
+        ),
       ),
     );
   }
 }
 
-class TaskDetailView extends StatefulWidget {
-  const TaskDetailView({required this.taskCompanion, super.key});
-  final TaskTableCompanion taskCompanion;
+class TaskDetailSheetView extends StatefulWidget {
+  const TaskDetailSheetView({
+    this.taskId,
+    this.onSuccess,
+    this.onError,
+    super.key,
+  });
+
+  final String? taskId;
+  final void Function(String message)? onSuccess;
+  final void Function(String message)? onError;
 
   @override
-  State<TaskDetailView> createState() => _TaskDetailViewState();
+  State<TaskDetailSheetView> createState() => _TaskDetailSheetViewState();
 }
 
-class _TaskDetailViewState extends State<TaskDetailView> {
+class _TaskDetailSheetViewState extends State<TaskDetailSheetView> {
+  // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
-  TaskTableCompanion get _taskCompanion => widget.taskCompanion;
-
-  late final Map<String, dynamic> _initialValues;
-
-  Map<String, dynamic> _companionToInitialFormValues(
-    TaskTableCompanion companion,
-  ) {
-    return <String, dynamic>{
-      'name': companion.name.present ? companion.name.value : '',
-      'description': companion.description.present
-          ? companion.description.value
-          : '',
-      'completed': companion.completed.present && companion.completed.value,
-    };
-  }
-
-  TaskTableCompanion get initialCompanionValue => widget.taskCompanion;
-
-  @override
-  void initState() {
-    super.initState();
-    _initialValues = _companionToInitialFormValues(widget.taskCompanion);
-  }
-
-  Future<void> onPopInvoked(bool didPop, Object? result) async {
-    if (didPop) return;
+  void _onSubmit(String? id) {
     final formState = _formKey.currentState;
-    if (formState == null || !formState.isDirty) {
-      Navigator.pop(context);
-      return;
-    }
-
-    final shouldPop = await showDialog<bool?>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Discard changes?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Discard'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
+    if (formState == null) return;
+    if (formState.saveAndValidate()) {
+      final formValues = formState.value;
+      if (id == null) {
+        // Create new data
+        context.read<TaskDetailBloc>().add(
+          TaskDetailEvent.create(
+            name: formState.value['name'] as String,
+            description: formState.value['description'] as String,
+          ),
         );
-      },
-    );
-
-    if ((shouldPop ?? false) && mounted) {
-      Navigator.pop(context);
+      } else {
+        // Update existing data
+        context.read<TaskDetailBloc>().add(
+          TaskDetailEvent.update(
+            id: id,
+            name: formValues['name'] as String,
+            description: formValues['description'] as String,
+            completed: formValues['completed'] as bool,
+          ),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final body = SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: FormBuilder(
-        key: _formKey,
-        initialValue: _initialValues,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FormBuilderTextField(
-                name: 'name',
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  hintText: 'Task Name',
-                  border: InputBorder.none,
-                ),
-                validator: FormBuilderValidators.compose([
-                  FormBuilderValidators.required(
-                    errorText: 'Name is required',
-                  ),
-                  FormBuilderValidators.minLength(
-                    1,
-                    errorText: 'Name must not be empty',
-                  ),
-                ]),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FormBuilderTextField(
-                name: 'description',
-                textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Description',
-                  border: InputBorder.none,
-                ),
-                maxLines: null,
-                validator: FormBuilderValidators.maxLength(
-                  150,
-                  errorText: 'Description is too long',
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: FormBuilderCheckbox(
-                name: 'completed',
-                title: const Text('Completed'),
-                initialValue: _initialValues['completed'] as bool? ?? false,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    void onSubmit() {
-      final formState = _formKey.currentState;
-      if (formState == null) return;
-      if (formState.isDirty && formState.saveAndValidate()) {
-        final name = (formState.value['name'] as String?)?.trim() ?? '';
-        final description = (formState.value['description'] as String?)?.trim();
-        final completed = formState.value['completed'] as bool? ?? false;
-
-        if (initialCompanionValue.id.present) {
-          final updateCompanion = TaskTableCompanion(
-            id: initialCompanionValue.id,
-            name: Value(name),
-            description: Value(description),
-            completed: Value(completed),
-            updatedAt: Value(DateTime.now()),
-          );
-          context.read<TaskDetailBloc>().add(
-            TaskDetailEvent.updateTask(updateRequest: updateCompanion),
-          );
-        } else {
-          final createCompanion = TaskTableCompanion(
-            name: Value(name),
-            description: Value(description),
-            completed: Value(completed),
-            createdAt: Value(DateTime.now()),
-            updatedAt: Value(DateTime.now()),
-          );
-          context.read<TaskDetailBloc>().add(
-            TaskDetailEvent.createTask(createRequest: createCompanion),
-          );
+    return BlocConsumer<TaskDetailBloc, TaskDetailState>(
+      listenWhen: (previous, current) {
+        return current is TaskDetailOperationSuccess ||
+            current is TaskDetailOperationFailure;
+      },
+      listener: (context, state) {
+        switch (state) {
+          case TaskDetailOperationSuccess(:final message):
+            widget.onSuccess?.call(message);
+          case TaskDetailOperationFailure(:final errorDetails):
+            widget.onError?.call(errorDetails.message);
+          default:
+            return;
         }
-
-        Navigator.pop(context);
-      }
-    }
-
-    final bottomBar = Material(
-      color: Theme.of(context).colorScheme.secondaryContainer,
-      child: SafeArea(
-        top: false,
-        child: SizedBox.fromSize(
-          size: const Size.fromHeight(kToolbarHeight),
-          child: Row(
-            children: [
-              IconButton.filled(
-                icon: const Icon(Icons.arrow_upward),
-                tooltip: 'Submit',
-                onPressed: onSubmit,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: onPopInvoked,
-      child: SheetKeyboardDismissible(
-        dismissBehavior: const SheetKeyboardDismissBehavior.onDragDown(
-          isContentScrollAware: true,
-        ),
-        child: Sheet(
-          scrollConfiguration: const SheetScrollConfiguration(),
-          decoration: MaterialSheetDecoration(
-            size: SheetSize.stretch,
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            clipBehavior: Clip.antiAlias,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-          ),
-          child: SheetContentScaffold(
-            body: body,
-            bottomBar: bottomBar,
-          ),
-        ),
-      ),
+      },
+      buildWhen: (previous, current) {
+        return current is TaskDetailInitial ||
+            current is TaskDetailLoadInProgress ||
+            current is TaskDetailLoadSuccess;
+      },
+      builder: (context, state) {
+        switch (state) {
+          case TaskDetailInitial():
+            return TaskForm(
+              formKey: _formKey,
+              onSubmit: () => _onSubmit(widget.taskId),
+              submitTooltip: 'Create',
+            );
+          case TaskDetailLoadInProgress():
+            return const Center(child: CircularProgressIndicator());
+          case TaskDetailLoadSuccess(:final task):
+            return TaskForm(
+              initialData: task,
+              formKey: _formKey,
+              onSubmit: () => _onSubmit(task.id),
+              submitTooltip: 'Update',
+            );
+          default:
+            return const SizedBox.shrink();
+        }
+      },
     );
   }
 }

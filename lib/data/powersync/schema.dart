@@ -13,8 +13,8 @@ const schema = Schema([
     Column.text('deadline_date'),
     Column.text('description'),
     Column.text('project_id'),
-    Column.text('repeat_id'),
     Column.text('user_id'),
+    Column.text('repeat_ical_rrule'),
   ]),
   Table('values', [
     Column.text('created_at'),
@@ -28,7 +28,6 @@ const schema = Schema([
     Column.integer('completed'),
     Column.text('created_at'),
     Column.text('updated_at'),
-    Column.text('repeat_id'),
     Column.text('user_id'),
   ]),
   Table('project_values_link', [
@@ -36,13 +35,5 @@ const schema = Schema([
     Column.text('value_id'),
     Column.text('user_id'),
   ]),
-  Table('repeat_schedule', [
-    Column.text('created_at'),
-    Column.text('updated_at'),
-    Column.text('repeat_start_date'),
-    Column.text('repeat_type'),
-    Column.text('repeat_interval'),
-    Column.text('repeat_end_date'),
-    Column.text('user_id'),
-  ]),
+  Table('repeat_schedule', []),
 ]);

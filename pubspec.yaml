@@ -9,9 +9,9 @@ environment:
 
 dependencies:
   bloc: ^9.0.1
-  drift_sqlite_async: ^0.2.6
   drift: ^2.30.0
   drift_flutter: ^0.2.8
+  drift_sqlite_async: ^0.2.6
   envied: ^1.3.2
   flutter:
     sdk: flutter
@@ -33,16 +33,16 @@ dependencies:
   uuid: ^4.4.2
 dev_dependencies:
   bloc_test: ^10.0.0
+  build_runner: ^2.10.4
+  drift_dev: ^2.30.0
   envied_generator: ^1.3.2
   # flutter_test:
   #   sdk: flutter
-  mocktail: ^1.0.4
-  very_good_analysis: ^10.0.0
-  build_runner: ^2.10.4
   freezed: ^3.2.3
   freezed_annotation: ^3.1.0
   json_serializable: ^6.9.5
-  drift_dev: ^2.30.0
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0
 flutter:
   generate: true
   uses-material-design: true

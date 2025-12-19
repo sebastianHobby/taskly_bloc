@@ -1,57 +1,56 @@
-// ...existing code...
 import 'package:bloc/bloc.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:drift/drift.dart' hide JsonKey;
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 part 'task_list_bloc.freezed.dart';
 
 //Events (the input to bloc)
 @freezed
-sealed class TaskListEvent with _$TaskListEvent {
-  const factory TaskListEvent.subscriptionRequested() =
-      TaskListSubscriptionRequested;
+sealed class TaskOverviewEvent with _$TaskOverviewEvent {
+  const factory TaskOverviewEvent.subscriptionRequested() =
+      TaskOverviewSubscriptionRequested;
 
-  const factory TaskListEvent.toggleTaskCompletion({
+  const factory TaskOverviewEvent.toggleTaskCompletion({
     required TaskTableData taskData,
-  }) = TaskListToggleTaskCompletion;
+  }) = TaskOverviewToggleTaskCompletion;
 }
 
 // State (output of bloc which UI responds to)
 @freezed
-sealed class TaskListState with _$TaskListState {
-  const factory TaskListState.initial() = _TaskListInitial;
-  const factory TaskListState.loading() = _TaskListLoading;
-  const factory TaskListState.loaded({
+sealed class TaskOverviewState with _$TaskOverviewState {
+  const factory TaskOverviewState.initial() = TaskOverviewInitial;
+  const factory TaskOverviewState.loading() = TaskOverviewLoading;
+  const factory TaskOverviewState.loaded({
     required List<TaskTableData> tasks,
-  }) = _TaskListLoaded;
-  const factory TaskListState.error({
+  }) = TaskOverviewLoaded;
+  const factory TaskOverviewState.error({
     required String message,
     required StackTrace stacktrace,
-  }) = _TaskListError;
+  }) = TaskOverviewError;
 }
 
 // The bloc itself - consumed events from UI and outputs state for UI to react to
-class TaskListBloc extends Bloc<TaskListEvent, TaskListState> {
-  TaskListBloc({required TaskRepository taskRepository})
+class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
+  TaskOverviewBloc({required TaskRepository taskRepository})
     : _taskRepository = taskRepository,
-      super(const TaskListState.initial()) {
-    on<TaskListSubscriptionRequested>(_onSubscriptionRequested);
-    on<TaskListToggleTaskCompletion>(_onToggleTaskCompletion);
+      super(const TaskOverviewState.initial()) {
+    on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
+    on<TaskOverviewToggleTaskCompletion>(_onToggleTaskCompletion);
   }
 
   final TaskRepository _taskRepository;
 
   Future<void> _onSubscriptionRequested(
-    TaskListSubscriptionRequested event,
-    Emitter<TaskListState> emit,
+    TaskOverviewSubscriptionRequested event,
+    Emitter<TaskOverviewState> emit,
   ) async {
-    emit(const TaskListState.loading());
+    emit(const TaskOverviewState.loading());
 
     await emit.forEach<List<TaskTableData>>(
       _taskRepository.getTasks,
-      onData: (tasks) => TaskListState.loaded(tasks: tasks),
-      onError: (error, stackTrace) => TaskListState.error(
+      onData: (tasks) => TaskOverviewState.loaded(tasks: tasks),
+      onError: (error, stackTrace) => TaskOverviewState.error(
         message: error.toString(),
         stacktrace: stackTrace,
       ),
@@ -59,8 +58,8 @@ class TaskListBloc extends Bloc<TaskListEvent, TaskListState> {
   }
 
   Future<void> _onToggleTaskCompletion(
-    TaskListToggleTaskCompletion event,
-    Emitter<TaskListState> emit,
+    TaskOverviewToggleTaskCompletion event,
+    Emitter<TaskOverviewState> emit,
   ) async {
     final taskData = event.taskData;
 
@@ -75,7 +74,7 @@ class TaskListBloc extends Bloc<TaskListEvent, TaskListState> {
       await _taskRepository.updateTask(updateCompanion);
     } catch (error, stacktrace) {
       emit(
-        TaskListState.error(
+        TaskOverviewState.error(
           message: error.toString(),
           stacktrace: stacktrace,
         ),

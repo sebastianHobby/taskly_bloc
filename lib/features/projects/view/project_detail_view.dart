@@ -1,220 +1,134 @@
-import 'package:drift/drift.dart' hide Column;
+// drift types are provided by the generated database import below
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:smooth_sheets/smooth_sheets.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/features/projects/widgets/project_form_item.dart';
+import 'package:taskly_bloc/features/projects/widgets/project_form.dart';
 
-enum ProjectDetailMode { create, edit }
+class ProjectDetailSheetPage extends StatelessWidget {
+  const ProjectDetailSheetPage({
+    required this.onSuccess,
+    required this.onError,
+    this.projectId,
+    super.key,
+  });
 
-class ProjectDetailPage extends StatelessWidget {
-  ProjectDetailPage({this.projectId, super.key});
-  final ProjectRepository projectRepository = getIt<ProjectRepository>();
   final String? projectId;
+  final void Function(String message) onSuccess;
+  final void Function(String message) onError;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => ProjectDetailBloc(
-        projectRepository: projectRepository,
-        projectId: projectId,
+    final projectRepository = getIt<ProjectRepository>();
+    return Scaffold(
+      body: BlocProvider(
+        create: (context) => ProjectDetailBloc(
+          projectRepository: projectRepository,
+          projectId: projectId,
+        ),
+        lazy: false,
+        child: ProjectDetailSheetView(
+          projectId: projectId,
+          onSuccess: onSuccess,
+          onError: onError,
+        ),
       ),
-      child: ProjectDetailView(),
     );
   }
 }
 
-class ProjectDetailView extends StatefulWidget {
-  const ProjectDetailView({super.key});
+class ProjectDetailSheetView extends StatefulWidget {
+  const ProjectDetailSheetView({
+    required this.onSuccess,
+    required this.onError,
+    this.projectId,
+    super.key,
+  });
+
+  final String? projectId;
+  final void Function(String message) onSuccess;
+  final void Function(String message) onError;
 
   @override
-  State<ProjectDetailView> createState() => _ProjectDetailViewState();
+  State<ProjectDetailSheetView> createState() => _ProjectDetailSheetViewState();
 }
 
-class _ProjectDetailViewState extends State<ProjectDetailView> {
+class _ProjectDetailSheetViewState extends State<ProjectDetailSheetView> {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
-  // cache initial values derived from the companion
-  late final Map<String, dynamic> _initialValues;
-
-  Map<String, dynamic> _companionToInitialFormValues(
-    ProjectTableCompanion companion,
-  ) {
-    return <String, dynamic>{
-      'name': companion.name.present ? companion.name.value : '',
-      'description': companion.description.present
-          ? companion.description.value
-          : '',
-      'completed': companion.completed.present && companion.completed.value,
-    };
-  }
-
-  Future<void> onPopInvoked(bool didPop, Object? result) async {
-    if (didPop) return;
+  void _onSubmit(String? id) {
     final formState = _formKey.currentState;
-    if (formState == null || !formState.isDirty) {
-      Navigator.pop(context);
-      return;
-    }
-
-    final shouldPop = await showDialog<bool?>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Discard changes?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Discard'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if ((shouldPop ?? false) && mounted) {
-      Navigator.pop(context);
-    }
-  }
-
-  Widget _buildLoading() => const Center(child: CircularProgressIndicator());
-
-  Widget _buildError(String message, StackTrace stacktrace) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error, size: 48, color: Colors.red),
-            const SizedBox(height: 12),
-            Text('Error: $message', textAlign: TextAlign.center),
-            const SizedBox(height: 8),
-            Text(
-              stacktrace.toString(),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreate() {
-    void onSubmitCreate() {
-      final formState = _formKey.currentState;
-      if (formState == null) return;
-      if (formState.saveAndValidate()) {
+    if (formState == null) return;
+    if (formState.saveAndValidate()) {
+      final formValues = formState.value;
+      if (id == null) {
+        // Create new data
         context.read<ProjectDetailBloc>().add(
           ProjectDetailEvent.create(
-            name: formState.value['name'] as String,
-            description: formState.value['description'] as String,
+            name: formValues['name'] as String,
+            description: formValues['description'] as String,
           ),
         );
-      }
-    }
-
-    final body = SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: ProjectForm(formKey: _formKey, initialValues: const {}),
-    );
-
-    return ProjectSheet(
-      body: body,
-      onSubmit: onSubmitCreate,
-      onPopInvokedWithResult: onPopInvoked,
-    );
-  }
-
-  Widget _buildEdit({required ProjectTableData initialProjectData}) {
-    void onSubmitUpdate() {
-      final formState = _formKey.currentState;
-
-      if (formState != null && formState.saveAndValidate()) {
-        final formValues = formState.value;
+      } else {
+        // Update existing data
         context.read<ProjectDetailBloc>().add(
-          ProjectDetailEvent.createProject(createCompanion: createCompanion),
+          ProjectDetailEvent.update(
+            id: id,
+            name: formValues['name'] as String,
+            description: formValues['description'] as String,
+            completed: formValues['completed'] as bool,
+          ),
         );
-
-        Navigator.pop(context);
       }
     }
-
-    final body = SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: FormBuilder(
-        key: _formKey,
-        initialValue: _initialValues,
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: ProjectFormItem(initialValues: _initialValues),
-      ),
-    );
-
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: onPopInvoked,
-      child: SheetKeyboardDismissible(
-        dismissBehavior: const SheetKeyboardDismissBehavior.onDragDown(
-          isContentScrollAware: true,
-        ),
-        child: Sheet(
-          scrollConfiguration: const SheetScrollConfiguration(),
-          decoration: MaterialSheetDecoration(
-            size: SheetSize.stretch,
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            clipBehavior: Clip.antiAlias,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-          ),
-          child: SheetContentScaffold(
-            body: body,
-            bottomBar: Material(
-              color: Theme.of(context).colorScheme.secondaryContainer,
-              child: SafeArea(
-                top: false,
-                child: SizedBox.fromSize(
-                  size: const Size.fromHeight(kToolbarHeight),
-                  child: Row(
-                    children: [
-                      IconButton.filled(
-                        icon: const Icon(Icons.check),
-                        tooltip: 'Submit',
-                        onPressed: onSubmitCreate,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
-
-  Widget _buildEdit() => const Center(child: CircularProgressIndicator());
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ProjectDetailBloc, ProjectDetailState>(
+    return BlocConsumer<ProjectDetailBloc, ProjectDetailState>(
+      listenWhen: (previous, current) {
+        return current is ProjectDetailOperationSuccess ||
+            current is ProjectDetailOperationFailure;
+      },
+      listener: (context, state) {
+        switch (state) {
+          case ProjectDetailOperationSuccess(:final message):
+            widget.onSuccess(message);
+          case ProjectDetailOperationFailure(:final errorDetails):
+            widget.onError(errorDetails.message);
+          default:
+            return;
+        }
+      },
+      buildWhen: (previous, current) {
+        return current is ProjectDetailInitial ||
+            current is ProjectDetailLoadInProgress ||
+            current is ProjectDetailLoadSuccess;
+      },
       builder: (context, state) {
-        return state.when(
-          loading: _buildLoading,
-          createProject: _buildCreate,
-          editProject: _buildEdit,
-          error: _buildError,
-        );
+        switch (state) {
+          case ProjectDetailInitial():
+            return ProjectForm(
+              initialData: null,
+              formKey: _formKey,
+              onSubmit: () => _onSubmit(widget.projectId),
+              submitTooltip: 'Create',
+            );
+          case ProjectDetailLoadInProgress():
+            return const Center(child: CircularProgressIndicator());
+          case ProjectDetailLoadSuccess(:final project):
+            return ProjectForm(
+              initialData: project,
+              formKey: _formKey,
+              onSubmit: () => _onSubmit(project.id),
+              submitTooltip: 'Update',
+            );
+          default:
+            return const SizedBox.shrink();
+        }
       },
     );
   }

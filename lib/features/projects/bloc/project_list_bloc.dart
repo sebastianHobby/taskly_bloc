@@ -7,55 +7,55 @@ part 'project_list_bloc.freezed.dart';
 
 // Define the various events that ProjectsBloc will handle
 @freezed
-sealed class ProjectListEvent with _$ProjectListEvent {
-  const factory ProjectListEvent.projectsSubscriptionRequested() =
-      ProjectListSubscriptionRequested;
-  const factory ProjectListEvent.toggleProjectCompletion({
+sealed class ProjectOverviewEvent with _$ProjectOverviewEvent {
+  const factory ProjectOverviewEvent.projectsSubscriptionRequested() =
+      ProjectOverviewSubscriptionRequested;
+  const factory ProjectOverviewEvent.toggleProjectCompletion({
     required ProjectTableData projectData,
-  }) = ProjectListToggleProjectCompletion;
+  }) = ProjectOverviewToggleProjectCompletion;
 }
 
 // Define the various states that ProjectsBloc can emit
 @freezed
-sealed class ProjectListState with _$ProjectListState {
-  const factory ProjectListState.initial() = ProjectListInitial;
-  const factory ProjectListState.loading() = ProjectListLoading;
-  const factory ProjectListState.loaded({
+sealed class ProjectOverviewState with _$ProjectOverviewState {
+  const factory ProjectOverviewState.initial() = ProjectOverviewInitial;
+  const factory ProjectOverviewState.loading() = ProjectOverviewLoading;
+  const factory ProjectOverviewState.loaded({
     required List<ProjectTableData> projects,
-  }) = ProjectListLoaded;
-  const factory ProjectListState.error({required String message}) =
-      ProjectListError;
+  }) = ProjectOverviewLoaded;
+  const factory ProjectOverviewState.error({required String message}) =
+      ProjectOverviewError;
 }
 
-class ProjectListBloc extends Bloc<ProjectListEvent, ProjectListState> {
-  ProjectListBloc({required ProjectRepository projectRepository})
+class ProjectOverviewBloc extends Bloc<ProjectOverviewEvent, ProjectOverviewState> {
+  ProjectOverviewBloc({required ProjectRepository projectRepository})
     : _projectRepository = projectRepository,
-      super(const ProjectListInitial()) {
-    on<ProjectListSubscriptionRequested>(onSubscriptionRequested);
-    on<ProjectListToggleProjectCompletion>(onProjectToggleCompletion);
+      super(const ProjectOverviewInitial()) {
+    on<ProjectOverviewSubscriptionRequested>(onSubscriptionRequested);
+    on<ProjectOverviewToggleProjectCompletion>(onProjectToggleCompletion);
   }
 
   final ProjectRepository _projectRepository;
 
   Future<void> onSubscriptionRequested(
-    ProjectListSubscriptionRequested event,
-    Emitter<ProjectListState> emit,
+    ProjectOverviewSubscriptionRequested event,
+    Emitter<ProjectOverviewState> emit,
   ) async {
     // // Send state indicating loading is in progress for UI
-    emit(const ProjectListLoading());
+    emit(const ProjectOverviewLoading());
     // For each ProjectModel we receive in the stream emit the data loaded
     // state so UI can update or error state if there is an error
     await emit.forEach<List<ProjectTableData>>(
       _projectRepository.getProjects,
-      onData: (projects) => ProjectListLoaded(projects: projects),
+      onData: (projects) => ProjectOverviewLoaded(projects: projects),
       onError: (error, stackTrace) =>
-          const ProjectListError(message: 'todo error handling'),
+          const ProjectOverviewError(message: 'todo error handling'),
     );
   }
 
   Future<void> onProjectToggleCompletion(
-    ProjectListToggleProjectCompletion event,
-    Emitter<ProjectListState> emit,
+    ProjectOverviewToggleProjectCompletion event,
+    Emitter<ProjectOverviewState> emit,
   ) async {
     ProjectTableCompanion updateCompanion = event.projectData.toCompanion(true);
     updateCompanion = updateCompanion.copyWith(

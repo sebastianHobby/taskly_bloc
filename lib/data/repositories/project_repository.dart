@@ -13,11 +13,11 @@ class ProjectRepository {
         .getSingle();
   }
 
-  Future<int> updateProject(
+  Future<bool> updateProject(
     ProjectTableCompanion updateCompanion,
-  ) {
+  ) async {
     // Ensure the project exists first
-    return driftDb.update(driftDb.projectTable).write(updateCompanion);
+    return driftDb.update(driftDb.projectTable).replace(updateCompanion);
   }
 
   Future<int> deleteProject(ProjectTableCompanion deleteCompanion) async {

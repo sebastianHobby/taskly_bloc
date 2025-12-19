@@ -7,14 +7,16 @@ class TaskRepository {
   Stream<List<TaskTableData>> get getTasks =>
       driftDb.select(driftDb.taskTable).watch();
 
-  Future<TaskTableData?> getTaskById(String id) {
-    return (driftDb.select(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<TaskTableData?> getTaskById(String id) async {
+    return driftDb.managers.taskTable
+        .filter((f) => f.id.equals(id))
+        .getSingle();
   }
 
-  Future<int> updateTask(TaskTableCompanion updateCompanion) {
-    return driftDb.update(driftDb.taskTable).write(updateCompanion);
+  Future<bool> updateTask(
+    TaskTableCompanion updateCompanion,
+  ) async {
+    return driftDb.update(driftDb.taskTable).replace(updateCompanion);
   }
 
   Future<int> deleteTask(TaskTableCompanion deleteCompanion) async {
