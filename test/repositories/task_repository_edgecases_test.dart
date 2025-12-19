@@ -24,11 +24,9 @@ void main() {
     expect(first, isEmpty);
   });
 
-  test('getTaskById throws when missing', () async {
-    expect(
-      () async => repo.getTaskById('non-existent'),
-      throwsA(isA<Object>()),
-    );
+  test('getTaskById returns null when missing', () async {
+    final res = await repo.getTaskById('non-existent');
+    expect(res, isNull);
   });
 
   test('create duplicate id throws', () async {

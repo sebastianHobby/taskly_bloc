@@ -38,8 +38,8 @@ class FakeValueRepository extends ValueRepository {
   }
 
   @override
-  Future<int> updateValue(ValueTableCompanion updateCompanion) async {
-    return 1;
+  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
+    return true;
   }
 
   @override

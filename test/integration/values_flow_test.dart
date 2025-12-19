@@ -33,7 +33,7 @@ class FakeValueRepository extends ValueRepository {
   }
 
   @override
-  Future<int> updateValue(ValueTableCompanion updateCompanion) async {
+  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
     try {
       final id = updateCompanion.id.value as String?;
       if (id != null) {
@@ -55,7 +55,7 @@ class FakeValueRepository extends ValueRepository {
         }
       }
     } catch (_) {}
-    return 1;
+    return true;
   }
 
   @override
@@ -119,8 +119,7 @@ void main() {
 
     // Open detail sheet by tapping the value tile
     await tester.tap(find.text('Integration Value'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     expect(find.byType(FormBuilder), findsOneWidget);
 
     // Close sheet
@@ -130,8 +129,7 @@ void main() {
 
     // Open create sheet via FAB
     await tester.tap(find.byTooltip('Create value'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     expect(find.byType(FormBuilder), findsOneWidget);
   });
 

@@ -14,12 +14,14 @@ class LabelRepository {
     )..where((l) => l.id.equals(id))).getSingleOrNull();
   }
 
-  Future<int> updateLabel(LabelTableCompanion updateCompanion) async {
-    final int rows = await driftDb.update(driftDb.labelTable).write(updateCompanion);
-    if (rows == 0) {
+  Future<bool> updateLabel(LabelTableCompanion updateCompanion) async {
+    final bool success = await driftDb
+        .update(driftDb.labelTable)
+        .replace(updateCompanion);
+    if (!success) {
       throw RepositoryNotFoundException('No label found to update');
     }
-    return rows;
+    return success;
   }
 
   Future<int> deleteLabel(LabelTableCompanion deleteCompanion) async {

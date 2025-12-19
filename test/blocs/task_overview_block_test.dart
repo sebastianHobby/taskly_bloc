@@ -64,7 +64,7 @@ void main() {
     setUp: () {
       when(
         () => mockRepository.updateTask(any()),
-      ).thenAnswer((_) async => 1);
+      ).thenAnswer((_) async => true);
     },
     build: () => TaskOverviewBloc(taskRepository: mockRepository),
     act: (bloc) =>

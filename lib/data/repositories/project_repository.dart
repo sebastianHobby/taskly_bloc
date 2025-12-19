@@ -11,19 +11,19 @@ class ProjectRepository {
   Future<ProjectTableData?> getProjectById(String id) async {
     return driftDb.managers.projectTable
         .filter((f) => f.id.equals(id))
-        .getSingle();
+        .getSingleOrNull();
   }
 
-  Future<int> updateProject(
+  Future<bool> updateProject(
     ProjectTableCompanion updateCompanion,
   ) async {
-    final int impactedRowCnt = await driftDb
+    final bool success = await driftDb
         .update(driftDb.projectTable)
-        .write(updateCompanion);
-    if (impactedRowCnt == 0) {
+        .replace(updateCompanion);
+    if (!success) {
       throw RepositoryNotFoundException('No project found to update');
     }
-    return impactedRowCnt;
+    return success;
   }
 
   Future<int> deleteProject(ProjectTableCompanion deleteCompanion) async {

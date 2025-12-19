@@ -44,7 +44,7 @@ void main() {
     );
 
     final updated = await repo.updateProject(updateCompanion);
-    expect(updated, greaterThan(0));
+    expect(updated, isTrue);
 
     final listAfterUpdate = await repo.getProjects.first;
     final after = listAfterUpdate.singleWhere((p) => p.id == 'p-test-1');

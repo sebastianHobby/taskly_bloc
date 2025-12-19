@@ -23,11 +23,9 @@ void main() {
     expect(first, isEmpty);
   });
 
-  test('getProjectById throws when missing', () async {
-    expect(
-      () async => repo.getProjectById('non-existent'),
-      throwsA(isA<Object>()),
-    );
+  test('getProjectById returns null when missing', () async {
+    final res = await repo.getProjectById('non-existent');
+    expect(res, isNull);
   });
 
   test('create duplicate id throws', () async {

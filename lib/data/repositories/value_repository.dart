@@ -14,14 +14,14 @@ class ValueRepository {
     )..where((v) => v.id.equals(id))).getSingleOrNull();
   }
 
-  Future<int> updateValue(ValueTableCompanion updateCompanion) async {
-    final int impactedRowCnt = await driftDb
+  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
+    final bool success = await driftDb
         .update(driftDb.valueTable)
-        .write(updateCompanion);
-    if (impactedRowCnt == 0) {
+        .replace(updateCompanion);
+    if (!success) {
       throw RepositoryNotFoundException('No value found to update');
     }
-    return impactedRowCnt;
+    return success;
   }
 
   Future<int> deleteValue(ValueTableCompanion deleteCompanion) async {

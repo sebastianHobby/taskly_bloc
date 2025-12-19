@@ -49,7 +49,7 @@ void main() {
     setUp: () {
       when(
         () => mockRepository.updateProject(any()),
-      ).thenAnswer((_) async => 1);
+      ).thenAnswer((_) async => true);
     },
     build: () => ProjectOverviewBloc(projectRepository: mockRepository),
     act: (bloc) => bloc.add(

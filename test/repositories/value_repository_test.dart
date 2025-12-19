@@ -42,7 +42,7 @@ void main() {
     );
 
     final updated = await repo.updateValue(updateCompanion);
-    expect(updated, greaterThanOrEqualTo(0));
+    expect(updated, isTrue);
 
     final listAfterUpdate = await repo.getValues.first;
     final after = listAfterUpdate.singleWhere((v) => v.id == 'v-test-1');

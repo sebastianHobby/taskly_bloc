@@ -27,6 +27,7 @@ class ProjectForm extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
+
       children: [
         Flexible(
           child: SingleChildScrollView(
@@ -42,6 +43,7 @@ class ProjectForm extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: FormBuilderTextField(
                       name: 'name',
+                      textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         hintText: 'Title',
@@ -55,6 +57,10 @@ class ProjectForm extends StatelessWidget {
                           1,
                           errorText: 'Title must not be empty',
                         ),
+                        FormBuilderValidators.maxLength(
+                          120,
+                          errorText: 'Title must be 120 characters or fewer',
+                        ),
                       ]),
                     ),
                   ),
@@ -67,10 +73,11 @@ class ProjectForm extends StatelessWidget {
                         hintText: 'Description',
                         border: InputBorder.none,
                       ),
-                      maxLines: 2,
+                      minLines: 2,
+                      maxLines: 5,
                       validator: FormBuilderValidators.maxLength(
                         200,
-                        errorText: 'Description is too long!!',
+                        errorText: 'Description is too long',
                         checkNullOrEmpty: false,
                       ),
                     ),

@@ -100,7 +100,9 @@ void main() {
   blocTest<ValueDetailBloc, ValueDetailState>(
     'update emits operationSuccess on successful update',
     setUp: () {
-      when(() => mockRepository.updateValue(any())).thenAnswer((_) async => 1);
+      when(
+        () => mockRepository.updateValue(any()),
+      ).thenAnswer((_) async => true);
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
     act: (bloc) =>

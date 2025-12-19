@@ -38,7 +38,7 @@ class FakeTaskRepository extends TaskRepository {
   }
 
   @override
-  Future<int> updateTask(TaskTableCompanion updateCompanion) async {
+  Future<bool> updateTask(TaskTableCompanion updateCompanion) async {
     // apply update to in-memory list if id present
     try {
       final id = updateCompanion.id.value as String?;
@@ -73,7 +73,7 @@ class FakeTaskRepository extends TaskRepository {
       }
     } catch (_) {}
     updateCalled?.complete();
-    return 1;
+    return true;
   }
 
   @override
@@ -149,8 +149,7 @@ void main() {
 
     // Open detail sheet by tapping the task tile
     await tester.tap(find.text('Integration Task'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     expect(find.byType(TaskForm), findsOneWidget);
 
     // Close sheet
@@ -160,8 +159,7 @@ void main() {
 
     // Open create sheet via FAB
     await tester.tap(find.byTooltip('Create task'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
     expect(find.byType(TaskForm), findsOneWidget);
   });
 
@@ -211,8 +209,7 @@ void main() {
 
     // Open detail sheet
     await tester.tap(find.text('To Update'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
 
     // Change name and press update
     final textFields2 = find.descendant(

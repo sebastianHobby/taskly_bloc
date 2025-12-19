@@ -44,7 +44,7 @@ void main() {
     );
 
     final updated = await repo.updateTask(updateCompanion);
-    expect(updated, greaterThan(0));
+    expect(updated, isTrue);
 
     final listAfterUpdate = await repo.getTasks.first;
     final after = listAfterUpdate.singleWhere((t) => t.id == 't-test-1');

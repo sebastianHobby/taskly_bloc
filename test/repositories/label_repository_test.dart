@@ -42,7 +42,7 @@ void main() {
     );
 
     final updated = await repo.updateLabel(updateCompanion);
-    expect(updated, greaterThanOrEqualTo(0));
+    expect(updated, isTrue);
 
     final listAfterUpdate = await repo.getLabels.first;
     final after = listAfterUpdate.singleWhere((l) => l.id == 'l-test-1');

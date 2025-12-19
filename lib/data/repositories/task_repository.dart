@@ -11,19 +11,19 @@ class TaskRepository {
   Future<TaskTableData?> getTaskById(String id) async {
     return driftDb.managers.taskTable
         .filter((f) => f.id.equals(id))
-        .getSingle();
+        .getSingleOrNull();
   }
 
-  Future<int> updateTask(
+  Future<bool> updateTask(
     TaskTableCompanion updateCompanion,
   ) async {
-    final int impactedRowCnt = await driftDb
+    final bool success = await driftDb
         .update(driftDb.taskTable)
-        .write(updateCompanion);
-    if (impactedRowCnt == 0) {
+        .replace(updateCompanion);
+    if (!success) {
       throw RepositoryNotFoundException('No task found to update');
     }
-    return impactedRowCnt;
+    return success;
   }
 
   Future<int> deleteTask(TaskTableCompanion deleteCompanion) async {

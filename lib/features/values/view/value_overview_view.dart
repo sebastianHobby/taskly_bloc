@@ -19,10 +19,29 @@ class ValueOverviewPage extends StatelessWidget {
   }
 }
 
-class ValueOverviewView extends StatelessWidget {
+class ValueOverviewView extends StatefulWidget {
   const ValueOverviewView({required this.valueRepository, super.key});
 
   final ValueRepository valueRepository;
+
+  @override
+  State<ValueOverviewView> createState() => _ValueOverviewViewState();
+}
+
+class _ValueOverviewViewState extends State<ValueOverviewView> {
+  late final ValueNotifier<bool> _isSheetOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    _isSheetOpen = ValueNotifier<bool>(false);
+  }
+
+  @override
+  void dispose() {
+    _isSheetOpen.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +61,13 @@ class ValueOverviewView extends StatelessWidget {
             appBar: AppBar(title: const Text('Values')),
             body: ValuesListView(
               values: state.values,
-              valueRepository: valueRepository,
+              valueRepository: widget.valueRepository,
+              isSheetOpen: _isSheetOpen,
             ),
-            floatingActionButton: AddValueFab(valueRepository: valueRepository),
+            floatingActionButton: AddValueFab(
+              valueRepository: widget.valueRepository,
+              isSheetOpen: _isSheetOpen,
+            ),
           );
         }
 
