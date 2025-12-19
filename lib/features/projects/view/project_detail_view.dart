@@ -115,19 +115,33 @@ class _ProjectDetailViewState extends State<ProjectDetailView> {
       final formState = _formKey.currentState;
       if (formState == null) return;
       if (formState.saveAndValidate()) {
-        final name = (formState.value['name'] as String?)?.trim() ?? '';
-        final description =
-            (formState.value['description'] as String?)?.trim() ?? '';
-        final completed = formState.value['completed'] as bool? ?? false;
-
-        final createCompanion = ProjectTableCompanion(
-          name: Value(name),
-          description: Value(description),
-          completed: Value(completed),
-          createdAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
+        context.read<ProjectDetailBloc>().add(
+          ProjectDetailEvent.create(
+            name: formState.value['name'] as String,
+            description: formState.value['description'] as String,
+          ),
         );
+      }
+    }
 
+    final body = SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: ProjectForm(formKey: _formKey, initialValues: const {}),
+    );
+
+    return ProjectSheet(
+      body: body,
+      onSubmit: onSubmitCreate,
+      onPopInvokedWithResult: onPopInvoked,
+    );
+  }
+
+  Widget _buildEdit({required ProjectTableData initialProjectData}) {
+    void onSubmitUpdate() {
+      final formState = _formKey.currentState;
+
+      if (formState != null && formState.saveAndValidate()) {
+        final formValues = formState.value;
         context.read<ProjectDetailBloc>().add(
           ProjectDetailEvent.createProject(createCompanion: createCompanion),
         );

@@ -13,28 +13,70 @@ class ProjectsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final projectRepository = getIt<ProjectRepository>();
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Projects'),
-      ),
-      body: BlocProvider(
-        create: (_) => ProjectListBloc(projectRepository: projectRepository),
-        child: const ProjectsListView(),
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add project',
-        onPressed: () async {
-          await context.push(Routes.createProjectModal);
-        },
-        heroTag: 'add_project_fab', // used by assistive technologies
-        child: const Icon(Icons.add),
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) =>
+              ProjectOverviewBloc(projectRepository: projectRepository),
+        ),
+        BlocProvider(
+          create: (_) =>
+              ProjectDetailBloc(projectRepository: projectRepository),
+        ),
+      ],
+      child: const ProjectOverviewView(),
     );
   }
 }
 
-class ProjectsListView extends StatelessWidget {
-  const ProjectsListView({super.key});
+ListView ProjectsList(List<ProjectTableData> projects, BuildContext context) {
+  return ListView.builder(
+    itemCount: projects.length,
+    itemBuilder: (context, index) {
+      final project = projects[index];
+      return ProjectListTile(
+        project: project,
+        onCheckboxChanged: (project, _) {
+          context.read<ProjectOverviewBloc>().add(
+            ProjectOverviewEvent.toggleProjectCompletion(
+              projectData: project,
+            ),
+          );
+        },
+        onTap: (project) async {
+          late PersistentBottomSheetController controller;
+          controller = Scaffold.of(context).showBottomSheet(
+            (ctx) => Material(
+              color: Theme.of(ctx).colorScheme.surface,
+              child: SafeArea(
+                top: false,
+                child: ProjectDetailSheetView(
+                  initialData: project,
+                  onSuccess: (message) {
+                    controller.close();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(message)),
+                    );
+                  },
+                  onError: (errorMessage) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: $errorMessage')),
+                    );
+                  },
+                ),
+              ),
+            ),
+            elevation: 8,
+          );
+        },
+      );
+    },
+  );
+}
+
+class ProjectOverviewView extends StatelessWidget {
+  const ProjectOverviewView({super.key});
 
   @override
   Widget build(BuildContext context) {
