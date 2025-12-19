@@ -28,7 +28,7 @@ dependencies:
   mocktail: ^1.0.4
   path: ^1.9.1
   path_provider: ^2.1.5
-  powersync: ^1.16.2
+  powersync: ^1.17.0
   smooth_sheets: ^0.15.0
   supabase_flutter: ^2.10.3
   uuid: ^4.4.2
