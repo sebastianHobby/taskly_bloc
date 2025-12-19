@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 
 class AddProjectFab extends StatelessWidget {
   const AddProjectFab({
-    required this.context,
-
+    required this.projectRepository,
     super.key,
   });
 
-  final BuildContext context;
+  final ProjectRepository projectRepository;
 
   @override
   Widget build(BuildContext fabContext) {
@@ -23,6 +23,7 @@ class AddProjectFab extends StatelessWidget {
             child: SafeArea(
               top: false,
               child: ProjectDetailSheetPage(
+                projectRepository: projectRepository,
                 onSuccess: (message) {
                   controller.close();
                   ScaffoldMessenger.of(fabContext).showSnackBar(

@@ -20,6 +20,10 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         destinations: const [
           NavigationDestination(label: 'Projects', icon: Icon(Icons.home)),
           NavigationDestination(label: 'Tasks', icon: Icon(Icons.settings)),
+          NavigationDestination(
+            label: 'Values',
+            icon: Icon(Icons.favorite_outline),
+          ),
         ],
         onDestinationSelected: onDestinationSelected,
       ),

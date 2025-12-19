@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 
 class TaskRepository {
   TaskRepository({required this.driftDb});
@@ -13,10 +14,16 @@ class TaskRepository {
         .getSingle();
   }
 
-  Future<bool> updateTask(
+  Future<int> updateTask(
     TaskTableCompanion updateCompanion,
   ) async {
-    return driftDb.update(driftDb.taskTable).replace(updateCompanion);
+    final int impactedRowCnt = await driftDb
+        .update(driftDb.taskTable)
+        .write(updateCompanion);
+    if (impactedRowCnt == 0) {
+      throw RepositoryNotFoundException('No task found to update');
+    }
+    return impactedRowCnt;
   }
 
   Future<int> deleteTask(TaskTableCompanion deleteCompanion) async {

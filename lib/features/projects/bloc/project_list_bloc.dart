@@ -27,7 +27,8 @@ sealed class ProjectOverviewState with _$ProjectOverviewState {
       ProjectOverviewError;
 }
 
-class ProjectOverviewBloc extends Bloc<ProjectOverviewEvent, ProjectOverviewState> {
+class ProjectOverviewBloc
+    extends Bloc<ProjectOverviewEvent, ProjectOverviewState> {
   ProjectOverviewBloc({required ProjectRepository projectRepository})
     : _projectRepository = projectRepository,
       super(const ProjectOverviewInitial()) {
@@ -63,7 +64,11 @@ class ProjectOverviewBloc extends Bloc<ProjectOverviewEvent, ProjectOverviewStat
       updatedAt: Value(DateTime.now()),
     );
 
-    await _projectRepository.updateProject(updateCompanion);
+    try {
+      await _projectRepository.updateProject(updateCompanion);
+    } catch (error) {
+      emit(ProjectOverviewError(message: error.toString()));
+    }
     // No need to call refresh as the stream subscription will handle it
   }
 }

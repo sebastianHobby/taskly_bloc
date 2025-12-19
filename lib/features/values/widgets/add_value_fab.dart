@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
+import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 
-class AddTaskFab extends StatelessWidget {
-  const AddTaskFab({
-    required this.taskRepository,
-    super.key,
-  });
+class AddValueFab extends StatelessWidget {
+  const AddValueFab({required this.valueRepository, super.key});
 
-  final TaskRepository taskRepository;
+  final ValueRepository valueRepository;
 
   @override
   Widget build(BuildContext fabContext) {
     return FloatingActionButton(
-      tooltip: 'Create task',
+      tooltip: 'Create value',
       onPressed: () async {
         late PersistentBottomSheetController controller;
         controller = Scaffold.of(fabContext).showBottomSheet(
@@ -22,8 +19,8 @@ class AddTaskFab extends StatelessWidget {
             elevation: 8,
             child: SafeArea(
               top: false,
-              child: TaskDetailSheetPage(
-                taskRepository: taskRepository,
+              child: ValueDetailSheetPage(
+                valueRepository: valueRepository,
                 onSuccess: (message) {
                   controller.close();
                   ScaffoldMessenger.of(fabContext).showSnackBar(
@@ -32,9 +29,7 @@ class AddTaskFab extends StatelessWidget {
                 },
                 onError: (errorMessage) {
                   ScaffoldMessenger.of(fabContext).showSnackBar(
-                    SnackBar(
-                      content: Text('Error: $errorMessage'),
-                    ),
+                    SnackBar(content: Text('Error: $errorMessage')),
                   );
                 },
               ),
@@ -42,7 +37,7 @@ class AddTaskFab extends StatelessWidget {
           ),
         );
       },
-      heroTag: 'create_task_fab',
+      heroTag: 'create_value_fab',
       child: const Icon(Icons.add),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 
 class ProjectRepository {
   ProjectRepository({required this.driftDb});
@@ -13,15 +14,19 @@ class ProjectRepository {
         .getSingle();
   }
 
-  Future<bool> updateProject(
+  Future<int> updateProject(
     ProjectTableCompanion updateCompanion,
   ) async {
-    // Ensure the project exists first
-    return driftDb.update(driftDb.projectTable).replace(updateCompanion);
+    final int impactedRowCnt = await driftDb
+        .update(driftDb.projectTable)
+        .write(updateCompanion);
+    if (impactedRowCnt == 0) {
+      throw RepositoryNotFoundException('No project found to update');
+    }
+    return impactedRowCnt;
   }
 
   Future<int> deleteProject(ProjectTableCompanion deleteCompanion) async {
-    // validate input similar to update project: ensure a  project to delete with a valid id
     return driftDb.delete(driftDb.projectTable).delete(deleteCompanion);
   }
 

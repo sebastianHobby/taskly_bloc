@@ -1,30 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/features/projects/widgets/projects_list.dart';
 
 class ProjectOverviewPage extends StatelessWidget {
-  const ProjectOverviewPage({super.key});
+  const ProjectOverviewPage({
+    required this.projectRepository,
+    super.key,
+  });
+
+  final ProjectRepository projectRepository;
+
   @override
   Widget build(BuildContext context) {
-    final projectRepository = getIt<ProjectRepository>();
     return BlocProvider(
       create: (_) => ProjectOverviewBloc(projectRepository: projectRepository),
-      child: const ProjectOverviewView(),
+      child: ProjectOverviewView(projectRepository: projectRepository),
     );
   }
 }
 
 class ProjectOverviewView extends StatelessWidget {
-  const ProjectOverviewView({super.key});
+  const ProjectOverviewView({
+    required this.projectRepository,
+    super.key,
+  });
+
+  final ProjectRepository projectRepository;
 
   @override
   Widget build(BuildContext context) {
     //Todo add localization - just a shell so easy to add in future
-    //final l10n = context.l10n;
 
     // Send event to request data stream subscription
     return BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
@@ -45,9 +53,12 @@ class ProjectOverviewView extends StatelessWidget {
             } else {
               return Scaffold(
                 appBar: AppBar(title: const Text('Projects')),
-                body: ProjectsList(projects, context),
+                body: ProjectsListView(
+                  projects: projects,
+                  projectRepository: projectRepository,
+                ),
                 floatingActionButton: AddProjectFab(
-                  context: context,
+                  projectRepository: projectRepository,
                 ),
               );
             }

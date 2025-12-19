@@ -2,26 +2,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_form.dart';
 
 class ProjectDetailSheetPage extends StatelessWidget {
   const ProjectDetailSheetPage({
+    required this.projectRepository,
     required this.onSuccess,
     required this.onError,
     this.projectId,
     super.key,
   });
 
+  final ProjectRepository projectRepository;
   final String? projectId;
   final void Function(String message) onSuccess;
   final void Function(String message) onError;
 
   @override
   Widget build(BuildContext context) {
-    final projectRepository = getIt<ProjectRepository>();
     return Scaffold(
       body: BlocProvider(
         create: (context) => ProjectDetailBloc(

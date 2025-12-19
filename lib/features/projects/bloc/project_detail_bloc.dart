@@ -147,6 +147,11 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     );
     try {
       await _projectRepository.deleteProject(deleteCompanion);
+      emit(
+        const ProjectDetailState.operationSuccess(
+          message: 'Project deleted successfully.',
+        ),
+      );
     } catch (error, stacktrace) {
       emit(
         ProjectDetailState.operationFailure(

@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 
 class ValueRepository {
   ValueRepository({required this.driftDb});
@@ -13,8 +14,14 @@ class ValueRepository {
     )..where((v) => v.id.equals(id))).getSingleOrNull();
   }
 
-  Future<int> updateValue(ValueTableCompanion updateCompanion) {
-    return driftDb.update(driftDb.valueTable).write(updateCompanion);
+  Future<int> updateValue(ValueTableCompanion updateCompanion) async {
+    final int impactedRowCnt = await driftDb
+        .update(driftDb.valueTable)
+        .write(updateCompanion);
+    if (impactedRowCnt == 0) {
+      throw RepositoryNotFoundException('No value found to update');
+    }
+    return impactedRowCnt;
   }
 
   Future<int> deleteValue(ValueTableCompanion deleteCompanion) async {

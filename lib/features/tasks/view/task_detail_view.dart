@@ -2,26 +2,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 class TaskDetailSheetPage extends StatelessWidget {
   const TaskDetailSheetPage({
+    required this.taskRepository,
     this.taskId,
     this.onSuccess,
     this.onError,
     super.key,
   });
 
+  final TaskRepository taskRepository;
   final String? taskId;
   final void Function(String message)? onSuccess;
   final void Function(String message)? onError;
 
   @override
   Widget build(BuildContext context) {
-    final taskRepository = getIt<TaskRepository>();
     return Scaffold(
       body: BlocProvider(
         create: (context) {

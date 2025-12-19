@@ -141,6 +141,11 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
     final deleteCompanion = TaskTableCompanion(id: Value(id));
     try {
       await _taskRepository.deleteTask(deleteCompanion);
+      emit(
+        const TaskDetailState.operationSuccess(
+          message: 'Task deleted successfully.',
+        ),
+      );
     } catch (error, stacktrace) {
       emit(
         TaskDetailState.operationFailure(
