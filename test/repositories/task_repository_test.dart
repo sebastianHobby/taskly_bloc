@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
@@ -19,43 +18,28 @@ void main() {
   });
 
   test('create/get/update/delete task flow', () async {
-    final now = DateTime.now();
+    await repo.create(name: 'Test Task');
 
-    final createCompanion = TaskTableCompanion(
-      id: Value('t-test-1'),
-      name: Value('Test Task'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-      completed: const Value(false),
-    );
+    final listAfterCreate = await repo.watchAll().first;
+    expect(listAfterCreate, hasLength(1));
 
-    final rowId = await repo.createTask(createCompanion);
-    expect(rowId, isNonZero);
-
-    final listAfterCreate = await repo.getTasks.first;
-    final fetched = listAfterCreate.singleWhere((t) => t.id == 't-test-1');
+    final fetched = listAfterCreate.single;
     expect(fetched.name, 'Test Task');
 
-    final updateCompanion = TaskTableCompanion(
-      id: Value('t-test-1'),
-      name: const Value('Updated Task'),
-      updatedAt: Value(DateTime.now()),
-      completed: const Value(true),
+    await repo.update(
+      id: fetched.id,
+      name: 'Updated Task',
+      completed: true,
     );
 
-    final updated = await repo.updateTask(updateCompanion);
-    expect(updated, isTrue);
-
-    final listAfterUpdate = await repo.getTasks.first;
-    final after = listAfterUpdate.singleWhere((t) => t.id == 't-test-1');
+    final listAfterUpdate = await repo.watchAll().first;
+    final after = listAfterUpdate.singleWhere((t) => t.id == fetched.id);
     expect(after.name, 'Updated Task');
     expect(after.completed, isTrue);
 
-    final deleteCompanion = TaskTableCompanion(id: Value('t-test-1'));
-    final deleted = await repo.deleteTask(deleteCompanion);
-    expect(deleted, greaterThanOrEqualTo(0));
+    await repo.delete(fetched.id);
 
-    final listAfterDelete = await repo.getTasks.first;
-    expect(listAfterDelete.where((t) => t.id == 't-test-1'), isEmpty);
+    final listAfterDelete = await repo.watchAll().first;
+    expect(listAfterDelete.where((t) => t.id == fetched.id), isEmpty);
   });
 }

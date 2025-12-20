@@ -1,8 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:drift/drift.dart' hide JsonKey;
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
 
 part 'project_detail_bloc.freezed.dart';
 
@@ -12,7 +11,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
   const factory ProjectDetailEvent.update({
     required String id,
     required String name,
-    required String description,
     required bool completed,
   }) = _ProjectDetailUpdate;
   const factory ProjectDetailEvent.delete({
@@ -21,7 +19,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
 
   const factory ProjectDetailEvent.create({
     required String name,
-    required String description,
   }) = _ProjectDetailCreate;
 
   const factory ProjectDetailEvent.get({required String projectId}) =
@@ -52,30 +49,30 @@ class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.loadInProgress() =
       ProjectDetailLoadInProgress;
   const factory ProjectDetailState.loadSuccess({
-    required ProjectTableData project,
+    required Project project,
   }) = ProjectDetailLoadSuccess;
 }
 
 class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   ProjectDetailBloc({
-    required ProjectRepository projectRepository,
+    required ProjectRepositoryContract projectRepository,
     String? projectId,
   }) : _projectRepository = projectRepository,
        super(const ProjectDetailState.initial()) {
     on<ProjectDetailEvent>((event, emit) async {
       await event.when(
         get: (projectId) async => _onGet(projectId, emit),
-        update: (id, name, description, completed) async =>
-            _onUpdate(id, name, description, completed, emit),
+        update: (id, name, completed) async =>
+            _onUpdate(id, name, completed, emit),
         delete: (id) async => _onDelete(id, emit),
-        create: (name, description) async => _onCreate(name, description, emit),
+        create: (name) async => _onCreate(name, emit),
       );
     });
     if (projectId != null) {
       add(ProjectDetailEvent.get(projectId: projectId));
     }
   }
-  final ProjectRepository _projectRepository;
+  final ProjectRepositoryContract _projectRepository;
 
   Future _onGet(
     String projectId,
@@ -83,7 +80,10 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   ) async {
     emit(const ProjectDetailState.loadInProgress());
     try {
-      final project = await _projectRepository.getProjectById(projectId);
+      final project = await _projectRepository.get(
+        projectId,
+        withRelated: true,
+      );
       if (project == null) {
         emit(
           const ProjectDetailState.operationFailure(
@@ -108,19 +108,11 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   Future<void> _onUpdate(
     String id,
     String name,
-    String description,
     bool completed,
     Emitter<ProjectDetailState> emit,
   ) async {
-    final updateCompanion = ProjectTableCompanion(
-      id: Value(id),
-      name: Value(name),
-      description: Value(description),
-      updatedAt: Value(DateTime.now()),
-    );
-
     try {
-      await _projectRepository.updateProject(updateCompanion);
+      await _projectRepository.update(id: id, name: name, completed: completed);
       emit(
         ProjectDetailState.operationSuccess(
           message: 'Project updated successfully.',
@@ -142,11 +134,8 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     String id,
     Emitter<ProjectDetailState> emit,
   ) async {
-    final deleteCompanion = ProjectTableCompanion(
-      id: Value(id),
-    );
     try {
-      await _projectRepository.deleteProject(deleteCompanion);
+      await _projectRepository.delete(id);
       emit(
         const ProjectDetailState.operationSuccess(
           message: 'Project deleted successfully.',
@@ -166,19 +155,10 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
 
   Future<void> _onCreate(
     String name,
-    String description,
     Emitter<ProjectDetailState> emit,
   ) async {
-    final createCompanion = ProjectTableCompanion(
-      name: Value(name),
-      description: Value(description),
-      completed: Value(false),
-      createdAt: Value(DateTime.now()),
-      updatedAt: Value(DateTime.now()),
-    );
-
     try {
-      await _projectRepository.createProject(createCompanion);
+      await _projectRepository.create(name: name);
       emit(
         const ProjectDetailState.operationSuccess(
           message: 'Project created successfully.',

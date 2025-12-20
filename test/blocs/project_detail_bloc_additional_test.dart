@@ -1,19 +1,13 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 
-class MockProjectRepository extends Mock implements ProjectRepository {}
+class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 void main() {
   late MockProjectRepository mockRepository;
-
-  setUpAll(() {
-    registerFallbackValue(ProjectTableCompanion(id: const Value('f')));
-  });
 
   setUp(() {
     mockRepository = MockProjectRepository();
@@ -23,7 +17,7 @@ void main() {
     'get emits operationFailure when repository returns null',
     setUp: () {
       when(
-        () => mockRepository.getProjectById('p1'),
+        () => mockRepository.get('p1'),
       ).thenAnswer((_) async => null);
     },
     build: () =>
@@ -38,7 +32,7 @@ void main() {
     'get emits operationFailure when repository throws',
     setUp: () {
       when(
-        () => mockRepository.getProjectById('p1'),
+        () => mockRepository.get('p1'),
       ).thenAnswer((_) async => throw Exception('boom'));
     },
     build: () =>
@@ -53,15 +47,18 @@ void main() {
     'update emits operationSuccess on successful update',
     setUp: () {
       when(
-        () => mockRepository.updateProject(any()),
-      ).thenAnswer((_) async => true);
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
+      ).thenAnswer((_) async {});
     },
     build: () => ProjectDetailBloc(projectRepository: mockRepository),
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.update(
         id: 'p1',
         name: 'Updated',
-        description: 'd',
         completed: false,
       ),
     ),
@@ -76,7 +73,11 @@ void main() {
     'update emits operationFailure when update throws',
     setUp: () {
       when(
-        () => mockRepository.updateProject(any()),
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
       ).thenAnswer((_) async => throw Exception('fail'));
     },
     build: () => ProjectDetailBloc(projectRepository: mockRepository),
@@ -84,7 +85,6 @@ void main() {
       const ProjectDetailEvent.update(
         id: 'p1',
         name: 'Updated',
-        description: 'd',
         completed: false,
       ),
     ),
@@ -95,14 +95,16 @@ void main() {
     'create emits operationFailure when create throws',
     setUp: () {
       when(
-        () => mockRepository.createProject(any()),
+        () => mockRepository.create(
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
       ).thenAnswer((_) async => throw Exception('boom'));
     },
     build: () => ProjectDetailBloc(projectRepository: mockRepository),
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.create(
         name: 'n',
-        description: 'd',
       ),
     ),
     expect: () => <dynamic>[isA<ProjectDetailOperationFailure>()],
@@ -112,8 +114,8 @@ void main() {
     'delete emits operationSuccess on successful delete',
     setUp: () {
       when(
-        () => mockRepository.deleteProject(any()),
-      ).thenAnswer((_) async => 1);
+        () => mockRepository.delete(any()),
+      ).thenAnswer((_) async {});
     },
     build: () => ProjectDetailBloc(projectRepository: mockRepository),
     act: (bloc) => bloc.add(const ProjectDetailEvent.delete(id: 'p1')),

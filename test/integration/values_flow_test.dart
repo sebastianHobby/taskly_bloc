@@ -3,28 +3,41 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import '../helpers/test_db.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
 
 // Minimal in-test fake repository to avoid external test helper dependency.
-class FakeValueRepository extends ValueRepository {
-  FakeValueRepository() : super(driftDb: createTestDb());
+class FakeValueRepository implements ValueRepositoryContract {
+  FakeValueRepository();
 
-  final _controller = StreamController<List<ValueTableData>>.broadcast();
-  List<ValueTableData> _last = [];
+  final _controller = StreamController<List<ValueModel>>.broadcast();
+  List<ValueModel> _last = [];
 
-  void pushValues(List<ValueTableData> values) {
+  void pushValues(List<ValueModel> values) {
     _last = values;
     _controller.add(values);
   }
 
   @override
-  Stream<List<ValueTableData>> get getValues => _controller.stream;
+  Stream<List<ValueModel>> watchAll({bool withRelated = false}) =>
+      _controller.stream;
 
   @override
-  Future<ValueTableData?> getValueById(String id) async {
+  Future<List<ValueModel>> getAll({bool withRelated = false}) async => _last;
+
+  @override
+  Stream<ValueModel?> watch(String id, {bool withRelated = false}) =>
+      _controller.stream.map((values) {
+        try {
+          return values.firstWhere((v) => v.id == id);
+        } catch (_) {
+          return null;
+        }
+      });
+
+  @override
+  Future<ValueModel?> get(String id, {bool withRelated = false}) async {
     try {
       return _last.firstWhere((v) => v.id == id);
     } catch (_) {
@@ -33,63 +46,38 @@ class FakeValueRepository extends ValueRepository {
   }
 
   @override
-  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
-    try {
-      final id = updateCompanion.id.value as String?;
-      if (id != null) {
-        final idx = _last.indexWhere((v) => v.id == id);
-        if (idx != -1) {
-          final old = _last[idx];
-          final updated = ValueTableData(
-            id: id,
-            createdAt: old.createdAt,
-            updatedAt: updateCompanion.updatedAt.present
-                ? updateCompanion.updatedAt.value
-                : DateTime.now(),
-            name: updateCompanion.name.present
-                ? updateCompanion.name.value
-                : old.name,
-          );
-          _last[idx] = updated;
-          _controller.add(_last);
-        }
-      }
-    } catch (_) {}
-    return true;
+  Future<void> update({required String id, required String name}) async {
+    final idx = _last.indexWhere((v) => v.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    _last[idx] = ValueModel(
+      id: old.id,
+      createdAt: old.createdAt,
+      updatedAt: DateTime.now(),
+      name: name,
+    );
+    _controller.add(_last);
   }
 
   @override
-  Future<int> createValue(ValueTableCompanion createCompanion) async {
-    final id = createCompanion.id.present
-        ? createCompanion.id.value
-        : 'gen-${DateTime.now().millisecondsSinceEpoch}';
-    final now = createCompanion.createdAt.present
-        ? createCompanion.createdAt.value
-        : DateTime.now();
-    final newValue = ValueTableData(
+  Future<void> create({required String name}) async {
+    final now = DateTime.now();
+    final id = 'gen-${now.microsecondsSinceEpoch}';
+    final newValue = ValueModel(
       id: id,
       createdAt: now,
-      updatedAt: createCompanion.updatedAt.present
-          ? createCompanion.updatedAt.value
-          : now,
-      name: createCompanion.name.present ? createCompanion.name.value : '',
+      updatedAt: now,
+      name: name,
     );
     _last = [..._last, newValue];
     _controller.add(_last);
-    return 1;
   }
 
   @override
-  Future<int> deleteValue(ValueTableCompanion deleteCompanion) async {
-    try {
-      final id = deleteCompanion.id.value as String?;
-      if (id != null) {
-        _last.removeWhere((v) => v.id == id);
-        _controller.add(_last);
-        return 1;
-      }
-    } catch (_) {}
-    return 0;
+  Future<void> delete(String id) async {
+    _last = _last.where((v) => v.id != id).toList();
+    _controller.add(_last);
   }
 }
 
@@ -99,10 +87,11 @@ void main() {
   ) async {
     final repo = FakeValueRepository();
 
-    final sample = ValueTableData(
+    final now = DateTime.now();
+    final sample = ValueModel(
       id: 'v-int-1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Integration Value',
     );
 
@@ -115,10 +104,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // Value is displayed
-    expect(find.text('Integration Value'), findsOneWidget);
+    expect(find.byKey(const Key('value-v-int-1')), findsOneWidget);
 
     // Open detail sheet by tapping the value tile
-    await tester.tap(find.text('Integration Value'));
+    await tester.tap(find.byKey(const Key('value-v-int-1')));
     await tester.pumpAndSettle();
     expect(find.byType(FormBuilder), findsOneWidget);
 

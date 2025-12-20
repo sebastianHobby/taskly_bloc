@@ -1,8 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:drift/drift.dart' hide JsonKey;
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 
 part 'value_detail_bloc.freezed.dart';
 
@@ -45,14 +44,16 @@ class ValueDetailState with _$ValueDetailState {
 
   const factory ValueDetailState.loadInProgress() = ValueDetailLoadInProgress;
   const factory ValueDetailState.loadSuccess({
-    required ValueTableData value,
+    required ValueModel value,
   }) = ValueDetailLoadSuccess;
 }
 
 class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
-  ValueDetailBloc({required ValueRepository valueRepository, String? valueId})
-    : _valueRepository = valueRepository,
-      super(const ValueDetailState.initial()) {
+  ValueDetailBloc({
+    required ValueRepositoryContract valueRepository,
+    String? valueId,
+  }) : _valueRepository = valueRepository,
+       super(const ValueDetailState.initial()) {
     on<ValueDetailEvent>((event, emit) async {
       await event.when(
         get: (valueId) async => _onGet(valueId, emit),
@@ -67,12 +68,12 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
     }
   }
 
-  final ValueRepository _valueRepository;
+  final ValueRepositoryContract _valueRepository;
 
   Future _onGet(String valueId, Emitter<ValueDetailState> emit) async {
     emit(const ValueDetailState.loadInProgress());
     try {
-      final value = await _valueRepository.getValueById(valueId);
+      final value = await _valueRepository.get(valueId);
       if (value == null) {
         emit(
           const ValueDetailState.operationFailure(
@@ -99,14 +100,8 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
     String name,
     Emitter<ValueDetailState> emit,
   ) async {
-    final updateCompanion = ValueTableCompanion(
-      id: Value(id),
-      name: Value(name),
-      updatedAt: Value(DateTime.now()),
-    );
-
     try {
-      await _valueRepository.updateValue(updateCompanion);
+      await _valueRepository.update(id: id, name: name);
       emit(
         ValueDetailState.operationSuccess(
           message: 'Value updated successfully.',
@@ -128,11 +123,8 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
     String id,
     Emitter<ValueDetailState> emit,
   ) async {
-    final deleteCompanion = ValueTableCompanion(
-      id: Value(id),
-    );
     try {
-      await _valueRepository.deleteValue(deleteCompanion);
+      await _valueRepository.delete(id);
       emit(
         const ValueDetailState.operationSuccess(
           message: 'Value deleted successfully.',
@@ -154,14 +146,8 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
     String name,
     Emitter<ValueDetailState> emit,
   ) async {
-    final createCompanion = ValueTableCompanion(
-      name: Value(name),
-      createdAt: Value(DateTime.now()),
-      updatedAt: Value(DateTime.now()),
-    );
-
     try {
-      await _valueRepository.createValue(createCompanion);
+      await _valueRepository.create(name: name);
       emit(
         const ValueDetailState.operationSuccess(
           message: 'Value created successfully.',

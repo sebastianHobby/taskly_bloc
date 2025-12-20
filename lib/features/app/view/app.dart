@@ -10,9 +10,9 @@ class App extends StatelessWidget {
     //Todo get all the widgets using this theme
     return MaterialApp.router(
       theme: ThemeData(
-        appBarTheme: AppBarTheme(
-          backgroundColor: Color.fromSeed)
-        ),
+        //   // appBarTheme: AppBarTheme(
+        //   //   backgroundColor: Color.fromSeed)
+        // ),
         useMaterial3: true,
       ),
       localizationsDelegates: AppLocalizations.localizationsDelegates,

@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
@@ -19,73 +18,50 @@ void main() {
     await db.close();
   });
 
-  test('getTasks stream is initially empty', () async {
-    final first = await repo.getTasks.first;
+  test('watchAll stream is initially empty', () async {
+    final first = await repo.watchAll().first;
     expect(first, isEmpty);
   });
 
-  test('getTaskById returns null when missing', () async {
-    final res = await repo.getTaskById('non-existent');
+  test('get returns null when missing', () async {
+    final res = await repo.get('non-existent');
     expect(res, isNull);
   });
 
-  test('create duplicate id throws', () async {
-    final now = DateTime.now();
-    final companion = TaskTableCompanion(
-      id: Value('dup-1'),
-      name: Value('Dup'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-      completed: const Value(false),
-    );
+  test('creating twice creates two tasks', () async {
+    await repo.create(name: 'A');
+    await repo.create(name: 'B');
 
-    final first = await repo.createTask(companion);
-    expect(first, isNonZero);
-
-    // second insert with same PK should throw
-    await expectLater(repo.createTask(companion), throwsA(isA<Object>()));
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(2));
+    expect(list.map((t) => t.name), containsAll(<String>['A', 'B']));
   });
 
   test('update non-existent throws', () async {
-    final update = TaskTableCompanion(
-      id: Value('nope'),
-      name: const Value('Nope'),
-      updatedAt: Value(DateTime.now()),
-      completed: const Value(false),
-    );
-
     await expectLater(
-      repo.updateTask(update),
+      repo.update(id: 'nope', name: 'Nope', completed: false),
       throwsA(isA<RepositoryNotFoundException>()),
     );
   });
 
-  test('delete non-existent returns 0', () async {
-    final del = TaskTableCompanion(id: Value('nope'));
-    final res = await repo.deleteTask(del);
-    expect(res, equals(0));
+  test('delete non-existent does not throw', () async {
+    await repo.delete('nope');
+    final list = await repo.watchAll().first;
+    expect(list, isEmpty);
   });
 
   test('concurrent creates produce multiple rows', () async {
-    final now = DateTime.now();
     final futures = List.generate(5, (i) {
-      final c = TaskTableCompanion(
-        id: Value('c-$i'),
-        name: Value('Task $i'),
-        createdAt: Value(now),
-        updatedAt: Value(now),
-        completed: const Value(false),
-      );
-      return repo.createTask(c);
+      return repo.create(name: 'Task $i');
     });
 
-    final results = await Future.wait(futures);
-    expect(results.where((r) => r > 0), hasLength(5));
+    await Future.wait(futures);
 
-    final list = await repo.getTasks.first;
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(5));
     expect(
-      list.map((t) => t.id),
-      containsAll(<String>['c-0', 'c-1', 'c-2', 'c-3', 'c-4']),
+      list.map((t) => t.name),
+      containsAll(<String>['Task 0', 'Task 1', 'Task 2', 'Task 3', 'Task 4']),
     );
   });
 }

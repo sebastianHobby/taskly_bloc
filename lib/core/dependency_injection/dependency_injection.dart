@@ -1,4 +1,5 @@
 // Todo setup get it / work out how to handle DI simply/effectively
+import 'package:flutter/foundation.dart';
 import 'package:drift/drift.dart';
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:get_it/get_it.dart';
@@ -7,6 +8,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
+import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
@@ -23,11 +28,15 @@ Future<void> setupDependencies() async {
 
   //Define here as a global.
   final supabase = Supabase.instance.client;
-  //Todo remove this login once auth is implemented
-  await supabase.auth.signInWithPassword(
-    email: Env.devUsername,
-    password: Env.devPassword,
-  );
+  if (kDebugMode &&
+      (supabase.auth.currentSession == null) &&
+      Env.devUsername.isNotEmpty &&
+      Env.devPassword.isNotEmpty) {
+    await supabase.auth.signInWithPassword(
+      email: Env.devUsername,
+      password: Env.devPassword,
+    );
+  }
 
   // db variable is set by the openDatabase function. Someday improve this
   // so it's not a global variable ...
@@ -39,16 +48,16 @@ Future<void> setupDependencies() async {
 
   getIt
     ..registerSingleton<AppDatabase>(appDatabase)
-    ..registerLazySingleton<ProjectRepository>(
+    ..registerLazySingleton<ProjectRepositoryContract>(
       () => ProjectRepository(driftDb: getIt<AppDatabase>()),
     )
-    ..registerLazySingleton<TaskRepository>(
+    ..registerLazySingleton<TaskRepositoryContract>(
       () => TaskRepository(driftDb: getIt<AppDatabase>()),
     )
-    ..registerLazySingleton<ValueRepository>(
+    ..registerLazySingleton<ValueRepositoryContract>(
       () => ValueRepository(driftDb: getIt<AppDatabase>()),
     )
-    ..registerLazySingleton<LabelRepository>(
+    ..registerLazySingleton<LabelRepositoryContract>(
       () => LabelRepository(driftDb: getIt<AppDatabase>()),
     );
 }

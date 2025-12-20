@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
 
 class ProjectForm extends StatelessWidget {
   const ProjectForm({
@@ -15,13 +15,12 @@ class ProjectForm extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
   final VoidCallback onSubmit;
   final String submitTooltip;
-  final ProjectTableData? initialData;
+  final Project? initialData;
 
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name.trim() ?? '',
-      'description': initialData?.description?.trim() ?? '',
       'completed': initialData?.completed ?? false,
     };
 
@@ -66,21 +65,6 @@ class ProjectForm extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
-                      name: 'description',
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: 'Description',
-                        border: InputBorder.none,
-                      ),
-                      minLines: 2,
-                      maxLines: 5,
-                      validator: FormBuilderValidators.maxLength(
-                        200,
-                        errorText: 'Description is too long',
-                        checkNullOrEmpty: false,
-                      ),
-                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -104,7 +88,7 @@ class ProjectForm extends StatelessWidget {
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: IconButton.filled(
+                child: IconButton(
                   icon: const Icon(Icons.check),
                   tooltip: submitTooltip,
                   onPressed: onSubmit,

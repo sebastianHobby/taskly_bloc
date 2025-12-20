@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
@@ -19,40 +18,22 @@ void main() {
   });
 
   test('create/get/update/delete label flow', () async {
-    final now = DateTime.now();
+    await repo.create(name: 'Test Label');
 
-    final createCompanion = LabelTableCompanion(
-      id: Value('l-test-1'),
-      name: Value('Test Label'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-    );
-
-    final rowId = await repo.createLabel(createCompanion);
-    expect(rowId, isNonZero);
-
-    final listAfterCreate = await repo.getLabels.first;
-    final fetched = listAfterCreate.singleWhere((l) => l.id == 'l-test-1');
+    final listAfterCreate = await repo.watchAll().first;
+    expect(listAfterCreate, hasLength(1));
+    final fetched = listAfterCreate.single;
     expect(fetched.name, 'Test Label');
 
-    final updateCompanion = LabelTableCompanion(
-      id: Value('l-test-1'),
-      name: const Value('Updated Label'),
-      updatedAt: Value(DateTime.now()),
-    );
+    await repo.update(id: fetched.id, name: 'Updated Label');
 
-    final updated = await repo.updateLabel(updateCompanion);
-    expect(updated, isTrue);
-
-    final listAfterUpdate = await repo.getLabels.first;
-    final after = listAfterUpdate.singleWhere((l) => l.id == 'l-test-1');
+    final listAfterUpdate = await repo.watchAll().first;
+    final after = listAfterUpdate.singleWhere((l) => l.id == fetched.id);
     expect(after.name, 'Updated Label');
 
-    final deleteCompanion = LabelTableCompanion(id: Value('l-test-1'));
-    final deleted = await repo.deleteLabel(deleteCompanion);
-    expect(deleted, greaterThanOrEqualTo(0));
+    await repo.delete(fetched.id);
 
-    final listAfterDelete = await repo.getLabels.first;
-    expect(listAfterDelete.where((l) => l.id == 'l-test-1'), isEmpty);
+    final listAfterDelete = await repo.watchAll().first;
+    expect(listAfterDelete.where((l) => l.id == fetched.id), isEmpty);
   });
 }

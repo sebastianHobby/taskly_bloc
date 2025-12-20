@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 
 // Events
 abstract class ValueOverviewEvent {}
@@ -16,7 +16,7 @@ class ValueOverviewLoading extends ValueOverviewState {}
 
 class ValueOverviewLoaded extends ValueOverviewState {
   ValueOverviewLoaded({required this.values});
-  final List<ValueTableData> values;
+  final List<ValueModel> values;
 }
 
 class ValueOverviewError extends ValueOverviewState {
@@ -25,21 +25,21 @@ class ValueOverviewError extends ValueOverviewState {
 }
 
 class ValueOverviewBloc extends Bloc<ValueOverviewEvent, ValueOverviewState> {
-  ValueOverviewBloc({required ValueRepository valueRepository})
+  ValueOverviewBloc({required ValueRepositoryContract valueRepository})
     : _valueRepository = valueRepository,
       super(ValueOverviewInitial()) {
     on<ValuesSubscriptionRequested>(_onSubscriptionRequested);
   }
 
-  final ValueRepository _valueRepository;
+  final ValueRepositoryContract _valueRepository;
 
   Future<void> _onSubscriptionRequested(
     ValuesSubscriptionRequested event,
     Emitter<ValueOverviewState> emit,
   ) async {
     emit(ValueOverviewLoading());
-    await emit.forEach<List<ValueTableData>>(
-      _valueRepository.getValues,
+    await emit.forEach<List<ValueModel>>(
+      _valueRepository.watchAll(),
       onData: (values) => ValueOverviewLoaded(values: values),
       onError: (error, stack) => ValueOverviewError(error.toString()),
     );

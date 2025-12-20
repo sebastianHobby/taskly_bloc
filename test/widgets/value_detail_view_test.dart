@@ -4,54 +4,81 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import '../helpers/test_db.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 
-class FakeValueRepository extends ValueRepository {
-  FakeValueRepository() : super(driftDb: createTestDb());
+class FakeValueRepository implements ValueRepositoryContract {
+  final _controller = StreamController<List<ValueModel>>.broadcast();
+  List<ValueModel> _last = [];
 
-  final _controller = StreamController<List<ValueTableData>>.broadcast();
-  List<ValueTableData> _last = [];
-
-  void pushValues(List<ValueTableData> values) {
+  void pushValues(List<ValueModel> values) {
     _last = values;
     _controller.add(values);
   }
 
   @override
-  Stream<List<ValueTableData>> get getValues => _controller.stream;
-
-  @override
-  Future<ValueTableData?> getValueById(String id) async {
-    try {
-      return _last.firstWhere((v) => v.id == id);
-    } catch (_) {
-      return null;
-    }
+  Stream<List<ValueModel>> watchAll({bool withRelated = false}) {
+    return _controller.stream;
   }
 
   @override
-  Future<int> createValue(ValueTableCompanion createCompanion) async {
-    return 1;
+  Future<List<ValueModel>> getAll({bool withRelated = false}) async {
+    return _last;
   }
 
   @override
-  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
-    return true;
+  Stream<ValueModel?> watch(String id, {bool withRelated = false}) {
+    return watchAll(withRelated: withRelated).map(
+      (values) => values.where((v) => v.id == id).firstOrNull,
+    );
   }
 
   @override
-  Future<int> deleteValue(ValueTableCompanion deleteCompanion) async {
-    return 1;
+  Future<ValueModel?> get(String id, {bool withRelated = false}) async {
+    return _last.where((v) => v.id == id).firstOrNull;
+  }
+
+  @override
+  Future<void> create({required String name}) async {
+    final now = DateTime.now();
+    final created = ValueModel(
+      id: 'fake-${_last.length + 1}',
+      createdAt: now,
+      updatedAt: now,
+      name: name,
+    );
+    pushValues([..._last, created]);
+  }
+
+  @override
+  Future<void> update({required String id, required String name}) async {
+    pushValues(
+      _last
+          .map(
+            (v) => v.id == id
+                ? ValueModel(
+                    id: v.id,
+                    createdAt: v.createdAt,
+                    updatedAt: DateTime.now(),
+                    name: name,
+                  )
+                : v,
+          )
+          .toList(),
+    );
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    pushValues(_last.where((v) => v.id != id).toList());
   }
 }
 
 void main() {
   testWidgets('value detail sheet shows initial data', (tester) async {
     final repo = FakeValueRepository();
-    final sample = ValueTableData(
+    final sample = ValueModel(
       id: 'v1',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),

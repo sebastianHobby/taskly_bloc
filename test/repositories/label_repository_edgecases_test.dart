@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
@@ -20,46 +19,34 @@ void main() {
   });
 
   test('getLabels stream is initially empty', () async {
-    final first = await repo.getLabels.first;
+    final first = await repo.watchAll().first;
     expect(first, isEmpty);
   });
 
   test('getLabelById returns null when missing', () async {
-    final res = await repo.getLabelById('nope');
+    final res = await repo.get('nope');
     expect(res, isNull);
   });
 
-  test('create duplicate id throws', () async {
-    final now = DateTime.now();
-    final companion = LabelTableCompanion(
-      id: Value('ldup-1'),
-      name: Value('Ldup'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-    );
+  test('creating twice creates two labels', () async {
+    await repo.create(name: 'A');
+    await repo.create(name: 'B');
 
-    final first = await repo.createLabel(companion);
-    expect(first, isNonZero);
-
-    await expectLater(repo.createLabel(companion), throwsA(isA<Object>()));
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(2));
+    expect(list.map((l) => l.name), containsAll(<String>['A', 'B']));
   });
 
   test('update non-existent throws', () async {
-    final update = LabelTableCompanion(
-      id: Value('nope-l'),
-      name: const Value('Nope'),
-      updatedAt: Value(DateTime.now()),
-    );
-
     await expectLater(
-      repo.updateLabel(update),
+      repo.update(id: 'nope-l', name: 'Nope'),
       throwsA(isA<RepositoryNotFoundException>()),
     );
   });
 
-  test('delete non-existent returns 0', () async {
-    final del = LabelTableCompanion(id: Value('nope-l'));
-    final res = await repo.deleteLabel(del);
-    expect(res, equals(0));
+  test('delete non-existent does not throw', () async {
+    await repo.delete('nope-l');
+    final list = await repo.watchAll().first;
+    expect(list, isEmpty);
   });
 }

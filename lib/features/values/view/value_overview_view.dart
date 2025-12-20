@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/features/values/widgets/values_list.dart';
@@ -8,12 +8,14 @@ import 'package:taskly_bloc/features/values/widgets/values_list.dart';
 class ValueOverviewPage extends StatelessWidget {
   const ValueOverviewPage({required this.valueRepository, super.key});
 
-  final ValueRepository valueRepository;
+  final ValueRepositoryContract valueRepository;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ValueOverviewBloc(valueRepository: valueRepository),
+      create: (_) =>
+          ValueOverviewBloc(valueRepository: valueRepository)
+            ..add(ValuesSubscriptionRequested()),
       child: ValueOverviewView(valueRepository: valueRepository),
     );
   }
@@ -22,7 +24,7 @@ class ValueOverviewPage extends StatelessWidget {
 class ValueOverviewView extends StatefulWidget {
   const ValueOverviewView({required this.valueRepository, super.key});
 
-  final ValueRepository valueRepository;
+  final ValueRepositoryContract valueRepository;
 
   @override
   State<ValueOverviewView> createState() => _ValueOverviewViewState();
@@ -48,7 +50,6 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
     return BlocBuilder<ValueOverviewBloc, ValueOverviewState>(
       builder: (context, state) {
         if (state is ValueOverviewInitial) {
-          context.read<ValueOverviewBloc>().add(ValuesSubscriptionRequested());
           return const Center(child: CircularProgressIndicator());
         }
 

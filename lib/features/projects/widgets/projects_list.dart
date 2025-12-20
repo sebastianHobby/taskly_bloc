@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -14,8 +14,8 @@ class ProjectsListView extends StatelessWidget {
     super.key,
   });
 
-  final List<ProjectTableData> projects;
-  final ProjectRepository projectRepository;
+  final List<Project> projects;
+  final ProjectRepositoryContract projectRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +27,7 @@ class ProjectsListView extends StatelessWidget {
           project: project,
           onCheckboxChanged: (project, _) {
             context.read<ProjectOverviewBloc>().add(
-              ProjectOverviewEvent.toggleProjectCompletion(
-                projectData: project,
-              ),
+              ProjectOverviewEvent.toggleProjectCompletion(project: project),
             );
           },
           onTap: (project) async {

@@ -1,13 +1,12 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
-
 part 'drift_database.g.dart';
 
 class ProjectTable extends Table {
   @override
   String get tableName => 'projects';
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get name => text().withLength(min: 1, max: 120).named('name')();
+  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get description => text().nullable().named('description')();
   BoolColumn get completed =>
       boolean().clientDefault(() => false).named('completed')();
@@ -15,7 +14,6 @@ class ProjectTable extends Table {
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -30,7 +28,7 @@ class TaskTable extends Table {
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get name => text().withLength(min: 1, max: 120).named('name')();
+  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   BoolColumn get completed =>
       boolean().clientDefault(() => false).named('completed')();
   DateTimeColumn get startDate => dateTime().nullable().named('start_date')();
@@ -39,9 +37,8 @@ class TaskTable extends Table {
   TextColumn get description => text().nullable().named('description')();
   TextColumn get projectId =>
       text().nullable().named('project_id').references(ProjectTable, #id)();
-  TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get repeatIcalRrule =>
-      text().nullable().named('repeat_ical_rrule')();
+      text().clientDefault(() => '').nullable().named('repeat_ical_rrule')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -51,12 +48,11 @@ class ValueTable extends Table {
   @override
   String get tableName => 'values';
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get name => text().withLength(min: 1, max: 120).named('name')();
+  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -69,9 +65,10 @@ class ProjectValuesLinkTable extends Table {
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get projectId =>
       text().nullable().named('project_id').references(ProjectTable, #id)();
-  TextColumn get valueId =>
-      text().named('value_id').references(ValueTable, #id)();
-  TextColumn get userId => text().nullable().named('user_id')();
+  TextColumn get valueId => text()
+      .clientDefault(uuid.v4)
+      .named('value_id')
+      .references(ValueTable, #id)();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -82,14 +79,13 @@ class LabelTable extends Table {
   String get tableName => 'labels';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get name => text().withLength(min: 1, max: 120).named('name')();
+  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get color =>
       text().withDefault(const Constant('#ffffff')).named('color')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -108,7 +104,6 @@ class ProjectLabelsTable extends Table {
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -126,7 +121,23 @@ class TaskLabelsTable extends Table {
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+class TaskValuesTable extends Table {
+  @override
+  String get tableName => 'task_values';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get taskId => text().named('task_id').references(TaskTable, #id)();
+  TextColumn get valueId =>
+      text().named('value_id').references(ValueTable, #id)();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -140,6 +151,7 @@ class TaskLabelsTable extends Table {
     ProjectValuesLinkTable,
     LabelTable,
     ProjectLabelsTable,
+    TaskValuesTable,
     TaskLabelsTable,
   ],
 )

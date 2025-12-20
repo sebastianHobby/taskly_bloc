@@ -1,29 +1,25 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 
-class MockProjectRepository extends Mock implements ProjectRepository {}
+class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 void main() {
   late MockProjectRepository mockRepository;
-  late ProjectTableData sampleProject;
-
-  setUpAll(() {
-    registerFallbackValue(ProjectTableCompanion(id: const Value('f')));
-  });
+  late Project sampleProject;
 
   setUp(() {
     mockRepository = MockProjectRepository();
-    sampleProject = ProjectTableData(
+    final now = DateTime.now();
+    sampleProject = Project(
       id: 'p1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Project 1',
       completed: false,
     );
@@ -33,14 +29,15 @@ void main() {
     'emits loading then loaded when subscriptionRequested and repository provides projects',
     setUp: () {
       when(
-        () => mockRepository.getProjects,
+        () => mockRepository.watchAll(),
       ).thenAnswer((_) => Stream.value([sampleProject]));
     },
     build: () => ProjectOverviewBloc(projectRepository: mockRepository),
-    act: (bloc) => bloc.add(ProjectOverviewSubscriptionRequested()),
-    expect: () => <ProjectOverviewState>[
-      const ProjectOverviewState.loading(),
-      ProjectOverviewState.loaded(projects: [sampleProject]),
+    act: (bloc) =>
+        bloc.add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
+    expect: () => <Object>[
+      isA<ProjectOverviewLoading>(),
+      isA<ProjectOverviewLoaded>(),
     ],
   );
 
@@ -48,16 +45,28 @@ void main() {
     'toggleProjectCompletion calls repository.updateProject',
     setUp: () {
       when(
-        () => mockRepository.updateProject(any()),
-      ).thenAnswer((_) async => true);
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
+      ).thenAnswer((_) async {});
     },
     build: () => ProjectOverviewBloc(projectRepository: mockRepository),
     act: (bloc) => bloc.add(
-      ProjectOverviewEvent.toggleProjectCompletion(projectData: sampleProject),
+      ProjectOverviewEvent.toggleProjectCompletion(
+        project: sampleProject,
+      ),
     ),
     expect: () => <ProjectOverviewState>[],
     verify: (_) async {
-      verify(() => mockRepository.updateProject(any())).called(1);
+      verify(
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
+      ).called(1);
     },
   );
 }

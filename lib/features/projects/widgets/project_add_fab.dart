@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 
@@ -9,7 +9,7 @@ class AddProjectFab extends StatelessWidget {
     super.key,
   });
 
-  final ProjectRepository projectRepository;
+  final ProjectRepositoryContract projectRepository;
 
   @override
   Widget build(BuildContext fabContext) {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/features/values/widgets/value_form.dart';
 
@@ -14,7 +14,7 @@ class ValueDetailSheetPage extends StatelessWidget {
     super.key,
   });
 
-  final ValueRepository valueRepository;
+  final ValueRepositoryContract valueRepository;
   final String? valueId;
   final void Function(String message) onSuccess;
   final void Function(String message) onError;

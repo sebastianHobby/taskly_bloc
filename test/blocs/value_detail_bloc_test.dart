@@ -1,27 +1,23 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:drift/drift.dart' show Value;
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
 
-class MockValueRepository extends Mock implements ValueRepository {}
+class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
 void main() {
   late MockValueRepository mockRepository;
-  late ValueTableData sampleValue;
-
-  setUpAll(() {
-    registerFallbackValue(ValueTableCompanion(id: const Value('f')));
-  });
+  late ValueModel sampleValue;
 
   setUp(() {
     mockRepository = MockValueRepository();
-    sampleValue = ValueTableData(
+    final now = DateTime.now();
+    sampleValue = ValueModel(
       id: 'v1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Value 1',
     );
   });
@@ -30,7 +26,7 @@ void main() {
     'get emits loadInProgress then loadSuccess when repository returns a value',
     setUp: () {
       when(
-        () => mockRepository.getValueById('v1'),
+        () => mockRepository.get('v1'),
       ).thenAnswer((_) async => sampleValue);
     },
     build: () =>
@@ -44,9 +40,7 @@ void main() {
   blocTest<ValueDetailBloc, ValueDetailState>(
     'get emits operationFailure when repository returns null',
     setUp: () {
-      when(
-        () => mockRepository.getValueById('v1'),
-      ).thenAnswer((_) async => null);
+      when(() => mockRepository.get('v1')).thenAnswer((_) async => null);
     },
     build: () =>
         ValueDetailBloc(valueRepository: mockRepository, valueId: 'v1'),
@@ -60,7 +54,7 @@ void main() {
     'get emits operationFailure when repository throws',
     setUp: () {
       when(
-        () => mockRepository.getValueById('v1'),
+        () => mockRepository.get('v1'),
       ).thenAnswer((_) async => throw Exception('boom'));
     },
     build: () =>
@@ -74,7 +68,9 @@ void main() {
   blocTest<ValueDetailBloc, ValueDetailState>(
     'create emits operationSuccess on successful create',
     setUp: () {
-      when(() => mockRepository.createValue(any())).thenAnswer((_) async => 1);
+      when(
+        () => mockRepository.create(name: any(named: 'name')),
+      ).thenAnswer((_) async {});
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
     act: (bloc) => bloc.add(const ValueDetailEvent.create(name: 'New')),
@@ -89,7 +85,7 @@ void main() {
     'create emits operationFailure when create throws',
     setUp: () {
       when(
-        () => mockRepository.createValue(any()),
+        () => mockRepository.create(name: any(named: 'name')),
       ).thenAnswer((_) async => throw Exception('fail'));
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
@@ -101,8 +97,11 @@ void main() {
     'update emits operationSuccess on successful update',
     setUp: () {
       when(
-        () => mockRepository.updateValue(any()),
-      ).thenAnswer((_) async => true);
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+        ),
+      ).thenAnswer((_) async {});
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
     act: (bloc) =>
@@ -118,7 +117,10 @@ void main() {
     'update emits operationFailure when update throws',
     setUp: () {
       when(
-        () => mockRepository.updateValue(any()),
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+        ),
       ).thenAnswer((_) async => throw Exception('bad'));
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
@@ -130,7 +132,7 @@ void main() {
   blocTest<ValueDetailBloc, ValueDetailState>(
     'delete emits operationSuccess on successful delete',
     setUp: () {
-      when(() => mockRepository.deleteValue(any())).thenAnswer((_) async => 1);
+      when(() => mockRepository.delete(any())).thenAnswer((_) async {});
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),
     act: (bloc) => bloc.add(const ValueDetailEvent.delete(id: 'v1')),
@@ -145,7 +147,7 @@ void main() {
     'delete emits operationFailure when delete throws',
     setUp: () {
       when(
-        () => mockRepository.deleteValue(any()),
+        () => mockRepository.delete(any()),
       ).thenAnswer((_) async => throw Exception('oh no'));
     },
     build: () => ValueDetailBloc(valueRepository: mockRepository),

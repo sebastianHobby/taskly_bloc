@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
 
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-
-/// A single list tile representing a TaskTableData.
+/// A single list tile representing a task.
 class TaskListTile extends StatelessWidget {
   const TaskListTile({
     required this.task,
@@ -11,33 +10,25 @@ class TaskListTile extends StatelessWidget {
     super.key,
   });
 
-  final TaskTableData task;
-  final void Function(TaskTableData, bool?) onCheckboxChanged;
-  final void Function(TaskTableData) onTap;
+  final Task task;
+  final void Function(Task, bool?) onCheckboxChanged;
+  final void Function(Task) onTap;
 
   @override
   Widget build(BuildContext context) {
+    final description = task.description;
+    final hasDescription = description != null && description.isNotEmpty;
+
     return ListTile(
-      onTap: () => onTap(task),
-      title: Text(
-        task.name,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      subtitle: (task.description == null || task.description!.isEmpty)
-          ? null
-          : Text(
-              task.description!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+      key: Key('task-${task.id}'),
       leading: Checkbox(
-        shape: const ContinuousRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(8)),
-        ),
         value: task.completed,
         onChanged: (value) => onCheckboxChanged(task, value),
       ),
+      title: Text(task.name),
+      subtitle: hasDescription ? Text(description) : null,
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => onTap(task),
     );
   }
 }

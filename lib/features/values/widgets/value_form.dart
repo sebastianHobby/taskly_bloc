@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
 
 class ValueForm extends StatelessWidget {
   const ValueForm({
@@ -15,7 +15,7 @@ class ValueForm extends StatelessWidget {
   final GlobalKey<FormBuilderState> formKey;
   final VoidCallback onSubmit;
   final String submitTooltip;
-  final ValueTableData? initialData;
+  final ValueModel? initialData;
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
@@ -18,22 +17,13 @@ void main() {
     await db.close();
   });
 
-  test('getProjectById returns the inserted project', () async {
-    final now = DateTime.now();
-    final companion = ProjectTableCompanion(
-      id: Value('pg1'),
-      name: Value('GBY Project'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-      completed: const Value(false),
-    );
+  test('get returns the created project', () async {
+    await repo.create(name: 'GBY Project');
+    final created = (await repo.watchAll().first).single;
 
-    final rowId = await repo.createProject(companion);
-    expect(rowId, isNonZero);
-
-    final fetched = await repo.getProjectById('pg1');
+    final fetched = await repo.get(created.id);
     expect(fetched, isNotNull);
-    expect(fetched!.id, 'pg1');
+    expect(fetched!.id, created.id);
     expect(fetched.name, 'GBY Project');
   });
 }

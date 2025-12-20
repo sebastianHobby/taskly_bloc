@@ -1,0 +1,12 @@
+import 'package:taskly_bloc/core/domain/domain.dart';
+
+abstract class LabelRepositoryContract {
+  Stream<List<Label>> watchAll({bool withRelated = false});
+  Future<List<Label>> getAll({bool withRelated = false});
+  Stream<Label?> watch(String id, {bool withRelated = false});
+  Future<Label?> get(String id, {bool withRelated = false});
+
+  Future<void> create({required String name});
+  Future<void> update({required String id, required String name});
+  Future<void> delete(String id);
+}

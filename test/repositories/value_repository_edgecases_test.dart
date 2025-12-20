@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
@@ -19,47 +18,35 @@ void main() {
     await db.close();
   });
 
-  test('getValues stream is initially empty', () async {
-    final first = await repo.getValues.first;
+  test('watchAll stream is initially empty', () async {
+    final first = await repo.watchAll().first;
     expect(first, isEmpty);
   });
 
-  test('getValueById returns null when missing', () async {
-    final res = await repo.getValueById('nope');
+  test('get returns null when missing', () async {
+    final res = await repo.get('nope');
     expect(res, isNull);
   });
 
-  test('create duplicate id throws', () async {
-    final now = DateTime.now();
-    final companion = ValueTableCompanion(
-      id: Value('vdup-1'),
-      name: Value('Vdup'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-    );
+  test('creating twice creates two values', () async {
+    await repo.create(name: 'A');
+    await repo.create(name: 'B');
 
-    final first = await repo.createValue(companion);
-    expect(first, isNonZero);
-
-    await expectLater(repo.createValue(companion), throwsA(isA<Object>()));
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(2));
+    expect(list.map((v) => v.name), containsAll(<String>['A', 'B']));
   });
 
   test('update non-existent throws', () async {
-    final update = ValueTableCompanion(
-      id: Value('nope-v'),
-      name: const Value('Nope'),
-      updatedAt: Value(DateTime.now()),
-    );
-
     await expectLater(
-      repo.updateValue(update),
+      repo.update(id: 'nope-v', name: 'Nope'),
       throwsA(isA<RepositoryNotFoundException>()),
     );
   });
 
-  test('delete non-existent returns 0', () async {
-    final del = ValueTableCompanion(id: Value('nope-v'));
-    final res = await repo.deleteValue(del);
-    expect(res, equals(0));
+  test('delete non-existent does not throw', () async {
+    await repo.delete('nope-v');
+    final list = await repo.watchAll().first;
+    expect(list, isEmpty);
   });
 }

@@ -2,133 +2,160 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
-class TaskDetailSheetPage extends StatelessWidget {
-  const TaskDetailSheetPage({
-    required this.taskRepository,
+class TaskDetailSheet extends StatefulWidget {
+  const TaskDetailSheet({
     this.taskId,
-    this.onSuccess,
-    this.onError,
-    super.key,
-  });
-
-  final TaskRepository taskRepository;
-  final String? taskId;
-  final void Function(String message)? onSuccess;
-  final void Function(String message)? onError;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocProvider(
-        create: (context) {
-          final bloc = TaskDetailBloc(taskRepository: taskRepository);
-          if (taskId != null) bloc.add(TaskDetailEvent.get(taskId: taskId!));
-          return bloc;
-        },
-        lazy: false,
-        child: TaskDetailSheetView(
-          taskId: taskId,
-          onSuccess: onSuccess,
-          onError: onError,
-        ),
-      ),
-    );
-  }
-}
-
-class TaskDetailSheetView extends StatefulWidget {
-  const TaskDetailSheetView({
-    this.taskId,
-    this.onSuccess,
-    this.onError,
     super.key,
   });
 
   final String? taskId;
-  final void Function(String message)? onSuccess;
-  final void Function(String message)? onError;
 
   @override
-  State<TaskDetailSheetView> createState() => _TaskDetailSheetViewState();
+  State<TaskDetailSheet> createState() => _TaskDetailSheetState();
 }
 
-class _TaskDetailSheetViewState extends State<TaskDetailSheetView> {
+class _TaskDetailSheetState extends State<TaskDetailSheet> {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
-  void _onSubmit(String? id) {
-    final formState = _formKey.currentState;
-    if (formState == null) return;
-    if (formState.saveAndValidate()) {
-      final formValues = formState.value;
-      if (id == null) {
-        // Create new data
-        context.read<TaskDetailBloc>().add(
-          TaskDetailEvent.create(
-            name: formState.value['name'] as String,
-            description: formState.value['description'] as String,
-          ),
-        );
-      } else {
-        // Update existing data
-        context.read<TaskDetailBloc>().add(
-          TaskDetailEvent.update(
-            id: id,
-            name: formValues['name'] as String,
-            description: formValues['description'] as String,
-            completed: formValues['completed'] as bool,
-          ),
-        );
-      }
+  @override
+  void initState() {
+    super.initState();
+    final bloc = context.read<TaskDetailBloc>();
+
+    if (widget.taskId != null && widget.taskId!.isNotEmpty) {
+      bloc.add(TaskDetailEvent.get(taskId: widget.taskId!));
+    } else {
+      bloc.add(const TaskDetailEvent.loadInitialData());
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<TaskDetailBloc, TaskDetailState>(
-      listenWhen: (previous, current) {
-        return current is TaskDetailOperationSuccess ||
-            current is TaskDetailOperationFailure;
-      },
+      listenWhen: (previous, current) =>
+          current is TaskDetailOperationSuccess ||
+          current is TaskDetailOperationFailure,
       listener: (context, state) {
-        switch (state) {
-          case TaskDetailOperationSuccess(:final message):
-            widget.onSuccess?.call(message);
-          case TaskDetailOperationFailure(:final errorDetails):
-            widget.onError?.call(errorDetails.message);
-          default:
-            return;
-        }
+        state.maybeWhen(
+          operationSuccess: (message) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
+            Navigator.of(context).maybePop();
+          },
+          operationFailure: (errorDetails) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(errorDetails.message)),
+            );
+          },
+          orElse: () {},
+        );
       },
-      buildWhen: (previous, current) {
-        return current is TaskDetailInitial ||
-            current is TaskDetailLoadInProgress ||
-            current is TaskDetailLoadSuccess;
-      },
+      buildWhen: (previous, current) =>
+          current is TaskDetailInitial ||
+          current is TaskDetailLoadInProgress ||
+          current is TaskDetailInitialDataLoadSuccess ||
+          current is TaskDetailLoadSuccess,
       builder: (context, state) {
-        switch (state) {
-          case TaskDetailInitial():
-            return TaskForm(
-              formKey: _formKey,
-              onSubmit: () => _onSubmit(widget.taskId),
-              submitTooltip: 'Create',
-            );
-          case TaskDetailLoadInProgress():
-            return const Center(child: CircularProgressIndicator());
-          case TaskDetailLoadSuccess(:final task):
-            return TaskForm(
-              initialData: task,
-              formKey: _formKey,
-              onSubmit: () => _onSubmit(task.id),
-              submitTooltip: 'Update',
-            );
-          default:
-            return const SizedBox.shrink();
-        }
+        return state.when(
+          initial: () => const Center(child: CircularProgressIndicator()),
+          loadInProgress: () =>
+              const Center(child: CircularProgressIndicator()),
+          initialDataLoadSuccess:
+              (availableProjects, availableValues, availableLabels) => TaskForm(
+                formKey: _formKey,
+                onSubmit: () {
+                  final formState = _formKey.currentState;
+                  if (formState == null) return;
+                  if (!formState.saveAndValidate()) return;
+                  final formValues = formState.value;
+                  final name = formValues['name'] as String;
+                  final description = formValues['description'] as String?;
+                  final projectId = formValues['projectId'] as String?;
+                  final valueIds =
+                      (formValues['valueIds'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      <String>[];
+                  final labelIds =
+                      (formValues['labelIds'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      <String>[];
+
+                  final selectedValues = availableValues
+                      .where((v) => valueIds.contains(v.id))
+                      .toList();
+                  final selectedLabels = availableLabels
+                      .where((l) => labelIds.contains(l.id))
+                      .toList();
+
+                  context.read<TaskDetailBloc>().add(
+                    TaskDetailEvent.create(
+                      name: name,
+                      description: description,
+                      projectId: projectId,
+                      values: selectedValues,
+                      labels: selectedLabels,
+                    ),
+                  );
+                },
+                submitTooltip: 'Create',
+                availableProjects: availableProjects,
+                availableValues: availableValues,
+                availableLabels: availableLabels,
+              ),
+          loadSuccess:
+              (availableProjects, availableValues, availableLabels, task) =>
+                  TaskForm(
+                    initialData: task,
+                    formKey: _formKey,
+                    onSubmit: () {
+                      final formState = _formKey.currentState;
+                      if (formState == null) return;
+                      if (!formState.saveAndValidate()) return;
+                      final formValues = formState.value;
+                      final name = formValues['name'] as String;
+                      final description = formValues['description'] as String?;
+                      final projectId = formValues['projectId'] as String?;
+                      final valueIds =
+                          (formValues['valueIds'] as List<dynamic>?)
+                              ?.cast<String>() ??
+                          <String>[];
+                      final labelIds =
+                          (formValues['labelIds'] as List<dynamic>?)
+                              ?.cast<String>() ??
+                          <String>[];
+
+                      final selectedValues = availableValues
+                          .where((v) => valueIds.contains(v.id))
+                          .toList();
+                      final selectedLabels = availableLabels
+                          .where((l) => labelIds.contains(l.id))
+                          .toList();
+
+                      context.read<TaskDetailBloc>().add(
+                        TaskDetailEvent.update(
+                          id: task.id,
+                          name: name,
+                          description: description,
+                          completed: formValues['completed'] as bool? ?? false,
+                          projectId: projectId,
+                          values: selectedValues,
+                          labels: selectedLabels,
+                        ),
+                      );
+                    },
+                    submitTooltip: 'Update',
+                    availableProjects: availableProjects,
+                    availableValues: availableValues,
+                    availableLabels: availableLabels,
+                  ),
+          operationSuccess: (_) => const SizedBox.shrink(),
+          operationFailure: (_) => const SizedBox.shrink(),
+        );
       },
     );
   }

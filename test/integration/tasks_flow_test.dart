@@ -3,113 +3,124 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
 // removed unused direct import; test uses createTestDb from helpers
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
+import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 import '../helpers/test_db.dart';
 
 // Minimal in-test fake repository to avoid external test helper dependency.
-class FakeTaskRepository extends TaskRepository {
-  FakeTaskRepository() : super(driftDb: createTestDb());
+class FakeTaskRepository implements TaskRepositoryContract {
+  FakeTaskRepository();
 
-  final _controller = StreamController<List<TaskTableData>>.broadcast();
+  final _controller = StreamController<List<Task>>.broadcast();
   Completer<void>? updateCalled;
-  List<TaskTableData> _last = [];
+  List<Task> _last = [];
 
-  void pushTasks(List<TaskTableData> tasks) {
+  void pushTasks(List<Task> tasks) {
     _last = tasks;
     _controller.add(tasks);
   }
 
   @override
-  Stream<List<TaskTableData>> get getTasks => _controller.stream;
+  Stream<List<Task>> watchAll({bool withRelated = false}) => _controller.stream;
 
   @override
+  Future<List<Task>> getAll({bool withRelated = false}) async => _last;
+
   @override
-  Future<TaskTableData?> getTaskById(String id) async {
+  Stream<Task?> watch(String id, {bool withRelated = false}) =>
+      _controller.stream.map((rows) {
+        try {
+          return rows.firstWhere((r) => r.id == id);
+        } catch (_) {
+          return null;
+        }
+      });
+
+  @override
+  Future<Task?> get(String id, {bool withRelated = false}) async {
     try {
-      return _last.firstWhere((t) => t.id == id);
+      return _last.firstWhere((r) => r.id == id);
     } catch (_) {
       return null;
     }
   }
 
   @override
-  Future<bool> updateTask(TaskTableCompanion updateCompanion) async {
-    // apply update to in-memory list if id present
-    try {
-      final id = updateCompanion.id.value as String?;
-      if (id != null) {
-        final idx = _last.indexWhere((t) => t.id == id);
-        if (idx != -1) {
-          final old = _last[idx];
-          final updated = TaskTableData(
-            id: id,
-            createdAt: old.createdAt,
-            updatedAt: updateCompanion.updatedAt.present
-                ? updateCompanion.updatedAt.value
-                : DateTime.now(),
-            name: updateCompanion.name.present
-                ? updateCompanion.name.value
-                : old.name,
-            completed: updateCompanion.completed.present
-                ? updateCompanion.completed.value
-                : old.completed,
-            startDate: old.startDate,
-            deadlineDate: old.deadlineDate,
-            description: updateCompanion.description.present
-                ? updateCompanion.description.value
-                : old.description,
-            projectId: old.projectId,
-            userId: old.userId,
-            repeatIcalRrule: old.repeatIcalRrule,
-          );
-          _last[idx] = updated;
-          _controller.add(_last);
-        }
-      }
-    } catch (_) {}
+  Future<void> update({
+    required String id,
+    required String name,
+    required bool completed,
+    String? description,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    String? repeatIcalRrule,
+    List<String>? valueIds,
+    List<String>? labelIds,
+  }) async {
+    final idx = _last.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    _last[idx] = Task(
+      id: old.id,
+      createdAt: old.createdAt,
+      updatedAt: DateTime.now(),
+      name: name,
+      completed: completed,
+      description: description,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      repeatIcalRrule: repeatIcalRrule,
+      values: old.values,
+      labels: old.labels,
+    );
+    _controller.add(_last);
     updateCalled?.complete();
-    return true;
   }
 
   @override
-  Future<int> createTask(TaskTableCompanion createCompanion) async {
-    final id = createCompanion.id.present
-        ? createCompanion.id.value
-        : 'gen-${DateTime.now().millisecondsSinceEpoch}';
-    final now = createCompanion.createdAt.present
-        ? createCompanion.createdAt.value
-        : DateTime.now();
-    final newTask = TaskTableData(
+  Future<void> create({
+    required String name,
+    String? description,
+    bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? projectId,
+    String? repeatIcalRrule,
+    List<String>? valueIds,
+    List<String>? labelIds,
+  }) async {
+    final now = DateTime.now();
+    final id = 'gen-${now.microsecondsSinceEpoch}';
+    final newTask = Task(
       id: id,
       createdAt: now,
-      updatedAt: createCompanion.updatedAt.present
-          ? createCompanion.updatedAt.value
-          : now,
-      name: createCompanion.name.present ? createCompanion.name.value : '',
-      completed:
-          createCompanion.completed.present && createCompanion.completed.value,
+      updatedAt: now,
+      name: name,
+      completed: completed,
+      description: description,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      repeatIcalRrule: repeatIcalRrule,
     );
     _last = [..._last, newTask];
     _controller.add(_last);
-    return 1;
   }
 
   @override
-  Future<int> deleteTask(TaskTableCompanion deleteCompanion) async {
-    try {
-      final id = deleteCompanion.id.value as String?;
-      if (id != null) {
-        _last.removeWhere((t) => t.id == id);
-        _controller.add(_last);
-        return 1;
-      }
-    } catch (_) {}
-    return 0;
+  Future<void> delete(String id) async {
+    _last = _last.where((t) => t.id != id).toList();
+    _controller.add(_last);
   }
 }
 
@@ -119,16 +130,29 @@ void main() {
   ) async {
     final repo = FakeTaskRepository();
 
-    final sample = TaskTableData(
+    final now = DateTime.now();
+    final sample = Task(
       id: 't-int-1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Integration Task',
       completed: false,
     );
 
+    final db = createTestDb();
+    final projectRepo = ProjectRepository(driftDb: db);
+    final valueRepo = ValueRepository(driftDb: db);
+    final labelRepo = LabelRepository(driftDb: db);
+
     await tester.pumpWidget(
-      MaterialApp(home: TaskOverviewPage(taskRepository: repo)),
+      MaterialApp(
+        home: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          valueRepository: valueRepo,
+          labelRepository: labelRepo,
+        ),
+      ),
     );
     // push tasks after widget builds so the bloc subscription receives the value
     // from the broadcast stream.
@@ -137,7 +161,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     // Task is displayed
-    expect(find.text('Integration Task'), findsOneWidget);
+    expect(find.byKey(const Key('task-t-int-1')), findsOneWidget);
 
     // Toggle completion via the checkbox (should call repository.updateTask)
     repo.updateCalled = Completer<void>();
@@ -148,7 +172,7 @@ void main() {
     expect(repo.updateCalled!.isCompleted, isTrue);
 
     // Open detail sheet by tapping the task tile
-    await tester.tap(find.text('Integration Task'));
+    await tester.tap(find.byKey(const Key('task-t-int-1')));
     await tester.pumpAndSettle();
     expect(find.byType(TaskForm), findsOneWidget);
 
@@ -165,8 +189,20 @@ void main() {
 
   testWidgets('create task via UI updates list', (tester) async {
     final repo = FakeTaskRepository();
+    final db = createTestDb();
+    final projectRepo = ProjectRepository(driftDb: db);
+    final valueRepo = ValueRepository(driftDb: db);
+    final labelRepo = LabelRepository(driftDb: db);
+
     await tester.pumpWidget(
-      MaterialApp(home: TaskOverviewPage(taskRepository: repo)),
+      MaterialApp(
+        home: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          valueRepository: valueRepo,
+          labelRepository: labelRepo,
+        ),
+      ),
     );
     await tester.pump();
 
@@ -200,15 +236,27 @@ void main() {
       name: 'To Update',
       completed: false,
     );
+    final db = createTestDb();
+    final projectRepo = ProjectRepository(driftDb: db);
+    final valueRepo = ValueRepository(driftDb: db);
+    final labelRepo = LabelRepository(driftDb: db);
+
     await tester.pumpWidget(
-      MaterialApp(home: TaskOverviewPage(taskRepository: repo)),
+      MaterialApp(
+        home: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          valueRepository: valueRepo,
+          labelRepository: labelRepo,
+        ),
+      ),
     );
     await tester.pump();
     repo.pushTasks([sample]);
     await tester.pump();
 
     // Open detail sheet
-    await tester.tap(find.text('To Update'));
+    await tester.tap(find.byKey(const Key('task-t-update-1')));
     await tester.pumpAndSettle();
 
     // Change name and press update
@@ -218,11 +266,9 @@ void main() {
     );
     await tester.enterText(textFields2.at(0), 'Updated UI');
     await tester.tap(find.byTooltip('Update'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pumpAndSettle();
 
     // Verify list updated
-    await tester.pump();
     expect(find.text('Updated UI'), findsOneWidget);
   });
 }

@@ -1,44 +1,39 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 
-class MockTaskRepository extends Mock implements TaskRepository {}
+class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
-class MockProjectRepository extends Mock implements ProjectRepository {}
+class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
 void main() {
   late MockTaskRepository mockTaskRepo;
   late MockProjectRepository mockProjectRepo;
-  late TaskTableData sampleTask;
-  late ProjectTableData sampleProject;
-
-  setUpAll(() {
-    registerFallbackValue(TaskTableCompanion(id: const Value('f')));
-    registerFallbackValue(ProjectTableCompanion(id: const Value('f')));
-  });
+  late Task sampleTask;
+  late Project sampleProject;
 
   setUp(() {
     mockTaskRepo = MockTaskRepository();
     mockProjectRepo = MockProjectRepository();
 
-    sampleTask = TaskTableData(
+    final now = DateTime.now();
+    sampleTask = Task(
       id: 't1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Task 1',
       completed: false,
     );
 
-    sampleProject = ProjectTableData(
+    sampleProject = Project(
       id: 'p1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Project 1',
       completed: false,
     );
@@ -48,15 +43,38 @@ void main() {
     'toggleTaskCompletion emits error when updateTask throws',
     setUp: () {
       when(
-        () => mockTaskRepo.updateTask(any()),
+        () => mockTaskRepo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+          description: any(named: 'description'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          projectId: any(named: 'projectId'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          valueIds: any(named: 'valueIds'),
+          labelIds: any(named: 'labelIds'),
+        ),
       ).thenAnswer((_) async => throw Exception('update fail'));
     },
     build: () => TaskOverviewBloc(taskRepository: mockTaskRepo),
-    act: (bloc) =>
-        bloc.add(TaskOverviewEvent.toggleTaskCompletion(taskData: sampleTask)),
+    act: (bloc) => bloc.add(
+      TaskOverviewEvent.toggleTaskCompletion(task: sampleTask),
+    ),
     expect: () => <dynamic>[isA<TaskOverviewError>()],
     verify: (_) async {
-      verify(() => mockTaskRepo.updateTask(any())).called(1);
+      verify(
+        () => mockTaskRepo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+          description: any(named: 'description'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          projectId: any(named: 'projectId'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        ),
+      ).called(1);
     },
   );
 
@@ -64,16 +82,28 @@ void main() {
     'toggleProjectCompletion emits error when updateProject throws',
     setUp: () {
       when(
-        () => mockProjectRepo.updateProject(any()),
+        () => mockProjectRepo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
       ).thenAnswer((_) async => throw Exception('update fail'));
     },
     build: () => ProjectOverviewBloc(projectRepository: mockProjectRepo),
     act: (bloc) => bloc.add(
-      ProjectOverviewEvent.toggleProjectCompletion(projectData: sampleProject),
+      ProjectOverviewEvent.toggleProjectCompletion(
+        project: sampleProject,
+      ),
     ),
     expect: () => <dynamic>[isA<ProjectOverviewError>()],
     verify: (_) async {
-      verify(() => mockProjectRepo.updateProject(any())).called(1);
+      verify(
+        () => mockProjectRepo.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+        ),
+      ).called(1);
     },
   );
 }

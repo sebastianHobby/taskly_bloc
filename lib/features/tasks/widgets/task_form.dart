@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
 
 class TaskForm extends StatelessWidget {
   const TaskForm({
@@ -9,13 +9,19 @@ class TaskForm extends StatelessWidget {
     required this.onSubmit,
     required this.submitTooltip,
     this.initialData,
+    this.availableProjects = const [],
+    this.availableValues = const [],
+    this.availableLabels = const [],
     super.key,
   });
 
   final GlobalKey<FormBuilderState> formKey;
-  final TaskTableData? initialData;
+  final Task? initialData;
   final VoidCallback onSubmit;
   final String submitTooltip;
+  final List<Project> availableProjects;
+  final List<ValueModel> availableValues;
+  final List<Label> availableLabels;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +32,12 @@ class TaskForm extends StatelessWidget {
       'startDate': initialData?.startDate,
       'deadlineDate': initialData?.deadlineDate,
       'projectId': initialData?.projectId ?? '',
+      'valueIds': (initialData?.values ?? <ValueModel>[])
+          .map((ValueModel e) => e.id)
+          .toList(),
+      'labelIds': (initialData?.labels ?? <Label>[])
+          .map((Label e) => e.id)
+          .toList(),
       'repeatIcalRrule': initialData?.repeatIcalRrule ?? '',
     };
 
@@ -34,6 +46,7 @@ class TaskForm extends StatelessWidget {
       children: [
         Flexible(
           child: SingleChildScrollView(
+            key: const Key('task-form-scroll'),
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: FormBuilder(
               key: formKey,
@@ -131,19 +144,69 @@ class TaskForm extends StatelessWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
+                    child: FormBuilderDropdown<String>(
                       name: 'projectId',
-                      textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
-                        hintText: 'Project ID (optional)',
+                        hintText: 'Project (optional)',
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.work_outline),
                       ),
-                      validator: FormBuilderValidators.maxLength(
-                        120,
-                        errorText: 'Project ID is too long',
-                        checkNullOrEmpty: false,
+                      initialValue: initialData?.projectId,
+                      items: [
+                        const DropdownMenuItem(
+                          value: '',
+                          child: SizedBox.shrink(),
+                        ),
+                        for (final project in availableProjects)
+                          DropdownMenuItem(
+                            value: project.id,
+                            child: Text(project.name),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: FormBuilderFilterChips<String>(
+                      name: 'valueIds',
+                      initialValue: initialValues['valueIds'] as List<String>?,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Values',
                       ),
+                      options: availableValues
+                          .map(
+                            (v) => FormBuilderChipOption(
+                              value: v.id,
+                              child: Text(v.name),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: FormBuilderFilterChips<String>(
+                      name: 'labelIds',
+                      initialValue: initialValues['labelIds'] as List<String>?,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Labels',
+                      ),
+                      options: availableLabels
+                          .map(
+                            (l) => FormBuilderChipOption(
+                              value: l.id,
+                              child: Text(l.name),
+                            ),
+                          )
+                          .toList(),
                     ),
                   ),
                   Padding(
@@ -176,7 +239,7 @@ class TaskForm extends StatelessWidget {
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: IconButton.filled(
+                child: IconButton(
                   icon: const Icon(Icons.check),
                   tooltip: submitTooltip,
                   onPressed: onSubmit,

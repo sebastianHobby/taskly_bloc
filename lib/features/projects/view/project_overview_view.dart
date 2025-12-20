@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/features/projects/widgets/projects_list.dart';
@@ -11,12 +11,14 @@ class ProjectOverviewPage extends StatelessWidget {
     super.key,
   });
 
-  final ProjectRepository projectRepository;
+  final ProjectRepositoryContract projectRepository;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => ProjectOverviewBloc(projectRepository: projectRepository),
+      create: (_) =>
+          ProjectOverviewBloc(projectRepository: projectRepository)
+            ..add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
       child: ProjectOverviewView(projectRepository: projectRepository),
     );
   }
@@ -28,7 +30,7 @@ class ProjectOverviewView extends StatelessWidget {
     super.key,
   });
 
-  final ProjectRepository projectRepository;
+  final ProjectRepositoryContract projectRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -39,9 +41,6 @@ class ProjectOverviewView extends StatelessWidget {
       builder: (context, state) {
         switch (state) {
           case ProjectOverviewInitial():
-            context.read<ProjectOverviewBloc>().add(
-              const ProjectOverviewEvent.projectsSubscriptionRequested(),
-            );
             return const Center(child: CircularProgressIndicator());
 
           case ProjectOverviewLoading():

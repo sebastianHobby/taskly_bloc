@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -14,8 +14,8 @@ class ValuesListView extends StatelessWidget {
     super.key,
   });
 
-  final List<ValueTableData> values;
-  final ValueRepository valueRepository;
+  final List<ValueModel> values;
+  final ValueRepositoryContract valueRepository;
   final ValueNotifier<bool>? isSheetOpen;
 
   @override

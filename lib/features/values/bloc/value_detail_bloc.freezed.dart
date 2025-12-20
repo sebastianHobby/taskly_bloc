@@ -829,7 +829,7 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( ValueDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( ValueTableData value)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( ValueDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( ValueModel value)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial() when initial != null:
 return initial();case ValueDetailOperationSuccess() when operationSuccess != null:
@@ -854,7 +854,7 @@ return loadSuccess(_that.value);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( ValueDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( ValueTableData value)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( ValueDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( ValueModel value)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial():
 return initial();case ValueDetailOperationSuccess():
@@ -878,7 +878,7 @@ return loadSuccess(_that.value);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( ValueDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( ValueTableData value)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( ValueDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( ValueModel value)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial() when initial != null:
 return initial();case ValueDetailOperationSuccess() when operationSuccess != null:
@@ -1105,7 +1105,7 @@ class ValueDetailLoadSuccess implements ValueDetailState {
   const ValueDetailLoadSuccess({required this.value});
   
 
- final  ValueTableData value;
+ final  ValueModel value;
 
 /// Create a copy of ValueDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -1117,12 +1117,12 @@ $ValueDetailLoadSuccessCopyWith<ValueDetailLoadSuccess> get copyWith => _$ValueD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailLoadSuccess&&const DeepCollectionEquality().equals(other.value, value));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailLoadSuccess&&(identical(other.value, value) || other.value == value));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(value));
+int get hashCode => Object.hash(runtimeType,value);
 
 @override
 String toString() {
@@ -1137,7 +1137,7 @@ abstract mixin class $ValueDetailLoadSuccessCopyWith<$Res> implements $ValueDeta
   factory $ValueDetailLoadSuccessCopyWith(ValueDetailLoadSuccess value, $Res Function(ValueDetailLoadSuccess) _then) = _$ValueDetailLoadSuccessCopyWithImpl;
 @useResult
 $Res call({
- ValueTableData value
+ ValueModel value
 });
 
 
@@ -1154,10 +1154,10 @@ class _$ValueDetailLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of ValueDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? value = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? value = null,}) {
   return _then(ValueDetailLoadSuccess(
-value: freezed == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
-as ValueTableData,
+value: null == value ? _self.value : value // ignore: cast_nullable_to_non_nullable
+as ValueModel,
   ));
 }
 

@@ -1,27 +1,23 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 
-class MockTaskRepository extends Mock implements TaskRepository {}
+class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 void main() {
   late MockTaskRepository mockRepository;
-  late TaskTableData sampleTask;
-
-  setUpAll(() {
-    registerFallbackValue(TaskTableCompanion(id: const Value('f')));
-  });
+  late Task sampleTask;
 
   setUp(() {
     mockRepository = MockTaskRepository();
-    sampleTask = TaskTableData(
+    final now = DateTime.now();
+    sampleTask = Task(
       id: 't1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'Task 1',
       completed: false,
     );
@@ -30,8 +26,8 @@ void main() {
   blocTest<TaskOverviewBloc, TaskOverviewState>(
     'subscription emits error state when repository stream errors',
     setUp: () {
-      when(() => mockRepository.getTasks).thenAnswer(
-        (_) => Stream<List<TaskTableData>>.error(Exception('stream fail')),
+      when(() => mockRepository.watchAll()).thenAnswer(
+        (_) => Stream<List<Task>>.error(Exception('stream fail')),
       );
     },
     build: () => TaskOverviewBloc(taskRepository: mockRepository),
@@ -46,12 +42,24 @@ void main() {
     'toggleTaskCompletion emits error state when updateTask throws',
     setUp: () {
       when(
-        () => mockRepository.updateTask(any()),
+        () => mockRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          completed: any(named: 'completed'),
+          description: any(named: 'description'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          projectId: any(named: 'projectId'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
+          valueIds: any(named: 'valueIds'),
+          labelIds: any(named: 'labelIds'),
+        ),
       ).thenThrow(Exception('update fail'));
     },
     build: () => TaskOverviewBloc(taskRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(TaskOverviewEvent.toggleTaskCompletion(taskData: sampleTask)),
+    act: (bloc) => bloc.add(
+      TaskOverviewEvent.toggleTaskCompletion(task: sampleTask),
+    ),
     expect: () => <dynamic>[
       isA<TaskOverviewError>(),
     ],

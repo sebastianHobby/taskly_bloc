@@ -55,14 +55,15 @@ extension TaskDetailEventPatterns on TaskDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _TaskDetailUpdate value)?  update,TResult Function( _TaskDetailDelete value)?  delete,TResult Function( _TaskDetailCreate value)?  create,TResult Function( _TaskDetailGet value)?  get,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _TaskDetailUpdate value)?  update,TResult Function( _TaskDetailDelete value)?  delete,TResult Function( _TaskDetailCreate value)?  create,TResult Function( _TaskDetailGet value)?  get,TResult Function( _TaskDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
 return update(_that);case _TaskDetailDelete() when delete != null:
 return delete(_that);case _TaskDetailCreate() when create != null:
 return create(_that);case _TaskDetailGet() when get != null:
-return get(_that);case _:
+return get(_that);case _TaskDetailLoadInitialData() when loadInitialData != null:
+return loadInitialData(_that);case _:
   return orElse();
 
 }
@@ -80,14 +81,15 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _TaskDetailUpdate value)  update,required TResult Function( _TaskDetailDelete value)  delete,required TResult Function( _TaskDetailCreate value)  create,required TResult Function( _TaskDetailGet value)  get,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _TaskDetailUpdate value)  update,required TResult Function( _TaskDetailDelete value)  delete,required TResult Function( _TaskDetailCreate value)  create,required TResult Function( _TaskDetailGet value)  get,required TResult Function( _TaskDetailLoadInitialData value)  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
 return update(_that);case _TaskDetailDelete():
 return delete(_that);case _TaskDetailCreate():
 return create(_that);case _TaskDetailGet():
-return get(_that);}
+return get(_that);case _TaskDetailLoadInitialData():
+return loadInitialData(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -101,14 +103,15 @@ return get(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _TaskDetailUpdate value)?  update,TResult? Function( _TaskDetailDelete value)?  delete,TResult? Function( _TaskDetailCreate value)?  create,TResult? Function( _TaskDetailGet value)?  get,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _TaskDetailUpdate value)?  update,TResult? Function( _TaskDetailDelete value)?  delete,TResult? Function( _TaskDetailCreate value)?  create,TResult? Function( _TaskDetailGet value)?  get,TResult? Function( _TaskDetailLoadInitialData value)?  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
 return update(_that);case _TaskDetailDelete() when delete != null:
 return delete(_that);case _TaskDetailCreate() when create != null:
 return create(_that);case _TaskDetailGet() when get != null:
-return get(_that);case _:
+return get(_that);case _TaskDetailLoadInitialData() when loadInitialData != null:
+return loadInitialData(_that);case _:
   return null;
 
 }
@@ -125,13 +128,14 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description)?  create,TResult Function( String taskId)?  get,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)?  create,TResult Function( String taskId)?  get,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.projectId,_that.values,_that.labels);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description);case _TaskDetailGet() when get != null:
-return get(_that.taskId);case _:
+return create(_that.name,_that.description,_that.projectId,_that.values,_that.labels);case _TaskDetailGet() when get != null:
+return get(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
+return loadInitialData();case _:
   return orElse();
 
 }
@@ -149,13 +153,14 @@ return get(_that.taskId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description)  create,required TResult Function( String taskId)  get,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)  create,required TResult Function( String taskId)  get,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
-return update(_that.id,_that.name,_that.description,_that.completed);case _TaskDetailDelete():
+return update(_that.id,_that.name,_that.description,_that.completed,_that.projectId,_that.values,_that.labels);case _TaskDetailDelete():
 return delete(_that.id);case _TaskDetailCreate():
-return create(_that.name,_that.description);case _TaskDetailGet():
-return get(_that.taskId);}
+return create(_that.name,_that.description,_that.projectId,_that.values,_that.labels);case _TaskDetailGet():
+return get(_that.taskId);case _TaskDetailLoadInitialData():
+return loadInitialData();}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -169,13 +174,14 @@ return get(_that.taskId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description)?  create,TResult? Function( String taskId)?  get,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  String? projectId,  List<ValueModel>? values,  List<Label>? labels)?  create,TResult? Function( String taskId)?  get,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.projectId,_that.values,_that.labels);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description);case _TaskDetailGet() when get != null:
-return get(_that.taskId);case _:
+return create(_that.name,_that.description,_that.projectId,_that.values,_that.labels);case _TaskDetailGet() when get != null:
+return get(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
+return loadInitialData();case _:
   return null;
 
 }
@@ -187,13 +193,32 @@ return get(_that.taskId);case _:
 
 
 class _TaskDetailUpdate implements TaskDetailEvent {
-  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed});
+  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed, this.projectId, final  List<ValueModel>? values, final  List<Label>? labels}): _values = values,_labels = labels;
   
 
  final  String id;
  final  String name;
  final  String? description;
  final  bool completed;
+ final  String? projectId;
+ final  List<ValueModel>? _values;
+ List<ValueModel>? get values {
+  final value = _values;
+  if (value == null) return null;
+  if (_values is EqualUnmodifiableListView) return _values;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  List<Label>? _labels;
+ List<Label>? get labels {
+  final value = _labels;
+  if (value == null) return null;
+  if (_labels is EqualUnmodifiableListView) return _labels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -205,16 +230,16 @@ _$TaskDetailUpdateCopyWith<_TaskDetailUpdate> get copyWith => __$TaskDetailUpdat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&const DeepCollectionEquality().equals(other._values, _values)&&const DeepCollectionEquality().equals(other._labels, _labels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,completed);
+int get hashCode => Object.hash(runtimeType,id,name,description,completed,projectId,const DeepCollectionEquality().hash(_values),const DeepCollectionEquality().hash(_labels));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed)';
+  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed, projectId: $projectId, values: $values, labels: $labels)';
 }
 
 
@@ -225,7 +250,7 @@ abstract mixin class _$TaskDetailUpdateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailUpdateCopyWith(_TaskDetailUpdate value, $Res Function(_TaskDetailUpdate) _then) = __$TaskDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, bool completed
+ String id, String name, String? description, bool completed, String? projectId, List<ValueModel>? values, List<Label>? labels
 });
 
 
@@ -242,13 +267,16 @@ class __$TaskDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,Object? projectId = freezed,Object? values = freezed,Object? labels = freezed,}) {
   return _then(_TaskDetailUpdate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,completed: null == completed ? _self.completed : completed // ignore: cast_nullable_to_non_nullable
-as bool,
+as bool,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
+as String?,values: freezed == values ? _self._values : values // ignore: cast_nullable_to_non_nullable
+as List<ValueModel>?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
+as List<Label>?,
   ));
 }
 
@@ -325,11 +353,30 @@ as String,
 
 
 class _TaskDetailCreate implements TaskDetailEvent {
-  const _TaskDetailCreate({required this.name, required this.description});
+  const _TaskDetailCreate({required this.name, required this.description, this.projectId, final  List<ValueModel>? values, final  List<Label>? labels}): _values = values,_labels = labels;
   
 
  final  String name;
  final  String? description;
+ final  String? projectId;
+ final  List<ValueModel>? _values;
+ List<ValueModel>? get values {
+  final value = _values;
+  if (value == null) return null;
+  if (_values is EqualUnmodifiableListView) return _values;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
+ final  List<Label>? _labels;
+ List<Label>? get labels {
+  final value = _labels;
+  if (value == null) return null;
+  if (_labels is EqualUnmodifiableListView) return _labels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
+
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -341,16 +388,16 @@ _$TaskDetailCreateCopyWith<_TaskDetailCreate> get copyWith => __$TaskDetailCreat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&const DeepCollectionEquality().equals(other._values, _values)&&const DeepCollectionEquality().equals(other._labels, _labels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,description);
+int get hashCode => Object.hash(runtimeType,name,description,projectId,const DeepCollectionEquality().hash(_values),const DeepCollectionEquality().hash(_labels));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.create(name: $name, description: $description)';
+  return 'TaskDetailEvent.create(name: $name, description: $description, projectId: $projectId, values: $values, labels: $labels)';
 }
 
 
@@ -361,7 +408,7 @@ abstract mixin class _$TaskDetailCreateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailCreateCopyWith(_TaskDetailCreate value, $Res Function(_TaskDetailCreate) _then) = __$TaskDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- String name, String? description
+ String name, String? description, String? projectId, List<ValueModel>? values, List<Label>? labels
 });
 
 
@@ -378,11 +425,14 @@ class __$TaskDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,Object? projectId = freezed,Object? values = freezed,Object? labels = freezed,}) {
   return _then(_TaskDetailCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
+as String?,values: freezed == values ? _self._values : values // ignore: cast_nullable_to_non_nullable
+as List<ValueModel>?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
+as List<Label>?,
   ));
 }
 
@@ -454,6 +504,38 @@ as String,
 
 
 }
+
+/// @nodoc
+
+
+class _TaskDetailLoadInitialData implements TaskDetailEvent {
+  const _TaskDetailLoadInitialData();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailLoadInitialData);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'TaskDetailEvent.loadInitialData()';
+}
+
+
+}
+
+
+
 
 /// @nodoc
 mixin _$TaskDetailError {
@@ -759,11 +841,12 @@ extension TaskDetailStatePatterns on TaskDetailState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskDetailInitial value)?  initial,TResult Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult Function( TaskDetailOperationFailure value)?  operationFailure,TResult Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult Function( TaskDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskDetailInitial value)?  initial,TResult Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult Function( TaskDetailOperationFailure value)?  operationFailure,TResult Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult Function( TaskDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
+return initial(_that);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
+return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress(_that);case TaskDetailLoadSuccess() when loadSuccess != null:
@@ -785,11 +868,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskDetailInitial value)  initial,required TResult Function( TaskDetailOperationSuccess value)  operationSuccess,required TResult Function( TaskDetailOperationFailure value)  operationFailure,required TResult Function( TaskDetailLoadInProgress value)  loadInProgress,required TResult Function( TaskDetailLoadSuccess value)  loadSuccess,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskDetailInitial value)  initial,required TResult Function( TaskDetailInitialDataLoadSuccess value)  initialDataLoadSuccess,required TResult Function( TaskDetailOperationSuccess value)  operationSuccess,required TResult Function( TaskDetailOperationFailure value)  operationFailure,required TResult Function( TaskDetailLoadInProgress value)  loadInProgress,required TResult Function( TaskDetailLoadSuccess value)  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial():
-return initial(_that);case TaskDetailOperationSuccess():
+return initial(_that);case TaskDetailInitialDataLoadSuccess():
+return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess():
 return operationSuccess(_that);case TaskDetailOperationFailure():
 return operationFailure(_that);case TaskDetailLoadInProgress():
 return loadInProgress(_that);case TaskDetailLoadSuccess():
@@ -810,11 +894,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskDetailInitial value)?  initial,TResult? Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult? Function( TaskDetailOperationFailure value)?  operationFailure,TResult? Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult? Function( TaskDetailLoadSuccess value)?  loadSuccess,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskDetailInitial value)?  initial,TResult? Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult? Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult? Function( TaskDetailOperationFailure value)?  operationFailure,TResult? Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult? Function( TaskDetailLoadSuccess value)?  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
+return initial(_that);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
+return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress(_that);case TaskDetailLoadSuccess() when loadSuccess != null:
@@ -835,14 +920,15 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( TaskDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( TaskTableData task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( String message)?  operationSuccess,TResult Function( TaskDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial();case TaskDetailOperationSuccess() when operationSuccess != null:
+return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.message);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
-return loadSuccess(_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
   return orElse();
 
 }
@@ -860,14 +946,15 @@ return loadSuccess(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( TaskDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( TaskTableData task)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( String message)  operationSuccess,required TResult Function( TaskDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial():
-return initial();case TaskDetailOperationSuccess():
+return initial();case TaskDetailInitialDataLoadSuccess():
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess():
 return operationSuccess(_that.message);case TaskDetailOperationFailure():
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress():
 return loadInProgress();case TaskDetailLoadSuccess():
-return loadSuccess(_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -884,14 +971,15 @@ return loadSuccess(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( TaskDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( TaskTableData task)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( String message)?  operationSuccess,TResult? Function( TaskDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial();case TaskDetailOperationSuccess() when operationSuccess != null:
+return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.message);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
-return loadSuccess(_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
   return null;
 
 }
@@ -930,6 +1018,94 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class TaskDetailInitialDataLoadSuccess implements TaskDetailState {
+  const TaskDetailInitialDataLoadSuccess({required final  List<Project> availableProjects, required final  List<ValueModel> availableValues, required final  List<Label> availableLabels}): _availableProjects = availableProjects,_availableValues = availableValues,_availableLabels = availableLabels;
+  
+
+ final  List<Project> _availableProjects;
+ List<Project> get availableProjects {
+  if (_availableProjects is EqualUnmodifiableListView) return _availableProjects;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableProjects);
+}
+
+ final  List<ValueModel> _availableValues;
+ List<ValueModel> get availableValues {
+  if (_availableValues is EqualUnmodifiableListView) return _availableValues;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableValues);
+}
+
+ final  List<Label> _availableLabels;
+ List<Label> get availableLabels {
+  if (_availableLabels is EqualUnmodifiableListView) return _availableLabels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableLabels);
+}
+
+
+/// Create a copy of TaskDetailState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskDetailInitialDataLoadSuccessCopyWith<TaskDetailInitialDataLoadSuccess> get copyWith => _$TaskDetailInitialDataLoadSuccessCopyWithImpl<TaskDetailInitialDataLoadSuccess>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailInitialDataLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&const DeepCollectionEquality().equals(other._availableLabels, _availableLabels));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues),const DeepCollectionEquality().hash(_availableLabels));
+
+@override
+String toString() {
+  return 'TaskDetailState.initialDataLoadSuccess(availableProjects: $availableProjects, availableValues: $availableValues, availableLabels: $availableLabels)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskDetailInitialDataLoadSuccessCopyWith<$Res> implements $TaskDetailStateCopyWith<$Res> {
+  factory $TaskDetailInitialDataLoadSuccessCopyWith(TaskDetailInitialDataLoadSuccess value, $Res Function(TaskDetailInitialDataLoadSuccess) _then) = _$TaskDetailInitialDataLoadSuccessCopyWithImpl;
+@useResult
+$Res call({
+ List<Project> availableProjects, List<ValueModel> availableValues, List<Label> availableLabels
+});
+
+
+
+
+}
+/// @nodoc
+class _$TaskDetailInitialDataLoadSuccessCopyWithImpl<$Res>
+    implements $TaskDetailInitialDataLoadSuccessCopyWith<$Res> {
+  _$TaskDetailInitialDataLoadSuccessCopyWithImpl(this._self, this._then);
+
+  final TaskDetailInitialDataLoadSuccess _self;
+  final $Res Function(TaskDetailInitialDataLoadSuccess) _then;
+
+/// Create a copy of TaskDetailState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,Object? availableLabels = null,}) {
+  return _then(TaskDetailInitialDataLoadSuccess(
+availableProjects: null == availableProjects ? _self._availableProjects : availableProjects // ignore: cast_nullable_to_non_nullable
+as List<Project>,availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
+as List<ValueModel>,availableLabels: null == availableLabels ? _self._availableLabels : availableLabels // ignore: cast_nullable_to_non_nullable
+as List<Label>,
+  ));
+}
+
+
+}
 
 /// @nodoc
 
@@ -1108,10 +1284,31 @@ String toString() {
 
 
 class TaskDetailLoadSuccess implements TaskDetailState {
-  const TaskDetailLoadSuccess({required this.task});
+  const TaskDetailLoadSuccess({required final  List<Project> availableProjects, required final  List<ValueModel> availableValues, required final  List<Label> availableLabels, required this.task}): _availableProjects = availableProjects,_availableValues = availableValues,_availableLabels = availableLabels;
   
 
- final  TaskTableData task;
+ final  List<Project> _availableProjects;
+ List<Project> get availableProjects {
+  if (_availableProjects is EqualUnmodifiableListView) return _availableProjects;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableProjects);
+}
+
+ final  List<ValueModel> _availableValues;
+ List<ValueModel> get availableValues {
+  if (_availableValues is EqualUnmodifiableListView) return _availableValues;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableValues);
+}
+
+ final  List<Label> _availableLabels;
+ List<Label> get availableLabels {
+  if (_availableLabels is EqualUnmodifiableListView) return _availableLabels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_availableLabels);
+}
+
+ final  Task task;
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -1123,16 +1320,16 @@ $TaskDetailLoadSuccessCopyWith<TaskDetailLoadSuccess> get copyWith => _$TaskDeta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other.task, task));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&const DeepCollectionEquality().equals(other._availableLabels, _availableLabels)&&(identical(other.task, task) || other.task == task));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(task));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues),const DeepCollectionEquality().hash(_availableLabels),task);
 
 @override
 String toString() {
-  return 'TaskDetailState.loadSuccess(task: $task)';
+  return 'TaskDetailState.loadSuccess(availableProjects: $availableProjects, availableValues: $availableValues, availableLabels: $availableLabels, task: $task)';
 }
 
 
@@ -1143,7 +1340,7 @@ abstract mixin class $TaskDetailLoadSuccessCopyWith<$Res> implements $TaskDetail
   factory $TaskDetailLoadSuccessCopyWith(TaskDetailLoadSuccess value, $Res Function(TaskDetailLoadSuccess) _then) = _$TaskDetailLoadSuccessCopyWithImpl;
 @useResult
 $Res call({
- TaskTableData task
+ List<Project> availableProjects, List<ValueModel> availableValues, List<Label> availableLabels, Task task
 });
 
 
@@ -1160,10 +1357,13 @@ class _$TaskDetailLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? task = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,Object? availableLabels = null,Object? task = null,}) {
   return _then(TaskDetailLoadSuccess(
-task: freezed == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
-as TaskTableData,
+availableProjects: null == availableProjects ? _self._availableProjects : availableProjects // ignore: cast_nullable_to_non_nullable
+as List<Project>,availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
+as List<ValueModel>,availableLabels: null == availableLabels ? _self._availableLabels : availableLabels // ignore: cast_nullable_to_non_nullable
+as List<Label>,task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
+as Task,
   ));
 }
 

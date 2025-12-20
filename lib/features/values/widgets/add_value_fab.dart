@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -11,7 +11,7 @@ class AddValueFab extends StatelessWidget {
     super.key,
   });
 
-  final ValueRepository valueRepository;
+  final ValueRepositoryContract valueRepository;
   final ValueNotifier<bool>? isSheetOpen;
 
   @override

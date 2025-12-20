@@ -119,11 +119,11 @@ return toggleTaskCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskTableData taskData)?  toggleTaskCompletion,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( Task task)?  toggleTaskCompletion,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that.taskData);case _:
+return toggleTaskCompletion(_that.task);case _:
   return orElse();
 
 }
@@ -141,11 +141,11 @@ return toggleTaskCompletion(_that.taskData);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskTableData taskData)  toggleTaskCompletion,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( Task task)  toggleTaskCompletion,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested();case TaskOverviewToggleTaskCompletion():
-return toggleTaskCompletion(_that.taskData);}
+return toggleTaskCompletion(_that.task);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -159,11 +159,11 @@ return toggleTaskCompletion(_that.taskData);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskTableData taskData)?  toggleTaskCompletion,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( Task task)?  toggleTaskCompletion,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that.taskData);case _:
+return toggleTaskCompletion(_that.task);case _:
   return null;
 
 }
@@ -207,10 +207,10 @@ String toString() {
 
 
 class TaskOverviewToggleTaskCompletion implements TaskOverviewEvent {
-  const TaskOverviewToggleTaskCompletion({required this.taskData});
+  const TaskOverviewToggleTaskCompletion({required this.task});
   
 
- final  TaskTableData taskData;
+ final  Task task;
 
 /// Create a copy of TaskOverviewEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -222,16 +222,16 @@ $TaskOverviewToggleTaskCompletionCopyWith<TaskOverviewToggleTaskCompletion> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewToggleTaskCompletion&&const DeepCollectionEquality().equals(other.taskData, taskData));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewToggleTaskCompletion&&(identical(other.task, task) || other.task == task));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(taskData));
+int get hashCode => Object.hash(runtimeType,task);
 
 @override
 String toString() {
-  return 'TaskOverviewEvent.toggleTaskCompletion(taskData: $taskData)';
+  return 'TaskOverviewEvent.toggleTaskCompletion(task: $task)';
 }
 
 
@@ -242,7 +242,7 @@ abstract mixin class $TaskOverviewToggleTaskCompletionCopyWith<$Res> implements 
   factory $TaskOverviewToggleTaskCompletionCopyWith(TaskOverviewToggleTaskCompletion value, $Res Function(TaskOverviewToggleTaskCompletion) _then) = _$TaskOverviewToggleTaskCompletionCopyWithImpl;
 @useResult
 $Res call({
- TaskTableData taskData
+ Task task
 });
 
 
@@ -259,10 +259,10 @@ class _$TaskOverviewToggleTaskCompletionCopyWithImpl<$Res>
 
 /// Create a copy of TaskOverviewEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? taskData = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? task = null,}) {
   return _then(TaskOverviewToggleTaskCompletion(
-taskData: freezed == taskData ? _self.taskData : taskData // ignore: cast_nullable_to_non_nullable
-as TaskTableData,
+task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
+as Task,
   ));
 }
 
@@ -383,7 +383,7 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<TaskTableData> tasks)?  loaded,TResult Function( String message,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Task> tasks)?  loaded,TResult Function( String message,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
@@ -407,7 +407,7 @@ return error(_that.message,_that.stacktrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<TaskTableData> tasks)  loaded,required TResult Function( String message,  StackTrace stacktrace)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Task> tasks)  loaded,required TResult Function( String message,  StackTrace stacktrace)  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial():
 return initial();case TaskOverviewLoading():
@@ -427,7 +427,7 @@ return error(_that.message,_that.stacktrace);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<TaskTableData> tasks)?  loaded,TResult? Function( String message,  StackTrace stacktrace)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Task> tasks)?  loaded,TResult? Function( String message,  StackTrace stacktrace)?  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
@@ -509,11 +509,11 @@ String toString() {
 
 
 class TaskOverviewLoaded implements TaskOverviewState {
-  const TaskOverviewLoaded({required final  List<TaskTableData> tasks}): _tasks = tasks;
+  const TaskOverviewLoaded({required final  List<Task> tasks}): _tasks = tasks;
   
 
- final  List<TaskTableData> _tasks;
- List<TaskTableData> get tasks {
+ final  List<Task> _tasks;
+ List<Task> get tasks {
   if (_tasks is EqualUnmodifiableListView) return _tasks;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_tasks);
@@ -550,7 +550,7 @@ abstract mixin class $TaskOverviewLoadedCopyWith<$Res> implements $TaskOverviewS
   factory $TaskOverviewLoadedCopyWith(TaskOverviewLoaded value, $Res Function(TaskOverviewLoaded) _then) = _$TaskOverviewLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<TaskTableData> tasks
+ List<Task> tasks
 });
 
 
@@ -570,7 +570,7 @@ class _$TaskOverviewLoadedCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? tasks = null,}) {
   return _then(TaskOverviewLoaded(
 tasks: null == tasks ? _self._tasks : tasks // ignore: cast_nullable_to_non_nullable
-as List<TaskTableData>,
+as List<Task>,
   ));
 }
 

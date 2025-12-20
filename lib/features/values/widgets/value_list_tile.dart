@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-// imports intentionally minimal for this tile
+import 'package:taskly_bloc/core/domain/domain.dart';
 
 class ValueListTile extends StatelessWidget {
   const ValueListTile({
@@ -9,12 +8,13 @@ class ValueListTile extends StatelessWidget {
     super.key,
   });
 
-  final ValueTableData value;
-  final void Function(ValueTableData) onTap;
+  final ValueModel value;
+  final void Function(ValueModel) onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
+      key: Key('value-${value.id}'),
       onTap: () => onTap(value),
       title: Text(
         value.name,

@@ -1,6 +1,6 @@
-import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 
 import '../helpers/test_db.dart';
@@ -19,68 +19,49 @@ void main() {
   });
 
   test('getProjects stream is initially empty', () async {
-    final first = await repo.getProjects.first;
+    final first = await repo.watchAll().first;
     expect(first, isEmpty);
   });
 
   test('getProjectById returns null when missing', () async {
-    final res = await repo.getProjectById('non-existent');
+    final res = await repo.get('non-existent');
     expect(res, isNull);
   });
 
-  test('create duplicate id throws', () async {
-    final now = DateTime.now();
-    final companion = ProjectTableCompanion(
-      id: Value('dup-p1'),
-      name: Value('DupProject'),
-      createdAt: Value(now),
-      updatedAt: Value(now),
-      completed: const Value(false),
-    );
+  test('creating twice creates two projects', () async {
+    await repo.create(name: 'A');
+    await repo.create(name: 'B');
 
-    final first = await repo.createProject(companion);
-    expect(first, isNonZero);
-
-    await expectLater(repo.createProject(companion), throwsA(isA<Object>()));
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(2));
+    expect(list.map((p) => p.name), containsAll(<String>['A', 'B']));
   });
 
   test('update non-existent throws', () async {
-    final update = ProjectTableCompanion(
-      id: Value('nope-p'),
-      name: const Value('Nope'),
-      updatedAt: Value(DateTime.now()),
-      completed: const Value(false),
+    await expectLater(
+      repo.update(id: 'nope-p', name: 'Nope', completed: false),
+      throwsA(isA<RepositoryNotFoundException>()),
     );
-
-    await expectLater(repo.updateProject(update), throwsA(isA<Object>()));
   });
 
-  test('delete non-existent returns 0', () async {
-    final del = ProjectTableCompanion(id: Value('nope-p'));
-    final res = await repo.deleteProject(del);
-    expect(res, equals(0));
+  test('delete non-existent does not throw', () async {
+    await repo.delete('nope-p');
+    final list = await repo.watchAll().first;
+    expect(list, isEmpty);
   });
 
   test('concurrent creates produce multiple projects', () async {
-    final now = DateTime.now();
     final futures = List.generate(4, (i) {
-      final c = ProjectTableCompanion(
-        id: Value('pc-$i'),
-        name: Value('Project $i'),
-        createdAt: Value(now),
-        updatedAt: Value(now),
-        completed: const Value(false),
-      );
-      return repo.createProject(c);
+      return repo.create(name: 'Project $i');
     });
 
-    final results = await Future.wait(futures);
-    expect(results.where((r) => r > 0), hasLength(4));
+    await Future.wait(futures);
 
-    final list = await repo.getProjects.first;
+    final list = await repo.watchAll().first;
+    expect(list, hasLength(4));
     expect(
-      list.map((p) => p.id),
-      containsAll(<String>['pc-0', 'pc-1', 'pc-2', 'pc-3']),
+      list.map((p) => p.name),
+      containsAll(<String>['Project 0', 'Project 1', 'Project 2', 'Project 3']),
     );
   });
 }

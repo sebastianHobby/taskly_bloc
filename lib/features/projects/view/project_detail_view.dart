@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_form.dart';
 
@@ -15,7 +15,7 @@ class ProjectDetailSheetPage extends StatelessWidget {
     super.key,
   });
 
-  final ProjectRepository projectRepository;
+  final ProjectRepositoryContract projectRepository;
   final String? projectId;
   final void Function(String message) onSuccess;
   final void Function(String message) onError;
@@ -69,7 +69,6 @@ class _ProjectDetailSheetViewState extends State<ProjectDetailSheetView> {
         context.read<ProjectDetailBloc>().add(
           ProjectDetailEvent.create(
             name: formValues['name'] as String,
-            description: formValues['description'] as String,
           ),
         );
       } else {
@@ -78,7 +77,6 @@ class _ProjectDetailSheetViewState extends State<ProjectDetailSheetView> {
           ProjectDetailEvent.update(
             id: id,
             name: formValues['name'] as String,
-            description: formValues['description'] as String,
             completed: formValues['completed'] as bool,
           ),
         );

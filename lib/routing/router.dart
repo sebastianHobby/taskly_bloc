@@ -1,8 +1,9 @@
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/view/project_overview_view.dart';
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
@@ -25,7 +26,7 @@ final router = GoRouter(
               name: AppRouteName.projects,
               path: AppRoutePath.projects,
               builder: (context, state) => ProjectOverviewPage(
-                projectRepository: getIt<ProjectRepository>(),
+                projectRepository: getIt<ProjectRepositoryContract>(),
               ),
             ),
           ],
@@ -36,7 +37,10 @@ final router = GoRouter(
               name: AppRouteName.tasks,
               path: AppRoutePath.tasks,
               builder: (context, state) => TaskOverviewPage(
-                taskRepository: getIt<TaskRepository>(),
+                taskRepository: getIt<TaskRepositoryContract>(),
+                projectRepository: getIt<ProjectRepositoryContract>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
               ),
             ),
           ],
@@ -47,7 +51,7 @@ final router = GoRouter(
               name: AppRouteName.values,
               path: AppRoutePath.values,
               builder: (context, state) => ValueOverviewPage(
-                valueRepository: getIt<ValueRepository>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
               ),
             ),
           ],
