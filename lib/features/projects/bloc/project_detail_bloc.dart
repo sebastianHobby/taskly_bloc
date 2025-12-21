@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -15,6 +16,10 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     required String id,
     required String name,
     required bool completed,
+    String? description,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<ValueModel>? values,
     List<Label>? labels,
   }) = _ProjectDetailUpdate;
@@ -24,7 +29,11 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
 
   const factory ProjectDetailEvent.create({
     required String name,
+    String? description,
     @Default(false) bool completed,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<ValueModel>? values,
     List<Label>? labels,
   }) = _ProjectDetailCreate;
@@ -55,8 +64,9 @@ class ProjectDetailState with _$ProjectDetailState {
   }) = ProjectDetailInitialDataLoadSuccess;
 
   // Returns success or failure after create, update, delete operations
-  const factory ProjectDetailState.operationSuccess({required String message}) =
-      ProjectDetailOperationSuccess;
+  const factory ProjectDetailState.operationSuccess({
+    required EntityOperation operation,
+  }) = ProjectDetailOperationSuccess;
   const factory ProjectDetailState.operationFailure({
     required ProjectDetailError errorDetails,
   }) = ProjectDetailOperationFailure;
@@ -83,22 +93,51 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     on<ProjectDetailEvent>((event, emit) async {
       await event.when(
         get: (projectId) async => _onGet(projectId, emit),
-        update: (id, name, completed, values, labels) async => _onUpdate(
-          id: id,
-          name: name,
-          completed: completed,
-          values: values,
-          labels: labels,
-          emit: emit,
-        ),
+        update:
+            (
+              id,
+              name,
+              completed,
+              description,
+              startDate,
+              deadlineDate,
+              repeatIcalRrule,
+              values,
+              labels,
+            ) async => _onUpdate(
+              id: id,
+              name: name,
+              description: description,
+              completed: completed,
+              startDate: startDate,
+              deadlineDate: deadlineDate,
+              repeatIcalRrule: repeatIcalRrule,
+              values: values,
+              labels: labels,
+              emit: emit,
+            ),
         delete: (id) async => _onDelete(id, emit),
-        create: (name, completed, values, labels) async => _onCreate(
-          name: name,
-          completed: completed,
-          values: values,
-          labels: labels,
-          emit: emit,
-        ),
+        create:
+            (
+              name,
+              description,
+              completed,
+              startDate,
+              deadlineDate,
+              repeatIcalRrule,
+              values,
+              labels,
+            ) async => _onCreate(
+              name: name,
+              description: description,
+              completed: completed,
+              startDate: startDate,
+              deadlineDate: deadlineDate,
+              repeatIcalRrule: repeatIcalRrule,
+              values: values,
+              labels: labels,
+              emit: emit,
+            ),
         loadInitialData: () async => _onLoadInitialData(emit),
       );
     });
@@ -173,7 +212,11 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   Future<void> _onUpdate({
     required String id,
     required String name,
+    required String? description,
     required bool completed,
+    required DateTime? startDate,
+    required DateTime? deadlineDate,
+    required String? repeatIcalRrule,
     required List<ValueModel>? values,
     required List<Label>? labels,
     required Emitter<ProjectDetailState> emit,
@@ -182,13 +225,17 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
       await _projectRepository.update(
         id: id,
         name: name,
+        description: description,
         completed: completed,
+        startDate: startDate,
+        deadlineDate: deadlineDate,
+        repeatIcalRrule: repeatIcalRrule,
         valueIds: values?.map((e) => e.id).toList(growable: false),
         labelIds: labels?.map((e) => e.id).toList(growable: false),
       );
       emit(
         ProjectDetailState.operationSuccess(
-          message: 'Project updated successfully.',
+          operation: EntityOperation.update,
         ),
       );
     } catch (error, stacktrace) {
@@ -211,7 +258,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
       await _projectRepository.delete(id);
       emit(
         const ProjectDetailState.operationSuccess(
-          message: 'Project deleted successfully.',
+          operation: EntityOperation.delete,
         ),
       );
     } catch (error, stacktrace) {
@@ -228,7 +275,11 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
 
   Future<void> _onCreate({
     required String name,
+    required String? description,
     required bool completed,
+    required DateTime? startDate,
+    required DateTime? deadlineDate,
+    required String? repeatIcalRrule,
     required List<ValueModel>? values,
     required List<Label>? labels,
     required Emitter<ProjectDetailState> emit,
@@ -236,13 +287,17 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     try {
       await _projectRepository.create(
         name: name,
+        description: description,
         completed: completed,
+        startDate: startDate,
+        deadlineDate: deadlineDate,
+        repeatIcalRrule: repeatIcalRrule,
         valueIds: values?.map((e) => e.id).toList(growable: false),
         labelIds: labels?.map((e) => e.id).toList(growable: false),
       );
       emit(
         const ProjectDetailState.operationSuccess(
-          message: 'Project created successfully.',
+          operation: EntityOperation.create,
         ),
       );
     } catch (error, stacktrace) {

@@ -240,6 +240,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upcoming'**
   String get upcomingTitle;
+
+  /// Snackbar message shown after creating a task
+  ///
+  /// In en, this message translates to:
+  /// **'Task created successfully.'**
+  String get taskCreatedSuccessfully;
+
+  /// Snackbar message shown after updating a task
+  ///
+  /// In en, this message translates to:
+  /// **'Task updated successfully.'**
+  String get taskUpdatedSuccessfully;
+
+  /// Snackbar message shown after deleting a task
+  ///
+  /// In en, this message translates to:
+  /// **'Task deleted successfully.'**
+  String get taskDeletedSuccessfully;
+
+  /// Snackbar message shown after creating a project
+  ///
+  /// In en, this message translates to:
+  /// **'Project created successfully.'**
+  String get projectCreatedSuccessfully;
+
+  /// Snackbar message shown after updating a project
+  ///
+  /// In en, this message translates to:
+  /// **'Project updated successfully.'**
+  String get projectUpdatedSuccessfully;
+
+  /// Snackbar message shown after deleting a project
+  ///
+  /// In en, this message translates to:
+  /// **'Project deleted successfully.'**
+  String get projectDeletedSuccessfully;
+
+  /// Snackbar message shown after creating a value
+  ///
+  /// In en, this message translates to:
+  /// **'Value created successfully.'**
+  String get valueCreatedSuccessfully;
+
+  /// Snackbar message shown after updating a value
+  ///
+  /// In en, this message translates to:
+  /// **'Value updated successfully.'**
+  String get valueUpdatedSuccessfully;
+
+  /// Snackbar message shown after deleting a value
+  ///
+  /// In en, this message translates to:
+  /// **'Value deleted successfully.'**
+  String get valueDeletedSuccessfully;
+
+  /// Snackbar message shown after creating a label
+  ///
+  /// In en, this message translates to:
+  /// **'Label created successfully.'**
+  String get labelCreatedSuccessfully;
+
+  /// Snackbar message shown after updating a label
+  ///
+  /// In en, this message translates to:
+  /// **'Label updated successfully.'**
+  String get labelUpdatedSuccessfully;
+
+  /// Snackbar message shown after deleting a label
+  ///
+  /// In en, this message translates to:
+  /// **'Label deleted successfully.'**
+  String get labelDeletedSuccessfully;
+
+  /// Generic tooltip/label for a create action
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get actionCreate;
+
+  /// Generic tooltip/label for an update action
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get actionUpdate;
+
+  /// Hint text for the project title field
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get projectFormTitleHint;
+
+  /// Validation error shown when the project title is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Title is required'**
+  String get projectFormTitleRequired;
+
+  /// Validation error shown when the project title is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Title must not be empty'**
+  String get projectFormTitleEmpty;
+
+  /// Validation error shown when the project title is too long
+  ///
+  /// In en, this message translates to:
+  /// **'Title must be 120 characters or fewer'**
+  String get projectFormTitleTooLong;
+
+  /// Hint text for the project description field
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get projectFormDescriptionHint;
+
+  /// Validation error shown when the project description is too long
+  ///
+  /// In en, this message translates to:
+  /// **'Description is too long'**
+  String get projectFormDescriptionTooLong;
+
+  /// Hint text for the optional project start date field
+  ///
+  /// In en, this message translates to:
+  /// **'Start date (optional)'**
+  String get projectFormStartDateHint;
+
+  /// Hint text for the optional project deadline date field
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline date (optional)'**
+  String get projectFormDeadlineDateHint;
+
+  /// Validation error shown when the deadline is before the start date
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline must be after start date'**
+  String get projectFormDeadlineAfterStartError;
+
+  /// Label for the completed checkbox in the project form
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get projectFormCompletedLabel;
+
+  /// Label for the values selection chips in the project form
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get projectFormValuesLabel;
+
+  /// Label for the labels selection chips in the project form
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get projectFormLabelsLabel;
+
+  /// Hint text for the optional RRULE repeat rule field
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat rule (RRULE, optional)'**
+  String get projectFormRepeatRuleHint;
+
+  /// Validation error shown when the RRULE repeat rule is too long
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat rule is too long'**
+  String get projectFormRepeatRuleTooLong;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
+import 'package:taskly_bloc/routing/routes.dart';
 
 import '../helpers/pump_app.dart';
 
@@ -97,10 +99,24 @@ void main() {
       name: 'Integration Value',
     );
 
-    await pumpLocalizedApp(
-      tester,
-      home: ValueOverviewPage(valueRepository: repo),
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => ValueOverviewPage(valueRepository: repo),
+        ),
+        GoRoute(
+          name: AppRouteName.valueDetail,
+          path: '/values/:valueId',
+          builder: (context, state) {
+            final valueId = state.pathParameters['valueId']!;
+            return Scaffold(body: Text('value-detail:$valueId'));
+          },
+        ),
+      ],
     );
+
+    await pumpLocalizedRouterApp(tester, router: router);
     // push values after widget builds so the bloc subscription receives the value
     repo.pushValues([sample]);
     await tester.pump();
@@ -112,12 +128,11 @@ void main() {
     // Open detail sheet by tapping the value tile
     await tester.tap(find.byKey(const Key('value-v-int-1')));
     await tester.pumpAndSettle();
-    expect(find.byType(FormBuilder), findsOneWidget);
+    expect(find.text('value-detail:v-int-1'), findsOneWidget);
 
-    // Close sheet
-    await tester.tapAt(const Offset(10, 10));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    // Close detail page
+    router.pop();
+    await tester.pumpAndSettle();
 
     // Open create sheet via FAB
     await tester.tap(find.byTooltip('Create value'));
@@ -127,10 +142,23 @@ void main() {
 
   testWidgets('create value via UI updates list', (tester) async {
     final repo = FakeValueRepository();
-    await pumpLocalizedApp(
-      tester,
-      home: ValueOverviewPage(valueRepository: repo),
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => ValueOverviewPage(valueRepository: repo),
+        ),
+        GoRoute(
+          name: AppRouteName.valueDetail,
+          path: '/values/:valueId',
+          builder: (context, state) {
+            final valueId = state.pathParameters['valueId']!;
+            return Scaffold(body: Text('value-detail:$valueId'));
+          },
+        ),
+      ],
     );
+    await pumpLocalizedRouterApp(tester, router: router);
     // ensure the bloc receives an initial loaded state
     repo.pushValues([]);
     await tester.pump();

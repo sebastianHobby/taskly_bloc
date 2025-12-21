@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
@@ -63,8 +64,9 @@ class TaskDetailState with _$TaskDetailState {
     required List<Label> availableLabels,
   }) = TaskDetailInitialDataLoadSuccess;
 
-  const factory TaskDetailState.operationSuccess({required String message}) =
-      TaskDetailOperationSuccess;
+  const factory TaskDetailState.operationSuccess({
+    required EntityOperation operation,
+  }) = TaskDetailOperationSuccess;
   const factory TaskDetailState.operationFailure({
     required TaskDetailError errorDetails,
   }) = TaskDetailOperationFailure;
@@ -198,7 +200,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       );
       emit(
         const TaskDetailState.operationSuccess(
-          message: 'Task created successfully.',
+          operation: EntityOperation.create,
         ),
       );
     } catch (error, stacktrace) {
@@ -233,7 +235,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
 
       emit(
         const TaskDetailState.operationSuccess(
-          message: 'Task updated successfully.',
+          operation: EntityOperation.update,
         ),
       );
     } catch (error, stacktrace) {
@@ -256,7 +258,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       await _taskRepository.delete(event.id);
       emit(
         const TaskDetailState.operationSuccess(
-          message: 'Task deleted successfully.',
+          operation: EntityOperation.delete,
         ),
       );
     } catch (error, stacktrace) {

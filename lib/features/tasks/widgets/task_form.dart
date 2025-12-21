@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 
 class TaskForm extends StatelessWidget {
   const TaskForm({
@@ -102,31 +103,39 @@ class TaskForm extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: FormBuilderDateTimePicker(
                       name: 'startDate',
+                      inputType: InputType.date,
                       decoration: const InputDecoration(
-                        hintText: 'Start date/time (optional)',
+                        hintText: 'Start date (optional)',
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.play_arrow_outlined),
                       ),
-                      initialValue: initialValues['startDate'] as DateTime?,
+                      initialValue: dateOnlyOrNull(
+                        initialValues['startDate'] as DateTime?,
+                      ),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: FormBuilderDateTimePicker(
                       name: 'deadlineDate',
+                      inputType: InputType.date,
                       decoration: const InputDecoration(
-                        hintText: 'Deadline date/time (optional)',
+                        hintText: 'Deadline date (optional)',
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.flag_outlined),
                       ),
-                      initialValue: initialValues['deadlineDate'] as DateTime?,
+                      initialValue: dateOnlyOrNull(
+                        initialValues['deadlineDate'] as DateTime?,
+                      ),
                       validator: (valueCandidate) {
                         final start =
                             formKey.currentState?.fields['startDate']?.value
                                 as DateTime?;
                         if (valueCandidate != null && start != null) {
-                          if (valueCandidate.isBefore(start)) {
-                            return 'Deadline must be after start date/time';
+                          if (dateOnly(
+                            valueCandidate,
+                          ).isBefore(dateOnly(start))) {
+                            return 'Deadline must be after start date';
                           }
                         }
                         return null;

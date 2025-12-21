@@ -29,6 +29,9 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
+    Column.text('start_date'),
+    Column.text('deadline_date'),
+    Column.text('repeat_ical_rrule'),
   ]),
   Table('project_values_link', [
     Column.text('project_id'),

@@ -95,5 +95,117 @@
     "upcomingTitle": "Próximas",
     "@upcomingTitle": {
         "description": "Título para la sección de próximas"
+    },
+    "taskCreatedSuccessfully": "Tarea creada correctamente.",
+    "@taskCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear una tarea"
+    },
+    "taskUpdatedSuccessfully": "Tarea actualizada correctamente.",
+    "@taskUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar una tarea"
+    },
+    "taskDeletedSuccessfully": "Tarea eliminada correctamente.",
+    "@taskDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar una tarea"
+    },
+    "projectCreatedSuccessfully": "Proyecto creado correctamente.",
+    "@projectCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear un proyecto"
+    },
+    "projectUpdatedSuccessfully": "Proyecto actualizado correctamente.",
+    "@projectUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar un proyecto"
+    },
+    "projectDeletedSuccessfully": "Proyecto eliminado correctamente.",
+    "@projectDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar un proyecto"
+    },
+    "valueCreatedSuccessfully": "Valor creado correctamente.",
+    "@valueCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear un valor"
+    },
+    "valueUpdatedSuccessfully": "Valor actualizado correctamente.",
+    "@valueUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar un valor"
+    },
+    "valueDeletedSuccessfully": "Valor eliminado correctamente.",
+    "@valueDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar un valor"
+    },
+    "labelCreatedSuccessfully": "Etiqueta creada correctamente.",
+    "@labelCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear una etiqueta"
+    },
+    "labelUpdatedSuccessfully": "Etiqueta actualizada correctamente.",
+    "@labelUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar una etiqueta"
+    },
+    "labelDeletedSuccessfully": "Etiqueta eliminada correctamente.",
+    "@labelDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar una etiqueta"
+    },
+    "actionCreate": "Crear",
+    "@actionCreate": {
+        "description": "Etiqueta/tooltip genérico para la acción de crear"
+    },
+    "actionUpdate": "Actualizar",
+    "@actionUpdate": {
+        "description": "Etiqueta/tooltip genérico para la acción de actualizar"
+    },
+    "projectFormTitleHint": "Título",
+    "@projectFormTitleHint": {
+        "description": "Texto de sugerencia para el campo de título del proyecto"
+    },
+    "projectFormTitleRequired": "El título es obligatorio",
+    "@projectFormTitleRequired": {
+        "description": "Error de validación mostrado cuando falta el título del proyecto"
+    },
+    "projectFormTitleEmpty": "El título no puede estar vacío",
+    "@projectFormTitleEmpty": {
+        "description": "Error de validación mostrado cuando el título del proyecto está vacío"
+    },
+    "projectFormTitleTooLong": "El título debe tener 120 caracteres o menos",
+    "@projectFormTitleTooLong": {
+        "description": "Error de validación mostrado cuando el título del proyecto es demasiado largo"
+    },
+    "projectFormDescriptionHint": "Descripción",
+    "@projectFormDescriptionHint": {
+        "description": "Texto de sugerencia para el campo de descripción del proyecto"
+    },
+    "projectFormDescriptionTooLong": "La descripción es demasiado larga",
+    "@projectFormDescriptionTooLong": {
+        "description": "Error de validación mostrado cuando la descripción del proyecto es demasiado larga"
+    },
+    "projectFormStartDateHint": "Fecha de inicio (opcional)",
+    "@projectFormStartDateHint": {
+        "description": "Texto de sugerencia para el campo opcional de fecha de inicio del proyecto"
+    },
+    "projectFormDeadlineDateHint": "Fecha límite (opcional)",
+    "@projectFormDeadlineDateHint": {
+        "description": "Texto de sugerencia para el campo opcional de fecha límite del proyecto"
+    },
+    "projectFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "@projectFormDeadlineAfterStartError": {
+        "description": "Error de validación mostrado cuando la fecha límite es anterior a la fecha de inicio"
+    },
+    "projectFormCompletedLabel": "Completado",
+    "@projectFormCompletedLabel": {
+        "description": "Etiqueta para la casilla de completado en el formulario de proyecto"
+    },
+    "projectFormValuesLabel": "Valores",
+    "@projectFormValuesLabel": {
+        "description": "Etiqueta para la selección de valores en el formulario de proyecto"
+    },
+    "projectFormLabelsLabel": "Etiquetas",
+    "@projectFormLabelsLabel": {
+        "description": "Etiqueta para la selección de etiquetas en el formulario de proyecto"
+    },
+    "projectFormRepeatRuleHint": "Regla de repetición (RRULE, opcional)",
+    "@projectFormRepeatRuleHint": {
+        "description": "Texto de sugerencia para el campo opcional de regla RRULE"
+    },
+    "projectFormRepeatRuleTooLong": "La regla de repetición es demasiado larga",
+    "@projectFormRepeatRuleTooLong": {
+        "description": "Error de validación mostrado cuando la regla RRULE es demasiado larga"
     }
 }

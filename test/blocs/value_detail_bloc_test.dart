@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
@@ -76,7 +77,7 @@ void main() {
     act: (bloc) => bloc.add(const ValueDetailEvent.create(name: 'New')),
     expect: () => <dynamic>[
       const ValueDetailState.operationSuccess(
-        message: 'Value created successfully.',
+        operation: EntityOperation.create,
       ),
     ],
   );
@@ -108,7 +109,7 @@ void main() {
         bloc.add(const ValueDetailEvent.update(id: 'v1', name: 'Updated')),
     expect: () => <dynamic>[
       const ValueDetailState.operationSuccess(
-        message: 'Value updated successfully.',
+        operation: EntityOperation.update,
       ),
     ],
   );
@@ -138,7 +139,7 @@ void main() {
     act: (bloc) => bloc.add(const ValueDetailEvent.delete(id: 'v1')),
     expect: () => <dynamic>[
       const ValueDetailState.operationSuccess(
-        message: 'Value deleted successfully.',
+        operation: EntityOperation.delete,
       ),
     ],
   );

@@ -8,6 +8,10 @@ class Project {
     required this.updatedAt,
     required this.name,
     required this.completed,
+    this.description,
+    this.startDate,
+    this.deadlineDate,
+    this.repeatIcalRrule,
     List<ValueModel>? values,
     List<Label>? labels,
   }) : values = values ?? <ValueModel>[],
@@ -18,6 +22,10 @@ class Project {
   final DateTime updatedAt;
   final String name;
   final bool completed;
+  final String? description;
+  final DateTime? startDate;
+  final DateTime? deadlineDate;
+  final String? repeatIcalRrule;
   final List<ValueModel> values;
   final List<Label> labels;
 }

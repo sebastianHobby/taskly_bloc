@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
@@ -95,7 +96,12 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
       },
       listener: (context, state) {
         switch (state) {
-          case ValueDetailOperationSuccess(:final message):
+          case ValueDetailOperationSuccess(:final operation):
+            final message = switch (operation) {
+              EntityOperation.create => context.l10n.valueCreatedSuccessfully,
+              EntityOperation.update => context.l10n.valueUpdatedSuccessfully,
+              EntityOperation.delete => context.l10n.valueDeletedSuccessfully,
+            };
             widget.onSuccess(message);
           case ValueDetailOperationFailure(:final errorDetails):
             widget.onError(
@@ -118,7 +124,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
               initialData: null,
               formKey: _formKey,
               onSubmit: () => _onSubmit(null),
-              submitTooltip: 'Create',
+              submitTooltip: context.l10n.actionCreate,
             );
           case ValueDetailLoadInProgress():
             return const Center(child: CircularProgressIndicator());
@@ -130,7 +136,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
               initialData: value,
               formKey: _formKey,
               onSubmit: () => _onSubmit(value.id),
-              submitTooltip: 'Update',
+              submitTooltip: context.l10n.actionUpdate,
             );
           default:
             return const SizedBox.shrink();

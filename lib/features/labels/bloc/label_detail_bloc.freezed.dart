@@ -827,11 +827,11 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( LabelDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( Label label)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( LabelDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( Label label)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial() when initial != null:
 return initial();case LabelDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case LabelDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case LabelDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case LabelDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case LabelDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.label);case _:
@@ -852,11 +852,11 @@ return loadSuccess(_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( LabelDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( Label label)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( LabelDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( Label label)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial():
 return initial();case LabelDetailOperationSuccess():
-return operationSuccess(_that.message);case LabelDetailOperationFailure():
+return operationSuccess(_that.operation);case LabelDetailOperationFailure():
 return operationFailure(_that.errorDetails);case LabelDetailLoadInProgress():
 return loadInProgress();case LabelDetailLoadSuccess():
 return loadSuccess(_that.label);case _:
@@ -876,11 +876,11 @@ return loadSuccess(_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( LabelDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( Label label)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( LabelDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( Label label)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial() when initial != null:
 return initial();case LabelDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case LabelDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case LabelDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case LabelDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case LabelDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.label);case _:
@@ -927,10 +927,10 @@ String toString() {
 
 
 class LabelDetailOperationSuccess implements LabelDetailState {
-  const LabelDetailOperationSuccess({required this.message});
+  const LabelDetailOperationSuccess({required this.operation});
   
 
- final  String message;
+ final  EntityOperation operation;
 
 /// Create a copy of LabelDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -942,16 +942,16 @@ $LabelDetailOperationSuccessCopyWith<LabelDetailOperationSuccess> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelDetailOperationSuccess&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelDetailOperationSuccess&&(identical(other.operation, operation) || other.operation == operation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode => Object.hash(runtimeType,operation);
 
 @override
 String toString() {
-  return 'LabelDetailState.operationSuccess(message: $message)';
+  return 'LabelDetailState.operationSuccess(operation: $operation)';
 }
 
 
@@ -962,7 +962,7 @@ abstract mixin class $LabelDetailOperationSuccessCopyWith<$Res> implements $Labe
   factory $LabelDetailOperationSuccessCopyWith(LabelDetailOperationSuccess value, $Res Function(LabelDetailOperationSuccess) _then) = _$LabelDetailOperationSuccessCopyWithImpl;
 @useResult
 $Res call({
- String message
+ EntityOperation operation
 });
 
 
@@ -979,10 +979,10 @@ class _$LabelDetailOperationSuccessCopyWithImpl<$Res>
 
 /// Create a copy of LabelDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? operation = null,}) {
   return _then(LabelDetailOperationSuccess(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+operation: null == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
+as EntityOperation,
   ));
 }
 

@@ -6,7 +6,9 @@ abstract class AppRouteName {
   static const upcoming = 'upcoming';
   static const tasks = 'tasks';
   static const values = 'values';
+  static const valueDetail = 'valueDetail';
   static const labels = 'labels';
+  static const labelDetail = 'labelDetail';
 }
 
 abstract class AppRoutePath {

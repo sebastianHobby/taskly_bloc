@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -63,7 +64,11 @@ void main() {
       when(
         () => mockRepository.create(
           name: any(named: 'name'),
+          description: any(named: 'description'),
           completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
           valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
@@ -79,7 +84,7 @@ void main() {
     ),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
-        message: 'Project created successfully.',
+        operation: EntityOperation.create,
       ),
     ],
   );

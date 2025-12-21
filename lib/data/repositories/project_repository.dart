@@ -5,6 +5,7 @@ import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 
 class ProjectRepository implements ProjectRepositoryContract {
   ProjectRepository({required this.driftDb});
@@ -348,12 +349,19 @@ class ProjectRepository implements ProjectRepositoryContract {
   @override
   Future<void> create({
     required String name,
+    String? description,
     bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<String>? valueIds,
     List<String>? labelIds,
   }) async {
     final now = DateTime.now();
     final id = uuid.v4();
+
+    final normalizedStartDate = dateOnlyOrNull(startDate);
+    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
     final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
@@ -363,7 +371,11 @@ class ProjectRepository implements ProjectRepositoryContract {
         ProjectTableCompanion(
           id: Value(id),
           name: Value(name),
+          description: Value(description),
           completed: Value(completed),
+          startDate: Value(normalizedStartDate),
+          deadlineDate: Value(normalizedDeadlineDate),
+          repeatIcalRrule: Value(repeatIcalRrule ?? ''),
           createdAt: Value(now),
           updatedAt: Value(now),
         ),
@@ -404,6 +416,10 @@ class ProjectRepository implements ProjectRepositoryContract {
     required String id,
     required String name,
     required bool completed,
+    String? description,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<String>? valueIds,
     List<String>? labelIds,
   }) async {
@@ -414,6 +430,9 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     final now = DateTime.now();
 
+    final normalizedStartDate = dateOnlyOrNull(startDate);
+    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+
     final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
@@ -422,7 +441,13 @@ class ProjectRepository implements ProjectRepositoryContract {
         ProjectTableCompanion(
           id: Value(id),
           name: Value(name),
+          description: Value(description),
           completed: Value(completed),
+          startDate: Value(normalizedStartDate),
+          deadlineDate: Value(normalizedDeadlineDate),
+          repeatIcalRrule: repeatIcalRrule == null
+              ? Value.absent()
+              : Value(repeatIcalRrule),
           updatedAt: Value(now),
         ),
       );

@@ -13,7 +13,6 @@ import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
-import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
 
 /// Full-screen project page showing the project details and its related tasks.
 class ProjectDetailPage extends StatelessWidget {
@@ -140,11 +139,11 @@ class ProjectDetailPageView extends StatelessWidget {
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: const Center(child: CircularProgressIndicator()),
           ),
-          initialDataLoadSuccess: (_, __) => Scaffold(
+          initialDataLoadSuccess: (_, _) => Scaffold(
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: const Center(child: CircularProgressIndicator()),
           ),
-          loadSuccess: (_, __, project) => Scaffold(
+          loadSuccess: (_, _, project) => Scaffold(
             appBar: AppBar(
               title: Text(context.l10n.projectsTitle),
               actions: [
@@ -209,6 +208,9 @@ class _ProjectHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final localizations = MaterialLocalizations.of(context);
+
+    String formatDate(DateTime value) => localizations.formatShortDate(value);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -254,6 +256,64 @@ class _ProjectHeader extends StatelessWidget {
               ],
             ),
           ],
+          if (project.description != null &&
+              project.description!.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                project.description!.trim(),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          if (project.startDate != null || project.deadlineDate != null) ...[
+            const SizedBox(height: 12),
+            if (project.startDate != null)
+              Row(
+                children: [
+                  const Icon(Icons.play_arrow_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      formatDate(project.startDate!),
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            if (project.deadlineDate != null)
+              Row(
+                children: [
+                  const Icon(Icons.flag_outlined, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      formatDate(project.deadlineDate!),
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+          if (project.repeatIcalRrule != null &&
+              project.repeatIcalRrule!.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.repeat, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      project.repeatIcalRrule!.trim(),
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
@@ -30,7 +31,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           current is TaskDetailOperationFailure,
       listener: (context, state) {
         state.maybeWhen(
-          operationSuccess: (message) {
+          operationSuccess: (operation) {
+            final message = switch (operation) {
+              EntityOperation.create => context.l10n.taskCreatedSuccessfully,
+              EntityOperation.update => context.l10n.taskUpdatedSuccessfully,
+              EntityOperation.delete => context.l10n.taskDeletedSuccessfully,
+            };
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message)),
             );
@@ -111,7 +117,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     ),
                   );
                 },
-                submitTooltip: 'Create',
+                submitTooltip: context.l10n.actionCreate,
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 availableLabels: availableLabels,
@@ -176,7 +182,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     ),
                   );
                 },
-                submitTooltip: 'Update',
+                submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 availableLabels: availableLabels,

@@ -932,12 +932,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( String message)?  operationSuccess,TResult Function( TaskDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( TaskDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
 return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case TaskDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
@@ -958,12 +958,12 @@ return loadSuccess(_that.availableProjects,_that.availableValues,_that.available
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( String message)  operationSuccess,required TResult Function( TaskDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( TaskDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial():
 return initial();case TaskDetailInitialDataLoadSuccess():
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess():
-return operationSuccess(_that.message);case TaskDetailOperationFailure():
+return operationSuccess(_that.operation);case TaskDetailOperationFailure():
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress():
 return loadInProgress();case TaskDetailLoadSuccess():
 return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
@@ -983,12 +983,12 @@ return loadSuccess(_that.availableProjects,_that.availableValues,_that.available
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( String message)?  operationSuccess,TResult? Function( TaskDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( TaskDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<ValueModel> availableValues,  List<Label> availableLabels,  Task task)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
 return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case TaskDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.availableProjects,_that.availableValues,_that.availableLabels,_that.task);case _:
@@ -1123,10 +1123,10 @@ as List<Label>,
 
 
 class TaskDetailOperationSuccess implements TaskDetailState {
-  const TaskDetailOperationSuccess({required this.message});
+  const TaskDetailOperationSuccess({required this.operation});
   
 
- final  String message;
+ final  EntityOperation operation;
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -1138,16 +1138,16 @@ $TaskDetailOperationSuccessCopyWith<TaskDetailOperationSuccess> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailOperationSuccess&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailOperationSuccess&&(identical(other.operation, operation) || other.operation == operation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode => Object.hash(runtimeType,operation);
 
 @override
 String toString() {
-  return 'TaskDetailState.operationSuccess(message: $message)';
+  return 'TaskDetailState.operationSuccess(operation: $operation)';
 }
 
 
@@ -1158,7 +1158,7 @@ abstract mixin class $TaskDetailOperationSuccessCopyWith<$Res> implements $TaskD
   factory $TaskDetailOperationSuccessCopyWith(TaskDetailOperationSuccess value, $Res Function(TaskDetailOperationSuccess) _then) = _$TaskDetailOperationSuccessCopyWithImpl;
 @useResult
 $Res call({
- String message
+ EntityOperation operation
 });
 
 
@@ -1175,10 +1175,10 @@ class _$TaskDetailOperationSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? operation = null,}) {
   return _then(TaskDetailOperationSuccess(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+operation: null == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
+as EntityOperation,
   ));
 }
 

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
@@ -37,8 +38,9 @@ abstract class ValueDetailError with _$ValueDetailError {
 class ValueDetailState with _$ValueDetailState {
   const factory ValueDetailState.initial() = ValueDetailInitial;
 
-  const factory ValueDetailState.operationSuccess({required String message}) =
-      ValueDetailOperationSuccess;
+  const factory ValueDetailState.operationSuccess({
+    required EntityOperation operation,
+  }) = ValueDetailOperationSuccess;
   const factory ValueDetailState.operationFailure({
     required ValueDetailError errorDetails,
   }) = ValueDetailOperationFailure;
@@ -105,7 +107,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       await _valueRepository.update(id: id, name: name);
       emit(
         ValueDetailState.operationSuccess(
-          message: 'Value updated successfully.',
+          operation: EntityOperation.update,
         ),
       );
     } catch (error, stacktrace) {
@@ -128,7 +130,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       await _valueRepository.delete(id);
       emit(
         const ValueDetailState.operationSuccess(
-          message: 'Value deleted successfully.',
+          operation: EntityOperation.delete,
         ),
       );
     } catch (error, stacktrace) {
@@ -151,7 +153,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       await _valueRepository.create(name: name);
       emit(
         const ValueDetailState.operationSuccess(
-          message: 'Value created successfully.',
+          operation: EntityOperation.create,
         ),
       );
     } catch (error, stacktrace) {

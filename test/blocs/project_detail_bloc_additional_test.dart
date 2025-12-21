@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
@@ -94,7 +95,7 @@ void main() {
     ),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
-        message: 'Project updated successfully.',
+        operation: EntityOperation.update,
       ),
     ],
   );
@@ -106,7 +107,11 @@ void main() {
         () => mockRepository.update(
           id: any(named: 'id'),
           name: any(named: 'name'),
+          description: any(named: 'description'),
           completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
           valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
@@ -133,7 +138,11 @@ void main() {
       when(
         () => mockRepository.create(
           name: any(named: 'name'),
+          description: any(named: 'description'),
           completed: any(named: 'completed'),
+          startDate: any(named: 'startDate'),
+          deadlineDate: any(named: 'deadlineDate'),
+          repeatIcalRrule: any(named: 'repeatIcalRrule'),
           valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
@@ -167,7 +176,7 @@ void main() {
     act: (bloc) => bloc.add(const ProjectDetailEvent.delete(id: 'p1')),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
-        message: 'Project deleted successfully.',
+        operation: EntityOperation.delete,
       ),
     ],
   );

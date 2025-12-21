@@ -9,6 +9,11 @@ class ProjectTable extends Table {
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get description => text().nullable().named('description')();
   BoolColumn get completed => boolean().named('completed')();
+  DateTimeColumn get startDate => dateTime().nullable().named('start_date')();
+  DateTimeColumn get deadlineDate =>
+      dateTime().nullable().named('deadline_date')();
+  TextColumn get repeatIcalRrule =>
+      text().nullable().named('repeat_ical_rrule').clientDefault(() => '')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -204,9 +209,9 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {},
     beforeOpen: (details) async {
       // Ensure SQLite enforces foreign keys at runtime.
-    // Do not enable. Powersync exposes views which do not support
-    // foreign key constraints.
-    //  await customStatement('PRAGMA foreign_keys = ON');
+      // Do not enable. Powersync exposes views which do not support
+      // foreign key constraints.
+      //  await customStatement('PRAGMA foreign_keys = ON');
     },
   );
 }

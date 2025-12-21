@@ -8,7 +8,11 @@ abstract class ProjectRepositoryContract {
 
   Future<void> create({
     required String name,
+    String? description,
     bool completed = false,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<String>? valueIds,
     List<String>? labelIds,
   });
@@ -16,6 +20,10 @@ abstract class ProjectRepositoryContract {
     required String id,
     required String name,
     required bool completed,
+    String? description,
+    DateTime? startDate,
+    DateTime? deadlineDate,
+    String? repeatIcalRrule,
     List<String>? valueIds,
     List<String>? labelIds,
   });

@@ -82,4 +82,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upcomingTitle => 'Upcoming';
+
+  @override
+  String get taskCreatedSuccessfully => 'Task created successfully.';
+
+  @override
+  String get taskUpdatedSuccessfully => 'Task updated successfully.';
+
+  @override
+  String get taskDeletedSuccessfully => 'Task deleted successfully.';
+
+  @override
+  String get projectCreatedSuccessfully => 'Project created successfully.';
+
+  @override
+  String get projectUpdatedSuccessfully => 'Project updated successfully.';
+
+  @override
+  String get projectDeletedSuccessfully => 'Project deleted successfully.';
+
+  @override
+  String get valueCreatedSuccessfully => 'Value created successfully.';
+
+  @override
+  String get valueUpdatedSuccessfully => 'Value updated successfully.';
+
+  @override
+  String get valueDeletedSuccessfully => 'Value deleted successfully.';
+
+  @override
+  String get labelCreatedSuccessfully => 'Label created successfully.';
+
+  @override
+  String get labelUpdatedSuccessfully => 'Label updated successfully.';
+
+  @override
+  String get labelDeletedSuccessfully => 'Label deleted successfully.';
+
+  @override
+  String get actionCreate => 'Create';
+
+  @override
+  String get actionUpdate => 'Update';
+
+  @override
+  String get projectFormTitleHint => 'Title';
+
+  @override
+  String get projectFormTitleRequired => 'Title is required';
+
+  @override
+  String get projectFormTitleEmpty => 'Title must not be empty';
+
+  @override
+  String get projectFormTitleTooLong => 'Title must be 120 characters or fewer';
+
+  @override
+  String get projectFormDescriptionHint => 'Description';
+
+  @override
+  String get projectFormDescriptionTooLong => 'Description is too long';
+
+  @override
+  String get projectFormStartDateHint => 'Start date (optional)';
+
+  @override
+  String get projectFormDeadlineDateHint => 'Deadline date (optional)';
+
+  @override
+  String get projectFormDeadlineAfterStartError => 'Deadline must be after start date';
+
+  @override
+  String get projectFormCompletedLabel => 'Completed';
+
+  @override
+  String get projectFormValuesLabel => 'Values';
+
+  @override
+  String get projectFormLabelsLabel => 'Labels';
+
+  @override
+  String get projectFormRepeatRuleHint => 'Repeat rule (RRULE, optional)';
+
+  @override
+  String get projectFormRepeatRuleTooLong => 'Repeat rule is too long';
 }

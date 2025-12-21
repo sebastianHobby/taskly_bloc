@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -86,11 +87,39 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
     return BlocConsumer<ProjectDetailBloc, ProjectDetailState>(
       listenWhen: (previous, current) {
         return current is ProjectDetailOperationSuccess ||
-            current is ProjectDetailOperationFailure;
+            current is ProjectDetailOperationFailure ||
+            current is ProjectDetailLoadSuccess;
       },
       listener: (context, state) {
         switch (state) {
-          case ProjectDetailOperationSuccess(:final message):
+          case ProjectDetailLoadSuccess(
+            :final project,
+          ):
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final formState = _formKey.currentState;
+              if (formState == null) return;
+
+              formState.patchValue({
+                'name': project.name.trim(),
+                'description': project.description ?? '',
+                'completed': project.completed,
+                'startDate': project.startDate,
+                'deadlineDate': project.deadlineDate,
+                'repeatIcalRrule': project.repeatIcalRrule ?? '',
+                'valueIds': project.values
+                    .map((v) => v.id)
+                    .toList(growable: false),
+                'labelIds': project.labels
+                    .map((l) => l.id)
+                    .toList(growable: false),
+              });
+            });
+          case ProjectDetailOperationSuccess(:final operation):
+            final message = switch (operation) {
+              EntityOperation.create => context.l10n.projectCreatedSuccessfully,
+              EntityOperation.update => context.l10n.projectUpdatedSuccessfully,
+              EntityOperation.delete => context.l10n.projectDeletedSuccessfully,
+            };
             widget.onSuccess(message);
           case ProjectDetailOperationFailure(:final errorDetails):
             widget.onError(
@@ -124,7 +153,17 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
 
                 final formValues = formState.value;
                 final name = (formValues['name'] as String).trim();
+                final description = formValues['description'] as String?;
                 final completed = formValues['completed'] as bool? ?? false;
+
+                final repeatCandidate =
+                    (formValues['repeatIcalRrule'] as String?)?.trim();
+                final repeatIcalRrule =
+                    (repeatCandidate == null || repeatCandidate.isEmpty)
+                    ? null
+                    : repeatCandidate;
+                final startDate = formValues['startDate'] as DateTime?;
+                final deadlineDate = formValues['deadlineDate'] as DateTime?;
 
                 final valueIds =
                     (formValues['valueIds'] as List<dynamic>?)
@@ -145,13 +184,17 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.create(
                     name: name,
+                    description: description,
                     completed: completed,
+                    startDate: startDate,
+                    deadlineDate: deadlineDate,
+                    repeatIcalRrule: repeatIcalRrule,
                     values: selectedValues,
                     labels: selectedLabels,
                   ),
                 );
               },
-              submitTooltip: 'Create',
+              submitTooltip: context.l10n.actionCreate,
             );
           },
           loadSuccess: (availableValues, availableLabels, project) {
@@ -167,7 +210,17 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
 
                 final formValues = formState.value;
                 final name = (formValues['name'] as String).trim();
+                final description = formValues['description'] as String?;
                 final completed = formValues['completed'] as bool? ?? false;
+
+                final repeatCandidate =
+                    (formValues['repeatIcalRrule'] as String?)?.trim();
+                final repeatIcalRrule =
+                    (repeatCandidate == null || repeatCandidate.isEmpty)
+                    ? null
+                    : repeatCandidate;
+                final startDate = formValues['startDate'] as DateTime?;
+                final deadlineDate = formValues['deadlineDate'] as DateTime?;
 
                 final valueIds =
                     (formValues['valueIds'] as List<dynamic>?)
@@ -189,13 +242,17 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                   ProjectDetailEvent.update(
                     id: project.id,
                     name: name,
+                    description: description,
                     completed: completed,
+                    startDate: startDate,
+                    deadlineDate: deadlineDate,
+                    repeatIcalRrule: repeatIcalRrule,
                     values: selectedValues,
                     labels: selectedLabels,
                   ),
                 );
               },
-              submitTooltip: 'Update',
+              submitTooltip: context.l10n.actionUpdate,
             );
           },
           operationSuccess: (_) => const SizedBox.shrink(),

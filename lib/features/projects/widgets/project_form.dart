@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 class ProjectForm extends StatelessWidget {
@@ -23,15 +25,20 @@ class ProjectForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name.trim() ?? '',
+      'description': initialData?.description ?? '',
       'completed': initialData?.completed ?? false,
+      'startDate': initialData?.startDate,
+      'deadlineDate': initialData?.deadlineDate,
       'valueIds': (initialData?.values ?? <ValueModel>[])
           .map((ValueModel e) => e.id)
           .toList(growable: false),
       'labelIds': (initialData?.labels ?? <Label>[])
           .map((Label e) => e.id)
           .toList(growable: false),
+      'repeatIcalRrule': initialData?.repeatIcalRrule ?? '',
     };
 
     return Column(
@@ -54,33 +61,91 @@ class ProjectForm extends StatelessWidget {
                       name: 'name',
                       textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: 'Title',
+                      decoration: InputDecoration(
+                        hintText: l10n.projectFormTitleHint,
                         border: InputBorder.none,
                       ),
                       validator: FormBuilderValidators.compose([
                         FormBuilderValidators.required(
-                          errorText: 'Title is required',
+                          errorText: l10n.projectFormTitleRequired,
                         ),
                         FormBuilderValidators.minLength(
                           1,
-                          errorText: 'Title must not be empty',
+                          errorText: l10n.projectFormTitleEmpty,
                         ),
                         FormBuilderValidators.maxLength(
                           120,
-                          errorText: 'Title must be 120 characters or fewer',
+                          errorText: l10n.projectFormTitleTooLong,
                         ),
                       ]),
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FormBuilderTextField(
+                      name: 'description',
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: l10n.projectFormDescriptionHint,
+                        border: InputBorder.none,
+                      ),
+                      minLines: 2,
+                      maxLines: 5,
+                      validator: FormBuilderValidators.maxLength(
+                        200,
+                        errorText: l10n.projectFormDescriptionTooLong,
+                        checkNullOrEmpty: false,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FormBuilderDateTimePicker(
+                      name: 'startDate',
+                      inputType: InputType.date,
+                      decoration: InputDecoration(
+                        hintText: l10n.projectFormStartDateHint,
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(Icons.play_arrow_outlined),
+                      ),
+                      initialValue: dateOnlyOrNull(
+                        initialValues['startDate'] as DateTime?,
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FormBuilderDateTimePicker(
+                      name: 'deadlineDate',
+                      inputType: InputType.date,
+                      decoration: InputDecoration(
+                        hintText: l10n.projectFormDeadlineDateHint,
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(Icons.flag_outlined),
+                      ),
+                      initialValue: dateOnlyOrNull(
+                        initialValues['deadlineDate'] as DateTime?,
+                      ),
+                      validator: (valueCandidate) {
+                        final start =
+                            formKey.currentState?.fields['startDate']?.value
+                                as DateTime?;
+                        if (valueCandidate != null && start != null) {
+                          if (dateOnly(
+                            valueCandidate,
+                          ).isBefore(dateOnly(start))) {
+                            return l10n.projectFormDeadlineAfterStartError;
+                          }
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: FormBuilderCheckbox(
                       name: 'completed',
-                      title: const Text('Completed'),
+                      title: Text(l10n.projectFormCompletedLabel),
                       initialValue:
                           initialValues['completed'] as bool? ?? false,
                     ),
@@ -93,9 +158,9 @@ class ProjectForm extends StatelessWidget {
                     child: FormBuilderFilterChips<String>(
                       name: 'valueIds',
                       initialValue: initialValues['valueIds'] as List<String>?,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         border: InputBorder.none,
-                        labelText: 'Values',
+                        labelText: l10n.projectFormValuesLabel,
                       ),
                       options: availableValues
                           .map(
@@ -115,9 +180,9 @@ class ProjectForm extends StatelessWidget {
                     child: FormBuilderFilterChips<String>(
                       name: 'labelIds',
                       initialValue: initialValues['labelIds'] as List<String>?,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         border: InputBorder.none,
-                        labelText: 'Labels',
+                        labelText: l10n.projectFormLabelsLabel,
                       ),
                       options: availableLabels
                           .map(
@@ -127,6 +192,23 @@ class ProjectForm extends StatelessWidget {
                             ),
                           )
                           .toList(growable: false),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FormBuilderTextField(
+                      name: 'repeatIcalRrule',
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        hintText: l10n.projectFormRepeatRuleHint,
+                        border: InputBorder.none,
+                        prefixIcon: const Icon(Icons.repeat),
+                      ),
+                      validator: FormBuilderValidators.maxLength(
+                        255,
+                        errorText: l10n.projectFormRepeatRuleTooLong,
+                        checkNullOrEmpty: false,
+                      ),
                     ),
                   ),
                 ],

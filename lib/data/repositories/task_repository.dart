@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/task.dart';
 export 'package:taskly_bloc/domain/task.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
 class TaskRepository implements TaskRepositoryContract {
@@ -368,6 +369,9 @@ class TaskRepository implements TaskRepositoryContract {
     final now = DateTime.now();
     final id = uuid.v4();
 
+    final normalizedStartDate = dateOnlyOrNull(startDate);
+    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+
     final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
@@ -380,8 +384,8 @@ class TaskRepository implements TaskRepositoryContract {
               name: Value(name),
               description: Value(description),
               completed: Value(completed),
-              startDate: Value(startDate),
-              deadlineDate: Value(deadlineDate),
+              startDate: Value(normalizedStartDate),
+              deadlineDate: Value(normalizedDeadlineDate),
               projectId: Value(projectId),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const Value.absent()
@@ -443,6 +447,9 @@ class TaskRepository implements TaskRepositoryContract {
 
     final now = DateTime.now();
 
+    final normalizedStartDate = dateOnlyOrNull(startDate);
+    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+
     final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
@@ -455,8 +462,8 @@ class TaskRepository implements TaskRepositoryContract {
               name: Value(name),
               description: Value(description),
               completed: Value(completed),
-              startDate: Value(startDate),
-              deadlineDate: Value(deadlineDate),
+              startDate: Value(normalizedStartDate),
+              deadlineDate: Value(normalizedDeadlineDate),
               projectId: Value(projectId),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const Value.absent()

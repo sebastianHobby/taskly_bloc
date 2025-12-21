@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
@@ -35,8 +36,9 @@ abstract class LabelDetailError with _$LabelDetailError {
 class LabelDetailState with _$LabelDetailState {
   const factory LabelDetailState.initial() = LabelDetailInitial;
 
-  const factory LabelDetailState.operationSuccess({required String message}) =
-      LabelDetailOperationSuccess;
+  const factory LabelDetailState.operationSuccess({
+    required EntityOperation operation,
+  }) = LabelDetailOperationSuccess;
   const factory LabelDetailState.operationFailure({
     required LabelDetailError errorDetails,
   }) = LabelDetailOperationFailure;
@@ -102,7 +104,7 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
       await _labelRepository.update(id: id, name: name);
       emit(
         const LabelDetailState.operationSuccess(
-          message: 'Label updated successfully.',
+          operation: EntityOperation.update,
         ),
       );
     } catch (error, stacktrace) {
@@ -122,7 +124,7 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
       await _labelRepository.delete(id);
       emit(
         const LabelDetailState.operationSuccess(
-          message: 'Label deleted successfully.',
+          operation: EntityOperation.delete,
         ),
       );
     } catch (error, stacktrace) {
@@ -142,7 +144,7 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
       await _labelRepository.create(name: name);
       emit(
         const LabelDetailState.operationSuccess(
-          message: 'Label created successfully.',
+          operation: EntityOperation.create,
         ),
       );
     } catch (error, stacktrace) {

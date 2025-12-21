@@ -827,11 +827,11 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  operationSuccess,TResult Function( ValueDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( ValueModel value)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( ValueDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( ValueModel value)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial() when initial != null:
 return initial();case ValueDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case ValueDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case ValueDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case ValueDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case ValueDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.value);case _:
@@ -852,11 +852,11 @@ return loadSuccess(_that.value);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  operationSuccess,required TResult Function( ValueDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( ValueModel value)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( ValueDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( ValueModel value)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial():
 return initial();case ValueDetailOperationSuccess():
-return operationSuccess(_that.message);case ValueDetailOperationFailure():
+return operationSuccess(_that.operation);case ValueDetailOperationFailure():
 return operationFailure(_that.errorDetails);case ValueDetailLoadInProgress():
 return loadInProgress();case ValueDetailLoadSuccess():
 return loadSuccess(_that.value);case _:
@@ -876,11 +876,11 @@ return loadSuccess(_that.value);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  operationSuccess,TResult? Function( ValueDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( ValueModel value)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( ValueDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( ValueModel value)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ValueDetailInitial() when initial != null:
 return initial();case ValueDetailOperationSuccess() when operationSuccess != null:
-return operationSuccess(_that.message);case ValueDetailOperationFailure() when operationFailure != null:
+return operationSuccess(_that.operation);case ValueDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case ValueDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case ValueDetailLoadSuccess() when loadSuccess != null:
 return loadSuccess(_that.value);case _:
@@ -927,10 +927,10 @@ String toString() {
 
 
 class ValueDetailOperationSuccess implements ValueDetailState {
-  const ValueDetailOperationSuccess({required this.message});
+  const ValueDetailOperationSuccess({required this.operation});
   
 
- final  String message;
+ final  EntityOperation operation;
 
 /// Create a copy of ValueDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -942,16 +942,16 @@ $ValueDetailOperationSuccessCopyWith<ValueDetailOperationSuccess> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailOperationSuccess&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailOperationSuccess&&(identical(other.operation, operation) || other.operation == operation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode => Object.hash(runtimeType,operation);
 
 @override
 String toString() {
-  return 'ValueDetailState.operationSuccess(message: $message)';
+  return 'ValueDetailState.operationSuccess(operation: $operation)';
 }
 
 
@@ -962,7 +962,7 @@ abstract mixin class $ValueDetailOperationSuccessCopyWith<$Res> implements $Valu
   factory $ValueDetailOperationSuccessCopyWith(ValueDetailOperationSuccess value, $Res Function(ValueDetailOperationSuccess) _then) = _$ValueDetailOperationSuccessCopyWithImpl;
 @useResult
 $Res call({
- String message
+ EntityOperation operation
 });
 
 
@@ -979,10 +979,10 @@ class _$ValueDetailOperationSuccessCopyWithImpl<$Res>
 
 /// Create a copy of ValueDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? operation = null,}) {
   return _then(ValueDetailOperationSuccess(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+operation: null == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
+as EntityOperation,
   ));
 }
 

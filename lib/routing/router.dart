@@ -111,6 +111,19 @@ final router = GoRouter(
               builder: (context, state) => ValueOverviewPage(
                 valueRepository: getIt<ValueRepositoryContract>(),
               ),
+              routes: [
+                GoRoute(
+                  name: AppRouteName.valueDetail,
+                  path: ':valueId',
+                  builder: (context, state) => ValueDetailPage(
+                    valueId: state.pathParameters['valueId']!,
+                    valueRepository: getIt<ValueRepositoryContract>(),
+                    taskRepository: getIt<TaskRepositoryContract>(),
+                    projectRepository: getIt<ProjectRepositoryContract>(),
+                    labelRepository: getIt<LabelRepositoryContract>(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -122,6 +135,19 @@ final router = GoRouter(
               builder: (context, state) => LabelOverviewPage(
                 labelRepository: getIt<LabelRepositoryContract>(),
               ),
+              routes: [
+                GoRoute(
+                  name: AppRouteName.labelDetail,
+                  path: ':labelId',
+                  builder: (context, state) => LabelDetailPage(
+                    labelId: state.pathParameters['labelId']!,
+                    labelRepository: getIt<LabelRepositoryContract>(),
+                    taskRepository: getIt<TaskRepositoryContract>(),
+                    projectRepository: getIt<ProjectRepositoryContract>(),
+                    valueRepository: getIt<ValueRepositoryContract>(),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

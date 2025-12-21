@@ -41,8 +41,10 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   TaskOverviewBloc({
     required TaskRepositoryContract taskRepository,
     TaskListQuery initialQuery = TaskListQuery.all,
+    bool withRelated = false,
   }) : _taskRepository = taskRepository,
        _query = initialQuery,
+       _withRelated = withRelated,
        super(const TaskOverviewState.initial()) {
     on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<TaskOverviewQueryChanged>(_onQueryChanged);
@@ -50,6 +52,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   }
 
   final TaskRepositoryContract _taskRepository;
+  final bool _withRelated;
 
   TaskListQuery _query;
   var _hasTaskSnapshot = false;
@@ -70,6 +73,16 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
     final projectId = query.projectId;
     if (projectId != null && projectId.isNotEmpty) {
       filtered = filtered.where((t) => t.projectId == projectId);
+    }
+
+    final valueId = query.valueId;
+    if (valueId != null && valueId.isNotEmpty) {
+      filtered = filtered.where((t) => t.values.any((v) => v.id == valueId));
+    }
+
+    final labelId = query.labelId;
+    if (labelId != null && labelId.isNotEmpty) {
+      filtered = filtered.where((t) => t.labels.any((l) => l.id == labelId));
     }
 
     final onOrBeforeDate = query.onOrBeforeDate;
@@ -137,7 +150,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
     emit(const TaskOverviewState.loading());
     // Subscribe to task stream
     await emit.forEach<List<Task>>(
-      _taskRepository.watchAll(),
+      _taskRepository.watchAll(withRelated: _withRelated),
       onData: (tasks) {
         _hasTaskSnapshot = true;
         _allTasks = tasks;

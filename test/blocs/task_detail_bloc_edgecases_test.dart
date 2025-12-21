@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -203,7 +204,7 @@ void main() {
       const TaskDetailState.loadInProgress(),
       isA<TaskDetailInitialDataLoadSuccess>(),
       const TaskDetailState.operationSuccess(
-        message: 'Task updated successfully.',
+        operation: EntityOperation.update,
       ),
     ],
   );

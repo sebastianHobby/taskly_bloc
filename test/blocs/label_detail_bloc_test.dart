@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/features/labels/bloc/label_detail_bloc.dart';
@@ -76,7 +77,7 @@ void main() {
     act: (bloc) => bloc.add(const LabelDetailEvent.create(name: 'New')),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
-        message: 'Label created successfully.',
+        operation: EntityOperation.create,
       ),
     ],
   );
@@ -108,7 +109,7 @@ void main() {
         bloc.add(const LabelDetailEvent.update(id: 'l1', name: 'Updated')),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
-        message: 'Label updated successfully.',
+        operation: EntityOperation.update,
       ),
     ],
   );
@@ -138,7 +139,7 @@ void main() {
     act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'l1')),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
-        message: 'Label deleted successfully.',
+        operation: EntityOperation.delete,
       ),
     ],
   );

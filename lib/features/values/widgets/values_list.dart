@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
-import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
-import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/features/values/widgets/value_list_tile.dart';
+import 'package:taskly_bloc/routing/routes.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -28,29 +27,10 @@ class ValuesListView extends StatelessWidget {
           value: v,
           onTap: (value) async {
             isSheetOpen?.value = true;
-            await showDetailModal<void>(
-              context: context,
-              childBuilder: (modalSheetContext) => SafeArea(
-                top: false,
-                child: ValueDetailSheetPage(
-                  valueId: value.id,
-                  valueRepository: valueRepository,
-                  onSuccess: (message) {
-                    Navigator.of(modalSheetContext).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(message)),
-                    );
-                  },
-                  onError: (errorMessage) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(errorMessage)),
-                    );
-                  },
-                ),
-              ),
-              modalTypeBuilder: (_) => WoltModalType.bottomSheet(),
+            await context.pushNamed(
+              AppRouteName.valueDetail,
+              pathParameters: {'valueId': value.id},
             );
-
             isSheetOpen?.value = false;
           },
         );

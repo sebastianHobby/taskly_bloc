@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
-import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:taskly_bloc/features/values/widgets/values_list.dart';
+import 'package:taskly_bloc/routing/routes.dart';
 import '../helpers/pump_app.dart';
 
 class FakeValueRepository implements ValueRepositoryContract {
@@ -84,85 +85,51 @@ class FakeValueRepository implements ValueRepositoryContract {
 }
 
 void main() {
-  testWidgets(
-    'tapping value opens sheet and shows success snackbar on update',
-    (tester) async {
-      final sample = ValueModel(
-        id: 'v1',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        name: 'Value 1',
-      );
-      final repo = FakeValueRepository(initialValues: [sample]);
-
-      await pumpLocalizedApp(
-        tester,
-        home: Scaffold(
-          body: ValuesListView(
-            values: [sample],
-            valueRepository: repo,
-          ),
-        ),
-      );
-
-      await tester.tap(find.byKey(const Key('value-v1')));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ValueDetailSheetPage), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Update'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.text('Value updated successfully.'), findsOneWidget);
-
-      tester
-          .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
-          .hideCurrentSnackBar();
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ValueDetailSheetPage), findsNothing);
-    },
-  );
-
-  testWidgets('shows error snackbar when update fails', (tester) async {
+  testWidgets('tapping value navigates to value detail route', (tester) async {
     final sample = ValueModel(
       id: 'v1',
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       name: 'Value 1',
     );
-    final repo = FakeValueRepository(initialValues: [sample])
-      ..updateException = Exception('bad');
+    final repo = FakeValueRepository(initialValues: [sample]);
 
-    await pumpLocalizedApp(
-      tester,
-      home: Scaffold(
-        body: ValuesListView(
-          values: [sample],
-          valueRepository: repo,
+    final isSheetOpen = ValueNotifier<bool>(false);
+    final sheetOpenValues = <bool>[];
+    isSheetOpen.addListener(() => sheetOpenValues.add(isSheetOpen.value));
+
+    final router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => Scaffold(
+            body: ValuesListView(
+              values: [sample],
+              valueRepository: repo,
+              isSheetOpen: isSheetOpen,
+            ),
+          ),
         ),
-      ),
+        GoRoute(
+          name: AppRouteName.valueDetail,
+          path: '/values/:valueId',
+          builder: (context, state) {
+            final valueId = state.pathParameters['valueId']!;
+            return Scaffold(body: Text('value-detail:$valueId'));
+          },
+        ),
+      ],
     );
+
+    await pumpLocalizedRouterApp(tester, router: router);
 
     await tester.tap(find.byKey(const Key('value-v1')));
     await tester.pumpAndSettle();
+    expect(find.text('value-detail:v1'), findsOneWidget);
 
-    expect(find.byType(ValueDetailSheetPage), findsOneWidget);
-
-    await tester.tap(find.byTooltip('Update'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(
-      find.text('Something went wrong. Please try again.'),
-      findsAtLeast(1),
-    );
-    expect(find.byType(ValueDetailSheetPage), findsOneWidget);
-
-    tester
-        .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
-        .hideCurrentSnackBar();
+    router.pop();
     await tester.pumpAndSettle();
+
+    expect(sheetOpenValues, containsAllInOrder([true, false]));
   });
 }
