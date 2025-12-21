@@ -10,7 +10,6 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/labels/bloc/label_detail_bloc.dart';
 import 'package:taskly_bloc/features/labels/view/label_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
@@ -22,7 +21,6 @@ class LabelDetailPage extends StatelessWidget {
     required this.labelRepository,
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
     super.key,
   });
 
@@ -30,7 +28,6 @@ class LabelDetailPage extends StatelessWidget {
   final LabelRepositoryContract labelRepository;
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +52,6 @@ class LabelDetailPage extends StatelessWidget {
         labelRepository: labelRepository,
         taskRepository: taskRepository,
         projectRepository: projectRepository,
-        valueRepository: valueRepository,
       ),
     );
   }
@@ -69,14 +65,12 @@ class _LabelDetailView extends StatelessWidget {
     required this.labelRepository,
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
   });
 
   final String labelId;
   final LabelRepositoryContract labelRepository;
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
 
   void _showEditLabelSheet(BuildContext context) {
     unawaited(
@@ -118,7 +112,6 @@ class _LabelDetailView extends StatelessWidget {
             create: (_) => TaskDetailBloc(
               taskRepository: taskRepository,
               projectRepository: projectRepository,
-              valueRepository: valueRepository,
               labelRepository: labelRepository,
               taskId: taskId,
             ),

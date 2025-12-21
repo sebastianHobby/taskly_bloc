@@ -1,6 +1,5 @@
 import 'package:taskly_bloc/domain/label.dart';
 import 'package:taskly_bloc/domain/project.dart';
-import 'package:taskly_bloc/domain/value.dart';
 
 /// Domain representation of a Task used across the app.
 class Task {
@@ -16,10 +15,8 @@ class Task {
     this.projectId,
     this.repeatIcalRrule,
     this.project,
-    List<ValueModel>? values,
     List<Label>? labels,
-  }) : values = values ?? <ValueModel>[],
-       labels = labels ?? <Label>[];
+  }) : labels = labels ?? <Label>[];
 
   final String id;
   final DateTime createdAt;
@@ -32,6 +29,5 @@ class Task {
   final String? projectId;
   final String? repeatIcalRrule;
   final Project? project;
-  final List<ValueModel> values;
   final List<Label> labels;
 }

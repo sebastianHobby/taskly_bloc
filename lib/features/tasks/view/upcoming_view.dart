@@ -9,7 +9,6 @@ import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_list_tile.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
@@ -24,14 +23,12 @@ class UpcomingPage extends StatelessWidget {
   const UpcomingPage({
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   @override
@@ -44,18 +41,19 @@ class UpcomingPage extends StatelessWidget {
             initialQuery: TaskListQuery.upcoming(now: DateTime.now()).copyWith(
               sort: TaskSort.deadline,
             ),
+            withRelated: true,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
         BlocProvider<ProjectOverviewBloc>(
           create: (context) => ProjectOverviewBloc(
             projectRepository: projectRepository,
+            withRelated: true,
           )..add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
         ),
       ],
       child: UpcomingView(
         taskRepository: taskRepository,
         projectRepository: projectRepository,
-        valueRepository: valueRepository,
         labelRepository: labelRepository,
       ),
     );
@@ -66,14 +64,12 @@ class UpcomingView extends StatelessWidget {
   const UpcomingView({
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   bool _matchesOnOrAfterDay(DateTime? candidate, DateTime cutoffDay) {
@@ -116,7 +112,6 @@ class UpcomingView extends StatelessWidget {
             create: (_) => TaskDetailBloc(
               taskRepository: taskRepository,
               projectRepository: projectRepository,
-              valueRepository: valueRepository,
               labelRepository: labelRepository,
               taskId: taskId,
             ),

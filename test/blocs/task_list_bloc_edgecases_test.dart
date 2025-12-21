@@ -51,8 +51,6 @@ void main() {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          valueIds: any(named: 'valueIds'),
-          labelIds: any(named: 'labelIds'),
         ),
       ).thenThrow(Exception('update fail'));
     },

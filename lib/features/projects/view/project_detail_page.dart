@@ -9,7 +9,6 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
@@ -20,7 +19,6 @@ class ProjectDetailPage extends StatelessWidget {
     required this.projectId,
     required this.projectRepository,
     required this.taskRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
@@ -28,7 +26,6 @@ class ProjectDetailPage extends StatelessWidget {
   final String projectId;
   final ProjectRepositoryContract projectRepository;
   final TaskRepositoryContract taskRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   @override
@@ -38,7 +35,6 @@ class ProjectDetailPage extends StatelessWidget {
         BlocProvider<ProjectDetailBloc>(
           create: (_) => ProjectDetailBloc(
             projectRepository: projectRepository,
-            valueRepository: valueRepository,
             labelRepository: labelRepository,
           )..add(ProjectDetailEvent.get(projectId: projectId)),
         ),
@@ -46,6 +42,7 @@ class ProjectDetailPage extends StatelessWidget {
           create: (_) => TaskOverviewBloc(
             taskRepository: taskRepository,
             initialQuery: TaskListQuery(projectId: projectId),
+            withRelated: true,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
       ],
@@ -53,7 +50,6 @@ class ProjectDetailPage extends StatelessWidget {
         projectId: projectId,
         projectRepository: projectRepository,
         taskRepository: taskRepository,
-        valueRepository: valueRepository,
         labelRepository: labelRepository,
       ),
     );
@@ -65,7 +61,6 @@ class ProjectDetailPageView extends StatelessWidget {
     required this.projectId,
     required this.projectRepository,
     required this.taskRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
@@ -73,7 +68,6 @@ class ProjectDetailPageView extends StatelessWidget {
   final String projectId;
   final ProjectRepositoryContract projectRepository;
   final TaskRepositoryContract taskRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   void _showEditProjectSheet(BuildContext context) {
@@ -83,7 +77,6 @@ class ProjectDetailPageView extends StatelessWidget {
         childBuilder: (modalSheetContext) => ProjectEditSheetPage(
           projectId: projectId,
           projectRepository: projectRepository,
-          valueRepository: valueRepository,
           labelRepository: labelRepository,
           onSuccess: (message) {
             Navigator.of(modalSheetContext).pop();
@@ -115,7 +108,6 @@ class ProjectDetailPageView extends StatelessWidget {
             create: (_) => TaskDetailBloc(
               taskRepository: taskRepository,
               projectRepository: projectRepository,
-              valueRepository: valueRepository,
               labelRepository: labelRepository,
               taskId: taskId,
             ),
@@ -139,11 +131,11 @@ class ProjectDetailPageView extends StatelessWidget {
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: const Center(child: CircularProgressIndicator()),
           ),
-          initialDataLoadSuccess: (_, _) => Scaffold(
+          initialDataLoadSuccess: (_) => Scaffold(
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: const Center(child: CircularProgressIndicator()),
           ),
-          loadSuccess: (_, _, project) => Scaffold(
+          loadSuccess: (_, project) => Scaffold(
             appBar: AppBar(
               title: Text(context.l10n.projectsTitle),
               actions: [
@@ -159,8 +151,8 @@ class ProjectDetailPageView extends StatelessWidget {
                 const Divider(height: 1),
                 Expanded(
                   child: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
-                    builder: (context, state) {
-                      return state.when(
+                    builder: (context, taskState) {
+                      return taskState.when(
                         initial: () =>
                             const Center(child: CircularProgressIndicator()),
                         loading: () =>
@@ -186,11 +178,11 @@ class ProjectDetailPageView extends StatelessWidget {
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: const Center(child: CircularProgressIndicator()),
           ),
-          operationFailure: (details) => Scaffold(
+          operationFailure: (errorDetails) => Scaffold(
             appBar: AppBar(title: Text(context.l10n.projectsTitle)),
             body: Center(
               child: Text(
-                friendlyErrorMessageForUi(details.error, context.l10n),
+                friendlyErrorMessageForUi(errorDetails.error, context.l10n),
               ),
             ),
           ),
@@ -204,6 +196,14 @@ class _ProjectHeader extends StatelessWidget {
   const _ProjectHeader({required this.project});
 
   final Project project;
+
+  Color _colorFromHexOrFallback(String? hex) {
+    final normalized = (hex ?? '').replaceAll('#', '');
+    if (normalized.length != 6) return Colors.black;
+    final value = int.tryParse('FF$normalized', radix: 16);
+    if (value == null) return Colors.black;
+    return Color(value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,20 +235,19 @@ class _ProjectHeader extends StatelessWidget {
               ),
             ],
           ),
-          if (project.values.isNotEmpty || project.labels.isNotEmpty) ...[
+          if (project.labels.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                ...project.values.map(
-                  (v) => Chip(
-                    label: Text(v.name),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
                 ...project.labels.map(
                   (l) => Chip(
+                    avatar: Icon(
+                      Icons.label_outline,
+                      size: 18,
+                      color: _colorFromHexOrFallback(l.color),
+                    ),
                     label: Text(l.name),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),

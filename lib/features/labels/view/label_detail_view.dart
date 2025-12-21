@@ -71,12 +71,15 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
 
     final formValues = formState.value;
     final name = formValues['name'] as String;
+    final color = formValues['colour'] as String;
 
     if (id == null) {
-      context.read<LabelDetailBloc>().add(LabelDetailEvent.create(name: name));
+      context.read<LabelDetailBloc>().add(
+        LabelDetailEvent.create(name: name, color: color),
+      );
     } else {
       context.read<LabelDetailBloc>().add(
-        LabelDetailEvent.update(id: id, name: name),
+        LabelDetailEvent.update(id: id, name: name, color: color),
       );
     }
   }

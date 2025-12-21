@@ -12,13 +12,16 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
   const factory LabelDetailEvent.update({
     required String id,
     required String name,
+    required String color,
   }) = _LabelDetailUpdate;
 
   const factory LabelDetailEvent.delete({required String id}) =
       _LabelDetailDelete;
 
-  const factory LabelDetailEvent.create({required String name}) =
-      _LabelDetailCreate;
+  const factory LabelDetailEvent.create({
+    required String name,
+    required String color,
+  }) = _LabelDetailCreate;
 
   const factory LabelDetailEvent.get({required String labelId}) =
       _LabelDetailGet;
@@ -57,9 +60,9 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
     on<LabelDetailEvent>((event, emit) async {
       await event.when(
         get: (labelId) async => _onGet(labelId, emit),
-        update: (id, name) async => _onUpdate(id, name, emit),
+        update: (id, name, color) async => _onUpdate(id, name, color, emit),
         delete: (id) async => _onDelete(id, emit),
-        create: (name) async => _onCreate(name, emit),
+        create: (name, color) async => _onCreate(name, color, emit),
       );
     });
 
@@ -98,10 +101,11 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
   Future<void> _onUpdate(
     String id,
     String name,
+    String color,
     Emitter<LabelDetailState> emit,
   ) async {
     try {
-      await _labelRepository.update(id: id, name: name);
+      await _labelRepository.update(id: id, name: name, color: color);
       emit(
         const LabelDetailState.operationSuccess(
           operation: EntityOperation.update,
@@ -139,9 +143,13 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
     }
   }
 
-  Future<void> _onCreate(String name, Emitter<LabelDetailState> emit) async {
+  Future<void> _onCreate(
+    String name,
+    String color,
+    Emitter<LabelDetailState> emit,
+  ) async {
     try {
-      await _labelRepository.create(name: name);
+      await _labelRepository.create(name: name, color: color);
       emit(
         const LabelDetailState.operationSuccess(
           operation: EntityOperation.create,

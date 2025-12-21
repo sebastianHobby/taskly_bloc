@@ -21,10 +21,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksTitle => 'Tareas';
 
   @override
-  String get valuesTitle => 'Valores';
+  String get labelsTitle => 'Etiquetas';
 
   @override
-  String get labelsTitle => 'Etiquetas';
+  String get browseTitle => 'Explorar';
 
   @override
   String get noProjectsFound => 'No se encontraron proyectos.';
@@ -34,9 +34,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createTaskTooltip => 'Crear tarea';
-
-  @override
-  String get createValueTooltip => 'Crear valor';
 
   @override
   String get createLabelTooltip => 'Crear etiqueta';
@@ -52,9 +49,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectNotFound => 'No se encontró el proyecto.';
-
-  @override
-  String get valueNotFound => 'No se encontró el valor.';
 
   @override
   String get labelNotFound => 'No se encontró la etiqueta.';

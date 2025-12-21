@@ -57,12 +57,6 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       userId: userId,
       expiresAt: expiresAt,
     );
-    // return PowerSyncCredentials(
-    //     endpoint: Env.powersyncUrl,
-    //     token:
-    //         'eyJhbGciOiJSUzI1NiIsImtpZCI6InBvd2Vyc3luYy1kZXYtMzIyM2Q0ZTMifQ.eyJzdWIiOiJjZGE5YzZhNC1kNTc2LTQyNzktYTVjYi02YThkOTkxODg1ODUiLCJpYXQiOjE3NjUyNzgwMzcsImlzcyI6Imh0dHBzOi8vcG93ZXJzeW5jLWFwaS5qb3VybmV5YXBwcy5jb20iLCJhdWQiOiJodHRwczovLzY5MzY2YTg2YWYwZGM3Zjc1OTc4ODI2MC5wb3dlcnN5bmMuam91cm5leWFwcHMuY29tIiwiZXhwIjoxNzY1MzIxMjM3fQ.GksdmYDXYU5Svb_K-aX0jN5gHQFyYhwwGMpOFRWjoV2X8yOCSZ6CmNCidk2uL0K8KyKuirPa8FHXezfIRTPgKcdUiq7x2lE6RpbXyoMcoayLF9PihNWHGrcfO5M_jQYg_zMvNgNsmz8o3Usueu4rlSOPdlfnRM7i6qYkvhZKzKFSw_GG6_iHvo-YrruBNEP8Co7F3kzIUjFE_NHluvEnIj-mQDrbd7VJwR0y9Dso0EIyHscwcdLa4gqdLLuqfWl0vrxm1h6xQxM2XCAbnWVwX08b6pprpTh50hMnqryoMv4pz3Eb4i2bPrfhq3c8_qXKOsClFluUtgpssuix1aeN4Q',
-    //     userId: userId,
-    //     expiresAt: expiresAt);
   }
 
   @override

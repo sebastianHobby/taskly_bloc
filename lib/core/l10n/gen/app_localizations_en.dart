@@ -21,10 +21,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksTitle => 'Tasks';
 
   @override
-  String get valuesTitle => 'Values';
+  String get labelsTitle => 'Labels';
 
   @override
-  String get labelsTitle => 'Labels';
+  String get browseTitle => 'Browse';
 
   @override
   String get noProjectsFound => 'No projects found.';
@@ -34,9 +34,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createTaskTooltip => 'Create task';
-
-  @override
-  String get createValueTooltip => 'Create value';
 
   @override
   String get createLabelTooltip => 'Create label';
@@ -52,9 +49,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectNotFound => 'Project not found.';
-
-  @override
-  String get valueNotFound => 'Value not found.';
 
   @override
   String get labelNotFound => 'Label not found.';

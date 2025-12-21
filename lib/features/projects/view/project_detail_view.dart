@@ -7,14 +7,12 @@ import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_form.dart';
 
 class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({
     required this.projectRepository,
-    required this.valueRepository,
     required this.labelRepository,
     required this.onSuccess,
     required this.onError,
@@ -23,7 +21,6 @@ class ProjectEditSheetPage extends StatelessWidget {
   });
 
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
   final String? projectId;
   final void Function(String message) onSuccess;
@@ -35,7 +32,6 @@ class ProjectEditSheetPage extends StatelessWidget {
       body: BlocProvider(
         create: (context) => ProjectDetailBloc(
           projectRepository: projectRepository,
-          valueRepository: valueRepository,
           labelRepository: labelRepository,
         ),
         lazy: false,
@@ -106,9 +102,6 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                 'startDate': project.startDate,
                 'deadlineDate': project.deadlineDate,
                 'repeatIcalRrule': project.repeatIcalRrule ?? '',
-                'valueIds': project.values
-                    .map((v) => v.id)
-                    .toList(growable: false),
                 'labelIds': project.labels
                     .map((l) => l.id)
                     .toList(growable: false),
@@ -140,11 +133,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          initialDataLoadSuccess: (availableValues, availableLabels) {
+          initialDataLoadSuccess: (availableLabels) {
             return ProjectForm(
               initialData: null,
               formKey: _formKey,
-              availableValues: availableValues,
               availableLabels: availableLabels,
               onSubmit: () {
                 final formState = _formKey.currentState;
@@ -164,19 +156,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                     : repeatCandidate;
                 final startDate = formValues['startDate'] as DateTime?;
                 final deadlineDate = formValues['deadlineDate'] as DateTime?;
-
-                final valueIds =
-                    (formValues['valueIds'] as List<dynamic>?)
-                        ?.cast<String>() ??
-                    <String>[];
                 final labelIds =
                     (formValues['labelIds'] as List<dynamic>?)
                         ?.cast<String>() ??
                     <String>[];
-
-                final selectedValues = availableValues
-                    .where((v) => valueIds.contains(v.id))
-                    .toList(growable: false);
                 final selectedLabels = availableLabels
                     .where((l) => labelIds.contains(l.id))
                     .toList(growable: false);
@@ -189,7 +172,6 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                     startDate: startDate,
                     deadlineDate: deadlineDate,
                     repeatIcalRrule: repeatIcalRrule,
-                    values: selectedValues,
                     labels: selectedLabels,
                   ),
                 );
@@ -197,11 +179,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
               submitTooltip: context.l10n.actionCreate,
             );
           },
-          loadSuccess: (availableValues, availableLabels, project) {
+          loadSuccess: (availableLabels, project) {
             return ProjectForm(
               initialData: project,
               formKey: _formKey,
-              availableValues: availableValues,
               availableLabels: availableLabels,
               onSubmit: () {
                 final formState = _formKey.currentState;
@@ -221,19 +202,10 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                     : repeatCandidate;
                 final startDate = formValues['startDate'] as DateTime?;
                 final deadlineDate = formValues['deadlineDate'] as DateTime?;
-
-                final valueIds =
-                    (formValues['valueIds'] as List<dynamic>?)
-                        ?.cast<String>() ??
-                    <String>[];
                 final labelIds =
                     (formValues['labelIds'] as List<dynamic>?)
                         ?.cast<String>() ??
                     <String>[];
-
-                final selectedValues = availableValues
-                    .where((v) => valueIds.contains(v.id))
-                    .toList(growable: false);
                 final selectedLabels = availableLabels
                     .where((l) => labelIds.contains(l.id))
                     .toList(growable: false);
@@ -247,7 +219,6 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                     startDate: startDate,
                     deadlineDate: deadlineDate,
                     repeatIcalRrule: repeatIcalRrule,
-                    values: selectedValues,
                     labels: selectedLabels,
                   ),
                 );

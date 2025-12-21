@@ -37,18 +37,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectTable,
         )..orderBy([(p) => OrderingTerm(expression: p.name)])).join([
           leftOuterJoin(
-            driftDb.projectValuesLinkTable,
-            driftDb.projectValuesLinkTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.projectValuesLinkTable.valueId.equalsExp(
-              driftDb.valueTable.id,
-            ),
-          ),
-          leftOuterJoin(
             driftDb.projectLabelsTable,
             driftDb.projectLabelsTable.projectId.equalsExp(
               driftDb.projectTable.id,
@@ -62,7 +50,6 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     return joined.watch().map((rows) {
       final Map<String, ProjectTableData> projectsById = {};
-      final Map<String, Map<String, ValueTableData>> valuesByProject = {};
       final Map<String, Map<String, LabelTableData>> labelsByProject = {};
 
       for (final row in rows) {
@@ -70,13 +57,6 @@ class ProjectRepository implements ProjectRepositoryContract {
         final id = project.id;
 
         projectsById.putIfAbsent(id, () => project);
-
-        final value = row.readTableOrNull(driftDb.valueTable);
-        if (value != null) {
-          valuesByProject
-              .putIfAbsent(id, () => <String, ValueTableData>{})
-              .putIfAbsent(value.id, () => value);
-        }
 
         final label = row.readTableOrNull(driftDb.labelTable);
         if (label != null) {
@@ -89,18 +69,14 @@ class ProjectRepository implements ProjectRepositoryContract {
       final results = <Project>[];
       for (final entry in projectsById.entries) {
         final id = entry.key;
-        final valueTableList =
-            (valuesByProject[id]?.values.toList() ?? <ValueTableData>[])
-              ..sort((a, b) => a.name.compareTo(b.name));
         final labelTableList =
             (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
               ..sort((a, b) => a.name.compareTo(b.name));
 
-        final values = valueTableList.map(valueFromTable).toList();
         final labels = labelTableList.map(labelFromTable).toList();
 
         results.add(
-          projectFromTable(entry.value, values: values, labels: labels),
+          projectFromTable(entry.value, labels: labels),
         );
       }
 
@@ -120,18 +96,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectTable,
         )..orderBy([(p) => OrderingTerm(expression: p.name)])).join([
           leftOuterJoin(
-            driftDb.projectValuesLinkTable,
-            driftDb.projectValuesLinkTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.projectValuesLinkTable.valueId.equalsExp(
-              driftDb.valueTable.id,
-            ),
-          ),
-          leftOuterJoin(
             driftDb.projectLabelsTable,
             driftDb.projectLabelsTable.projectId.equalsExp(
               driftDb.projectTable.id,
@@ -146,7 +110,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     final rows = await joined.get();
 
     final Map<String, ProjectTableData> projectsById = {};
-    final Map<String, Map<String, ValueTableData>> valuesByProject = {};
     final Map<String, Map<String, LabelTableData>> labelsByProject = {};
 
     for (final row in rows) {
@@ -154,13 +117,6 @@ class ProjectRepository implements ProjectRepositoryContract {
       final id = project.id;
 
       projectsById.putIfAbsent(id, () => project);
-
-      final value = row.readTableOrNull(driftDb.valueTable);
-      if (value != null) {
-        valuesByProject
-            .putIfAbsent(id, () => <String, ValueTableData>{})
-            .putIfAbsent(value.id, () => value);
-      }
 
       final label = row.readTableOrNull(driftDb.labelTable);
       if (label != null) {
@@ -173,18 +129,14 @@ class ProjectRepository implements ProjectRepositoryContract {
     final results = <Project>[];
     for (final entry in projectsById.entries) {
       final id = entry.key;
-      final valueTableList =
-          (valuesByProject[id]?.values.toList() ?? <ValueTableData>[])
-            ..sort((a, b) => a.name.compareTo(b.name));
       final labelTableList =
           (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
             ..sort((a, b) => a.name.compareTo(b.name));
 
-      final values = valueTableList.map(valueFromTable).toList();
       final labels = labelTableList.map(labelFromTable).toList();
 
       results.add(
-        projectFromTable(entry.value, values: values, labels: labels),
+        projectFromTable(entry.value, labels: labels),
       );
     }
 
@@ -205,18 +157,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
           leftOuterJoin(
-            driftDb.projectValuesLinkTable,
-            driftDb.projectValuesLinkTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.projectValuesLinkTable.valueId.equalsExp(
-              driftDb.valueTable.id,
-            ),
-          ),
-          leftOuterJoin(
             driftDb.projectLabelsTable,
             driftDb.projectLabelsTable.projectId.equalsExp(
               driftDb.projectTable.id,
@@ -233,16 +173,9 @@ class ProjectRepository implements ProjectRepositoryContract {
 
       ProjectTableData? project;
       final Map<String, LabelTableData> labelMap = {};
-      final Map<String, ValueTableData> valueMap = {};
 
       for (final row in rows) {
         project ??= row.readTable(driftDb.projectTable);
-
-        final valLink = row.readTableOrNull(driftDb.projectValuesLinkTable);
-        final value = row.readTableOrNull(driftDb.valueTable);
-        if (value != null && valLink != null) {
-          valueMap.putIfAbsent(value.id, () => value);
-        }
 
         final labLink = row.readTableOrNull(driftDb.projectLabelsTable);
         final label = row.readTableOrNull(driftDb.labelTable);
@@ -253,13 +186,10 @@ class ProjectRepository implements ProjectRepositoryContract {
 
       final labelTableList = labelMap.values.toList()
         ..sort((a, b) => a.name.compareTo(b.name));
-      final valueTableList = valueMap.values.toList()
-        ..sort((a, b) => a.name.compareTo(b.name));
 
       final labels = labelTableList.map(labelFromTable).toList();
-      final values = valueTableList.map(valueFromTable).toList();
 
-      return projectFromTable(project!, values: values, labels: labels);
+      return projectFromTable(project!, labels: labels);
     });
   }
 
@@ -274,18 +204,6 @@ class ProjectRepository implements ProjectRepositoryContract {
         (driftDb.select(
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
-          leftOuterJoin(
-            driftDb.projectValuesLinkTable,
-            driftDb.projectValuesLinkTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.projectValuesLinkTable.valueId.equalsExp(
-              driftDb.valueTable.id,
-            ),
-          ),
           leftOuterJoin(
             driftDb.projectLabelsTable,
             driftDb.projectLabelsTable.projectId.equalsExp(
@@ -303,16 +221,9 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     ProjectTableData? project;
     final Map<String, LabelTableData> labelMap = {};
-    final Map<String, ValueTableData> valueMap = {};
 
     for (final row in rows) {
       project ??= row.readTable(driftDb.projectTable);
-
-      final valLink = row.readTableOrNull(driftDb.projectValuesLinkTable);
-      final value = row.readTableOrNull(driftDb.valueTable);
-      if (value != null && valLink != null) {
-        valueMap.putIfAbsent(value.id, () => value);
-      }
 
       final labLink = row.readTableOrNull(driftDb.projectLabelsTable);
       final label = row.readTableOrNull(driftDb.labelTable);
@@ -323,13 +234,10 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     final labelTableList = labelMap.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
-    final valueTableList = valueMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
 
     final labels = labelTableList.map(labelFromTable).toList();
-    final values = valueTableList.map(valueFromTable).toList();
 
-    return projectFromTable(project!, values: values, labels: labels);
+    return projectFromTable(project!, labels: labels);
   }
 
   Future<void> _updateProject(ProjectTableCompanion updateCompanion) async {
@@ -354,7 +262,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   }) async {
     final now = DateTime.now();
@@ -363,7 +270,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
     await driftDb.transaction(() async {
@@ -380,20 +286,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           updatedAt: Value(now),
         ),
       );
-
-      if (uniqueValueIds != null) {
-        for (final valueId in uniqueValueIds) {
-          await driftDb
-              .into(driftDb.projectValuesLinkTable)
-              .insert(
-                ProjectValuesLinkTableCompanion(
-                  projectId: Value(id),
-                  valueId: Value(valueId),
-                ),
-                mode: InsertMode.insertOrIgnore,
-              );
-        }
-      }
 
       if (uniqueLabelIds != null) {
         for (final labelId in uniqueLabelIds) {
@@ -420,7 +312,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   }) async {
     final existing = await _getProjectById(id);
@@ -433,7 +324,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
     final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
     await driftDb.transaction(() async {
@@ -451,35 +341,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           updatedAt: Value(now),
         ),
       );
-
-      if (uniqueValueIds != null) {
-        final requested = uniqueValueIds.toSet();
-        final existing =
-            (await (driftDb.select(
-                  driftDb.projectValuesLinkTable,
-                )..where((t) => t.projectId.equals(id))).get())
-                .map((r) => r.valueId)
-                .toSet();
-
-        if (requested.length != existing.length ||
-            !existing.containsAll(requested)) {
-          await (driftDb.delete(
-            driftDb.projectValuesLinkTable,
-          )..where((t) => t.projectId.equals(id))).go();
-
-          for (final valueId in uniqueValueIds) {
-            await driftDb
-                .into(driftDb.projectValuesLinkTable)
-                .insert(
-                  ProjectValuesLinkTableCompanion(
-                    projectId: Value(id),
-                    valueId: Value(valueId),
-                  ),
-                  mode: InsertMode.insertOrIgnore,
-                );
-          }
-        }
-      }
 
       if (uniqueLabelIds != null) {
         final requested = uniqueLabelIds.toSet();

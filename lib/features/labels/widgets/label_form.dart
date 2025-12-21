@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:form_builder_extra_fields/form_builder_extra_fields.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -17,10 +18,24 @@ class LabelForm extends StatelessWidget {
   final String submitTooltip;
   final Label? initialData;
 
+  static const _defaultColorHex = '#000000';
+
+  static Color _colorFromHex(String hex) {
+    final normalized = hex.replaceAll('#', '');
+    if (normalized.length != 6) return const Color(0xFF000000);
+    return Color(int.parse('FF$normalized', radix: 16));
+  }
+
+  static String _toHex(Color color) {
+    final rgb = color.value & 0x00FFFFFF;
+    return '#${rgb.toRadixString(16).padLeft(6, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name.trim() ?? '',
+      'colour': _colorFromHex(initialData?.color ?? _defaultColorHex),
     };
 
     return Column(
@@ -54,6 +69,46 @@ class LabelForm extends StatelessWidget {
                           errorText: 'Name must not be empty',
                         ),
                       ]),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FormBuilderColorPickerField(
+                      name: 'colour',
+                      colorPickerType: ColorPickerType.blockPicker,
+                      availableColors: const [
+                        Colors.red,
+                        Colors.pink,
+                        Colors.purple,
+                        Colors.deepPurple,
+                        Colors.indigo,
+                        Colors.blue,
+                        Colors.lightBlue,
+                        Colors.cyan,
+                        Colors.teal,
+                        Colors.green,
+                        Colors.lightGreen,
+                        Colors.lime,
+                        Colors.yellow,
+                        Colors.amber,
+                        Colors.orange,
+                        Colors.deepOrange,
+                        Colors.brown,
+                        Colors.grey,
+                        Colors.blueGrey,
+                        Colors.black,
+                      ],
+                      decoration: const InputDecoration(
+                        hintText: 'Colour',
+                        border: InputBorder.none,
+                      ),
+                      valueTransformer: (colour) {
+                        if (colour == null) return _defaultColorHex;
+                        return _toHex(colour);
+                      },
+                      validator: FormBuilderValidators.required(
+                        errorText: 'Colour is required',
+                      ),
                     ),
                   ),
                 ],

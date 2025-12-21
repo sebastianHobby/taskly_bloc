@@ -13,7 +13,6 @@ abstract class ProjectRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   });
   Future<void> update({
@@ -24,7 +23,6 @@ abstract class ProjectRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   });
   Future<void> delete(String id);

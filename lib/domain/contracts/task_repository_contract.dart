@@ -14,7 +14,6 @@ abstract class TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   });
 
@@ -27,7 +26,6 @@ abstract class TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   });
 

@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 part 'drift_database.g.dart';
 
+enum LabelType { label, value }
+
 class ProjectTable extends Table {
   @override
   String get tableName => 'projects';
@@ -52,42 +54,6 @@ class TaskTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ValueTable extends Table {
-  @override
-  String get tableName => 'values';
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
-  DateTimeColumn get createdAt =>
-      dateTime().clientDefault(DateTime.now).named('created_at')();
-  DateTimeColumn get updatedAt =>
-      dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-class ProjectValuesLinkTable extends Table {
-  @override
-  String get tableName => 'project_values_link';
-
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get projectId =>
-      text().nullable().named('project_id').references(ProjectTable, #id)();
-  TextColumn get valueId => text()
-      .named('value_id')
-      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get userId => text().nullable().named('user_id')();
-
-  @override
-  List<Set<Column>> get uniqueKeys => [
-    {projectId, valueId},
-  ];
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
 class LabelTable extends Table {
   @override
   String get tableName => 'labels';
@@ -95,7 +61,10 @@ class LabelTable extends Table {
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get color =>
-      text().nullable().named('color').clientDefault(() => '#ffffff')();
+      text().nullable().named('color').clientDefault(() => '#000000')();
+  TextColumn get type => textEnum<LabelType>()
+      .named('type')
+      .withDefault(const Constant('label'))();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -163,36 +132,12 @@ class TaskLabelsTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class TaskValuesTable extends Table {
-  @override
-  String get tableName => 'task_values';
-
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get taskId => text()
-      .named('task_id')
-      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get valueId => text()
-      .named('value_id')
-      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
-  DateTimeColumn get createdAt =>
-      dateTime().clientDefault(DateTime.now).named('created_at')();
-  DateTimeColumn get updatedAt =>
-      dateTime().clientDefault(DateTime.now).named('updated_at')();
-  TextColumn get userId => text().nullable().named('user_id')();
-
-  @override
-  Set<Column> get primaryKey => {taskId, valueId};
-}
-
 @DriftDatabase(
   tables: [
     ProjectTable,
     TaskTable,
-    ValueTable,
-    ProjectValuesLinkTable,
     LabelTable,
     ProjectLabelsTable,
-    TaskValuesTable,
     TaskLabelsTable,
   ],
 )
@@ -200,7 +145,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

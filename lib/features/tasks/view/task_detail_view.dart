@@ -64,8 +64,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          initialDataLoadSuccess:
-              (availableProjects, availableValues, availableLabels) => TaskForm(
+          initialDataLoadSuccess: (availableProjects, availableLabels) =>
+              TaskForm(
                 formKey: _formKey,
                 onSubmit: () {
                   final formState = _formKey.currentState;
@@ -87,18 +87,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       : repeatCandidate;
                   final startDate = formValues['startDate'] as DateTime?;
                   final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                  final valueIds =
-                      (formValues['valueIds'] as List<dynamic>?)
-                          ?.cast<String>() ??
-                      <String>[];
                   final labelIds =
                       (formValues['labelIds'] as List<dynamic>?)
                           ?.cast<String>() ??
                       <String>[];
-
-                  final selectedValues = availableValues
-                      .where((v) => valueIds.contains(v.id))
-                      .toList();
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -112,20 +104,17 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
-                      values: selectedValues,
                       labels: selectedLabels,
                     ),
                   );
                 },
                 submitTooltip: context.l10n.actionCreate,
                 availableProjects: availableProjects,
-                availableValues: availableValues,
                 availableLabels: availableLabels,
               ),
           loadSuccess:
               (
                 availableProjects,
-                availableValues,
                 availableLabels,
                 task,
               ) => TaskForm(
@@ -151,18 +140,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       : repeatCandidate;
                   final startDate = formValues['startDate'] as DateTime?;
                   final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                  final valueIds =
-                      (formValues['valueIds'] as List<dynamic>?)
-                          ?.cast<String>() ??
-                      <String>[];
                   final labelIds =
                       (formValues['labelIds'] as List<dynamic>?)
                           ?.cast<String>() ??
                       <String>[];
-
-                  final selectedValues = availableValues
-                      .where((v) => valueIds.contains(v.id))
-                      .toList();
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -177,14 +158,12 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
-                      values: selectedValues,
                       labels: selectedLabels,
                     ),
                   );
                 },
                 submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
-                availableValues: availableValues,
                 availableLabels: availableLabels,
               ),
           operationSuccess: (_) => const SizedBox.shrink(),

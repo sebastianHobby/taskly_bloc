@@ -125,12 +125,12 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name)?  update,TResult Function( String id)?  delete,TResult Function( String name)?  create,TResult Function( String labelId)?  get,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String color)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String color)?  create,TResult Function( String labelId)?  get,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
-return update(_that.id,_that.name);case _LabelDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.color);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name);case _LabelDetailGet() when get != null:
+return create(_that.name,_that.color);case _LabelDetailGet() when get != null:
 return get(_that.labelId);case _:
   return orElse();
 
@@ -149,12 +149,12 @@ return get(_that.labelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name)  update,required TResult Function( String id)  delete,required TResult Function( String name)  create,required TResult Function( String labelId)  get,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String color)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String color)  create,required TResult Function( String labelId)  get,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate():
-return update(_that.id,_that.name);case _LabelDetailDelete():
+return update(_that.id,_that.name,_that.color);case _LabelDetailDelete():
 return delete(_that.id);case _LabelDetailCreate():
-return create(_that.name);case _LabelDetailGet():
+return create(_that.name,_that.color);case _LabelDetailGet():
 return get(_that.labelId);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -169,12 +169,12 @@ return get(_that.labelId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name)?  update,TResult? Function( String id)?  delete,TResult? Function( String name)?  create,TResult? Function( String labelId)?  get,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String color)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String color)?  create,TResult? Function( String labelId)?  get,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
-return update(_that.id,_that.name);case _LabelDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.color);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name);case _LabelDetailGet() when get != null:
+return create(_that.name,_that.color);case _LabelDetailGet() when get != null:
 return get(_that.labelId);case _:
   return null;
 
@@ -187,11 +187,12 @@ return get(_that.labelId);case _:
 
 
 class _LabelDetailUpdate implements LabelDetailEvent {
-  const _LabelDetailUpdate({required this.id, required this.name});
+  const _LabelDetailUpdate({required this.id, required this.name, required this.color});
   
 
  final  String id;
  final  String name;
+ final  String color;
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -203,16 +204,16 @@ _$LabelDetailUpdateCopyWith<_LabelDetailUpdate> get copyWith => __$LabelDetailUp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name);
+int get hashCode => Object.hash(runtimeType,id,name,color);
 
 @override
 String toString() {
-  return 'LabelDetailEvent.update(id: $id, name: $name)';
+  return 'LabelDetailEvent.update(id: $id, name: $name, color: $color)';
 }
 
 
@@ -223,7 +224,7 @@ abstract mixin class _$LabelDetailUpdateCopyWith<$Res> implements $LabelDetailEv
   factory _$LabelDetailUpdateCopyWith(_LabelDetailUpdate value, $Res Function(_LabelDetailUpdate) _then) = __$LabelDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name
+ String id, String name, String color
 });
 
 
@@ -240,10 +241,11 @@ class __$LabelDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = null,}) {
   return _then(_LabelDetailUpdate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -321,10 +323,11 @@ as String,
 
 
 class _LabelDetailCreate implements LabelDetailEvent {
-  const _LabelDetailCreate({required this.name});
+  const _LabelDetailCreate({required this.name, required this.color});
   
 
  final  String name;
+ final  String color;
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -336,16 +339,16 @@ _$LabelDetailCreateCopyWith<_LabelDetailCreate> get copyWith => __$LabelDetailCr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailCreate&&(identical(other.name, name) || other.name == name));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name);
+int get hashCode => Object.hash(runtimeType,name,color);
 
 @override
 String toString() {
-  return 'LabelDetailEvent.create(name: $name)';
+  return 'LabelDetailEvent.create(name: $name, color: $color)';
 }
 
 
@@ -356,7 +359,7 @@ abstract mixin class _$LabelDetailCreateCopyWith<$Res> implements $LabelDetailEv
   factory _$LabelDetailCreateCopyWith(_LabelDetailCreate value, $Res Function(_LabelDetailCreate) _then) = __$LabelDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- String name
+ String name, String color
 });
 
 
@@ -373,9 +376,10 @@ class __$LabelDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? color = null,}) {
   return _then(_LabelDetailCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

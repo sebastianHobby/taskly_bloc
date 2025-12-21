@@ -6,34 +6,26 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
-class MockValueRepository extends Mock implements ValueRepositoryContract {}
-
 class MockLabelRepository extends Mock implements LabelRepositoryContract {}
 
 void main() {
   late MockTaskRepository mockRepository;
   late MockProjectRepository mockProjectRepository;
-  late MockValueRepository mockValueRepository;
   late MockLabelRepository mockLabelRepository;
 
   setUp(() {
     mockRepository = MockTaskRepository();
     mockProjectRepository = MockProjectRepository();
-    mockValueRepository = MockValueRepository();
     mockLabelRepository = MockLabelRepository();
     when(
       () => mockProjectRepository.getAll(),
     ).thenAnswer((_) async => <Project>[]);
-    when(
-      () => mockValueRepository.getAll(),
-    ).thenAnswer((_) async => <ValueModel>[]);
     when(() => mockLabelRepository.getAll()).thenAnswer((_) async => <Label>[]);
   });
 
@@ -45,7 +37,6 @@ void main() {
           name: any(named: 'name'),
           description: any(named: 'description'),
           projectId: any(named: 'projectId'),
-          valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
       ).thenThrow(Exception('oh no'));
@@ -53,7 +44,6 @@ void main() {
     build: () => TaskDetailBloc(
       taskRepository: mockRepository,
       projectRepository: mockProjectRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) =>
@@ -91,7 +81,6 @@ void main() {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
       ).thenThrow(Exception('bad'));
@@ -99,7 +88,6 @@ void main() {
     build: () => TaskDetailBloc(
       taskRepository: mockRepository,
       projectRepository: mockProjectRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
       taskId: 't1',
     ),
@@ -132,7 +120,6 @@ void main() {
     build: () => TaskDetailBloc(
       taskRepository: mockRepository,
       projectRepository: mockProjectRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) async {
@@ -155,7 +142,6 @@ void main() {
     build: () => TaskDetailBloc(
       taskRepository: mockRepository,
       projectRepository: mockProjectRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     expect: () => <dynamic>[
@@ -177,7 +163,6 @@ void main() {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async {});
@@ -185,7 +170,6 @@ void main() {
     build: () => TaskDetailBloc(
       taskRepository: mockRepository,
       projectRepository: mockProjectRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) async {

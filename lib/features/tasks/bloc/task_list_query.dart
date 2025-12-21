@@ -11,7 +11,6 @@ class TaskListQuery {
     this.sort = TaskSort.name,
     this.onlyWithoutProject = false,
     this.projectId,
-    this.valueId,
     this.labelId,
     this.onOrBeforeDate,
     this.onOrAfterDate,
@@ -49,9 +48,6 @@ class TaskListQuery {
   /// If set, only tasks linked to this project are included.
   final String? projectId;
 
-  /// If set, only tasks linked to this value are included.
-  final String? valueId;
-
   /// If set, only tasks linked to this label are included.
   final String? labelId;
 
@@ -76,7 +72,6 @@ class TaskListQuery {
     TaskSort? sort,
     bool? onlyWithoutProject,
     String? projectId,
-    String? valueId,
     String? labelId,
     DateTime? onOrBeforeDate,
     DateTime? onOrAfterDate,
@@ -86,7 +81,6 @@ class TaskListQuery {
       sort: sort ?? this.sort,
       onlyWithoutProject: onlyWithoutProject ?? this.onlyWithoutProject,
       projectId: projectId ?? this.projectId,
-      valueId: valueId ?? this.valueId,
       labelId: labelId ?? this.labelId,
       onOrBeforeDate: onOrBeforeDate ?? this.onOrBeforeDate,
       onOrAfterDate: onOrAfterDate ?? this.onOrAfterDate,
@@ -100,7 +94,6 @@ class TaskListQuery {
         other.sort == sort &&
         other.onlyWithoutProject == onlyWithoutProject &&
         other.projectId == projectId &&
-        other.valueId == valueId &&
         other.labelId == labelId &&
         other.onOrBeforeDate == onOrBeforeDate &&
         other.onOrAfterDate == onOrAfterDate;
@@ -112,7 +105,6 @@ class TaskListQuery {
     sort,
     onlyWithoutProject,
     projectId,
-    valueId,
     labelId,
     onOrBeforeDate,
     onOrAfterDate,

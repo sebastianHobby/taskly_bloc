@@ -14,6 +14,14 @@ class TaskListTile extends StatelessWidget {
   final void Function(Task, bool?) onCheckboxChanged;
   final void Function(Task) onTap;
 
+  Color _colorFromHexOrFallback(String? hex) {
+    final normalized = (hex ?? '').replaceAll('#', '');
+    if (normalized.length != 6) return Colors.black;
+    final value = int.tryParse('FF$normalized', radix: 16);
+    if (value == null) return Colors.black;
+    return Color(value);
+  }
+
   String _formatDate(BuildContext context, DateTime value) {
     final localizations = MaterialLocalizations.of(context);
     return localizations.formatShortDate(value);
@@ -23,11 +31,14 @@ class TaskListTile extends StatelessWidget {
     final description = task.description;
     final hasDescription = description != null && description.isNotEmpty;
 
+    final labels = task.labels;
+    final hasLabels = labels.isNotEmpty;
+
     final startDate = task.startDate;
     final deadlineDate = task.deadlineDate;
     final hasDates = startDate != null || deadlineDate != null;
 
-    if (!hasDescription && !hasDates) return null;
+    if (!hasDescription && !hasLabels && !hasDates) return null;
 
     final theme = Theme.of(context);
 
@@ -41,8 +52,34 @@ class TaskListTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-        if (hasDates) ...[
+        if (hasLabels) ...[
           if (hasDescription) const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              for (final label in labels)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.label_outline,
+                      size: 14,
+                      color: _colorFromHexOrFallback(label.color),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      label.name,
+                      style: theme.textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+        if (hasDates) ...[
+          if (hasDescription || hasLabels) const SizedBox(height: 6),
           if (startDate != null)
             Row(
               children: [

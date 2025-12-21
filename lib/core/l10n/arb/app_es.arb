@@ -12,13 +12,13 @@
     "@tasksTitle": {
         "description": "Título para la sección de Tareas"
     },
-    "valuesTitle": "Valores",
-    "@valuesTitle": {
-        "description": "Título para la sección de Valores"
-    },
     "labelsTitle": "Etiquetas",
     "@labelsTitle": {
         "description": "Título para la sección de Etiquetas"
+    },
+    "browseTitle": "Explorar",
+    "@browseTitle": {
+        "description": "Título/etiqueta para el destino de navegación Explorar"
     },
     "noProjectsFound": "No se encontraron proyectos.",
     "@noProjectsFound": {
@@ -31,10 +31,6 @@
     "createTaskTooltip": "Crear tarea",
     "@createTaskTooltip": {
         "description": "Tooltip del botón flotante para crear tarea"
-    },
-    "createValueTooltip": "Crear valor",
-    "@createValueTooltip": {
-        "description": "Tooltip del botón flotante para crear valor"
     },
     "createLabelTooltip": "Crear etiqueta",
     "@createLabelTooltip": {
@@ -55,10 +51,6 @@
     "projectNotFound": "No se encontró el proyecto.",
     "@projectNotFound": {
         "description": "Error mostrado cuando no se encuentra un proyecto"
-    },
-    "valueNotFound": "No se encontró el valor.",
-    "@valueNotFound": {
-        "description": "Error mostrado cuando no se encuentra un valor"
     },
     "labelNotFound": "No se encontró la etiqueta.",
     "@labelNotFound": {

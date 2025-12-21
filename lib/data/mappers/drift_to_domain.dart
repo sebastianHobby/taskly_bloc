@@ -8,21 +8,12 @@ Label labelFromTable(LabelTableData t) {
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     name: t.name,
-  );
-}
-
-ValueModel valueFromTable(ValueTableData t) {
-  return ValueModel(
-    id: t.id,
-    createdAt: t.createdAt,
-    updatedAt: t.updatedAt,
-    name: t.name,
+    color: t.color,
   );
 }
 
 Project projectFromTable(
   ProjectTableData t, {
-  List<ValueModel>? values,
   List<Label>? labels,
 }) {
   return Project(
@@ -35,7 +26,6 @@ Project projectFromTable(
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
     repeatIcalRrule: t.repeatIcalRrule,
-    values: values,
     labels: labels,
   );
 }
@@ -43,7 +33,6 @@ Project projectFromTable(
 Task taskFromTable(
   TaskTableData t, {
   Project? project,
-  List<ValueModel>? values,
   List<Label>? labels,
 }) {
   return Task(
@@ -58,7 +47,6 @@ Task taskFromTable(
     projectId: t.projectId,
     repeatIcalRrule: t.repeatIcalRrule,
     project: project,
-    values: values,
     labels: labels,
   );
 }

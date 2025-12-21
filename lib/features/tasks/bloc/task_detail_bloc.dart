@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -22,7 +21,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<ValueModel>? values,
     List<Label>? labels,
   }) = _TaskDetailUpdate;
   const factory TaskDetailEvent.delete({
@@ -37,7 +35,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<ValueModel>? values,
     List<Label>? labels,
   }) = _TaskDetailCreate;
 
@@ -60,7 +57,6 @@ class TaskDetailState with _$TaskDetailState {
 
   const factory TaskDetailState.initialDataLoadSuccess({
     required List<Project> availableProjects,
-    required List<ValueModel> availableValues,
     required List<Label> availableLabels,
   }) = TaskDetailInitialDataLoadSuccess;
 
@@ -74,7 +70,6 @@ class TaskDetailState with _$TaskDetailState {
   const factory TaskDetailState.loadInProgress() = TaskDetailLoadInProgress;
   const factory TaskDetailState.loadSuccess({
     required List<Project> availableProjects,
-    required List<ValueModel> availableValues,
     required List<Label> availableLabels,
     required Task task,
   }) = TaskDetailLoadSuccess;
@@ -84,12 +79,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   TaskDetailBloc({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required ValueRepositoryContract valueRepository,
     required LabelRepositoryContract labelRepository,
     String? taskId,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _valueRepository = valueRepository,
        _labelRepository = labelRepository,
        super(const TaskDetailState.initial()) {
     // register handlers for each concrete event type
@@ -109,7 +102,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final ValueRepositoryContract _valueRepository;
   final LabelRepositoryContract _labelRepository;
 
   Future<void> _onLoadInitialData(
@@ -119,13 +111,11 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
     emit(const TaskDetailState.loadInProgress());
     try {
       final projects = await _projectRepository.getAll();
-      final values = await _valueRepository.getAll();
       final labels = await _labelRepository.getAll();
 
       emit(
         TaskDetailState.initialDataLoadSuccess(
           availableProjects: projects,
-          availableValues: values,
           availableLabels: labels,
         ),
       );
@@ -159,14 +149,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
 
       // Use existing repositories to supply available lists for the form
       final projects = await _projectRepository.getAll();
-      final values = await _valueRepository.getAll();
       final labels = await _labelRepository.getAll();
 
       emit(
         TaskDetailState.loadSuccess(
           task: task,
           availableProjects: projects,
-          availableValues: values,
           availableLabels: labels,
         ),
       );
@@ -195,7 +183,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
         deadlineDate: event.deadlineDate,
         projectId: event.projectId,
         repeatIcalRrule: event.repeatIcalRrule,
-        valueIds: event.values?.map((e) => e.id).toList(growable: false),
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       );
       emit(
@@ -229,7 +216,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
         startDate: event.startDate,
         deadlineDate: event.deadlineDate,
         repeatIcalRrule: event.repeatIcalRrule,
-        valueIds: event.values?.map((e) => e.id).toList(growable: false),
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       );
 

@@ -4,7 +4,6 @@ import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 part 'project_detail_bloc.freezed.dart';
@@ -20,7 +19,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<ValueModel>? values,
     List<Label>? labels,
   }) = _ProjectDetailUpdate;
   const factory ProjectDetailEvent.delete({
@@ -34,7 +32,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
-    List<ValueModel>? values,
     List<Label>? labels,
   }) = _ProjectDetailCreate;
 
@@ -59,7 +56,6 @@ class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.initial() = ProjectDetailInitial;
 
   const factory ProjectDetailState.initialDataLoadSuccess({
-    required List<ValueModel> availableValues,
     required List<Label> availableLabels,
   }) = ProjectDetailInitialDataLoadSuccess;
 
@@ -75,7 +71,6 @@ class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.loadInProgress() =
       ProjectDetailLoadInProgress;
   const factory ProjectDetailState.loadSuccess({
-    required List<ValueModel> availableValues,
     required List<Label> availableLabels,
     required Project project,
   }) = ProjectDetailLoadSuccess;
@@ -84,10 +79,8 @@ class ProjectDetailState with _$ProjectDetailState {
 class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   ProjectDetailBloc({
     required ProjectRepositoryContract projectRepository,
-    required ValueRepositoryContract valueRepository,
     required LabelRepositoryContract labelRepository,
   }) : _projectRepository = projectRepository,
-       _valueRepository = valueRepository,
        _labelRepository = labelRepository,
        super(const ProjectDetailState.initial()) {
     on<ProjectDetailEvent>((event, emit) async {
@@ -102,7 +95,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
               startDate,
               deadlineDate,
               repeatIcalRrule,
-              values,
               labels,
             ) async => _onUpdate(
               id: id,
@@ -112,7 +104,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
               startDate: startDate,
               deadlineDate: deadlineDate,
               repeatIcalRrule: repeatIcalRrule,
-              values: values,
               labels: labels,
               emit: emit,
             ),
@@ -125,7 +116,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
               startDate,
               deadlineDate,
               repeatIcalRrule,
-              values,
               labels,
             ) async => _onCreate(
               name: name,
@@ -134,7 +124,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
               startDate: startDate,
               deadlineDate: deadlineDate,
               repeatIcalRrule: repeatIcalRrule,
-              values: values,
               labels: labels,
               emit: emit,
             ),
@@ -143,18 +132,15 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     });
   }
   final ProjectRepositoryContract _projectRepository;
-  final ValueRepositoryContract _valueRepository;
   final LabelRepositoryContract _labelRepository;
 
   Future<void> _onLoadInitialData(Emitter<ProjectDetailState> emit) async {
     emit(const ProjectDetailState.loadInProgress());
     try {
-      final values = await _valueRepository.getAll();
       final labels = await _labelRepository.getAll();
 
       emit(
         ProjectDetailState.initialDataLoadSuccess(
-          availableValues: values,
           availableLabels: labels,
         ),
       );
@@ -176,7 +162,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
   ) async {
     emit(const ProjectDetailState.loadInProgress());
     try {
-      final values = await _valueRepository.getAll();
       final labels = await _labelRepository.getAll();
       final project = await _projectRepository.get(
         projectId,
@@ -191,7 +176,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
       } else {
         emit(
           ProjectDetailState.loadSuccess(
-            availableValues: values,
             availableLabels: labels,
             project: project,
           ),
@@ -217,7 +201,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     required DateTime? startDate,
     required DateTime? deadlineDate,
     required String? repeatIcalRrule,
-    required List<ValueModel>? values,
     required List<Label>? labels,
     required Emitter<ProjectDetailState> emit,
   }) async {
@@ -230,7 +213,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
         startDate: startDate,
         deadlineDate: deadlineDate,
         repeatIcalRrule: repeatIcalRrule,
-        valueIds: values?.map((e) => e.id).toList(growable: false),
         labelIds: labels?.map((e) => e.id).toList(growable: false),
       );
       emit(
@@ -280,7 +262,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
     required DateTime? startDate,
     required DateTime? deadlineDate,
     required String? repeatIcalRrule,
-    required List<ValueModel>? values,
     required List<Label>? labels,
     required Emitter<ProjectDetailState> emit,
   }) async {
@@ -292,7 +273,6 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
         startDate: startDate,
         deadlineDate: deadlineDate,
         repeatIcalRrule: repeatIcalRrule,
-        valueIds: values?.map((e) => e.id).toList(growable: false),
         labelIds: labels?.map((e) => e.id).toList(growable: false),
       );
       emit(

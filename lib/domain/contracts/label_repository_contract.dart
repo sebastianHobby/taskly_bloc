@@ -6,7 +6,11 @@ abstract class LabelRepositoryContract {
   Stream<Label?> watch(String id, {bool withRelated = false});
   Future<Label?> get(String id, {bool withRelated = false});
 
-  Future<void> create({required String name});
-  Future<void> update({required String id, required String name});
+  Future<void> create({required String name, required String color});
+  Future<void> update({
+    required String id,
+    required String name,
+    required String color,
+  });
   Future<void> delete(String id);
 }

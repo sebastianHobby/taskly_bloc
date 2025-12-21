@@ -8,7 +8,6 @@ import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 // removed unused direct import; test uses createTestDb from helpers
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
@@ -63,7 +62,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   }) async {
     final idx = _last.indexWhere((t) => t.id == id);
@@ -82,7 +80,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
-      values: old.values,
       labels: old.labels,
     );
 
@@ -100,7 +97,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    List<String>? valueIds,
     List<String>? labelIds,
   }) async {
     final now = DateTime.now();
@@ -145,7 +141,6 @@ void main() {
 
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
-    final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
     await pumpLocalizedApp(
@@ -153,7 +148,6 @@ void main() {
       home: TaskOverviewPage(
         taskRepository: repo,
         projectRepository: projectRepo,
-        valueRepository: valueRepo,
         labelRepository: labelRepo,
       ),
     );
@@ -194,7 +188,6 @@ void main() {
     final repo = FakeTaskRepository();
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
-    final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
     await pumpLocalizedApp(
@@ -202,7 +195,6 @@ void main() {
       home: TaskOverviewPage(
         taskRepository: repo,
         projectRepository: projectRepo,
-        valueRepository: valueRepo,
         labelRepository: labelRepo,
       ),
     );
@@ -241,7 +233,6 @@ void main() {
     );
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
-    final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
     await pumpLocalizedApp(
@@ -249,7 +240,6 @@ void main() {
       home: TaskOverviewPage(
         taskRepository: repo,
         projectRepository: projectRepo,
-        valueRepository: valueRepo,
         labelRepository: labelRepo,
       ),
     );

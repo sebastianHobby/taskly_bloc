@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
@@ -64,8 +65,6 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   }) {
     Iterable<Task> filtered = tasks;
 
-    DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-
     if (query.onlyWithoutProject) {
       filtered = filtered.where((t) => t.projectId == null);
     }
@@ -73,11 +72,6 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
     final projectId = query.projectId;
     if (projectId != null && projectId.isNotEmpty) {
       filtered = filtered.where((t) => t.projectId == projectId);
-    }
-
-    final valueId = query.valueId;
-    if (valueId != null && valueId.isNotEmpty) {
-      filtered = filtered.where((t) => t.values.any((v) => v.id == valueId));
     }
 
     final labelId = query.labelId;

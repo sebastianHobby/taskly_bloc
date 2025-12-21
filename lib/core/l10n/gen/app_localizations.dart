@@ -115,17 +115,17 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get tasksTitle;
 
-  /// Title for the Values section
-  ///
-  /// In en, this message translates to:
-  /// **'Values'**
-  String get valuesTitle;
-
   /// Title for the Labels section
   ///
   /// In en, this message translates to:
   /// **'Labels'**
   String get labelsTitle;
+
+  /// Title/label for the Browse navigation destination
+  ///
+  /// In en, this message translates to:
+  /// **'Browse'**
+  String get browseTitle;
 
   /// Empty state shown when there are no projects
   ///
@@ -144,12 +144,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create task'**
   String get createTaskTooltip;
-
-  /// Tooltip for the create value floating action button
-  ///
-  /// In en, this message translates to:
-  /// **'Create value'**
-  String get createValueTooltip;
 
   /// Tooltip for the create label floating action button
   ///
@@ -180,12 +174,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Project not found.'**
   String get projectNotFound;
-
-  /// Error shown when a value cannot be found
-  ///
-  /// In en, this message translates to:
-  /// **'Value not found.'**
-  String get valueNotFound;
 
   /// Error shown when a label cannot be found
   ///

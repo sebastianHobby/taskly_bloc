@@ -29,8 +29,8 @@ void main() {
   });
 
   test('creating twice creates two labels', () async {
-    await repo.create(name: 'A');
-    await repo.create(name: 'B');
+    await repo.create(name: 'A', color: '#000000');
+    await repo.create(name: 'B', color: '#000000');
 
     final list = await repo.watchAll().first;
     expect(list, hasLength(2));
@@ -39,7 +39,7 @@ void main() {
 
   test('update non-existent throws', () async {
     await expectLater(
-      repo.update(id: 'nope-l', name: 'Nope'),
+      repo.update(id: 'nope-l', name: 'Nope', color: '#000000'),
       throwsA(isA<RepositoryNotFoundException>()),
     );
   });

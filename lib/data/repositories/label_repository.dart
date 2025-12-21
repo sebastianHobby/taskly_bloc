@@ -57,11 +57,12 @@ class LabelRepository implements LabelRepositoryContract {
   }
 
   @override
-  Future<void> create({required String name}) async {
+  Future<void> create({required String name, required String color}) async {
     final now = DateTime.now();
     await _createLabel(
       LabelTableCompanion(
         name: Value(name),
+        color: Value(color),
         createdAt: Value(now),
         updatedAt: Value(now),
       ),
@@ -69,7 +70,11 @@ class LabelRepository implements LabelRepositoryContract {
   }
 
   @override
-  Future<void> update({required String id, required String name}) async {
+  Future<void> update({
+    required String id,
+    required String name,
+    required String color,
+  }) async {
     final existing = await _getLabelById(id);
     if (existing == null) {
       throw RepositoryNotFoundException('No label found to update');
@@ -80,6 +85,7 @@ class LabelRepository implements LabelRepositoryContract {
       LabelTableCompanion(
         id: Value(id),
         name: Value(name),
+        color: Value(color),
         updatedAt: Value(now),
       ),
     );

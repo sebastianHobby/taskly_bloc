@@ -18,14 +18,14 @@ void main() {
   });
 
   test('create/get/update/delete label flow', () async {
-    await repo.create(name: 'Test Label');
+    await repo.create(name: 'Test Label', color: '#000000');
 
     final listAfterCreate = await repo.watchAll().first;
     expect(listAfterCreate, hasLength(1));
     final fetched = listAfterCreate.single;
     expect(fetched.name, 'Test Label');
 
-    await repo.update(id: fetched.id, name: 'Updated Label');
+    await repo.update(id: fetched.id, name: 'Updated Label', color: '#ffffff');
 
     final listAfterUpdate = await repo.watchAll().first;
     final after = listAfterUpdate.singleWhere((l) => l.id == fetched.id);

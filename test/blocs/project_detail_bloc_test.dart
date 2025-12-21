@@ -5,24 +5,19 @@ import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
 class MockLabelRepository extends Mock implements LabelRepositoryContract {}
 
 void main() {
   late MockProjectRepository mockRepository;
-  late MockValueRepository mockValueRepository;
   late MockLabelRepository mockLabelRepository;
   late Project sampleProject;
 
   setUp(() {
     mockRepository = MockProjectRepository();
-    mockValueRepository = MockValueRepository();
     mockLabelRepository = MockLabelRepository();
     final now = DateTime.now();
     sampleProject = Project(
@@ -33,9 +28,6 @@ void main() {
       completed: false,
     );
 
-    when(
-      () => mockValueRepository.getAll(),
-    ).thenAnswer((_) async => <ValueModel>[]);
     when(() => mockLabelRepository.getAll()).thenAnswer((_) async => <Label>[]);
   });
 
@@ -48,7 +40,6 @@ void main() {
     },
     build: () => ProjectDetailBloc(
       projectRepository: mockRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) => bloc.add(const ProjectDetailEvent.get(projectId: 'p1')),
@@ -69,14 +60,12 @@ void main() {
           startDate: any(named: 'startDate'),
           deadlineDate: any(named: 'deadlineDate'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          valueIds: any(named: 'valueIds'),
           labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async {});
     },
     build: () => ProjectDetailBloc(
       projectRepository: mockRepository,
-      valueRepository: mockValueRepository,
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) => bloc.add(

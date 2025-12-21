@@ -8,7 +8,6 @@ import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
@@ -20,31 +19,25 @@ class InboxPage extends StatelessWidget {
   const InboxPage({
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<TaskOverviewBloc>(
-          create: (context) => TaskOverviewBloc(
-            taskRepository: taskRepository,
-            initialQuery: TaskListQuery.inbox,
-          )..add(const TaskOverviewEvent.subscriptionRequested()),
-        ),
-      ],
+    return BlocProvider<TaskOverviewBloc>(
+      create: (context) => TaskOverviewBloc(
+        taskRepository: taskRepository,
+        initialQuery: TaskListQuery.inbox,
+        withRelated: true,
+      )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: InboxView(
         taskRepository: taskRepository,
         projectRepository: projectRepository,
-        valueRepository: valueRepository,
         labelRepository: labelRepository,
       ),
     );
@@ -55,14 +48,12 @@ class InboxView extends StatelessWidget {
   const InboxView({
     required this.taskRepository,
     required this.projectRepository,
-    required this.valueRepository,
     required this.labelRepository,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
-  final ValueRepositoryContract valueRepository;
   final LabelRepositoryContract labelRepository;
 
   void _showTaskDetailSheet(BuildContext context, {String? taskId}) {
@@ -75,7 +66,6 @@ class InboxView extends StatelessWidget {
             create: (_) => TaskDetailBloc(
               taskRepository: taskRepository,
               projectRepository: projectRepository,
-              valueRepository: valueRepository,
               labelRepository: labelRepository,
               taskId: taskId,
             ),

@@ -3,20 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
 
 import '../helpers/test_db.dart';
 
 void main() {
   late AppDatabase db;
   late ProjectRepository projectRepository;
-  late ValueRepository valueRepository;
   late LabelRepository labelRepository;
 
   setUp(() {
     db = createTestDb();
     projectRepository = ProjectRepository(driftDb: db);
-    valueRepository = ValueRepository(driftDb: db);
     labelRepository = LabelRepository(driftDb: db);
   });
 
@@ -27,41 +24,14 @@ void main() {
   Future<String> createProjectWithLinks() async {
     await projectRepository.create(name: 'Proj');
     final projectId = (await projectRepository.getAll()).single.id;
-
-    await valueRepository.create(name: 'B');
-    await valueRepository.create(name: 'A');
-    await labelRepository.create(name: 'Z');
-    await labelRepository.create(name: 'M');
-
-    final valueAId = (await valueRepository.getAll())
-        .singleWhere((v) => v.name == 'A')
-        .id;
-    final valueBId = (await valueRepository.getAll())
-        .singleWhere((v) => v.name == 'B')
-        .id;
+    await labelRepository.create(name: 'Z', color: '#000000');
+    await labelRepository.create(name: 'M', color: '#000000');
     final labelMId = (await labelRepository.getAll())
         .singleWhere((l) => l.name == 'M')
         .id;
     final labelZId = (await labelRepository.getAll())
         .singleWhere((l) => l.name == 'Z')
         .id;
-
-    await db
-        .into(db.projectValuesLinkTable)
-        .insert(
-          ProjectValuesLinkTableCompanion(
-            projectId: Value(projectId),
-            valueId: Value(valueBId),
-          ),
-        );
-    await db
-        .into(db.projectValuesLinkTable)
-        .insert(
-          ProjectValuesLinkTableCompanion(
-            projectId: Value(projectId),
-            valueId: Value(valueAId),
-          ),
-        );
 
     final now = DateTime.now();
     await db
@@ -88,14 +58,13 @@ void main() {
     return projectId;
   }
 
-  test('getAll(withRelated: true) includes values/labels', () async {
+  test('getAll(withRelated: true) includes labels', () async {
     final projectId = await createProjectWithLinks();
 
     final projects = await projectRepository.getAll(withRelated: true);
     expect(projects, hasLength(1));
 
     final p = projects.singleWhere((p) => p.id == projectId);
-    expect(p.values.map((v) => v.name).toList(), <String>['A', 'B']);
     expect(p.labels.map((l) => l.name).toList(), <String>['M', 'Z']);
   });
 
@@ -108,7 +77,6 @@ void main() {
 
     expect(project, isNotNull);
     expect(project!.id, projectId);
-    expect(project.values.map((v) => v.name).toList(), <String>['A', 'B']);
     expect(project.labels.map((l) => l.name).toList(), <String>['M', 'Z']);
   });
 

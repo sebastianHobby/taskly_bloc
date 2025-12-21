@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/value.dart';
 import 'package:taskly_bloc/domain/label.dart';
 
 class Project {
@@ -12,10 +11,8 @@ class Project {
     this.startDate,
     this.deadlineDate,
     this.repeatIcalRrule,
-    List<ValueModel>? values,
     List<Label>? labels,
-  }) : values = values ?? <ValueModel>[],
-       labels = labels ?? <Label>[];
+  }) : labels = labels ?? <Label>[];
 
   final String id;
   final DateTime createdAt;
@@ -26,6 +23,5 @@ class Project {
   final DateTime? startDate;
   final DateTime? deadlineDate;
   final String? repeatIcalRrule;
-  final List<ValueModel> values;
   final List<Label> labels;
 }

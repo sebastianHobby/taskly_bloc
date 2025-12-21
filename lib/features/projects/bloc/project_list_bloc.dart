@@ -28,14 +28,18 @@ sealed class ProjectOverviewState with _$ProjectOverviewState {
 
 class ProjectOverviewBloc
     extends Bloc<ProjectOverviewEvent, ProjectOverviewState> {
-  ProjectOverviewBloc({required ProjectRepositoryContract projectRepository})
-    : _projectRepository = projectRepository,
-      super(const ProjectOverviewInitial()) {
+  ProjectOverviewBloc({
+    required ProjectRepositoryContract projectRepository,
+    bool withRelated = false,
+  }) : _projectRepository = projectRepository,
+       _withRelated = withRelated,
+       super(const ProjectOverviewInitial()) {
     on<ProjectOverviewSubscriptionRequested>(onSubscriptionRequested);
     on<ProjectOverviewToggleProjectCompletion>(onProjectToggleCompletion);
   }
 
   final ProjectRepositoryContract _projectRepository;
+  final bool _withRelated;
 
   Future<void> onSubscriptionRequested(
     ProjectOverviewSubscriptionRequested event,
@@ -46,7 +50,7 @@ class ProjectOverviewBloc
     // For each ProjectModel we receive in the stream emit the data loaded
     // state so UI can update or error state if there is an error
     await emit.forEach<List<Project>>(
-      _projectRepository.watchAll(),
+      _projectRepository.watchAll(withRelated: _withRelated),
       onData: (projects) => ProjectOverviewLoaded(projects: projects),
       onError: (error, stackTrace) => ProjectOverviewError(error: error),
     );

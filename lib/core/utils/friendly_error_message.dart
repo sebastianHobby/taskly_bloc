@@ -26,7 +26,6 @@ String friendlyErrorMessageForUi(Object error, AppLocalizations l10n) {
     return switch (error) {
       NotFoundEntity.task => l10n.taskNotFound,
       NotFoundEntity.project => l10n.projectNotFound,
-      NotFoundEntity.value => l10n.valueNotFound,
       NotFoundEntity.label => l10n.labelNotFound,
     };
   }

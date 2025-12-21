@@ -20,6 +20,7 @@ void main() {
       createdAt: now,
       updatedAt: now,
       name: 'Label 1',
+      color: '#000000',
     );
   });
 
@@ -70,11 +71,15 @@ void main() {
     'create emits operationSuccess on successful create',
     setUp: () {
       when(
-        () => mockRepository.create(name: any(named: 'name')),
+        () => mockRepository.create(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
       ).thenAnswer((_) async {});
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) => bloc.add(const LabelDetailEvent.create(name: 'New')),
+    act: (bloc) =>
+        bloc.add(const LabelDetailEvent.create(name: 'New', color: '#000000')),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.create,
@@ -86,11 +91,15 @@ void main() {
     'create emits operationFailure when create throws',
     setUp: () {
       when(
-        () => mockRepository.create(name: any(named: 'name')),
+        () => mockRepository.create(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
       ).thenAnswer((_) async => throw Exception('fail'));
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) => bloc.add(const LabelDetailEvent.create(name: 'New')),
+    act: (bloc) =>
+        bloc.add(const LabelDetailEvent.create(name: 'New', color: '#000000')),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 
@@ -101,12 +110,18 @@ void main() {
         () => mockRepository.update(
           id: any(named: 'id'),
           name: any(named: 'name'),
+          color: any(named: 'color'),
         ),
       ).thenAnswer((_) async {});
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelDetailEvent.update(id: 'l1', name: 'Updated')),
+    act: (bloc) => bloc.add(
+      const LabelDetailEvent.update(
+        id: 'l1',
+        name: 'Updated',
+        color: '#000000',
+      ),
+    ),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.update,
@@ -121,12 +136,18 @@ void main() {
         () => mockRepository.update(
           id: any(named: 'id'),
           name: any(named: 'name'),
+          color: any(named: 'color'),
         ),
       ).thenAnswer((_) async => throw Exception('bad'));
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelDetailEvent.update(id: 'l1', name: 'Updated')),
+    act: (bloc) => bloc.add(
+      const LabelDetailEvent.update(
+        id: 'l1',
+        name: 'Updated',
+        color: '#000000',
+      ),
+    ),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 

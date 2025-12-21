@@ -97,8 +97,6 @@ void main() {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          valueIds: any(named: 'valueIds'),
-          labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async {});
     },
@@ -325,62 +323,6 @@ void main() {
         (s) => s.tasks.map((t) => t.id).toList(growable: false),
         'task ids',
         ['p1t1'],
-      ),
-    ],
-  );
-
-  blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'valueId query includes only tasks linked to value',
-    setUp: () {
-      final now = DateTime(2025, 1, 15, 10, 30);
-
-      final v1 = ValueModel(
-        id: 'v1',
-        createdAt: now,
-        updatedAt: now,
-        name: 'V1',
-      );
-      final v2 = ValueModel(
-        id: 'v2',
-        createdAt: now,
-        updatedAt: now,
-        name: 'V2',
-      );
-
-      final a = Task(
-        id: 'vt1',
-        createdAt: now,
-        updatedAt: now,
-        name: 'A value task',
-        completed: false,
-        values: [v1],
-      );
-
-      final b = Task(
-        id: 'vt2',
-        createdAt: now,
-        updatedAt: now,
-        name: 'B other value task',
-        completed: false,
-        values: [v2],
-      );
-
-      when(
-        () => mockRepository.watchAll(withRelated: true),
-      ).thenAnswer((_) => Stream.value([b, a]));
-    },
-    build: () => TaskOverviewBloc(
-      taskRepository: mockRepository,
-      initialQuery: const TaskListQuery(valueId: 'v1'),
-      withRelated: true,
-    ),
-    act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
-    expect: () => <Object>[
-      const TaskOverviewState.loading(),
-      isA<TaskOverviewLoaded>().having(
-        (s) => s.tasks.map((t) => t.id).toList(growable: false),
-        'task ids',
-        ['vt1'],
       ),
     ],
   );

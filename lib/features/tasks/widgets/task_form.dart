@@ -11,7 +11,6 @@ class TaskForm extends StatelessWidget {
     required this.submitTooltip,
     this.initialData,
     this.availableProjects = const [],
-    this.availableValues = const [],
     this.availableLabels = const [],
     super.key,
   });
@@ -21,8 +20,15 @@ class TaskForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final List<Project> availableProjects;
-  final List<ValueModel> availableValues;
   final List<Label> availableLabels;
+
+  Color _colorFromHexOrFallback(String? hex) {
+    final normalized = (hex ?? '').replaceAll('#', '');
+    if (normalized.length != 6) return Colors.black;
+    final value = int.tryParse('FF$normalized', radix: 16);
+    if (value == null) return Colors.black;
+    return Color(value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +39,6 @@ class TaskForm extends StatelessWidget {
       'startDate': initialData?.startDate,
       'deadlineDate': initialData?.deadlineDate,
       'projectId': initialData?.projectId ?? '',
-      'valueIds': (initialData?.values ?? <ValueModel>[])
-          .map((ValueModel e) => e.id)
-          .toList(),
       'labelIds': (initialData?.labels ?? <Label>[])
           .map((Label e) => e.id)
           .toList(),
@@ -180,28 +183,6 @@ class TaskForm extends StatelessWidget {
                       vertical: 8,
                     ),
                     child: FormBuilderFilterChips<String>(
-                      name: 'valueIds',
-                      initialValue: initialValues['valueIds'] as List<String>?,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        labelText: 'Values',
-                      ),
-                      options: availableValues
-                          .map(
-                            (v) => FormBuilderChipOption(
-                              value: v.id,
-                              child: Text(v.name),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: FormBuilderFilterChips<String>(
                       name: 'labelIds',
                       initialValue: initialValues['labelIds'] as List<String>?,
                       decoration: const InputDecoration(
@@ -212,7 +193,18 @@ class TaskForm extends StatelessWidget {
                           .map(
                             (l) => FormBuilderChipOption(
                               value: l.id,
-                              child: Text(l.name),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.label_outline,
+                                    size: 16,
+                                    color: _colorFromHexOrFallback(l.color),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(l.name),
+                                ],
+                              ),
                             ),
                           )
                           .toList(),
