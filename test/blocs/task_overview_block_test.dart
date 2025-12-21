@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
+import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
@@ -49,7 +50,10 @@ void main() {
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <TaskOverviewState>[
       const TaskOverviewState.loading(),
-      TaskOverviewState.loaded(tasks: []),
+      const TaskOverviewState.loaded(
+        tasks: [],
+        query: TaskListQuery.all,
+      ),
     ],
   );
 

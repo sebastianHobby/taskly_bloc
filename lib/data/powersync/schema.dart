@@ -35,5 +35,11 @@ const schema = Schema([
     Column.text('value_id'),
     Column.text('user_id'),
   ]),
-  Table('repeat_schedule', []),
+  Table('labels', [
+    Column.text('name'),
+    Column.text('color'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('user_id'),
+  ]),
 ]);

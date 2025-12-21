@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
@@ -145,7 +146,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
       if (project == null) {
         emit(
           const ProjectDetailState.operationFailure(
-            errorDetails: ProjectDetailError(error: 'Project not found'),
+            errorDetails: ProjectDetailError(error: NotFoundEntity.project),
           ),
         );
       } else {

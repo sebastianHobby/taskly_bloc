@@ -75,7 +75,7 @@ class ProjectValuesLinkTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   @override
-  List<Set<TextColumn>> get uniqueKeys => [
+  List<Set<Column>> get uniqueKeys => [
     {projectId, valueId},
   ];
 
@@ -124,7 +124,7 @@ class ProjectLabelsTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   @override
-  List<Set<TextColumn>> get uniqueKeys => [
+  List<Set<Column>> get uniqueKeys => [
     {projectId, labelId},
   ];
 
@@ -150,7 +150,7 @@ class TaskLabelsTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   @override
-  List<Set<TextColumn>> get uniqueKeys => [
+  List<Set<Column>> get uniqueKeys => [
     {taskId, labelId},
   ];
 
@@ -204,7 +204,9 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (migrator, from, to) async {},
     beforeOpen: (details) async {
       // Ensure SQLite enforces foreign keys at runtime.
-      await customStatement('PRAGMA foreign_keys = ON');
+    // Do not enable. Powersync exposes views which do not support
+    // foreign key constraints.
+    //  await customStatement('PRAGMA foreign_keys = ON');
     },
   );
 }

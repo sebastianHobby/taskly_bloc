@@ -6,7 +6,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:taskly_bloc/features/values/widgets/values_list.dart';
-import 'package:taskly_bloc/test/helpers/pump_app.dart';
+import '../helpers/pump_app.dart';
 
 class FakeValueRepository implements ValueRepositoryContract {
   FakeValueRepository({required List<ValueModel> initialValues})

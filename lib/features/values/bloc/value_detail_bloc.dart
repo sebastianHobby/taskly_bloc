@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 
@@ -77,7 +78,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       if (value == null) {
         emit(
           const ValueDetailState.operationFailure(
-            errorDetails: ValueDetailError(error: 'Value not found'),
+            errorDetails: ValueDetailError(error: NotFoundEntity.value),
           ),
         );
       } else {

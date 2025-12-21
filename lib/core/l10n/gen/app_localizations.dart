@@ -121,6 +121,12 @@ abstract class AppLocalizations {
   /// **'Values'**
   String get valuesTitle;
 
+  /// Title for the Labels section
+  ///
+  /// In en, this message translates to:
+  /// **'Labels'**
+  String get labelsTitle;
+
   /// Empty state shown when there are no projects
   ///
   /// In en, this message translates to:
@@ -145,11 +151,95 @@ abstract class AppLocalizations {
   /// **'Create value'**
   String get createValueTooltip;
 
+  /// Tooltip for the create label floating action button
+  ///
+  /// In en, this message translates to:
+  /// **'Create label'**
+  String get createLabelTooltip;
+
+  /// Empty state shown when there are no labels
+  ///
+  /// In en, this message translates to:
+  /// **'No labels found.'**
+  String get noLabelsFound;
+
   /// Fallback error shown for unexpected errors
   ///
   /// In en, this message translates to:
   /// **'Something went wrong. Please try again.'**
   String get genericErrorFallback;
+
+  /// Error shown when a task cannot be found
+  ///
+  /// In en, this message translates to:
+  /// **'Task not found.'**
+  String get taskNotFound;
+
+  /// Error shown when a project cannot be found
+  ///
+  /// In en, this message translates to:
+  /// **'Project not found.'**
+  String get projectNotFound;
+
+  /// Error shown when a value cannot be found
+  ///
+  /// In en, this message translates to:
+  /// **'Value not found.'**
+  String get valueNotFound;
+
+  /// Error shown when a label cannot be found
+  ///
+  /// In en, this message translates to:
+  /// **'Label not found.'**
+  String get labelNotFound;
+
+  /// Task overview filter option to show all tasks
+  ///
+  /// In en, this message translates to:
+  /// **'All tasks'**
+  String get taskFilterAll;
+
+  /// Task overview filter option to show only active (not completed) tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Active tasks'**
+  String get taskFilterActive;
+
+  /// Task overview filter option to show only completed tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Completed tasks'**
+  String get taskFilterCompleted;
+
+  /// Task overview sort option to sort tasks by name
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by name'**
+  String get taskSortByName;
+
+  /// Task overview sort option to sort tasks by deadline date
+  ///
+  /// In en, this message translates to:
+  /// **'Sort by deadline'**
+  String get taskSortByDeadline;
+
+  /// Title for the Inbox section
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get inboxTitle;
+
+  /// Title for the Today section
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get todayTitle;
+
+  /// Title for the Upcoming section
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get upcomingTitle;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

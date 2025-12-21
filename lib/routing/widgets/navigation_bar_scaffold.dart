@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
 
-class ScaffoldWithNavigationRail extends StatelessWidget {
-  const ScaffoldWithNavigationRail({
+class ScaffoldWithNavigationBar extends StatelessWidget {
+  const ScaffoldWithNavigationBar({
     required this.body,
     required this.selectedIndex,
     required this.onDestinationSelected,
     super.key,
   });
+
   final Widget body;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
@@ -14,34 +16,40 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Row(
-        children: [
-          // Fixed navigation rail on the left (start)
-          NavigationRail(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            labelType: NavigationRailLabelType.all,
-            destinations: const [
-              NavigationRailDestination(
-                label: Text('Projects'),
-                icon: Icon(Icons.home),
-              ),
-              NavigationRailDestination(
-                label: Text('Tasks'),
-                icon: Icon(Icons.settings),
-              ),
-              NavigationRailDestination(
-                label: Text('Values'),
-                icon: Icon(Icons.favorite_outline),
-              ),
-            ],
+      body: body,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: selectedIndex,
+        destinations: [
+          NavigationDestination(
+            label: context.l10n.projectsTitle,
+            icon: const Icon(Icons.home),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
-          // Main content on the right (end)
-          Expanded(
-            child: body,
+          NavigationDestination(
+            label: context.l10n.inboxTitle,
+            icon: const Icon(Icons.inbox_outlined),
+          ),
+          NavigationDestination(
+            label: context.l10n.todayTitle,
+            icon: const Icon(Icons.calendar_today_outlined),
+          ),
+          NavigationDestination(
+            label: context.l10n.upcomingTitle,
+            icon: const Icon(Icons.event_outlined),
+          ),
+          NavigationDestination(
+            label: context.l10n.tasksTitle,
+            icon: const Icon(Icons.settings),
+          ),
+          NavigationDestination(
+            label: context.l10n.valuesTitle,
+            icon: const Icon(Icons.favorite_outline),
+          ),
+          NavigationDestination(
+            label: context.l10n.labelsTitle,
+            icon: const Icon(Icons.label_outline),
           ),
         ],
+        onDestinationSelected: onDestinationSelected,
       ),
     );
   }

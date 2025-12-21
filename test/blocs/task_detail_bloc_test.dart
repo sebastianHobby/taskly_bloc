@@ -1,6 +1,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -83,7 +84,7 @@ void main() {
     expect: () => <TaskDetailState>[
       const TaskDetailState.loadInProgress(),
       const TaskDetailState.operationFailure(
-        errorDetails: TaskDetailError(error: 'Task not found'),
+        errorDetails: TaskDetailError(error: NotFoundEntity.task),
       ),
     ],
   );

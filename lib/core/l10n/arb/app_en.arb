@@ -16,6 +16,10 @@
     "@valuesTitle": {
         "description": "Title for the Values section"
     },
+    "labelsTitle": "Labels",
+    "@labelsTitle": {
+        "description": "Title for the Labels section"
+    },
     "noProjectsFound": "No projects found.",
     "@noProjectsFound": {
         "description": "Empty state shown when there are no projects"
@@ -32,8 +36,64 @@
     "@createValueTooltip": {
         "description": "Tooltip for the create value floating action button"
     },
+    "createLabelTooltip": "Create label",
+    "@createLabelTooltip": {
+        "description": "Tooltip for the create label floating action button"
+    },
+    "noLabelsFound": "No labels found.",
+    "@noLabelsFound": {
+        "description": "Empty state shown when there are no labels"
+    },
     "genericErrorFallback": "Something went wrong. Please try again.",
     "@genericErrorFallback": {
         "description": "Fallback error shown for unexpected errors"
+    },
+    "taskNotFound": "Task not found.",
+    "@taskNotFound": {
+        "description": "Error shown when a task cannot be found"
+    },
+    "projectNotFound": "Project not found.",
+    "@projectNotFound": {
+        "description": "Error shown when a project cannot be found"
+    },
+    "valueNotFound": "Value not found.",
+    "@valueNotFound": {
+        "description": "Error shown when a value cannot be found"
+    },
+    "labelNotFound": "Label not found.",
+    "@labelNotFound": {
+        "description": "Error shown when a label cannot be found"
+    },
+    "taskFilterAll": "All tasks",
+    "@taskFilterAll": {
+        "description": "Task overview filter option to show all tasks"
+    },
+    "taskFilterActive": "Active tasks",
+    "@taskFilterActive": {
+        "description": "Task overview filter option to show only active (not completed) tasks"
+    },
+    "taskFilterCompleted": "Completed tasks",
+    "@taskFilterCompleted": {
+        "description": "Task overview filter option to show only completed tasks"
+    },
+    "taskSortByName": "Sort by name",
+    "@taskSortByName": {
+        "description": "Task overview sort option to sort tasks by name"
+    },
+    "taskSortByDeadline": "Sort by deadline",
+    "@taskSortByDeadline": {
+        "description": "Task overview sort option to sort tasks by deadline date"
+    },
+    "inboxTitle": "Inbox",
+    "@inboxTitle": {
+        "description": "Title for the Inbox section"
+    },
+    "todayTitle": "Today",
+    "@todayTitle": {
+        "description": "Title for the Today section"
+    },
+    "upcomingTitle": "Upcoming",
+    "@upcomingTitle": {
+        "description": "Title for the Upcoming section"
     }
 }

@@ -24,6 +24,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get valuesTitle => 'Valores';
 
   @override
+  String get labelsTitle => 'Etiquetas';
+
+  @override
   String get noProjectsFound => 'No se encontraron proyectos.';
 
   @override
@@ -36,5 +39,47 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createValueTooltip => 'Crear valor';
 
   @override
+  String get createLabelTooltip => 'Crear etiqueta';
+
+  @override
+  String get noLabelsFound => 'No se encontraron etiquetas.';
+
+  @override
   String get genericErrorFallback => 'Algo salió mal. Por favor, inténtalo de nuevo.';
+
+  @override
+  String get taskNotFound => 'No se encontró la tarea.';
+
+  @override
+  String get projectNotFound => 'No se encontró el proyecto.';
+
+  @override
+  String get valueNotFound => 'No se encontró el valor.';
+
+  @override
+  String get labelNotFound => 'No se encontró la etiqueta.';
+
+  @override
+  String get taskFilterAll => 'Todas las tareas';
+
+  @override
+  String get taskFilterActive => 'Tareas activas';
+
+  @override
+  String get taskFilterCompleted => 'Tareas completadas';
+
+  @override
+  String get taskSortByName => 'Ordenar por nombre';
+
+  @override
+  String get taskSortByDeadline => 'Ordenar por fecha límite';
+
+  @override
+  String get inboxTitle => 'Bandeja de entrada';
+
+  @override
+  String get todayTitle => 'Hoy';
+
+  @override
+  String get upcomingTitle => 'Próximas';
 }

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -148,7 +149,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       if (task == null) {
         emit(
           const TaskDetailState.operationFailure(
-            errorDetails: TaskDetailError(error: 'Task not found'),
+            errorDetails: TaskDetailError(error: NotFoundEntity.task),
           ),
         );
         return;

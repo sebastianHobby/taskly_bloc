@@ -10,8 +10,8 @@ import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_form.dart';
 
-class ProjectDetailSheetPage extends StatelessWidget {
-  const ProjectDetailSheetPage({
+class ProjectEditSheetPage extends StatelessWidget {
+  const ProjectEditSheetPage({
     required this.projectRepository,
     required this.valueRepository,
     required this.labelRepository,
@@ -38,7 +38,7 @@ class ProjectDetailSheetPage extends StatelessWidget {
           labelRepository: labelRepository,
         ),
         lazy: false,
-        child: ProjectDetailSheetView(
+        child: ProjectEditSheetView(
           projectId: projectId,
           onSuccess: onSuccess,
           onError: onError,
@@ -48,8 +48,8 @@ class ProjectDetailSheetPage extends StatelessWidget {
   }
 }
 
-class ProjectDetailSheetView extends StatefulWidget {
-  const ProjectDetailSheetView({
+class ProjectEditSheetView extends StatefulWidget {
+  const ProjectEditSheetView({
     required this.onSuccess,
     required this.onError,
     this.projectId,
@@ -61,10 +61,10 @@ class ProjectDetailSheetView extends StatefulWidget {
   final void Function(String message) onError;
 
   @override
-  State<ProjectDetailSheetView> createState() => _ProjectDetailSheetViewState();
+  State<ProjectEditSheetView> createState() => _ProjectEditSheetViewState();
 }
 
-class _ProjectDetailSheetViewState extends State<ProjectDetailSheetView> {
+class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 

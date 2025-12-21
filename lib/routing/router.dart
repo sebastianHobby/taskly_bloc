@@ -4,9 +4,10 @@ import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
-import 'package:taskly_bloc/features/projects/view/project_overview_view.dart';
-import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
-import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
+import 'package:taskly_bloc/features/labels/labels.dart';
+import 'package:taskly_bloc/features/projects/projects.dart';
+import 'package:taskly_bloc/features/tasks/tasks.dart';
+import 'package:taskly_bloc/features/values/values.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 import 'package:taskly_bloc/routing/widgets/scaffold_with_nested_navigation.dart';
 
@@ -26,6 +27,61 @@ final router = GoRouter(
               name: AppRouteName.projects,
               path: AppRoutePath.projects,
               builder: (context, state) => ProjectOverviewPage(
+                projectRepository: getIt<ProjectRepositoryContract>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
+              ),
+              routes: [
+                GoRoute(
+                  name: AppRouteName.projectDetail,
+                  path: ':projectId',
+                  builder: (context, state) => ProjectDetailPage(
+                    projectId: state.pathParameters['projectId']!,
+                    projectRepository: getIt<ProjectRepositoryContract>(),
+                    taskRepository: getIt<TaskRepositoryContract>(),
+                    valueRepository: getIt<ValueRepositoryContract>(),
+                    labelRepository: getIt<LabelRepositoryContract>(),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRouteName.inbox,
+              path: AppRoutePath.inbox,
+              builder: (context, state) => InboxPage(
+                taskRepository: getIt<TaskRepositoryContract>(),
+                projectRepository: getIt<ProjectRepositoryContract>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRouteName.today,
+              path: AppRoutePath.today,
+              builder: (context, state) => TodayPage(
+                taskRepository: getIt<TaskRepositoryContract>(),
+                projectRepository: getIt<ProjectRepositoryContract>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRouteName.upcoming,
+              path: AppRoutePath.upcoming,
+              builder: (context, state) => UpcomingPage(
+                taskRepository: getIt<TaskRepositoryContract>(),
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 valueRepository: getIt<ValueRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
@@ -54,6 +110,17 @@ final router = GoRouter(
               path: AppRoutePath.values,
               builder: (context, state) => ValueOverviewPage(
                 valueRepository: getIt<ValueRepositoryContract>(),
+              ),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              name: AppRouteName.labels,
+              path: AppRoutePath.labels,
+              builder: (context, state) => LabelOverviewPage(
+                labelRepository: getIt<LabelRepositoryContract>(),
               ),
             ),
           ],

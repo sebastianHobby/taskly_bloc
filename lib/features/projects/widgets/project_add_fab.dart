@@ -27,7 +27,7 @@ class AddProjectFab extends StatelessWidget {
           context: fabContext,
           childBuilder: (modalSheetContext) => SafeArea(
             top: false,
-            child: ProjectDetailSheetPage(
+            child: ProjectEditSheetPage(
               projectRepository: projectRepository,
               valueRepository: valueRepository,
               labelRepository: labelRepository,

@@ -1,0 +1,573 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'label_list_bloc.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+/// @nodoc
+mixin _$LabelOverviewEvent {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewEvent);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LabelOverviewEvent()';
+}
+
+
+}
+
+/// @nodoc
+class $LabelOverviewEventCopyWith<$Res>  {
+$LabelOverviewEventCopyWith(LabelOverviewEvent _, $Res Function(LabelOverviewEvent) __);
+}
+
+
+/// Adds pattern-matching-related methods to [LabelOverviewEvent].
+extension LabelOverviewEventPatterns on LabelOverviewEvent {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LabelsSubscriptionRequested value)?  labelsSubscriptionRequested,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
+return labelsSubscriptionRequested(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LabelsSubscriptionRequested value)  labelsSubscriptionRequested,}){
+final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested():
+return labelsSubscriptionRequested(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LabelsSubscriptionRequested value)?  labelsSubscriptionRequested,}){
+final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
+return labelsSubscriptionRequested(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  labelsSubscriptionRequested,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
+return labelsSubscriptionRequested();case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  labelsSubscriptionRequested,}) {final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested():
+return labelsSubscriptionRequested();}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  labelsSubscriptionRequested,}) {final _that = this;
+switch (_that) {
+case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
+return labelsSubscriptionRequested();case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class LabelsSubscriptionRequested implements LabelOverviewEvent {
+  const LabelsSubscriptionRequested();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelsSubscriptionRequested);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LabelOverviewEvent.labelsSubscriptionRequested()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+mixin _$LabelOverviewState {
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewState);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LabelOverviewState()';
+}
+
+
+}
+
+/// @nodoc
+class $LabelOverviewStateCopyWith<$Res>  {
+$LabelOverviewStateCopyWith(LabelOverviewState _, $Res Function(LabelOverviewState) __);
+}
+
+
+/// Adds pattern-matching-related methods to [LabelOverviewState].
+extension LabelOverviewStatePatterns on LabelOverviewState {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LabelOverviewInitial value)?  initial,TResult Function( LabelOverviewLoading value)?  loading,TResult Function( LabelOverviewLoaded value)?  loaded,TResult Function( LabelOverviewError value)?  error,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case LabelOverviewInitial() when initial != null:
+return initial(_that);case LabelOverviewLoading() when loading != null:
+return loading(_that);case LabelOverviewLoaded() when loaded != null:
+return loaded(_that);case LabelOverviewError() when error != null:
+return error(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LabelOverviewInitial value)  initial,required TResult Function( LabelOverviewLoading value)  loading,required TResult Function( LabelOverviewLoaded value)  loaded,required TResult Function( LabelOverviewError value)  error,}){
+final _that = this;
+switch (_that) {
+case LabelOverviewInitial():
+return initial(_that);case LabelOverviewLoading():
+return loading(_that);case LabelOverviewLoaded():
+return loaded(_that);case LabelOverviewError():
+return error(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LabelOverviewInitial value)?  initial,TResult? Function( LabelOverviewLoading value)?  loading,TResult? Function( LabelOverviewLoaded value)?  loaded,TResult? Function( LabelOverviewError value)?  error,}){
+final _that = this;
+switch (_that) {
+case LabelOverviewInitial() when initial != null:
+return initial(_that);case LabelOverviewLoading() when loading != null:
+return loading(_that);case LabelOverviewLoaded() when loaded != null:
+return loaded(_that);case LabelOverviewError() when error != null:
+return error(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Label> labels)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case LabelOverviewInitial() when initial != null:
+return initial();case LabelOverviewLoading() when loading != null:
+return loading();case LabelOverviewLoaded() when loaded != null:
+return loaded(_that.labels);case LabelOverviewError() when error != null:
+return error(_that.error);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Label> labels)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
+switch (_that) {
+case LabelOverviewInitial():
+return initial();case LabelOverviewLoading():
+return loading();case LabelOverviewLoaded():
+return loaded(_that.labels);case LabelOverviewError():
+return error(_that.error);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Label> labels)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
+switch (_that) {
+case LabelOverviewInitial() when initial != null:
+return initial();case LabelOverviewLoading() when loading != null:
+return loading();case LabelOverviewLoaded() when loaded != null:
+return loaded(_that.labels);case LabelOverviewError() when error != null:
+return error(_that.error);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+
+
+class LabelOverviewInitial implements LabelOverviewState {
+  const LabelOverviewInitial();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewInitial);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LabelOverviewState.initial()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class LabelOverviewLoading implements LabelOverviewState {
+  const LabelOverviewLoading();
+  
+
+
+
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewLoading);
+}
+
+
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'LabelOverviewState.loading()';
+}
+
+
+}
+
+
+
+
+/// @nodoc
+
+
+class LabelOverviewLoaded implements LabelOverviewState {
+  const LabelOverviewLoaded({required final  List<Label> labels}): _labels = labels;
+  
+
+ final  List<Label> _labels;
+ List<Label> get labels {
+  if (_labels is EqualUnmodifiableListView) return _labels;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_labels);
+}
+
+
+/// Create a copy of LabelOverviewState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LabelOverviewLoadedCopyWith<LabelOverviewLoaded> get copyWith => _$LabelOverviewLoadedCopyWithImpl<LabelOverviewLoaded>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewLoaded&&const DeepCollectionEquality().equals(other._labels, _labels));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_labels));
+
+@override
+String toString() {
+  return 'LabelOverviewState.loaded(labels: $labels)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LabelOverviewLoadedCopyWith<$Res> implements $LabelOverviewStateCopyWith<$Res> {
+  factory $LabelOverviewLoadedCopyWith(LabelOverviewLoaded value, $Res Function(LabelOverviewLoaded) _then) = _$LabelOverviewLoadedCopyWithImpl;
+@useResult
+$Res call({
+ List<Label> labels
+});
+
+
+
+
+}
+/// @nodoc
+class _$LabelOverviewLoadedCopyWithImpl<$Res>
+    implements $LabelOverviewLoadedCopyWith<$Res> {
+  _$LabelOverviewLoadedCopyWithImpl(this._self, this._then);
+
+  final LabelOverviewLoaded _self;
+  final $Res Function(LabelOverviewLoaded) _then;
+
+/// Create a copy of LabelOverviewState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? labels = null,}) {
+  return _then(LabelOverviewLoaded(
+labels: null == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
+as List<Label>,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class LabelOverviewError implements LabelOverviewState {
+  const LabelOverviewError({required this.error});
+  
+
+ final  Object error;
+
+/// Create a copy of LabelOverviewState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LabelOverviewErrorCopyWith<LabelOverviewError> get copyWith => _$LabelOverviewErrorCopyWithImpl<LabelOverviewError>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewError&&const DeepCollectionEquality().equals(other.error, error));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error));
+
+@override
+String toString() {
+  return 'LabelOverviewState.error(error: $error)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LabelOverviewErrorCopyWith<$Res> implements $LabelOverviewStateCopyWith<$Res> {
+  factory $LabelOverviewErrorCopyWith(LabelOverviewError value, $Res Function(LabelOverviewError) _then) = _$LabelOverviewErrorCopyWithImpl;
+@useResult
+$Res call({
+ Object error
+});
+
+
+
+
+}
+/// @nodoc
+class _$LabelOverviewErrorCopyWithImpl<$Res>
+    implements $LabelOverviewErrorCopyWith<$Res> {
+  _$LabelOverviewErrorCopyWithImpl(this._self, this._then);
+
+  final LabelOverviewError _self;
+  final $Res Function(LabelOverviewError) _then;
+
+/// Create a copy of LabelOverviewState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+  return _then(LabelOverviewError(
+error: null == error ? _self.error : error ,
+  ));
+}
+
+
+}
+
+// dart format on

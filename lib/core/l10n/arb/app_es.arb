@@ -16,6 +16,10 @@
     "@valuesTitle": {
         "description": "Título para la sección de Valores"
     },
+    "labelsTitle": "Etiquetas",
+    "@labelsTitle": {
+        "description": "Título para la sección de Etiquetas"
+    },
     "noProjectsFound": "No se encontraron proyectos.",
     "@noProjectsFound": {
         "description": "Estado vacío cuando no hay proyectos"
@@ -32,8 +36,64 @@
     "@createValueTooltip": {
         "description": "Tooltip del botón flotante para crear valor"
     },
+    "createLabelTooltip": "Crear etiqueta",
+    "@createLabelTooltip": {
+        "description": "Tooltip del botón flotante para crear etiqueta"
+    },
+    "noLabelsFound": "No se encontraron etiquetas.",
+    "@noLabelsFound": {
+        "description": "Estado vacío cuando no hay etiquetas"
+    },
     "genericErrorFallback": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "@genericErrorFallback": {
         "description": "Error de respaldo mostrado para errores inesperados"
+    },
+    "taskNotFound": "No se encontró la tarea.",
+    "@taskNotFound": {
+        "description": "Error mostrado cuando no se encuentra una tarea"
+    },
+    "projectNotFound": "No se encontró el proyecto.",
+    "@projectNotFound": {
+        "description": "Error mostrado cuando no se encuentra un proyecto"
+    },
+    "valueNotFound": "No se encontró el valor.",
+    "@valueNotFound": {
+        "description": "Error mostrado cuando no se encuentra un valor"
+    },
+    "labelNotFound": "No se encontró la etiqueta.",
+    "@labelNotFound": {
+        "description": "Error mostrado cuando no se encuentra una etiqueta"
+    },
+    "taskFilterAll": "Todas las tareas",
+    "@taskFilterAll": {
+        "description": "Opción de filtro en la vista de tareas para mostrar todas las tareas"
+    },
+    "taskFilterActive": "Tareas activas",
+    "@taskFilterActive": {
+        "description": "Opción de filtro en la vista de tareas para mostrar solo tareas activas (no completadas)"
+    },
+    "taskFilterCompleted": "Tareas completadas",
+    "@taskFilterCompleted": {
+        "description": "Opción de filtro en la vista de tareas para mostrar solo tareas completadas"
+    },
+    "taskSortByName": "Ordenar por nombre",
+    "@taskSortByName": {
+        "description": "Opción de ordenación en la vista de tareas para ordenar por nombre"
+    },
+    "taskSortByDeadline": "Ordenar por fecha límite",
+    "@taskSortByDeadline": {
+        "description": "Opción de ordenación en la vista de tareas para ordenar por fecha límite"
+    },
+    "inboxTitle": "Bandeja de entrada",
+    "@inboxTitle": {
+        "description": "Título para la sección de la bandeja de entrada"
+    },
+    "todayTitle": "Hoy",
+    "@todayTitle": {
+        "description": "Título para la sección de hoy"
+    },
+    "upcomingTitle": "Próximas",
+    "@upcomingTitle": {
+        "description": "Título para la sección de próximas"
     }
 }
