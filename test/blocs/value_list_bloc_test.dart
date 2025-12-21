@@ -1,8 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/domain/value.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/value.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_list_bloc.dart';
 
 class MockValueRepository extends Mock implements ValueRepositoryContract {}
@@ -30,7 +30,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([sampleValue]));
     },
     build: () => ValueOverviewBloc(valueRepository: mockRepository),
-    act: (bloc) => bloc.add(ValuesSubscriptionRequested()),
+    act: (bloc) =>
+        bloc.add(const ValueOverviewEvent.valuesSubscriptionRequested()),
     expect: () => <dynamic>[
       isA<ValueOverviewLoading>(),
       isA<ValueOverviewLoaded>(),
@@ -45,7 +46,8 @@ void main() {
       ).thenAnswer((_) => Stream<List<ValueModel>>.error(Exception('boom')));
     },
     build: () => ValueOverviewBloc(valueRepository: mockRepository),
-    act: (bloc) => bloc.add(ValuesSubscriptionRequested()),
+    act: (bloc) =>
+        bloc.add(const ValueOverviewEvent.valuesSubscriptionRequested()),
     expect: () => <dynamic>[
       isA<ValueOverviewLoading>(),
       isA<ValueOverviewError>(),

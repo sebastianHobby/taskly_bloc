@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:bloc/bloc.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 
 class AppBlocObserver extends BlocObserver {
@@ -35,7 +38,27 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   Bloc.observer = const AppBlocObserver();
   await setupDependencies();
 
+  await _maybeDevAutoLogin();
+
   // Add cross-flavor configuration here
 
   runApp(await builder());
+}
+
+Future<void> _maybeDevAutoLogin() async {
+  if (!kDebugMode) return;
+
+  final supabase = Supabase.instance.client;
+
+  if (supabase.auth.currentSession != null) return;
+  if (Env.devUsername.isEmpty || Env.devPassword.isEmpty) return;
+
+  try {
+    await supabase.auth.signInWithPassword(
+      email: Env.devUsername,
+      password: Env.devPassword,
+    );
+  } catch (error, stackTrace) {
+    log('Dev auto-login failed', error: error, stackTrace: stackTrace);
+  }
 }

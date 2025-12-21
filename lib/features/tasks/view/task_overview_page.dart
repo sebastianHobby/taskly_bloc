@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
-import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
@@ -34,33 +38,47 @@ class TaskOverviewPage extends StatelessWidget {
             taskRepository: taskRepository,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
-        BlocProvider<TaskDetailBloc>(
-          create: (context) => TaskDetailBloc(
-            taskRepository: taskRepository,
-            projectRepository: projectRepository,
-            valueRepository: valueRepository,
-            labelRepository: labelRepository,
-          ),
-        ),
       ],
-      child: const TaskOverviewView(),
+      child: TaskOverviewView(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        valueRepository: valueRepository,
+        labelRepository: labelRepository,
+      ),
     );
   }
 }
 
 class TaskOverviewView extends StatelessWidget {
   const TaskOverviewView({
+    required this.taskRepository,
+    required this.projectRepository,
+    required this.valueRepository,
+    required this.labelRepository,
     super.key,
   });
 
+  final TaskRepositoryContract taskRepository;
+  final ProjectRepositoryContract projectRepository;
+  final ValueRepositoryContract valueRepository;
+  final LabelRepositoryContract labelRepository;
+
   void _showTaskDetailSheet(BuildContext context, {String? taskId}) {
-    showDetailModal<void>(
-      context: context,
-      childBuilder: (modalSheetContext) => SafeArea(
-        top: false,
-        child: BlocProvider.value(
-          value: context.read<TaskDetailBloc>(),
-          child: TaskDetailSheet(taskId: taskId),
+    unawaited(
+      showDetailModal<void>(
+        context: context,
+        childBuilder: (modalSheetContext) => SafeArea(
+          top: false,
+          child: BlocProvider(
+            create: (_) => TaskDetailBloc(
+              taskRepository: taskRepository,
+              projectRepository: projectRepository,
+              valueRepository: valueRepository,
+              labelRepository: labelRepository,
+              taskId: taskId,
+            ),
+            child: const TaskDetailSheet(),
+          ),
         ),
       ),
     );
@@ -70,7 +88,7 @@ class TaskOverviewView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tasks'),
+        title: Text(context.l10n.tasksTitle),
       ),
       body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
         builder: (context, state) {
@@ -81,7 +99,11 @@ class TaskOverviewView extends StatelessWidget {
               tasks: tasks,
               onTap: (task) => _showTaskDetailSheet(context, taskId: task.id),
             ),
-            error: (message, _) => Center(child: Text(message)),
+            error: (error, _) => Center(
+              child: Text(
+                friendlyErrorMessageForUi(error, context.l10n),
+              ),
+            ),
           );
         },
       ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 class ProjectForm extends StatelessWidget {
   const ProjectForm({
@@ -9,6 +9,8 @@ class ProjectForm extends StatelessWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
+    this.availableValues = const <ValueModel>[],
+    this.availableLabels = const <Label>[],
     super.key,
   });
 
@@ -16,12 +18,20 @@ class ProjectForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Project? initialData;
+  final List<ValueModel> availableValues;
+  final List<Label> availableLabels;
 
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name.trim() ?? '',
       'completed': initialData?.completed ?? false,
+      'valueIds': (initialData?.values ?? <ValueModel>[])
+          .map((ValueModel e) => e.id)
+          .toList(growable: false),
+      'labelIds': (initialData?.labels ?? <Label>[])
+          .map((Label e) => e.id)
+          .toList(growable: false),
     };
 
     return Column(
@@ -73,6 +83,50 @@ class ProjectForm extends StatelessWidget {
                       title: const Text('Completed'),
                       initialValue:
                           initialValues['completed'] as bool? ?? false,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: FormBuilderFilterChips<String>(
+                      name: 'valueIds',
+                      initialValue: initialValues['valueIds'] as List<String>?,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Values',
+                      ),
+                      options: availableValues
+                          .map(
+                            (v) => FormBuilderChipOption(
+                              value: v.id,
+                              child: Text(v.name),
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: FormBuilderFilterChips<String>(
+                      name: 'labelIds',
+                      initialValue: initialValues['labelIds'] as List<String>?,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        labelText: 'Labels',
+                      ),
+                      options: availableLabels
+                          .map(
+                            (l) => FormBuilderChipOption(
+                              value: l.id,
+                              child: Text(l.name),
+                            ),
+                          )
+                          .toList(growable: false),
                     ),
                   ),
                 ],

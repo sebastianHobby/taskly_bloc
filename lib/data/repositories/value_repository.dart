@@ -1,19 +1,21 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 
 class ValueRepository implements ValueRepositoryContract {
   ValueRepository({required this.driftDb});
   final AppDatabase driftDb;
 
-  Stream<List<ValueTableData>> get _valueStream =>
-      driftDb.select(driftDb.valueTable).watch();
+  Stream<List<ValueTableData>> get _valueStream => (driftDb.select(
+    driftDb.valueTable,
+  )..orderBy([(v) => OrderingTerm(expression: v.name)])).watch();
 
-  Future<List<ValueTableData>> get _valueList =>
-      driftDb.select(driftDb.valueTable).get();
+  Future<List<ValueTableData>> get _valueList => (driftDb.select(
+    driftDb.valueTable,
+  )..orderBy([(v) => OrderingTerm(expression: v.name)])).get();
 
   Future<ValueTableData?> _getValueById(String id) {
     return (driftDb.select(
@@ -44,28 +46,22 @@ class ValueRepository implements ValueRepositoryContract {
     return data == null ? null : valueFromTable(data);
   }
 
-  Future<bool> updateValue(ValueTableCompanion updateCompanion) async {
-    final bool success = await driftDb
-        .update(driftDb.valueTable)
-        .replace(updateCompanion);
-    if (!success) {
-      throw RepositoryNotFoundException('No value found to update');
-    }
-    return success;
+  Future<void> _updateValue(ValueTableCompanion updateCompanion) async {
+    await driftDb.update(driftDb.valueTable).replace(updateCompanion);
   }
 
-  Future<int> deleteValue(ValueTableCompanion deleteCompanion) async {
+  Future<int> _deleteValue(ValueTableCompanion deleteCompanion) async {
     return driftDb.delete(driftDb.valueTable).delete(deleteCompanion);
   }
 
-  Future<int> createValue(ValueTableCompanion createCompanion) {
+  Future<int> _createValue(ValueTableCompanion createCompanion) {
     return driftDb.into(driftDb.valueTable).insert(createCompanion);
   }
 
   @override
   Future<void> create({required String name}) async {
     final now = DateTime.now();
-    await createValue(
+    await _createValue(
       ValueTableCompanion(
         name: Value(name),
         createdAt: Value(now),
@@ -76,8 +72,13 @@ class ValueRepository implements ValueRepositoryContract {
 
   @override
   Future<void> update({required String id, required String name}) async {
+    final existing = await _getValueById(id);
+    if (existing == null) {
+      throw RepositoryNotFoundException('No value found to update');
+    }
+
     final now = DateTime.now();
-    await updateValue(
+    await _updateValue(
       ValueTableCompanion(
         id: Value(id),
         name: Value(name),
@@ -88,6 +89,6 @@ class ValueRepository implements ValueRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
-    await deleteValue(ValueTableCompanion(id: Value(id)));
+    await _deleteValue(ValueTableCompanion(id: Value(id)));
   }
 }

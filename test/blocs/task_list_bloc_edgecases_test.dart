@@ -1,8 +1,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}

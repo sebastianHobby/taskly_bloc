@@ -6,7 +6,13 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 /// Sets Drift runtime option to avoid noisy warnings about multiple databases.
 AppDatabase createTestDb() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
-  return AppDatabase(NativeDatabase.memory());
+  return AppDatabase(
+    NativeDatabase.memory(
+      setup: (db) {
+        db.execute('PRAGMA foreign_keys = ON');
+      },
+    ),
+  );
 }
 
 Future<void> closeTestDb(AppDatabase db) => db.close();

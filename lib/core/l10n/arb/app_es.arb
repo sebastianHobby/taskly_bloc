@@ -3,5 +3,37 @@
     "counterAppBarTitle": "Contador",
     "@counterAppBarTitle": {
         "description": "Texto mostrado en la AppBar de la página del contador"
+    },
+    "projectsTitle": "Proyectos",
+    "@projectsTitle": {
+        "description": "Título para la sección de Proyectos"
+    },
+    "tasksTitle": "Tareas",
+    "@tasksTitle": {
+        "description": "Título para la sección de Tareas"
+    },
+    "valuesTitle": "Valores",
+    "@valuesTitle": {
+        "description": "Título para la sección de Valores"
+    },
+    "noProjectsFound": "No se encontraron proyectos.",
+    "@noProjectsFound": {
+        "description": "Estado vacío cuando no hay proyectos"
+    },
+    "createProjectTooltip": "Crear proyecto",
+    "@createProjectTooltip": {
+        "description": "Tooltip del botón flotante para crear proyecto"
+    },
+    "createTaskTooltip": "Crear tarea",
+    "@createTaskTooltip": {
+        "description": "Tooltip del botón flotante para crear tarea"
+    },
+    "createValueTooltip": "Crear valor",
+    "@createValueTooltip": {
+        "description": "Tooltip del botón flotante para crear valor"
+    },
+    "genericErrorFallback": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "@genericErrorFallback": {
+        "description": "Error de respaldo mostrado para errores inesperados"
     }
 }

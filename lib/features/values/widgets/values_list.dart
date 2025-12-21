@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -43,7 +43,7 @@ class ValuesListView extends StatelessWidget {
                   },
                   onError: (errorMessage) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error: $errorMessage')),
+                      SnackBar(content: Text(errorMessage)),
                     );
                   },
                 ),

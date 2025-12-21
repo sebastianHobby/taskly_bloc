@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 abstract class ValueRepositoryContract {
   Stream<List<ValueModel>> watchAll({bool withRelated = false});

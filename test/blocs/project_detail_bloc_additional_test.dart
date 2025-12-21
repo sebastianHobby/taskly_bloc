@@ -1,16 +1,32 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
+class MockValueRepository extends Mock implements ValueRepositoryContract {}
+
+class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+
 void main() {
   late MockProjectRepository mockRepository;
+  late MockValueRepository mockValueRepository;
+  late MockLabelRepository mockLabelRepository;
 
   setUp(() {
     mockRepository = MockProjectRepository();
+    mockValueRepository = MockValueRepository();
+    mockLabelRepository = MockLabelRepository();
+
+    when(
+      () => mockValueRepository.getAll(),
+    ).thenAnswer((_) async => <ValueModel>[]);
+    when(() => mockLabelRepository.getAll()).thenAnswer((_) async => <Label>[]);
   });
 
   blocTest<ProjectDetailBloc, ProjectDetailState>(
@@ -20,8 +36,12 @@ void main() {
         () => mockRepository.get('p1'),
       ).thenAnswer((_) async => null);
     },
-    build: () =>
-        ProjectDetailBloc(projectRepository: mockRepository, projectId: 'p1'),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
+    act: (bloc) => bloc.add(const ProjectDetailEvent.get(projectId: 'p1')),
     expect: () => <dynamic>[
       const ProjectDetailState.loadInProgress(),
       isA<ProjectDetailOperationFailure>(),
@@ -35,8 +55,12 @@ void main() {
         () => mockRepository.get('p1'),
       ).thenAnswer((_) async => throw Exception('boom'));
     },
-    build: () =>
-        ProjectDetailBloc(projectRepository: mockRepository, projectId: 'p1'),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
+    act: (bloc) => bloc.add(const ProjectDetailEvent.get(projectId: 'p1')),
     expect: () => <dynamic>[
       const ProjectDetailState.loadInProgress(),
       isA<ProjectDetailOperationFailure>(),
@@ -51,10 +75,16 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           completed: any(named: 'completed'),
+          valueIds: any(named: 'valueIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async {});
     },
-    build: () => ProjectDetailBloc(projectRepository: mockRepository),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.update(
         id: 'p1',
@@ -77,10 +107,16 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           completed: any(named: 'completed'),
+          valueIds: any(named: 'valueIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async => throw Exception('fail'));
     },
-    build: () => ProjectDetailBloc(projectRepository: mockRepository),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.update(
         id: 'p1',
@@ -98,10 +134,16 @@ void main() {
         () => mockRepository.create(
           name: any(named: 'name'),
           completed: any(named: 'completed'),
+          valueIds: any(named: 'valueIds'),
+          labelIds: any(named: 'labelIds'),
         ),
       ).thenAnswer((_) async => throw Exception('boom'));
     },
-    build: () => ProjectDetailBloc(projectRepository: mockRepository),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.create(
         name: 'n',
@@ -117,7 +159,11 @@ void main() {
         () => mockRepository.delete(any()),
       ).thenAnswer((_) async {});
     },
-    build: () => ProjectDetailBloc(projectRepository: mockRepository),
+    build: () => ProjectDetailBloc(
+      projectRepository: mockRepository,
+      valueRepository: mockValueRepository,
+      labelRepository: mockLabelRepository,
+    ),
     act: (bloc) => bloc.add(const ProjectDetailEvent.delete(id: 'p1')),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(

@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/core/domain/label.dart';
-import 'package:taskly_bloc/core/domain/project.dart';
-import 'package:taskly_bloc/core/domain/value.dart';
+import 'package:taskly_bloc/domain/label.dart';
+import 'package:taskly_bloc/domain/project.dart';
+import 'package:taskly_bloc/domain/value.dart';
 
 /// Domain representation of a Task used across the app.
 class Task {

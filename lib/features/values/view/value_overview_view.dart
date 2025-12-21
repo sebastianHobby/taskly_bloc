@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/features/values/widgets/values_list.dart';
@@ -15,7 +17,7 @@ class ValueOverviewPage extends StatelessWidget {
     return BlocProvider(
       create: (_) =>
           ValueOverviewBloc(valueRepository: valueRepository)
-            ..add(ValuesSubscriptionRequested()),
+            ..add(const ValueOverviewEvent.valuesSubscriptionRequested()),
       child: ValueOverviewView(valueRepository: valueRepository),
     );
   }
@@ -49,19 +51,13 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
   Widget build(BuildContext context) {
     return BlocBuilder<ValueOverviewBloc, ValueOverviewState>(
       builder: (context, state) {
-        if (state is ValueOverviewInitial) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (state is ValueOverviewLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (state is ValueOverviewLoaded) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Values')),
+        return state.when(
+          initial: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          loaded: (values) => Scaffold(
+            appBar: AppBar(title: Text(context.l10n.valuesTitle)),
             body: ValuesListView(
-              values: state.values,
+              values: values,
               valueRepository: widget.valueRepository,
               isSheetOpen: _isSheetOpen,
             ),
@@ -69,14 +65,13 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
               valueRepository: widget.valueRepository,
               isSheetOpen: _isSheetOpen,
             ),
-          );
-        }
-
-        if (state is ValueOverviewError) {
-          return Center(child: Text(state.message));
-        }
-
-        return const SizedBox.shrink();
+          ),
+          error: (error) => Center(
+            child: Text(
+              friendlyErrorMessageForUi(error, context.l10n),
+            ),
+          ),
+        );
       },
     );
   }

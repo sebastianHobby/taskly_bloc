@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
+
+import '../helpers/pump_app.dart';
 
 // Minimal in-test fake repository to avoid external test helper dependency.
 class FakeValueRepository implements ValueRepositoryContract {
@@ -95,8 +97,9 @@ void main() {
       name: 'Integration Value',
     );
 
-    await tester.pumpWidget(
-      MaterialApp(home: ValueOverviewPage(valueRepository: repo)),
+    await pumpLocalizedApp(
+      tester,
+      home: ValueOverviewPage(valueRepository: repo),
     );
     // push values after widget builds so the bloc subscription receives the value
     repo.pushValues([sample]);
@@ -124,8 +127,9 @@ void main() {
 
   testWidgets('create value via UI updates list', (tester) async {
     final repo = FakeValueRepository();
-    await tester.pumpWidget(
-      MaterialApp(home: ValueOverviewPage(valueRepository: repo)),
+    await pumpLocalizedApp(
+      tester,
+      home: ValueOverviewPage(valueRepository: repo),
     );
     // ensure the bloc receives an initial loaded state
     repo.pushValues([]);

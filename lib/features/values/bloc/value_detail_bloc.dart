@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 
 part 'value_detail_bloc.freezed.dart';
 
@@ -27,7 +27,7 @@ sealed class ValueDetailEvent with _$ValueDetailEvent {
 @freezed
 abstract class ValueDetailError with _$ValueDetailError {
   const factory ValueDetailError({
-    required String message,
+    required Object error,
     StackTrace? stackTrace,
   }) = _ValueDetailError;
 }
@@ -77,7 +77,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       if (value == null) {
         emit(
           const ValueDetailState.operationFailure(
-            errorDetails: ValueDetailError(message: 'Value not found'),
+            errorDetails: ValueDetailError(error: 'Value not found'),
           ),
         );
       } else {
@@ -87,7 +87,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       emit(
         ValueDetailState.operationFailure(
           errorDetails: ValueDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -111,7 +111,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       emit(
         ValueDetailState.operationFailure(
           errorDetails: ValueDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -134,7 +134,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       emit(
         ValueDetailState.operationFailure(
           errorDetails: ValueDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -157,7 +157,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState> {
       emit(
         ValueDetailState.operationFailure(
           errorDetails: ValueDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),

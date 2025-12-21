@@ -13,4 +13,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get counterAppBarTitle => 'Contador';
+
+  @override
+  String get projectsTitle => 'Proyectos';
+
+  @override
+  String get tasksTitle => 'Tareas';
+
+  @override
+  String get valuesTitle => 'Valores';
+
+  @override
+  String get noProjectsFound => 'No se encontraron proyectos.';
+
+  @override
+  String get createProjectTooltip => 'Crear proyecto';
+
+  @override
+  String get createTaskTooltip => 'Crear tarea';
+
+  @override
+  String get createValueTooltip => 'Crear valor';
+
+  @override
+  String get genericErrorFallback => 'Algo salió mal. Por favor, inténtalo de nuevo.';
 }

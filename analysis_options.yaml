@@ -12,7 +12,7 @@ analyzer:
     strict_raw_type: ignore
     directives_ordering: ignore
   exclude:
-    - lib/l10n/gen/*
+    - lib/core/l10n/gen/*
     - lib/*/*.g.dart
     - '*.freezed.dart'
 linter:

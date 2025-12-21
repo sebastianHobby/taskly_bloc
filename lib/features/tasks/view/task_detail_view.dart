@@ -1,17 +1,18 @@
 // drift types are provided by the generated database import below
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
-    this.taskId,
     super.key,
   });
-
-  final String? taskId;
 
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
@@ -20,18 +21,6 @@ class TaskDetailSheet extends StatefulWidget {
 class _TaskDetailSheetState extends State<TaskDetailSheet> {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
-
-  @override
-  void initState() {
-    super.initState();
-    final bloc = context.read<TaskDetailBloc>();
-
-    if (widget.taskId != null && widget.taskId!.isNotEmpty) {
-      bloc.add(TaskDetailEvent.get(taskId: widget.taskId!));
-    } else {
-      bloc.add(const TaskDetailEvent.loadInitialData());
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,11 +34,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(message)),
             );
-            Navigator.of(context).maybePop();
+            unawaited(Navigator.of(context).maybePop());
           },
           operationFailure: (errorDetails) {
+            final message = friendlyErrorMessageForUi(
+              errorDetails.error,
+              context.l10n,
+            );
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errorDetails.message)),
+              SnackBar(content: Text(message)),
             );
           },
           orElse: () {},
@@ -75,7 +68,19 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                   final formValues = formState.value;
                   final name = formValues['name'] as String;
                   final description = formValues['description'] as String?;
-                  final projectId = formValues['projectId'] as String?;
+                  final projectIdCandidate = formValues['projectId'] as String?;
+                  final projectId =
+                      (projectIdCandidate == null || projectIdCandidate.isEmpty)
+                      ? null
+                      : projectIdCandidate;
+                  final repeatCandidate =
+                      (formValues['repeatIcalRrule'] as String?)?.trim();
+                  final repeatIcalRrule =
+                      (repeatCandidate == null || repeatCandidate.isEmpty)
+                      ? null
+                      : repeatCandidate;
+                  final startDate = formValues['startDate'] as DateTime?;
+                  final deadlineDate = formValues['deadlineDate'] as DateTime?;
                   final valueIds =
                       (formValues['valueIds'] as List<dynamic>?)
                           ?.cast<String>() ??
@@ -96,7 +101,11 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     TaskDetailEvent.create(
                       name: name,
                       description: description,
+                      completed: formValues['completed'] as bool? ?? false,
+                      startDate: startDate,
+                      deadlineDate: deadlineDate,
                       projectId: projectId,
+                      repeatIcalRrule: repeatIcalRrule,
                       values: selectedValues,
                       labels: selectedLabels,
                     ),
@@ -108,51 +117,70 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 availableLabels: availableLabels,
               ),
           loadSuccess:
-              (availableProjects, availableValues, availableLabels, task) =>
-                  TaskForm(
-                    initialData: task,
-                    formKey: _formKey,
-                    onSubmit: () {
-                      final formState = _formKey.currentState;
-                      if (formState == null) return;
-                      if (!formState.saveAndValidate()) return;
-                      final formValues = formState.value;
-                      final name = formValues['name'] as String;
-                      final description = formValues['description'] as String?;
-                      final projectId = formValues['projectId'] as String?;
-                      final valueIds =
-                          (formValues['valueIds'] as List<dynamic>?)
-                              ?.cast<String>() ??
-                          <String>[];
-                      final labelIds =
-                          (formValues['labelIds'] as List<dynamic>?)
-                              ?.cast<String>() ??
-                          <String>[];
+              (
+                availableProjects,
+                availableValues,
+                availableLabels,
+                task,
+              ) => TaskForm(
+                initialData: task,
+                formKey: _formKey,
+                onSubmit: () {
+                  final formState = _formKey.currentState;
+                  if (formState == null) return;
+                  if (!formState.saveAndValidate()) return;
+                  final formValues = formState.value;
+                  final name = formValues['name'] as String;
+                  final description = formValues['description'] as String?;
+                  final projectIdCandidate = formValues['projectId'] as String?;
+                  final projectId =
+                      (projectIdCandidate == null || projectIdCandidate.isEmpty)
+                      ? null
+                      : projectIdCandidate;
+                  final repeatCandidate =
+                      (formValues['repeatIcalRrule'] as String?)?.trim();
+                  final repeatIcalRrule =
+                      (repeatCandidate == null || repeatCandidate.isEmpty)
+                      ? null
+                      : repeatCandidate;
+                  final startDate = formValues['startDate'] as DateTime?;
+                  final deadlineDate = formValues['deadlineDate'] as DateTime?;
+                  final valueIds =
+                      (formValues['valueIds'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      <String>[];
+                  final labelIds =
+                      (formValues['labelIds'] as List<dynamic>?)
+                          ?.cast<String>() ??
+                      <String>[];
 
-                      final selectedValues = availableValues
-                          .where((v) => valueIds.contains(v.id))
-                          .toList();
-                      final selectedLabels = availableLabels
-                          .where((l) => labelIds.contains(l.id))
-                          .toList();
+                  final selectedValues = availableValues
+                      .where((v) => valueIds.contains(v.id))
+                      .toList();
+                  final selectedLabels = availableLabels
+                      .where((l) => labelIds.contains(l.id))
+                      .toList();
 
-                      context.read<TaskDetailBloc>().add(
-                        TaskDetailEvent.update(
-                          id: task.id,
-                          name: name,
-                          description: description,
-                          completed: formValues['completed'] as bool? ?? false,
-                          projectId: projectId,
-                          values: selectedValues,
-                          labels: selectedLabels,
-                        ),
-                      );
-                    },
-                    submitTooltip: 'Update',
-                    availableProjects: availableProjects,
-                    availableValues: availableValues,
-                    availableLabels: availableLabels,
-                  ),
+                  context.read<TaskDetailBloc>().add(
+                    TaskDetailEvent.update(
+                      id: task.id,
+                      name: name,
+                      description: description,
+                      completed: formValues['completed'] as bool? ?? false,
+                      startDate: startDate,
+                      deadlineDate: deadlineDate,
+                      projectId: projectId,
+                      repeatIcalRrule: repeatIcalRrule,
+                      values: selectedValues,
+                      labels: selectedLabels,
+                    ),
+                  );
+                },
+                submitTooltip: 'Update',
+                availableProjects: availableProjects,
+                availableValues: availableValues,
+                availableLabels: availableLabels,
+              ),
           operationSuccess: (_) => const SizedBox.shrink(),
           operationFailure: (_) => const SizedBox.shrink(),
         );

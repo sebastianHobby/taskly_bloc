@@ -1,5 +1,5 @@
-import 'package:taskly_bloc/core/domain/value.dart';
-import 'package:taskly_bloc/core/domain/label.dart';
+import 'package:taskly_bloc/domain/value.dart';
+import 'package:taskly_bloc/domain/label.dart';
 
 class Project {
   Project({

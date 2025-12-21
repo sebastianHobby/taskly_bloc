@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 part 'task_list_bloc.freezed.dart';
 
 //Events (the input to bloc)
@@ -24,7 +24,7 @@ sealed class TaskOverviewState with _$TaskOverviewState {
     required List<Task> tasks,
   }) = TaskOverviewLoaded;
   const factory TaskOverviewState.error({
-    required String message,
+    required Object error,
     required StackTrace stacktrace,
   }) = TaskOverviewError;
 }
@@ -50,7 +50,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
       _taskRepository.watchAll(),
       onData: (tasks) => TaskOverviewState.loaded(tasks: tasks),
       onError: (error, stackTrace) => TaskOverviewState.error(
-        message: error.toString(),
+        error: error,
         stacktrace: stackTrace,
       ),
     );
@@ -73,13 +73,11 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
         projectId: task.projectId,
         repeatIcalRrule: task.repeatIcalRrule,
         // Don't touch links on quick toggle.
-        valueIds: null,
-        labelIds: null,
       );
     } catch (error, stacktrace) {
       emit(
         TaskOverviewState.error(
-          message: error.toString(),
+          error: error,
           stacktrace: stacktrace,
         ),
       );

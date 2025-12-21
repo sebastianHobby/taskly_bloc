@@ -1,21 +1,24 @@
 import 'package:drift/drift.dart';
+import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 
 class ProjectRepository implements ProjectRepositoryContract {
   ProjectRepository({required this.driftDb});
   final AppDatabase driftDb;
 
-  Stream<List<ProjectTableData>> get _projectStream =>
-      driftDb.select(driftDb.projectTable).watch();
+  Stream<List<ProjectTableData>> get _projectStream => (driftDb.select(
+    driftDb.projectTable,
+  )..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
 
-  Future<List<ProjectTableData>> get _projectList =>
-      driftDb.select(driftDb.projectTable).get();
+  Future<List<ProjectTableData>> get _projectList => (driftDb.select(
+    driftDb.projectTable,
+  )..orderBy([(p) => OrderingTerm(expression: p.name)])).get();
 
-  Future<ProjectTableData?> getProjectById(String id) async {
+  Future<ProjectTableData?> _getProjectById(String id) async {
     return driftDb.managers.projectTable
         .filter((f) => f.id.equals(id))
         .getSingleOrNull();
@@ -69,20 +72,16 @@ class ProjectRepository implements ProjectRepositoryContract {
 
         final value = row.readTableOrNull(driftDb.valueTable);
         if (value != null) {
-          final m = valuesByProject.putIfAbsent(
-            id,
-            () => <String, ValueTableData>{},
-          );
-          m.putIfAbsent(value.id, () => value);
+          valuesByProject
+              .putIfAbsent(id, () => <String, ValueTableData>{})
+              .putIfAbsent(value.id, () => value);
         }
 
         final label = row.readTableOrNull(driftDb.labelTable);
         if (label != null) {
-          final m = labelsByProject.putIfAbsent(
-            id,
-            () => <String, LabelTableData>{},
-          );
-          m.putIfAbsent(label.id, () => label);
+          labelsByProject
+              .putIfAbsent(id, () => <String, LabelTableData>{})
+              .putIfAbsent(label.id, () => label);
         }
       }
 
@@ -90,11 +89,11 @@ class ProjectRepository implements ProjectRepositoryContract {
       for (final entry in projectsById.entries) {
         final id = entry.key;
         final valueTableList =
-            valuesByProject[id]?.values.toList() ?? <ValueTableData>[];
-        valueTableList.sort((a, b) => a.name.compareTo(b.name));
+            (valuesByProject[id]?.values.toList() ?? <ValueTableData>[])
+              ..sort((a, b) => a.name.compareTo(b.name));
         final labelTableList =
-            labelsByProject[id]?.values.toList() ?? <LabelTableData>[];
-        labelTableList.sort((a, b) => a.name.compareTo(b.name));
+            (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
+              ..sort((a, b) => a.name.compareTo(b.name));
 
         final values = valueTableList.map(valueFromTable).toList();
         final labels = labelTableList.map(labelFromTable).toList();
@@ -157,20 +156,16 @@ class ProjectRepository implements ProjectRepositoryContract {
 
       final value = row.readTableOrNull(driftDb.valueTable);
       if (value != null) {
-        final m = valuesByProject.putIfAbsent(
-          id,
-          () => <String, ValueTableData>{},
-        );
-        m.putIfAbsent(value.id, () => value);
+        valuesByProject
+            .putIfAbsent(id, () => <String, ValueTableData>{})
+            .putIfAbsent(value.id, () => value);
       }
 
       final label = row.readTableOrNull(driftDb.labelTable);
       if (label != null) {
-        final m = labelsByProject.putIfAbsent(
-          id,
-          () => <String, LabelTableData>{},
-        );
-        m.putIfAbsent(label.id, () => label);
+        labelsByProject
+            .putIfAbsent(id, () => <String, LabelTableData>{})
+            .putIfAbsent(label.id, () => label);
       }
     }
 
@@ -178,11 +173,11 @@ class ProjectRepository implements ProjectRepositoryContract {
     for (final entry in projectsById.entries) {
       final id = entry.key;
       final valueTableList =
-          valuesByProject[id]?.values.toList() ?? <ValueTableData>[];
-      valueTableList.sort((a, b) => a.name.compareTo(b.name));
+          (valuesByProject[id]?.values.toList() ?? <ValueTableData>[])
+            ..sort((a, b) => a.name.compareTo(b.name));
       final labelTableList =
-          labelsByProject[id]?.values.toList() ?? <LabelTableData>[];
-      labelTableList.sort((a, b) => a.name.compareTo(b.name));
+          (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
+            ..sort((a, b) => a.name.compareTo(b.name));
 
       final values = valueTableList.map(valueFromTable).toList();
       final labels = labelTableList.map(labelFromTable).toList();
@@ -270,7 +265,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   @override
   Future<Project?> get(String id, {bool withRelated = false}) async {
     if (!withRelated) {
-      final data = await getProjectById(id);
+      final data = await _getProjectById(id);
       return data == null ? null : projectFromTable(data);
     }
 
@@ -336,39 +331,72 @@ class ProjectRepository implements ProjectRepositoryContract {
     return projectFromTable(project!, values: values, labels: labels);
   }
 
-  Future<bool> updateProject(
-    ProjectTableCompanion updateCompanion,
-  ) async {
-    final bool success = await driftDb
-        .update(driftDb.projectTable)
-        .replace(updateCompanion);
-    if (!success) {
-      throw RepositoryNotFoundException('No project found to update');
-    }
-    return success;
+  Future<void> _updateProject(ProjectTableCompanion updateCompanion) async {
+    await driftDb.update(driftDb.projectTable).replace(updateCompanion);
   }
 
-  Future<int> deleteProject(ProjectTableCompanion deleteCompanion) async {
+  Future<int> _deleteProject(ProjectTableCompanion deleteCompanion) async {
     return driftDb.delete(driftDb.projectTable).delete(deleteCompanion);
   }
 
-  Future<int> createProject(
+  Future<int> _createProject(
     ProjectTableCompanion createCompanion,
   ) {
     return driftDb.into(driftDb.projectTable).insert(createCompanion);
   }
 
   @override
-  Future<void> create({required String name, bool completed = false}) async {
+  Future<void> create({
+    required String name,
+    bool completed = false,
+    List<String>? valueIds,
+    List<String>? labelIds,
+  }) async {
     final now = DateTime.now();
-    await createProject(
-      ProjectTableCompanion(
-        name: Value(name),
-        completed: Value(completed),
-        createdAt: Value(now),
-        updatedAt: Value(now),
-      ),
-    );
+    final id = uuid.v4();
+
+    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
+    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
+
+    await driftDb.transaction(() async {
+      await _createProject(
+        ProjectTableCompanion(
+          id: Value(id),
+          name: Value(name),
+          completed: Value(completed),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      if (uniqueValueIds != null) {
+        for (final valueId in uniqueValueIds) {
+          await driftDb
+              .into(driftDb.projectValuesLinkTable)
+              .insert(
+                ProjectValuesLinkTableCompanion(
+                  projectId: Value(id),
+                  valueId: Value(valueId),
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+        }
+      }
+
+      if (uniqueLabelIds != null) {
+        for (final labelId in uniqueLabelIds) {
+          await driftDb
+              .into(driftDb.projectLabelsTable)
+              .insert(
+                ProjectLabelsTableCompanion(
+                  projectId: Value(id),
+                  labelId: Value(labelId),
+                ),
+                mode: InsertMode.insertOrIgnore,
+              );
+        }
+      }
+    });
   }
 
   @override
@@ -376,20 +404,91 @@ class ProjectRepository implements ProjectRepositoryContract {
     required String id,
     required String name,
     required bool completed,
+    List<String>? valueIds,
+    List<String>? labelIds,
   }) async {
+    final existing = await _getProjectById(id);
+    if (existing == null) {
+      throw RepositoryNotFoundException('No project found to update');
+    }
+
     final now = DateTime.now();
-    await updateProject(
-      ProjectTableCompanion(
-        id: Value(id),
-        name: Value(name),
-        completed: Value(completed),
-        updatedAt: Value(now),
-      ),
-    );
+
+    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
+    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
+
+    await driftDb.transaction(() async {
+      await _updateProject(
+        ProjectTableCompanion(
+          id: Value(id),
+          name: Value(name),
+          completed: Value(completed),
+          updatedAt: Value(now),
+        ),
+      );
+
+      if (uniqueValueIds != null) {
+        final requested = uniqueValueIds.toSet();
+        final existing =
+            (await (driftDb.select(
+                  driftDb.projectValuesLinkTable,
+                )..where((t) => t.projectId.equals(id))).get())
+                .map((r) => r.valueId)
+                .toSet();
+
+        if (requested.length != existing.length ||
+            !existing.containsAll(requested)) {
+          await (driftDb.delete(
+            driftDb.projectValuesLinkTable,
+          )..where((t) => t.projectId.equals(id))).go();
+
+          for (final valueId in uniqueValueIds) {
+            await driftDb
+                .into(driftDb.projectValuesLinkTable)
+                .insert(
+                  ProjectValuesLinkTableCompanion(
+                    projectId: Value(id),
+                    valueId: Value(valueId),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+          }
+        }
+      }
+
+      if (uniqueLabelIds != null) {
+        final requested = uniqueLabelIds.toSet();
+        final existing =
+            (await (driftDb.select(
+                  driftDb.projectLabelsTable,
+                )..where((t) => t.projectId.equals(id))).get())
+                .map((r) => r.labelId)
+                .toSet();
+
+        if (requested.length != existing.length ||
+            !existing.containsAll(requested)) {
+          await (driftDb.delete(
+            driftDb.projectLabelsTable,
+          )..where((t) => t.projectId.equals(id))).go();
+
+          for (final labelId in uniqueLabelIds) {
+            await driftDb
+                .into(driftDb.projectLabelsTable)
+                .insert(
+                  ProjectLabelsTableCompanion(
+                    projectId: Value(id),
+                    labelId: Value(labelId),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+          }
+        }
+      }
+    });
   }
 
   @override
   Future<void> delete(String id) async {
-    await deleteProject(ProjectTableCompanion(id: Value(id)));
+    await _deleteProject(ProjectTableCompanion(id: Value(id)));
   }
 }

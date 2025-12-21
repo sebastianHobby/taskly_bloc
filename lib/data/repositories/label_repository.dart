@@ -1,19 +1,21 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 
 class LabelRepository implements LabelRepositoryContract {
   LabelRepository({required this.driftDb});
   final AppDatabase driftDb;
 
-  Stream<List<LabelTableData>> get _labelStream =>
-      driftDb.select(driftDb.labelTable).watch();
+  Stream<List<LabelTableData>> get _labelStream => (driftDb.select(
+    driftDb.labelTable,
+  )..orderBy([(l) => OrderingTerm(expression: l.name)])).watch();
 
-  Future<List<LabelTableData>> get _labelList =>
-      driftDb.select(driftDb.labelTable).get();
+  Future<List<LabelTableData>> get _labelList => (driftDb.select(
+    driftDb.labelTable,
+  )..orderBy([(l) => OrderingTerm(expression: l.name)])).get();
 
   Future<LabelTableData?> _getLabelById(String id) {
     return (driftDb.select(
@@ -42,28 +44,22 @@ class LabelRepository implements LabelRepositoryContract {
     return data == null ? null : labelFromTable(data);
   }
 
-  Future<bool> updateLabel(LabelTableCompanion updateCompanion) async {
-    final bool success = await driftDb
-        .update(driftDb.labelTable)
-        .replace(updateCompanion);
-    if (!success) {
-      throw RepositoryNotFoundException('No label found to update');
-    }
-    return success;
+  Future<void> _updateLabel(LabelTableCompanion updateCompanion) async {
+    await driftDb.update(driftDb.labelTable).replace(updateCompanion);
   }
 
-  Future<int> deleteLabel(LabelTableCompanion deleteCompanion) async {
+  Future<int> _deleteLabel(LabelTableCompanion deleteCompanion) async {
     return driftDb.delete(driftDb.labelTable).delete(deleteCompanion);
   }
 
-  Future<int> createLabel(LabelTableCompanion createCompanion) {
+  Future<int> _createLabel(LabelTableCompanion createCompanion) {
     return driftDb.into(driftDb.labelTable).insert(createCompanion);
   }
 
   @override
   Future<void> create({required String name}) async {
     final now = DateTime.now();
-    await createLabel(
+    await _createLabel(
       LabelTableCompanion(
         name: Value(name),
         createdAt: Value(now),
@@ -74,8 +70,13 @@ class LabelRepository implements LabelRepositoryContract {
 
   @override
   Future<void> update({required String id, required String name}) async {
+    final existing = await _getLabelById(id);
+    if (existing == null) {
+      throw RepositoryNotFoundException('No label found to update');
+    }
+
     final now = DateTime.now();
-    await updateLabel(
+    await _updateLabel(
       LabelTableCompanion(
         id: Value(id),
         name: Value(name),
@@ -86,6 +87,6 @@ class LabelRepository implements LabelRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
-    await deleteLabel(LabelTableCompanion(id: Value(id)));
+    await _deleteLabel(LabelTableCompanion(id: Value(id)));
   }
 }

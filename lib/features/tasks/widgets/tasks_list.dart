@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
 

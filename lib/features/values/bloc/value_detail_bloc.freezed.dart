@@ -452,7 +452,7 @@ as String,
 /// @nodoc
 mixin _$ValueDetailError {
 
- String get message; StackTrace? get stackTrace;
+ Object get error; StackTrace? get stackTrace;
 /// Create a copy of ValueDetailError
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -463,16 +463,16 @@ $ValueDetailErrorCopyWith<ValueDetailError> get copyWith => _$ValueDetailErrorCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailError&&(identical(other.message, message) || other.message == message)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValueDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,stackTrace);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
 
 @override
 String toString() {
-  return 'ValueDetailError(message: $message, stackTrace: $stackTrace)';
+  return 'ValueDetailError(error: $error, stackTrace: $stackTrace)';
 }
 
 
@@ -483,7 +483,7 @@ abstract mixin class $ValueDetailErrorCopyWith<$Res>  {
   factory $ValueDetailErrorCopyWith(ValueDetailError value, $Res Function(ValueDetailError) _then) = _$ValueDetailErrorCopyWithImpl;
 @useResult
 $Res call({
- String message, StackTrace? stackTrace
+ Object error, StackTrace? stackTrace
 });
 
 
@@ -500,10 +500,9 @@ class _$ValueDetailErrorCopyWithImpl<$Res>
 
 /// Create a copy of ValueDetailError
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? message = null,Object? stackTrace = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? error = null,Object? stackTrace = freezed,}) {
   return _then(_self.copyWith(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
 as StackTrace?,
   ));
 }
@@ -589,10 +588,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String message,  StackTrace? stackTrace)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ValueDetailError() when $default != null:
-return $default(_that.message,_that.stackTrace);case _:
+return $default(_that.error,_that.stackTrace);case _:
   return orElse();
 
 }
@@ -610,10 +609,10 @@ return $default(_that.message,_that.stackTrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String message,  StackTrace? stackTrace)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)  $default,) {final _that = this;
 switch (_that) {
 case _ValueDetailError():
-return $default(_that.message,_that.stackTrace);case _:
+return $default(_that.error,_that.stackTrace);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -630,10 +629,10 @@ return $default(_that.message,_that.stackTrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String message,  StackTrace? stackTrace)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Object error,  StackTrace? stackTrace)?  $default,) {final _that = this;
 switch (_that) {
 case _ValueDetailError() when $default != null:
-return $default(_that.message,_that.stackTrace);case _:
+return $default(_that.error,_that.stackTrace);case _:
   return null;
 
 }
@@ -645,10 +644,10 @@ return $default(_that.message,_that.stackTrace);case _:
 
 
 class _ValueDetailError implements ValueDetailError {
-  const _ValueDetailError({required this.message, this.stackTrace});
+  const _ValueDetailError({required this.error, this.stackTrace});
   
 
-@override final  String message;
+@override final  Object error;
 @override final  StackTrace? stackTrace;
 
 /// Create a copy of ValueDetailError
@@ -661,16 +660,16 @@ _$ValueDetailErrorCopyWith<_ValueDetailError> get copyWith => __$ValueDetailErro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ValueDetailError&&(identical(other.message, message) || other.message == message)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ValueDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,stackTrace);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
 
 @override
 String toString() {
-  return 'ValueDetailError(message: $message, stackTrace: $stackTrace)';
+  return 'ValueDetailError(error: $error, stackTrace: $stackTrace)';
 }
 
 
@@ -681,7 +680,7 @@ abstract mixin class _$ValueDetailErrorCopyWith<$Res> implements $ValueDetailErr
   factory _$ValueDetailErrorCopyWith(_ValueDetailError value, $Res Function(_ValueDetailError) _then) = __$ValueDetailErrorCopyWithImpl;
 @override @useResult
 $Res call({
- String message, StackTrace? stackTrace
+ Object error, StackTrace? stackTrace
 });
 
 
@@ -698,10 +697,9 @@ class __$ValueDetailErrorCopyWithImpl<$Res>
 
 /// Create a copy of ValueDetailError
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? message = null,Object? stackTrace = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = freezed,}) {
   return _then(_ValueDetailError(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
 as StackTrace?,
   ));
 }

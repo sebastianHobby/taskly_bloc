@@ -383,13 +383,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects)?  loaded,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
 return loaded(_that.projects);case ProjectOverviewError() when error != null:
-return error(_that.message);case _:
+return error(_that.error);case _:
   return orElse();
 
 }
@@ -407,13 +407,13 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects)  loaded,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial():
 return initial();case ProjectOverviewLoading():
 return loading();case ProjectOverviewLoaded():
 return loaded(_that.projects);case ProjectOverviewError():
-return error(_that.message);}
+return error(_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -427,13 +427,13 @@ return error(_that.message);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects)?  loaded,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
 return loaded(_that.projects);case ProjectOverviewError() when error != null:
-return error(_that.message);case _:
+return error(_that.error);case _:
   return null;
 
 }
@@ -581,10 +581,10 @@ as List<Project>,
 
 
 class ProjectOverviewError implements ProjectOverviewState {
-  const ProjectOverviewError({required this.message});
+  const ProjectOverviewError({required this.error});
   
 
- final  String message;
+ final  Object error;
 
 /// Create a copy of ProjectOverviewState
 /// with the given fields replaced by the non-null parameter values.
@@ -596,16 +596,16 @@ $ProjectOverviewErrorCopyWith<ProjectOverviewError> get copyWith => _$ProjectOve
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewError&&(identical(other.message, message) || other.message == message));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewError&&const DeepCollectionEquality().equals(other.error, error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error));
 
 @override
 String toString() {
-  return 'ProjectOverviewState.error(message: $message)';
+  return 'ProjectOverviewState.error(error: $error)';
 }
 
 
@@ -616,7 +616,7 @@ abstract mixin class $ProjectOverviewErrorCopyWith<$Res> implements $ProjectOver
   factory $ProjectOverviewErrorCopyWith(ProjectOverviewError value, $Res Function(ProjectOverviewError) _then) = _$ProjectOverviewErrorCopyWithImpl;
 @useResult
 $Res call({
- String message
+ Object error
 });
 
 
@@ -633,10 +633,9 @@ class _$ProjectOverviewErrorCopyWithImpl<$Res>
 
 /// Create a copy of ProjectOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
   return _then(ProjectOverviewError(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,
+error: null == error ? _self.error : error ,
   ));
 }
 

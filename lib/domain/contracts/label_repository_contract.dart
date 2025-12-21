@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 abstract class LabelRepositoryContract {
   Stream<List<Label>> watchAll({bool withRelated = false});

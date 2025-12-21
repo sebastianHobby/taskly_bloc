@@ -8,12 +8,12 @@ class ProjectTable extends Table {
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get description => text().nullable().named('description')();
-  BoolColumn get completed =>
-      boolean().clientDefault(() => false).named('completed')();
+  BoolColumn get completed => boolean().named('completed')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -23,7 +23,7 @@ class TaskTable extends Table {
   @override
   String get tableName => 'tasks';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -35,10 +35,13 @@ class TaskTable extends Table {
   DateTimeColumn get deadlineDate =>
       dateTime().nullable().named('deadline_date')();
   TextColumn get description => text().nullable().named('description')();
-  TextColumn get projectId =>
-      text().nullable().named('project_id').references(ProjectTable, #id)();
+  TextColumn get projectId => text()
+      .nullable()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.setNull)();
+  TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get repeatIcalRrule =>
-      text().clientDefault(() => '').nullable().named('repeat_ical_rrule')();
+      text().nullable().named('repeat_ical_rrule').clientDefault(() => '')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -53,6 +56,7 @@ class ValueTable extends Table {
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -66,9 +70,14 @@ class ProjectValuesLinkTable extends Table {
   TextColumn get projectId =>
       text().nullable().named('project_id').references(ProjectTable, #id)();
   TextColumn get valueId => text()
-      .clientDefault(uuid.v4)
       .named('value_id')
-      .references(ValueTable, #id)();
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  @override
+  List<Set<TextColumn>> get uniqueKeys => [
+    {projectId, valueId},
+  ];
 
   @override
   Set<Column> get primaryKey => {id};
@@ -81,11 +90,17 @@ class LabelTable extends Table {
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get color =>
-      text().withDefault(const Constant('#ffffff')).named('color')();
+      text().nullable().named('color').clientDefault(() => '#ffffff')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (color IS NULL OR color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]')",
+  ];
 
   @override
   Set<Column> get primaryKey => {id};
@@ -96,14 +111,22 @@ class ProjectLabelsTable extends Table {
   String get tableName => 'project_labels';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get projectId =>
-      text().named('project_id').references(ProjectTable, #id)();
-  TextColumn get labelId =>
-      text().named('label_id').references(LabelTable, #id)();
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get labelId => text()
+      .named('label_id')
+      .references(LabelTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  @override
+  List<Set<TextColumn>> get uniqueKeys => [
+    {projectId, labelId},
+  ];
 
   @override
   Set<Column> get primaryKey => {id};
@@ -114,13 +137,22 @@ class TaskLabelsTable extends Table {
   String get tableName => 'task_labels';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get taskId => text().named('task_id').references(TaskTable, #id)();
-  TextColumn get labelId =>
-      text().named('label_id').references(LabelTable, #id)();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get labelId => text()
+      .named('label_id')
+      .references(LabelTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  @override
+  List<Set<TextColumn>> get uniqueKeys => [
+    {taskId, labelId},
+  ];
 
   @override
   Set<Column> get primaryKey => {id};
@@ -131,16 +163,20 @@ class TaskValuesTable extends Table {
   String get tableName => 'task_values';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get taskId => text().named('task_id').references(TaskTable, #id)();
-  TextColumn get valueId =>
-      text().named('value_id').references(ValueTable, #id)();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get valueId => text()
+      .named('value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
+  TextColumn get userId => text().nullable().named('user_id')();
 
   @override
-  Set<Column> get primaryKey => {id};
+  Set<Column> get primaryKey => {taskId, valueId};
 }
 
 @DriftDatabase(
@@ -159,5 +195,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+    // PowerSync owns the underlying SQLite schema. Avoid destructive drift
+    // migrations (like table rebuilds) that could drop synced columns.
+    onUpgrade: (migrator, from, to) async {},
+    beforeOpen: (details) async {
+      // Ensure SQLite enforces foreign keys at runtime.
+      await customStatement('PRAGMA foreign_keys = ON');
+    },
+  );
 }

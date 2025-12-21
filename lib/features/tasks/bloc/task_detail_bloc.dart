@@ -1,10 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -16,7 +16,10 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     required String name,
     required String? description,
     required bool completed,
+    DateTime? startDate,
+    DateTime? deadlineDate,
     String? projectId,
+    String? repeatIcalRrule,
     List<ValueModel>? values,
     List<Label>? labels,
   }) = _TaskDetailUpdate;
@@ -27,7 +30,11 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.create({
     required String name,
     required String? description,
+    @Default(false) bool completed,
+    DateTime? startDate,
+    DateTime? deadlineDate,
     String? projectId,
+    String? repeatIcalRrule,
     List<ValueModel>? values,
     List<Label>? labels,
   }) = _TaskDetailCreate;
@@ -39,7 +46,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
 @freezed
 abstract class TaskDetailError with _$TaskDetailError {
   const factory TaskDetailError({
-    required String message,
+    required Object error,
     StackTrace? stackTrace,
   }) = _TaskDetailError;
 }
@@ -123,7 +130,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       emit(
         TaskDetailState.operationFailure(
           errorDetails: TaskDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -141,7 +148,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       if (task == null) {
         emit(
           const TaskDetailState.operationFailure(
-            errorDetails: TaskDetailError(message: 'Task not found'),
+            errorDetails: TaskDetailError(error: 'Task not found'),
           ),
         );
         return;
@@ -164,7 +171,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       emit(
         TaskDetailState.operationFailure(
           errorDetails: TaskDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -180,7 +187,11 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       await _taskRepository.create(
         name: event.name,
         description: event.description,
+        completed: event.completed,
+        startDate: event.startDate,
+        deadlineDate: event.deadlineDate,
         projectId: event.projectId,
+        repeatIcalRrule: event.repeatIcalRrule,
         valueIds: event.values?.map((e) => e.id).toList(growable: false),
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       );
@@ -193,7 +204,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       emit(
         TaskDetailState.operationFailure(
           errorDetails: TaskDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -205,30 +216,16 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
     _TaskDetailUpdate event,
     Emitter<TaskDetailState> emit,
   ) async {
-    final currentTask = switch (state) {
-      TaskDetailLoadSuccess(:final task) => task,
-      _ => null,
-    };
-
     try {
-      if (currentTask == null) {
-        emit(
-          const TaskDetailState.operationFailure(
-            errorDetails: TaskDetailError(message: 'No task to update'),
-          ),
-        );
-        return;
-      }
-
       await _taskRepository.update(
         id: event.id,
         name: event.name,
         description: event.description,
         completed: event.completed,
         projectId: event.projectId,
-        startDate: currentTask.startDate,
-        deadlineDate: currentTask.deadlineDate,
-        repeatIcalRrule: currentTask.repeatIcalRrule,
+        startDate: event.startDate,
+        deadlineDate: event.deadlineDate,
+        repeatIcalRrule: event.repeatIcalRrule,
         valueIds: event.values?.map((e) => e.id).toList(growable: false),
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       );
@@ -242,7 +239,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       emit(
         TaskDetailState.operationFailure(
           errorDetails: TaskDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),
@@ -265,7 +262,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       emit(
         TaskDetailState.operationFailure(
           errorDetails: TaskDetailError(
-            message: error.toString(),
+            error: error,
             stackTrace: stacktrace,
           ),
         ),

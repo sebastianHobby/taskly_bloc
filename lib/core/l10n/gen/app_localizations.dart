@@ -102,6 +102,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Counter'**
   String get counterAppBarTitle;
+
+  /// Title for the Projects section
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectsTitle;
+
+  /// Title for the Tasks section
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get tasksTitle;
+
+  /// Title for the Values section
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get valuesTitle;
+
+  /// Empty state shown when there are no projects
+  ///
+  /// In en, this message translates to:
+  /// **'No projects found.'**
+  String get noProjectsFound;
+
+  /// Tooltip for the create project floating action button
+  ///
+  /// In en, this message translates to:
+  /// **'Create project'**
+  String get createProjectTooltip;
+
+  /// Tooltip for the create task floating action button
+  ///
+  /// In en, this message translates to:
+  /// **'Create task'**
+  String get createTaskTooltip;
+
+  /// Tooltip for the create value floating action button
+  ///
+  /// In en, this message translates to:
+  /// **'Create value'**
+  String get createValueTooltip;
+
+  /// Fallback error shown for unexpected errors
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong. Please try again.'**
+  String get genericErrorFallback;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

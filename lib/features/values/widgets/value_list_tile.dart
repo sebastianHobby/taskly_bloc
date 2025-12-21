@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 class ValueListTile extends StatelessWidget {
   const ValueListTile({

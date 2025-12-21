@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 part 'project_list_bloc.freezed.dart';
 
 // Define the various events that ProjectsBloc will handle
@@ -22,7 +22,7 @@ sealed class ProjectOverviewState with _$ProjectOverviewState {
   const factory ProjectOverviewState.loaded({
     required List<Project> projects,
   }) = ProjectOverviewLoaded;
-  const factory ProjectOverviewState.error({required String message}) =
+  const factory ProjectOverviewState.error({required Object error}) =
       ProjectOverviewError;
 }
 
@@ -48,8 +48,7 @@ class ProjectOverviewBloc
     await emit.forEach<List<Project>>(
       _projectRepository.watchAll(),
       onData: (projects) => ProjectOverviewLoaded(projects: projects),
-      onError: (error, stackTrace) =>
-          ProjectOverviewError(message: error.toString()),
+      onError: (error, stackTrace) => ProjectOverviewError(error: error),
     );
   }
 
@@ -66,7 +65,7 @@ class ProjectOverviewBloc
         completed: !project.completed,
       );
     } catch (error) {
-      emit(ProjectOverviewError(message: error.toString()));
+      emit(ProjectOverviewError(error: error));
     }
   }
 }

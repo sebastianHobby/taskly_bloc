@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/domain/domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 // removed unused direct import; test uses createTestDb from helpers
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
@@ -12,6 +12,7 @@ import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
+import '../helpers/pump_app.dart';
 import '../helpers/test_db.dart';
 
 // Minimal in-test fake repository to avoid external test helper dependency.
@@ -69,7 +70,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
     if (idx == -1) return;
 
     final old = _last[idx];
-    _last[idx] = Task(
+    final updated = [..._last];
+    updated[idx] = Task(
       id: old.id,
       createdAt: old.createdAt,
       updatedAt: DateTime.now(),
@@ -83,6 +85,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
       values: old.values,
       labels: old.labels,
     );
+
+    _last = updated;
     _controller.add(_last);
     updateCalled?.complete();
   }
@@ -144,14 +148,13 @@ void main() {
     final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          valueRepository: valueRepo,
-          labelRepository: labelRepo,
-        ),
+    await pumpLocalizedApp(
+      tester,
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        valueRepository: valueRepo,
+        labelRepository: labelRepo,
       ),
     );
     // push tasks after widget builds so the bloc subscription receives the value
@@ -194,14 +197,13 @@ void main() {
     final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          valueRepository: valueRepo,
-          labelRepository: labelRepo,
-        ),
+    await pumpLocalizedApp(
+      tester,
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        valueRepository: valueRepo,
+        labelRepository: labelRepo,
       ),
     );
     await tester.pump();
@@ -229,10 +231,11 @@ void main() {
 
   testWidgets('update task via detail sheet updates list', (tester) async {
     final repo = FakeTaskRepository();
-    final sample = TaskTableData(
+    final now = DateTime.now();
+    final sample = Task(
       id: 't-update-1',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
+      createdAt: now,
+      updatedAt: now,
       name: 'To Update',
       completed: false,
     );
@@ -241,14 +244,13 @@ void main() {
     final valueRepo = ValueRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          valueRepository: valueRepo,
-          labelRepository: labelRepo,
-        ),
+    await pumpLocalizedApp(
+      tester,
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        valueRepository: valueRepo,
+        labelRepository: labelRepo,
       ),
     );
     await tester.pump();
@@ -265,8 +267,24 @@ void main() {
       matching: find.byType(TextField),
     );
     await tester.enterText(textFields2.at(0), 'Updated UI');
+
+    repo.updateCalled = Completer<void>();
     await tester.tap(find.byTooltip('Update'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+    await repo.updateCalled!.future;
+
+    final updatedTask = await repo.get(sample.id);
+    expect(updatedTask?.name, 'Updated UI');
+
+    // Dismiss the sheet if still open, then settle animations.
+    await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
+
+    for (var i = 0; i < 10; i++) {
+      if (find.text('Updated UI').evaluate().isNotEmpty) break;
+      await tester.pump(const Duration(milliseconds: 50));
+    }
 
     // Verify list updated
     expect(find.text('Updated UI'), findsOneWidget);

@@ -1,15 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart';
-import 'package:taskly_bloc/core/domain/label.dart';
-import 'package:taskly_bloc/core/domain/value.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/core/domain/task.dart';
-export 'package:taskly_bloc/core/domain/task.dart';
+import 'package:taskly_bloc/domain/task.dart';
+export 'package:taskly_bloc/domain/task.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
-
-// Domain Task is defined in `lib/core/domain/task.dart` and exported above.
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
 class TaskRepository implements TaskRepositoryContract {
   TaskRepository({required this.driftDb});
@@ -71,20 +67,16 @@ class TaskRepository implements TaskRepositoryContract {
 
         final label = row.readTableOrNull(driftDb.labelTable);
         if (label != null) {
-          final m = labelsByTask.putIfAbsent(
-            taskId,
-            () => <String, LabelTableData>{},
-          );
-          m.putIfAbsent(label.id, () => label);
+          labelsByTask
+              .putIfAbsent(taskId, () => <String, LabelTableData>{})
+              .putIfAbsent(label.id, () => label);
         }
 
         final value = row.readTableOrNull(driftDb.valueTable);
         if (value != null) {
-          final m = valuesByTask.putIfAbsent(
-            taskId,
-            () => <String, ValueTableData>{},
-          );
-          m.putIfAbsent(value.id, () => value);
+          valuesByTask
+              .putIfAbsent(taskId, () => <String, ValueTableData>{})
+              .putIfAbsent(value.id, () => value);
         }
       }
 
@@ -92,11 +84,11 @@ class TaskRepository implements TaskRepositoryContract {
       for (final entry in tasksById.entries) {
         final id = entry.key;
         final labelList =
-            labelsByTask[id]?.values.toList() ?? <LabelTableData>[];
-        labelList.sort((a, b) => a.name.compareTo(b.name));
+            (labelsByTask[id]?.values.toList() ?? <LabelTableData>[])
+              ..sort((a, b) => a.name.compareTo(b.name));
         final valueList =
-            valuesByTask[id]?.values.toList() ?? <ValueTableData>[];
-        valueList.sort((a, b) => a.name.compareTo(b.name));
+            (valuesByTask[id]?.values.toList() ?? <ValueTableData>[])
+              ..sort((a, b) => a.name.compareTo(b.name));
 
         final labels = labelList.map(labelFromTable).toList();
         final values = valueList.map(valueFromTable).toList();
@@ -172,30 +164,28 @@ class TaskRepository implements TaskRepositoryContract {
 
       final label = row.readTableOrNull(driftDb.labelTable);
       if (label != null) {
-        final m = labelsByTask.putIfAbsent(
-          taskId,
-          () => <String, LabelTableData>{},
-        );
-        m.putIfAbsent(label.id, () => label);
+        labelsByTask
+            .putIfAbsent(taskId, () => <String, LabelTableData>{})
+            .putIfAbsent(label.id, () => label);
       }
 
       final value = row.readTableOrNull(driftDb.valueTable);
       if (value != null) {
-        final m = valuesByTask.putIfAbsent(
-          taskId,
-          () => <String, ValueTableData>{},
-        );
-        m.putIfAbsent(value.id, () => value);
+        valuesByTask
+            .putIfAbsent(taskId, () => <String, ValueTableData>{})
+            .putIfAbsent(value.id, () => value);
       }
     }
 
     final results = <Task>[];
     for (final entry in tasksById.entries) {
       final id = entry.key;
-      final labelList = labelsByTask[id]?.values.toList() ?? <LabelTableData>[];
-      labelList.sort((a, b) => a.name.compareTo(b.name));
-      final valueList = valuesByTask[id]?.values.toList() ?? <ValueTableData>[];
-      valueList.sort((a, b) => a.name.compareTo(b.name));
+      final labelList =
+          (labelsByTask[id]?.values.toList() ?? <LabelTableData>[])
+            ..sort((a, b) => a.name.compareTo(b.name));
+      final valueList =
+          (valuesByTask[id]?.values.toList() ?? <ValueTableData>[])
+            ..sort((a, b) => a.name.compareTo(b.name));
 
       final labels = labelList.map(labelFromTable).toList();
       final values = valueList.map(valueFromTable).toList();
@@ -217,23 +207,74 @@ class TaskRepository implements TaskRepositoryContract {
     return results;
   }
 
-  // Get single task as a domain model. If [withRelated] is true the returned
-  // model will include project, labels and values. This returns a Future for
-  // the current snapshot; use [watchTask] to subscribe to changes.
-  /// Backwards-compatible name.
-  Future<Task?> getTask(String id, {bool withRelated = false}) async {
-    return get(id, withRelated: withRelated);
-  }
-
   @override
   Future<Task?> get(String id, {bool withRelated = false}) async {
-    return watch(id, withRelated: withRelated).first;
-  }
+    if (!withRelated) {
+      final data = await (driftDb.select(
+        driftDb.taskTable,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  // Watch a single task by id. Returns null if the task does not exist.
-  /// Backwards-compatible name.
-  Stream<Task?> watchTask(String taskId, {bool withRelated = false}) {
-    return watch(taskId, withRelated: withRelated);
+      return data == null ? null : taskFromTable(data);
+    }
+
+    final joined =
+        (driftDb.select(
+          driftDb.taskTable,
+        )..where((t) => t.id.equals(id))).join([
+          leftOuterJoin(
+            driftDb.projectTable,
+            driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+          ),
+          leftOuterJoin(
+            driftDb.taskLabelsTable,
+            driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+          ),
+          leftOuterJoin(
+            driftDb.labelTable,
+            driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+          ),
+          leftOuterJoin(
+            driftDb.taskValuesTable,
+            driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
+          ),
+          leftOuterJoin(
+            driftDb.valueTable,
+            driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
+          ),
+        ]);
+
+    final rows = await joined.get();
+    if (rows.isEmpty) return null;
+
+    TaskTableData? task;
+    ProjectTableData? project;
+    final Map<String, LabelTableData> labelMap = {};
+    final Map<String, ValueTableData> valueMap = {};
+
+    for (final row in rows) {
+      task ??= row.readTable(driftDb.taskTable);
+      project ??= row.readTableOrNull(driftDb.projectTable);
+
+      final label = row.readTableOrNull(driftDb.labelTable);
+      if (label != null) labelMap.putIfAbsent(label.id, () => label);
+
+      final value = row.readTableOrNull(driftDb.valueTable);
+      if (value != null) valueMap.putIfAbsent(value.id, () => value);
+    }
+
+    final labels = labelMap.values.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+    final values = valueMap.values.toList()
+      ..sort((a, b) => a.name.compareTo(b.name));
+
+    final projectModel = project == null ? null : projectFromTable(project);
+
+    return taskFromTable(
+      task!,
+      project: projectModel,
+      values: values.map(valueFromTable).toList(),
+      labels: labels.map(labelFromTable).toList(),
+    );
   }
 
   @override
@@ -312,111 +353,6 @@ class TaskRepository implements TaskRepositoryContract {
     });
   }
 
-  Future<bool> updateTask(
-    TaskTableCompanion updateCompanion, {
-    List<ValueModel>? values,
-    List<Label>? labels,
-  }) async {
-    return driftDb.transaction(() async {
-      final bool success = await driftDb
-          .update(driftDb.taskTable)
-          .replace(updateCompanion);
-      if (!success) {
-        throw RepositoryNotFoundException('No task found to update');
-      }
-
-      final taskId = updateCompanion.id.present
-          ? updateCompanion.id.value
-          : throw RepositoryNotFoundException('Task id required for links');
-
-      if (values != null) {
-        // remove existing links
-        await (driftDb.delete(
-          driftDb.taskValuesTable,
-        )..where((t) => t.taskId.equals(taskId))).go();
-        // insert new links
-        for (final v in values) {
-          await driftDb
-              .into(driftDb.taskValuesTable)
-              .insert(
-                TaskValuesTableCompanion(
-                  taskId: Value(taskId),
-                  valueId: Value(v.id),
-                ),
-              );
-        }
-      }
-
-      if (labels != null) {
-        await (driftDb.delete(
-          driftDb.taskLabelsTable,
-        )..where((t) => t.taskId.equals(taskId))).go();
-        for (final l in labels) {
-          await driftDb
-              .into(driftDb.taskLabelsTable)
-              .insert(
-                TaskLabelsTableCompanion(
-                  taskId: Value(taskId),
-                  labelId: Value(l.id),
-                ),
-              );
-        }
-      }
-
-      return success;
-    });
-  }
-
-  Future<int> deleteTask(TaskTableCompanion deleteCompanion) async {
-    return driftDb.delete(driftDb.taskTable).delete(deleteCompanion);
-  }
-
-  Future<int> createTask(
-    TaskTableCompanion createCompanion, {
-    List<ValueModel>? values,
-    List<Label>? labels,
-  }) async {
-    return driftDb.transaction(() async {
-      // ensure id present so we can insert links
-      final id = createCompanion.id.present
-          ? createCompanion.id.value
-          : uuid.v4();
-
-      final companionWithId = createCompanion.copyWith(id: Value(id));
-      final rowId = await driftDb
-          .into(driftDb.taskTable)
-          .insert(companionWithId);
-
-      if (values != null) {
-        for (final v in values) {
-          await driftDb
-              .into(driftDb.taskValuesTable)
-              .insert(
-                TaskValuesTableCompanion(
-                  taskId: Value(id),
-                  valueId: Value(v.id),
-                ),
-              );
-        }
-      }
-
-      if (labels != null) {
-        for (final l in labels) {
-          await driftDb
-              .into(driftDb.taskLabelsTable)
-              .insert(
-                TaskLabelsTableCompanion(
-                  taskId: Value(id),
-                  labelId: Value(l.id),
-                ),
-              );
-        }
-      }
-
-      return rowId;
-    });
-  }
-
   @override
   Future<void> create({
     required String name,
@@ -432,6 +368,9 @@ class TaskRepository implements TaskRepositoryContract {
     final now = DateTime.now();
     final id = uuid.v4();
 
+    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
+    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
+
     await driftDb.transaction(() async {
       await driftDb
           .into(driftDb.taskTable)
@@ -444,14 +383,16 @@ class TaskRepository implements TaskRepositoryContract {
               startDate: Value(startDate),
               deadlineDate: Value(deadlineDate),
               projectId: Value(projectId),
-              repeatIcalRrule: Value(repeatIcalRrule),
+              repeatIcalRrule: repeatIcalRrule == null
+                  ? const Value.absent()
+                  : Value(repeatIcalRrule),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
           );
 
-      if (valueIds != null) {
-        for (final valueId in valueIds) {
+      if (uniqueValueIds != null) {
+        for (final valueId in uniqueValueIds) {
           await driftDb
               .into(driftDb.taskValuesTable)
               .insert(
@@ -459,12 +400,13 @@ class TaskRepository implements TaskRepositoryContract {
                   taskId: Value(id),
                   valueId: Value(valueId),
                 ),
+                mode: InsertMode.insertOrIgnore,
               );
         }
       }
 
-      if (labelIds != null) {
-        for (final labelId in labelIds) {
+      if (uniqueLabelIds != null) {
+        for (final labelId in uniqueLabelIds) {
           await driftDb
               .into(driftDb.taskLabelsTable)
               .insert(
@@ -472,6 +414,7 @@ class TaskRepository implements TaskRepositoryContract {
                   taskId: Value(id),
                   labelId: Value(labelId),
                 ),
+                mode: InsertMode.insertOrIgnore,
               );
         }
       }
@@ -491,10 +434,20 @@ class TaskRepository implements TaskRepositoryContract {
     List<String>? valueIds,
     List<String>? labelIds,
   }) async {
+    final existing = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (existing == null) {
+      throw RepositoryNotFoundException('No task found to update');
+    }
+
     final now = DateTime.now();
 
+    final uniqueValueIds = valueIds?.toSet().toList(growable: false);
+    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
+
     await driftDb.transaction(() async {
-      final success = await driftDb
+      await driftDb
           .update(driftDb.taskTable)
           .replace(
             TaskTableCompanion(
@@ -505,45 +458,68 @@ class TaskRepository implements TaskRepositoryContract {
               startDate: Value(startDate),
               deadlineDate: Value(deadlineDate),
               projectId: Value(projectId),
-              repeatIcalRrule: Value(repeatIcalRrule),
+              repeatIcalRrule: repeatIcalRrule == null
+                  ? const Value.absent()
+                  : Value(repeatIcalRrule),
               updatedAt: Value(now),
             ),
           );
-      if (!success) {
-        throw RepositoryNotFoundException('No task found to update');
-      }
 
-      if (valueIds != null) {
-        await (driftDb.delete(
-          driftDb.taskValuesTable,
-        )..where((t) => t.taskId.equals(id))).go();
+      if (uniqueValueIds != null) {
+        final requested = uniqueValueIds.toSet();
+        final existing =
+            (await (driftDb.select(
+                  driftDb.taskValuesTable,
+                )..where((t) => t.taskId.equals(id))).get())
+                .map((r) => r.valueId)
+                .toSet();
 
-        for (final valueId in valueIds) {
-          await driftDb
-              .into(driftDb.taskValuesTable)
-              .insert(
-                TaskValuesTableCompanion(
-                  taskId: Value(id),
-                  valueId: Value(valueId),
-                ),
-              );
+        if (requested.length != existing.length ||
+            !existing.containsAll(requested)) {
+          await (driftDb.delete(
+            driftDb.taskValuesTable,
+          )..where((t) => t.taskId.equals(id))).go();
+
+          for (final valueId in uniqueValueIds) {
+            await driftDb
+                .into(driftDb.taskValuesTable)
+                .insert(
+                  TaskValuesTableCompanion(
+                    taskId: Value(id),
+                    valueId: Value(valueId),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+          }
         }
       }
 
-      if (labelIds != null) {
-        await (driftDb.delete(
-          driftDb.taskLabelsTable,
-        )..where((t) => t.taskId.equals(id))).go();
+      if (uniqueLabelIds != null) {
+        final requested = uniqueLabelIds.toSet();
+        final existing =
+            (await (driftDb.select(
+                  driftDb.taskLabelsTable,
+                )..where((t) => t.taskId.equals(id))).get())
+                .map((r) => r.labelId)
+                .toSet();
 
-        for (final labelId in labelIds) {
-          await driftDb
-              .into(driftDb.taskLabelsTable)
-              .insert(
-                TaskLabelsTableCompanion(
-                  taskId: Value(id),
-                  labelId: Value(labelId),
-                ),
-              );
+        if (requested.length != existing.length ||
+            !existing.containsAll(requested)) {
+          await (driftDb.delete(
+            driftDb.taskLabelsTable,
+          )..where((t) => t.taskId.equals(id))).go();
+
+          for (final labelId in uniqueLabelIds) {
+            await driftDb
+                .into(driftDb.taskLabelsTable)
+                .insert(
+                  TaskLabelsTableCompanion(
+                    taskId: Value(id),
+                    labelId: Value(labelId),
+                  ),
+                  mode: InsertMode.insertOrIgnore,
+                );
+          }
         }
       }
     });
@@ -551,6 +527,8 @@ class TaskRepository implements TaskRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
-    await deleteTask(TaskTableCompanion(id: Value(id)));
+    await driftDb
+        .delete(driftDb.taskTable)
+        .delete(TaskTableCompanion(id: Value(id)));
   }
 }

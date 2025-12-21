@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/view/value_detail_view.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -21,7 +22,7 @@ class AddValueFab extends StatelessWidget {
       builder: (context, hidden, _) {
         if (hidden) return const SizedBox.shrink();
         return FloatingActionButton(
-          tooltip: 'Create value',
+          tooltip: fabContext.l10n.createValueTooltip,
           onPressed: () async {
             isSheetOpen?.value = true;
             await showDetailModal<void>(
@@ -38,7 +39,7 @@ class AddValueFab extends StatelessWidget {
                   },
                   onError: (errorMessage) {
                     ScaffoldMessenger.of(fabContext).showSnackBar(
-                      SnackBar(content: Text('Error: $errorMessage')),
+                      SnackBar(content: Text(errorMessage)),
                     );
                   },
                 ),

@@ -3,5 +3,37 @@
     "counterAppBarTitle": "Counter",
     "@counterAppBarTitle": {
         "description": "Text shown in the AppBar of the Counter Page"
+    },
+    "projectsTitle": "Projects",
+    "@projectsTitle": {
+        "description": "Title for the Projects section"
+    },
+    "tasksTitle": "Tasks",
+    "@tasksTitle": {
+        "description": "Title for the Tasks section"
+    },
+    "valuesTitle": "Values",
+    "@valuesTitle": {
+        "description": "Title for the Values section"
+    },
+    "noProjectsFound": "No projects found.",
+    "@noProjectsFound": {
+        "description": "Empty state shown when there are no projects"
+    },
+    "createProjectTooltip": "Create project",
+    "@createProjectTooltip": {
+        "description": "Tooltip for the create project floating action button"
+    },
+    "createTaskTooltip": "Create task",
+    "@createTaskTooltip": {
+        "description": "Tooltip for the create task floating action button"
+    },
+    "createValueTooltip": "Create value",
+    "@createValueTooltip": {
+        "description": "Tooltip for the create value floating action button"
+    },
+    "genericErrorFallback": "Something went wrong. Please try again.",
+    "@genericErrorFallback": {
+        "description": "Fallback error shown for unexpected errors"
     }
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/features/values/widgets/value_form.dart';
 
@@ -53,7 +55,14 @@ class ValueDetailSheetView extends StatefulWidget {
 }
 
 class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
-  final _formKey = GlobalKey<FormBuilderState>();
+  GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
+  String? _formValueId;
+
+  void _ensureFreshFormKeyFor(String? valueId) {
+    if (_formValueId == valueId) return;
+    _formValueId = valueId;
+    _formKey = GlobalKey<FormBuilderState>();
+  }
 
   void _onSubmit(String? id) {
     final formState = _formKey.currentState;
@@ -89,7 +98,9 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
           case ValueDetailOperationSuccess(:final message):
             widget.onSuccess(message);
           case ValueDetailOperationFailure(:final errorDetails):
-            widget.onError(errorDetails.message);
+            widget.onError(
+              friendlyErrorMessageForUi(errorDetails.error, context.l10n),
+            );
           default:
             return;
         }
@@ -102,6 +113,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
       builder: (context, state) {
         switch (state) {
           case ValueDetailInitial():
+            _ensureFreshFormKeyFor(null);
             return ValueForm(
               initialData: null,
               formKey: _formKey,
@@ -113,10 +125,10 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView> {
           case ValueDetailLoadSuccess(:final value):
             // Use a fresh form key when loading existing data so the
             // FormBuilder picks up the provided initial values.
-            final loadKey = GlobalKey<FormBuilderState>();
+            _ensureFreshFormKeyFor(value.id);
             return ValueForm(
               initialData: value,
-              formKey: loadKey,
+              formKey: _formKey,
               onSubmit: () => _onSubmit(value.id),
               submitTooltip: 'Update',
             );

@@ -383,13 +383,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Task> tasks)?  loaded,TResult Function( String message,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Task> tasks)?  loaded,TResult Function( Object error,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
 return loading();case TaskOverviewLoaded() when loaded != null:
 return loaded(_that.tasks);case TaskOverviewError() when error != null:
-return error(_that.message,_that.stacktrace);case _:
+return error(_that.error,_that.stacktrace);case _:
   return orElse();
 
 }
@@ -407,13 +407,13 @@ return error(_that.message,_that.stacktrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Task> tasks)  loaded,required TResult Function( String message,  StackTrace stacktrace)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Task> tasks)  loaded,required TResult Function( Object error,  StackTrace stacktrace)  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial():
 return initial();case TaskOverviewLoading():
 return loading();case TaskOverviewLoaded():
 return loaded(_that.tasks);case TaskOverviewError():
-return error(_that.message,_that.stacktrace);}
+return error(_that.error,_that.stacktrace);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -427,13 +427,13 @@ return error(_that.message,_that.stacktrace);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Task> tasks)?  loaded,TResult? Function( String message,  StackTrace stacktrace)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Task> tasks)?  loaded,TResult? Function( Object error,  StackTrace stacktrace)?  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
 return loading();case TaskOverviewLoaded() when loaded != null:
 return loaded(_that.tasks);case TaskOverviewError() when error != null:
-return error(_that.message,_that.stacktrace);case _:
+return error(_that.error,_that.stacktrace);case _:
   return null;
 
 }
@@ -581,10 +581,10 @@ as List<Task>,
 
 
 class TaskOverviewError implements TaskOverviewState {
-  const TaskOverviewError({required this.message, required this.stacktrace});
+  const TaskOverviewError({required this.error, required this.stacktrace});
   
 
- final  String message;
+ final  Object error;
  final  StackTrace stacktrace;
 
 /// Create a copy of TaskOverviewState
@@ -597,16 +597,16 @@ $TaskOverviewErrorCopyWith<TaskOverviewError> get copyWith => _$TaskOverviewErro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewError&&(identical(other.message, message) || other.message == message)&&(identical(other.stacktrace, stacktrace) || other.stacktrace == stacktrace));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stacktrace, stacktrace) || other.stacktrace == stacktrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,message,stacktrace);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stacktrace);
 
 @override
 String toString() {
-  return 'TaskOverviewState.error(message: $message, stacktrace: $stacktrace)';
+  return 'TaskOverviewState.error(error: $error, stacktrace: $stacktrace)';
 }
 
 
@@ -617,7 +617,7 @@ abstract mixin class $TaskOverviewErrorCopyWith<$Res> implements $TaskOverviewSt
   factory $TaskOverviewErrorCopyWith(TaskOverviewError value, $Res Function(TaskOverviewError) _then) = _$TaskOverviewErrorCopyWithImpl;
 @useResult
 $Res call({
- String message, StackTrace stacktrace
+ Object error, StackTrace stacktrace
 });
 
 
@@ -634,10 +634,9 @@ class _$TaskOverviewErrorCopyWithImpl<$Res>
 
 /// Create a copy of TaskOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? message = null,Object? stacktrace = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stacktrace = null,}) {
   return _then(TaskOverviewError(
-message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
-as String,stacktrace: null == stacktrace ? _self.stacktrace : stacktrace // ignore: cast_nullable_to_non_nullable
+error: null == error ? _self.error : error ,stacktrace: null == stacktrace ? _self.stacktrace : stacktrace // ignore: cast_nullable_to_non_nullable
 as StackTrace,
   ));
 }

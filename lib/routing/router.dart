@@ -1,9 +1,9 @@
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/data/repositories/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/contracts/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/value_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/view/project_overview_view.dart';
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/features/values/view/value_overview_view.dart';
@@ -27,6 +27,8 @@ final router = GoRouter(
               path: AppRoutePath.projects,
               builder: (context, state) => ProjectOverviewPage(
                 projectRepository: getIt<ProjectRepositoryContract>(),
+                valueRepository: getIt<ValueRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
               ),
             ),
           ],

@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 
 Label labelFromTable(LabelTableData t) {
