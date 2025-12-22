@@ -24,6 +24,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get labelsTitle => 'Etiquetas';
 
   @override
+  String get valuesTitle => 'Valores';
+
+  @override
   String get browseTitle => 'Explorar';
 
   @override
@@ -37,6 +40,18 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get createLabelTooltip => 'Crear etiqueta';
+
+  @override
+  String get createLabelOption => 'Crear etiqueta';
+
+  @override
+  String get createValueOption => 'Crear valor';
+
+  @override
+  String get labelTypeLabelHeading => 'Etiqueta';
+
+  @override
+  String get labelTypeValueHeading => 'Valor';
 
   @override
   String get noLabelsFound => 'No se encontraron etiquetas.';
@@ -69,6 +84,69 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskSortByDeadline => 'Ordenar por fecha límite';
 
   @override
+  String get groupSortMenuTitle => 'Agrupar y ordenar';
+
+  @override
+  String get groupSortGroupingLabel => 'Agrupación';
+
+  @override
+  String get groupSortSortingLabel => 'Ordenamiento';
+
+  @override
+  String get groupOptionNone => 'Sin agrupación';
+
+  @override
+  String get groupOptionLabels => 'Agrupar por etiquetas';
+
+  @override
+  String get groupOptionValues => 'Agrupar por valores';
+
+  @override
+  String get sortFieldNameLabel => 'Nombre';
+
+  @override
+  String get sortFieldStartDateLabel => 'Fecha de inicio';
+
+  @override
+  String get sortFieldDeadlineDateLabel => 'Fecha límite';
+
+  @override
+  String get sortFieldNoneLabel => 'Ninguno';
+
+  @override
+  String get sortSlotPrimaryLabel => 'Orden principal';
+
+  @override
+  String get sortSlotSecondaryLabel => 'Orden secundario';
+
+  @override
+  String get sortSlotTertiaryLabel => 'Orden terciario';
+
+  @override
+  String get sortMenuTitle => 'Ordenar';
+
+  @override
+  String get sortSortingLabel => 'Orden';
+
+  @override
+  String get sortDirectionLabel => 'Dirección';
+
+  @override
+  String get sortDirectionAscending => 'Ascendente';
+
+  @override
+  String get sortDirectionDescending => 'Descendente';
+
+  @override
+  String get groupingMissingLabels => 'Sin etiquetas';
+
+  @override
+  String get groupingMissingValues => 'Sin valores';
+
+  @override
+  String get groupSortApplyButton => 'Aplicar';
+
+  @override
   String get inboxTitle => 'Bandeja de entrada';
 
   @override
@@ -76,6 +154,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get upcomingTitle => 'Próximas';
+
+  @override
+  String get nextActionsTitle => 'Siguientes acciones';
 
   @override
   String get taskCreatedSuccessfully => 'Tarea creada correctamente.';
@@ -160,4 +241,40 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectFormRepeatRuleTooLong => 'La regla de repetición es demasiado larga';
+
+  @override
+  String get emptyInboxTitle => 'Tu bandeja de entrada está vacía';
+
+  @override
+  String get emptyInboxDescription => 'Las tareas sin proyecto aparecerán aquí';
+
+  @override
+  String get emptyTodayTitle => 'Nada para hoy';
+
+  @override
+  String get emptyTodayDescription => 'Las tareas y proyectos del día aparecerán aquí';
+
+  @override
+  String get emptyUpcomingTitle => 'Nada próximo';
+
+  @override
+  String get emptyUpcomingDescription => 'Las tareas y proyectos futuros aparecerán aquí';
+
+  @override
+  String get emptyProjectsTitle => 'Sin proyectos aún';
+
+  @override
+  String get emptyProjectsDescription => 'Crea un proyecto para organizar tus tareas';
+
+  @override
+  String get emptyTasksTitle => 'Sin tareas aún';
+
+  @override
+  String get emptyTasksDescription => 'Añade una tarea para empezar';
+
+  @override
+  String get addTaskAction => 'Añadir tarea';
+
+  @override
+  String get addProjectAction => 'Añadir proyecto';
 }

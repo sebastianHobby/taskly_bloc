@@ -6,9 +6,11 @@ import 'package:powersync/powersync.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
+import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/supabase/supabase.dart';
@@ -39,5 +41,8 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<LabelRepositoryContract>(
       () => LabelRepository(driftDb: getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<SettingsRepositoryContract>(
+      () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     );
 }

@@ -1,19 +1,20 @@
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/core/utils/date_only.dart';
 
-Label labelFromTable(LabelTableData t) {
+Label labelFromTable(drift.LabelTableData t) {
   return Label(
     id: t.id,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     name: t.name,
     color: t.color,
+    type: LabelType.values.byName(t.type.name),
   );
 }
 
 Project projectFromTable(
-  ProjectTableData t, {
+  drift.ProjectTableData t, {
   List<Label>? labels,
 }) {
   return Project(
@@ -31,7 +32,7 @@ Project projectFromTable(
 }
 
 Task taskFromTable(
-  TaskTableData t, {
+  drift.TaskTableData t, {
   Project? project,
   List<Label>? labels,
 }) {

@@ -1,10 +1,14 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/labels/labels.dart';
+import 'package:taskly_bloc/features/next_action/next_action.dart';
 import 'package:taskly_bloc/features/projects/projects.dart';
+import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 import 'package:taskly_bloc/routing/widgets/scaffold_with_nested_navigation.dart';
@@ -16,7 +20,14 @@ final router = GoRouter(
       // A builder that adds a navigation bar or rail depending on screen size
       // to all the branches below
       builder: (context, state, navigationShell) {
-        return ScaffoldWithNestedNavigation(navigationShell: navigationShell);
+        return BlocProvider(
+          create: (_) => SettingsBloc(
+            settingsRepository: getIt<SettingsRepositoryContract>(),
+          )..add(const SettingsSubscriptionRequested()),
+          child: ScaffoldWithNestedNavigation(
+            navigationShell: navigationShell,
+          ),
+        );
       },
       branches: [
         StatefulShellBranch(
@@ -65,6 +76,7 @@ final router = GoRouter(
               path: AppRoutePath.projects,
               builder: (context, state) => ProjectOverviewPage(
                 projectRepository: getIt<ProjectRepositoryContract>(),
+                taskRepository: getIt<TaskRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
               ),
               routes: [
@@ -107,6 +119,28 @@ final router = GoRouter(
                   ),
                 ),
               ],
+            ),
+            GoRoute(
+              name: AppRouteName.values,
+              path: AppRoutePath.values,
+              builder: (context, state) => ValueOverviewPage(
+                labelRepository: getIt<LabelRepositoryContract>(),
+              ),
+            ),
+
+            GoRoute(
+              name: AppRouteName.taskNextActions,
+              path: AppRoutePath.taskNextActions,
+              builder: (context, state) => TaskNextActionsPage(
+                projectRepository: getIt<ProjectRepositoryContract>(),
+                taskRepository: getIt<TaskRepositoryContract>(),
+                labelRepository: getIt<LabelRepositoryContract>(),
+              ),
+            ),
+            GoRoute(
+              name: AppRouteName.taskNextActionsSettings,
+              path: AppRoutePath.taskNextActionsSettings,
+              builder: (context, state) => const NextActionsSettingsPage(),
             ),
           ],
         ),

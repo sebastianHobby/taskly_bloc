@@ -1,7 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' hide LabelType;
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
 
@@ -29,8 +30,8 @@ void main() {
   });
 
   test('creating twice creates two labels', () async {
-    await repo.create(name: 'A', color: '#000000');
-    await repo.create(name: 'B', color: '#000000');
+    await repo.create(name: 'A', color: '#000000', type: LabelType.label);
+    await repo.create(name: 'B', color: '#000000', type: LabelType.label);
 
     final list = await repo.watchAll().first;
     expect(list, hasLength(2));
@@ -39,7 +40,12 @@ void main() {
 
   test('update non-existent throws', () async {
     await expectLater(
-      repo.update(id: 'nope-l', name: 'Nope', color: '#000000'),
+      repo.update(
+        id: 'nope-l',
+        name: 'Nope',
+        color: '#000000',
+        type: LabelType.label,
+      ),
       throwsA(isA<RepositoryNotFoundException>()),
     );
   });

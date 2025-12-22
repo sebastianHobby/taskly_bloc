@@ -52,11 +52,27 @@ class _ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.playlist_play_outlined),
+                title: Text(context.l10n.nextActionsTitle),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.goNamed(AppRouteName.taskNextActions);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.label_outline),
                 title: Text(context.l10n.labelsTitle),
                 onTap: () {
                   Navigator.of(context).pop();
                   context.goNamed(AppRouteName.labels);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.favorite_border_rounded),
+                title: Text(context.l10n.labelTypeValueHeading),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  context.goNamed(AppRouteName.values);
                 },
               ),
             ],

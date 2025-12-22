@@ -13,6 +13,7 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
     required String id,
     required String name,
     required String color,
+    required LabelType type,
   }) = _LabelDetailUpdate;
 
   const factory LabelDetailEvent.delete({required String id}) =
@@ -21,6 +22,7 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
   const factory LabelDetailEvent.create({
     required String name,
     required String color,
+    required LabelType type,
   }) = _LabelDetailCreate;
 
   const factory LabelDetailEvent.get({required String labelId}) =
@@ -60,9 +62,10 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
     on<LabelDetailEvent>((event, emit) async {
       await event.when(
         get: (labelId) async => _onGet(labelId, emit),
-        update: (id, name, color) async => _onUpdate(id, name, color, emit),
+        update: (id, name, color, type) async =>
+            _onUpdate(id, name, color, type, emit),
         delete: (id) async => _onDelete(id, emit),
-        create: (name, color) async => _onCreate(name, color, emit),
+        create: (name, color, type) async => _onCreate(name, color, type, emit),
       );
     });
 
@@ -102,10 +105,16 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
     String id,
     String name,
     String color,
+    LabelType type,
     Emitter<LabelDetailState> emit,
   ) async {
     try {
-      await _labelRepository.update(id: id, name: name, color: color);
+      await _labelRepository.update(
+        id: id,
+        name: name,
+        color: color,
+        type: type,
+      );
       emit(
         const LabelDetailState.operationSuccess(
           operation: EntityOperation.update,
@@ -146,10 +155,11 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
   Future<void> _onCreate(
     String name,
     String color,
+    LabelType type,
     Emitter<LabelDetailState> emit,
   ) async {
     try {
-      await _labelRepository.create(name: name, color: color);
+      await _labelRepository.create(name: name, color: color, type: type);
       emit(
         const LabelDetailState.operationSuccess(
           operation: EntityOperation.create,

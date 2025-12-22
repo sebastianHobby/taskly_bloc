@@ -6,7 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
-import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
+import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
@@ -62,9 +62,9 @@ void main() {
       bloc.add(const TaskOverviewEvent.subscriptionRequested());
       await Future<void>.delayed(Duration.zero);
       bloc.add(
-        const TaskOverviewEvent.queryChanged(
-          query: TaskListQuery(
-            completion: TaskCompletionFilter.completed,
+        TaskOverviewEvent.configChanged(
+          config: TaskSelector.all().withCompletion(
+            TaskCompletionFilter.completed,
           ),
         ),
       );
@@ -73,12 +73,12 @@ void main() {
       const TaskOverviewState.loading(),
       TaskOverviewState.loaded(
         tasks: [sampleTask, completedTask],
-        query: TaskListQuery.all,
+        config: TaskSelector.all(),
       ),
       TaskOverviewState.loaded(
         tasks: [completedTask],
-        query: const TaskListQuery(
-          completion: TaskCompletionFilter.completed,
+        config: TaskSelector.all().withCompletion(
+          TaskCompletionFilter.completed,
         ),
       ),
     ],
@@ -179,7 +179,7 @@ void main() {
       final now = DateTime(2025, 1, 15, 10, 30);
       return TaskOverviewBloc(
         taskRepository: mockRepository,
-        initialQuery: TaskListQuery.today(now: now),
+        initialConfig: TaskSelector.today(now: now),
       );
     },
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
@@ -188,7 +188,7 @@ void main() {
       isA<TaskOverviewLoaded>().having(
         (s) => s.tasks.map((t) => t.id).toList(growable: false),
         'task ids',
-        ['t3', 't4'],
+        ['t4', 't3'],
       ),
     ],
   );
@@ -263,7 +263,7 @@ void main() {
       final now = DateTime(2025, 1, 15, 10, 30);
       return TaskOverviewBloc(
         taskRepository: mockRepository,
-        initialQuery: TaskListQuery.upcoming(now: now),
+        initialConfig: TaskSelector.upcoming(now: now),
       );
     },
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
@@ -272,7 +272,7 @@ void main() {
       isA<TaskOverviewLoaded>().having(
         (s) => s.tasks.map((t) => t.id).toList(growable: false),
         'task ids',
-        ['u1', 'u2', 'u4'],
+        ['u4', 'u2', 'u1'],
       ),
     ],
   );
@@ -314,7 +314,7 @@ void main() {
     },
     build: () => TaskOverviewBloc(
       taskRepository: mockRepository,
-      initialQuery: const TaskListQuery(projectId: 'p1'),
+      initialConfig: TaskSelector.forProject('p1'),
     ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[
@@ -359,7 +359,7 @@ void main() {
     },
     build: () => TaskOverviewBloc(
       taskRepository: mockRepository,
-      initialQuery: const TaskListQuery(labelId: 'l1'),
+      initialConfig: TaskSelector.forLabel('l1'),
       withRelated: true,
     ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),

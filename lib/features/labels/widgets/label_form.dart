@@ -10,6 +10,8 @@ class LabelForm extends StatelessWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
+    this.initialType,
+    this.lockType = false,
     super.key,
   });
 
@@ -17,6 +19,8 @@ class LabelForm extends StatelessWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Label? initialData;
+  final LabelType? initialType;
+  final bool lockType;
 
   static const _defaultColorHex = '#000000';
 
@@ -36,6 +40,7 @@ class LabelForm extends StatelessWidget {
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name.trim() ?? '',
       'colour': _colorFromHex(initialData?.color ?? _defaultColorHex),
+      'type': initialData?.type ?? initialType ?? LabelType.label,
     };
 
     return Column(
@@ -110,6 +115,31 @@ class LabelForm extends StatelessWidget {
                         errorText: 'Colour is required',
                       ),
                     ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: lockType
+                        ? const SizedBox.shrink()
+                        : FormBuilderDropdown<LabelType>(
+                            name: 'type',
+                            decoration: const InputDecoration(
+                              hintText: 'Type',
+                              border: InputBorder.none,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: LabelType.label,
+                                child: Text('Label'),
+                              ),
+                              DropdownMenuItem(
+                                value: LabelType.value,
+                                child: Text('Value'),
+                              ),
+                            ],
+                            validator: FormBuilderValidators.required(
+                              errorText: 'Type is required',
+                            ),
+                          ),
                   ),
                 ],
               ),

@@ -16,6 +16,10 @@
     "@labelsTitle": {
         "description": "Title for the Labels section"
     },
+    "valuesTitle": "Values",
+    "@valuesTitle": {
+        "description": "Title/label for the Values section"
+    },
     "browseTitle": "Browse",
     "@browseTitle": {
         "description": "Title/label for the Browse navigation destination"
@@ -35,6 +39,22 @@
     "createLabelTooltip": "Create label",
     "@createLabelTooltip": {
         "description": "Tooltip for the create label floating action button"
+    },
+    "createLabelOption": "Create label",
+    "@createLabelOption": {
+        "description": "Option text for creating a label"
+    },
+    "createValueOption": "Create value",
+    "@createValueOption": {
+        "description": "Option text for creating a value"
+    },
+    "labelTypeLabelHeading": "Label",
+    "@labelTypeLabelHeading": {
+        "description": "Heading shown above the list of labels"
+    },
+    "labelTypeValueHeading": "Values",
+    "@labelTypeValueHeading": {
+        "description": "Heading shown above the list of values"
     },
     "noLabelsFound": "No labels found.",
     "@noLabelsFound": {
@@ -76,6 +96,90 @@
     "@taskSortByDeadline": {
         "description": "Task overview sort option to sort tasks by deadline date"
     },
+    "groupSortMenuTitle": "Group & sort",
+    "@groupSortMenuTitle": {
+        "description": "Title for the group and sort bottom sheet"
+    },
+    "groupSortGroupingLabel": "Grouping",
+    "@groupSortGroupingLabel": {
+        "description": "Label shown above grouping options"
+    },
+    "groupSortSortingLabel": "Sorting",
+    "@groupSortSortingLabel": {
+        "description": "Label shown above sorting controls"
+    },
+    "groupOptionNone": "No grouping",
+    "@groupOptionNone": {
+        "description": "Grouping option to disable grouping"
+    },
+    "groupOptionLabels": "Group by labels",
+    "@groupOptionLabels": {
+        "description": "Grouping option to organize items by associated labels"
+    },
+    "groupOptionValues": "Group by values",
+    "@groupOptionValues": {
+        "description": "Grouping option to organize items by associated values"
+    },
+    "sortFieldNameLabel": "Name",
+    "@sortFieldNameLabel": {
+        "description": "Label for the name sort field"
+    },
+    "sortFieldStartDateLabel": "Start date",
+    "@sortFieldStartDateLabel": {
+        "description": "Label for the start date sort field"
+    },
+    "sortFieldDeadlineDateLabel": "Deadline date",
+    "@sortFieldDeadlineDateLabel": {
+        "description": "Label for the deadline date sort field"
+    },
+    "sortFieldNoneLabel": "None",
+    "@sortFieldNoneLabel": {
+        "description": "Option label for clearing a sort slot"
+    },
+    "sortSlotPrimaryLabel": "Primary sort",
+    "@sortSlotPrimaryLabel": {
+        "description": "Label for the primary sort dropdown"
+    },
+    "sortSlotSecondaryLabel": "Secondary sort",
+    "@sortSlotSecondaryLabel": {
+        "description": "Label for the secondary sort dropdown"
+    },
+    "sortSlotTertiaryLabel": "Tertiary sort",
+    "@sortSlotTertiaryLabel": {
+        "description": "Label for the tertiary sort dropdown"
+    },
+    "sortMenuTitle": "Sort",
+    "@sortMenuTitle": {
+        "description": "Title for the sort bottom sheet"
+    },
+    "sortSortingLabel": "Sorting",
+    "@sortSortingLabel": {
+        "description": "Label shown above sorting controls"
+    },
+    "sortDirectionLabel": "Direction",
+    "@sortDirectionLabel": {
+        "description": "Label for the sort direction dropdown"
+    },
+    "sortDirectionAscending": "Ascending",
+    "@sortDirectionAscending": {
+        "description": "Label for ascending sort direction"
+    },
+    "sortDirectionDescending": "Descending",
+    "@sortDirectionDescending": {
+        "description": "Label for descending sort direction"
+    },
+    "groupingMissingLabels": "No labels",
+    "@groupingMissingLabels": {
+        "description": "Group header shown when an item has no labels"
+    },
+    "groupingMissingValues": "No values",
+    "@groupingMissingValues": {
+        "description": "Group header shown when an item has no values"
+    },
+    "groupSortApplyButton": "Apply",
+    "@groupSortApplyButton": {
+        "description": "Button text for applying group & sort changes"
+    },
     "inboxTitle": "Inbox",
     "@inboxTitle": {
         "description": "Title for the Inbox section"
@@ -87,6 +191,10 @@
     "upcomingTitle": "Upcoming",
     "@upcomingTitle": {
         "description": "Title for the Upcoming section"
+    },
+    "nextActionsTitle": "Next actions",
+    "@nextActionsTitle": {
+        "description": "Title for the Next actions section"
     },
     "taskCreatedSuccessfully": "Task created successfully.",
     "@taskCreatedSuccessfully": {
@@ -199,5 +307,53 @@
     "projectFormRepeatRuleTooLong": "Repeat rule is too long",
     "@projectFormRepeatRuleTooLong": {
         "description": "Validation error shown when the RRULE repeat rule is too long"
+    },
+    "emptyInboxTitle": "Your inbox is empty",
+    "@emptyInboxTitle": {
+        "description": "Title shown when the inbox has no tasks"
+    },
+    "emptyInboxDescription": "Tasks without a project will appear here",
+    "@emptyInboxDescription": {
+        "description": "Description shown when the inbox has no tasks"
+    },
+    "emptyTodayTitle": "Nothing due today",
+    "@emptyTodayTitle": {
+        "description": "Title shown when there are no tasks or projects due today"
+    },
+    "emptyTodayDescription": "Tasks and projects due today will appear here",
+    "@emptyTodayDescription": {
+        "description": "Description shown when there are no tasks or projects due today"
+    },
+    "emptyUpcomingTitle": "Nothing upcoming",
+    "@emptyUpcomingTitle": {
+        "description": "Title shown when there are no upcoming tasks or projects"
+    },
+    "emptyUpcomingDescription": "Future tasks and projects will appear here",
+    "@emptyUpcomingDescription": {
+        "description": "Description shown when there are no upcoming tasks or projects"
+    },
+    "emptyProjectsTitle": "No projects yet",
+    "@emptyProjectsTitle": {
+        "description": "Title shown when there are no projects"
+    },
+    "emptyProjectsDescription": "Create a project to organize your tasks",
+    "@emptyProjectsDescription": {
+        "description": "Description shown when there are no projects"
+    },
+    "emptyTasksTitle": "No tasks yet",
+    "@emptyTasksTitle": {
+        "description": "Title shown when there are no tasks"
+    },
+    "emptyTasksDescription": "Add a task to get started",
+    "@emptyTasksDescription": {
+        "description": "Description shown when there are no tasks"
+    },
+    "addTaskAction": "Add task",
+    "@addTaskAction": {
+        "description": "Action button text for adding a task"
+    },
+    "addProjectAction": "Add project",
+    "@addProjectAction": {
+        "description": "Action button text for adding a project"
     }
 }

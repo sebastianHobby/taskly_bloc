@@ -19,7 +19,9 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     if (selectedIndex != 3) return selectedIndex;
 
     final path = GoRouterState.of(context).uri.path;
-    if (path.startsWith(AppRoutePath.labels)) return 4;
+    if (path.startsWith(AppRoutePath.taskNextActions)) return 4;
+    if (path.startsWith(AppRoutePath.labels)) return 5;
+    if (path.startsWith(AppRoutePath.values)) return 6;
     return 3;
   }
 
@@ -34,7 +36,13 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
         context.goNamed(AppRouteName.projects);
         return;
       case 4:
+        context.goNamed(AppRouteName.taskNextActions);
+        return;
+      case 5:
         context.goNamed(AppRouteName.labels);
+        return;
+      case 6:
+        context.goNamed(AppRouteName.values);
         return;
     }
   }
@@ -67,8 +75,16 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                 icon: const Icon(Icons.home_outlined),
               ),
               NavigationRailDestination(
+                label: Text(context.l10n.nextActionsTitle),
+                icon: const Icon(Icons.playlist_play_outlined),
+              ),
+              NavigationRailDestination(
                 label: Text(context.l10n.labelsTitle),
                 icon: const Icon(Icons.label_outline),
+              ),
+              NavigationRailDestination(
+                label: Text(context.l10n.valuesTitle),
+                icon: const Icon(Icons.favorite_border_outlined),
               ),
             ],
           ),

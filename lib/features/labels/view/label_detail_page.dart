@@ -42,7 +42,7 @@ class LabelDetailPage extends StatelessWidget {
         BlocProvider<TaskOverviewBloc>(
           create: (_) => TaskOverviewBloc(
             taskRepository: taskRepository,
-            initialQuery: TaskListQuery(labelId: labelId),
+            initialConfig: TaskSelector.forLabel(labelId),
             withRelated: true,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),

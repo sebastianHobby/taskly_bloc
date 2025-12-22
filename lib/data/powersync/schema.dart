@@ -50,4 +50,10 @@ const schema = Schema([
     Column.text('updated_at'),
     Column.text('user_id'),
   ]),
+  Table('user_profiles', [
+    Column.text('user_id'),
+    Column.text('settings'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ]),
 ]);

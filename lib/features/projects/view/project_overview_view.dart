@@ -1,29 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/project.dart';
+import 'package:taskly_bloc/domain/project_task_counts.dart';
+import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/projects/widgets/project_add_fab.dart';
-import 'package:taskly_bloc/features/projects/widgets/projects_list.dart';
+import 'package:taskly_bloc/features/projects/widgets/project_list_tile.dart';
+import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/core/shared/widgets/sort_bottom_sheet.dart';
+import 'package:taskly_bloc/features/settings/settings.dart';
+import 'package:taskly_bloc/routing/routes.dart';
+import 'package:taskly_bloc/core/shared/widgets/empty_state_widget.dart';
+import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
 class ProjectOverviewPage extends StatelessWidget {
   const ProjectOverviewPage({
     required this.projectRepository,
+    required this.taskRepository,
     required this.labelRepository,
     super.key,
   });
 
   final ProjectRepositoryContract projectRepository;
+  final TaskRepositoryContract taskRepository;
   final LabelRepositoryContract labelRepository;
 
   @override
   Widget build(BuildContext context) {
+    final settingsState = context.read<SettingsBloc>().state;
+    final savedSort = settingsState.settings?.sortFor(SettingsPageKey.projects);
+    final initialSort = savedSort ?? const SortPreferences();
+
     return BlocProvider(
       create: (_) => ProjectOverviewBloc(
         projectRepository: projectRepository,
+        taskRepository: taskRepository,
         withRelated: true,
+        initialSortPreferences: initialSort,
       )..add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
       child: ProjectOverviewView(
         projectRepository: projectRepository,
@@ -33,7 +51,7 @@ class ProjectOverviewPage extends StatelessWidget {
   }
 }
 
-class ProjectOverviewView extends StatelessWidget {
+class ProjectOverviewView extends StatefulWidget {
   const ProjectOverviewView({
     required this.projectRepository,
     required this.labelRepository,
@@ -44,44 +62,130 @@ class ProjectOverviewView extends StatelessWidget {
   final LabelRepositoryContract labelRepository;
 
   @override
+  State<ProjectOverviewView> createState() => _ProjectOverviewViewState();
+}
+
+class _ProjectOverviewViewState extends State<ProjectOverviewView> {
+  Future<void> _openGroupSortSheet() async {
+    final bloc = context.read<ProjectOverviewBloc>();
+    final currentPreferences = bloc.currentSortPreferences;
+
+    await showSortBottomSheet(
+      context: context,
+      current: currentPreferences,
+      availableSortFields: const [
+        SortField.deadlineDate,
+        SortField.startDate,
+        SortField.name,
+      ],
+      onChanged: (updated) {
+        bloc.add(ProjectOverviewEvent.sortChanged(preferences: updated));
+        context.read<SettingsBloc>().add(
+          SettingsUpdatePageSort(
+            pageKey: SettingsPageKey.projects,
+            preferences: updated,
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Send event to request data stream subscription
-    return BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
-      builder: (context, state) {
-        switch (state) {
-          case ProjectOverviewInitial():
-            return const Center(child: CircularProgressIndicator());
+    return BlocListener<SettingsBloc, SettingsState>(
+      listenWhen: (previous, current) {
+        final previousSort = previous.settings?.sortFor(
+          SettingsPageKey.projects,
+        );
+        final currentSort = current.settings?.sortFor(SettingsPageKey.projects);
+        return previousSort != currentSort;
+      },
+      listener: (context, state) {
+        final preferences = state.settings?.sortFor(SettingsPageKey.projects);
+        if (preferences == null) return;
 
-          case ProjectOverviewLoading():
-            return const Center(child: CircularProgressIndicator());
-
-          case ProjectOverviewLoaded(projects: final projects):
-            if (projects.isEmpty) {
-              return Center(child: Text(context.l10n.noProjectsFound));
-            } else {
-              return Scaffold(
-                appBar: AppBar(title: Text(context.l10n.projectsTitle)),
-                body: ProjectsListView(
-                  projects: projects,
-                  projectRepository: projectRepository,
-                  labelRepository: labelRepository,
+        final bloc = context.read<ProjectOverviewBloc>();
+        if (bloc.currentSortPreferences != preferences) {
+          bloc.add(
+            ProjectOverviewEvent.sortChanged(preferences: preferences),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.projectsTitle),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: context.l10n.sortMenuTitle,
+              onPressed: _openGroupSortSheet,
+            ),
+          ],
+        ),
+        body: BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+          builder: (context, state) {
+            return switch (state) {
+              ProjectOverviewInitial() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              ProjectOverviewLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              ProjectOverviewLoaded(
+                projects: final projects,
+                taskCounts: final taskCounts,
+              ) =>
+                _buildLoadedState(context, projects, taskCounts),
+              ProjectOverviewError(error: final error) => Center(
+                child: Text(
+                  friendlyErrorMessageForUi(error, context.l10n),
                 ),
-                floatingActionButton: AddProjectFab(
-                  projectRepository: projectRepository,
-                  labelRepository: labelRepository,
-                ),
-              );
-            }
+              ),
+            };
+          },
+        ),
+        floatingActionButton: AddProjectFab(
+          projectRepository: widget.projectRepository,
+          labelRepository: widget.labelRepository,
+        ),
+      ),
+    );
+  }
 
-          case ProjectOverviewError(
-            error: final error,
-          ):
-            return Center(
-              child: Text(
-                friendlyErrorMessageForUi(error, context.l10n),
+  Widget _buildLoadedState(
+    BuildContext context,
+    List<Project> projects,
+    Map<String, ProjectTaskCounts> taskCounts,
+  ) {
+    if (projects.isEmpty) {
+      return EmptyStateWidget.noProjects(
+        title: context.l10n.emptyProjectsTitle,
+        description: context.l10n.emptyProjectsDescription,
+      );
+    }
+    return ListView.builder(
+      itemCount: projects.length,
+      itemBuilder: (context, index) {
+        final project = projects[index];
+        final counts = taskCounts[project.id];
+        return ProjectListTile(
+          project: project,
+          taskCount: counts?.totalCount,
+          completedTaskCount: counts?.completedCount,
+          onCheckboxChanged: (project, _) {
+            context.read<ProjectOverviewBloc>().add(
+              ProjectOverviewEvent.toggleProjectCompletion(
+                project: project,
               ),
             );
-        }
+          },
+          onTap: (project) async {
+            await context.pushNamed(
+              AppRouteName.projectDetail,
+              pathParameters: {'projectId': project.id},
+            );
+          },
+        );
       },
     );
   }

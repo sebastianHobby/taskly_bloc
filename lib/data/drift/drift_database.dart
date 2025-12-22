@@ -60,8 +60,7 @@ class LabelTable extends Table {
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
-  TextColumn get color =>
-      text().nullable().named('color').clientDefault(() => '#000000')();
+  TextColumn get color => text().named('color')();
   TextColumn get type => textEnum<LabelType>()
       .named('type')
       .withDefault(const Constant('label'))();
@@ -132,6 +131,25 @@ class TaskLabelsTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+class UserProfileTable extends Table {
+  @override
+  String get tableName => 'user_profiles';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  /// JSON blob stored as a text column (e.g. serialized settings map).
+  TextColumn get settings => text().named('settings')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 @DriftDatabase(
   tables: [
     ProjectTable,
@@ -139,13 +157,14 @@ class TaskLabelsTable extends Table {
     LabelTable,
     ProjectLabelsTable,
     TaskLabelsTable,
+    UserProfileTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

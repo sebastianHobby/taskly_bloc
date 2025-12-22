@@ -8,12 +8,17 @@ import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
-import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
-import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
+import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/core/shared/widgets/sort_bottom_sheet.dart';
 import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
+import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
+import 'package:taskly_bloc/features/settings/settings.dart';
+import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/core/shared/widgets/empty_state_widget.dart';
 
 class InboxPage extends StatelessWidget {
   const InboxPage({
@@ -29,10 +34,16 @@ class InboxPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settingsState = context.read<SettingsBloc>().state;
+    final inboxSort = settingsState.settings?.sortFor(SettingsPageKey.inbox);
+    final initialConfig = inboxSort == null
+        ? TaskSelector.inbox()
+        : TaskSelector.inbox(sortCriteria: inboxSort.criteria);
+
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        initialQuery: TaskListQuery.inbox,
+        initialConfig: initialConfig,
         withRelated: true,
       )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: InboxView(
@@ -44,7 +55,7 @@ class InboxPage extends StatelessWidget {
   }
 }
 
-class InboxView extends StatelessWidget {
+class InboxView extends StatefulWidget {
   const InboxView({
     required this.taskRepository,
     required this.projectRepository,
@@ -56,6 +67,93 @@ class InboxView extends StatelessWidget {
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
 
+  @override
+  State<InboxView> createState() => _InboxViewState();
+}
+
+class _InboxViewState extends State<InboxView> {
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<SettingsBloc, SettingsState>(
+      listenWhen: (previous, current) {
+        final previousSort = previous.settings
+            ?.sortFor(SettingsPageKey.inbox)
+            ?.criteria;
+        final currentSort = current.settings
+            ?.sortFor(SettingsPageKey.inbox)
+            ?.criteria;
+        return previousSort != currentSort;
+      },
+      listener: (context, state) {
+        final preferences = state.settings?.sortFor(SettingsPageKey.inbox);
+        if (preferences == null) return;
+
+        final bloc = context.read<TaskOverviewBloc>();
+        final currentQuery = bloc.state.maybeWhen(
+          loaded: (_, config) => config,
+          orElse: TaskSelector.inbox,
+        );
+
+        if (currentQuery.sortCriteria != preferences.criteria) {
+          bloc.add(
+            TaskOverviewEvent.configChanged(
+              config: currentQuery.copyWith(
+                sortCriteria: preferences.criteria,
+              ),
+            ),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.l10n.inboxTitle),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.sort),
+              tooltip: context.l10n.sortMenuTitle,
+              onPressed: _openGroupSortSheet,
+            ),
+          ],
+        ),
+        body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
+          builder: (context, state) {
+            return state.when(
+              initial: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              loaded: (tasks, query) {
+                if (tasks.isEmpty) {
+                  return EmptyStateWidget.inbox(
+                    title: context.l10n.emptyInboxTitle,
+                    description: context.l10n.emptyInboxDescription,
+                  );
+                }
+                return TasksListView(
+                  tasks: tasks,
+                  onTap: (task) => _showTaskDetailSheet(
+                    context,
+                    taskId: task.id,
+                  ),
+                );
+              },
+              error: (error, _) => Center(
+                child: Text(
+                  friendlyErrorMessageForUi(error, context.l10n),
+                ),
+              ),
+            );
+          },
+        ),
+        floatingActionButton: AddTaskFab(
+          onPressed: () => _showTaskDetailSheet(context),
+        ),
+      ),
+    );
+  }
+
   void _showTaskDetailSheet(BuildContext context, {String? taskId}) {
     unawaited(
       showDetailModal<void>(
@@ -64,9 +162,9 @@ class InboxView extends StatelessWidget {
           top: false,
           child: BlocProvider(
             create: (_) => TaskDetailBloc(
-              taskRepository: taskRepository,
-              projectRepository: projectRepository,
-              labelRepository: labelRepository,
+              taskRepository: widget.taskRepository,
+              projectRepository: widget.projectRepository,
+              labelRepository: widget.labelRepository,
               taskId: taskId,
             ),
             child: const TaskDetailSheet(),
@@ -76,32 +174,35 @@ class InboxView extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.l10n.inboxTitle),
-      ),
-      body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
-        builder: (context, state) {
-          return state.when(
-            initial: () => const Center(child: CircularProgressIndicator()),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            loaded: (tasks, query) => TasksListView(
-              tasks: tasks,
-              onTap: (task) => _showTaskDetailSheet(context, taskId: task.id),
-            ),
-            error: (error, _) => Center(
-              child: Text(
-                friendlyErrorMessageForUi(error, context.l10n),
-              ),
-            ),
-          );
-        },
-      ),
-      floatingActionButton: AddTaskFab(
-        onPressed: () => _showTaskDetailSheet(context),
-      ),
+  Future<void> _openGroupSortSheet() async {
+    final bloc = context.read<TaskOverviewBloc>();
+    final currentQuery = bloc.state.maybeWhen(
+      loaded: (_, config) => config,
+      orElse: TaskSelector.all,
+    );
+
+    await showSortBottomSheet(
+      context: context,
+      current: SortPreferences(criteria: currentQuery.sortCriteria),
+      availableSortFields: const [
+        SortField.deadlineDate,
+        SortField.startDate,
+        SortField.name,
+      ],
+      onChanged: (updated) {
+        bloc.add(
+          TaskOverviewEvent.configChanged(
+            config: currentQuery.copyWith(sortCriteria: updated.criteria),
+          ),
+        );
+
+        context.read<SettingsBloc>().add(
+          SettingsUpdatePageSort(
+            pageKey: SettingsPageKey.inbox,
+            preferences: updated,
+          ),
+        );
+      },
     );
   }
 }

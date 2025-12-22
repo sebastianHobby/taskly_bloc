@@ -6,7 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
-import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
+import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
@@ -52,7 +52,10 @@ void main() {
       const TaskOverviewState.loading(),
       const TaskOverviewState.loaded(
         tasks: [],
-        query: TaskListQuery.all,
+        config: TaskSelectorConfig(
+          ruleSets: [],
+          sortCriteria: TaskSelector.defaultSortCriteria,
+        ),
       ),
     ],
   );

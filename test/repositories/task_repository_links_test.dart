@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' hide LabelType;
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
 
@@ -22,7 +23,11 @@ void main() {
   });
 
   test('create writes label link rows when ids provided', () async {
-    await labelRepository.create(name: 'Label A', color: '#000000');
+    await labelRepository.create(
+      name: 'Label A',
+      color: '#000000',
+      type: LabelType.label,
+    );
     final label = (await labelRepository.getAll()).single;
 
     await taskRepository.create(
@@ -39,7 +44,11 @@ void main() {
   });
 
   test('create tolerates duplicate label ids', () async {
-    await labelRepository.create(name: 'Label A', color: '#000000');
+    await labelRepository.create(
+      name: 'Label A',
+      color: '#000000',
+      type: LabelType.label,
+    );
     final label = (await labelRepository.getAll()).single;
 
     await taskRepository.create(
@@ -56,8 +65,16 @@ void main() {
   });
 
   test('update replaces label link rows when ids provided', () async {
-    await labelRepository.create(name: 'L1', color: '#000000');
-    await labelRepository.create(name: 'L2', color: '#000000');
+    await labelRepository.create(
+      name: 'L1',
+      color: '#000000',
+      type: LabelType.label,
+    );
+    await labelRepository.create(
+      name: 'L2',
+      color: '#000000',
+      type: LabelType.label,
+    );
 
     final label1Id = (await labelRepository.getAll())
         .singleWhere((l) => l.name == 'L1')
@@ -91,8 +108,16 @@ void main() {
   });
 
   test('update does not rewrite link rows when ids unchanged', () async {
-    await labelRepository.create(name: 'L1', color: '#000000');
-    await labelRepository.create(name: 'L2', color: '#000000');
+    await labelRepository.create(
+      name: 'L1',
+      color: '#000000',
+      type: LabelType.label,
+    );
+    await labelRepository.create(
+      name: 'L2',
+      color: '#000000',
+      type: LabelType.label,
+    );
     final label1Id = (await labelRepository.getAll())
         .singleWhere((l) => l.name == 'L1')
         .id;

@@ -1,8 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' hide LabelType;
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
 
@@ -25,8 +26,16 @@ void main() {
 
   test('getAll(withRelated: true) includes related entities', () async {
     await projectRepository.create(name: 'Proj');
-    await labelRepository.create(name: 'Z', color: '#000000');
-    await labelRepository.create(name: 'M', color: '#000000');
+    await labelRepository.create(
+      name: 'Z',
+      color: '#000000',
+      type: LabelType.label,
+    );
+    await labelRepository.create(
+      name: 'M',
+      color: '#000000',
+      type: LabelType.label,
+    );
 
     final projectId = (await projectRepository.getAll())
         .singleWhere((p) => p.name == 'Proj')

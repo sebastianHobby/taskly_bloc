@@ -24,6 +24,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelsTitle => 'Labels';
 
   @override
+  String get valuesTitle => 'Values';
+
+  @override
   String get browseTitle => 'Browse';
 
   @override
@@ -37,6 +40,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get createLabelTooltip => 'Create label';
+
+  @override
+  String get createLabelOption => 'Create label';
+
+  @override
+  String get createValueOption => 'Create value';
+
+  @override
+  String get labelTypeLabelHeading => 'Label';
+
+  @override
+  String get labelTypeValueHeading => 'Values';
 
   @override
   String get noLabelsFound => 'No labels found.';
@@ -69,6 +84,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskSortByDeadline => 'Sort by deadline';
 
   @override
+  String get groupSortMenuTitle => 'Group & sort';
+
+  @override
+  String get groupSortGroupingLabel => 'Grouping';
+
+  @override
+  String get groupSortSortingLabel => 'Sorting';
+
+  @override
+  String get groupOptionNone => 'No grouping';
+
+  @override
+  String get groupOptionLabels => 'Group by labels';
+
+  @override
+  String get groupOptionValues => 'Group by values';
+
+  @override
+  String get sortFieldNameLabel => 'Name';
+
+  @override
+  String get sortFieldStartDateLabel => 'Start date';
+
+  @override
+  String get sortFieldDeadlineDateLabel => 'Deadline date';
+
+  @override
+  String get sortFieldNoneLabel => 'None';
+
+  @override
+  String get sortSlotPrimaryLabel => 'Primary sort';
+
+  @override
+  String get sortSlotSecondaryLabel => 'Secondary sort';
+
+  @override
+  String get sortSlotTertiaryLabel => 'Tertiary sort';
+
+  @override
+  String get sortMenuTitle => 'Sort';
+
+  @override
+  String get sortSortingLabel => 'Sorting';
+
+  @override
+  String get sortDirectionLabel => 'Direction';
+
+  @override
+  String get sortDirectionAscending => 'Ascending';
+
+  @override
+  String get sortDirectionDescending => 'Descending';
+
+  @override
+  String get groupingMissingLabels => 'No labels';
+
+  @override
+  String get groupingMissingValues => 'No values';
+
+  @override
+  String get groupSortApplyButton => 'Apply';
+
+  @override
   String get inboxTitle => 'Inbox';
 
   @override
@@ -76,6 +154,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get upcomingTitle => 'Upcoming';
+
+  @override
+  String get nextActionsTitle => 'Next actions';
 
   @override
   String get taskCreatedSuccessfully => 'Task created successfully.';
@@ -160,4 +241,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectFormRepeatRuleTooLong => 'Repeat rule is too long';
+
+  @override
+  String get emptyInboxTitle => 'Your inbox is empty';
+
+  @override
+  String get emptyInboxDescription => 'Tasks without a project will appear here';
+
+  @override
+  String get emptyTodayTitle => 'Nothing due today';
+
+  @override
+  String get emptyTodayDescription => 'Tasks and projects due today will appear here';
+
+  @override
+  String get emptyUpcomingTitle => 'Nothing upcoming';
+
+  @override
+  String get emptyUpcomingDescription => 'Future tasks and projects will appear here';
+
+  @override
+  String get emptyProjectsTitle => 'No projects yet';
+
+  @override
+  String get emptyProjectsDescription => 'Create a project to organize your tasks';
+
+  @override
+  String get emptyTasksTitle => 'No tasks yet';
+
+  @override
+  String get emptyTasksDescription => 'Add a task to get started';
+
+  @override
+  String get addTaskAction => 'Add task';
+
+  @override
+  String get addProjectAction => 'Add project';
 }

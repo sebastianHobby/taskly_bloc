@@ -12,6 +12,10 @@ void main() {
   late MockLabelRepository mockRepository;
   late Label sampleLabel;
 
+  setUpAll(() {
+    registerFallbackValue(LabelType.label);
+  });
+
   setUp(() {
     mockRepository = MockLabelRepository();
     final now = DateTime.now();
@@ -74,12 +78,18 @@ void main() {
         () => mockRepository.create(
           name: any(named: 'name'),
           color: any(named: 'color'),
+          type: any(named: 'type'),
         ),
       ).thenAnswer((_) async {});
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelDetailEvent.create(name: 'New', color: '#000000')),
+    act: (bloc) => bloc.add(
+      const LabelDetailEvent.create(
+        name: 'New',
+        color: '#000000',
+        type: LabelType.label,
+      ),
+    ),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.create,
@@ -94,12 +104,18 @@ void main() {
         () => mockRepository.create(
           name: any(named: 'name'),
           color: any(named: 'color'),
+          type: any(named: 'type'),
         ),
       ).thenAnswer((_) async => throw Exception('fail'));
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelDetailEvent.create(name: 'New', color: '#000000')),
+    act: (bloc) => bloc.add(
+      const LabelDetailEvent.create(
+        name: 'New',
+        color: '#000000',
+        type: LabelType.label,
+      ),
+    ),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 
@@ -111,6 +127,7 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           color: any(named: 'color'),
+          type: any(named: 'type'),
         ),
       ).thenAnswer((_) async {});
     },
@@ -120,6 +137,7 @@ void main() {
         id: 'l1',
         name: 'Updated',
         color: '#000000',
+        type: LabelType.label,
       ),
     ),
     expect: () => <dynamic>[
@@ -137,6 +155,7 @@ void main() {
           id: any(named: 'id'),
           name: any(named: 'name'),
           color: any(named: 'color'),
+          type: any(named: 'type'),
         ),
       ).thenAnswer((_) async => throw Exception('bad'));
     },
@@ -146,6 +165,7 @@ void main() {
         id: 'l1',
         name: 'Updated',
         color: '#000000',
+        type: LabelType.label,
       ),
     ),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
@@ -154,7 +174,7 @@ void main() {
   blocTest<LabelDetailBloc, LabelDetailState>(
     'delete emits operationSuccess on successful delete',
     setUp: () {
-      when(() => mockRepository.delete(any())).thenAnswer((_) async {});
+      when(() => mockRepository.delete('l1')).thenAnswer((_) async {});
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
     act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'l1')),
@@ -169,7 +189,7 @@ void main() {
     'delete emits operationFailure when delete throws',
     setUp: () {
       when(
-        () => mockRepository.delete(any()),
+        () => mockRepository.delete('l1'),
       ).thenAnswer((_) async => throw Exception('oh no'));
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),

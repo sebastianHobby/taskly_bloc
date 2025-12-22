@@ -12,8 +12,11 @@ import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
+    this.defaultProjectId,
     super.key,
   });
+
+  final String? defaultProjectId;
 
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
@@ -111,6 +114,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 submitTooltip: context.l10n.actionCreate,
                 availableProjects: availableProjects,
                 availableLabels: availableLabels,
+                defaultProjectId: widget.defaultProjectId,
               ),
           loadSuccess:
               (
@@ -165,6 +169,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
                 availableLabels: availableLabels,
+                defaultProjectId: widget.defaultProjectId,
               ),
           operationSuccess: (_) => const SizedBox.shrink(),
           operationFailure: (_) => const SizedBox.shrink(),

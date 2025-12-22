@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 // removed unused direct import; test uses createTestDb from helpers
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
+import 'package:taskly_bloc/features/settings/settings.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_db.dart';
@@ -122,6 +125,60 @@ class FakeTaskRepository implements TaskRepositoryContract {
     _last = _last.where((t) => t.id != id).toList();
     _controller.add(_last);
   }
+
+  @override
+  Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject() {
+    return _controller.stream.map(_aggregateCounts);
+  }
+
+  @override
+  Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject() async {
+    return _aggregateCounts(_last);
+  }
+
+  Map<String, ProjectTaskCounts> _aggregateCounts(List<Task> tasks) {
+    final counts = <String, ({int total, int completed})>{};
+    for (final task in tasks) {
+      final projectId = task.projectId;
+      if (projectId != null) {
+        final current = counts[projectId] ?? (total: 0, completed: 0);
+        counts[projectId] = (
+          total: current.total + 1,
+          completed: current.completed + (task.completed ? 1 : 0),
+        );
+      }
+    }
+    return counts.map(
+      (projectId, data) => MapEntry(
+        projectId,
+        ProjectTaskCounts(
+          projectId: projectId,
+          totalCount: data.total,
+          completedCount: data.completed,
+        ),
+      ),
+    );
+  }
+}
+
+class FakeSettingsRepository implements SettingsRepositoryContract {
+  FakeSettingsRepository({AppSettings initial = const AppSettings()})
+    : _current = initial;
+
+  final _controller = StreamController<AppSettings>.broadcast();
+  AppSettings _current;
+
+  @override
+  Stream<AppSettings> watch() => _controller.stream;
+
+  @override
+  Future<AppSettings> load() async => _current;
+
+  @override
+  Future<void> save(AppSettings settings) async {
+    _current = settings;
+    _controller.add(settings);
+  }
 }
 
 void main() {
@@ -142,13 +199,19 @@ void main() {
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
+    final settingsRepository = FakeSettingsRepository();
+    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
+    addTearDown(settingsBloc.close);
 
     await pumpLocalizedApp(
       tester,
-      home: TaskOverviewPage(
-        taskRepository: repo,
-        projectRepository: projectRepo,
-        labelRepository: labelRepo,
+      home: BlocProvider.value(
+        value: settingsBloc,
+        child: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          labelRepository: labelRepo,
+        ),
       ),
     );
     // push tasks after widget builds so the bloc subscription receives the value
@@ -189,13 +252,19 @@ void main() {
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
+    final settingsRepository = FakeSettingsRepository();
+    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
+    addTearDown(settingsBloc.close);
 
     await pumpLocalizedApp(
       tester,
-      home: TaskOverviewPage(
-        taskRepository: repo,
-        projectRepository: projectRepo,
-        labelRepository: labelRepo,
+      home: BlocProvider.value(
+        value: settingsBloc,
+        child: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          labelRepository: labelRepo,
+        ),
       ),
     );
     await tester.pump();
@@ -234,13 +303,19 @@ void main() {
     final db = createTestDb();
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
+    final settingsRepository = FakeSettingsRepository();
+    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
+    addTearDown(settingsBloc.close);
 
     await pumpLocalizedApp(
       tester,
-      home: TaskOverviewPage(
-        taskRepository: repo,
-        projectRepository: projectRepo,
-        labelRepository: labelRepo,
+      home: BlocProvider.value(
+        value: settingsBloc,
+        child: TaskOverviewPage(
+          taskRepository: repo,
+          projectRepository: projectRepo,
+          labelRepository: labelRepo,
+        ),
       ),
     );
     await tester.pump();

@@ -1,10 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
-import 'package:taskly_bloc/features/tasks/bloc/task_list_query.dart';
+import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 part 'task_list_bloc.freezed.dart';
 
 //Events (the input to bloc)
@@ -13,9 +12,9 @@ sealed class TaskOverviewEvent with _$TaskOverviewEvent {
   const factory TaskOverviewEvent.subscriptionRequested() =
       TaskOverviewSubscriptionRequested;
 
-  const factory TaskOverviewEvent.queryChanged({
-    required TaskListQuery query,
-  }) = TaskOverviewQueryChanged;
+  const factory TaskOverviewEvent.configChanged({
+    required TaskSelectorConfig config,
+  }) = TaskOverviewConfigChanged;
 
   const factory TaskOverviewEvent.toggleTaskCompletion({
     required Task task,
@@ -29,7 +28,7 @@ sealed class TaskOverviewState with _$TaskOverviewState {
   const factory TaskOverviewState.loading() = TaskOverviewLoading;
   const factory TaskOverviewState.loaded({
     required List<Task> tasks,
-    required TaskListQuery query,
+    required TaskSelectorConfig config,
   }) = TaskOverviewLoaded;
   const factory TaskOverviewState.error({
     required Object error,
@@ -41,101 +40,28 @@ sealed class TaskOverviewState with _$TaskOverviewState {
 class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   TaskOverviewBloc({
     required TaskRepositoryContract taskRepository,
-    TaskListQuery initialQuery = TaskListQuery.all,
+    TaskSelectorConfig initialConfig = const TaskSelectorConfig(
+      ruleSets: [],
+      sortCriteria: TaskSelector.defaultSortCriteria,
+    ),
     bool withRelated = false,
   }) : _taskRepository = taskRepository,
-       _query = initialQuery,
+       _config = initialConfig,
        _withRelated = withRelated,
+       _selector = TaskSelector(),
        super(const TaskOverviewState.initial()) {
     on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
-    on<TaskOverviewQueryChanged>(_onQueryChanged);
+    on<TaskOverviewConfigChanged>(_onConfigChanged);
     on<TaskOverviewToggleTaskCompletion>(_onToggleTaskCompletion);
   }
 
   final TaskRepositoryContract _taskRepository;
   final bool _withRelated;
+  final TaskSelector _selector;
 
-  TaskListQuery _query;
+  TaskSelectorConfig _config;
   var _hasTaskSnapshot = false;
   List<Task> _allTasks = const [];
-
-  static List<Task> _applyQuery({
-    required List<Task> tasks,
-    required TaskListQuery query,
-  }) {
-    Iterable<Task> filtered = tasks;
-
-    if (query.onlyWithoutProject) {
-      filtered = filtered.where((t) => t.projectId == null);
-    }
-
-    final projectId = query.projectId;
-    if (projectId != null && projectId.isNotEmpty) {
-      filtered = filtered.where((t) => t.projectId == projectId);
-    }
-
-    final labelId = query.labelId;
-    if (labelId != null && labelId.isNotEmpty) {
-      filtered = filtered.where((t) => t.labels.any((l) => l.id == labelId));
-    }
-
-    final onOrBeforeDate = query.onOrBeforeDate;
-    if (onOrBeforeDate != null) {
-      final cutoff = dateOnly(onOrBeforeDate);
-      filtered = filtered.where((t) {
-        final start = t.startDate;
-        final deadline = t.deadlineDate;
-        final startOk = start != null && !dateOnly(start).isAfter(cutoff);
-        final deadlineOk =
-            deadline != null && !dateOnly(deadline).isAfter(cutoff);
-        return startOk || deadlineOk;
-      });
-    }
-
-    final onOrAfterDate = query.onOrAfterDate;
-    if (onOrAfterDate != null) {
-      final cutoff = dateOnly(onOrAfterDate);
-      filtered = filtered.where((t) {
-        final start = t.startDate;
-        final deadline = t.deadlineDate;
-        final startOk = start != null && !dateOnly(start).isBefore(cutoff);
-        final deadlineOk =
-            deadline != null && !dateOnly(deadline).isBefore(cutoff);
-        return startOk || deadlineOk;
-      });
-    }
-
-    switch (query.completion) {
-      case TaskCompletionFilter.all:
-        break;
-      case TaskCompletionFilter.active:
-        filtered = filtered.where((t) => !t.completed);
-      case TaskCompletionFilter.completed:
-        filtered = filtered.where((t) => t.completed);
-    }
-
-    final result = filtered.toList(growable: false);
-
-    int compareNullableDate(DateTime? a, DateTime? b) {
-      if (a == null && b == null) return 0;
-      if (a == null) return 1;
-      if (b == null) return -1;
-      return a.compareTo(b);
-    }
-
-    switch (query.sort) {
-      case TaskSort.name:
-        result.sort((a, b) => a.name.compareTo(b.name));
-      case TaskSort.deadline:
-        result.sort((a, b) {
-          final primary = compareNullableDate(a.deadlineDate, b.deadlineDate);
-          if (primary != 0) return primary;
-          return a.name.compareTo(b.name);
-        });
-    }
-
-    return result;
-  }
 
   Future<void> _onSubscriptionRequested(
     TaskOverviewSubscriptionRequested event,
@@ -149,8 +75,8 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
         _hasTaskSnapshot = true;
         _allTasks = tasks;
         return TaskOverviewState.loaded(
-          tasks: _applyQuery(tasks: tasks, query: _query),
-          query: _query,
+          tasks: _applyConfig(tasks),
+          config: _config,
         );
       },
       onError: (error, stackTrace) => TaskOverviewState.error(
@@ -165,17 +91,17 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
 
     emit(
       TaskOverviewState.loaded(
-        tasks: _applyQuery(tasks: _allTasks, query: _query),
-        query: _query,
+        tasks: _applyConfig(_allTasks),
+        config: _config,
       ),
     );
   }
 
-  void _onQueryChanged(
-    TaskOverviewQueryChanged event,
+  void _onConfigChanged(
+    TaskOverviewConfigChanged event,
     Emitter<TaskOverviewState> emit,
   ) {
-    _query = event.query;
+    _config = event.config;
     _emitLoadedFromSnapshot(emit);
   }
 
@@ -205,5 +131,14 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
         ),
       );
     }
+  }
+
+  List<Task> _applyConfig(List<Task> tasks) {
+    return _selector.filter(
+      tasks: tasks,
+      ruleSets: _config.ruleSets,
+      sortCriteria: _config.sortCriteria,
+      now: DateTime.now(),
+    );
   }
 }

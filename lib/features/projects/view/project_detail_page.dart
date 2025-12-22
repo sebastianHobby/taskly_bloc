@@ -10,7 +10,7 @@ import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/features/projects/view/project_detail_view.dart';
+import 'package:taskly_bloc/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
 
 /// Full-screen project page showing the project details and its related tasks.
@@ -41,7 +41,7 @@ class ProjectDetailPage extends StatelessWidget {
         BlocProvider<TaskOverviewBloc>(
           create: (_) => TaskOverviewBloc(
             taskRepository: taskRepository,
-            initialQuery: TaskListQuery(projectId: projectId),
+            initialConfig: TaskSelector.forProject(projectId),
             withRelated: true,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
@@ -98,7 +98,11 @@ class ProjectDetailPageView extends StatelessWidget {
     );
   }
 
-  void _showTaskDetailSheet(BuildContext context, {String? taskId}) {
+  void _showTaskDetailSheet(
+    BuildContext context, {
+    String? taskId,
+    String? defaultProjectId,
+  }) {
     unawaited(
       showDetailModal<void>(
         context: context,
@@ -111,7 +115,7 @@ class ProjectDetailPageView extends StatelessWidget {
               labelRepository: labelRepository,
               taskId: taskId,
             ),
-            child: const TaskDetailSheet(),
+            child: TaskDetailSheet(defaultProjectId: defaultProjectId),
           ),
         ),
       ),
@@ -159,8 +163,10 @@ class ProjectDetailPageView extends StatelessWidget {
                             const Center(child: CircularProgressIndicator()),
                         loaded: (tasks, _) => TasksListView(
                           tasks: tasks,
-                          onTap: (task) =>
-                              _showTaskDetailSheet(context, taskId: task.id),
+                          onTap: (task) => _showTaskDetailSheet(
+                            context,
+                            taskId: task.id,
+                          ),
                         ),
                         error: (error, _) => Center(
                           child: Text(
@@ -172,6 +178,12 @@ class ProjectDetailPageView extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            floatingActionButton: AddTaskFab(
+              onPressed: () => _showTaskDetailSheet(
+                context,
+                defaultProjectId: project.id,
+              ),
             ),
           ),
           operationSuccess: (_) => Scaffold(
@@ -237,23 +249,45 @@ class _ProjectHeader extends StatelessWidget {
           ),
           if (project.labels.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...project.labels.map(
-                  (l) => Chip(
-                    avatar: Icon(
-                      Icons.label_outline,
-                      size: 18,
-                      color: _colorFromHexOrFallback(l.color),
-                    ),
-                    label: Text(l.name),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-              ],
-            ),
+            if (project.labels.any((l) => l.type == LabelType.value))
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final l in project.labels)
+                    if (l.type == LabelType.value)
+                      Chip(
+                        avatar: Icon(
+                          Icons.label_outline,
+                          size: 18,
+                          color: _colorFromHexOrFallback(l.color),
+                        ),
+                        label: Text(l.name),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                ],
+              ),
+            if (project.labels.any((l) => l.type == LabelType.value) &&
+                project.labels.any((l) => l.type == LabelType.label))
+              const SizedBox(height: 8),
+            if (project.labels.any((l) => l.type == LabelType.label))
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final l in project.labels)
+                    if (l.type == LabelType.label)
+                      Chip(
+                        avatar: Icon(
+                          Icons.label_outline,
+                          size: 18,
+                          color: _colorFromHexOrFallback(l.color),
+                        ),
+                        label: Text(l.name),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                ],
+              ),
           ],
           if (project.description != null &&
               project.description!.trim().isNotEmpty)

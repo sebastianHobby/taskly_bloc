@@ -55,12 +55,14 @@ extension ProjectOverviewEventPatterns on ProjectOverviewEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOverviewSubscriptionRequested value)?  projectsSubscriptionRequested,TResult Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOverviewSubscriptionRequested value)?  projectsSubscriptionRequested,TResult Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult Function( ProjectOverviewSortChanged value)?  sortChanged,TResult Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that);case _:
+return toggleProjectCompletion(_that);case ProjectOverviewSortChanged() when sortChanged != null:
+return sortChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return taskCountsUpdated(_that);case _:
   return orElse();
 
 }
@@ -78,12 +80,14 @@ return toggleProjectCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOverviewSubscriptionRequested value)  projectsSubscriptionRequested,required TResult Function( ProjectOverviewToggleProjectCompletion value)  toggleProjectCompletion,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOverviewSubscriptionRequested value)  projectsSubscriptionRequested,required TResult Function( ProjectOverviewToggleProjectCompletion value)  toggleProjectCompletion,required TResult Function( ProjectOverviewSortChanged value)  sortChanged,required TResult Function( ProjectOverviewTaskCountsUpdated value)  taskCountsUpdated,}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested():
 return projectsSubscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion():
-return toggleProjectCompletion(_that);}
+return toggleProjectCompletion(_that);case ProjectOverviewSortChanged():
+return sortChanged(_that);case ProjectOverviewTaskCountsUpdated():
+return taskCountsUpdated(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -97,12 +101,14 @@ return toggleProjectCompletion(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOverviewSubscriptionRequested value)?  projectsSubscriptionRequested,TResult? Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOverviewSubscriptionRequested value)?  projectsSubscriptionRequested,TResult? Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult? Function( ProjectOverviewSortChanged value)?  sortChanged,TResult? Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that);case _:
+return toggleProjectCompletion(_that);case ProjectOverviewSortChanged() when sortChanged != null:
+return sortChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return taskCountsUpdated(_that);case _:
   return null;
 
 }
@@ -119,11 +125,13 @@ return toggleProjectCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( Project project)?  toggleProjectCompletion,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  projectsSubscriptionRequested,TResult Function( Project project)?  toggleProjectCompletion,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that.project);case _:
+return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged() when sortChanged != null:
+return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return taskCountsUpdated(_that.taskCounts);case _:
   return orElse();
 
 }
@@ -141,11 +149,13 @@ return toggleProjectCompletion(_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( Project project)  toggleProjectCompletion,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  projectsSubscriptionRequested,required TResult Function( Project project)  toggleProjectCompletion,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( Map<String, ProjectTaskCounts> taskCounts)  taskCountsUpdated,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested():
 return projectsSubscriptionRequested();case ProjectOverviewToggleProjectCompletion():
-return toggleProjectCompletion(_that.project);}
+return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged():
+return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated():
+return taskCountsUpdated(_that.taskCounts);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -159,11 +169,13 @@ return toggleProjectCompletion(_that.project);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( Project project)?  toggleProjectCompletion,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  projectsSubscriptionRequested,TResult? Function( Project project)?  toggleProjectCompletion,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when projectsSubscriptionRequested != null:
 return projectsSubscriptionRequested();case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
-return toggleProjectCompletion(_that.project);case _:
+return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged() when sortChanged != null:
+return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return taskCountsUpdated(_that.taskCounts);case _:
   return null;
 
 }
@@ -263,6 +275,144 @@ class _$ProjectOverviewToggleProjectCompletionCopyWithImpl<$Res>
   return _then(ProjectOverviewToggleProjectCompletion(
 project: null == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
 as Project,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ProjectOverviewSortChanged implements ProjectOverviewEvent {
+  const ProjectOverviewSortChanged({required this.preferences});
+  
+
+ final  SortPreferences preferences;
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectOverviewSortChangedCopyWith<ProjectOverviewSortChanged> get copyWith => _$ProjectOverviewSortChangedCopyWithImpl<ProjectOverviewSortChanged>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewSortChanged&&(identical(other.preferences, preferences) || other.preferences == preferences));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,preferences);
+
+@override
+String toString() {
+  return 'ProjectOverviewEvent.sortChanged(preferences: $preferences)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectOverviewSortChangedCopyWith<$Res> implements $ProjectOverviewEventCopyWith<$Res> {
+  factory $ProjectOverviewSortChangedCopyWith(ProjectOverviewSortChanged value, $Res Function(ProjectOverviewSortChanged) _then) = _$ProjectOverviewSortChangedCopyWithImpl;
+@useResult
+$Res call({
+ SortPreferences preferences
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectOverviewSortChangedCopyWithImpl<$Res>
+    implements $ProjectOverviewSortChangedCopyWith<$Res> {
+  _$ProjectOverviewSortChangedCopyWithImpl(this._self, this._then);
+
+  final ProjectOverviewSortChanged _self;
+  final $Res Function(ProjectOverviewSortChanged) _then;
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? preferences = null,}) {
+  return _then(ProjectOverviewSortChanged(
+preferences: null == preferences ? _self.preferences : preferences // ignore: cast_nullable_to_non_nullable
+as SortPreferences,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ProjectOverviewTaskCountsUpdated implements ProjectOverviewEvent {
+  const ProjectOverviewTaskCountsUpdated({required final  Map<String, ProjectTaskCounts> taskCounts}): _taskCounts = taskCounts;
+  
+
+ final  Map<String, ProjectTaskCounts> _taskCounts;
+ Map<String, ProjectTaskCounts> get taskCounts {
+  if (_taskCounts is EqualUnmodifiableMapView) return _taskCounts;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_taskCounts);
+}
+
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectOverviewTaskCountsUpdatedCopyWith<ProjectOverviewTaskCountsUpdated> get copyWith => _$ProjectOverviewTaskCountsUpdatedCopyWithImpl<ProjectOverviewTaskCountsUpdated>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewTaskCountsUpdated&&const DeepCollectionEquality().equals(other._taskCounts, _taskCounts));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_taskCounts));
+
+@override
+String toString() {
+  return 'ProjectOverviewEvent.taskCountsUpdated(taskCounts: $taskCounts)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectOverviewTaskCountsUpdatedCopyWith<$Res> implements $ProjectOverviewEventCopyWith<$Res> {
+  factory $ProjectOverviewTaskCountsUpdatedCopyWith(ProjectOverviewTaskCountsUpdated value, $Res Function(ProjectOverviewTaskCountsUpdated) _then) = _$ProjectOverviewTaskCountsUpdatedCopyWithImpl;
+@useResult
+$Res call({
+ Map<String, ProjectTaskCounts> taskCounts
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectOverviewTaskCountsUpdatedCopyWithImpl<$Res>
+    implements $ProjectOverviewTaskCountsUpdatedCopyWith<$Res> {
+  _$ProjectOverviewTaskCountsUpdatedCopyWithImpl(this._self, this._then);
+
+  final ProjectOverviewTaskCountsUpdated _self;
+  final $Res Function(ProjectOverviewTaskCountsUpdated) _then;
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? taskCounts = null,}) {
+  return _then(ProjectOverviewTaskCountsUpdated(
+taskCounts: null == taskCounts ? _self._taskCounts : taskCounts // ignore: cast_nullable_to_non_nullable
+as Map<String, ProjectTaskCounts>,
   ));
 }
 
@@ -383,12 +533,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
-return loaded(_that.projects);case ProjectOverviewError() when error != null:
+return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError() when error != null:
 return error(_that.error);case _:
   return orElse();
 
@@ -407,12 +557,12 @@ return error(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial():
 return initial();case ProjectOverviewLoading():
 return loading();case ProjectOverviewLoaded():
-return loaded(_that.projects);case ProjectOverviewError():
+return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError():
 return error(_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -427,12 +577,12 @@ return error(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
-return loaded(_that.projects);case ProjectOverviewError() when error != null:
+return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError() when error != null:
 return error(_that.error);case _:
   return null;
 
@@ -509,7 +659,7 @@ String toString() {
 
 
 class ProjectOverviewLoaded implements ProjectOverviewState {
-  const ProjectOverviewLoaded({required final  List<Project> projects}): _projects = projects;
+  const ProjectOverviewLoaded({required final  List<Project> projects, final  Map<String, ProjectTaskCounts> taskCounts = const {}}): _projects = projects,_taskCounts = taskCounts;
   
 
  final  List<Project> _projects;
@@ -517,6 +667,13 @@ class ProjectOverviewLoaded implements ProjectOverviewState {
   if (_projects is EqualUnmodifiableListView) return _projects;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_projects);
+}
+
+ final  Map<String, ProjectTaskCounts> _taskCounts;
+@JsonKey() Map<String, ProjectTaskCounts> get taskCounts {
+  if (_taskCounts is EqualUnmodifiableMapView) return _taskCounts;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_taskCounts);
 }
 
 
@@ -530,16 +687,16 @@ $ProjectOverviewLoadedCopyWith<ProjectOverviewLoaded> get copyWith => _$ProjectO
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewLoaded&&const DeepCollectionEquality().equals(other._projects, _projects));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewLoaded&&const DeepCollectionEquality().equals(other._projects, _projects)&&const DeepCollectionEquality().equals(other._taskCounts, _taskCounts));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_projects));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_projects),const DeepCollectionEquality().hash(_taskCounts));
 
 @override
 String toString() {
-  return 'ProjectOverviewState.loaded(projects: $projects)';
+  return 'ProjectOverviewState.loaded(projects: $projects, taskCounts: $taskCounts)';
 }
 
 
@@ -550,7 +707,7 @@ abstract mixin class $ProjectOverviewLoadedCopyWith<$Res> implements $ProjectOve
   factory $ProjectOverviewLoadedCopyWith(ProjectOverviewLoaded value, $Res Function(ProjectOverviewLoaded) _then) = _$ProjectOverviewLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Project> projects
+ List<Project> projects, Map<String, ProjectTaskCounts> taskCounts
 });
 
 
@@ -567,10 +724,11 @@ class _$ProjectOverviewLoadedCopyWithImpl<$Res>
 
 /// Create a copy of ProjectOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? projects = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? projects = null,Object? taskCounts = null,}) {
   return _then(ProjectOverviewLoaded(
 projects: null == projects ? _self._projects : projects // ignore: cast_nullable_to_non_nullable
-as List<Project>,
+as List<Project>,taskCounts: null == taskCounts ? _self._taskCounts : taskCounts // ignore: cast_nullable_to_non_nullable
+as Map<String, ProjectTaskCounts>,
   ));
 }
 

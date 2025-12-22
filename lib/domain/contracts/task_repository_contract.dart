@@ -6,6 +6,14 @@ abstract class TaskRepositoryContract {
   Stream<Task?> watch(String id, {bool withRelated = false});
   Future<Task?> get(String id, {bool withRelated = false});
 
+  /// Watch task counts for all projects.
+  /// Returns a stream of maps where keys are project IDs.
+  Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject();
+
+  /// Get task counts for all projects.
+  /// Returns a map where keys are project IDs.
+  Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject();
+
   Future<void> create({
     required String name,
     String? description,

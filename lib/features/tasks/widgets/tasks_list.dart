@@ -8,17 +8,23 @@ class TasksListView extends StatelessWidget {
   const TasksListView({
     required this.tasks,
     required this.onTap,
+    this.shrinkWrap = false,
+    this.physics,
     super.key,
   });
 
   final List<Task> tasks;
   final ValueChanged<Task> onTap;
+  final bool shrinkWrap;
+  final ScrollPhysics? physics;
 
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<TaskOverviewBloc>();
 
     return ListView.builder(
+      shrinkWrap: shrinkWrap,
+      physics: physics,
       itemCount: tasks.length,
       itemBuilder: (context, index) {
         final task = tasks[index];

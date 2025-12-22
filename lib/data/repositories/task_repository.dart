@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/task.dart';
+import 'package:taskly_bloc/domain/project_task_counts.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
@@ -416,5 +417,43 @@ class TaskRepository implements TaskRepositoryContract {
     await driftDb
         .delete(driftDb.taskTable)
         .delete(TaskTableCompanion(id: Value(id)));
+  }
+
+  @override
+  Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject() {
+    // Watch all tasks and aggregate counts by project
+    return driftDb.select(driftDb.taskTable).watch().map(_aggregateCounts);
+  }
+
+  @override
+  Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject() async {
+    final rows = await driftDb.select(driftDb.taskTable).get();
+    return _aggregateCounts(rows);
+  }
+
+  Map<String, ProjectTaskCounts> _aggregateCounts(List<TaskTableData> rows) {
+    final counts = <String, ({int total, int completed})>{};
+
+    for (final row in rows) {
+      final projectId = row.projectId;
+      if (projectId != null) {
+        final current = counts[projectId] ?? (total: 0, completed: 0);
+        counts[projectId] = (
+          total: current.total + 1,
+          completed: current.completed + (row.completed ? 1 : 0),
+        );
+      }
+    }
+
+    return counts.map(
+      (projectId, data) => MapEntry(
+        projectId,
+        ProjectTaskCounts(
+          projectId: projectId,
+          totalCount: data.total,
+          completedCount: data.completed,
+        ),
+      ),
+    );
   }
 }

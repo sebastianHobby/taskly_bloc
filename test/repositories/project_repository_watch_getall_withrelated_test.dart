@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' hide LabelType;
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
 
@@ -24,8 +25,16 @@ void main() {
   Future<String> createProjectWithLinks() async {
     await projectRepository.create(name: 'Proj');
     final projectId = (await projectRepository.getAll()).single.id;
-    await labelRepository.create(name: 'Z', color: '#000000');
-    await labelRepository.create(name: 'M', color: '#000000');
+    await labelRepository.create(
+      name: 'Z',
+      color: '#000000',
+      type: LabelType.label,
+    );
+    await labelRepository.create(
+      name: 'M',
+      color: '#000000',
+      type: LabelType.label,
+    );
     final labelMId = (await labelRepository.getAll())
         .singleWhere((l) => l.name == 'M')
         .id;

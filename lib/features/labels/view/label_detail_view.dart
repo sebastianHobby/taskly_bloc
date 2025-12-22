@@ -4,6 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/features/labels/bloc/label_detail_bloc.dart';
 import 'package:taskly_bloc/features/labels/widgets/label_form.dart';
@@ -14,11 +15,15 @@ class LabelDetailSheetPage extends StatelessWidget {
     required this.onSuccess,
     required this.onError,
     this.labelId,
+    this.initialType,
+    this.lockType = false,
     super.key,
   });
 
   final LabelRepositoryContract labelRepository;
   final String? labelId;
+  final LabelType? initialType;
+  final bool lockType;
   final void Function(String message) onSuccess;
   final void Function(String message) onError;
 
@@ -34,6 +39,8 @@ class LabelDetailSheetPage extends StatelessWidget {
         child: LabelDetailSheetView(
           onSuccess: onSuccess,
           onError: onError,
+          initialType: initialType,
+          lockType: lockType,
         ),
       ),
     );
@@ -44,11 +51,15 @@ class LabelDetailSheetView extends StatefulWidget {
   const LabelDetailSheetView({
     required this.onSuccess,
     required this.onError,
+    this.initialType,
+    this.lockType = false,
     super.key,
   });
 
   final void Function(String message) onSuccess;
   final void Function(String message) onError;
+  final LabelType? initialType;
+  final bool lockType;
 
   @override
   State<LabelDetailSheetView> createState() => _LabelDetailSheetViewState();
@@ -64,7 +75,7 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
     _formKey = GlobalKey<FormBuilderState>();
   }
 
-  void _onSubmit(String? id) {
+  void _onSubmit(String? id, {LabelType? existingType}) {
     final formState = _formKey.currentState;
     if (formState == null) return;
     if (!formState.saveAndValidate()) return;
@@ -72,16 +83,37 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
     final formValues = formState.value;
     final name = formValues['name'] as String;
     final color = formValues['colour'] as String;
+    final type = widget.lockType
+        ? (widget.initialType ?? existingType ?? LabelType.label)
+        : (formValues['type'] as LabelType);
 
     if (id == null) {
       context.read<LabelDetailBloc>().add(
-        LabelDetailEvent.create(name: name, color: color),
+        LabelDetailEvent.create(name: name, color: color, type: type),
       );
     } else {
       context.read<LabelDetailBloc>().add(
-        LabelDetailEvent.update(id: id, name: name, color: color),
+        LabelDetailEvent.update(id: id, name: name, color: color, type: type),
       );
     }
+  }
+
+  String _successMessageFor(EntityOperation operation, AppLocalizations l10n) {
+    final isValueFlow =
+        widget.lockType && widget.initialType == LabelType.value;
+    if (!isValueFlow) {
+      return switch (operation) {
+        EntityOperation.create => l10n.labelCreatedSuccessfully,
+        EntityOperation.update => l10n.labelUpdatedSuccessfully,
+        EntityOperation.delete => l10n.labelDeletedSuccessfully,
+      };
+    }
+
+    return switch (operation) {
+      EntityOperation.create => l10n.valueCreatedSuccessfully,
+      EntityOperation.update => l10n.valueUpdatedSuccessfully,
+      EntityOperation.delete => l10n.valueDeletedSuccessfully,
+    };
   }
 
   @override
@@ -94,12 +126,7 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
       listener: (context, state) {
         switch (state) {
           case LabelDetailOperationSuccess(:final operation):
-            final message = switch (operation) {
-              EntityOperation.create => context.l10n.labelCreatedSuccessfully,
-              EntityOperation.update => context.l10n.labelUpdatedSuccessfully,
-              EntityOperation.delete => context.l10n.labelDeletedSuccessfully,
-            };
-            widget.onSuccess(message);
+            widget.onSuccess(_successMessageFor(operation, context.l10n));
           case LabelDetailOperationFailure(:final errorDetails):
             widget.onError(
               friendlyErrorMessageForUi(errorDetails.error, context.l10n),
@@ -119,6 +146,8 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
             _ensureFreshFormKeyFor(null);
             return LabelForm(
               initialData: null,
+              initialType: widget.initialType,
+              lockType: widget.lockType,
               formKey: _formKey,
               onSubmit: () => _onSubmit(null),
               submitTooltip: context.l10n.actionCreate,
@@ -129,8 +158,10 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
             _ensureFreshFormKeyFor(label.id);
             return LabelForm(
               initialData: label,
+              initialType: widget.initialType,
+              lockType: widget.lockType,
               formKey: _formKey,
-              onSubmit: () => _onSubmit(label.id),
+              onSubmit: () => _onSubmit(label.id, existingType: label.type),
               submitTooltip: context.l10n.actionUpdate,
             );
           default:

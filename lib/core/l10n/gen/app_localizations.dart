@@ -121,6 +121,12 @@ abstract class AppLocalizations {
   /// **'Labels'**
   String get labelsTitle;
 
+  /// Title/label for the Values section
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get valuesTitle;
+
   /// Title/label for the Browse navigation destination
   ///
   /// In en, this message translates to:
@@ -150,6 +156,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create label'**
   String get createLabelTooltip;
+
+  /// Option text for creating a label
+  ///
+  /// In en, this message translates to:
+  /// **'Create label'**
+  String get createLabelOption;
+
+  /// Option text for creating a value
+  ///
+  /// In en, this message translates to:
+  /// **'Create value'**
+  String get createValueOption;
+
+  /// Heading shown above the list of labels
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get labelTypeLabelHeading;
+
+  /// Heading shown above the list of values
+  ///
+  /// In en, this message translates to:
+  /// **'Values'**
+  String get labelTypeValueHeading;
 
   /// Empty state shown when there are no labels
   ///
@@ -211,6 +241,132 @@ abstract class AppLocalizations {
   /// **'Sort by deadline'**
   String get taskSortByDeadline;
 
+  /// Title for the group and sort bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Group & sort'**
+  String get groupSortMenuTitle;
+
+  /// Label shown above grouping options
+  ///
+  /// In en, this message translates to:
+  /// **'Grouping'**
+  String get groupSortGroupingLabel;
+
+  /// Label shown above sorting controls
+  ///
+  /// In en, this message translates to:
+  /// **'Sorting'**
+  String get groupSortSortingLabel;
+
+  /// Grouping option to disable grouping
+  ///
+  /// In en, this message translates to:
+  /// **'No grouping'**
+  String get groupOptionNone;
+
+  /// Grouping option to organize items by associated labels
+  ///
+  /// In en, this message translates to:
+  /// **'Group by labels'**
+  String get groupOptionLabels;
+
+  /// Grouping option to organize items by associated values
+  ///
+  /// In en, this message translates to:
+  /// **'Group by values'**
+  String get groupOptionValues;
+
+  /// Label for the name sort field
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get sortFieldNameLabel;
+
+  /// Label for the start date sort field
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get sortFieldStartDateLabel;
+
+  /// Label for the deadline date sort field
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline date'**
+  String get sortFieldDeadlineDateLabel;
+
+  /// Option label for clearing a sort slot
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get sortFieldNoneLabel;
+
+  /// Label for the primary sort dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Primary sort'**
+  String get sortSlotPrimaryLabel;
+
+  /// Label for the secondary sort dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Secondary sort'**
+  String get sortSlotSecondaryLabel;
+
+  /// Label for the tertiary sort dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Tertiary sort'**
+  String get sortSlotTertiaryLabel;
+
+  /// Title for the sort bottom sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortMenuTitle;
+
+  /// Label shown above sorting controls
+  ///
+  /// In en, this message translates to:
+  /// **'Sorting'**
+  String get sortSortingLabel;
+
+  /// Label for the sort direction dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Direction'**
+  String get sortDirectionLabel;
+
+  /// Label for ascending sort direction
+  ///
+  /// In en, this message translates to:
+  /// **'Ascending'**
+  String get sortDirectionAscending;
+
+  /// Label for descending sort direction
+  ///
+  /// In en, this message translates to:
+  /// **'Descending'**
+  String get sortDirectionDescending;
+
+  /// Group header shown when an item has no labels
+  ///
+  /// In en, this message translates to:
+  /// **'No labels'**
+  String get groupingMissingLabels;
+
+  /// Group header shown when an item has no values
+  ///
+  /// In en, this message translates to:
+  /// **'No values'**
+  String get groupingMissingValues;
+
+  /// Button text for applying group & sort changes
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get groupSortApplyButton;
+
   /// Title for the Inbox section
   ///
   /// In en, this message translates to:
@@ -228,6 +384,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upcoming'**
   String get upcomingTitle;
+
+  /// Title for the Next actions section
+  ///
+  /// In en, this message translates to:
+  /// **'Next actions'**
+  String get nextActionsTitle;
 
   /// Snackbar message shown after creating a task
   ///
@@ -396,6 +558,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat rule is too long'**
   String get projectFormRepeatRuleTooLong;
+
+  /// Title shown when the inbox has no tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Your inbox is empty'**
+  String get emptyInboxTitle;
+
+  /// Description shown when the inbox has no tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks without a project will appear here'**
+  String get emptyInboxDescription;
+
+  /// Title shown when there are no tasks or projects due today
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing due today'**
+  String get emptyTodayTitle;
+
+  /// Description shown when there are no tasks or projects due today
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks and projects due today will appear here'**
+  String get emptyTodayDescription;
+
+  /// Title shown when there are no upcoming tasks or projects
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing upcoming'**
+  String get emptyUpcomingTitle;
+
+  /// Description shown when there are no upcoming tasks or projects
+  ///
+  /// In en, this message translates to:
+  /// **'Future tasks and projects will appear here'**
+  String get emptyUpcomingDescription;
+
+  /// Title shown when there are no projects
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet'**
+  String get emptyProjectsTitle;
+
+  /// Description shown when there are no projects
+  ///
+  /// In en, this message translates to:
+  /// **'Create a project to organize your tasks'**
+  String get emptyProjectsDescription;
+
+  /// Title shown when there are no tasks
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks yet'**
+  String get emptyTasksTitle;
+
+  /// Description shown when there are no tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task to get started'**
+  String get emptyTasksDescription;
+
+  /// Action button text for adding a task
+  ///
+  /// In en, this message translates to:
+  /// **'Add task'**
+  String get addTaskAction;
+
+  /// Action button text for adding a project
+  ///
+  /// In en, this message translates to:
+  /// **'Add project'**
+  String get addProjectAction;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

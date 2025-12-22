@@ -44,6 +44,13 @@ class ProjectForm extends StatelessWidget {
       'repeatIcalRrule': initialData?.repeatIcalRrule ?? '',
     };
 
+    final labelTypeLabels = availableLabels
+        .where((l) => l.type == LabelType.label)
+        .toList();
+    final labelTypeValues = availableLabels
+        .where((l) => l.type == LabelType.value)
+        .toList();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
 
@@ -158,32 +165,81 @@ class ProjectForm extends StatelessWidget {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: FormBuilderFilterChips<String>(
+                    child: FormBuilderField<List<String>>(
                       name: 'labelIds',
                       initialValue: initialValues['labelIds'] as List<String>?,
-                      decoration: InputDecoration(
-                        border: InputBorder.none,
-                        labelText: l10n.projectFormLabelsLabel,
-                      ),
-                      options: availableLabels
-                          .map(
-                            (l) => FormBuilderChipOption(
-                              value: l.id,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                      builder: (field) {
+                        final selected = List<String>.from(
+                          field.value ?? const <String>[],
+                        );
+
+                        void toggle(String id, bool isSelected) {
+                          final updated = List<String>.from(selected);
+                          if (isSelected) {
+                            if (!updated.contains(id)) {
+                              updated.add(id);
+                            }
+                          } else {
+                            updated.remove(id);
+                          }
+                          field.didChange(updated);
+                        }
+
+                        Widget buildSection(
+                          String heading,
+                          List<Label> items,
+                        ) {
+                          if (items.isEmpty) return const SizedBox.shrink();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                heading,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
-                                  Icon(
-                                    Icons.label_outline,
-                                    size: 16,
-                                    color: _colorFromHexOrFallback(l.color),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(l.name),
+                                  for (final label in items)
+                                    FilterChip(
+                                      selected: selected.contains(label.id),
+                                      avatar: Icon(
+                                        Icons.label_outline,
+                                        size: 16,
+                                        color: _colorFromHexOrFallback(
+                                          label.color,
+                                        ),
+                                      ),
+                                      label: Text(label.name),
+                                      onSelected: (isSelected) =>
+                                          toggle(label.id, isSelected),
+                                    ),
                                 ],
                               ),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildSection(
+                              l10n.projectFormValuesLabel,
+                              labelTypeValues,
                             ),
-                          )
-                          .toList(growable: false),
+                            const SizedBox(height: 16),
+                            buildSection(
+                              l10n.projectFormLabelsLabel,
+                              labelTypeLabels,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   Padding(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 
@@ -12,6 +13,7 @@ class TaskForm extends StatelessWidget {
     this.initialData,
     this.availableProjects = const [],
     this.availableLabels = const [],
+    this.defaultProjectId,
     super.key,
   });
 
@@ -21,6 +23,7 @@ class TaskForm extends StatelessWidget {
   final String submitTooltip;
   final List<Project> availableProjects;
   final List<Label> availableLabels;
+  final String? defaultProjectId;
 
   Color _colorFromHexOrFallback(String? hex) {
     final normalized = (hex ?? '').replaceAll('#', '');
@@ -32,18 +35,26 @@ class TaskForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final Map<String, dynamic> initialValues = {
       'name': initialData?.name ?? '',
       'description': initialData?.description ?? '',
       'completed': initialData?.completed ?? false,
       'startDate': initialData?.startDate,
       'deadlineDate': initialData?.deadlineDate,
-      'projectId': initialData?.projectId ?? '',
+      'projectId': initialData?.projectId ?? defaultProjectId ?? '',
       'labelIds': (initialData?.labels ?? <Label>[])
           .map((Label e) => e.id)
           .toList(),
       'repeatIcalRrule': initialData?.repeatIcalRrule ?? '',
     };
+
+    final labelTypeLabels = availableLabels
+        .where((l) => l.type == LabelType.label)
+        .toList();
+    final labelTypeValues = availableLabels
+        .where((l) => l.type == LabelType.value)
+        .toList();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -163,7 +174,7 @@ class TaskForm extends StatelessWidget {
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.work_outline),
                       ),
-                      initialValue: initialData?.projectId,
+                      initialValue: initialValues['projectId'] as String?,
                       items: [
                         const DropdownMenuItem(
                           value: '',
@@ -182,32 +193,81 @@ class TaskForm extends StatelessWidget {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: FormBuilderFilterChips<String>(
+                    child: FormBuilderField<List<String>>(
                       name: 'labelIds',
                       initialValue: initialValues['labelIds'] as List<String>?,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
-                        labelText: 'Labels',
-                      ),
-                      options: availableLabels
-                          .map(
-                            (l) => FormBuilderChipOption(
-                              value: l.id,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
+                      builder: (field) {
+                        final selected = List<String>.from(
+                          field.value ?? const <String>[],
+                        );
+
+                        void toggle(String id, bool isSelected) {
+                          final updated = List<String>.from(selected);
+                          if (isSelected) {
+                            if (!updated.contains(id)) {
+                              updated.add(id);
+                            }
+                          } else {
+                            updated.remove(id);
+                          }
+                          field.didChange(updated);
+                        }
+
+                        Widget buildSection(
+                          String heading,
+                          List<Label> items,
+                        ) {
+                          if (items.isEmpty) return const SizedBox.shrink();
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                heading,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
-                                  Icon(
-                                    Icons.label_outline,
-                                    size: 16,
-                                    color: _colorFromHexOrFallback(l.color),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(l.name),
+                                  for (final label in items)
+                                    FilterChip(
+                                      selected: selected.contains(label.id),
+                                      avatar: Icon(
+                                        Icons.label_outline,
+                                        size: 16,
+                                        color: _colorFromHexOrFallback(
+                                          label.color,
+                                        ),
+                                      ),
+                                      label: Text(label.name),
+                                      onSelected: (isSelected) =>
+                                          toggle(label.id, isSelected),
+                                    ),
                                 ],
                               ),
+                            ],
+                          );
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildSection(
+                              l10n.labelTypeValueHeading,
+                              labelTypeValues,
                             ),
-                          )
-                          .toList(),
+                            const SizedBox(height: 16),
+                            buildSection(
+                              l10n.labelTypeLabelHeading,
+                              labelTypeLabels,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                   Padding(

@@ -1,3 +1,8 @@
+enum LabelType {
+  label,
+  value,
+}
+
 class Label {
   Label({
     required this.id,
@@ -5,6 +10,7 @@ class Label {
     required this.updatedAt,
     required this.name,
     this.color,
+    this.type = LabelType.label,
   });
 
   final String id;
@@ -12,4 +18,5 @@ class Label {
   final DateTime updatedAt;
   final String name;
   final String? color;
+  final LabelType type;
 }

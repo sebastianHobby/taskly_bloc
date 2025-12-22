@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
@@ -7,17 +7,47 @@ import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 
 class LabelRepository implements LabelRepositoryContract {
   LabelRepository({required this.driftDb});
-  final AppDatabase driftDb;
+  final drift.AppDatabase driftDb;
 
-  Stream<List<LabelTableData>> get _labelStream => (driftDb.select(
-    driftDb.labelTable,
-  )..orderBy([(l) => OrderingTerm(expression: l.name)])).watch();
+  Stream<List<drift.LabelTableData>> get _labelStream =>
+      (driftDb.select(
+            driftDb.labelTable,
+          )..orderBy([
+            (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+            (l) => OrderingTerm(expression: l.name),
+          ]))
+          .watch();
 
-  Future<List<LabelTableData>> get _labelList => (driftDb.select(
-    driftDb.labelTable,
-  )..orderBy([(l) => OrderingTerm(expression: l.name)])).get();
+  Stream<List<drift.LabelTableData>> _labelStreamByType(LabelType type) {
+    return (driftDb.select(driftDb.labelTable)
+          ..where((l) => l.type.equals(type.name))
+          ..orderBy([
+            (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+            (l) => OrderingTerm(expression: l.name),
+          ]))
+        .watch();
+  }
 
-  Future<LabelTableData?> _getLabelById(String id) {
+  Future<List<drift.LabelTableData>> get _labelList =>
+      (driftDb.select(
+            driftDb.labelTable,
+          )..orderBy([
+            (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+            (l) => OrderingTerm(expression: l.name),
+          ]))
+          .get();
+
+  Future<List<drift.LabelTableData>> _labelListByType(LabelType type) {
+    return (driftDb.select(driftDb.labelTable)
+          ..where((l) => l.type.equals(type.name))
+          ..orderBy([
+            (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+            (l) => OrderingTerm(expression: l.name),
+          ]))
+        .get();
+  }
+
+  Future<drift.LabelTableData?> _getLabelById(String id) {
     return (driftDb.select(
       driftDb.labelTable,
     )..where((l) => l.id.equals(id))).getSingleOrNull();
@@ -33,6 +63,16 @@ class LabelRepository implements LabelRepositoryContract {
       (await _labelList).map(labelFromTable).toList();
 
   @override
+  Stream<List<Label>> watchByType(LabelType type, {bool withRelated = false}) =>
+      _labelStreamByType(type).map((rows) => rows.map(labelFromTable).toList());
+
+  @override
+  Future<List<Label>> getAllByType(
+    LabelType type, {
+    bool withRelated = false,
+  }) async => (await _labelListByType(type)).map(labelFromTable).toList();
+
+  @override
   Stream<Label?> watch(String id, {bool withRelated = false}) =>
       (driftDb.select(driftDb.labelTable)..where((l) => l.id.equals(id)))
           .watch()
@@ -44,25 +84,35 @@ class LabelRepository implements LabelRepositoryContract {
     return data == null ? null : labelFromTable(data);
   }
 
-  Future<void> _updateLabel(LabelTableCompanion updateCompanion) async {
+  Future<void> _updateLabel(drift.LabelTableCompanion updateCompanion) async {
     await driftDb.update(driftDb.labelTable).replace(updateCompanion);
   }
 
-  Future<int> _deleteLabel(LabelTableCompanion deleteCompanion) async {
+  Future<int> _deleteLabel(drift.LabelTableCompanion deleteCompanion) async {
     return driftDb.delete(driftDb.labelTable).delete(deleteCompanion);
   }
 
-  Future<int> _createLabel(LabelTableCompanion createCompanion) {
+  Future<int> _createLabel(drift.LabelTableCompanion createCompanion) {
     return driftDb.into(driftDb.labelTable).insert(createCompanion);
   }
 
   @override
-  Future<void> create({required String name, required String color}) async {
+  Future<void> create({
+    required String name,
+    required String color,
+    required LabelType type,
+  }) async {
     final now = DateTime.now();
+    final driftLabel = switch (type) {
+      LabelType.label => drift.LabelType.label,
+      LabelType.value => drift.LabelType.value,
+    };
+
     await _createLabel(
-      LabelTableCompanion(
+      drift.LabelTableCompanion(
         name: Value(name),
         color: Value(color),
+        type: Value(driftLabel),
         createdAt: Value(now),
         updatedAt: Value(now),
       ),
@@ -74,6 +124,7 @@ class LabelRepository implements LabelRepositoryContract {
     required String id,
     required String name,
     required String color,
+    required LabelType type,
   }) async {
     final existing = await _getLabelById(id);
     if (existing == null) {
@@ -82,10 +133,11 @@ class LabelRepository implements LabelRepositoryContract {
 
     final now = DateTime.now();
     await _updateLabel(
-      LabelTableCompanion(
+      drift.LabelTableCompanion(
         id: Value(id),
         name: Value(name),
         color: Value(color),
+        type: Value(drift.LabelType.values.byName(type.name)),
         updatedAt: Value(now),
       ),
     );
@@ -93,6 +145,6 @@ class LabelRepository implements LabelRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
-    await _deleteLabel(LabelTableCompanion(id: Value(id)));
+    await _deleteLabel(drift.LabelTableCompanion(id: Value(id)));
   }
 }
