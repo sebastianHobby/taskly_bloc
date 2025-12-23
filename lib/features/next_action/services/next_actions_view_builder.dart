@@ -72,8 +72,14 @@ class NextActionsViewBuilder {
 
     final priorityBuckets = <int, Map<String, List<Task>>>{};
     final projectsById = <String, Project>{};
+    final projectTaskCounts = <String, int>{};
 
-    bucketed.forEach((priority, bucketTasks) {
+    // Sort priorities to process higher priorities first
+    final sortedPriorities = bucketed.keys.toList()..sort();
+
+    // Process each priority bucket in order
+    for (final priority in sortedPriorities) {
+      final bucketTasks = bucketed[priority]!;
       final criterion =
           bucketRuleByPriority[priority]?.sortCriterion ?? fallbackCriterion;
       final grouped = _groupTasksByProject(
@@ -87,16 +93,33 @@ class NextActionsViewBuilder {
       ];
 
       for (final entry in grouped.values) {
+        final projectId = entry.project.id;
+        final currentCount = projectTaskCounts[projectId] ?? 0;
+
+        // Calculate how many more tasks this project can take
+        final remainingSlots = tasksPerProject - currentCount;
+
+        if (remainingSlots <= 0) {
+          // Project has already reached its limit
+          continue;
+        }
+
         final tasksForProject = [...entry.tasks]
           ..sort((a, b) => _compareWithCriteria(a, b, ordering));
-        final limited = tasksForProject.take(tasksPerProject);
-        final bucket = priorityBuckets.putIfAbsent(priority, () => {});
-        bucket[entry.project.id] = limited.toList(growable: false);
-        projectsById[entry.project.id] = entry.project;
-      }
-    });
 
-    final sortedPriorities = priorityBuckets.keys.toList()..sort();
+        // Take only as many tasks as we have slots for
+        final tasksToInclude = tasksForProject
+            .take(remainingSlots)
+            .toList(growable: false);
+
+        if (tasksToInclude.isNotEmpty) {
+          final bucket = priorityBuckets.putIfAbsent(priority, () => {});
+          bucket[projectId] = tasksToInclude;
+          projectsById[projectId] = entry.project;
+          projectTaskCounts[projectId] = currentCount + tasksToInclude.length;
+        }
+      }
+    }
 
     return NextActionsSelection(
       priorityBuckets: priorityBuckets,

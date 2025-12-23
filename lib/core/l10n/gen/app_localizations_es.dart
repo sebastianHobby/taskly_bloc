@@ -66,6 +66,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get noLabelsFound => 'No se encontraron etiquetas.';
 
   @override
+  String get noValuesFound => 'No se encontraron valores.';
+
+  @override
   String get genericErrorFallback => 'Algo salió mal. Por favor, inténtalo de nuevo.';
 
   @override

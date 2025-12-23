@@ -205,6 +205,12 @@ abstract class AppLocalizations {
   /// **'No labels found.'**
   String get noLabelsFound;
 
+  /// Empty state shown when there are no values
+  ///
+  /// In en, this message translates to:
+  /// **'No values found.'**
+  String get noValuesFound;
+
   /// Fallback error shown for unexpected errors
   ///
   /// In en, this message translates to:

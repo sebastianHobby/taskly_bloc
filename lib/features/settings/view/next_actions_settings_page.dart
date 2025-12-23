@@ -24,6 +24,11 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
   late bool _includeInbox;
   late List<TaskPriorityBucketRule> _buckets;
 
+  // Track initial state for change detection
+  late String _initialTasksPerProject;
+  late bool _initialIncludeInbox;
+  late List<TaskPriorityBucketRule> _initialBuckets;
+
   @override
   void initState() {
     super.initState();
@@ -35,6 +40,11 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
     _buckets = _settings.bucketRules.isEmpty
         ? _createDefaultBuckets()
         : List.from(_settings.bucketRules);
+
+    // Store initial state
+    _initialTasksPerProject = _tasksPerProjectController.text;
+    _initialIncludeInbox = _includeInbox;
+    _initialBuckets = List.from(_buckets);
   }
 
   @override
@@ -44,25 +54,75 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
   }
 
   List<TaskPriorityBucketRule> _createDefaultBuckets() {
-    return [
-      TaskPriorityBucketRule(
-        priority: 1,
-        name: 'Deadline Soon',
-        ruleSets: [
-          TaskRuleSet(
-            operator: RuleSetOperator.and,
-            rules: [
-              const DateRule(
-                field: DateRuleField.deadlineDate,
-                operator: DateRuleOperator.relative,
-                relativeComparison: RelativeComparison.before,
-                relativeDays: 7,
-              ),
-            ],
+    return NextActionsSettings.defaultBucketRules;
+  }
+
+  void _restoreDefaults() {
+    setState(() {
+      _tasksPerProjectController.text = '5';
+      _includeInbox = false;
+      _buckets = _createDefaultBuckets();
+    });
+  }
+
+  bool _hasUnsavedChanges() {
+    if (_tasksPerProjectController.text != _initialTasksPerProject) {
+      return true;
+    }
+    if (_includeInbox != _initialIncludeInbox) {
+      return true;
+    }
+    if (_buckets.length != _initialBuckets.length) {
+      return true;
+    }
+    // Simple check - could be enhanced with deep equality if needed
+    for (var i = 0; i < _buckets.length; i++) {
+      if (_buckets[i] != _initialBuckets[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  Future<bool> _confirmDiscard() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Unsaved Changes'),
+        content: const Text(
+          'You have unsaved changes. Do you want to save them before leaving?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              Navigator.of(context).pop(); // Discard and close
+            },
+            child: const Text('Discard'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop(true);
+              _save(); // Save and close
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
-    ];
+    );
+    return result ?? false;
+  }
+
+  Future<void> _handleBack() async {
+    if (_hasUnsavedChanges()) {
+      await _confirmDiscard();
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   void _save() {
@@ -94,77 +154,85 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Next Actions Settings'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-      body: FutureBuilder<({List<Label> labels, List<Project> projects})>(
-        future: _loadData(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final data = snapshot.data;
-          final labels = data?.labels ?? <Label>[];
-          final projects = data?.projects ?? <Project>[];
-
-          return Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Basic settings
-                  _BasicSettings(
-                    tasksPerProjectController: _tasksPerProjectController,
-                    includeInbox: _includeInbox,
-                    onIncludeInboxChanged: (value) {
-                      setState(() => _includeInbox = value);
-                    },
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Priority buckets
-                  PriorityBucketBuilder(
-                    buckets: _buckets,
-                    onChanged: (buckets) {
-                      setState(() => _buckets = buckets);
-                    },
-                    availableLabels: labels,
-                    availableProjects: projects,
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Action buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cancel'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: _save,
-                        child: const Text('Save Settings'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _handleBack();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Next Actions Settings'),
+          actions: [
+            TextButton(
+              onPressed: _save,
+              child: const Text('Save'),
             ),
-          );
-        },
+          ],
+        ),
+        body: FutureBuilder<({List<Label> labels, List<Project> projects})>(
+          future: _loadData(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final data = snapshot.data;
+            final labels = data?.labels ?? <Label>[];
+            final projects = data?.projects ?? <Project>[];
+
+            return Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Basic settings
+                    _BasicSettings(
+                      tasksPerProjectController: _tasksPerProjectController,
+                      includeInbox: _includeInbox,
+                      onIncludeInboxChanged: (value) {
+                        setState(() => _includeInbox = value);
+                      },
+                      onRestoreDefaults: _restoreDefaults,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Priority buckets
+                    PriorityBucketBuilder(
+                      buckets: _buckets,
+                      onChanged: (buckets) {
+                        setState(() => _buckets = buckets);
+                      },
+                      availableLabels: labels,
+                      availableProjects: projects,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Action buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: _handleBack,
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 12),
+                        ElevatedButton(
+                          onPressed: _save,
+                          child: const Text('Save Settings'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -190,11 +258,13 @@ class _BasicSettings extends StatelessWidget {
     required this.tasksPerProjectController,
     required this.includeInbox,
     required this.onIncludeInboxChanged,
+    required this.onRestoreDefaults,
   });
 
   final TextEditingController tasksPerProjectController;
   final bool includeInbox;
   final ValueChanged<bool> onIncludeInboxChanged;
+  final VoidCallback onRestoreDefaults;
 
   @override
   Widget build(BuildContext context) {
@@ -204,9 +274,19 @@ class _BasicSettings extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'General Settings',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              children: [
+                Text(
+                  'General Settings',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                OutlinedButton.icon(
+                  onPressed: onRestoreDefaults,
+                  icon: const Icon(Icons.restore, size: 18),
+                  label: const Text('Restore Defaults'),
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),

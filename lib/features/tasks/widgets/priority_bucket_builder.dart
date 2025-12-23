@@ -26,10 +26,10 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
   void _addBucket() {
     final newBucket = TaskPriorityBucketRule(
       priority: widget.buckets.length + 1,
-      name: 'New Bucket',
+      name: 'New Priority Group',
       ruleSets: [
         TaskRuleSet(
-          operator: RuleSetOperator.and,
+          operator: RuleSetOperator.or,
           rules: [
             const DateRule(
               field: DateRuleField.deadlineDate,
@@ -76,14 +76,14 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
             Row(
               children: [
                 Text(
-                  'Priority Buckets',
+                  'Priority Groups',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
                 IconButton(
                   onPressed: _addBucket,
                   icon: const Icon(Icons.add),
-                  tooltip: 'Add bucket',
+                  tooltip: 'Add priority group',
                 ),
               ],
             ),
@@ -91,7 +91,9 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
             const SizedBox(height: 16),
 
             if (widget.buckets.isEmpty)
-              const Text('No buckets configured. Add a bucket to get started.')
+              const Text(
+                'No priority groups configured. Add a priority group to get started.',
+              )
             else
               ...widget.buckets.asMap().entries.map(
                 (entry) => PriorityBucketEditor(
@@ -148,34 +150,26 @@ class PriorityBucketEditor extends StatefulWidget {
 
 class _PriorityBucketEditorState extends State<PriorityBucketEditor> {
   late TextEditingController _nameController;
-  late TextEditingController _limitController;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.bucket.name);
-    _limitController = TextEditingController(
-      text: widget.bucket.limit?.toString() ?? '',
-    );
   }
 
   @override
   void dispose() {
     _nameController.dispose();
-    _limitController.dispose();
     super.dispose();
   }
 
   void _updateBucket() {
     final name = _nameController.text.trim().isEmpty
-        ? 'Bucket ${widget.index + 1}'
+        ? 'Priority ${widget.index + 1}'
         : _nameController.text.trim();
-    final limitText = _limitController.text.trim();
-    final limit = limitText.isEmpty ? null : int.tryParse(limitText);
 
     final updatedBucket = widget.bucket.copyWith(
       name: name,
-      limit: limit,
     );
 
     widget.onChanged(updatedBucket);
@@ -194,58 +188,59 @@ class _PriorityBucketEditorState extends State<PriorityBucketEditor> {
             Row(
               children: [
                 Text(
-                  'Bucket ${widget.index + 1}',
-                  style: Theme.of(context).textTheme.titleSmall,
+                  'Priority ${widget.index + 1}',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const Spacer(),
-                if (widget.canMoveUp)
-                  IconButton(
-                    onPressed: widget.onMoveUp,
-                    icon: const Icon(Icons.arrow_upward),
-                    tooltip: 'Move up',
-                  ),
-                if (widget.canMoveDown)
-                  IconButton(
-                    onPressed: widget.onMoveDown,
-                    icon: const Icon(Icons.arrow_downward),
-                    tooltip: 'Move down',
-                  ),
                 IconButton(
                   onPressed: widget.onRemove,
                   icon: const Icon(Icons.delete_outline),
-                  tooltip: 'Remove bucket',
+                  tooltip: 'Remove priority group',
                 ),
               ],
             ),
 
             const SizedBox(height: 16),
 
-            // Name and limit fields
+            // Description field with movement controls
             Row(
               children: [
                 Expanded(
-                  flex: 3,
                   child: TextFormField(
                     controller: _nameController,
                     decoration: const InputDecoration(
-                      labelText: 'Bucket Name',
+                      labelText: 'Group description',
                       border: OutlineInputBorder(),
                     ),
                     onChanged: (_) => _updateBucket(),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _limitController,
-                    decoration: const InputDecoration(
-                      labelText: 'Task Limit',
-                      hintText: 'Optional',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => _updateBucket(),
-                  ),
+                const SizedBox(width: 8),
+                Column(
+                  children: [
+                    if (widget.canMoveUp)
+                      ElevatedButton(
+                        onPressed: widget.onMoveUp,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.arrow_upward),
+                      ),
+                    if (widget.canMoveUp && widget.canMoveDown)
+                      const SizedBox(height: 8),
+                    if (widget.canMoveDown)
+                      ElevatedButton(
+                        onPressed: widget.onMoveDown,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.all(12),
+                          minimumSize: const Size(48, 48),
+                        ),
+                        child: const Icon(Icons.arrow_downward),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -297,7 +292,7 @@ class _PriorityBucketEditorState extends State<PriorityBucketEditor> {
               child: TextButton.icon(
                 onPressed: () {
                   final newRuleSet = TaskRuleSet(
-                    operator: RuleSetOperator.and,
+                    operator: RuleSetOperator.or,
                     rules: [
                       const DateRule(
                         field: DateRuleField.deadlineDate,

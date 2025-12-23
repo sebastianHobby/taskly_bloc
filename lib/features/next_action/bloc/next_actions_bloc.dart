@@ -278,10 +278,9 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
               .trim();
           final label = priority == 9999
               ? 'Unmatched priority'
-              : [
-                  'P$priority',
-                  if (ruleName != null && ruleName.isNotEmpty) ruleName,
-                ].join(' ');
+              : ruleName != null && ruleName.isNotEmpty
+              ? 'Priority $priority - $ruleName'
+              : 'Priority $priority';
 
           return NextActionPriorityGroup(
             priority: priority,

@@ -129,7 +129,7 @@ class NextActionsSettings {
   static List<TaskPriorityBucketRule> get defaultBucketRules => [
     TaskPriorityBucketRule(
       priority: 1,
-      name: 'Deadline and no start date',
+      name: 'Upcoming deadline with no start date',
       ruleSets: [
         TaskRuleSet(
           operator: RuleSetOperator.and,
@@ -137,8 +137,14 @@ class NextActionsSettings {
             DateRule(
               field: DateRuleField.deadlineDate,
               operator: DateRuleOperator.relative,
-              relativeComparison: RelativeComparison.before,
-              relativeDays: 365,
+              relativeComparison: RelativeComparison.onOrAfter,
+              relativeDays: 1,
+            ),
+            DateRule(
+              field: DateRuleField.deadlineDate,
+              operator: DateRuleOperator.relative,
+              relativeComparison: RelativeComparison.onOrBefore,
+              relativeDays: 90,
             ),
             DateRule(
               field: DateRuleField.startDate,
@@ -148,6 +154,52 @@ class NextActionsSettings {
         ),
       ],
       sortCriterion: const SortCriterion(field: SortField.deadlineDate),
+    ),
+    TaskPriorityBucketRule(
+      priority: 2,
+      name: 'Unscheduled and 30+ days old without updates',
+      ruleSets: [
+        TaskRuleSet(
+          operator: RuleSetOperator.and,
+          rules: const [
+            DateRule(
+              field: DateRuleField.updatedAt,
+              operator: DateRuleOperator.relative,
+              relativeComparison: RelativeComparison.before,
+              relativeDays: -30,
+            ),
+            DateRule(
+              field: DateRuleField.startDate,
+              operator: DateRuleOperator.isNull,
+            ),
+            DateRule(
+              field: DateRuleField.deadlineDate,
+              operator: DateRuleOperator.isNull,
+            ),
+          ],
+        ),
+      ],
+      sortCriterion: const SortCriterion(field: SortField.updatedDate),
+    ),
+    TaskPriorityBucketRule(
+      priority: 3,
+      name: 'Unscheduled tasks',
+      ruleSets: [
+        TaskRuleSet(
+          operator: RuleSetOperator.and,
+          rules: const [
+            DateRule(
+              field: DateRuleField.deadlineDate,
+              operator: DateRuleOperator.isNull,
+            ),
+            DateRule(
+              field: DateRuleField.startDate,
+              operator: DateRuleOperator.isNull,
+            ),
+          ],
+        ),
+      ],
+      sortCriterion: const SortCriterion(field: SortField.name),
     ),
   ];
 

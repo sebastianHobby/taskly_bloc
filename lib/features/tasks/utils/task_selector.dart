@@ -780,8 +780,6 @@ class DateRule extends TaskRule {
         }
         if (relativeDays == null) {
           errors.add('Relative operator requires days value');
-        } else if (relativeDays! < 0) {
-          errors.add('Relative days must be non-negative');
         }
       case DateRuleOperator.onOrAfter:
       case DateRuleOperator.onOrBefore:
@@ -861,6 +859,7 @@ class DateRule extends TaskRule {
     return switch (field) {
       DateRuleField.startDate => task.startDate,
       DateRuleField.deadlineDate => task.deadlineDate,
+      DateRuleField.updatedAt => task.updatedAt,
     };
   }
 
@@ -1264,7 +1263,7 @@ enum RuleType {
 
 enum RuleSetOperator { and, or }
 
-enum DateRuleField { startDate, deadlineDate }
+enum DateRuleField { startDate, deadlineDate, updatedAt }
 
 enum DateRuleOperator {
   onOrAfter,

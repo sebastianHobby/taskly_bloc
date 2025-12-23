@@ -198,11 +198,13 @@ extension DateRuleFieldDisplay on DateRuleField {
   String get displayName => switch (this) {
     DateRuleField.startDate => 'Start Date',
     DateRuleField.deadlineDate => 'Deadline',
+    DateRuleField.updatedAt => 'Updated Date',
   };
 
   IconData get icon => switch (this) {
     DateRuleField.startDate => Icons.play_arrow,
     DateRuleField.deadlineDate => Icons.flag,
+    DateRuleField.updatedAt => Icons.update,
   };
 }
 
@@ -219,21 +221,39 @@ extension RelativeComparisonDisplay on RelativeComparison {
   String descriptionWithDays(int days) {
     if (days == 0) {
       return switch (this) {
-        RelativeComparison.on => 'Exactly today',
-        RelativeComparison.before => 'Before today',
-        RelativeComparison.after => 'After today',
-        RelativeComparison.onOrBefore => 'Today or earlier',
-        RelativeComparison.onOrAfter => 'Today or later',
+        RelativeComparison.on => 'Date is exactly today',
+        RelativeComparison.before => 'Date is before today',
+        RelativeComparison.after => 'Date is after today',
+        RelativeComparison.onOrBefore => 'Date is on or before today',
+        RelativeComparison.onOrAfter => 'Date is on or after today',
       };
     }
     final dayWord = days == 1 ? 'day' : 'days';
-    return switch (this) {
-      RelativeComparison.on => 'Exactly $days $dayWord from today',
-      RelativeComparison.before => 'More than $days $dayWord ago',
-      RelativeComparison.after => 'More than $days $dayWord from now',
-      RelativeComparison.onOrBefore => 'Within $days $dayWord ago or today',
-      RelativeComparison.onOrAfter => 'Today or within $days $dayWord',
-    };
+    if (days > 0) {
+      return switch (this) {
+        RelativeComparison.on => 'Date is exactly today + $days $dayWord',
+        RelativeComparison.before => 'Date is before today + $days $dayWord',
+        RelativeComparison.after => 'Date is after today + $days $dayWord',
+        RelativeComparison.onOrBefore =>
+          'Date is on or before today + $days $dayWord',
+        RelativeComparison.onOrAfter =>
+          'Date is on or after today + $days $dayWord',
+      };
+    } else {
+      final absDays = -days;
+      final absDayWord = absDays == 1 ? 'day' : 'days';
+      return switch (this) {
+        RelativeComparison.on => 'Date is exactly today - $absDays $absDayWord',
+        RelativeComparison.before =>
+          'Date is before today - $absDays $absDayWord',
+        RelativeComparison.after =>
+          'Date is after today - $absDays $absDayWord',
+        RelativeComparison.onOrBefore =>
+          'Date is on or before today - $absDays $absDayWord',
+        RelativeComparison.onOrAfter =>
+          'Date is on or after today - $absDays $absDayWord',
+      };
+    }
   }
 }
 
@@ -738,18 +758,16 @@ class _DateRuleEditor extends StatelessWidget {
         Row(
           children: [
             IconButton.outlined(
-              onPressed: days > 0
-                  ? () {
-                      onChanged(
-                        DateRule(
-                          field: rule.field,
-                          operator: rule.operator,
-                          relativeComparison: comparison,
-                          relativeDays: days - 1,
-                        ),
-                      );
-                    }
-                  : null,
+              onPressed: () {
+                onChanged(
+                  DateRule(
+                    field: rule.field,
+                    operator: rule.operator,
+                    relativeComparison: comparison,
+                    relativeDays: days - 1,
+                  ),
+                );
+              },
               icon: const Icon(Icons.remove),
             ),
             const SizedBox(width: 16),
