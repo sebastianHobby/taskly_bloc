@@ -2,14 +2,10 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 
-class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late MockProjectRepository mockRepository;

@@ -1,10 +1,11 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/next_action/services/next_actions_view_builder.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 enum NextActionsStatus {
@@ -72,74 +73,66 @@ class NextActionsSubscriptionRequested extends NextActionsEvent {
   const NextActionsSubscriptionRequested();
 }
 
-class NextActionsSettingsUpdated extends NextActionsEvent {
-  const NextActionsSettingsUpdated(this.settings);
-
-  final NextActionsSettings settings;
-}
-
 class NextActionsTaskToggled extends NextActionsEvent {
   const NextActionsTaskToggled(this.task);
 
   final Task task;
 }
 
-class NextActionsTasksReceived extends NextActionsEvent {
-  const NextActionsTasksReceived(this.tasks);
+class _NextActionsDataReceived extends NextActionsEvent {
+  const _NextActionsDataReceived({
+    required this.tasks,
+    required this.settings,
+  });
 
   final List<Task> tasks;
+  final NextActionsSettings settings;
 }
 
-class NextActionsStreamError extends NextActionsEvent {
-  const NextActionsStreamError(this.error);
+class _NextActionsStreamError extends NextActionsEvent {
+  const _NextActionsStreamError(this.error);
 
   final Object error;
 }
 
+/// A BLoC that manages the Next Actions view.
+///
+/// This bloc combines task data from [TaskRepositoryContract] and settings
+/// from [NextActionsSettingsAdapter] into a unified stream. This design:
+///
+/// 1. **Avoids bloc-to-bloc dependencies** - Uses adapter instead of SettingsBloc
+/// 2. **Eliminates race conditions** - Single combined stream ensures
+///    atomic updates when either tasks or settings change
+/// 3. **Maintains consistency** - View always reflects the latest
+///    combination of tasks and settings
+/// 4. **Enforces boundaries** - Adapter restricts access to only NextActionsSettings
 class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
   NextActionsBloc({
     required TaskRepositoryContract taskRepository,
-    required SettingsBloc settingsBloc,
+    required NextActionsSettingsAdapter settingsAdapter,
     NextActionsViewBuilder? viewBuilder,
     TaskSelector? taskSelector,
   }) : _taskRepository = taskRepository,
+       _settingsAdapter = settingsAdapter,
        _viewBuilder = viewBuilder ?? NextActionsViewBuilder(),
        _taskSelector = taskSelector ?? TaskSelector(),
-       _settingsBloc = settingsBloc,
        super(const NextActionsState()) {
     on<NextActionsSubscriptionRequested>(_onSubscriptionRequested);
-    on<NextActionsSettingsUpdated>(_onSettingsUpdated);
-    on<NextActionsTasksReceived>(_onTasksReceived);
-    on<NextActionsStreamError>(_onStreamError);
+    on<_NextActionsDataReceived>(_onDataReceived);
+    on<_NextActionsStreamError>(_onStreamError);
     on<NextActionsTaskToggled>(_onTaskToggled);
-
-    _settings =
-        _settingsBloc.state.settings?.nextActions ??
-        const NextActionsSettings();
-    _settingsSubscription = _settingsBloc.stream
-        .map(
-          (state) => state.settings?.nextActions ?? const NextActionsSettings(),
-        )
-        .distinct()
-        .listen((settings) {
-          add(NextActionsSettingsUpdated(settings));
-        });
   }
 
   final TaskRepositoryContract _taskRepository;
+  final NextActionsSettingsAdapter _settingsAdapter;
   final NextActionsViewBuilder _viewBuilder;
   final TaskSelector _taskSelector;
-  final SettingsBloc _settingsBloc;
 
-  late NextActionsSettings _settings;
-  List<Task> _latestTasks = const [];
-  StreamSubscription<List<Task>>? _tasksSubscription;
-  StreamSubscription<NextActionsSettings>? _settingsSubscription;
+  StreamSubscription<_CombinedData>? _dataSubscription;
 
   @override
   Future<void> close() async {
-    await _tasksSubscription?.cancel();
-    await _settingsSubscription?.cancel();
+    await _dataSubscription?.cancel();
     return super.close();
   }
 
@@ -149,26 +142,35 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
   ) async {
     emit(state.copyWith(status: NextActionsStatus.loading));
 
-    await _tasksSubscription?.cancel();
-    _tasksSubscription = _taskRepository
-        .watchAll(withRelated: true)
-        .listen(
-          (tasks) => add(NextActionsTasksReceived(tasks)),
-          onError: (Object error, StackTrace _) =>
-              add(NextActionsStreamError(error)),
+    await _dataSubscription?.cancel();
+
+    // Combine tasks and settings into a single stream using RxDart.
+    // This ensures atomic updates - whenever either source changes,
+    // we get a new combined value with the latest from both.
+    final combinedStream =
+        Rx.combineLatest2<List<Task>, NextActionsSettings, _CombinedData>(
+          _taskRepository.watchAll(withRelated: true),
+          _settingsAdapter.watch(),
+          (tasks, settings) => _CombinedData(tasks: tasks, settings: settings),
         );
+
+    _dataSubscription = combinedStream.listen(
+      (data) => add(
+        _NextActionsDataReceived(
+          tasks: data.tasks,
+          settings: data.settings,
+        ),
+      ),
+      onError: (Object error) => add(_NextActionsStreamError(error)),
+    );
   }
 
-  void _onSettingsUpdated(
-    NextActionsSettingsUpdated event,
+  void _onDataReceived(
+    _NextActionsDataReceived event,
     Emitter<NextActionsState> emit,
   ) {
-    if (event.settings == _settings) return;
-    _settings = event.settings;
-    if (_latestTasks.isEmpty) return;
-
-    final filtered = _filterTasks(_latestTasks);
-    final view = _buildView(filtered);
+    final filtered = _filterTasks(event.tasks, event.settings);
+    final view = _buildView(filtered, event.settings);
     emit(
       state.copyWith(
         status: NextActionsStatus.success,
@@ -204,24 +206,8 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
     }
   }
 
-  void _onTasksReceived(
-    NextActionsTasksReceived event,
-    Emitter<NextActionsState> emit,
-  ) {
-    _latestTasks = event.tasks;
-    final filtered = _filterTasks(event.tasks);
-    final view = _buildView(filtered);
-    emit(
-      state.copyWith(
-        status: NextActionsStatus.success,
-        groups: view.groups,
-        totalCount: view.totalCount,
-      ),
-    );
-  }
-
   void _onStreamError(
-    NextActionsStreamError event,
+    _NextActionsStreamError event,
     Emitter<NextActionsState> emit,
   ) {
     emit(
@@ -232,9 +218,9 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
     );
   }
 
-  List<Task> _filterTasks(List<Task> tasks) {
+  List<Task> _filterTasks(List<Task> tasks, NextActionsSettings settings) {
     final config = TaskSelector.nextActions(
-      includeInbox: _settings.includeInboxTasks,
+      includeInbox: settings.includeInboxTasks,
     );
     return _taskSelector.filter(
       tasks: tasks,
@@ -246,10 +232,11 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
 
   ({List<NextActionPriorityGroup> groups, int totalCount}) _buildView(
     List<Task> tasks,
+    NextActionsSettings settings,
   ) {
     final selection = _viewBuilder.build(
       tasks: tasks,
-      settings: _settings,
+      settings: settings,
       now: DateTime.now(),
     );
 
@@ -261,7 +248,6 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
                   .map((entry) {
                     final project = selection.projectsById[entry.key];
                     if (project == null) return null;
-                    // Tasks are already ordered in the selector; avoid re-sorting here.
                     final tasksForProject = List<Task>.unmodifiable(
                       entry.value,
                     );
@@ -292,4 +278,15 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
 
     return (groups: groups, totalCount: selection.totalCount);
   }
+}
+
+/// Internal data class for combining tasks and settings.
+class _CombinedData {
+  const _CombinedData({
+    required this.tasks,
+    required this.settings,
+  });
+
+  final List<Task> tasks;
+  final NextActionsSettings settings;
 }

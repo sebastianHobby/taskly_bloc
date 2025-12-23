@@ -37,9 +37,7 @@ class NextActionsViewBuilder {
     required NextActionsSettings settings,
     DateTime? now,
   }) {
-    final bucketRules = settings.bucketRules.isEmpty
-        ? NextActionsSettings.defaultBucketRules
-        : settings.bucketRules;
+    final bucketRules = settings.effectiveBucketRules;
     final bucketRuleByPriority = {
       for (final rule in bucketRules) rule.priority: rule,
     };

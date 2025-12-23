@@ -247,24 +247,50 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
                     const SizedBox(height: 8),
 
-                    // Project Selection
-                    if (widget.availableProjects.isNotEmpty) ...[
-                      FormBuilderProjectPickerModern(
-                        name: 'projectId',
-                        label: 'Project',
-                        hint: l10n.taskFormProjectHint,
-                        availableProjects: widget.availableProjects,
-                      ),
-                      const SizedBox(height: 8),
-                    ],
-
-                    // Date chips row
+                    // Chips row: Project, Start Date, Deadline
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
+                          // Project chip
+                          if (widget.availableProjects.isNotEmpty)
+                            FormBuilderField<String>(
+                              name: 'projectId',
+                              builder: (field) {
+                                final selectedProject = widget.availableProjects
+                                    .where((p) => p.id == field.value)
+                                    .firstOrNull;
+
+                                return _ProjectChip(
+                                  project: selectedProject,
+                                  onTap: () async {
+                                    final selected = await showDialog<Project>(
+                                      context: context,
+                                      builder: (context) =>
+                                          _ProjectPickerDialog(
+                                            availableProjects:
+                                                widget.availableProjects,
+                                            currentProjectId: field.value,
+                                          ),
+                                    );
+                                    if (selected != null) {
+                                      field.didChange(selected.id);
+                                      markDirty();
+                                    }
+                                  },
+                                  onClear:
+                                      field.value != null &&
+                                          field.value!.isNotEmpty
+                                      ? () {
+                                          field.didChange('');
+                                          markDirty();
+                                        }
+                                      : null,
+                                );
+                              },
+                            ),
                           // Start Date chip
                           FormBuilderField<DateTime?>(
                             name: 'startDate',
@@ -348,6 +374,154 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A chip widget for displaying and selecting projects.
+class _ProjectChip extends StatelessWidget {
+  const _ProjectChip({
+    required this.project,
+    required this.onTap,
+    this.onClear,
+  });
+
+  final Project? project;
+  final VoidCallback onTap;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final hasProject = project != null;
+
+    final chipColor = hasProject
+        ? colorScheme.secondaryContainer
+        : colorScheme.surfaceContainerHigh;
+
+    final contentColor = hasProject
+        ? colorScheme.onSecondaryContainer
+        : colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: chipColor,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: EdgeInsets.only(
+            left: 10,
+            right: onClear != null && hasProject ? 4 : 10,
+            top: 6,
+            bottom: 6,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.folder_rounded,
+                size: 16,
+                color: contentColor,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                hasProject ? project!.name : 'Add project',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: contentColor,
+                  fontWeight: hasProject ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+              if (onClear != null && hasProject) ...[
+                const SizedBox(width: 2),
+                InkWell(
+                  onTap: onClear,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: contentColor,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Dialog for selecting a project.
+class _ProjectPickerDialog extends StatelessWidget {
+  const _ProjectPickerDialog({
+    required this.availableProjects,
+    this.currentProjectId,
+  });
+
+  final List<Project> availableProjects;
+  final String? currentProjectId;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 500),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    'Select Project',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: availableProjects.length,
+                itemBuilder: (context, index) {
+                  final project = availableProjects[index];
+                  final isSelected = project.id == currentProjectId;
+
+                  return ListTile(
+                    leading: Icon(
+                      Icons.folder_rounded,
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                    title: Text(project.name),
+                    trailing: isSelected
+                        ? Icon(Icons.check, color: colorScheme.primary)
+                        : null,
+                    selected: isSelected,
+                    onTap: () => Navigator.of(context).pop(project),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,10 +1,12 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/features/auth/auth.dart';
 import 'package:taskly_bloc/features/labels/labels.dart';
 import 'package:taskly_bloc/features/next_action/next_action.dart';
 import 'package:taskly_bloc/features/projects/projects.dart';
@@ -15,7 +17,62 @@ import 'package:taskly_bloc/routing/widgets/scaffold_with_nested_navigation.dart
 
 final router = GoRouter(
   initialLocation: AppRoutePath.inbox,
+  redirect: (context, state) async {
+    final authRepository = getIt<AuthRepositoryContract>();
+    final authState = await authRepository.watchAuthState().first;
+    final isAuthenticated = authState.session != null;
+
+    final isAuthRoute =
+        state.matchedLocation == '/sign-in' ||
+        state.matchedLocation == '/sign-up' ||
+        state.matchedLocation == '/forgot-password';
+
+    // If not authenticated and trying to access protected route, redirect to sign in
+    if (!isAuthenticated && !isAuthRoute) {
+      return '/sign-in';
+    }
+
+    // If authenticated and trying to access auth route, redirect to home
+    if (isAuthenticated && isAuthRoute) {
+      return AppRoutePath.inbox;
+    }
+
+    // No redirect needed
+    return null;
+  },
   routes: [
+    // Authentication routes (not protected)
+    GoRoute(
+      name: 'sign-in',
+      path: '/sign-in',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AuthBloc(
+          authRepository: getIt<AuthRepositoryContract>(),
+        )..add(const AuthSubscriptionRequested()),
+        child: const SignInView(),
+      ),
+    ),
+    GoRoute(
+      name: 'sign-up',
+      path: '/sign-up',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AuthBloc(
+          authRepository: getIt<AuthRepositoryContract>(),
+        )..add(const AuthSubscriptionRequested()),
+        child: const SignUpView(),
+      ),
+    ),
+    GoRoute(
+      name: 'forgot-password',
+      path: '/forgot-password',
+      builder: (context, state) => BlocProvider(
+        create: (_) => AuthBloc(
+          authRepository: getIt<AuthRepositoryContract>(),
+        )..add(const AuthSubscriptionRequested()),
+        child: const ForgotPasswordView(),
+      ),
+    ),
+    // Protected routes
     StatefulShellRoute.indexedStack(
       // A builder that adds a navigation bar or rail depending on screen size
       // to all the branches below

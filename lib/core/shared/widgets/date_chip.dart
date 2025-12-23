@@ -20,7 +20,7 @@ class DateChip extends StatelessWidget {
     required String label,
     Key? key,
   }) : this(
-         icon: Icons.play_arrow_rounded,
+         icon: Icons.calendar_today_rounded,
          label: label,
          color: Theme.of(context).colorScheme.onSurfaceVariant,
          key: key,

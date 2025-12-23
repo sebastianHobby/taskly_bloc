@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/shared/views/schedule_view.dart';
 import 'package:taskly_bloc/core/shared/views/schedule_view_config.dart';
 import 'package:taskly_bloc/core/shared/widgets/empty_state_widget.dart';
+import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/next_action/next_action.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
 /// The Today page displaying tasks and projects due today or earlier.
@@ -55,7 +56,7 @@ class _NextActionsBanner extends StatelessWidget {
     return BlocProvider<NextActionsBloc>(
       create: (context) => NextActionsBloc(
         taskRepository: taskRepository,
-        settingsBloc: context.read<SettingsBloc>(),
+        settingsAdapter: getIt<NextActionsSettingsAdapter>(),
       )..add(const NextActionsSubscriptionRequested()),
       child: BlocBuilder<NextActionsBloc, NextActionsState>(
         builder: (context, state) {

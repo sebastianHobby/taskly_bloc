@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
+import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
@@ -33,7 +34,7 @@ class TaskNextActionsPage extends StatelessWidget {
     return BlocProvider<NextActionsBloc>(
       create: (context) => NextActionsBloc(
         taskRepository: taskRepository,
-        settingsBloc: context.read<SettingsBloc>(),
+        settingsAdapter: getIt<NextActionsSettingsAdapter>(),
       )..add(const NextActionsSubscriptionRequested()),
       child: TaskNextActionsView(
         projectRepository: projectRepository,
@@ -116,7 +117,7 @@ class TaskNextActionsView extends StatelessWidget {
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: state.groups.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 16),
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final group = state.groups[index];
 

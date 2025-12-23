@@ -3,25 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/features/settings/settings.dart';
 
 import '../../../helpers/pump_app.dart';
-
-class MockTaskRepository extends Mock implements TaskRepositoryContract {}
-
-class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
-
-class MockSettingsRepository extends Mock
-    implements SettingsRepositoryContract {}
+import '../../../mocks/repository_mocks.dart';
 
 void main() {
   testWidgets('TaskOverviewPage builds and shows app bar + fab', (
@@ -32,7 +20,7 @@ void main() {
     final labelRepository = MockLabelRepository();
     final settingsRepository = MockSettingsRepository();
 
-    when(settingsRepository.watch).thenAnswer(
+    when(settingsRepository.watchAll).thenAnswer(
       (_) => Stream.value(const AppSettings()),
     );
     final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);

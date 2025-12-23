@@ -202,7 +202,7 @@ extension DateRuleFieldDisplay on DateRuleField {
   };
 
   IconData get icon => switch (this) {
-    DateRuleField.startDate => Icons.play_arrow,
+    DateRuleField.startDate => Icons.calendar_today,
     DateRuleField.deadlineDate => Icons.flag,
     DateRuleField.updatedAt => Icons.update,
   };

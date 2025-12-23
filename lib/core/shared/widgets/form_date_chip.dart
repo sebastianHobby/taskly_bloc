@@ -25,7 +25,7 @@ class FormDateChip extends StatelessWidget {
     VoidCallback? onClear,
     Key? key,
   }) : this(
-         icon: Icons.play_arrow_rounded,
+         icon: Icons.calendar_today_rounded,
          label: 'start date',
          date: date,
          onTap: onTap,

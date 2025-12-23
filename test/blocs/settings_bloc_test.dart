@@ -3,11 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/settings.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/features/settings/settings.dart';
 
-class MockSettingsRepository extends Mock
-    implements SettingsRepositoryContract {}
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late MockSettingsRepository mockRepository;
@@ -21,7 +19,7 @@ void main() {
       'emits loading then loaded when subscription requested',
       setUp: () {
         when(
-          () => mockRepository.watch(),
+          () => mockRepository.watchAll(),
         ).thenAnswer((_) => Stream.value(const AppSettings()));
       },
       build: () => SettingsBloc(settingsRepository: mockRepository),
@@ -39,7 +37,7 @@ void main() {
       'updates sort for a page and persists it',
       setUp: () {
         when(
-          () => mockRepository.watch(),
+          () => mockRepository.watchAll(),
         ).thenAnswer((_) => Stream.value(const AppSettings()));
       },
       build: () => SettingsBloc(settingsRepository: mockRepository),
@@ -51,13 +49,11 @@ void main() {
             SortCriterion(field: SortField.name),
           ],
         );
-        final expectedSettings = const AppSettings().upsertPageSort(
-          pageKey: SettingsPageKey.inbox,
-          preferences: preferences,
-        );
-
         when(
-          () => mockRepository.save(expectedSettings),
+          () => mockRepository.savePageSort(
+            SettingsPageKey.inbox,
+            preferences,
+          ),
         ).thenAnswer((_) async {});
 
         bloc.add(
@@ -67,30 +63,15 @@ void main() {
           ),
         );
       },
-      expect: () {
-        const preferences = SortPreferences(
-          criteria: [
-            SortCriterion(field: SortField.deadlineDate),
-            SortCriterion(field: SortField.name),
-          ],
-        );
-        final updatedSettings = const AppSettings().upsertPageSort(
-          pageKey: SettingsPageKey.inbox,
-          preferences: preferences,
-        );
-
-        return <SettingsState>[
-          const SettingsState(status: SettingsStatus.loading),
-          const SettingsState(
-            status: SettingsStatus.loaded,
-            settings: AppSettings(),
-          ),
-          SettingsState(
-            status: SettingsStatus.loaded,
-            settings: updatedSettings,
-          ),
-        ];
-      },
+      expect: () => const <SettingsState>[
+        SettingsState(status: SettingsStatus.loading),
+        SettingsState(
+          status: SettingsStatus.loaded,
+          settings: AppSettings(),
+        ),
+        // No third emission: removed optimistic emit,
+        // watch stream emission happens after save completes
+      ],
       verify: (bloc) {
         const preferences = SortPreferences(
           criteria: [
@@ -98,12 +79,12 @@ void main() {
             SortCriterion(field: SortField.name),
           ],
         );
-        final expectedSettings = const AppSettings().upsertPageSort(
-          pageKey: SettingsPageKey.inbox,
-          preferences: preferences,
-        );
-
-        verify(() => mockRepository.save(expectedSettings)).called(1);
+        verify(
+          () => mockRepository.savePageSort(
+            SettingsPageKey.inbox,
+            preferences,
+          ),
+        ).called(1);
       },
     );
 
@@ -111,7 +92,7 @@ void main() {
       'updates next actions settings and persists them',
       setUp: () {
         when(
-          () => mockRepository.watch(),
+          () => mockRepository.watchAll(),
         ).thenAnswer((_) => Stream.value(const AppSettings()));
       },
       build: () => SettingsBloc(settingsRepository: mockRepository),
@@ -120,45 +101,30 @@ void main() {
         const updatedNextActions = NextActionsSettings(
           tasksPerProject: 4,
         );
-        final expectedSettings = const AppSettings().updateNextActions(
-          updatedNextActions,
-        );
-
         when(
-          () => mockRepository.save(expectedSettings),
+          () => mockRepository.saveNextActionsSettings(updatedNextActions),
         ).thenAnswer((_) async {});
 
         bloc.add(
           const SettingsUpdateNextActions(settings: updatedNextActions),
         );
       },
-      expect: () {
-        const updatedNextActions = NextActionsSettings(
-          tasksPerProject: 4,
-        );
-        final expectedSettings = const AppSettings().updateNextActions(
-          updatedNextActions,
-        );
-        return <SettingsState>[
-          const SettingsState(status: SettingsStatus.loading),
-          const SettingsState(
-            status: SettingsStatus.loaded,
-            settings: AppSettings(),
-          ),
-          SettingsState(
-            status: SettingsStatus.loaded,
-            settings: expectedSettings,
-          ),
-        ];
-      },
+      expect: () => const <SettingsState>[
+        SettingsState(status: SettingsStatus.loading),
+        SettingsState(
+          status: SettingsStatus.loaded,
+          settings: AppSettings(),
+        ),
+        // No third emission: removed optimistic emit,
+        // watch stream emission happens after save completes
+      ],
       verify: (bloc) {
         const updatedNextActions = NextActionsSettings(
           tasksPerProject: 4,
         );
-        final expectedSettings = const AppSettings().updateNextActions(
-          updatedNextActions,
-        );
-        verify(() => mockRepository.save(expectedSettings)).called(1);
+        verify(
+          () => mockRepository.saveNextActionsSettings(updatedNextActions),
+        ).called(1);
       },
     );
   });

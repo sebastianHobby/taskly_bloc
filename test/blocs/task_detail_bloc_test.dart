@@ -4,16 +4,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 
-class MockTaskRepository extends Mock implements TaskRepositoryContract {}
-
-class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
-
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late MockTaskRepository mockRepository;

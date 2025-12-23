@@ -5,8 +5,8 @@ import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 class AppSettings {
   const AppSettings({
     this.pageSortPreferences = const <String, SortPreferences>{},
-    this.nextActions = const NextActionsSettings(),
-  });
+    NextActionsSettings? nextActions,
+  }) : nextActions = nextActions ?? const NextActionsSettings();
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
     final rawSorts = json['pageSortPreferences'] as Map<String, dynamic>?;
@@ -18,7 +18,7 @@ class AppSettings {
     });
     final nextActionsJson = json['nextActions'] as Map<String, dynamic>?;
     final nextActions = nextActionsJson == null
-        ? const NextActionsSettings()
+        ? NextActionsSettings.withDefaults()
         : NextActionsSettings.fromJson(nextActionsJson);
     return AppSettings(
       pageSortPreferences: sorts,
@@ -103,6 +103,21 @@ class NextActionsSettings {
     this.includeInboxTasks = false,
     this.sortPreferences = const SortPreferences(),
   });
+
+  /// Creates settings with default bucket rules applied if none provided.
+  factory NextActionsSettings.withDefaults({
+    int? tasksPerProject,
+    List<TaskPriorityBucketRule>? bucketRules,
+    bool? includeInboxTasks,
+    SortPreferences? sortPreferences,
+  }) {
+    return NextActionsSettings(
+      tasksPerProject: tasksPerProject ?? 2,
+      bucketRules: bucketRules ?? defaultBucketRules,
+      includeInboxTasks: includeInboxTasks ?? false,
+      sortPreferences: sortPreferences ?? const SortPreferences(),
+    );
+  }
 
   factory NextActionsSettings.fromJson(Map<String, dynamic> json) {
     final tasksPerProject = json['tasksPerProject'] as int?;
@@ -207,6 +222,10 @@ class NextActionsSettings {
   final List<TaskPriorityBucketRule> bucketRules;
   final bool includeInboxTasks;
   final SortPreferences sortPreferences;
+
+  /// Returns the effective bucket rules, using defaults if none are configured.
+  List<TaskPriorityBucketRule> get effectiveBucketRules =>
+      bucketRules.isEmpty ? defaultBucketRules : bucketRules;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'tasksPerProject': tasksPerProject,

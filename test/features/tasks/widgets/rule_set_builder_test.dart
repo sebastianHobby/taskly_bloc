@@ -124,7 +124,7 @@ void main() {
 
     test('TaskField enum has correct display names and icons', () {
       expect(TaskField.startDate.displayName, 'Start Date');
-      expect(TaskField.startDate.icon, Icons.play_arrow);
+      expect(TaskField.startDate.icon, Icons.calendar_today);
 
       expect(TaskField.deadlineDate.displayName, 'Deadline Date');
       expect(TaskField.deadlineDate.icon, Icons.flag);

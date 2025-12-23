@@ -130,7 +130,7 @@ class FormBuilderDatePickerModern extends StatelessWidget {
 
   IconData _getIconData() {
     return switch (dateType) {
-      DateFieldType.startDate => Icons.play_arrow,
+      DateFieldType.startDate => Icons.calendar_today,
       DateFieldType.deadline => Icons.flag,
       DateFieldType.standard => Icons.event,
     };

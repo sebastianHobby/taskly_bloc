@@ -3,10 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/features/labels/bloc/label_detail_bloc.dart';
 
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late MockLabelRepository mockRepository;

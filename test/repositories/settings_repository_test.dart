@@ -21,94 +21,87 @@ void main() {
     await db.close();
   });
 
-  test('load returns default settings when no row exists', () async {
-    final result = await repository.load();
+  test('loadAll returns default settings when no row exists', () async {
+    final result = await repository.loadAll();
 
     expect(result, const AppSettings());
 
+    // Without cache, we don't auto-insert a row anymore
+    final rows = await db.select(db.userProfileTable).get();
+    expect(rows, isEmpty);
+  });
+
+  test('savePageSort then loadAll returns persisted settings', () async {
+    const sortPrefs = SortPreferences(
+      criteria: [SortCriterion(field: SortField.name)],
+    );
+
+    await repository.savePageSort(SettingsPageKey.inbox, sortPrefs);
+
+    final loaded = await repository.loadAll();
+
+    expect(loaded.sortFor(SettingsPageKey.inbox), sortPrefs);
+
     final rows = await db.select(db.userProfileTable).get();
     expect(rows, hasLength(1));
     expect(rows.first.userId, isNull);
   });
 
-  test('save then load returns persisted settings', () async {
-    const saved = AppSettings(
-      pageSortPreferences: {
-        SettingsPageKey.inbox: SortPreferences(
-          criteria: [SortCriterion(field: SortField.name)],
-        ),
-      },
+  test('watchAll emits updated settings when changed', () async {
+    const sortPrefs = SortPreferences(
+      criteria: [
+        SortCriterion(field: SortField.deadlineDate),
+        SortCriterion(field: SortField.name),
+      ],
     );
 
-    await repository.save(saved);
+    // Just verify that the stream eventually emits the saved settings
+    final stream = repository.watchAll();
 
-    final loaded = await repository.load();
+    await repository.savePageSort(SettingsPageKey.today, sortPrefs);
 
-    expect(loaded, saved);
-
-    final rows = await db.select(db.userProfileTable).get();
-    expect(rows, hasLength(1));
-    expect(rows.first.userId, isNull);
-  });
-
-  test('watch emits default then updated when settings change', () async {
-    const updated = AppSettings(
-      pageSortPreferences: {
-        SettingsPageKey.today: SortPreferences(
-          criteria: [
-            SortCriterion(field: SortField.deadlineDate),
-            SortCriterion(field: SortField.name),
-          ],
-        ),
-      },
+    // Wait for stream to emit the updated value
+    final result = await stream.firstWhere(
+      (settings) => settings.sortFor(SettingsPageKey.today) == sortPrefs,
     );
 
-    final expectation = expectLater(
-      repository.watch(),
-      emitsInOrder(<AppSettings>[const AppSettings(), updated]),
-    );
-
-    await repository.save(updated);
-
-    await expectation;
+    expect(result.sortFor(SettingsPageKey.today), sortPrefs);
   });
 
   test('persists next actions settings', () async {
-    const updated = AppSettings(
-      nextActions: NextActionsSettings(
-        tasksPerProject: 5,
-        bucketRules: [
-          TaskPriorityBucketRule(
-            priority: 1,
-            name: 'Deadline Soon',
-            ruleSets: [
-              TaskRuleSet(
-                operator: RuleSetOperator.and,
+    const nextActionsSettings = NextActionsSettings(
+      tasksPerProject: 5,
+      bucketRules: [
+        TaskPriorityBucketRule(
+          priority: 1,
+          name: 'Deadline Soon',
+          ruleSets: [
+            TaskRuleSet(
+              operator: RuleSetOperator.and,
 
-                rules: [
-                  DateRule(
-                    field: DateRuleField.deadlineDate,
-                    operator: DateRuleOperator.relative,
-                    relativeComparison: RelativeComparison.before,
-                    relativeDays: 7,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
+              rules: [
+                DateRule(
+                  field: DateRuleField.deadlineDate,
+                  operator: DateRuleOperator.relative,
+                  relativeComparison: RelativeComparison.before,
+                  relativeDays: 7,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     );
 
-    await repository.save(updated);
+    await repository.saveNextActionsSettings(nextActionsSettings);
 
-    final loaded = await repository.load();
+    final loaded = await repository.loadAll();
 
     expect(loaded.nextActions.tasksPerProject, 5);
-    expect(loaded.nextActions.bucketRules, updated.nextActions.bucketRules);
+    expect(loaded.nextActions.bucketRules, nextActionsSettings.bucketRules);
   });
 
-  test('load falls back to default when JSON is invalid', () async {
+  test('loadAll falls back to default when JSON is invalid', () async {
     final now = DateTime.now();
     await db.customInsert(
       'INSERT INTO user_profiles (id, user_id, settings, created_at, updated_at) VALUES (?, ?, ?, ?, ?)',
@@ -122,7 +115,7 @@ void main() {
       updates: {db.userProfileTable},
     );
 
-    final result = await repository.load();
+    final result = await repository.loadAll();
 
     expect(result, const AppSettings());
   });

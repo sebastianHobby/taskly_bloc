@@ -25,7 +25,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     emit(state.copyWith(status: SettingsStatus.loading));
 
     await emit.forEach<AppSettings>(
-      _settingsRepository.watch(),
+      _settingsRepository.watchAll(),
       onData: (settings) => state.copyWith(
         status: SettingsStatus.loaded,
         settings: settings,
@@ -41,36 +41,20 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsUpdatePageSort event,
     Emitter<SettingsState> emit,
   ) async {
-    final currentSettings = state.settings ?? const AppSettings();
-    final updated = currentSettings.upsertPageSort(
-      pageKey: event.pageKey,
-      preferences: event.preferences,
+    // Save using granular method - the watch stream in _onSubscriptionRequested
+    // will automatically emit the updated state
+    await _settingsRepository.savePageSort(
+      event.pageKey,
+      event.preferences,
     );
-
-    emit(
-      state.copyWith(
-        status: SettingsStatus.loaded,
-        settings: updated,
-      ),
-    );
-
-    await _settingsRepository.save(updated);
   }
 
   Future<void> _onUpdateNextActions(
     SettingsUpdateNextActions event,
     Emitter<SettingsState> emit,
   ) async {
-    final currentSettings = state.settings ?? const AppSettings();
-    final updated = currentSettings.updateNextActions(event.settings);
-
-    emit(
-      state.copyWith(
-        status: SettingsStatus.loaded,
-        settings: updated,
-      ),
-    );
-
-    await _settingsRepository.save(updated);
+    // Save using granular method - the watch stream in _onSubscriptionRequested
+    // will automatically emit the updated state
+    await _settingsRepository.saveNextActionsSettings(event.settings);
   }
 }

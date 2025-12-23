@@ -45,7 +45,7 @@ void main() {
     expect(find.text(task.description!), findsOneWidget);
 
     // Uses rounded icons in the new Card-based design
-    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_today_rounded), findsOneWidget);
     expect(find.text(expectedStart), findsOneWidget);
 
     expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
@@ -83,7 +83,7 @@ void main() {
     expect(find.text(task.name), findsOneWidget);
 
     // No date icons should be shown when no dates provided
-    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.calendar_today_rounded), findsNothing);
     expect(find.byIcon(Icons.flag_rounded), findsNothing);
   });
 }

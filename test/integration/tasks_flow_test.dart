@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
@@ -168,16 +169,54 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
   AppSettings _current;
 
   @override
-  Stream<AppSettings> watch() => _controller.stream;
-
-  @override
-  Future<AppSettings> load() async => _current;
-
-  @override
-  Future<void> save(AppSettings settings) async {
-    _current = settings;
-    _controller.add(settings);
+  Stream<NextActionsSettings> watchNextActionsSettings() async* {
+    yield _current.nextActions;
+    yield* _controller.stream
+        .map((settings) => settings.nextActions)
+        .distinct();
   }
+
+  @override
+  Future<NextActionsSettings> loadNextActionsSettings() async {
+    return _current.nextActions;
+  }
+
+  @override
+  Future<void> saveNextActionsSettings(NextActionsSettings settings) async {
+    _current = _current.updateNextActions(settings);
+    _controller.add(_current);
+  }
+
+  @override
+  Stream<SortPreferences?> watchPageSort(String pageKey) async* {
+    yield _current.sortFor(pageKey);
+    yield* _controller.stream
+        .map((settings) => settings.sortFor(pageKey))
+        .distinct();
+  }
+
+  @override
+  Future<SortPreferences?> loadPageSort(String pageKey) async {
+    return _current.sortFor(pageKey);
+  }
+
+  @override
+  Future<void> savePageSort(String pageKey, SortPreferences preferences) async {
+    _current = _current.upsertPageSort(
+      pageKey: pageKey,
+      preferences: preferences,
+    );
+    _controller.add(_current);
+  }
+
+  @override
+  Stream<AppSettings> watchAll() async* {
+    yield _current;
+    yield* _controller.stream;
+  }
+
+  @override
+  Future<AppSettings> loadAll() async => _current;
 }
 
 void main() {

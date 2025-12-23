@@ -139,7 +139,7 @@ class _SortBottomSheetContentState extends State<_SortBottomSheetContent> {
   IconData _fieldIcon(SortField field) {
     return switch (field) {
       SortField.name => Icons.sort_by_alpha_rounded,
-      SortField.startDate => Icons.play_arrow_rounded,
+      SortField.startDate => Icons.calendar_today_rounded,
       SortField.deadlineDate => Icons.flag_rounded,
       SortField.createdDate => Icons.add_circle_outline_rounded,
       SortField.updatedDate => Icons.update_rounded,

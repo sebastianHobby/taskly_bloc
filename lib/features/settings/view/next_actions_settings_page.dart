@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 import 'package:taskly_bloc/features/tasks/widgets/priority_bucket_builder.dart';
 
-/// Next actions settings page using the unified rule system.
+/// Next actions settings page using the adapter pattern.
+///
+/// Reads and writes settings directly through the adapter, ensuring
+/// proper UDF (UI → Adapter → Repository) and maintaining consistency
+/// with the in-memory cache.
 class NextActionsSettingsPage extends StatefulWidget {
   const NextActionsSettingsPage({super.key});
 
@@ -18,6 +21,8 @@ class NextActionsSettingsPage extends StatefulWidget {
 }
 
 class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
+  final NextActionsSettingsAdapter _settingsAdapter =
+      getIt<NextActionsSettingsAdapter>();
   late NextActionsSettings _settings;
   final _formKey = GlobalKey<FormState>();
   final _tasksPerProjectController = TextEditingController();
@@ -32,19 +37,29 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _settings =
-        context.read<SettingsBloc>().state.settings?.nextActions ??
-        const NextActionsSettings();
-    _tasksPerProjectController.text = _settings.tasksPerProject.toString();
-    _includeInbox = _settings.includeInboxTasks;
-    _buckets = _settings.bucketRules.isEmpty
-        ? _createDefaultBuckets()
-        : List.from(_settings.bucketRules);
+    _loadSettings();
+  }
 
-    // Store initial state
-    _initialTasksPerProject = _tasksPerProjectController.text;
-    _initialIncludeInbox = _includeInbox;
-    _initialBuckets = List.from(_buckets);
+  Future<void> _loadSettings() async {
+    try {
+      _settings = await _settingsAdapter.load();
+      _tasksPerProjectController.text = _settings.tasksPerProject.toString();
+      _includeInbox = _settings.includeInboxTasks;
+      _buckets = List.from(_settings.effectiveBucketRules);
+
+      // Store initial state
+      _initialTasksPerProject = _tasksPerProjectController.text;
+      _initialIncludeInbox = _includeInbox;
+      _initialBuckets = List.from(_buckets);
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load settings: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -125,7 +140,7 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
     final tasksPerProject =
@@ -145,11 +160,20 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
       sortPreferences: _settings.sortPreferences,
     );
 
-    context.read<SettingsBloc>().add(
-      SettingsUpdateNextActions(settings: updatedSettings),
-    );
+    try {
+      // Save directly through adapter (optimistic update in repository)
+      await _settingsAdapter.save(updatedSettings);
 
-    Navigator.of(context).pop();
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save settings: $e')),
+        );
+      }
+    }
   }
 
   @override

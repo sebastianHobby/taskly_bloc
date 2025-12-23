@@ -5,7 +5,7 @@ import 'package:taskly_bloc/features/tasks/widgets/rule_editor.dart';
 
 /// Represents all available fields that can be used for task filtering
 enum TaskField {
-  startDate('Start Date', Icons.play_arrow),
+  startDate('Start Date', Icons.calendar_today),
   deadlineDate('Deadline Date', Icons.flag),
   completed('Completed Status', Icons.check_circle),
   labels('Labels', Icons.label),
@@ -887,9 +887,10 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
 
   void _reorderBuckets(int oldIndex, int newIndex) {
     setState(() {
-      if (oldIndex < newIndex) newIndex -= 1;
+      var adjustedNewIndex = newIndex;
+      if (oldIndex < newIndex) adjustedNewIndex -= 1;
       final bucket = _buckets.removeAt(oldIndex);
-      _buckets.insert(newIndex, bucket);
+      _buckets.insert(adjustedNewIndex, bucket);
     });
     _reorderPriorities();
     widget.onChanged(_buckets);
