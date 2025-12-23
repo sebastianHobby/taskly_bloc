@@ -18,12 +18,10 @@ void main() {
       database = AppDatabase(NativeDatabase.memory());
       settingsRepository = SettingsRepository(driftDb: database);
       // Pre-save some settings with includeInboxTasks = true
-      await settingsRepository.save(
-        const AppSettings(
-          nextActions: NextActionsSettings(
-            includeInboxTasks: true,
-            tasksPerProject: 5,
-          ),
+      await settingsRepository.saveNextActionsSettings(
+        const NextActionsSettings(
+          includeInboxTasks: true,
+          tasksPerProject: 5,
         ),
       );
     });

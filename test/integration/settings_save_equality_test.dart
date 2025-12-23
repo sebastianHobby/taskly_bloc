@@ -41,10 +41,6 @@ void main() {
         bucketRules: normalizedBuckets,
       );
 
-      final appSettings = const AppSettings().updateNextActions(
-        updatedSettings,
-      );
-
       // Save
       await settingsRepository.saveNextActionsSettings(updatedSettings);
 

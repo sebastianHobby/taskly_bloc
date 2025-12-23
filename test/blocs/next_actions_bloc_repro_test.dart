@@ -5,8 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
 import 'package:taskly_bloc/features/next_action/services/next_actions_view_builder.dart';
