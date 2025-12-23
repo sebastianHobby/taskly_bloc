@@ -125,12 +125,12 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String color,  LabelType type)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String color,  LabelType type)?  create,TResult Function( String labelId)?  get,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult Function( String labelId)?  get,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.color,_that.type);case _LabelDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name,_that.color,_that.type);case _LabelDetailGet() when get != null:
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet() when get != null:
 return get(_that.labelId);case _:
   return orElse();
 
@@ -149,12 +149,12 @@ return get(_that.labelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String color,  LabelType type)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String color,  LabelType type)  create,required TResult Function( String labelId)  get,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String color,  LabelType type,  String? iconName)  create,required TResult Function( String labelId)  get,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate():
-return update(_that.id,_that.name,_that.color,_that.type);case _LabelDetailDelete():
+return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete():
 return delete(_that.id);case _LabelDetailCreate():
-return create(_that.name,_that.color,_that.type);case _LabelDetailGet():
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet():
 return get(_that.labelId);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -169,12 +169,12 @@ return get(_that.labelId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String color,  LabelType type)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String color,  LabelType type)?  create,TResult? Function( String labelId)?  get,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult? Function( String labelId)?  get,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.color,_that.type);case _LabelDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name,_that.color,_that.type);case _LabelDetailGet() when get != null:
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet() when get != null:
 return get(_that.labelId);case _:
   return null;
 
@@ -187,13 +187,14 @@ return get(_that.labelId);case _:
 
 
 class _LabelDetailUpdate implements LabelDetailEvent {
-  const _LabelDetailUpdate({required this.id, required this.name, required this.color, required this.type});
+  const _LabelDetailUpdate({required this.id, required this.name, required this.color, required this.type, this.iconName});
   
 
  final  String id;
  final  String name;
  final  String color;
  final  LabelType type;
+ final  String? iconName;
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -205,16 +206,16 @@ _$LabelDetailUpdateCopyWith<_LabelDetailUpdate> get copyWith => __$LabelDetailUp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.type, type) || other.type == type)&&(identical(other.iconName, iconName) || other.iconName == iconName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,color,type);
+int get hashCode => Object.hash(runtimeType,id,name,color,type,iconName);
 
 @override
 String toString() {
-  return 'LabelDetailEvent.update(id: $id, name: $name, color: $color, type: $type)';
+  return 'LabelDetailEvent.update(id: $id, name: $name, color: $color, type: $type, iconName: $iconName)';
 }
 
 
@@ -225,7 +226,7 @@ abstract mixin class _$LabelDetailUpdateCopyWith<$Res> implements $LabelDetailEv
   factory _$LabelDetailUpdateCopyWith(_LabelDetailUpdate value, $Res Function(_LabelDetailUpdate) _then) = __$LabelDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String color, LabelType type
+ String id, String name, String color, LabelType type, String? iconName
 });
 
 
@@ -242,13 +243,14 @@ class __$LabelDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = null,Object? type = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? color = null,Object? type = null,Object? iconName = freezed,}) {
   return _then(_LabelDetailUpdate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as LabelType,
+as LabelType,iconName: freezed == iconName ? _self.iconName : iconName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -325,12 +327,13 @@ as String,
 
 
 class _LabelDetailCreate implements LabelDetailEvent {
-  const _LabelDetailCreate({required this.name, required this.color, required this.type});
+  const _LabelDetailCreate({required this.name, required this.color, required this.type, this.iconName});
   
 
  final  String name;
  final  String color;
  final  LabelType type;
+ final  String? iconName;
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -342,16 +345,16 @@ _$LabelDetailCreateCopyWith<_LabelDetailCreate> get copyWith => __$LabelDetailCr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.type, type) || other.type == type));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.color, color) || other.color == color)&&(identical(other.type, type) || other.type == type)&&(identical(other.iconName, iconName) || other.iconName == iconName));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,color,type);
+int get hashCode => Object.hash(runtimeType,name,color,type,iconName);
 
 @override
 String toString() {
-  return 'LabelDetailEvent.create(name: $name, color: $color, type: $type)';
+  return 'LabelDetailEvent.create(name: $name, color: $color, type: $type, iconName: $iconName)';
 }
 
 
@@ -362,7 +365,7 @@ abstract mixin class _$LabelDetailCreateCopyWith<$Res> implements $LabelDetailEv
   factory _$LabelDetailCreateCopyWith(_LabelDetailCreate value, $Res Function(_LabelDetailCreate) _then) = __$LabelDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- String name, String color, LabelType type
+ String name, String color, LabelType type, String? iconName
 });
 
 
@@ -379,12 +382,13 @@ class __$LabelDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? color = null,Object? type = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? color = null,Object? type = null,Object? iconName = freezed,}) {
   return _then(_LabelDetailCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
-as LabelType,
+as LabelType,iconName: freezed == iconName ? _self.iconName : iconName // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -451,264 +455,6 @@ class __$LabelDetailGetCopyWithImpl<$Res>
   return _then(_LabelDetailGet(
 labelId: null == labelId ? _self.labelId : labelId // ignore: cast_nullable_to_non_nullable
 as String,
-  ));
-}
-
-
-}
-
-/// @nodoc
-mixin _$LabelDetailError {
-
- Object get error; StackTrace? get stackTrace;
-/// Create a copy of LabelDetailError
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$LabelDetailErrorCopyWith<LabelDetailError> get copyWith => _$LabelDetailErrorCopyWithImpl<LabelDetailError>(this as LabelDetailError, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
-
-@override
-String toString() {
-  return 'LabelDetailError(error: $error, stackTrace: $stackTrace)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $LabelDetailErrorCopyWith<$Res>  {
-  factory $LabelDetailErrorCopyWith(LabelDetailError value, $Res Function(LabelDetailError) _then) = _$LabelDetailErrorCopyWithImpl;
-@useResult
-$Res call({
- Object error, StackTrace? stackTrace
-});
-
-
-
-
-}
-/// @nodoc
-class _$LabelDetailErrorCopyWithImpl<$Res>
-    implements $LabelDetailErrorCopyWith<$Res> {
-  _$LabelDetailErrorCopyWithImpl(this._self, this._then);
-
-  final LabelDetailError _self;
-  final $Res Function(LabelDetailError) _then;
-
-/// Create a copy of LabelDetailError
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? error = null,Object? stackTrace = freezed,}) {
-  return _then(_self.copyWith(
-error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
-as StackTrace?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [LabelDetailError].
-extension LabelDetailErrorPatterns on LabelDetailError {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _LabelDetailError value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _LabelDetailError() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _LabelDetailError value)  $default,){
-final _that = this;
-switch (_that) {
-case _LabelDetailError():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _LabelDetailError value)?  $default,){
-final _that = this;
-switch (_that) {
-case _LabelDetailError() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _LabelDetailError() when $default != null:
-return $default(_that.error,_that.stackTrace);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)  $default,) {final _that = this;
-switch (_that) {
-case _LabelDetailError():
-return $default(_that.error,_that.stackTrace);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Object error,  StackTrace? stackTrace)?  $default,) {final _that = this;
-switch (_that) {
-case _LabelDetailError() when $default != null:
-return $default(_that.error,_that.stackTrace);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-
-
-class _LabelDetailError implements LabelDetailError {
-  const _LabelDetailError({required this.error, this.stackTrace});
-  
-
-@override final  Object error;
-@override final  StackTrace? stackTrace;
-
-/// Create a copy of LabelDetailError
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$LabelDetailErrorCopyWith<_LabelDetailError> get copyWith => __$LabelDetailErrorCopyWithImpl<_LabelDetailError>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
-
-@override
-String toString() {
-  return 'LabelDetailError(error: $error, stackTrace: $stackTrace)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$LabelDetailErrorCopyWith<$Res> implements $LabelDetailErrorCopyWith<$Res> {
-  factory _$LabelDetailErrorCopyWith(_LabelDetailError value, $Res Function(_LabelDetailError) _then) = __$LabelDetailErrorCopyWithImpl;
-@override @useResult
-$Res call({
- Object error, StackTrace? stackTrace
-});
-
-
-
-
-}
-/// @nodoc
-class __$LabelDetailErrorCopyWithImpl<$Res>
-    implements _$LabelDetailErrorCopyWith<$Res> {
-  __$LabelDetailErrorCopyWithImpl(this._self, this._then);
-
-  final _LabelDetailError _self;
-  final $Res Function(_LabelDetailError) _then;
-
-/// Create a copy of LabelDetailError
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = freezed,}) {
-  return _then(_LabelDetailError(
-error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
-as StackTrace?,
   ));
 }
 
@@ -835,7 +581,7 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( LabelDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( Label label)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Label> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( Label label)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial() when initial != null:
 return initial();case LabelDetailOperationSuccess() when operationSuccess != null:
@@ -860,7 +606,7 @@ return loadSuccess(_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( LabelDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( Label label)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Label> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( Label label)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial():
 return initial();case LabelDetailOperationSuccess():
@@ -884,7 +630,7 @@ return loadSuccess(_that.label);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( LabelDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( Label label)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Label> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( Label label)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case LabelDetailInitial() when initial != null:
 return initial();case LabelDetailOperationSuccess() when operationSuccess != null:
@@ -1004,7 +750,7 @@ class LabelDetailOperationFailure implements LabelDetailState {
   const LabelDetailOperationFailure({required this.errorDetails});
   
 
- final  LabelDetailError errorDetails;
+ final  DetailBlocError<Label> errorDetails;
 
 /// Create a copy of LabelDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -1036,11 +782,11 @@ abstract mixin class $LabelDetailOperationFailureCopyWith<$Res> implements $Labe
   factory $LabelDetailOperationFailureCopyWith(LabelDetailOperationFailure value, $Res Function(LabelDetailOperationFailure) _then) = _$LabelDetailOperationFailureCopyWithImpl;
 @useResult
 $Res call({
- LabelDetailError errorDetails
+ DetailBlocError<Label> errorDetails
 });
 
 
-$LabelDetailErrorCopyWith<$Res> get errorDetails;
+
 
 }
 /// @nodoc
@@ -1056,20 +802,11 @@ class _$LabelDetailOperationFailureCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? errorDetails = null,}) {
   return _then(LabelDetailOperationFailure(
 errorDetails: null == errorDetails ? _self.errorDetails : errorDetails // ignore: cast_nullable_to_non_nullable
-as LabelDetailError,
+as DetailBlocError<Label>,
   ));
 }
 
-/// Create a copy of LabelDetailState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$LabelDetailErrorCopyWith<$Res> get errorDetails {
-  
-  return $LabelDetailErrorCopyWith<$Res>(_self.errorDetails, (value) {
-    return _then(_self.copyWith(errorDetails: value));
-  });
-}
+
 }
 
 /// @nodoc

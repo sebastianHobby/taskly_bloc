@@ -11,7 +11,7 @@ Future<void> pumpLocalizedApp(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.theme(),
+      theme: AppTheme.lightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: home,
@@ -27,7 +27,7 @@ Future<void> pumpLocalizedRouterApp(
 }) async {
   await tester.pumpWidget(
     MaterialApp.router(
-      theme: AppTheme.theme(),
+      theme: AppTheme.lightTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: router,

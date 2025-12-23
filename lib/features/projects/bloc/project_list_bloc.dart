@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/shared/utils/sort_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -9,10 +10,9 @@ import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 part 'project_list_bloc.freezed.dart';
 
-// Define the various events that ProjectsBloc will handle
 @freezed
 sealed class ProjectOverviewEvent with _$ProjectOverviewEvent {
-  const factory ProjectOverviewEvent.projectsSubscriptionRequested() =
+  const factory ProjectOverviewEvent.subscriptionRequested() =
       ProjectOverviewSubscriptionRequested;
   const factory ProjectOverviewEvent.toggleProjectCompletion({
     required Project project,
@@ -23,9 +23,11 @@ sealed class ProjectOverviewEvent with _$ProjectOverviewEvent {
   const factory ProjectOverviewEvent.taskCountsUpdated({
     required Map<String, ProjectTaskCounts> taskCounts,
   }) = ProjectOverviewTaskCountsUpdated;
+  const factory ProjectOverviewEvent.deleteProject({
+    required Project project,
+  }) = ProjectOverviewDeleteProject;
 }
 
-// Define the various states that ProjectsBloc can emit
 @freezed
 sealed class ProjectOverviewState with _$ProjectOverviewState {
   const factory ProjectOverviewState.initial() = ProjectOverviewInitial;
@@ -39,7 +41,8 @@ sealed class ProjectOverviewState with _$ProjectOverviewState {
 }
 
 class ProjectOverviewBloc
-    extends Bloc<ProjectOverviewEvent, ProjectOverviewState> {
+    extends Bloc<ProjectOverviewEvent, ProjectOverviewState>
+    with ListBlocMixin<ProjectOverviewEvent, ProjectOverviewState, Project> {
   ProjectOverviewBloc({
     required ProjectRepositoryContract projectRepository,
     TaskRepositoryContract? taskRepository,
@@ -50,10 +53,11 @@ class ProjectOverviewBloc
        _withRelated = withRelated,
        _sortPreferences = initialSortPreferences,
        super(const ProjectOverviewInitial()) {
-    on<ProjectOverviewSubscriptionRequested>(onSubscriptionRequested);
-    on<ProjectOverviewToggleProjectCompletion>(onProjectToggleCompletion);
-    on<ProjectOverviewSortChanged>(onSortChanged);
-    on<ProjectOverviewTaskCountsUpdated>(onTaskCountsUpdated);
+    on<ProjectOverviewSubscriptionRequested>(_onSubscriptionRequested);
+    on<ProjectOverviewToggleProjectCompletion>(_onToggleCompletion);
+    on<ProjectOverviewSortChanged>(_onSortChanged);
+    on<ProjectOverviewTaskCountsUpdated>(_onTaskCountsUpdated);
+    on<ProjectOverviewDeleteProject>(_onDeleteProject);
   }
 
   final ProjectRepositoryContract _projectRepository;
@@ -64,6 +68,23 @@ class ProjectOverviewBloc
 
   SortPreferences get currentSortPreferences => _sortPreferences;
 
+  // ListBlocMixin implementation
+  @override
+  ProjectOverviewState createLoadingState() => const ProjectOverviewLoading();
+
+  @override
+  ProjectOverviewState createErrorState(Object error) =>
+      ProjectOverviewError(error: error);
+
+  @override
+  ProjectOverviewState createLoadedState(List<Project> items) {
+    final currentCounts = state.maybeWhen(
+      loaded: (_, taskCounts) => taskCounts,
+      orElse: () => <String, ProjectTaskCounts>{},
+    );
+    return ProjectOverviewLoaded(projects: items, taskCounts: currentCounts);
+  }
+
   List<Project> _sortProjects(List<Project> projects) {
     List<Project> compareSorted(List<Project> source, List<SortCriterion> c) {
       int compareByCriterion(Project a, Project b, SortCriterion criterion) {
@@ -72,10 +93,7 @@ class ProjectOverviewBloc
             : -1;
         final value = switch (criterion.field) {
           SortField.name => compareAsciiLowerCase(a.name, b.name),
-          SortField.startDate => compareNullableDate(
-            a.startDate,
-            b.startDate,
-          ),
+          SortField.startDate => compareNullableDate(a.startDate, b.startDate),
           SortField.deadlineDate => compareNullableDate(
             a.deadlineDate,
             b.deadlineDate,
@@ -103,23 +121,20 @@ class ProjectOverviewBloc
       return sorted;
     }
 
-    final criteria = _sortPreferences.sanitizedCriteria(
-      const [
-        SortField.deadlineDate,
-        SortField.startDate,
-        SortField.createdDate,
-        SortField.updatedDate,
-        SortField.name,
-      ],
-    );
+    final criteria = _sortPreferences.sanitizedCriteria(const [
+      SortField.deadlineDate,
+      SortField.startDate,
+      SortField.createdDate,
+      SortField.updatedDate,
+      SortField.name,
+    ]);
     return compareSorted(projects, criteria);
   }
 
-  Future<void> onSubscriptionRequested(
+  Future<void> _onSubscriptionRequested(
     ProjectOverviewSubscriptionRequested event,
     Emitter<ProjectOverviewState> emit,
   ) async {
-    // Send state indicating loading is in progress for UI
     emit(const ProjectOverviewLoading());
 
     // Subscribe to task counts if task repository is available
@@ -132,57 +147,40 @@ class ProjectOverviewBloc
           });
     }
 
-    // For each ProjectModel we receive in the stream emit the data loaded
-    // state so UI can update or error state if there is an error
-    await emit.forEach<List<Project>>(
-      _projectRepository.watchAll(withRelated: _withRelated),
-      onData: (projects) {
-        final currentCounts = state.maybeWhen(
-          loaded: (_, taskCounts) => taskCounts,
-          orElse: () => <String, ProjectTaskCounts>{},
-        );
-        return ProjectOverviewLoaded(
-          projects: _sortProjects(projects),
-          taskCounts: currentCounts,
-        );
-      },
-      onError: (error, stackTrace) => ProjectOverviewError(error: error),
+    await subscribeToStream(
+      emit,
+      stream: _projectRepository.watchAll(withRelated: _withRelated),
+      onData: _sortProjects,
     );
   }
 
-  void onTaskCountsUpdated(
+  void _onTaskCountsUpdated(
     ProjectOverviewTaskCountsUpdated event,
     Emitter<ProjectOverviewState> emit,
   ) {
     state.maybeWhen(
       loaded: (projects, _) => emit(
-        ProjectOverviewLoaded(
-          projects: projects,
-          taskCounts: event.taskCounts,
-        ),
+        ProjectOverviewLoaded(projects: projects, taskCounts: event.taskCounts),
       ),
       orElse: () {},
     );
   }
 
-  Future<void> onProjectToggleCompletion(
+  Future<void> _onToggleCompletion(
     ProjectOverviewToggleProjectCompletion event,
     Emitter<ProjectOverviewState> emit,
   ) async {
-    final project = event.project;
-
-    try {
-      await _projectRepository.update(
-        id: project.id,
-        name: project.name,
-        completed: !project.completed,
-      );
-    } catch (error) {
-      emit(ProjectOverviewError(error: error));
-    }
+    await executeToggle(
+      emit,
+      toggle: () => _projectRepository.update(
+        id: event.project.id,
+        name: event.project.name,
+        completed: !event.project.completed,
+      ),
+    );
   }
 
-  void onSortChanged(
+  void _onSortChanged(
     ProjectOverviewSortChanged event,
     Emitter<ProjectOverviewState> emit,
   ) {
@@ -195,6 +193,16 @@ class ProjectOverviewBloc
         ),
       ),
       orElse: () {},
+    );
+  }
+
+  Future<void> _onDeleteProject(
+    ProjectOverviewDeleteProject event,
+    Emitter<ProjectOverviewState> emit,
+  ) async {
+    await executeDelete(
+      emit,
+      delete: () => _projectRepository.delete(event.project.id),
     );
   }
 

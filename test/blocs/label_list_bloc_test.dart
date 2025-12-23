@@ -30,8 +30,7 @@ void main() {
       ).thenAnswer((_) => Stream.value([sampleLabel]));
     },
     build: () => LabelOverviewBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelOverviewEvent.labelsSubscriptionRequested()),
+    act: (bloc) => bloc.add(const LabelOverviewEvent.subscriptionRequested()),
     expect: () => <dynamic>[
       isA<LabelOverviewLoading>(),
       isA<LabelOverviewLoaded>(),
@@ -46,8 +45,7 @@ void main() {
       ).thenAnswer((_) => Stream<List<Label>>.error(Exception('boom')));
     },
     build: () => LabelOverviewBloc(labelRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const LabelOverviewEvent.labelsSubscriptionRequested()),
+    act: (bloc) => bloc.add(const LabelOverviewEvent.subscriptionRequested()),
     expect: () => <dynamic>[
       isA<LabelOverviewLoading>(),
       isA<LabelOverviewError>(),

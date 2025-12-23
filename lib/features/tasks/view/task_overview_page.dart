@@ -78,7 +78,7 @@ class TaskOverviewView extends StatelessWidget {
               labelRepository: labelRepository,
               taskId: taskId,
             ),
-            child: const TaskDetailSheet(),
+            child: TaskDetailSheet(labelRepository: labelRepository),
           ),
         ),
       ),
@@ -290,7 +290,9 @@ class TaskOverviewView extends StatelessWidget {
           },
         ),
         floatingActionButton: AddTaskFab(
-          onPressed: () => _showTaskDetailSheet(context),
+          taskRepository: taskRepository,
+          projectRepository: projectRepository,
+          labelRepository: labelRepository,
         ),
       ),
     );

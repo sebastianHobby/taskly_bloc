@@ -69,7 +69,7 @@ void main() {
     expect(notifier.value, isFalse);
   });
 
-  testWidgets('useNonScrolling: false uses WoltModalSheetPage', (
+  testWidgets('showDetailModal uses WoltModalSheetPage for proper sizing', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -83,7 +83,6 @@ void main() {
                   await showDetailModal<void>(
                     context: appCtx,
                     sheetOpenNotifier: notifier,
-                    useNonScrolling: false,
                     childBuilder: (modalCtx) => SafeArea(
                       top: false,
                       child: Material(
@@ -113,9 +112,9 @@ void main() {
     await tester.tap(find.text('OpenAlt'));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('alt-text')), findsOneWidget);
-    // We can't reliably assert WoltModalSheetPage type is in the tree because
-    // the library may wrap pages internally. At minimum, ensure the
-    // NonScrollingWoltModalSheetPage is not present when useNonScrolling=false.
+    // WoltModalSheetPage wraps content in SliverToBoxAdapter (not SliverFillViewport),
+    // so content sizes to its intrinsic height without extra whitespace.
+    // NonScrollingWoltModalSheetPage would use SliverFillViewport which fills viewport.
     expect(find.byType(NonScrollingWoltModalSheetPage), findsNothing);
 
     await tester.tap(find.byKey(const Key('alt-close')));

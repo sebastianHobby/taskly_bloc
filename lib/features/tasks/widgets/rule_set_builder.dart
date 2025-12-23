@@ -218,21 +218,21 @@ class _RuleSetBuilderState extends State<RuleSetBuilder> {
 
             // Operator selection
             Text(
-              'Rules must satisfy:',
+              'Tasks must match:',
               style: Theme.of(context).textTheme.labelMedium,
             ),
             SizedBox(height: widget.compact ? 4 : 8),
             SegmentedButton<RuleSetOperator>(
               segments: const [
                 ButtonSegment(
-                  value: RuleSetOperator.and,
-                  label: Text('ALL'),
-                  icon: Icon(Icons.check_box),
+                  value: RuleSetOperator.or,
+                  label: Text('Any rule'),
+                  icon: Icon(Icons.check_box_outline_blank),
                 ),
                 ButtonSegment(
-                  value: RuleSetOperator.or,
-                  label: Text('ANY'),
-                  icon: Icon(Icons.check_box_outline_blank),
+                  value: RuleSetOperator.and,
+                  label: Text('All rules'),
+                  icon: Icon(Icons.check_box),
                 ),
               ],
               selected: {_currentRuleSet.operator},
@@ -593,29 +593,51 @@ class _RuleSummaryTile extends StatelessWidget {
       }
     }
 
+    final isValue = label.type == LabelType.value;
+
+    // For values: use colored background with contrasting text
+    // For labels: use neutral background with colored icon
+    final backgroundColor = isValue
+        ? chipColor
+        : colorScheme.surfaceContainerLow;
+    final textColor = isValue
+        ? (chipColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white)
+        : colorScheme.onSurface;
+
+    // Get the icon - emoji for values, colored label icon for labels
+    final Widget icon;
+    if (isValue) {
+      final emoji = label.iconName?.isNotEmpty ?? false
+          ? label.iconName!
+          : '❤️';
+      icon = Text(
+        emoji,
+        style: const TextStyle(fontSize: 10),
+      );
+    } else {
+      icon = Icon(
+        Icons.label,
+        size: 10,
+        color: chipColor,
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.15),
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: chipColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: chipColor,
-              shape: BoxShape.circle,
-            ),
-          ),
+          icon,
           const SizedBox(width: 4),
           Text(
             label.name,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: colorScheme.onSurface,
+              color: textColor,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -645,7 +667,7 @@ class _RuleSummaryTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.tertiaryContainer.withOpacity(0.5),
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(

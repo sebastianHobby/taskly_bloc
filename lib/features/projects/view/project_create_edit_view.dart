@@ -1,8 +1,12 @@
 // drift types are provided by the generated database import below
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/mixins/form_submission_mixin.dart';
+import 'package:taskly_bloc/core/shared/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
@@ -14,32 +18,30 @@ class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({
     required this.projectRepository,
     required this.labelRepository,
-    required this.onSuccess,
-    required this.onError,
     this.projectId,
+    this.onSaved,
     super.key,
   });
 
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
   final String? projectId;
-  final void Function(String message) onSuccess;
-  final void Function(String message) onError;
+
+  /// Optional callback when a project is saved (created or updated).
+  /// Called with the project ID after successful save.
+  final void Function(String projectId)? onSaved;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocProvider(
-        create: (context) => ProjectDetailBloc(
-          projectRepository: projectRepository,
-          labelRepository: labelRepository,
-        ),
-        lazy: false,
-        child: ProjectEditSheetView(
-          projectId: projectId,
-          onSuccess: onSuccess,
-          onError: onError,
-        ),
+    return BlocProvider(
+      create: (context) => ProjectDetailBloc(
+        projectRepository: projectRepository,
+        labelRepository: labelRepository,
+      ),
+      lazy: false,
+      child: ProjectEditSheetView(
+        projectId: projectId,
+        onSaved: onSaved,
       ),
     );
   }
@@ -47,21 +49,22 @@ class ProjectEditSheetPage extends StatelessWidget {
 
 class ProjectEditSheetView extends StatefulWidget {
   const ProjectEditSheetView({
-    required this.onSuccess,
-    required this.onError,
     this.projectId,
+    this.onSaved,
     super.key,
   });
 
   final String? projectId;
-  final void Function(String message) onSuccess;
-  final void Function(String message) onError;
+
+  /// Optional callback when a project is saved (created or updated).
+  final void Function(String projectId)? onSaved;
 
   @override
   State<ProjectEditSheetView> createState() => _ProjectEditSheetViewState();
 }
 
-class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
+class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
+    with FormSubmissionMixin {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
@@ -113,10 +116,21 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
               EntityOperation.update => context.l10n.projectUpdatedSuccessfully,
               EntityOperation.delete => context.l10n.projectDeletedSuccessfully,
             };
-            widget.onSuccess(message);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
+            // Call onSaved callback if provided (for edit scenarios that need refresh)
+            if (widget.projectId != null) {
+              widget.onSaved?.call(widget.projectId!);
+            }
+            unawaited(Navigator.of(context).maybePop());
           case ProjectDetailOperationFailure(:final errorDetails):
-            widget.onError(
-              friendlyErrorMessageForUi(errorDetails.error, context.l10n),
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  friendlyErrorMessageForUi(errorDetails.error, context.l10n),
+                ),
+              ),
             );
           default:
             return;
@@ -139,27 +153,30 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
               formKey: _formKey,
               availableLabels: availableLabels,
               onSubmit: () {
-                final formState = _formKey.currentState;
-                if (formState == null) return;
-                if (!formState.saveAndValidate()) return;
+                final formValues = validateAndGetFormValues(_formKey);
+                if (formValues == null) return;
 
-                final formValues = formState.value;
-                final name = (formValues['name'] as String).trim();
-                final description = formValues['description'] as String?;
-                final completed = formValues['completed'] as bool? ?? false;
+                final name = extractStringValue(formValues, 'name').trim();
+                final description = extractNullableStringValue(
+                  formValues,
+                  'description',
+                );
+                final completed = extractBoolValue(formValues, 'completed');
 
-                final repeatCandidate =
-                    (formValues['repeatIcalRrule'] as String?)?.trim();
+                final repeatCandidate = extractNullableStringValue(
+                  formValues,
+                  'repeatIcalRrule',
+                );
                 final repeatIcalRrule =
                     (repeatCandidate == null || repeatCandidate.isEmpty)
                     ? null
                     : repeatCandidate;
-                final startDate = formValues['startDate'] as DateTime?;
-                final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                final labelIds =
-                    (formValues['labelIds'] as List<dynamic>?)
-                        ?.cast<String>() ??
-                    <String>[];
+                final startDate = extractDateTimeValue(formValues, 'startDate');
+                final deadlineDate = extractDateTimeValue(
+                  formValues,
+                  'deadlineDate',
+                );
+                final labelIds = extractStringListValue(formValues, 'labelIds');
                 final selectedLabels = availableLabels
                     .where((l) => labelIds.contains(l.id))
                     .toList(growable: false);
@@ -177,6 +194,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                 );
               },
               submitTooltip: context.l10n.actionCreate,
+              onClose: () => Navigator.of(context).maybePop(),
             );
           },
           loadSuccess: (availableLabels, project) {
@@ -185,27 +203,30 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
               formKey: _formKey,
               availableLabels: availableLabels,
               onSubmit: () {
-                final formState = _formKey.currentState;
-                if (formState == null) return;
-                if (!formState.saveAndValidate()) return;
+                final formValues = validateAndGetFormValues(_formKey);
+                if (formValues == null) return;
 
-                final formValues = formState.value;
-                final name = (formValues['name'] as String).trim();
-                final description = formValues['description'] as String?;
-                final completed = formValues['completed'] as bool? ?? false;
+                final name = extractStringValue(formValues, 'name').trim();
+                final description = extractNullableStringValue(
+                  formValues,
+                  'description',
+                );
+                final completed = extractBoolValue(formValues, 'completed');
 
-                final repeatCandidate =
-                    (formValues['repeatIcalRrule'] as String?)?.trim();
+                final repeatCandidate = extractNullableStringValue(
+                  formValues,
+                  'repeatIcalRrule',
+                );
                 final repeatIcalRrule =
                     (repeatCandidate == null || repeatCandidate.isEmpty)
                     ? null
                     : repeatCandidate;
-                final startDate = formValues['startDate'] as DateTime?;
-                final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                final labelIds =
-                    (formValues['labelIds'] as List<dynamic>?)
-                        ?.cast<String>() ??
-                    <String>[];
+                final startDate = extractDateTimeValue(formValues, 'startDate');
+                final deadlineDate = extractDateTimeValue(
+                  formValues,
+                  'deadlineDate',
+                );
+                final labelIds = extractStringListValue(formValues, 'labelIds');
                 final selectedLabels = availableLabels
                     .where((l) => labelIds.contains(l.id))
                     .toList(growable: false);
@@ -223,7 +244,22 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView> {
                   ),
                 );
               },
+              onDelete: () async {
+                final confirmed = await showDeleteConfirmationDialog(
+                  context: context,
+                  title: 'Delete Project',
+                  itemName: project.name,
+                  description:
+                      'All tasks in this project will also be deleted. This action cannot be undone.',
+                );
+                if (confirmed && context.mounted) {
+                  context.read<ProjectDetailBloc>().add(
+                    ProjectDetailEvent.delete(id: project.id),
+                  );
+                }
+              },
               submitTooltip: context.l10n.actionUpdate,
+              onClose: () => Navigator.of(context).maybePop(),
             );
           },
           operationSuccess: (_) => const SizedBox.shrink(),

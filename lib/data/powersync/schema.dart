@@ -35,6 +35,7 @@ const schema = Schema([
     Column.text('updated_at'),
     Column.text('user_id'),
     Column.text('type'),
+    Column.text('icon_name'),
   ]),
   Table('task_labels', [
     Column.text('task_id'),

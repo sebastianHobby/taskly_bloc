@@ -31,7 +31,7 @@ class LabelOverviewPage extends StatelessWidget {
         labelRepository: labelRepository,
         typeFilter: LabelType.label,
         initialSortPreferences: initialSort,
-      )..add(const LabelOverviewEvent.labelsSubscriptionRequested()),
+      )..add(const LabelOverviewEvent.subscriptionRequested()),
       child: LabelOverviewView(labelRepository: labelRepository),
     );
   }
@@ -124,7 +124,6 @@ class _LabelOverviewViewState extends State<LabelOverviewView> {
                     ),
               floatingActionButton: AddLabelFab(
                 labelRepository: widget.labelRepository,
-                isSheetOpen: _isSheetOpen,
                 initialType: LabelType.label,
                 lockType: true,
                 tooltip: context.l10n.createLabelTooltip,

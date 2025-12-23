@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/detail_bloc_mixin.dart';
+import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
@@ -42,14 +44,6 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
       _ProjectDetailLoadInitialData;
 }
 
-@freezed
-abstract class ProjectDetailError with _$ProjectDetailError {
-  const factory ProjectDetailError({
-    required Object error,
-    StackTrace? stackTrace,
-  }) = _ProjectDetailError;
-}
-
 // State
 @freezed
 class ProjectDetailState with _$ProjectDetailState {
@@ -59,15 +53,13 @@ class ProjectDetailState with _$ProjectDetailState {
     required List<Label> availableLabels,
   }) = ProjectDetailInitialDataLoadSuccess;
 
-  // Returns success or failure after create, update, delete operations
   const factory ProjectDetailState.operationSuccess({
     required EntityOperation operation,
   }) = ProjectDetailOperationSuccess;
   const factory ProjectDetailState.operationFailure({
-    required ProjectDetailError errorDetails,
+    required DetailBlocError<Project> errorDetails,
   }) = ProjectDetailOperationFailure;
 
-  // States for loading a project
   const factory ProjectDetailState.loadInProgress() =
       ProjectDetailLoadInProgress;
   const factory ProjectDetailState.loadSuccess({
@@ -76,87 +68,41 @@ class ProjectDetailState with _$ProjectDetailState {
   }) = ProjectDetailLoadSuccess;
 }
 
-class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
+class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
+    with DetailBlocMixin<ProjectDetailEvent, ProjectDetailState, Project> {
   ProjectDetailBloc({
     required ProjectRepositoryContract projectRepository,
     required LabelRepositoryContract labelRepository,
   }) : _projectRepository = projectRepository,
        _labelRepository = labelRepository,
        super(const ProjectDetailState.initial()) {
-    on<ProjectDetailEvent>((event, emit) async {
-      await event.when(
-        get: (projectId) async => _onGet(projectId, emit),
-        update:
-            (
-              id,
-              name,
-              completed,
-              description,
-              startDate,
-              deadlineDate,
-              repeatIcalRrule,
-              labels,
-            ) async => _onUpdate(
-              id: id,
-              name: name,
-              description: description,
-              completed: completed,
-              startDate: startDate,
-              deadlineDate: deadlineDate,
-              repeatIcalRrule: repeatIcalRrule,
-              labels: labels,
-              emit: emit,
-            ),
-        delete: (id) async => _onDelete(id, emit),
-        create:
-            (
-              name,
-              description,
-              completed,
-              startDate,
-              deadlineDate,
-              repeatIcalRrule,
-              labels,
-            ) async => _onCreate(
-              name: name,
-              description: description,
-              completed: completed,
-              startDate: startDate,
-              deadlineDate: deadlineDate,
-              repeatIcalRrule: repeatIcalRrule,
-              labels: labels,
-              emit: emit,
-            ),
-        loadInitialData: () async => _onLoadInitialData(emit),
-      );
-    });
+    on<_ProjectDetailGet>((event, emit) => _onGet(event.projectId, emit));
+    on<_ProjectDetailCreate>(_onCreate);
+    on<_ProjectDetailUpdate>(_onUpdate);
+    on<_ProjectDetailDelete>(_onDelete);
+    on<_ProjectDetailLoadInitialData>(
+      (event, emit) => _onLoadInitialData(emit),
+    );
   }
+
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
 
-  Future<void> _onLoadInitialData(Emitter<ProjectDetailState> emit) async {
-    emit(const ProjectDetailState.loadInProgress());
-    try {
-      final labels = await _labelRepository.getAll();
+  // DetailBlocMixin implementation
+  @override
+  ProjectDetailState createLoadInProgressState() =>
+      const ProjectDetailState.loadInProgress();
 
-      emit(
-        ProjectDetailState.initialDataLoadSuccess(
-          availableLabels: labels,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        ProjectDetailState.operationFailure(
-          errorDetails: ProjectDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
-  }
+  @override
+  ProjectDetailState createOperationSuccessState(EntityOperation operation) =>
+      ProjectDetailState.operationSuccess(operation: operation);
 
-  Future _onGet(
+  @override
+  ProjectDetailState createOperationFailureState(
+    DetailBlocError<Project> error,
+  ) => ProjectDetailState.operationFailure(errorDetails: error);
+
+  Future<void> _onGet(
     String projectId,
     Emitter<ProjectDetailState> emit,
   ) async {
@@ -167,10 +113,13 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
         projectId,
         withRelated: true,
       );
+
       if (project == null) {
         emit(
           const ProjectDetailState.operationFailure(
-            errorDetails: ProjectDetailError(error: NotFoundEntity.project),
+            errorDetails: DetailBlocError<Project>(
+              error: NotFoundEntity.project,
+            ),
           ),
         );
       } else {
@@ -181,111 +130,76 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState> {
           ),
         );
       }
-    } catch (error, stacktrace) {
+    } catch (error, stackTrace) {
       emit(
         ProjectDetailState.operationFailure(
-          errorDetails: ProjectDetailError(
+          errorDetails: DetailBlocError<Project>(
             error: error,
-            stackTrace: stacktrace,
+            stackTrace: stackTrace,
           ),
         ),
       );
     }
   }
 
-  Future<void> _onUpdate({
-    required String id,
-    required String name,
-    required String? description,
-    required bool completed,
-    required DateTime? startDate,
-    required DateTime? deadlineDate,
-    required String? repeatIcalRrule,
-    required List<Label>? labels,
-    required Emitter<ProjectDetailState> emit,
-  }) async {
-    try {
-      await _projectRepository.update(
-        id: id,
-        name: name,
-        description: description,
-        completed: completed,
-        startDate: startDate,
-        deadlineDate: deadlineDate,
-        repeatIcalRrule: repeatIcalRrule,
-        labelIds: labels?.map((e) => e.id).toList(growable: false),
-      );
-      emit(
-        ProjectDetailState.operationSuccess(
-          operation: EntityOperation.update,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        ProjectDetailState.operationFailure(
-          errorDetails: ProjectDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+  Future<void> _onUpdate(
+    _ProjectDetailUpdate event,
+    Emitter<ProjectDetailState> emit,
+  ) async {
+    await executeUpdateOperation(
+      emit,
+      () => _projectRepository.update(
+        id: event.id,
+        name: event.name,
+        description: event.description,
+        completed: event.completed,
+        startDate: event.startDate,
+        deadlineDate: event.deadlineDate,
+        repeatIcalRrule: event.repeatIcalRrule,
+        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+      ),
+    );
   }
 
   Future<void> _onDelete(
-    String id,
+    _ProjectDetailDelete event,
     Emitter<ProjectDetailState> emit,
   ) async {
-    try {
-      await _projectRepository.delete(id);
-      emit(
-        const ProjectDetailState.operationSuccess(
-          operation: EntityOperation.delete,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        ProjectDetailState.operationFailure(
-          errorDetails: ProjectDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+    await executeDeleteOperation(
+      emit,
+      () => _projectRepository.delete(event.id),
+    );
   }
 
-  Future<void> _onCreate({
-    required String name,
-    required String? description,
-    required bool completed,
-    required DateTime? startDate,
-    required DateTime? deadlineDate,
-    required String? repeatIcalRrule,
-    required List<Label>? labels,
-    required Emitter<ProjectDetailState> emit,
-  }) async {
+  Future<void> _onCreate(
+    _ProjectDetailCreate event,
+    Emitter<ProjectDetailState> emit,
+  ) async {
+    await executeCreateOperation(
+      emit,
+      () => _projectRepository.create(
+        name: event.name,
+        description: event.description,
+        completed: event.completed,
+        startDate: event.startDate,
+        deadlineDate: event.deadlineDate,
+        repeatIcalRrule: event.repeatIcalRrule,
+        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+      ),
+    );
+  }
+
+  Future<void> _onLoadInitialData(Emitter<ProjectDetailState> emit) async {
+    emit(const ProjectDetailState.loadInProgress());
     try {
-      await _projectRepository.create(
-        name: name,
-        description: description,
-        completed: completed,
-        startDate: startDate,
-        deadlineDate: deadlineDate,
-        repeatIcalRrule: repeatIcalRrule,
-        labelIds: labels?.map((e) => e.id).toList(growable: false),
-      );
-      emit(
-        const ProjectDetailState.operationSuccess(
-          operation: EntityOperation.create,
-        ),
-      );
-    } catch (error, stacktrace) {
+      final labels = await _labelRepository.getAll();
+      emit(ProjectDetailState.initialDataLoadSuccess(availableLabels: labels));
+    } catch (error, stackTrace) {
       emit(
         ProjectDetailState.operationFailure(
-          errorDetails: ProjectDetailError(
+          errorDetails: DetailBlocError<Project>(
             error: error,
-            stackTrace: stacktrace,
+            stackTrace: stackTrace,
           ),
         ),
       );

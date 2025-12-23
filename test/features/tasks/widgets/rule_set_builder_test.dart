@@ -4,8 +4,8 @@ import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 import 'package:taskly_bloc/features/tasks/widgets/rule_set_builder.dart';
 
 void main() {
-  group('RuleSetBuilder - Field First Selection', () {
-    testWidgets('displays field-based rule selector', (tester) async {
+  group('RuleSetBuilder', () {
+    testWidgets('displays Add Rule button when empty', (tester) async {
       TaskRuleSet? updatedRuleSet;
 
       final initialRuleSet = TaskRuleSet(
@@ -26,33 +26,30 @@ void main() {
         ),
       );
 
-      // Find and tap the add rule button
+      // Verify Add Rule button is visible
       expect(find.text('Add Rule'), findsOneWidget);
+
+      // Tap Add Rule to open the dialog
       await tester.tap(find.text('Add Rule'));
       await tester.pumpAndSettle();
 
-      // Verify field options are available in popup menu
-      expect(find.text('Start Date'), findsOneWidget);
-      expect(find.text('Deadline Date'), findsOneWidget);
-      expect(find.text('Completed Status'), findsOneWidget);
-      expect(find.text('Labels'), findsOneWidget);
-      expect(find.text('Project'), findsOneWidget);
+      // Verify dialog opened (has Save and Cancel buttons)
+      expect(find.text('Add Rule'), findsWidgets); // Title in dialog
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
 
-      // Select Start Date to test that rule creation works
-      await tester.tap(find.text('Start Date'));
+      // Save the default rule
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       // Verify a new rule was added
       expect(updatedRuleSet, isNotNull);
       expect(updatedRuleSet!.rules.length, equals(1));
-
-      // Verify the new rule is a DateRule with start date field
-      final newRule = updatedRuleSet!.rules.first;
-      expect(newRule, isA<DateRule>());
-      expect((newRule as DateRule).field, DateRuleField.startDate);
     });
 
-    testWidgets('creates DateRule for start date field', (tester) async {
+    testWidgets('adds default DateRule when Save clicked in dialog', (
+      tester,
+    ) async {
       TaskRuleSet? updatedRuleSet;
 
       final initialRuleSet = TaskRuleSet(
@@ -73,15 +70,15 @@ void main() {
         ),
       );
 
-      // Find and tap the add rule button
+      // Tap Add Rule to open dialog
       await tester.tap(find.text('Add Rule'));
       await tester.pumpAndSettle();
 
-      // Select start date field
-      await tester.tap(find.text('Start Date'));
+      // Save the rule
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      // Verify a DateRule with start date field was created
+      // Verify a DateRule with start date field was created (default)
       expect(updatedRuleSet, isNotNull);
       expect(updatedRuleSet!.rules.length, equals(1));
 
@@ -90,7 +87,9 @@ void main() {
       expect((newRule as DateRule).field, DateRuleField.startDate);
     });
 
-    testWidgets('creates BooleanRule for completed field', (tester) async {
+    testWidgets('Cancel button closes dialog without adding rule', (
+      tester,
+    ) async {
       TaskRuleSet? updatedRuleSet;
 
       final initialRuleSet = TaskRuleSet(
@@ -111,21 +110,16 @@ void main() {
         ),
       );
 
-      // Find and tap the add rule button
+      // Tap Add Rule to open dialog
       await tester.tap(find.text('Add Rule'));
       await tester.pumpAndSettle();
 
-      // Select completed field
-      await tester.tap(find.text('Completed Status'));
+      // Tap Cancel
+      await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      // Verify a BooleanRule was created
-      expect(updatedRuleSet, isNotNull);
-      expect(updatedRuleSet!.rules.length, equals(1));
-
-      final newRule = updatedRuleSet!.rules.first;
-      expect(newRule, isA<BooleanRule>());
-      expect((newRule as BooleanRule).field, BooleanRuleField.completed);
+      // Verify no rule was added
+      expect(updatedRuleSet, isNull);
     });
 
     test('TaskField enum has correct display names and icons', () {

@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:form_builder_extra_fields/form_builder_extra_fields.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:taskly_bloc/core/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/core/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/core/shared/form_fields/form_fields.dart';
 
-class LabelForm extends StatelessWidget {
+/// A modern form for creating or editing labels/values.
+///
+/// Features:
+/// - X close button in top right
+/// - Action button in sticky footer at bottom right
+/// - Unsaved changes confirmation on close
+class LabelForm extends StatefulWidget {
   const LabelForm({
     required this.formKey,
     required this.initialData,
@@ -12,6 +20,8 @@ class LabelForm extends StatelessWidget {
     required this.submitTooltip,
     this.initialType,
     this.lockType = false,
+    this.onDelete,
+    this.onClose,
     super.key,
   });
 
@@ -21,149 +31,260 @@ class LabelForm extends StatelessWidget {
   final Label? initialData;
   final LabelType? initialType;
   final bool lockType;
+  final VoidCallback? onDelete;
+
+  /// Called when the user wants to close the form.
+  /// If null, no close button is shown.
+  final VoidCallback? onClose;
 
   static const _defaultColorHex = '#000000';
+  static const _defaultValueEmoji = '❤️';
 
-  static Color _colorFromHex(String hex) {
-    final normalized = hex.replaceAll('#', '');
-    if (normalized.length != 6) return const Color(0xFF000000);
-    return Color(int.parse('FF$normalized', radix: 16));
-  }
+  @override
+  State<LabelForm> createState() => _LabelFormState();
+}
 
-  static String _toHex(Color color) {
-    final rgb = color.value & 0x00FFFFFF;
-    return '#${rgb.toRadixString(16).padLeft(6, '0')}';
-  }
+class _LabelFormState extends State<LabelForm> with FormDirtyStateMixin {
+  @override
+  VoidCallback? get onClose => widget.onClose;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Determine the effective type for display purposes
+    final effectiveType =
+        widget.initialData?.type ?? widget.initialType ?? LabelType.label;
+    final isValueType = effectiveType == LabelType.value;
+    final isCreating = widget.initialData == null;
+
     final Map<String, dynamic> initialValues = {
-      'name': initialData?.name.trim() ?? '',
-      'colour': _colorFromHex(initialData?.color ?? _defaultColorHex),
-      'type': initialData?.type ?? initialType ?? LabelType.label,
+      'name': widget.initialData?.name.trim() ?? '',
+      'colour': ColorUtils.fromHex(
+        widget.initialData?.color ?? LabelForm._defaultColorHex,
+      ),
+      'type': effectiveType,
+      // Default emoji to heart for values, empty for labels
+      'iconName':
+          widget.initialData?.iconName ??
+          (isValueType ? LabelForm._defaultValueEmoji : ''),
     };
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: FormBuilder(
-              key: formKey,
-              initialValue: initialValues,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
+    final entityName = isValueType ? 'Value' : 'Label';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: 32,
+            height: 4,
+            margin: const EdgeInsets.only(top: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.outline.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // Header with title and close button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
+            child: Row(
+              children: [
+                // Title with icon
+                Icon(
+                  isValueType ? Icons.sell : Icons.label,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isCreating ? 'New $entityName' : 'Edit $entityName',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+
+                // Delete button (if editing)
+                if (widget.initialData != null && widget.onDelete != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colorScheme.error,
+                      size: 20,
+                    ),
+                    onPressed: widget.onDelete,
+                    tooltip: 'Delete $entityName',
+                    visualDensity: VisualDensity.compact,
+                  ),
+
+                // Close button (X) in top right
+                if (widget.onClose != null)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: handleClose,
+                    tooltip: 'Close',
+                    style: IconButton.styleFrom(
+                      foregroundColor: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+
+          const Divider(height: 16),
+
+          // Form content
+          FormBuilder(
+            key: widget.formKey,
+            initialValue: initialValues,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            onChanged: markDirty,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
-                      name: 'name',
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: 'Name',
-                        border: InputBorder.none,
-                      ),
-                      validator: FormBuilderValidators.compose([
-                        FormBuilderValidators.required(
-                          errorText: 'Name is required',
-                        ),
-                        FormBuilderValidators.minLength(
-                          1,
-                          errorText: 'Name must not be empty',
-                        ),
-                      ]),
+                  // Name field
+                  FormBuilderTextField(
+                    name: 'name',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w500,
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderColorPickerField(
-                      name: 'colour',
-                      colorPickerType: ColorPickerType.blockPicker,
-                      availableColors: const [
-                        Colors.red,
-                        Colors.pink,
-                        Colors.purple,
-                        Colors.deepPurple,
-                        Colors.indigo,
-                        Colors.blue,
-                        Colors.lightBlue,
-                        Colors.cyan,
-                        Colors.teal,
-                        Colors.green,
-                        Colors.lightGreen,
-                        Colors.lime,
-                        Colors.yellow,
-                        Colors.amber,
-                        Colors.orange,
-                        Colors.deepOrange,
-                        Colors.brown,
-                        Colors.grey,
-                        Colors.blueGrey,
-                        Colors.black,
-                      ],
-                      decoration: const InputDecoration(
-                        hintText: 'Colour',
-                        border: InputBorder.none,
+                    decoration: InputDecoration(
+                      hintText: 'Name',
+                      filled: true,
+                      fillColor: colorScheme.surfaceContainerLow,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
-                      valueTransformer: (colour) {
-                        if (colour == null) return _defaultColorHex;
-                        return _toHex(colour);
-                      },
-                      validator: FormBuilderValidators.required(
-                        errorText: 'Colour is required',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
                       ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      isDense: true,
                     ),
+                    validator: FormBuilderValidators.compose([
+                      FormBuilderValidators.required<String>(
+                        errorText: 'Name is required',
+                      ),
+                    ]),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: lockType
-                        ? const SizedBox.shrink()
-                        : FormBuilderDropdown<LabelType>(
+
+                  const SizedBox(height: 12),
+
+                  // Type picker (only when creating and not locked)
+                  if (widget.initialData == null && !widget.lockType)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FormBuilderLabelTypePickerModern(
                             name: 'type',
-                            decoration: const InputDecoration(
-                              hintText: 'Type',
-                              border: InputBorder.none,
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: LabelType.label,
-                                child: Text('Label'),
-                              ),
-                              DropdownMenuItem(
-                                value: LabelType.value,
-                                child: Text('Value'),
-                              ),
-                            ],
-                            validator: FormBuilderValidators.required(
-                              errorText: 'Type is required',
+                            label: 'Type',
+                            compact: true,
+                            validator:
+                                FormBuilderValidators.required<LabelType>(
+                                  errorText: 'Type is required',
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  if (widget.initialData == null && !widget.lockType)
+                    const SizedBox(height: 12),
+
+                  // Color and Emoji pickers
+                  FormBuilderField<LabelType>(
+                    name: 'type',
+                    builder: (field) {
+                      final isValue = field.value == LabelType.value;
+
+                      return Row(
+                        children: [
+                          FormBuilderColorPickerModern(
+                            name: 'colour',
+                            showLabel: false,
+                            compact: true,
+                            validator: FormBuilderValidators.required<Color>(
+                              errorText: 'Color is required',
                             ),
                           ),
+                          if (isValue) ...[
+                            const SizedBox(width: 8),
+                            FormBuilderEmojiPickerModern(
+                              name: 'iconName',
+                              showLabel: false,
+                              compact: true,
+                              validator: FormBuilderValidators.required<String>(
+                                errorText: 'Emoji is required',
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
             ),
           ),
-        ),
-        const Divider(height: 1),
-        SizedBox(
-          height: kToolbarHeight,
-          child: Row(
-            children: [
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton.filled(
-                  icon: const Icon(Icons.check),
-                  tooltip: submitTooltip,
-                  onPressed: onSubmit,
+
+          // Sticky footer with action button at bottom right
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
-            ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FilledButton.icon(
+                  onPressed: widget.onSubmit,
+                  icon: Icon(
+                    isCreating ? Icons.add : Icons.check,
+                    size: 18,
+                  ),
+                  label: Text(
+                    isCreating ? 'Create $entityName' : 'Save Changes',
+                  ),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

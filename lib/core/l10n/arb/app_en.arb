@@ -4,6 +4,18 @@
     "@counterAppBarTitle": {
         "description": "Text shown in the AppBar of the Counter Page"
     },
+    "editLabel": "Edit",
+    "@editLabel": {
+        "description": "Generic edit action label"
+    },
+    "cancelLabel": "Cancel",
+    "@cancelLabel": {
+        "description": "Generic cancel action label"
+    },
+    "deleteLabel": "Delete",
+    "@deleteLabel": {
+        "description": "Generic delete action label"
+    },
     "projectsTitle": "Projects",
     "@projectsTitle": {
         "description": "Title for the Projects section"
@@ -59,6 +71,10 @@
     "noLabelsFound": "No labels found.",
     "@noLabelsFound": {
         "description": "Empty state shown when there are no labels"
+    },
+    "noValuesFound": "No values found.",
+    "@noValuesFound": {
+        "description": "Empty state shown when there are no values"
     },
     "genericErrorFallback": "Something went wrong. Please try again.",
     "@genericErrorFallback": {
@@ -355,5 +371,255 @@
     "addProjectAction": "Add project",
     "@addProjectAction": {
         "description": "Action button text for adding a project"
+    },
+    "taskFormNameHint": "Task Name",
+    "@taskFormNameHint": {
+        "description": "Hint text for the task name field"
+    },
+    "taskFormDescriptionHint": "Description",
+    "@taskFormDescriptionHint": {
+        "description": "Hint text for the task description field"
+    },
+    "taskFormStartDateHint": "Start date (optional)",
+    "@taskFormStartDateHint": {
+        "description": "Hint text for the task start date field"
+    },
+    "taskFormDeadlineDateHint": "Deadline date (optional)",
+    "@taskFormDeadlineDateHint": {
+        "description": "Hint text for the task deadline date field"
+    },
+    "taskFormProjectHint": "Project (optional)",
+    "@taskFormProjectHint": {
+        "description": "Hint text for the task project field"
+    },
+    "taskFormCompletedLabel": "Completed",
+    "@taskFormCompletedLabel": {
+        "description": "Label for the completed checkbox in the task form"
+    },
+    "taskFormNameRequired": "Name is required",
+    "@taskFormNameRequired": {
+        "description": "Validation error when task name is missing"
+    },
+    "taskFormNameEmpty": "Name must not be empty",
+    "@taskFormNameEmpty": {
+        "description": "Validation error when task name is empty"
+    },
+    "taskFormNameTooLong": "Name must be 120 characters or fewer",
+    "@taskFormNameTooLong": {
+        "description": "Validation error when task name is too long"
+    },
+    "taskFormDescriptionTooLong": "Description is too long",
+    "@taskFormDescriptionTooLong": {
+        "description": "Validation error when task description is too long"
+    },
+    "taskFormDeadlineAfterStartError": "Deadline must be after start date",
+    "@taskFormDeadlineAfterStartError": {
+        "description": "Validation error when deadline is before start date"
+    },
+    "dateToday": "Today",
+    "@dateToday": {
+        "description": "Relative date label for today"
+    },
+    "dateTomorrow": "Tomorrow",
+    "@dateTomorrow": {
+        "description": "Relative date label for tomorrow"
+    },
+    "dateYesterday": "Yesterday",
+    "@dateYesterday": {
+        "description": "Relative date label for yesterday"
+    },
+    "dateInDays": "In {days} days",
+    "@dateInDays": {
+        "description": "Relative date label for days in the future",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "dateDaysAgo": "{days} days ago",
+    "@dateDaysAgo": {
+        "description": "Relative date label for days in the past",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "repeatsLabel": "Repeats",
+    "@repeatsLabel": {
+        "description": "Label shown for repeating tasks/projects"
+    },
+    "labelTypeLabel": "Label",
+    "@labelTypeLabel": {
+        "description": "Display name for label type"
+    },
+    "labelTypeValue": "Value",
+    "@labelTypeValue": {
+        "description": "Display name for value type"
+    },
+    "retryButton": "Retry",
+    "@retryButton": {
+        "description": "Text for retry action button"
+    },
+    "rruleDaily": "Every day",
+    "@rruleDaily": {
+        "description": "RRULE frequency: daily"
+    },
+    "rruleWeekly": "Every week",
+    "@rruleWeekly": {
+        "description": "RRULE frequency: weekly"
+    },
+    "rruleMonthly": "Every month",
+    "@rruleMonthly": {
+        "description": "RRULE frequency: monthly"
+    },
+    "rruleYearly": "Every year",
+    "@rruleYearly": {
+        "description": "RRULE frequency: yearly"
+    },
+    "rruleEveryNDays": "Every {n} days",
+    "@rruleEveryNDays": {
+        "description": "RRULE frequency: every n days",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNWeeks": "Every {n} weeks",
+    "@rruleEveryNWeeks": {
+        "description": "RRULE frequency: every n weeks",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNMonths": "Every {n} months",
+    "@rruleEveryNMonths": {
+        "description": "RRULE frequency: every n months",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNYears": "Every {n} years",
+    "@rruleEveryNYears": {
+        "description": "RRULE frequency: every n years",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleOn": "on",
+    "@rruleOn": {
+        "description": "RRULE: preposition for days"
+    },
+    "rruleOnDay": "on day",
+    "@rruleOnDay": {
+        "description": "RRULE: preposition for day of month"
+    },
+    "rruleTimes": "{count, plural, =1{1 time} other{{count} times}}",
+    "@rruleTimes": {
+        "description": "RRULE: number of occurrences",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "rruleUntil": "until",
+    "@rruleUntil": {
+        "description": "RRULE: preposition for end date"
+    },
+    "dayMon": "Mon",
+    "@dayMon": {
+        "description": "Abbreviated day name: Monday"
+    },
+    "dayTue": "Tue",
+    "@dayTue": {
+        "description": "Abbreviated day name: Tuesday"
+    },
+    "dayWed": "Wed",
+    "@dayWed": {
+        "description": "Abbreviated day name: Wednesday"
+    },
+    "dayThu": "Thu",
+    "@dayThu": {
+        "description": "Abbreviated day name: Thursday"
+    },
+    "dayFri": "Fri",
+    "@dayFri": {
+        "description": "Abbreviated day name: Friday"
+    },
+    "daySat": "Sat",
+    "@daySat": {
+        "description": "Abbreviated day name: Saturday"
+    },
+    "daySun": "Sun",
+    "@daySun": {
+        "description": "Abbreviated day name: Sunday"
+    },
+    "projectDetailTasksTitle": "Tasks",
+    "@projectDetailTasksTitle": {
+        "description": "Title for tasks section in project detail"
+    },
+    "projectDetailTaskCount": "{count, plural, =0{No tasks} =1{1 task} other{{count} tasks}}",
+    "@projectDetailTaskCount": {
+        "description": "Task count display in project detail",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailCompletedCount": "{completed} of {total} completed",
+    "@projectDetailCompletedCount": {
+        "description": "Completed task count display",
+        "placeholders": {
+            "completed": {
+                "type": "int",
+                "example": "3"
+            },
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailEmptyTasksDescription": "Add tasks to this project to track your progress",
+    "@projectDetailEmptyTasksDescription": {
+        "description": "Description shown when project has no tasks"
+    },
+    "projectStatusCompleted": "Completed",
+    "@projectStatusCompleted": {
+        "description": "Status badge for completed projects"
+    },
+    "projectStatusActive": "Active",
+    "@projectStatusActive": {
+        "description": "Status badge for active projects"
+    },
+    "deleteProjectAction": "Delete project",
+    "@deleteProjectAction": {
+        "description": "Menu action to delete a project"
+    },
+    "markCompleteAction": "Mark complete",
+    "@markCompleteAction": {
+        "description": "Menu action to mark a project complete"
+    },
+    "markIncompleteAction": "Mark incomplete",
+    "@markIncompleteAction": {
+        "description": "Menu action to mark a project incomplete"
     }
 }

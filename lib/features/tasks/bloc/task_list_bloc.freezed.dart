@@ -55,13 +55,14 @@ extension TaskOverviewEventPatterns on TaskOverviewEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( TaskOverviewConfigChanged value)?  configChanged,TResult Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( TaskOverviewConfigChanged value)?  configChanged,TResult Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult Function( TaskOverviewDeleteTask value)?  deleteTask,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that);case _:
+return toggleTaskCompletion(_that);case TaskOverviewDeleteTask() when deleteTask != null:
+return deleteTask(_that);case _:
   return orElse();
 
 }
@@ -79,13 +80,14 @@ return toggleTaskCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( TaskOverviewConfigChanged value)  configChanged,required TResult Function( TaskOverviewToggleTaskCompletion value)  toggleTaskCompletion,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( TaskOverviewConfigChanged value)  configChanged,required TResult Function( TaskOverviewToggleTaskCompletion value)  toggleTaskCompletion,required TResult Function( TaskOverviewDeleteTask value)  deleteTask,}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested(_that);case TaskOverviewConfigChanged():
 return configChanged(_that);case TaskOverviewToggleTaskCompletion():
-return toggleTaskCompletion(_that);}
+return toggleTaskCompletion(_that);case TaskOverviewDeleteTask():
+return deleteTask(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -99,13 +101,14 @@ return toggleTaskCompletion(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( TaskOverviewConfigChanged value)?  configChanged,TResult? Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( TaskOverviewConfigChanged value)?  configChanged,TResult? Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult? Function( TaskOverviewDeleteTask value)?  deleteTask,}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that);case _:
+return toggleTaskCompletion(_that);case TaskOverviewDeleteTask() when deleteTask != null:
+return deleteTask(_that);case _:
   return null;
 
 }
@@ -122,12 +125,13 @@ return toggleTaskCompletion(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskSelectorConfig config)?  configChanged,TResult Function( Task task)?  toggleTaskCompletion,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskSelectorConfig config)?  configChanged,TResult Function( Task task)?  toggleTaskCompletion,TResult Function( Task task)?  deleteTask,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that.config);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that.task);case _:
+return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
+return deleteTask(_that.task);case _:
   return orElse();
 
 }
@@ -145,12 +149,13 @@ return toggleTaskCompletion(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskSelectorConfig config)  configChanged,required TResult Function( Task task)  toggleTaskCompletion,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskSelectorConfig config)  configChanged,required TResult Function( Task task)  toggleTaskCompletion,required TResult Function( Task task)  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested();case TaskOverviewConfigChanged():
 return configChanged(_that.config);case TaskOverviewToggleTaskCompletion():
-return toggleTaskCompletion(_that.task);}
+return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask():
+return deleteTask(_that.task);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -164,12 +169,13 @@ return toggleTaskCompletion(_that.task);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskSelectorConfig config)?  configChanged,TResult? Function( Task task)?  toggleTaskCompletion,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskSelectorConfig config)?  configChanged,TResult? Function( Task task)?  toggleTaskCompletion,TResult? Function( Task task)?  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that.config);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
-return toggleTaskCompletion(_that.task);case _:
+return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
+return deleteTask(_that.task);case _:
   return null;
 
 }
@@ -333,6 +339,72 @@ class _$TaskOverviewToggleTaskCompletionCopyWithImpl<$Res>
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? task = null,}) {
   return _then(TaskOverviewToggleTaskCompletion(
+task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
+as Task,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TaskOverviewDeleteTask implements TaskOverviewEvent {
+  const TaskOverviewDeleteTask({required this.task});
+  
+
+ final  Task task;
+
+/// Create a copy of TaskOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskOverviewDeleteTaskCopyWith<TaskOverviewDeleteTask> get copyWith => _$TaskOverviewDeleteTaskCopyWithImpl<TaskOverviewDeleteTask>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewDeleteTask&&(identical(other.task, task) || other.task == task));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,task);
+
+@override
+String toString() {
+  return 'TaskOverviewEvent.deleteTask(task: $task)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskOverviewDeleteTaskCopyWith<$Res> implements $TaskOverviewEventCopyWith<$Res> {
+  factory $TaskOverviewDeleteTaskCopyWith(TaskOverviewDeleteTask value, $Res Function(TaskOverviewDeleteTask) _then) = _$TaskOverviewDeleteTaskCopyWithImpl;
+@useResult
+$Res call({
+ Task task
+});
+
+
+
+
+}
+/// @nodoc
+class _$TaskOverviewDeleteTaskCopyWithImpl<$Res>
+    implements $TaskOverviewDeleteTaskCopyWith<$Res> {
+  _$TaskOverviewDeleteTaskCopyWithImpl(this._self, this._then);
+
+  final TaskOverviewDeleteTask _self;
+  final $Res Function(TaskOverviewDeleteTask) _then;
+
+/// Create a copy of TaskOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? task = null,}) {
+  return _then(TaskOverviewDeleteTask(
 task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
 as Task,
   ));

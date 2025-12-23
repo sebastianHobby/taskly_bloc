@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
+import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
@@ -32,56 +33,35 @@ class ProjectRepository implements ProjectRepositoryContract {
       return _projectStream.map((rows) => rows.map(projectFromTable).toList());
     }
 
-    final joined =
-        (driftDb.select(
-          driftDb.projectTable,
-        )..orderBy([(p) => OrderingTerm(expression: p.name)])).join([
-          leftOuterJoin(
-            driftDb.projectLabelsTable,
-            driftDb.projectLabelsTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
-          ),
-        ]);
-
-    return joined.watch().map((rows) {
-      final Map<String, ProjectTableData> projectsById = {};
-      final Map<String, Map<String, LabelTableData>> labelsByProject = {};
-
-      for (final row in rows) {
-        final project = row.readTable(driftDb.projectTable);
-        final id = project.id;
-
-        projectsById.putIfAbsent(id, () => project);
-
-        final label = row.readTableOrNull(driftDb.labelTable);
-        if (label != null) {
-          labelsByProject
-              .putIfAbsent(id, () => <String, LabelTableData>{})
-              .putIfAbsent(label.id, () => label);
-        }
-      }
-
-      final results = <Project>[];
-      for (final entry in projectsById.entries) {
-        final id = entry.key;
-        final labelTableList =
-            (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
-              ..sort((a, b) => a.name.compareTo(b.name));
-
-        final labels = labelTableList.map(labelFromTable).toList();
-
-        results.add(
-          projectFromTable(entry.value, labels: labels),
-        );
-      }
-
-      return results;
+    return _projectWithRelatedJoin().watch().map((rows) {
+      return ProjectAggregation.fromRows(
+        rows: rows,
+        driftDb: driftDb,
+      ).toProjects();
     });
+  }
+
+  /// Creates the standard join query for projects with labels.
+  JoinedSelectStatement<HasResultSet, dynamic> _projectWithRelatedJoin({
+    Expression<bool>? where,
+  }) {
+    final query = driftDb.select(driftDb.projectTable)
+      ..orderBy([(p) => OrderingTerm(expression: p.name)]);
+
+    if (where != null) {
+      query.where((p) => where);
+    }
+
+    return query.join([
+      leftOuterJoin(
+        driftDb.projectLabelsTable,
+        driftDb.projectLabelsTable.projectId.equalsExp(driftDb.projectTable.id),
+      ),
+      leftOuterJoin(
+        driftDb.labelTable,
+        driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+      ),
+    ]);
   }
 
   @override
@@ -90,57 +70,11 @@ class ProjectRepository implements ProjectRepositoryContract {
       return (await _projectList).map(projectFromTable).toList();
     }
 
-    // For snapshot queries we perform a join similar to the watch path.
-    final joined =
-        (driftDb.select(
-          driftDb.projectTable,
-        )..orderBy([(p) => OrderingTerm(expression: p.name)])).join([
-          leftOuterJoin(
-            driftDb.projectLabelsTable,
-            driftDb.projectLabelsTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
-          ),
-        ]);
-
-    final rows = await joined.get();
-
-    final Map<String, ProjectTableData> projectsById = {};
-    final Map<String, Map<String, LabelTableData>> labelsByProject = {};
-
-    for (final row in rows) {
-      final project = row.readTable(driftDb.projectTable);
-      final id = project.id;
-
-      projectsById.putIfAbsent(id, () => project);
-
-      final label = row.readTableOrNull(driftDb.labelTable);
-      if (label != null) {
-        labelsByProject
-            .putIfAbsent(id, () => <String, LabelTableData>{})
-            .putIfAbsent(label.id, () => label);
-      }
-    }
-
-    final results = <Project>[];
-    for (final entry in projectsById.entries) {
-      final id = entry.key;
-      final labelTableList =
-          (labelsByProject[id]?.values.toList() ?? <LabelTableData>[])
-            ..sort((a, b) => a.name.compareTo(b.name));
-
-      final labels = labelTableList.map(labelFromTable).toList();
-
-      results.add(
-        projectFromTable(entry.value, labels: labels),
-      );
-    }
-
-    return results;
+    final rows = await _projectWithRelatedJoin().get();
+    return ProjectAggregation.fromRows(
+      rows: rows,
+      driftDb: driftDb,
+    ).toProjects();
   }
 
   @override
@@ -169,27 +103,10 @@ class ProjectRepository implements ProjectRepositoryContract {
         ]);
 
     return joined.watch().map((rows) {
-      if (rows.isEmpty) return null;
-
-      ProjectTableData? project;
-      final Map<String, LabelTableData> labelMap = {};
-
-      for (final row in rows) {
-        project ??= row.readTable(driftDb.projectTable);
-
-        final labLink = row.readTableOrNull(driftDb.projectLabelsTable);
-        final label = row.readTableOrNull(driftDb.labelTable);
-        if (label != null && labLink != null) {
-          labelMap.putIfAbsent(label.id, () => label);
-        }
-      }
-
-      final labelTableList = labelMap.values.toList()
-        ..sort((a, b) => a.name.compareTo(b.name));
-
-      final labels = labelTableList.map(labelFromTable).toList();
-
-      return projectFromTable(project!, labels: labels);
+      return ProjectAggregation.fromRows(
+        rows: rows,
+        driftDb: driftDb,
+      ).toSingleProject();
     });
   }
 
@@ -217,27 +134,10 @@ class ProjectRepository implements ProjectRepositoryContract {
         ]);
 
     final rows = await joined.get();
-    if (rows.isEmpty) return null;
-
-    ProjectTableData? project;
-    final Map<String, LabelTableData> labelMap = {};
-
-    for (final row in rows) {
-      project ??= row.readTable(driftDb.projectTable);
-
-      final labLink = row.readTableOrNull(driftDb.projectLabelsTable);
-      final label = row.readTableOrNull(driftDb.labelTable);
-      if (label != null && labLink != null) {
-        labelMap.putIfAbsent(label.id, () => label);
-      }
-    }
-
-    final labelTableList = labelMap.values.toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    final labels = labelTableList.map(labelFromTable).toList();
-
-    return projectFromTable(project!, labels: labels);
+    return ProjectAggregation.fromRows(
+      rows: rows,
+      driftDb: driftDb,
+    ).toSingleProject();
   }
 
   Future<void> _updateProject(ProjectTableCompanion updateCompanion) async {

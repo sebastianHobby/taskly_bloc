@@ -148,7 +148,9 @@ class _InboxViewState extends State<InboxView> {
           },
         ),
         floatingActionButton: AddTaskFab(
-          onPressed: () => _showTaskDetailSheet(context),
+          taskRepository: widget.taskRepository,
+          projectRepository: widget.projectRepository,
+          labelRepository: widget.labelRepository,
         ),
       ),
     );
@@ -167,7 +169,7 @@ class _InboxViewState extends State<InboxView> {
               labelRepository: widget.labelRepository,
               taskId: taskId,
             ),
-            child: const TaskDetailSheet(),
+            child: TaskDetailSheet(labelRepository: widget.labelRepository),
           ),
         ),
       ),

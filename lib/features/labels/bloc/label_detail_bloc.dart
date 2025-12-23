@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/detail_bloc_mixin.dart';
+import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -14,6 +16,7 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   }) = _LabelDetailUpdate;
 
   const factory LabelDetailEvent.delete({required String id}) =
@@ -23,18 +26,11 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   }) = _LabelDetailCreate;
 
   const factory LabelDetailEvent.get({required String labelId}) =
       _LabelDetailGet;
-}
-
-@freezed
-abstract class LabelDetailError with _$LabelDetailError {
-  const factory LabelDetailError({
-    required Object error,
-    StackTrace? stackTrace,
-  }) = _LabelDetailError;
 }
 
 @freezed
@@ -45,7 +41,7 @@ class LabelDetailState with _$LabelDetailState {
     required EntityOperation operation,
   }) = LabelDetailOperationSuccess;
   const factory LabelDetailState.operationFailure({
-    required LabelDetailError errorDetails,
+    required DetailBlocError<Label> errorDetails,
   }) = LabelDetailOperationFailure;
 
   const factory LabelDetailState.loadInProgress() = LabelDetailLoadInProgress;
@@ -53,21 +49,17 @@ class LabelDetailState with _$LabelDetailState {
       LabelDetailLoadSuccess;
 }
 
-class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
+class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState>
+    with DetailBlocMixin<LabelDetailEvent, LabelDetailState, Label> {
   LabelDetailBloc({
     required LabelRepositoryContract labelRepository,
     String? labelId,
   }) : _labelRepository = labelRepository,
        super(const LabelDetailState.initial()) {
-    on<LabelDetailEvent>((event, emit) async {
-      await event.when(
-        get: (labelId) async => _onGet(labelId, emit),
-        update: (id, name, color, type) async =>
-            _onUpdate(id, name, color, type, emit),
-        delete: (id) async => _onDelete(id, emit),
-        create: (name, color, type) async => _onCreate(name, color, type, emit),
-      );
-    });
+    on<_LabelDetailGet>(_onGet);
+    on<_LabelDetailCreate>(_onCreate);
+    on<_LabelDetailUpdate>(_onUpdate);
+    on<_LabelDetailDelete>(_onDelete);
 
     if (labelId != null) {
       add(LabelDetailEvent.get(labelId: labelId));
@@ -76,104 +68,67 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState> {
 
   final LabelRepositoryContract _labelRepository;
 
-  Future<void> _onGet(String labelId, Emitter<LabelDetailState> emit) async {
-    emit(const LabelDetailState.loadInProgress());
-    try {
-      final label = await _labelRepository.get(labelId);
-      if (label == null) {
-        emit(
-          const LabelDetailState.operationFailure(
-            errorDetails: LabelDetailError(error: NotFoundEntity.label),
-          ),
-        );
-      } else {
-        emit(LabelDetailState.loadSuccess(label: label));
-      }
-    } catch (error, stacktrace) {
-      emit(
-        LabelDetailState.operationFailure(
-          errorDetails: LabelDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+  // DetailBlocMixin implementation
+  @override
+  LabelDetailState createLoadInProgressState() =>
+      const LabelDetailState.loadInProgress();
+
+  @override
+  LabelDetailState createOperationSuccessState(EntityOperation operation) =>
+      LabelDetailState.operationSuccess(operation: operation);
+
+  @override
+  LabelDetailState createOperationFailureState(DetailBlocError<Label> error) =>
+      LabelDetailState.operationFailure(errorDetails: error);
+
+  Future<void> _onGet(
+    _LabelDetailGet event,
+    Emitter<LabelDetailState> emit,
+  ) async {
+    await executeLoadOperation(
+      emit,
+      load: () => _labelRepository.get(event.labelId),
+      onSuccess: (label) => LabelDetailState.loadSuccess(label: label),
+      onNotFound: () =>
+          const DetailBlocError<Label>(error: NotFoundEntity.label),
+    );
   }
 
   Future<void> _onUpdate(
-    String id,
-    String name,
-    String color,
-    LabelType type,
+    _LabelDetailUpdate event,
     Emitter<LabelDetailState> emit,
   ) async {
-    try {
-      await _labelRepository.update(
-        id: id,
-        name: name,
-        color: color,
-        type: type,
-      );
-      emit(
-        const LabelDetailState.operationSuccess(
-          operation: EntityOperation.update,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        LabelDetailState.operationFailure(
-          errorDetails: LabelDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+    await executeUpdateOperation(
+      emit,
+      () => _labelRepository.update(
+        id: event.id,
+        name: event.name,
+        color: event.color,
+        type: event.type,
+        iconName: event.iconName,
+      ),
+    );
   }
 
-  Future<void> _onDelete(String id, Emitter<LabelDetailState> emit) async {
-    try {
-      await _labelRepository.delete(id);
-      emit(
-        const LabelDetailState.operationSuccess(
-          operation: EntityOperation.delete,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        LabelDetailState.operationFailure(
-          errorDetails: LabelDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+  Future<void> _onDelete(
+    _LabelDetailDelete event,
+    Emitter<LabelDetailState> emit,
+  ) async {
+    await executeDeleteOperation(emit, () => _labelRepository.delete(event.id));
   }
 
   Future<void> _onCreate(
-    String name,
-    String color,
-    LabelType type,
+    _LabelDetailCreate event,
     Emitter<LabelDetailState> emit,
   ) async {
-    try {
-      await _labelRepository.create(name: name, color: color, type: type);
-      emit(
-        const LabelDetailState.operationSuccess(
-          operation: EntityOperation.create,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        LabelDetailState.operationFailure(
-          errorDetails: LabelDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+    await executeCreateOperation(
+      emit,
+      () => _labelRepository.create(
+        name: event.name,
+        color: event.color,
+        type: event.type,
+        iconName: event.iconName,
+      ),
+    );
   }
 }

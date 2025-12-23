@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/shared/widgets/section_header.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -81,18 +82,10 @@ class _LabelDetailView extends StatelessWidget {
           child: LabelDetailSheetPage(
             labelId: labelId,
             labelRepository: labelRepository,
-            onSuccess: (message) {
-              Navigator.of(modalSheetContext).pop();
+            onSaved: (savedLabelId) {
+              // Refresh the label details after edit
               context.read<LabelDetailBloc>().add(
-                LabelDetailEvent.get(labelId: labelId),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              );
-            },
-            onError: (message) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
+                LabelDetailEvent.get(labelId: savedLabelId),
               );
             },
           ),
@@ -115,7 +108,7 @@ class _LabelDetailView extends StatelessWidget {
               labelRepository: labelRepository,
               taskId: taskId,
             ),
-            child: const TaskDetailSheet(),
+            child: TaskDetailSheet(labelRepository: labelRepository),
           ),
         ),
       ),
@@ -157,7 +150,10 @@ class _LabelDetailView extends StatelessWidget {
             ),
             body: Column(
               children: [
-                _Header(title: label.name),
+                _Header(
+                  title: label.name,
+                  onTap: () => _showEditLabelSheet(context),
+                ),
                 const Divider(height: 1),
                 Expanded(
                   child: _RelatedLists(
@@ -200,29 +196,70 @@ class _LabelDetailView extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.title});
+  const _Header({required this.title, this.onTap});
 
   final String title;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          const Icon(Icons.label_outline),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: theme.textTheme.titleLarge,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.label_outline,
+                  color: colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (onTap != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tap to edit',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (onTap != null)
+                Icon(
+                  Icons.edit_outlined,
+                  size: 20,
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -267,7 +304,7 @@ class _RelatedLists extends StatelessWidget {
                   child: Column(
                     children: [
                       if (tasks.isNotEmpty)
-                        _SectionHeader(title: context.l10n.tasksTitle),
+                        SectionHeader.simple(title: context.l10n.tasksTitle),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -290,7 +327,7 @@ class _RelatedLists extends StatelessWidget {
                         },
                       ),
                       if (projects.isNotEmpty)
-                        _SectionHeader(title: context.l10n.projectsTitle),
+                        SectionHeader.simple(title: context.l10n.projectsTitle),
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -315,28 +352,6 @@ class _RelatedLists extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: theme.textTheme.titleMedium,
-        ),
-      ),
     );
   }
 }

@@ -378,7 +378,6 @@ class _RuleEditorState extends State<RuleEditor> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with remove button if provided
             if (widget.onRemove != null) ...[
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -851,10 +850,10 @@ class _DateRuleEditor extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.3),
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1093,6 +1092,30 @@ class _LabelRuleEditor extends StatelessWidget {
       runSpacing: 8,
       children: availableLabels.map((label) {
         final isSelected = rule.labelIds.contains(label.id);
+        final color = label.color != null
+            ? _parseColor(label.color)
+            : theme.colorScheme.primary;
+
+        final isValue = label.type == LabelType.value;
+
+        // Get the icon - emoji for values, colored label icon for labels
+        final Widget icon;
+        if (isValue) {
+          final emoji = label.iconName?.isNotEmpty ?? false
+              ? label.iconName!
+              : '❤️';
+          icon = Text(
+            emoji,
+            style: const TextStyle(fontSize: 14),
+          );
+        } else {
+          icon = Icon(
+            Icons.label,
+            size: 14,
+            color: color,
+          );
+        }
+
         return FilterChip(
           label: Text(label.name),
           selected: isSelected,
@@ -1111,12 +1134,19 @@ class _LabelRuleEditor extends StatelessWidget {
               ),
             );
           },
-          avatar: label.color != null
-              ? CircleAvatar(
-                  backgroundColor: _parseColor(label.color),
-                  radius: 8,
-                )
-              : null,
+          avatar: icon,
+          backgroundColor: theme.colorScheme.surfaceContainerLow,
+          selectedColor: theme.colorScheme.surfaceContainerHighest,
+          labelStyle: TextStyle(
+            color: theme.colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+          checkmarkColor: Colors.transparent,
+          side: BorderSide(
+            color: isSelected
+                ? color
+                : theme.colorScheme.outline.withOpacity(0.3),
+          ),
         );
       }).toList(),
     );
@@ -1228,6 +1258,19 @@ class _ValueRuleEditor extends StatelessWidget {
       runSpacing: 8,
       children: availableValues.map((value) {
         final isSelected = rule.labelIds.contains(value.id);
+        final color = value.color != null
+            ? _parseColor(value.color)
+            : theme.colorScheme.primary;
+
+        // Calculate text color for proper contrast on the colored background
+        final luminance = color.computeLuminance();
+        final textColor = luminance > 0.5 ? Colors.black87 : Colors.white;
+
+        // Get the emoji icon for values
+        final emoji = value.iconName?.isNotEmpty ?? false
+            ? value.iconName!
+            : '❤️';
+
         return FilterChip(
           label: Text(value.name),
           selected: isSelected,
@@ -1245,12 +1288,22 @@ class _ValueRuleEditor extends StatelessWidget {
               ),
             );
           },
-          avatar: value.color != null
-              ? CircleAvatar(
-                  backgroundColor: _parseColor(value.color),
-                  radius: 8,
-                )
-              : null,
+          avatar: Text(
+            emoji,
+            style: const TextStyle(fontSize: 14),
+          ),
+          backgroundColor: theme.colorScheme.surfaceContainerLow,
+          selectedColor: color,
+          labelStyle: TextStyle(
+            color: isSelected ? textColor : theme.colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+          checkmarkColor: Colors.transparent,
+          side: BorderSide(
+            color: isSelected
+                ? color
+                : theme.colorScheme.outline.withOpacity(0.3),
+          ),
         );
       }).toList(),
     );

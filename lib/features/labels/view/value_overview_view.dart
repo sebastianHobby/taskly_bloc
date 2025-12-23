@@ -35,7 +35,7 @@ class ValueOverviewPage extends StatelessWidget {
         labelRepository: labelRepository,
         typeFilter: LabelType.value,
         initialSortPreferences: initialSort,
-      )..add(const LabelOverviewEvent.labelsSubscriptionRequested()),
+      )..add(const LabelOverviewEvent.subscriptionRequested()),
       child: ValueOverviewView(labelRepository: labelRepository),
     );
   }
@@ -80,17 +80,6 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
           labelRepository: widget.labelRepository,
           initialType: LabelType.value,
           lockType: true,
-          onSuccess: (message) {
-            Navigator.of(modalSheetContext).pop();
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message)),
-            );
-          },
-          onError: (message) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message)),
-            );
-          },
         ),
       ),
       showDragHandle: true,
@@ -155,7 +144,7 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
                 ],
               ),
               body: labels.isEmpty
-                  ? Center(child: Text(context.l10n.noLabelsFound))
+                  ? Center(child: Text(context.l10n.noValuesFound))
                   : ListView(
                       children: [
                         for (final label in labels)
@@ -172,7 +161,6 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
                     ),
               floatingActionButton: AddLabelFab(
                 labelRepository: widget.labelRepository,
-                isSheetOpen: _isSheetOpen,
                 initialType: LabelType.value,
                 lockType: true,
                 tooltip: context.l10n.createValueOption,

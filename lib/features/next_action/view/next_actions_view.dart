@@ -69,7 +69,7 @@ class TaskNextActionsView extends StatelessWidget {
               labelRepository: labelRepository,
               taskId: taskId,
             ),
-            child: const TaskDetailSheet(),
+            child: TaskDetailSheet(labelRepository: labelRepository),
           ),
         ),
       ),

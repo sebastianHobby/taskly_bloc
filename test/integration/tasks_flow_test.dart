@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
@@ -271,19 +270,26 @@ void main() {
 
     // Open create sheet via FAB
     await tester.tap(find.byTooltip('Create task'));
+    // Use multiple pumps with delay to allow modal animation to complete
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // Enter name and submit — locate text fields inside the FormBuilder
+    // Verify the TaskForm is visible
+    expect(find.byType(TaskForm), findsOneWidget);
+
+    // Enter name and submit — find all text fields in the TaskForm
     final textFields = find.descendant(
-      of: find.byType(FormBuilder),
+      of: find.byType(TaskForm),
       matching: find.byType(TextField),
     );
+    expect(textFields, findsWidgets);
     await tester.enterText(textFields.at(0), 'New UI Task');
     await tester.enterText(textFields.at(1), 'desc');
-    await tester.tap(find.byTooltip('Create'));
+    // Tap the Create Task button
+    await tester.tap(find.text('Create Task'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
 
     // The fake repo should have emitted the new task and the list should update
     await tester.pump();
@@ -326,15 +332,20 @@ void main() {
     await tester.tap(find.byKey(const Key('task-t-update-1')));
     await tester.pumpAndSettle();
 
-    // Change name and press update
+    // Verify the TaskForm is visible
+    expect(find.byType(TaskForm), findsOneWidget);
+
+    // Change name and press update - find text fields in the TaskForm
     final textFields2 = find.descendant(
-      of: find.byType(FormBuilder),
+      of: find.byType(TaskForm),
       matching: find.byType(TextField),
     );
+    expect(textFields2, findsWidgets);
     await tester.enterText(textFields2.at(0), 'Updated UI');
 
     repo.updateCalled = Completer<void>();
-    await tester.tap(find.byTooltip('Update'));
+    // Tap the Save Changes button (in the sticky footer)
+    await tester.tap(find.text('Save Changes'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 200));
     await repo.updateCalled!.future;

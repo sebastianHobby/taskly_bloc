@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/shared/utils/sort_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -9,11 +10,14 @@ part 'label_list_bloc.freezed.dart';
 
 @freezed
 sealed class LabelOverviewEvent with _$LabelOverviewEvent {
-  const factory LabelOverviewEvent.labelsSubscriptionRequested() =
-      LabelsSubscriptionRequested;
+  const factory LabelOverviewEvent.subscriptionRequested() =
+      LabelOverviewSubscriptionRequested;
   const factory LabelOverviewEvent.sortChanged({
     required SortPreferences preferences,
   }) = LabelsSortChanged;
+  const factory LabelOverviewEvent.deleteLabel({
+    required Label label,
+  }) = LabelOverviewDeleteLabel;
 }
 
 @freezed
@@ -26,7 +30,8 @@ sealed class LabelOverviewState with _$LabelOverviewState {
       LabelOverviewError;
 }
 
-class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState> {
+class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState>
+    with ListBlocMixin<LabelOverviewEvent, LabelOverviewState, Label> {
   LabelOverviewBloc({
     required LabelRepositoryContract labelRepository,
     LabelType? typeFilter,
@@ -37,8 +42,9 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState> {
        _typeFilter = typeFilter,
        _sortPreferences = initialSortPreferences,
        super(const LabelOverviewInitial()) {
-    on<LabelsSubscriptionRequested>(_onSubscriptionRequested);
+    on<LabelOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<LabelsSortChanged>(_onSortChanged);
+    on<LabelOverviewDeleteLabel>(_onDeleteLabel);
   }
 
   final LabelRepositoryContract _labelRepository;
@@ -47,32 +53,36 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState> {
 
   SortPreferences get currentSortPreferences => _sortPreferences;
 
+  // ListBlocMixin implementation
+  @override
+  LabelOverviewState createLoadingState() => const LabelOverviewLoading();
+
+  @override
+  LabelOverviewState createErrorState(Object error) =>
+      LabelOverviewError(error: error);
+
+  @override
+  LabelOverviewState createLoadedState(List<Label> items) =>
+      LabelOverviewLoaded(labels: items);
+
   List<Label> _sortLabels(List<Label> labels) {
     final criteria = _sortPreferences.sanitizedCriteria(const [SortField.name]);
     final direction = criteria.first.direction;
     final modifier = direction == SortDirection.ascending ? 1 : -1;
     final sorted = [...labels];
-    sorted.sort(
-      (a, b) => modifier * compareAsciiLowerCase(a.name, b.name),
-    );
+    sorted.sort((a, b) => modifier * compareAsciiLowerCase(a.name, b.name));
     return sorted;
   }
 
   Future<void> _onSubscriptionRequested(
-    LabelsSubscriptionRequested event,
+    LabelOverviewSubscriptionRequested event,
     Emitter<LabelOverviewState> emit,
   ) async {
-    emit(const LabelOverviewLoading());
-
     final stream = _typeFilter == null
         ? _labelRepository.watchAll()
         : _labelRepository.watchByType(_typeFilter);
 
-    await emit.forEach<List<Label>>(
-      stream,
-      onData: (labels) => LabelOverviewLoaded(labels: _sortLabels(labels)),
-      onError: (error, stack) => LabelOverviewError(error: error),
-    );
+    await subscribeToStream(emit, stream: stream, onData: _sortLabels);
   }
 
   void _onSortChanged(
@@ -84,6 +94,16 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState> {
       loaded: (labels) =>
           emit(LabelOverviewLoaded(labels: _sortLabels(labels))),
       orElse: () {},
+    );
+  }
+
+  Future<void> _onDeleteLabel(
+    LabelOverviewDeleteLabel event,
+    Emitter<LabelOverviewState> emit,
+  ) async {
+    await executeDelete(
+      emit,
+      delete: () => _labelRepository.delete(event.label.id),
     );
   }
 }

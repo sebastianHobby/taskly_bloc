@@ -33,8 +33,7 @@ void main() {
       ).thenAnswer((_) => Stream.value([sampleProject]));
     },
     build: () => ProjectOverviewBloc(projectRepository: mockRepository),
-    act: (bloc) =>
-        bloc.add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
+    act: (bloc) => bloc.add(const ProjectOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[
       isA<ProjectOverviewLoading>(),
       isA<ProjectOverviewLoaded>(),

@@ -55,12 +55,13 @@ extension LabelOverviewEventPatterns on LabelOverviewEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LabelsSubscriptionRequested value)?  labelsSubscriptionRequested,TResult Function( LabelsSortChanged value)?  sortChanged,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( LabelOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( LabelsSortChanged value)?  sortChanged,TResult Function( LabelOverviewDeleteLabel value)?  deleteLabel,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
-return labelsSubscriptionRequested(_that);case LabelsSortChanged() when sortChanged != null:
-return sortChanged(_that);case _:
+case LabelOverviewSubscriptionRequested() when subscriptionRequested != null:
+return subscriptionRequested(_that);case LabelsSortChanged() when sortChanged != null:
+return sortChanged(_that);case LabelOverviewDeleteLabel() when deleteLabel != null:
+return deleteLabel(_that);case _:
   return orElse();
 
 }
@@ -78,12 +79,13 @@ return sortChanged(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LabelsSubscriptionRequested value)  labelsSubscriptionRequested,required TResult Function( LabelsSortChanged value)  sortChanged,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( LabelOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( LabelsSortChanged value)  sortChanged,required TResult Function( LabelOverviewDeleteLabel value)  deleteLabel,}){
 final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested():
-return labelsSubscriptionRequested(_that);case LabelsSortChanged():
-return sortChanged(_that);}
+case LabelOverviewSubscriptionRequested():
+return subscriptionRequested(_that);case LabelsSortChanged():
+return sortChanged(_that);case LabelOverviewDeleteLabel():
+return deleteLabel(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -97,12 +99,13 @@ return sortChanged(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LabelsSubscriptionRequested value)?  labelsSubscriptionRequested,TResult? Function( LabelsSortChanged value)?  sortChanged,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( LabelOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( LabelsSortChanged value)?  sortChanged,TResult? Function( LabelOverviewDeleteLabel value)?  deleteLabel,}){
 final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
-return labelsSubscriptionRequested(_that);case LabelsSortChanged() when sortChanged != null:
-return sortChanged(_that);case _:
+case LabelOverviewSubscriptionRequested() when subscriptionRequested != null:
+return subscriptionRequested(_that);case LabelsSortChanged() when sortChanged != null:
+return sortChanged(_that);case LabelOverviewDeleteLabel() when deleteLabel != null:
+return deleteLabel(_that);case _:
   return null;
 
 }
@@ -119,11 +122,12 @@ return sortChanged(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  labelsSubscriptionRequested,TResult Function( SortPreferences preferences)?  sortChanged,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( Label label)?  deleteLabel,required TResult orElse(),}) {final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
-return labelsSubscriptionRequested();case LabelsSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case _:
+case LabelOverviewSubscriptionRequested() when subscriptionRequested != null:
+return subscriptionRequested();case LabelsSortChanged() when sortChanged != null:
+return sortChanged(_that.preferences);case LabelOverviewDeleteLabel() when deleteLabel != null:
+return deleteLabel(_that.label);case _:
   return orElse();
 
 }
@@ -141,11 +145,12 @@ return sortChanged(_that.preferences);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  labelsSubscriptionRequested,required TResult Function( SortPreferences preferences)  sortChanged,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( Label label)  deleteLabel,}) {final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested():
-return labelsSubscriptionRequested();case LabelsSortChanged():
-return sortChanged(_that.preferences);}
+case LabelOverviewSubscriptionRequested():
+return subscriptionRequested();case LabelsSortChanged():
+return sortChanged(_that.preferences);case LabelOverviewDeleteLabel():
+return deleteLabel(_that.label);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -159,11 +164,12 @@ return sortChanged(_that.preferences);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  labelsSubscriptionRequested,TResult? Function( SortPreferences preferences)?  sortChanged,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( Label label)?  deleteLabel,}) {final _that = this;
 switch (_that) {
-case LabelsSubscriptionRequested() when labelsSubscriptionRequested != null:
-return labelsSubscriptionRequested();case LabelsSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case _:
+case LabelOverviewSubscriptionRequested() when subscriptionRequested != null:
+return subscriptionRequested();case LabelsSortChanged() when sortChanged != null:
+return sortChanged(_that.preferences);case LabelOverviewDeleteLabel() when deleteLabel != null:
+return deleteLabel(_that.label);case _:
   return null;
 
 }
@@ -174,8 +180,8 @@ return sortChanged(_that.preferences);case _:
 /// @nodoc
 
 
-class LabelsSubscriptionRequested implements LabelOverviewEvent {
-  const LabelsSubscriptionRequested();
+class LabelOverviewSubscriptionRequested implements LabelOverviewEvent {
+  const LabelOverviewSubscriptionRequested();
   
 
 
@@ -185,7 +191,7 @@ class LabelsSubscriptionRequested implements LabelOverviewEvent {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelsSubscriptionRequested);
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewSubscriptionRequested);
 }
 
 
@@ -194,7 +200,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'LabelOverviewEvent.labelsSubscriptionRequested()';
+  return 'LabelOverviewEvent.subscriptionRequested()';
 }
 
 
@@ -263,6 +269,72 @@ class _$LabelsSortChangedCopyWithImpl<$Res>
   return _then(LabelsSortChanged(
 preferences: null == preferences ? _self.preferences : preferences // ignore: cast_nullable_to_non_nullable
 as SortPreferences,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class LabelOverviewDeleteLabel implements LabelOverviewEvent {
+  const LabelOverviewDeleteLabel({required this.label});
+  
+
+ final  Label label;
+
+/// Create a copy of LabelOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$LabelOverviewDeleteLabelCopyWith<LabelOverviewDeleteLabel> get copyWith => _$LabelOverviewDeleteLabelCopyWithImpl<LabelOverviewDeleteLabel>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewDeleteLabel&&(identical(other.label, label) || other.label == label));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,label);
+
+@override
+String toString() {
+  return 'LabelOverviewEvent.deleteLabel(label: $label)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $LabelOverviewDeleteLabelCopyWith<$Res> implements $LabelOverviewEventCopyWith<$Res> {
+  factory $LabelOverviewDeleteLabelCopyWith(LabelOverviewDeleteLabel value, $Res Function(LabelOverviewDeleteLabel) _then) = _$LabelOverviewDeleteLabelCopyWithImpl;
+@useResult
+$Res call({
+ Label label
+});
+
+
+
+
+}
+/// @nodoc
+class _$LabelOverviewDeleteLabelCopyWithImpl<$Res>
+    implements $LabelOverviewDeleteLabelCopyWith<$Res> {
+  _$LabelOverviewDeleteLabelCopyWithImpl(this._self, this._then);
+
+  final LabelOverviewDeleteLabel _self;
+  final $Res Function(LabelOverviewDeleteLabel) _then;
+
+/// Create a copy of LabelOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? label = null,}) {
+  return _then(LabelOverviewDeleteLabel(
+label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
+as Label,
   ));
 }
 

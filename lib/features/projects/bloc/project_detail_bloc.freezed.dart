@@ -528,264 +528,6 @@ String toString() {
 
 
 /// @nodoc
-mixin _$ProjectDetailError {
-
- Object get error; StackTrace? get stackTrace;
-/// Create a copy of ProjectDetailError
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$ProjectDetailErrorCopyWith<ProjectDetailError> get copyWith => _$ProjectDetailErrorCopyWithImpl<ProjectDetailError>(this as ProjectDetailError, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
-
-@override
-String toString() {
-  return 'ProjectDetailError(error: $error, stackTrace: $stackTrace)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $ProjectDetailErrorCopyWith<$Res>  {
-  factory $ProjectDetailErrorCopyWith(ProjectDetailError value, $Res Function(ProjectDetailError) _then) = _$ProjectDetailErrorCopyWithImpl;
-@useResult
-$Res call({
- Object error, StackTrace? stackTrace
-});
-
-
-
-
-}
-/// @nodoc
-class _$ProjectDetailErrorCopyWithImpl<$Res>
-    implements $ProjectDetailErrorCopyWith<$Res> {
-  _$ProjectDetailErrorCopyWithImpl(this._self, this._then);
-
-  final ProjectDetailError _self;
-  final $Res Function(ProjectDetailError) _then;
-
-/// Create a copy of ProjectDetailError
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? error = null,Object? stackTrace = freezed,}) {
-  return _then(_self.copyWith(
-error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
-as StackTrace?,
-  ));
-}
-
-}
-
-
-/// Adds pattern-matching-related methods to [ProjectDetailError].
-extension ProjectDetailErrorPatterns on ProjectDetailError {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ProjectDetailError value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _ProjectDetailError() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ProjectDetailError value)  $default,){
-final _that = this;
-switch (_that) {
-case _ProjectDetailError():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ProjectDetailError value)?  $default,){
-final _that = this;
-switch (_that) {
-case _ProjectDetailError() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _ProjectDetailError() when $default != null:
-return $default(_that.error,_that.stackTrace);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Object error,  StackTrace? stackTrace)  $default,) {final _that = this;
-switch (_that) {
-case _ProjectDetailError():
-return $default(_that.error,_that.stackTrace);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Object error,  StackTrace? stackTrace)?  $default,) {final _that = this;
-switch (_that) {
-case _ProjectDetailError() when $default != null:
-return $default(_that.error,_that.stackTrace);case _:
-  return null;
-
-}
-}
-
-}
-
-/// @nodoc
-
-
-class _ProjectDetailError implements ProjectDetailError {
-  const _ProjectDetailError({required this.error, this.stackTrace});
-  
-
-@override final  Object error;
-@override final  StackTrace? stackTrace;
-
-/// Create a copy of ProjectDetailError
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$ProjectDetailErrorCopyWith<_ProjectDetailError> get copyWith => __$ProjectDetailErrorCopyWithImpl<_ProjectDetailError>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
-
-@override
-String toString() {
-  return 'ProjectDetailError(error: $error, stackTrace: $stackTrace)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$ProjectDetailErrorCopyWith<$Res> implements $ProjectDetailErrorCopyWith<$Res> {
-  factory _$ProjectDetailErrorCopyWith(_ProjectDetailError value, $Res Function(_ProjectDetailError) _then) = __$ProjectDetailErrorCopyWithImpl;
-@override @useResult
-$Res call({
- Object error, StackTrace? stackTrace
-});
-
-
-
-
-}
-/// @nodoc
-class __$ProjectDetailErrorCopyWithImpl<$Res>
-    implements _$ProjectDetailErrorCopyWith<$Res> {
-  __$ProjectDetailErrorCopyWithImpl(this._self, this._then);
-
-  final _ProjectDetailError _self;
-  final $Res Function(_ProjectDetailError) _then;
-
-/// Create a copy of ProjectDetailError
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = freezed,}) {
-  return _then(_ProjectDetailError(
-error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
-as StackTrace?,
-  ));
-}
-
-
-}
-
-/// @nodoc
 mixin _$ProjectDetailState {
 
 
@@ -908,7 +650,7 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( ProjectDetailError errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Label> availableLabels,  Project project)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Label> availableLabels,  Project project)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
 return initial();case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
@@ -934,7 +676,7 @@ return loadSuccess(_that.availableLabels,_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( ProjectDetailError errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Label> availableLabels,  Project project)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Project> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Label> availableLabels,  Project project)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial():
 return initial();case ProjectDetailInitialDataLoadSuccess():
@@ -959,7 +701,7 @@ return loadSuccess(_that.availableLabels,_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( ProjectDetailError errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Label> availableLabels,  Project project)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Label> availableLabels,  Project project)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
 return initial();case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
@@ -1152,7 +894,7 @@ class ProjectDetailOperationFailure implements ProjectDetailState {
   const ProjectDetailOperationFailure({required this.errorDetails});
   
 
- final  ProjectDetailError errorDetails;
+ final  DetailBlocError<Project> errorDetails;
 
 /// Create a copy of ProjectDetailState
 /// with the given fields replaced by the non-null parameter values.
@@ -1184,11 +926,11 @@ abstract mixin class $ProjectDetailOperationFailureCopyWith<$Res> implements $Pr
   factory $ProjectDetailOperationFailureCopyWith(ProjectDetailOperationFailure value, $Res Function(ProjectDetailOperationFailure) _then) = _$ProjectDetailOperationFailureCopyWithImpl;
 @useResult
 $Res call({
- ProjectDetailError errorDetails
+ DetailBlocError<Project> errorDetails
 });
 
 
-$ProjectDetailErrorCopyWith<$Res> get errorDetails;
+
 
 }
 /// @nodoc
@@ -1204,20 +946,11 @@ class _$ProjectDetailOperationFailureCopyWithImpl<$Res>
 @pragma('vm:prefer-inline') $Res call({Object? errorDetails = null,}) {
   return _then(ProjectDetailOperationFailure(
 errorDetails: null == errorDetails ? _self.errorDetails : errorDetails // ignore: cast_nullable_to_non_nullable
-as ProjectDetailError,
+as DetailBlocError<Project>,
   ));
 }
 
-/// Create a copy of ProjectDetailState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$ProjectDetailErrorCopyWith<$Res> get errorDetails {
-  
-  return $ProjectDetailErrorCopyWith<$Res>(_self.errorDetails, (value) {
-    return _then(_self.copyWith(errorDetails: value));
-  });
-}
+
 }
 
 /// @nodoc

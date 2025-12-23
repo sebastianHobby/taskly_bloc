@@ -12,12 +12,14 @@ abstract class LabelRepositoryContract {
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   });
   Future<void> update({
     required String id,
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   });
   Future<void> delete(String id);
 }

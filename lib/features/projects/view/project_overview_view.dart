@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/shared/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/core/shared/widgets/swipe_to_delete.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -42,7 +44,7 @@ class ProjectOverviewPage extends StatelessWidget {
         taskRepository: taskRepository,
         withRelated: true,
         initialSortPreferences: initialSort,
-      )..add(const ProjectOverviewEvent.projectsSubscriptionRequested()),
+      )..add(const ProjectOverviewEvent.subscriptionRequested()),
       child: ProjectOverviewView(
         projectRepository: projectRepository,
         labelRepository: labelRepository,
@@ -168,23 +170,43 @@ class _ProjectOverviewViewState extends State<ProjectOverviewView> {
       itemBuilder: (context, index) {
         final project = projects[index];
         final counts = taskCounts[project.id];
-        return ProjectListTile(
-          project: project,
-          taskCount: counts?.totalCount,
-          completedTaskCount: counts?.completedCount,
-          onCheckboxChanged: (project, _) {
+        return SwipeToDelete(
+          itemKey: ValueKey(project.id),
+          confirmDismiss: () => showDeleteConfirmationDialog(
+            context: context,
+            title: 'Delete Project',
+            itemName: project.name,
+            description:
+                'All tasks in this project will also be deleted. '
+                'This action cannot be undone.',
+          ),
+          onDismissed: () {
             context.read<ProjectOverviewBloc>().add(
-              ProjectOverviewEvent.toggleProjectCompletion(
-                project: project,
-              ),
+              ProjectOverviewEvent.deleteProject(project: project),
+            );
+            showDeleteSnackBar(
+              context: context,
+              message: 'Project deleted',
             );
           },
-          onTap: (project) async {
-            await context.pushNamed(
-              AppRouteName.projectDetail,
-              pathParameters: {'projectId': project.id},
-            );
-          },
+          child: ProjectListTile(
+            project: project,
+            taskCount: counts?.totalCount,
+            completedTaskCount: counts?.completedCount,
+            onCheckboxChanged: (project, _) {
+              context.read<ProjectOverviewBloc>().add(
+                ProjectOverviewEvent.toggleProjectCompletion(
+                  project: project,
+                ),
+              );
+            },
+            onTap: (project) async {
+              await context.pushNamed(
+                AppRouteName.projectDetail,
+                pathParameters: {'projectId': project.id},
+              );
+            },
+          ),
         );
       },
     );

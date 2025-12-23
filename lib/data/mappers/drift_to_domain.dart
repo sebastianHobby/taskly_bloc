@@ -10,6 +10,7 @@ Label labelFromTable(drift.LabelTableData t) {
     name: t.name,
     color: t.color,
     type: LabelType.values.byName(t.type.name),
+    iconName: t.iconName,
   );
 }
 
@@ -27,7 +28,7 @@ Project projectFromTable(
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
     repeatIcalRrule: t.repeatIcalRrule,
-    labels: labels,
+    labels: labels ?? const <Label>[],
   );
 }
 
@@ -48,6 +49,6 @@ Task taskFromTable(
     projectId: t.projectId,
     repeatIcalRrule: t.repeatIcalRrule,
     project: project,
-    labels: labels,
+    labels: labels ?? const <Label>[],
   );
 }

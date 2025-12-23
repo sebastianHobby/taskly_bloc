@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/mixins/form_submission_mixin.dart';
+import 'package:taskly_bloc/core/shared/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -12,11 +16,10 @@ import 'package:taskly_bloc/features/labels/widgets/label_form.dart';
 class LabelDetailSheetPage extends StatelessWidget {
   const LabelDetailSheetPage({
     required this.labelRepository,
-    required this.onSuccess,
-    required this.onError,
     this.labelId,
     this.initialType,
     this.lockType = false,
+    this.onSaved,
     super.key,
   });
 
@@ -24,24 +27,24 @@ class LabelDetailSheetPage extends StatelessWidget {
   final String? labelId;
   final LabelType? initialType;
   final bool lockType;
-  final void Function(String message) onSuccess;
-  final void Function(String message) onError;
+
+  /// Optional callback when a label is saved (created or updated).
+  /// Called with the label ID after successful save.
+  final void Function(String labelId)? onSaved;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocProvider(
-        create: (context) => LabelDetailBloc(
-          labelRepository: labelRepository,
-          labelId: labelId,
-        ),
-        lazy: false,
-        child: LabelDetailSheetView(
-          onSuccess: onSuccess,
-          onError: onError,
-          initialType: initialType,
-          lockType: lockType,
-        ),
+    return BlocProvider(
+      create: (context) => LabelDetailBloc(
+        labelRepository: labelRepository,
+        labelId: labelId,
+      ),
+      lazy: false,
+      child: LabelDetailSheetView(
+        labelId: labelId,
+        initialType: initialType,
+        lockType: lockType,
+        onSaved: onSaved,
       ),
     );
   }
@@ -49,23 +52,26 @@ class LabelDetailSheetPage extends StatelessWidget {
 
 class LabelDetailSheetView extends StatefulWidget {
   const LabelDetailSheetView({
-    required this.onSuccess,
-    required this.onError,
+    this.labelId,
     this.initialType,
     this.lockType = false,
+    this.onSaved,
     super.key,
   });
 
-  final void Function(String message) onSuccess;
-  final void Function(String message) onError;
+  final String? labelId;
   final LabelType? initialType;
   final bool lockType;
+
+  /// Optional callback when a label is saved.
+  final void Function(String labelId)? onSaved;
 
   @override
   State<LabelDetailSheetView> createState() => _LabelDetailSheetViewState();
 }
 
-class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
+class _LabelDetailSheetViewState extends State<LabelDetailSheetView>
+    with FormSubmissionMixin {
   GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   String? _formLabelId;
 
@@ -76,24 +82,36 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
   }
 
   void _onSubmit(String? id, {LabelType? existingType}) {
-    final formState = _formKey.currentState;
-    if (formState == null) return;
-    if (!formState.saveAndValidate()) return;
+    final formValues = validateAndGetFormValues(_formKey);
+    if (formValues == null) return;
 
-    final formValues = formState.value;
-    final name = formValues['name'] as String;
-    final color = formValues['colour'] as String;
+    final name = extractStringValue(formValues, 'name');
+    final color = extractStringValue(formValues, 'colour');
     final type = widget.lockType
         ? (widget.initialType ?? existingType ?? LabelType.label)
         : (formValues['type'] as LabelType);
+    final iconName = extractStringValue(formValues, 'iconName').isEmpty
+        ? null
+        : extractStringValue(formValues, 'iconName');
 
     if (id == null) {
       context.read<LabelDetailBloc>().add(
-        LabelDetailEvent.create(name: name, color: color, type: type),
+        LabelDetailEvent.create(
+          name: name,
+          color: color,
+          type: type,
+          iconName: iconName,
+        ),
       );
     } else {
       context.read<LabelDetailBloc>().add(
-        LabelDetailEvent.update(id: id, name: name, color: color, type: type),
+        LabelDetailEvent.update(
+          id: id,
+          name: name,
+          color: color,
+          type: type,
+          iconName: iconName,
+        ),
       );
     }
   }
@@ -126,10 +144,22 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
       listener: (context, state) {
         switch (state) {
           case LabelDetailOperationSuccess(:final operation):
-            widget.onSuccess(_successMessageFor(operation, context.l10n));
+            final message = _successMessageFor(operation, context.l10n);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
+            // Call onSaved callback if provided (for edit scenarios that need refresh)
+            if (widget.labelId != null) {
+              widget.onSaved?.call(widget.labelId!);
+            }
+            unawaited(Navigator.of(context).maybePop());
           case LabelDetailOperationFailure(:final errorDetails):
-            widget.onError(
-              friendlyErrorMessageForUi(errorDetails.error, context.l10n),
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  friendlyErrorMessageForUi(errorDetails.error, context.l10n),
+                ),
+              ),
             );
           default:
             return;
@@ -151,6 +181,7 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
               formKey: _formKey,
               onSubmit: () => _onSubmit(null),
               submitTooltip: context.l10n.actionCreate,
+              onClose: () => Navigator.of(context).maybePop(),
             );
           case LabelDetailLoadInProgress():
             return const Center(child: CircularProgressIndicator());
@@ -162,7 +193,23 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView> {
               lockType: widget.lockType,
               formKey: _formKey,
               onSubmit: () => _onSubmit(label.id, existingType: label.type),
+              onDelete: () async {
+                final confirmed = await showDeleteConfirmationDialog(
+                  context: context,
+                  title:
+                      'Delete ${label.type == LabelType.label ? 'Label' : 'Value'}',
+                  itemName: label.name,
+                  description:
+                      'This ${label.type == LabelType.label ? 'label' : 'value'} will be removed from all tasks. This action cannot be undone.',
+                );
+                if (confirmed && context.mounted) {
+                  context.read<LabelDetailBloc>().add(
+                    LabelDetailEvent.delete(id: label.id),
+                  );
+                }
+              },
               submitTooltip: context.l10n.actionUpdate,
+              onClose: () => Navigator.of(context).maybePop(),
             );
           default:
             return const SizedBox.shrink();

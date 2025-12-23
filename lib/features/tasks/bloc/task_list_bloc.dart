@@ -1,12 +1,12 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 
 import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 part 'task_list_bloc.freezed.dart';
 
-//Events (the input to bloc)
 @freezed
 sealed class TaskOverviewEvent with _$TaskOverviewEvent {
   const factory TaskOverviewEvent.subscriptionRequested() =
@@ -19,9 +19,12 @@ sealed class TaskOverviewEvent with _$TaskOverviewEvent {
   const factory TaskOverviewEvent.toggleTaskCompletion({
     required Task task,
   }) = TaskOverviewToggleTaskCompletion;
+
+  const factory TaskOverviewEvent.deleteTask({
+    required Task task,
+  }) = TaskOverviewDeleteTask;
 }
 
-// State (output of bloc which UI responds to)
 @freezed
 sealed class TaskOverviewState with _$TaskOverviewState {
   const factory TaskOverviewState.initial() = TaskOverviewInitial;
@@ -36,8 +39,10 @@ sealed class TaskOverviewState with _$TaskOverviewState {
   }) = TaskOverviewError;
 }
 
-// The bloc itself - consumed events from UI and outputs state for UI to react to
-class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
+class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
+    with
+        ListBlocMixin<TaskOverviewEvent, TaskOverviewState, Task>,
+        CachedListBlocMixin<TaskOverviewEvent, TaskOverviewState, Task> {
   TaskOverviewBloc({
     required TaskRepositoryContract taskRepository,
     TaskSelectorConfig initialConfig = const TaskSelectorConfig(
@@ -53,6 +58,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
     on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<TaskOverviewConfigChanged>(_onConfigChanged);
     on<TaskOverviewToggleTaskCompletion>(_onToggleTaskCompletion);
+    on<TaskOverviewDeleteTask>(_onDeleteTask);
   }
 
   final TaskRepositoryContract _taskRepository;
@@ -60,20 +66,38 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   final TaskSelector _selector;
 
   TaskSelectorConfig _config;
-  var _hasTaskSnapshot = false;
-  List<Task> _allTasks = const [];
+
+  // ListBlocMixin implementation
+  @override
+  TaskOverviewState createLoadingState() => const TaskOverviewLoading();
+
+  @override
+  TaskOverviewState createErrorState(Object error) =>
+      TaskOverviewState.error(error: error, stacktrace: StackTrace.current);
+
+  @override
+  TaskOverviewState createLoadedState(List<Task> items) =>
+      TaskOverviewLoaded(tasks: items, config: _config);
+
+  List<Task> _applyConfig(List<Task> tasks) {
+    return _selector.filter(
+      tasks: tasks,
+      ruleSets: _config.ruleSets,
+      sortCriteria: _config.sortCriteria,
+      now: DateTime.now(),
+    );
+  }
 
   Future<void> _onSubscriptionRequested(
     TaskOverviewSubscriptionRequested event,
     Emitter<TaskOverviewState> emit,
   ) async {
     emit(const TaskOverviewState.loading());
-    // Subscribe to task stream
+
     await emit.forEach<List<Task>>(
       _taskRepository.watchAll(withRelated: _withRelated),
       onData: (tasks) {
-        _hasTaskSnapshot = true;
-        _allTasks = tasks;
+        updateCache(tasks);
         return TaskOverviewState.loaded(
           tasks: _applyConfig(tasks),
           config: _config,
@@ -87,11 +111,11 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
   }
 
   void _emitLoadedFromSnapshot(Emitter<TaskOverviewState> emit) {
-    if (!_hasTaskSnapshot) return;
+    if (!hasSnapshot) return;
 
     emit(
       TaskOverviewState.loaded(
-        tasks: _applyConfig(_allTasks),
+        tasks: _applyConfig(cachedItems),
         config: _config,
       ),
     );
@@ -121,24 +145,20 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState> {
         deadlineDate: task.deadlineDate,
         projectId: task.projectId,
         repeatIcalRrule: task.repeatIcalRrule,
-        // Don't touch links on quick toggle.
       );
     } catch (error, stacktrace) {
-      emit(
-        TaskOverviewState.error(
-          error: error,
-          stacktrace: stacktrace,
-        ),
-      );
+      emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
     }
   }
 
-  List<Task> _applyConfig(List<Task> tasks) {
-    return _selector.filter(
-      tasks: tasks,
-      ruleSets: _config.ruleSets,
-      sortCriteria: _config.sortCriteria,
-      now: DateTime.now(),
-    );
+  Future<void> _onDeleteTask(
+    TaskOverviewDeleteTask event,
+    Emitter<TaskOverviewState> emit,
+  ) async {
+    try {
+      await _taskRepository.delete(event.task.id);
+    } catch (error, stacktrace) {
+      emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
+    }
   }
 }

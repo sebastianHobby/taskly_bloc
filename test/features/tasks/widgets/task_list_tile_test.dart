@@ -9,7 +9,11 @@ void main() {
   testWidgets('renders description and date-only start/deadline', (
     tester,
   ) async {
-    final now = DateTime(2025, 12, 21, 13, 45);
+    // Use dates far in the future (> 7 days) to ensure formatShortDate is used
+    // instead of relative date formatting like "Today" or "Tomorrow"
+    final now = DateTime.now();
+    final farFutureStart = now.add(const Duration(days: 30));
+    final farFutureDeadline = now.add(const Duration(days: 31));
     final task = Task(
       id: 't1',
       createdAt: now,
@@ -17,8 +21,8 @@ void main() {
       name: 'Task name',
       completed: false,
       description: 'Do something important',
-      startDate: DateTime(2025, 12, 21, 23, 59),
-      deadlineDate: DateTime(2025, 12, 22, 1, 2),
+      startDate: farFutureStart,
+      deadlineDate: farFutureDeadline,
     );
 
     await pumpLocalizedApp(
@@ -40,10 +44,11 @@ void main() {
     expect(find.text(task.name), findsOneWidget);
     expect(find.text(task.description!), findsOneWidget);
 
-    expect(find.byIcon(Icons.play_arrow_outlined), findsOneWidget);
+    // Uses rounded icons in the new Card-based design
+    expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     expect(find.text(expectedStart), findsOneWidget);
 
-    expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
     expect(find.text(expectedDeadline), findsOneWidget);
 
     // Sanity check: we don't show a time-of-day.
@@ -73,10 +78,12 @@ void main() {
       ),
     );
 
-    final listTile = tester.widget<ListTile>(find.byType(ListTile));
-    expect(listTile.subtitle, isNull);
+    // TaskListTile uses Card-based layout, not ListTile
+    expect(find.byType(Card), findsOneWidget);
+    expect(find.text(task.name), findsOneWidget);
 
-    expect(find.byIcon(Icons.play_arrow_outlined), findsNothing);
-    expect(find.byIcon(Icons.flag_outlined), findsNothing);
+    // No date icons should be shown when no dates provided
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+    expect(find.byIcon(Icons.flag_rounded), findsNothing);
   });
 }

@@ -15,6 +15,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get counterAppBarTitle => 'Contador';
 
   @override
+  String get editLabel => 'Editar';
+
+  @override
+  String get cancelLabel => 'Cancelar';
+
+  @override
+  String get deleteLabel => 'Eliminar';
+
+  @override
   String get projectsTitle => 'Proyectos';
 
   @override
@@ -277,4 +286,179 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get addProjectAction => 'Añadir proyecto';
+
+  @override
+  String get taskFormNameHint => 'Nombre de la tarea';
+
+  @override
+  String get taskFormDescriptionHint => 'Descripción';
+
+  @override
+  String get taskFormStartDateHint => 'Fecha de inicio (opcional)';
+
+  @override
+  String get taskFormDeadlineDateHint => 'Fecha límite (opcional)';
+
+  @override
+  String get taskFormProjectHint => 'Proyecto (opcional)';
+
+  @override
+  String get taskFormCompletedLabel => 'Completada';
+
+  @override
+  String get taskFormNameRequired => 'El nombre es obligatorio';
+
+  @override
+  String get taskFormNameEmpty => 'El nombre no puede estar vacío';
+
+  @override
+  String get taskFormNameTooLong => 'El nombre debe tener 120 caracteres o menos';
+
+  @override
+  String get taskFormDescriptionTooLong => 'La descripción es muy larga';
+
+  @override
+  String get taskFormDeadlineAfterStartError => 'La fecha límite debe ser posterior a la fecha de inicio';
+
+  @override
+  String get dateToday => 'Hoy';
+
+  @override
+  String get dateTomorrow => 'Mañana';
+
+  @override
+  String get dateYesterday => 'Ayer';
+
+  @override
+  String dateInDays(int days) {
+    return 'En $days días';
+  }
+
+  @override
+  String dateDaysAgo(int days) {
+    return 'Hace $days días';
+  }
+
+  @override
+  String get repeatsLabel => 'Se repite';
+
+  @override
+  String get labelTypeLabel => 'Etiqueta';
+
+  @override
+  String get labelTypeValue => 'Valor';
+
+  @override
+  String get retryButton => 'Reintentar';
+
+  @override
+  String get rruleDaily => 'Cada día';
+
+  @override
+  String get rruleWeekly => 'Cada semana';
+
+  @override
+  String get rruleMonthly => 'Cada mes';
+
+  @override
+  String get rruleYearly => 'Cada año';
+
+  @override
+  String rruleEveryNDays(int n) {
+    return 'Cada $n días';
+  }
+
+  @override
+  String rruleEveryNWeeks(int n) {
+    return 'Cada $n semanas';
+  }
+
+  @override
+  String rruleEveryNMonths(int n) {
+    return 'Cada $n meses';
+  }
+
+  @override
+  String rruleEveryNYears(int n) {
+    return 'Cada $n años';
+  }
+
+  @override
+  String get rruleOn => 'el';
+
+  @override
+  String get rruleOnDay => 'el día';
+
+  @override
+  String rruleTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count veces',
+      one: '1 vez',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rruleUntil => 'hasta';
+
+  @override
+  String get dayMon => 'Lun';
+
+  @override
+  String get dayTue => 'Mar';
+
+  @override
+  String get dayWed => 'Mié';
+
+  @override
+  String get dayThu => 'Jue';
+
+  @override
+  String get dayFri => 'Vie';
+
+  @override
+  String get daySat => 'Sáb';
+
+  @override
+  String get daySun => 'Dom';
+
+  @override
+  String get projectDetailTasksTitle => 'Tareas';
+
+  @override
+  String projectDetailTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas',
+      one: '1 tarea',
+      zero: 'Sin tareas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectDetailCompletedCount(int completed, int total) {
+    return '$completed de $total completadas';
+  }
+
+  @override
+  String get projectDetailEmptyTasksDescription => 'Añade tareas a este proyecto para seguir tu progreso';
+
+  @override
+  String get projectStatusCompleted => 'Completado';
+
+  @override
+  String get projectStatusActive => 'Activo';
+
+  @override
+  String get deleteProjectAction => 'Eliminar proyecto';
+
+  @override
+  String get markCompleteAction => 'Marcar como completado';
+
+  @override
+  String get markIncompleteAction => 'Marcar como incompleto';
 }

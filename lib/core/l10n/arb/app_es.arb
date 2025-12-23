@@ -4,6 +4,18 @@
     "@counterAppBarTitle": {
         "description": "Texto mostrado en la AppBar de la página del contador"
     },
+    "editLabel": "Editar",
+    "@editLabel": {
+        "description": "Etiqueta de acción genérica de editar"
+    },
+    "cancelLabel": "Cancelar",
+    "@cancelLabel": {
+        "description": "Etiqueta de acción genérica de cancelar"
+    },
+    "deleteLabel": "Eliminar",
+    "@deleteLabel": {
+        "description": "Etiqueta de acción genérica de eliminar"
+    },
     "projectsTitle": "Proyectos",
     "@projectsTitle": {
         "description": "Título para la sección de Proyectos"
@@ -59,6 +71,10 @@
     "noLabelsFound": "No se encontraron etiquetas.",
     "@noLabelsFound": {
         "description": "Estado vacío cuando no hay etiquetas"
+    },
+    "noValuesFound": "No se encontraron valores.",
+    "@noValuesFound": {
+        "description": "Estado vacío cuando no hay valores"
     },
     "genericErrorFallback": "Algo salió mal. Por favor, inténtalo de nuevo.",
     "@genericErrorFallback": {
@@ -355,5 +371,255 @@
     "addProjectAction": "Añadir proyecto",
     "@addProjectAction": {
         "description": "Texto del botón de acción para añadir un proyecto"
+    },
+    "taskFormNameHint": "Nombre de la tarea",
+    "@taskFormNameHint": {
+        "description": "Texto de sugerencia para el campo de nombre de tarea"
+    },
+    "taskFormDescriptionHint": "Descripción",
+    "@taskFormDescriptionHint": {
+        "description": "Texto de sugerencia para el campo de descripción de tarea"
+    },
+    "taskFormStartDateHint": "Fecha de inicio (opcional)",
+    "@taskFormStartDateHint": {
+        "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
+    },
+    "taskFormDeadlineDateHint": "Fecha límite (opcional)",
+    "@taskFormDeadlineDateHint": {
+        "description": "Texto de sugerencia para el campo de fecha límite de tarea"
+    },
+    "taskFormProjectHint": "Proyecto (opcional)",
+    "@taskFormProjectHint": {
+        "description": "Texto de sugerencia para el campo de proyecto de tarea"
+    },
+    "taskFormCompletedLabel": "Completada",
+    "@taskFormCompletedLabel": {
+        "description": "Etiqueta para la casilla de completada en el formulario de tarea"
+    },
+    "taskFormNameRequired": "El nombre es obligatorio",
+    "@taskFormNameRequired": {
+        "description": "Error de validación cuando falta el nombre de la tarea"
+    },
+    "taskFormNameEmpty": "El nombre no puede estar vacío",
+    "@taskFormNameEmpty": {
+        "description": "Error de validación cuando el nombre de la tarea está vacío"
+    },
+    "taskFormNameTooLong": "El nombre debe tener 120 caracteres o menos",
+    "@taskFormNameTooLong": {
+        "description": "Error de validación cuando el nombre de la tarea es muy largo"
+    },
+    "taskFormDescriptionTooLong": "La descripción es muy larga",
+    "@taskFormDescriptionTooLong": {
+        "description": "Error de validación cuando la descripción de la tarea es muy larga"
+    },
+    "taskFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "@taskFormDeadlineAfterStartError": {
+        "description": "Error de validación cuando la fecha límite es anterior a la fecha de inicio"
+    },
+    "dateToday": "Hoy",
+    "@dateToday": {
+        "description": "Etiqueta de fecha relativa para hoy"
+    },
+    "dateTomorrow": "Mañana",
+    "@dateTomorrow": {
+        "description": "Etiqueta de fecha relativa para mañana"
+    },
+    "dateYesterday": "Ayer",
+    "@dateYesterday": {
+        "description": "Etiqueta de fecha relativa para ayer"
+    },
+    "dateInDays": "En {days} días",
+    "@dateInDays": {
+        "description": "Etiqueta de fecha relativa para días en el futuro",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "dateDaysAgo": "Hace {days} días",
+    "@dateDaysAgo": {
+        "description": "Etiqueta de fecha relativa para días en el pasado",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "repeatsLabel": "Se repite",
+    "@repeatsLabel": {
+        "description": "Etiqueta mostrada para tareas/proyectos repetitivos"
+    },
+    "labelTypeLabel": "Etiqueta",
+    "@labelTypeLabel": {
+        "description": "Nombre para mostrar del tipo etiqueta"
+    },
+    "labelTypeValue": "Valor",
+    "@labelTypeValue": {
+        "description": "Nombre para mostrar del tipo valor"
+    },
+    "retryButton": "Reintentar",
+    "@retryButton": {
+        "description": "Texto para el botón de acción de reintentar"
+    },
+    "rruleDaily": "Cada día",
+    "@rruleDaily": {
+        "description": "Frecuencia RRULE: diario"
+    },
+    "rruleWeekly": "Cada semana",
+    "@rruleWeekly": {
+        "description": "Frecuencia RRULE: semanal"
+    },
+    "rruleMonthly": "Cada mes",
+    "@rruleMonthly": {
+        "description": "Frecuencia RRULE: mensual"
+    },
+    "rruleYearly": "Cada año",
+    "@rruleYearly": {
+        "description": "Frecuencia RRULE: anual"
+    },
+    "rruleEveryNDays": "Cada {n} días",
+    "@rruleEveryNDays": {
+        "description": "Frecuencia RRULE: cada n días",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNWeeks": "Cada {n} semanas",
+    "@rruleEveryNWeeks": {
+        "description": "Frecuencia RRULE: cada n semanas",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNMonths": "Cada {n} meses",
+    "@rruleEveryNMonths": {
+        "description": "Frecuencia RRULE: cada n meses",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNYears": "Cada {n} años",
+    "@rruleEveryNYears": {
+        "description": "Frecuencia RRULE: cada n años",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleOn": "el",
+    "@rruleOn": {
+        "description": "RRULE: preposición para días"
+    },
+    "rruleOnDay": "el día",
+    "@rruleOnDay": {
+        "description": "RRULE: preposición para día del mes"
+    },
+    "rruleTimes": "{count, plural, =1{1 vez} other{{count} veces}}",
+    "@rruleTimes": {
+        "description": "RRULE: número de ocurrencias",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "rruleUntil": "hasta",
+    "@rruleUntil": {
+        "description": "RRULE: preposición para fecha de fin"
+    },
+    "dayMon": "Lun",
+    "@dayMon": {
+        "description": "Nombre de día abreviado: Lunes"
+    },
+    "dayTue": "Mar",
+    "@dayTue": {
+        "description": "Nombre de día abreviado: Martes"
+    },
+    "dayWed": "Mié",
+    "@dayWed": {
+        "description": "Nombre de día abreviado: Miércoles"
+    },
+    "dayThu": "Jue",
+    "@dayThu": {
+        "description": "Nombre de día abreviado: Jueves"
+    },
+    "dayFri": "Vie",
+    "@dayFri": {
+        "description": "Nombre de día abreviado: Viernes"
+    },
+    "daySat": "Sáb",
+    "@daySat": {
+        "description": "Nombre de día abreviado: Sábado"
+    },
+    "daySun": "Dom",
+    "@daySun": {
+        "description": "Nombre de día abreviado: Domingo"
+    },
+    "projectDetailTasksTitle": "Tareas",
+    "@projectDetailTasksTitle": {
+        "description": "Título de la sección de tareas en detalle del proyecto"
+    },
+    "projectDetailTaskCount": "{count, plural, =0{Sin tareas} =1{1 tarea} other{{count} tareas}}",
+    "@projectDetailTaskCount": {
+        "description": "Recuento de tareas en detalle del proyecto",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailCompletedCount": "{completed} de {total} completadas",
+    "@projectDetailCompletedCount": {
+        "description": "Recuento de tareas completadas",
+        "placeholders": {
+            "completed": {
+                "type": "int",
+                "example": "3"
+            },
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailEmptyTasksDescription": "Añade tareas a este proyecto para seguir tu progreso",
+    "@projectDetailEmptyTasksDescription": {
+        "description": "Descripción mostrada cuando el proyecto no tiene tareas"
+    },
+    "projectStatusCompleted": "Completado",
+    "@projectStatusCompleted": {
+        "description": "Insignia de estado para proyectos completados"
+    },
+    "projectStatusActive": "Activo",
+    "@projectStatusActive": {
+        "description": "Insignia de estado para proyectos activos"
+    },
+    "deleteProjectAction": "Eliminar proyecto",
+    "@deleteProjectAction": {
+        "description": "Acción del menú para eliminar un proyecto"
+    },
+    "markCompleteAction": "Marcar como completado",
+    "@markCompleteAction": {
+        "description": "Acción del menú para marcar un proyecto como completado"
+    },
+    "markIncompleteAction": "Marcar como incompleto",
+    "@markIncompleteAction": {
+        "description": "Acción del menú para marcar un proyecto como incompleto"
     }
 }

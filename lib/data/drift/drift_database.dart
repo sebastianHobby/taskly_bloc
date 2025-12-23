@@ -69,7 +69,7 @@ class LabelTable extends Table {
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
   TextColumn get userId => text().nullable().named('user_id')();
-
+  TextColumn get iconName => text().nullable().named('icon_name')();
   @override
   List<String> get customConstraints => [
     "CHECK (color IS NULL OR color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]')",

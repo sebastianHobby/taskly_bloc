@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A widget that displays label chips with colored icons.
@@ -70,43 +71,61 @@ class _LabelChip extends StatelessWidget {
 
   final Label label;
 
-  Color _colorFromHexOrFallback(BuildContext context, String? hex) {
-    final normalized = (hex ?? '').replaceAll('#', '');
-    if (normalized.length != 6) {
-      return Theme.of(context).colorScheme.primary;
-    }
-    final value = int.tryParse('FF$normalized', radix: 16);
-    if (value == null) {
-      return Theme.of(context).colorScheme.primary;
-    }
-    return Color(value);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = _colorFromHexOrFallback(context, label.color);
+    final colorScheme = theme.colorScheme;
+    final color = ColorUtils.fromHexWithThemeFallback(context, label.color);
+    final isValue = label.type == LabelType.value;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
+    // For values: use colored background with contrasting text
+    // For labels: use neutral background with colored icon
+    final backgroundColor = isValue ? color : colorScheme.surfaceContainerLow;
+    final textColor = isValue
+        ? (color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white)
+        : colorScheme.onSurface;
+
+    // Get the icon - emoji for values, colored label icon for labels
+    final Widget icon;
+    if (isValue) {
+      final emoji = label.iconName?.isNotEmpty ?? false
+          ? label.iconName!
+          : '❤️';
+      icon = Text(
+        emoji,
+        style: const TextStyle(fontSize: 12),
+      );
+    } else {
+      icon = Icon(
+        Icons.label,
+        size: 12,
+        color: color,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          icon,
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label.name,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            label.name,
-            style: theme.textTheme.bodySmall,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

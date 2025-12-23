@@ -103,6 +103,24 @@ abstract class AppLocalizations {
   /// **'Counter'**
   String get counterAppBarTitle;
 
+  /// Generic edit action label
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get editLabel;
+
+  /// Generic cancel action label
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelLabel;
+
+  /// Generic delete action label
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get deleteLabel;
+
   /// Title for the Projects section
   ///
   /// In en, this message translates to:
@@ -630,6 +648,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add project'**
   String get addProjectAction;
+
+  /// Hint text for the task name field
+  ///
+  /// In en, this message translates to:
+  /// **'Task Name'**
+  String get taskFormNameHint;
+
+  /// Hint text for the task description field
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get taskFormDescriptionHint;
+
+  /// Hint text for the task start date field
+  ///
+  /// In en, this message translates to:
+  /// **'Start date (optional)'**
+  String get taskFormStartDateHint;
+
+  /// Hint text for the task deadline date field
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline date (optional)'**
+  String get taskFormDeadlineDateHint;
+
+  /// Hint text for the task project field
+  ///
+  /// In en, this message translates to:
+  /// **'Project (optional)'**
+  String get taskFormProjectHint;
+
+  /// Label for the completed checkbox in the task form
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get taskFormCompletedLabel;
+
+  /// Validation error when task name is missing
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get taskFormNameRequired;
+
+  /// Validation error when task name is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Name must not be empty'**
+  String get taskFormNameEmpty;
+
+  /// Validation error when task name is too long
+  ///
+  /// In en, this message translates to:
+  /// **'Name must be 120 characters or fewer'**
+  String get taskFormNameTooLong;
+
+  /// Validation error when task description is too long
+  ///
+  /// In en, this message translates to:
+  /// **'Description is too long'**
+  String get taskFormDescriptionTooLong;
+
+  /// Validation error when deadline is before start date
+  ///
+  /// In en, this message translates to:
+  /// **'Deadline must be after start date'**
+  String get taskFormDeadlineAfterStartError;
+
+  /// Relative date label for today
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dateToday;
+
+  /// Relative date label for tomorrow
+  ///
+  /// In en, this message translates to:
+  /// **'Tomorrow'**
+  String get dateTomorrow;
+
+  /// Relative date label for yesterday
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get dateYesterday;
+
+  /// Relative date label for days in the future
+  ///
+  /// In en, this message translates to:
+  /// **'In {days} days'**
+  String dateInDays(int days);
+
+  /// Relative date label for days in the past
+  ///
+  /// In en, this message translates to:
+  /// **'{days} days ago'**
+  String dateDaysAgo(int days);
+
+  /// Label shown for repeating tasks/projects
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get repeatsLabel;
+
+  /// Display name for label type
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get labelTypeLabel;
+
+  /// Display name for value type
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get labelTypeValue;
+
+  /// Text for retry action button
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retryButton;
+
+  /// RRULE frequency: daily
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get rruleDaily;
+
+  /// RRULE frequency: weekly
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get rruleWeekly;
+
+  /// RRULE frequency: monthly
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get rruleMonthly;
+
+  /// RRULE frequency: yearly
+  ///
+  /// In en, this message translates to:
+  /// **'Every year'**
+  String get rruleYearly;
+
+  /// RRULE frequency: every n days
+  ///
+  /// In en, this message translates to:
+  /// **'Every {n} days'**
+  String rruleEveryNDays(int n);
+
+  /// RRULE frequency: every n weeks
+  ///
+  /// In en, this message translates to:
+  /// **'Every {n} weeks'**
+  String rruleEveryNWeeks(int n);
+
+  /// RRULE frequency: every n months
+  ///
+  /// In en, this message translates to:
+  /// **'Every {n} months'**
+  String rruleEveryNMonths(int n);
+
+  /// RRULE frequency: every n years
+  ///
+  /// In en, this message translates to:
+  /// **'Every {n} years'**
+  String rruleEveryNYears(int n);
+
+  /// RRULE: preposition for days
+  ///
+  /// In en, this message translates to:
+  /// **'on'**
+  String get rruleOn;
+
+  /// RRULE: preposition for day of month
+  ///
+  /// In en, this message translates to:
+  /// **'on day'**
+  String get rruleOnDay;
+
+  /// RRULE: number of occurrences
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 time} other{{count} times}}'**
+  String rruleTimes(int count);
+
+  /// RRULE: preposition for end date
+  ///
+  /// In en, this message translates to:
+  /// **'until'**
+  String get rruleUntil;
+
+  /// Abbreviated day name: Monday
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get dayMon;
+
+  /// Abbreviated day name: Tuesday
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get dayTue;
+
+  /// Abbreviated day name: Wednesday
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get dayWed;
+
+  /// Abbreviated day name: Thursday
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get dayThu;
+
+  /// Abbreviated day name: Friday
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get dayFri;
+
+  /// Abbreviated day name: Saturday
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get daySat;
+
+  /// Abbreviated day name: Sunday
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get daySun;
+
+  /// Title for tasks section in project detail
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get projectDetailTasksTitle;
+
+  /// Task count display in project detail
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No tasks} =1{1 task} other{{count} tasks}}'**
+  String projectDetailTaskCount(int count);
+
+  /// Completed task count display
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total} completed'**
+  String projectDetailCompletedCount(int completed, int total);
+
+  /// Description shown when project has no tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Add tasks to this project to track your progress'**
+  String get projectDetailEmptyTasksDescription;
+
+  /// Status badge for completed projects
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get projectStatusCompleted;
+
+  /// Status badge for active projects
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get projectStatusActive;
+
+  /// Menu action to delete a project
+  ///
+  /// In en, this message translates to:
+  /// **'Delete project'**
+  String get deleteProjectAction;
+
+  /// Menu action to mark a project complete
+  ///
+  /// In en, this message translates to:
+  /// **'Mark complete'**
+  String get markCompleteAction;
+
+  /// Menu action to mark a project incomplete
+  ///
+  /// In en, this message translates to:
+  /// **'Mark incomplete'**
+  String get markIncompleteAction;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

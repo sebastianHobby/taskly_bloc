@@ -101,6 +101,7 @@ class LabelRepository implements LabelRepositoryContract {
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   }) async {
     final now = DateTime.now();
     final driftLabel = switch (type) {
@@ -113,6 +114,7 @@ class LabelRepository implements LabelRepositoryContract {
         name: Value(name),
         color: Value(color),
         type: Value(driftLabel),
+        iconName: Value(iconName),
         createdAt: Value(now),
         updatedAt: Value(now),
       ),
@@ -125,6 +127,7 @@ class LabelRepository implements LabelRepositoryContract {
     required String name,
     required String color,
     required LabelType type,
+    String? iconName,
   }) async {
     final existing = await _getLabelById(id);
     if (existing == null) {
@@ -138,6 +141,7 @@ class LabelRepository implements LabelRepositoryContract {
         name: Value(name),
         color: Value(color),
         type: Value(drift.LabelType.values.byName(type.name)),
+        iconName: Value(iconName),
         updatedAt: Value(now),
       ),
     );

@@ -1,28 +1,36 @@
-// drift types are provided by the generated database import below
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/mixins/form_submission_mixin.dart';
+import 'package:taskly_bloc/core/shared/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
     this.defaultProjectId,
+    this.labelRepository,
     super.key,
   });
 
   final String? defaultProjectId;
 
+  /// Optional label repository for creating new labels/values inline.
+  /// If null, the "Add label/value" options won't be shown.
+  final LabelRepositoryContract? labelRepository;
+
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
 }
 
-class _TaskDetailSheetState extends State<TaskDetailSheet> {
+class _TaskDetailSheetState extends State<TaskDetailSheet>
+    with FormSubmissionMixin {
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
@@ -71,29 +79,42 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
               TaskForm(
                 formKey: _formKey,
                 onSubmit: () {
-                  final formState = _formKey.currentState;
-                  if (formState == null) return;
-                  if (!formState.saveAndValidate()) return;
-                  final formValues = formState.value;
-                  final name = formValues['name'] as String;
-                  final description = formValues['description'] as String?;
-                  final projectIdCandidate = formValues['projectId'] as String?;
+                  final formValues = validateAndGetFormValues(_formKey);
+                  if (formValues == null) return;
+
+                  final name = extractStringValue(formValues, 'name');
+                  final description = extractNullableStringValue(
+                    formValues,
+                    'description',
+                  );
+                  final projectIdCandidate = extractNullableStringValue(
+                    formValues,
+                    'projectId',
+                  );
                   final projectId =
                       (projectIdCandidate == null || projectIdCandidate.isEmpty)
                       ? null
                       : projectIdCandidate;
-                  final repeatCandidate =
-                      (formValues['repeatIcalRrule'] as String?)?.trim();
+                  final repeatCandidate = extractNullableStringValue(
+                    formValues,
+                    'repeatIcalRrule',
+                  );
                   final repeatIcalRrule =
                       (repeatCandidate == null || repeatCandidate.isEmpty)
                       ? null
                       : repeatCandidate;
-                  final startDate = formValues['startDate'] as DateTime?;
-                  final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                  final labelIds =
-                      (formValues['labelIds'] as List<dynamic>?)
-                          ?.cast<String>() ??
-                      <String>[];
+                  final startDate = extractDateTimeValue(
+                    formValues,
+                    'startDate',
+                  );
+                  final deadlineDate = extractDateTimeValue(
+                    formValues,
+                    'deadlineDate',
+                  );
+                  final labelIds = extractStringListValue(
+                    formValues,
+                    'labelIds',
+                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -102,7 +123,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     TaskDetailEvent.create(
                       name: name,
                       description: description,
-                      completed: formValues['completed'] as bool? ?? false,
+                      completed: extractBoolValue(formValues, 'completed'),
                       startDate: startDate,
                       deadlineDate: deadlineDate,
                       projectId: projectId,
@@ -115,6 +136,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 availableProjects: availableProjects,
                 availableLabels: availableLabels,
                 defaultProjectId: widget.defaultProjectId,
+                onClose: () => Navigator.of(context).maybePop(),
               ),
           loadSuccess:
               (
@@ -125,29 +147,41 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                 initialData: task,
                 formKey: _formKey,
                 onSubmit: () {
-                  final formState = _formKey.currentState;
-                  if (formState == null) return;
-                  if (!formState.saveAndValidate()) return;
-                  final formValues = formState.value;
-                  final name = formValues['name'] as String;
-                  final description = formValues['description'] as String?;
-                  final projectIdCandidate = formValues['projectId'] as String?;
+                  final formValues = validateAndGetFormValues(_formKey);
+                  if (formValues == null) return;
+                  final name = extractStringValue(formValues, 'name');
+                  final description = extractNullableStringValue(
+                    formValues,
+                    'description',
+                  );
+                  final projectIdCandidate = extractNullableStringValue(
+                    formValues,
+                    'projectId',
+                  );
                   final projectId =
                       (projectIdCandidate == null || projectIdCandidate.isEmpty)
                       ? null
                       : projectIdCandidate;
-                  final repeatCandidate =
-                      (formValues['repeatIcalRrule'] as String?)?.trim();
+                  final repeatCandidate = extractNullableStringValue(
+                    formValues,
+                    'repeatIcalRrule',
+                  );
                   final repeatIcalRrule =
                       (repeatCandidate == null || repeatCandidate.isEmpty)
                       ? null
                       : repeatCandidate;
-                  final startDate = formValues['startDate'] as DateTime?;
-                  final deadlineDate = formValues['deadlineDate'] as DateTime?;
-                  final labelIds =
-                      (formValues['labelIds'] as List<dynamic>?)
-                          ?.cast<String>() ??
-                      <String>[];
+                  final startDate = extractDateTimeValue(
+                    formValues,
+                    'startDate',
+                  );
+                  final deadlineDate = extractDateTimeValue(
+                    formValues,
+                    'deadlineDate',
+                  );
+                  final labelIds = extractStringListValue(
+                    formValues,
+                    'labelIds',
+                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -157,7 +191,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                       id: task.id,
                       name: name,
                       description: description,
-                      completed: formValues['completed'] as bool? ?? false,
+                      completed: extractBoolValue(formValues, 'completed'),
                       startDate: startDate,
                       deadlineDate: deadlineDate,
                       projectId: projectId,
@@ -166,10 +200,24 @@ class _TaskDetailSheetState extends State<TaskDetailSheet> {
                     ),
                   );
                 },
+                onDelete: () async {
+                  final confirmed = await showDeleteConfirmationDialog(
+                    context: context,
+                    title: 'Delete Task',
+                    itemName: task.name,
+                    description: 'This action cannot be undone.',
+                  );
+                  if (confirmed && context.mounted) {
+                    context.read<TaskDetailBloc>().add(
+                      TaskDetailEvent.delete(id: task.id),
+                    );
+                  }
+                },
                 submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
                 availableLabels: availableLabels,
                 defaultProjectId: widget.defaultProjectId,
+                onClose: () => Navigator.of(context).maybePop(),
               ),
           operationSuccess: (_) => const SizedBox.shrink(),
           operationFailure: (_) => const SizedBox.shrink(),

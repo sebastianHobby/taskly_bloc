@@ -5,11 +5,14 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 ///
 /// Use `childBuilder` to obtain the modal sheet's inner BuildContext so
 /// callbacks that need to `Navigator.of(modalContext).pop()` can access it.
+///
+/// Note: We use [WoltModalSheetPage] instead of [NonScrollingWoltModalSheetPage]
+/// because the latter uses [SliverFillViewport] which forces content to fill
+/// the entire viewport height, causing unwanted whitespace for forms.
 Future<T?> showDetailModal<T>({
   required BuildContext context,
   required Widget Function(BuildContext modalContext) childBuilder,
   ValueNotifier<bool>? sheetOpenNotifier,
-  bool useNonScrolling = true,
   WoltModalType Function(BuildContext)? modalTypeBuilder,
   bool barrierDismissible = true,
   bool useSafeArea = true,
@@ -24,18 +27,12 @@ Future<T?> showDetailModal<T>({
     modalTypeBuilder: modalTypeBuilder,
     showDragHandle: showDragHandle,
     pageListBuilder: (modalSheetContext) => [
-      if (useNonScrolling)
-        NonScrollingWoltModalSheetPage(
-          child: Builder(
-            builder: (modalContext) => childBuilder(modalContext),
-          ),
-        )
-      else
-        WoltModalSheetPage(
-          child: Builder(
-            builder: (modalContext) => childBuilder(modalContext),
-          ),
+      WoltModalSheetPage(
+        hasTopBarLayer: false,
+        child: Builder(
+          builder: (modalContext) => childBuilder(modalContext),
         ),
+      ),
     ],
   );
 

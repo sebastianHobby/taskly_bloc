@@ -15,6 +15,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get counterAppBarTitle => 'Counter';
 
   @override
+  String get editLabel => 'Edit';
+
+  @override
+  String get cancelLabel => 'Cancel';
+
+  @override
+  String get deleteLabel => 'Delete';
+
+  @override
   String get projectsTitle => 'Projects';
 
   @override
@@ -277,4 +286,179 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addProjectAction => 'Add project';
+
+  @override
+  String get taskFormNameHint => 'Task Name';
+
+  @override
+  String get taskFormDescriptionHint => 'Description';
+
+  @override
+  String get taskFormStartDateHint => 'Start date (optional)';
+
+  @override
+  String get taskFormDeadlineDateHint => 'Deadline date (optional)';
+
+  @override
+  String get taskFormProjectHint => 'Project (optional)';
+
+  @override
+  String get taskFormCompletedLabel => 'Completed';
+
+  @override
+  String get taskFormNameRequired => 'Name is required';
+
+  @override
+  String get taskFormNameEmpty => 'Name must not be empty';
+
+  @override
+  String get taskFormNameTooLong => 'Name must be 120 characters or fewer';
+
+  @override
+  String get taskFormDescriptionTooLong => 'Description is too long';
+
+  @override
+  String get taskFormDeadlineAfterStartError => 'Deadline must be after start date';
+
+  @override
+  String get dateToday => 'Today';
+
+  @override
+  String get dateTomorrow => 'Tomorrow';
+
+  @override
+  String get dateYesterday => 'Yesterday';
+
+  @override
+  String dateInDays(int days) {
+    return 'In $days days';
+  }
+
+  @override
+  String dateDaysAgo(int days) {
+    return '$days days ago';
+  }
+
+  @override
+  String get repeatsLabel => 'Repeats';
+
+  @override
+  String get labelTypeLabel => 'Label';
+
+  @override
+  String get labelTypeValue => 'Value';
+
+  @override
+  String get retryButton => 'Retry';
+
+  @override
+  String get rruleDaily => 'Every day';
+
+  @override
+  String get rruleWeekly => 'Every week';
+
+  @override
+  String get rruleMonthly => 'Every month';
+
+  @override
+  String get rruleYearly => 'Every year';
+
+  @override
+  String rruleEveryNDays(int n) {
+    return 'Every $n days';
+  }
+
+  @override
+  String rruleEveryNWeeks(int n) {
+    return 'Every $n weeks';
+  }
+
+  @override
+  String rruleEveryNMonths(int n) {
+    return 'Every $n months';
+  }
+
+  @override
+  String rruleEveryNYears(int n) {
+    return 'Every $n years';
+  }
+
+  @override
+  String get rruleOn => 'on';
+
+  @override
+  String get rruleOnDay => 'on day';
+
+  @override
+  String rruleTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count times',
+      one: '1 time',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get rruleUntil => 'until';
+
+  @override
+  String get dayMon => 'Mon';
+
+  @override
+  String get dayTue => 'Tue';
+
+  @override
+  String get dayWed => 'Wed';
+
+  @override
+  String get dayThu => 'Thu';
+
+  @override
+  String get dayFri => 'Fri';
+
+  @override
+  String get daySat => 'Sat';
+
+  @override
+  String get daySun => 'Sun';
+
+  @override
+  String get projectDetailTasksTitle => 'Tasks';
+
+  @override
+  String projectDetailTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+      zero: 'No tasks',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String projectDetailCompletedCount(int completed, int total) {
+    return '$completed of $total completed';
+  }
+
+  @override
+  String get projectDetailEmptyTasksDescription => 'Add tasks to this project to track your progress';
+
+  @override
+  String get projectStatusCompleted => 'Completed';
+
+  @override
+  String get projectStatusActive => 'Active';
+
+  @override
+  String get deleteProjectAction => 'Delete project';
+
+  @override
+  String get markCompleteAction => 'Mark complete';
+
+  @override
+  String get markIncompleteAction => 'Mark incomplete';
 }

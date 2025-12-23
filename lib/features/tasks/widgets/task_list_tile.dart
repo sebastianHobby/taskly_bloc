@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/shared/widgets/truncated_label_chips.dart';
+import 'package:taskly_bloc/core/shared/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A modern card-based list tile representing a task.
@@ -73,13 +73,13 @@ class TaskListTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: isOverdue
-              ? colorScheme.error.withOpacity(0.3)
-              : colorScheme.outlineVariant.withOpacity(0.5),
+              ? colorScheme.error.withValues(alpha: 0.3)
+              : colorScheme.outlineVariant.withValues(alpha: 0.5),
           width: isOverdue ? 1.5 : 1,
         ),
       ),
       color: task.completed
-          ? colorScheme.surfaceContainerLowest.withOpacity(0.5)
+          ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.5)
           : colorScheme.surface,
       child: InkWell(
         onTap: () => onTap(task),
@@ -114,7 +114,7 @@ class TaskListTile extends StatelessWidget {
                                   ? TextDecoration.lineThrough
                                   : null,
                               color: task.completed
-                                  ? colorScheme.onSurface.withOpacity(0.5)
+                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
                                   : colorScheme.onSurface,
                             ),
                             maxLines: 2,
@@ -143,10 +143,10 @@ class TaskListTile extends StatelessWidget {
                     ],
 
                     // Labels section
-                    _LabelsSection(labels: task.labels),
+                    LabelsSection(labels: task.labels),
 
                     // Dates row
-                    _DatesRow(
+                    DatesRow(
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -163,7 +163,7 @@ class TaskListTile extends StatelessWidget {
               Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],
           ),
@@ -229,7 +229,7 @@ class _ProjectBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: colorScheme.tertiaryContainer.withOpacity(0.5),
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -251,155 +251,6 @@ class _ProjectBadge extends StatelessWidget {
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Section displaying labels and values.
-class _LabelsSection extends StatelessWidget {
-  const _LabelsSection({required this.labels});
-
-  final List<Label> labels;
-
-  @override
-  Widget build(BuildContext context) {
-    if (labels.isEmpty) return const SizedBox.shrink();
-
-    final valueLabels = labels.where((l) => l.type == LabelType.value).toList();
-    final typeLabels = labels.where((l) => l.type == LabelType.label).toList();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (valueLabels.isNotEmpty) TruncatedLabelChips(labels: valueLabels),
-          if (valueLabels.isNotEmpty && typeLabels.isNotEmpty)
-            const SizedBox(height: 4),
-          if (typeLabels.isNotEmpty) TruncatedLabelChips(labels: typeLabels),
-        ],
-      ),
-    );
-  }
-}
-
-/// Row displaying dates with visual indicators.
-class _DatesRow extends StatelessWidget {
-  const _DatesRow({
-    required this.startDate,
-    required this.deadlineDate,
-    required this.isOverdue,
-    required this.isDueToday,
-    required this.isDueSoon,
-    required this.formatDate,
-    required this.hasRepeat,
-  });
-
-  final DateTime? startDate;
-  final DateTime? deadlineDate;
-  final bool isOverdue;
-  final bool isDueToday;
-  final bool isDueSoon;
-  final String Function(BuildContext, DateTime) formatDate;
-  final bool hasRepeat;
-
-  @override
-  Widget build(BuildContext context) {
-    if (startDate == null && deadlineDate == null && !hasRepeat) {
-      return const SizedBox.shrink();
-    }
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        children: [
-          // Start date
-          if (startDate != null)
-            _DateChip(
-              icon: Icons.play_arrow_rounded,
-              label: formatDate(context, startDate!),
-              color: colorScheme.onSurfaceVariant,
-            ),
-
-          // Deadline date with status color
-          if (deadlineDate != null)
-            _DateChip(
-              icon: Icons.flag_rounded,
-              label: formatDate(context, deadlineDate!),
-              color: isOverdue
-                  ? colorScheme.error
-                  : isDueToday
-                  ? colorScheme.tertiary
-                  : isDueSoon
-                  ? colorScheme.secondary
-                  : colorScheme.onSurfaceVariant,
-              backgroundColor: isOverdue
-                  ? colorScheme.errorContainer.withOpacity(0.3)
-                  : isDueToday
-                  ? colorScheme.tertiaryContainer.withOpacity(0.3)
-                  : null,
-            ),
-
-          // Repeat indicator
-          if (hasRepeat)
-            _DateChip(
-              icon: Icons.repeat_rounded,
-              label: 'Repeats',
-              color: colorScheme.primary,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A compact chip showing a date or indicator.
-class _DateChip extends StatelessWidget {
-  const _DateChip({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.backgroundColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Color? backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      padding: backgroundColor != null
-          ? const EdgeInsets.symmetric(horizontal: 6, vertical: 2)
-          : EdgeInsets.zero,
-      decoration: backgroundColor != null
-          ? BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(4),
-            )
-          : null,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: color,
-              fontWeight: FontWeight.w500,
             ),
           ),
         ],

@@ -1,5 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/mixins/detail_bloc_mixin.dart';
+import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -42,14 +44,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.loadInitialData() = _TaskDetailLoadInitialData;
 }
 
-@freezed
-abstract class TaskDetailError with _$TaskDetailError {
-  const factory TaskDetailError({
-    required Object error,
-    StackTrace? stackTrace,
-  }) = _TaskDetailError;
-}
-
 // State
 @freezed
 class TaskDetailState with _$TaskDetailState {
@@ -64,7 +58,7 @@ class TaskDetailState with _$TaskDetailState {
     required EntityOperation operation,
   }) = TaskDetailOperationSuccess;
   const factory TaskDetailState.operationFailure({
-    required TaskDetailError errorDetails,
+    required DetailBlocError<Task> errorDetails,
   }) = TaskDetailOperationFailure;
 
   const factory TaskDetailState.loadInProgress() = TaskDetailLoadInProgress;
@@ -75,7 +69,8 @@ class TaskDetailState with _$TaskDetailState {
   }) = TaskDetailLoadSuccess;
 }
 
-class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
+class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
+    with DetailBlocMixin<TaskDetailEvent, TaskDetailState, Task> {
   TaskDetailBloc({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
@@ -85,14 +80,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
        _projectRepository = projectRepository,
        _labelRepository = labelRepository,
        super(const TaskDetailState.initial()) {
-    // register handlers for each concrete event type
     on<_TaskDetailLoadInitialData>(_onLoadInitialData);
     on<_TaskDetailGet>(_onGet);
     on<_TaskDetailCreate>(_onCreate);
     on<_TaskDetailUpdate>(_onUpdate);
     on<_TaskDetailDelete>(_onDelete);
 
-    // Only load initial data OR get specific task (not both).
     if (taskId != null && taskId.isNotEmpty) {
       add(TaskDetailEvent.get(taskId: taskId));
     } else {
@@ -103,6 +96,19 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
+
+  // DetailBlocMixin implementation
+  @override
+  TaskDetailState createLoadInProgressState() =>
+      const TaskDetailState.loadInProgress();
+
+  @override
+  TaskDetailState createOperationSuccessState(EntityOperation operation) =>
+      TaskDetailState.operationSuccess(operation: operation);
+
+  @override
+  TaskDetailState createOperationFailureState(DetailBlocError<Task> error) =>
+      TaskDetailState.operationFailure(errorDetails: error);
 
   Future<void> _onLoadInitialData(
     _TaskDetailLoadInitialData event,
@@ -119,12 +125,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
           availableLabels: labels,
         ),
       );
-    } catch (error, stacktrace) {
+    } catch (error, stackTrace) {
       emit(
         TaskDetailState.operationFailure(
-          errorDetails: TaskDetailError(
+          errorDetails: DetailBlocError<Task>(
             error: error,
-            stackTrace: stacktrace,
+            stackTrace: stackTrace,
           ),
         ),
       );
@@ -141,13 +147,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
       if (task == null) {
         emit(
           const TaskDetailState.operationFailure(
-            errorDetails: TaskDetailError(error: NotFoundEntity.task),
+            errorDetails: DetailBlocError<Task>(error: NotFoundEntity.task),
           ),
         );
         return;
       }
 
-      // Use existing repositories to supply available lists for the form
       final projects = await _projectRepository.getAll();
       final labels = await _labelRepository.getAll();
 
@@ -158,12 +163,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
           availableLabels: labels,
         ),
       );
-    } catch (error, stacktrace) {
+    } catch (error, stackTrace) {
       emit(
         TaskDetailState.operationFailure(
-          errorDetails: TaskDetailError(
+          errorDetails: DetailBlocError<Task>(
             error: error,
-            stackTrace: stacktrace,
+            stackTrace: stackTrace,
           ),
         ),
       );
@@ -174,8 +179,9 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
     _TaskDetailCreate event,
     Emitter<TaskDetailState> emit,
   ) async {
-    try {
-      await _taskRepository.create(
+    await executeCreateOperation(
+      emit,
+      () => _taskRepository.create(
         name: event.name,
         description: event.description,
         completed: event.completed,
@@ -184,30 +190,17 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
         projectId: event.projectId,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
-      );
-      emit(
-        const TaskDetailState.operationSuccess(
-          operation: EntityOperation.create,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        TaskDetailState.operationFailure(
-          errorDetails: TaskDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _onUpdate(
     _TaskDetailUpdate event,
     Emitter<TaskDetailState> emit,
   ) async {
-    try {
-      await _taskRepository.update(
+    await executeUpdateOperation(
+      emit,
+      () => _taskRepository.update(
         id: event.id,
         name: event.name,
         description: event.description,
@@ -217,45 +210,14 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState> {
         deadlineDate: event.deadlineDate,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
-      );
-
-      emit(
-        const TaskDetailState.operationSuccess(
-          operation: EntityOperation.update,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        TaskDetailState.operationFailure(
-          errorDetails: TaskDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _onDelete(
     _TaskDetailDelete event,
     Emitter<TaskDetailState> emit,
   ) async {
-    try {
-      await _taskRepository.delete(event.id);
-      emit(
-        const TaskDetailState.operationSuccess(
-          operation: EntityOperation.delete,
-        ),
-      );
-    } catch (error, stacktrace) {
-      emit(
-        TaskDetailState.operationFailure(
-          errorDetails: TaskDetailError(
-            error: error,
-            stackTrace: stacktrace,
-          ),
-        ),
-      );
-    }
+    await executeDeleteOperation(emit, () => _taskRepository.delete(event.id));
   }
 }

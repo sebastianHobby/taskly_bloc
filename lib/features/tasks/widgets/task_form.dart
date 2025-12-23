@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/shared/form_fields/form_fields.dart';
+import 'package:taskly_bloc/core/shared/utils/form_utils.dart';
+import 'package:taskly_bloc/core/shared/widgets/form_date_chip.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
 
-class TaskForm extends StatelessWidget {
+/// A modern form for creating or editing tasks.
+///
+/// Features:
+/// - Action buttons in header (always visible)
+/// - Unsaved changes confirmation on close
+/// - Clear cancel/close affordance
+class TaskForm extends StatefulWidget {
   const TaskForm({
     required this.formKey,
     required this.onSubmit,
@@ -14,6 +22,8 @@ class TaskForm extends StatelessWidget {
     this.availableProjects = const [],
     this.availableLabels = const [],
     this.defaultProjectId,
+    this.onDelete,
+    this.onClose,
     super.key,
   });
 
@@ -24,292 +34,321 @@ class TaskForm extends StatelessWidget {
   final List<Project> availableProjects;
   final List<Label> availableLabels;
   final String? defaultProjectId;
+  final VoidCallback? onDelete;
 
-  Color _colorFromHexOrFallback(String? hex) {
-    final normalized = (hex ?? '').replaceAll('#', '');
-    if (normalized.length != 6) return Colors.black;
-    final value = int.tryParse('FF$normalized', radix: 16);
-    if (value == null) return Colors.black;
-    return Color(value);
+  /// Called when the user wants to close the form.
+  /// If null, no close button is shown.
+  final VoidCallback? onClose;
+
+  @override
+  State<TaskForm> createState() => _TaskFormState();
+}
+
+class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
+  @override
+  VoidCallback? get onClose => widget.onClose;
+
+  Future<void> _showDatePicker(
+    BuildContext context,
+    DateTime? initialDate,
+    ValueChanged<DateTime?> onDateSelected,
+  ) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate ?? now,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      onDateSelected(picked);
+      markDirty();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isCreating = widget.initialData == null;
+
     final Map<String, dynamic> initialValues = {
-      'name': initialData?.name ?? '',
-      'description': initialData?.description ?? '',
-      'completed': initialData?.completed ?? false,
-      'startDate': initialData?.startDate,
-      'deadlineDate': initialData?.deadlineDate,
-      'projectId': initialData?.projectId ?? defaultProjectId ?? '',
-      'labelIds': (initialData?.labels ?? <Label>[])
+      'name': widget.initialData?.name ?? '',
+      'description': widget.initialData?.description ?? '',
+      'completed': widget.initialData?.completed ?? false,
+      'startDate': widget.initialData?.startDate,
+      'deadlineDate': widget.initialData?.deadlineDate,
+      'projectId':
+          widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
+      'labelIds': (widget.initialData?.labels ?? <Label>[])
           .map((Label e) => e.id)
           .toList(),
-      'repeatIcalRrule': initialData?.repeatIcalRrule ?? '',
+      'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
     };
 
-    final labelTypeLabels = availableLabels
-        .where((l) => l.type == LabelType.label)
-        .toList();
-    final labelTypeValues = availableLabels
-        .where((l) => l.type == LabelType.value)
-        .toList();
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(top: 12),
+            decoration: BoxDecoration(
+              color: colorScheme.outline.withValues(alpha: 0.4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Flexible(
-          child: SingleChildScrollView(
-            key: const Key('task-form-scroll'),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: FormBuilder(
-              key: formKey,
-              initialValue: initialValues,
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
-                      name: 'name',
-                      textCapitalization: TextCapitalization.words,
-                      textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        hintText: 'Task Name',
-                        border: InputBorder.none,
-                      ),
-                      validator: FormBuilderValidators.compose([
-                        FormBuilderValidators.required(
-                          errorText: 'Name is required',
-                        ),
-                        FormBuilderValidators.minLength(
-                          1,
-                          errorText: 'Name must not be empty',
-                        ),
-                        FormBuilderValidators.maxLength(
-                          120,
-                          errorText: 'Name must be 120 characters or fewer',
-                        ),
-                      ]),
+          // Action buttons row
+          Container(
+            padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Delete button (if editing)
+                if (widget.initialData != null && widget.onDelete != null)
+                  IconButton(
+                    icon: Icon(
+                      Icons.delete_outline_rounded,
+                      color: colorScheme.error,
+                    ),
+                    onPressed: widget.onDelete,
+                    tooltip: 'Delete Task',
+                  ),
+
+                // Close button (X) in top right
+                if (widget.onClose != null)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: handleClose,
+                    tooltip: 'Close',
+                    style: IconButton.styleFrom(
+                      foregroundColor: colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
-                      name: 'description',
-                      textInputAction: TextInputAction.newline,
-                      decoration: const InputDecoration(
-                        hintText: 'Description',
-                        border: InputBorder.none,
+              ],
+            ),
+          ),
+
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(bottom: 24),
+              child: FormBuilder(
+                key: widget.formKey,
+                initialValue: initialValues,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                onChanged: markDirty,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Task Name with completion checkbox
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Completion checkbox
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: FormBuilderField<bool>(
+                              name: 'completed',
+                              builder: (field) {
+                                return SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: Checkbox(
+                                    value: field.value ?? false,
+                                    onChanged: (value) {
+                                      field.didChange(value);
+                                      markDirty();
+                                    },
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Task name field
+                          Expanded(
+                            child: FormBuilderTextField(
+                              name: 'name',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textCapitalization: TextCapitalization.sentences,
+                              textInputAction: TextInputAction.next,
+                              decoration: InputDecoration(
+                                hintText: l10n.taskFormNameHint,
+                                filled: true,
+                                fillColor: colorScheme.surfaceContainerLow,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: colorScheme.primary,
+                                    width: 1.5,
+                                  ),
+                                ),
+                              ),
+                              validator: FormBuilderValidators.compose([
+                                FormBuilderValidators.required(
+                                  errorText: l10n.taskFormNameRequired,
+                                ),
+                                FormBuilderValidators.minLength(
+                                  1,
+                                  errorText: l10n.taskFormNameEmpty,
+                                ),
+                                FormBuilderValidators.maxLength(
+                                  120,
+                                  errorText: l10n.taskFormNameTooLong,
+                                ),
+                              ]),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+
+                    // Task Description
+                    FormBuilderTextFieldModern(
+                      name: 'description',
+                      hint: l10n.taskFormDescriptionHint,
+                      textInputAction: TextInputAction.newline,
+                      fieldType: ModernFieldType.description,
+                      maxLines: 3,
                       minLines: 2,
-                      maxLines: 5,
                       validator: FormBuilderValidators.maxLength(
                         200,
-                        errorText: 'Description is too long',
+                        errorText: l10n.taskFormDescriptionTooLong,
                         checkNullOrEmpty: false,
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderDateTimePicker(
-                      name: 'startDate',
-                      inputType: InputType.date,
-                      decoration: const InputDecoration(
-                        hintText: 'Start date (optional)',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.play_arrow_outlined),
-                      ),
-                      initialValue: dateOnlyOrNull(
-                        initialValues['startDate'] as DateTime?,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderDateTimePicker(
-                      name: 'deadlineDate',
-                      inputType: InputType.date,
-                      decoration: const InputDecoration(
-                        hintText: 'Deadline date (optional)',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.flag_outlined),
-                      ),
-                      initialValue: dateOnlyOrNull(
-                        initialValues['deadlineDate'] as DateTime?,
-                      ),
-                      validator: (valueCandidate) {
-                        final start =
-                            formKey.currentState?.fields['startDate']?.value
-                                as DateTime?;
-                        if (valueCandidate != null && start != null) {
-                          if (dateOnly(
-                            valueCandidate,
-                          ).isBefore(dateOnly(start))) {
-                            return 'Deadline must be after start date';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderCheckbox(
-                      name: 'completed',
-                      title: const Text('Completed'),
-                      initialValue:
-                          initialValues['completed'] as bool? ?? false,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderDropdown<String>(
-                      name: 'projectId',
-                      decoration: const InputDecoration(
-                        hintText: 'Project (optional)',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.work_outline),
-                      ),
-                      initialValue: initialValues['projectId'] as String?,
-                      items: [
-                        const DropdownMenuItem(
-                          value: '',
-                          child: SizedBox.shrink(),
-                        ),
-                        for (final project in availableProjects)
-                          DropdownMenuItem(
-                            value: project.id,
-                            child: Text(project.name),
-                          ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: FormBuilderField<List<String>>(
-                      name: 'labelIds',
-                      initialValue: initialValues['labelIds'] as List<String>?,
-                      builder: (field) {
-                        final selected = List<String>.from(
-                          field.value ?? const <String>[],
-                        );
 
-                        void toggle(String id, bool isSelected) {
-                          final updated = List<String>.from(selected);
-                          if (isSelected) {
-                            if (!updated.contains(id)) {
-                              updated.add(id);
-                            }
-                          } else {
-                            updated.remove(id);
-                          }
-                          field.didChange(updated);
-                        }
+                    const SizedBox(height: 8),
 
-                        Widget buildSection(
-                          String heading,
-                          List<Label> items,
-                        ) {
-                          if (items.isEmpty) return const SizedBox.shrink();
+                    // Project Selection
+                    if (widget.availableProjects.isNotEmpty) ...[
+                      FormBuilderProjectPickerModern(
+                        name: 'projectId',
+                        label: 'Project',
+                        hint: l10n.taskFormProjectHint,
+                        availableProjects: widget.availableProjects,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                heading,
-                                style: Theme.of(
+                    // Date chips row
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          // Start Date chip
+                          FormBuilderField<DateTime?>(
+                            name: 'startDate',
+                            builder: (field) {
+                              return FormDateChip.startDate(
+                                date: field.value,
+                                onTap: () => _showDatePicker(
                                   context,
-                                ).textTheme.titleSmall,
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final label in items)
-                                    FilterChip(
-                                      selected: selected.contains(label.id),
-                                      avatar: Icon(
-                                        Icons.label_outline,
-                                        size: 16,
-                                        color: _colorFromHexOrFallback(
-                                          label.color,
-                                        ),
-                                      ),
-                                      label: Text(label.name),
-                                      onSelected: (isSelected) =>
-                                          toggle(label.id, isSelected),
-                                    ),
-                                ],
-                              ),
-                            ],
-                          );
-                        }
+                                  field.value,
+                                  (date) => field.didChange(date),
+                                ),
+                                onClear: field.value != null
+                                    ? () => field.didChange(null)
+                                    : null,
+                              );
+                            },
+                          ),
+                          // Deadline Date chip
+                          FormBuilderField<DateTime?>(
+                            name: 'deadlineDate',
+                            builder: (field) {
+                              return FormDateChip.deadline(
+                                date: field.value,
+                                onTap: () => _showDatePicker(
+                                  context,
+                                  field.value,
+                                  (date) => field.didChange(date),
+                                ),
+                                onClear: field.value != null
+                                    ? () => field.didChange(null)
+                                    : null,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
 
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            buildSection(
-                              l10n.labelTypeValueHeading,
-                              labelTypeValues,
-                            ),
-                            const SizedBox(height: 16),
-                            buildSection(
-                              l10n.labelTypeLabelHeading,
-                              labelTypeLabels,
-                            ),
-                          ],
-                        );
-                      },
+                    const SizedBox(height: 16),
+
+                    // Labels and Values Section
+                    FormBuilderLabelPickerModern(
+                      name: 'labelIds',
+                      availableLabels: widget.availableLabels,
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FormBuilderTextField(
-                      name: 'repeatIcalRrule',
-                      textInputAction: TextInputAction.done,
-                      decoration: const InputDecoration(
-                        hintText: 'Repeat rule (RRULE, optional)',
-                        border: InputBorder.none,
-                        prefixIcon: Icon(Icons.repeat),
-                      ),
-                      validator: FormBuilderValidators.maxLength(
-                        255,
-                        errorText: 'Repeat rule is too long',
-                        checkNullOrEmpty: false,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const Divider(height: 1),
-        SizedBox(
-          height: kToolbarHeight,
-          child: Row(
-            children: [
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: IconButton(
-                  icon: const Icon(Icons.check),
-                  tooltip: submitTooltip,
-                  onPressed: onSubmit,
+
+          // Sticky footer with action button - always visible at bottom right
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(
+                top: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
-            ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                FilledButton.icon(
+                  onPressed: widget.onSubmit,
+                  icon: Icon(
+                    isCreating ? Icons.add : Icons.check,
+                    size: 18,
+                  ),
+                  label: Text(isCreating ? 'Create Task' : 'Save Changes'),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
