@@ -859,6 +859,7 @@ class DateRule extends TaskRule {
     return switch (field) {
       DateRuleField.startDate => task.startDate,
       DateRuleField.deadlineDate => task.deadlineDate,
+      DateRuleField.createdAt => task.createdAt,
       DateRuleField.updatedAt => task.updatedAt,
     };
   }
@@ -1263,7 +1264,7 @@ enum RuleType {
 
 enum RuleSetOperator { and, or }
 
-enum DateRuleField { startDate, deadlineDate, updatedAt }
+enum DateRuleField { startDate, deadlineDate, createdAt, updatedAt }
 
 enum DateRuleOperator {
   onOrAfter,

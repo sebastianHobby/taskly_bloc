@@ -122,65 +122,93 @@ class TaskNextActionsView extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  ...group.projects.map((projectGroup) {
-                    final project = projectGroup.project;
-                    final tasksForProject = projectGroup.tasks;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () async {
-                                  await context.pushNamed(
-                                    AppRouteName.projectDetail,
-                                    pathParameters: {
-                                      'projectId': project.id,
-                                    },
-                                  );
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                    horizontal: 4,
-                                  ),
-                                  child: Text(
-                                    project.name,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium,
-                                  ),
-                                ),
+                  if (group.projects.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Theme.of(context).colorScheme.secondary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'No tasks matching rules for this priority group',
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
                               ),
-                              const SizedBox(height: 8),
-                              const Divider(height: 1),
-                              const SizedBox(height: 8),
-                              for (final task in tasksForProject) ...[
-                                TaskListTile(
-                                  task: task,
-                                  onCheckboxChanged: (task, isCompleted) {
-                                    if (isCompleted == null) return;
-                                    context.read<NextActionsBloc>().add(
-                                      NextActionsTaskToggled(task),
-                                    );
-                                  },
-                                  onTap: (_) => _showTaskDetailSheet(
-                                    context,
-                                    taskId: task.id,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    );
-                  }),
+                    )
+                  else
+                    ...group.projects.map((projectGroup) {
+                      final project = projectGroup.project;
+                      final tasksForProject = projectGroup.tasks;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () async {
+                                    await context.pushNamed(
+                                      AppRouteName.projectDetail,
+                                      pathParameters: {
+                                        'projectId': project.id,
+                                      },
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                      horizontal: 4,
+                                    ),
+                                    child: Text(
+                                      project.name,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Divider(height: 1),
+                                const SizedBox(height: 8),
+                                for (final task in tasksForProject) ...[
+                                  TaskListTile(
+                                    task: task,
+                                    onCheckboxChanged: (task, isCompleted) {
+                                      if (isCompleted == null) return;
+                                      context.read<NextActionsBloc>().add(
+                                        NextActionsTaskToggled(task),
+                                      );
+                                    },
+                                    onTap: (_) => _showTaskDetailSheet(
+                                      context,
+                                      taskId: task.id,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                 ],
               );
             },

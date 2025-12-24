@@ -133,11 +133,11 @@ void main() {
         bloc.add(const NextActionsSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
         settingsController.add(
-          const NextActionsSettings(includeInboxTasks: true),
+          const NextActionsSettings(),
         );
         await Future<void>.delayed(const Duration(milliseconds: 50));
         settingsController.add(
-          const NextActionsSettings(),
+          const NextActionsSettings(includeInboxTasks: false),
         );
       },
       skip: 1, // Skip loading state

@@ -57,6 +57,9 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
   ) async {
     try {
       await execute();
+      // Brief delay to allow stream updates to propagate to parent BLoCs
+      // This ensures UI updates before modal closes
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       emit(createOperationSuccessState(operation));
     } catch (error, stackTrace) {
       emit(

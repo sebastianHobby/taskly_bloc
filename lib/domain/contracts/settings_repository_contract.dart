@@ -17,6 +17,14 @@ abstract class SettingsRepositoryContract {
   Future<SortPreferences?> loadPageSort(String pageKey);
   Future<void> savePageSort(String pageKey, SortPreferences preferences);
 
+  // Page Display Settings
+  Stream<PageDisplaySettings> watchPageDisplaySettings(String pageKey);
+  Future<PageDisplaySettings> loadPageDisplaySettings(String pageKey);
+  Future<void> savePageDisplaySettings(
+    String pageKey,
+    PageDisplaySettings settings,
+  );
+
   // Full settings access (for migration/debugging)
   Stream<AppSettings> watchAll();
   Future<AppSettings> loadAll();

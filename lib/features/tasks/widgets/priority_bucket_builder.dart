@@ -11,12 +11,16 @@ class PriorityBucketBuilder extends StatefulWidget {
     super.key,
     this.availableLabels = const [],
     this.availableProjects = const [],
+    this.excludeFutureStartDates = true,
+    this.includeInboxTasks = false,
   });
 
   final List<TaskPriorityBucketRule> buckets;
   final ValueChanged<List<TaskPriorityBucketRule>> onChanged;
   final List<Label> availableLabels;
   final List<Project> availableProjects;
+  final bool excludeFutureStartDates;
+  final bool includeInboxTasks;
 
   @override
   State<PriorityBucketBuilder> createState() => _PriorityBucketBuilderState();
@@ -104,6 +108,8 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
                   canMoveDown: entry.key < widget.buckets.length - 1,
                   availableLabels: widget.availableLabels,
                   availableProjects: widget.availableProjects,
+                  excludeFutureStartDates: widget.excludeFutureStartDates,
+                  includeInboxTasks: widget.includeInboxTasks,
                   onChanged: (bucket) => _updateBucket(entry.key, bucket),
                   onRemove: () => _removeBucket(entry.key),
                   onMoveUp: () => _moveBucket(entry.key, entry.key - 1),
@@ -131,6 +137,8 @@ class PriorityBucketEditor extends StatefulWidget {
     super.key,
     this.availableLabels = const [],
     this.availableProjects = const [],
+    this.excludeFutureStartDates = true,
+    this.includeInboxTasks = false,
   });
 
   final TaskPriorityBucketRule bucket;
@@ -143,6 +151,8 @@ class PriorityBucketEditor extends StatefulWidget {
   final VoidCallback onMoveDown;
   final List<Label> availableLabels;
   final List<Project> availableProjects;
+  final bool excludeFutureStartDates;
+  final bool includeInboxTasks;
 
   @override
   State<PriorityBucketEditor> createState() => _PriorityBucketEditorState();
@@ -173,6 +183,45 @@ class _PriorityBucketEditorState extends State<PriorityBucketEditor> {
     );
 
     widget.onChanged(updatedBucket);
+  }
+
+  /// Filters rules from a rule set based on current settings.
+  /// Returns a new rule set with filtered rules for display only.
+  TaskRuleSet _filterRulesForDisplay(TaskRuleSet ruleSet) {
+    final filteredRules = ruleSet.rules.where((rule) {
+      // Filter start date rules if excludeFutureStartDates is enabled
+      if (widget.excludeFutureStartDates && rule is DateRule) {
+        if (rule.field == DateRuleField.startDate) {
+          return false;
+        }
+      }
+
+      // Filter project null/not-null rules if includeInboxTasks is disabled
+      if (!widget.includeInboxTasks && rule is ProjectRule) {
+        if (rule.operator == ProjectRuleOperator.isNull ||
+            rule.operator == ProjectRuleOperator.isNotNull) {
+          return false;
+        }
+      }
+
+      return true;
+    }).toList();
+
+    return ruleSet.copyWith(rules: filteredRules);
+  }
+
+  /// Gets the list of available fields based on current settings.
+  List<TaskField> _getAvailableFields() {
+    final fields = <TaskField>[
+      TaskField.deadlineDate,
+    ];
+
+    // Only show start date field if excludeFutureStartDates is false
+    if (!widget.excludeFutureStartDates) {
+      fields.insert(0, TaskField.startDate);
+    }
+
+    return fields;
   }
 
   @override
@@ -255,35 +304,41 @@ class _PriorityBucketEditorState extends State<PriorityBucketEditor> {
             const SizedBox(height: 8),
 
             ...widget.bucket.ruleSets.asMap().entries.map(
-              (entry) => RuleSetBuilder(
-                key: ValueKey('${widget.index}_${entry.key}'),
-                ruleSet: entry.value,
-                availableLabels: widget.availableLabels,
-                availableProjects: widget.availableProjects,
-                onChanged: (TaskRuleSet ruleSet) {
-                  final updatedRuleSets = [...widget.bucket.ruleSets];
-                  updatedRuleSets[entry.key] = ruleSet;
-                  widget.onChanged(
-                    widget.bucket.copyWith(ruleSets: updatedRuleSets),
-                  );
-                },
-                showRemoveButton: widget.bucket.ruleSets.length > 1,
-                onRemove: widget.bucket.ruleSets.length > 1
-                    ? () {
-                        final updatedRuleSets = [...widget.bucket.ruleSets];
-                        updatedRuleSets.removeAt(entry.key);
-                        widget.onChanged(
-                          widget.bucket.copyWith(ruleSets: updatedRuleSets),
-                        );
-                      }
-                    : null,
-                compact: true,
-                availableFields: const [
-                  TaskField.startDate,
-                  TaskField.deadlineDate,
-                ],
-                relativeDateOnly: true,
-              ),
+              (entry) {
+                final filteredRuleSet = _filterRulesForDisplay(entry.value);
+
+                // Skip displaying empty rule sets
+                if (filteredRuleSet.rules.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return RuleSetBuilder(
+                  key: ValueKey('${widget.index}_${entry.key}'),
+                  ruleSet: filteredRuleSet,
+                  availableLabels: widget.availableLabels,
+                  availableProjects: widget.availableProjects,
+                  onChanged: (TaskRuleSet ruleSet) {
+                    final updatedRuleSets = [...widget.bucket.ruleSets];
+                    updatedRuleSets[entry.key] = ruleSet;
+                    widget.onChanged(
+                      widget.bucket.copyWith(ruleSets: updatedRuleSets),
+                    );
+                  },
+                  showRemoveButton: widget.bucket.ruleSets.length > 1,
+                  onRemove: widget.bucket.ruleSets.length > 1
+                      ? () {
+                          final updatedRuleSets = [...widget.bucket.ruleSets];
+                          updatedRuleSets.removeAt(entry.key);
+                          widget.onChanged(
+                            widget.bucket.copyWith(ruleSets: updatedRuleSets),
+                          );
+                        }
+                      : null,
+                  compact: true,
+                  availableFields: _getAvailableFields(),
+                  relativeDateOnly: true,
+                );
+              },
             ),
 
             // Add rule set button

@@ -268,6 +268,7 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
               ? 'Priority $priority - $ruleName'
               : 'Priority $priority';
 
+          // Always return the group, even if it has no projects
           return NextActionPriorityGroup(
             priority: priority,
             label: label,

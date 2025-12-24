@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/features/tasks/bloc/today_tasks_bloc.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
 class ScaffoldWithNavigationBar extends StatefulWidget {
@@ -89,7 +91,7 @@ class _ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
           ),
           NavigationDestination(
             label: context.l10n.todayTitle,
-            icon: const Icon(Icons.calendar_today_outlined),
+            icon: _buildTodayIcon(),
           ),
           NavigationDestination(
             label: context.l10n.upcomingTitle,
@@ -102,6 +104,25 @@ class _ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
         ],
         onDestinationSelected: _onDestinationSelected,
       ),
+    );
+  }
+
+  Widget _buildTodayIcon() {
+    return BlocBuilder<TodayTasksBloc, TodayTasksState>(
+      builder: (context, state) {
+        return state.maybeWhen(
+          loaded: (_, incompleteCount) {
+            if (incompleteCount > 0) {
+              return Badge(
+                label: Text(incompleteCount.toString()),
+                child: const Icon(Icons.calendar_today_outlined),
+              );
+            }
+            return const Icon(Icons.calendar_today_outlined);
+          },
+          orElse: () => const Icon(Icons.calendar_today_outlined),
+        );
+      },
     );
   }
 }

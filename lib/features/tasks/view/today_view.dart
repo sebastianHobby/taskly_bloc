@@ -68,7 +68,7 @@ class _NextActionsBanner extends StatelessWidget {
             child: ListTile(
               leading: const Icon(Icons.play_circle_outline),
               title: Text(
-                '${state.totalCount} next actions are available to start',
+                '${state.totalCount} next actions available',
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => context.goNamed(

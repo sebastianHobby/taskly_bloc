@@ -84,7 +84,6 @@ void main() {
       // User opens settings page and changes includeInboxTasks to true
       print('\n=== User changes settings ===');
       const newSettings = NextActionsSettings(
-        includeInboxTasks: true,
         tasksPerProject: 5,
       );
 
@@ -129,13 +128,18 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Change 1
-      await adapter.save(const NextActionsSettings(includeInboxTasks: true));
+      await adapter.save(const NextActionsSettings());
       await Future<void>.delayed(const Duration(milliseconds: 200));
       var loaded = await adapter.load();
       expect(loaded.includeInboxTasks, true);
 
-      // Change 2
-      await adapter.save(const NextActionsSettings(tasksPerProject: 10));
+      // Change 2 - explicitly set includeInboxTasks to false
+      await adapter.save(
+        const NextActionsSettings(
+          tasksPerProject: 10,
+          includeInboxTasks: false,
+        ),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 200));
       loaded = await adapter.load();
       expect(loaded.includeInboxTasks, false);
@@ -143,7 +147,7 @@ void main() {
 
       // Change 3
       await adapter.save(
-        const NextActionsSettings(includeInboxTasks: true, tasksPerProject: 3),
+        const NextActionsSettings(tasksPerProject: 3),
       );
       await Future<void>.delayed(const Duration(milliseconds: 200));
       loaded = await adapter.load();

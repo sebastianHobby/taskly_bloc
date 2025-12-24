@@ -5,6 +5,8 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/shared/form_fields/form_fields.dart';
 import 'package:taskly_bloc/core/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/core/shared/widgets/form_date_chip.dart';
+import 'package:taskly_bloc/core/shared/widgets/form_recurrence_chip.dart';
+import 'package:taskly_bloc/core/shared/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A modern form for creating or editing tasks.
@@ -321,6 +323,37 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                                 ),
                                 onClear: field.value != null
                                     ? () => field.didChange(null)
+                                    : null,
+                              );
+                            },
+                          ),
+                          // Recurrence chip
+                          FormBuilderField<String?>(
+                            name: 'repeatIcalRrule',
+                            builder: (field) {
+                              return FormRecurrenceChip(
+                                rrule: field.value,
+                                onTap: () async {
+                                  await showDialog<void>(
+                                    context: context,
+                                    builder: (context) => Dialog(
+                                      child: RecurrencePicker(
+                                        initialRRule: field.value,
+                                        onRRuleChanged: (rrule) {
+                                          field.didChange(rrule);
+                                          markDirty();
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onClear:
+                                    field.value != null &&
+                                        field.value!.isNotEmpty
+                                    ? () {
+                                        field.didChange(null);
+                                        markDirty();
+                                      }
                                     : null,
                               );
                             },

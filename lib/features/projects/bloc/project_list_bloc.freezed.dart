@@ -55,13 +55,14 @@ extension ProjectOverviewEventPatterns on ProjectOverviewEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult Function( ProjectOverviewSortChanged value)?  sortChanged,TResult Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,TResult Function( ProjectOverviewDeleteProject value)?  deleteProject,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult Function( ProjectOverviewSortChanged value)?  sortChanged,TResult Function( ProjectOverviewDisplaySettingsChanged value)?  displaySettingsChanged,TResult Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,TResult Function( ProjectOverviewDeleteProject value)?  deleteProject,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
 return toggleProjectCompletion(_that);case ProjectOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return sortChanged(_that);case ProjectOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
 return taskCountsUpdated(_that);case ProjectOverviewDeleteProject() when deleteProject != null:
 return deleteProject(_that);case _:
   return orElse();
@@ -81,13 +82,14 @@ return deleteProject(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( ProjectOverviewToggleProjectCompletion value)  toggleProjectCompletion,required TResult Function( ProjectOverviewSortChanged value)  sortChanged,required TResult Function( ProjectOverviewTaskCountsUpdated value)  taskCountsUpdated,required TResult Function( ProjectOverviewDeleteProject value)  deleteProject,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( ProjectOverviewToggleProjectCompletion value)  toggleProjectCompletion,required TResult Function( ProjectOverviewSortChanged value)  sortChanged,required TResult Function( ProjectOverviewDisplaySettingsChanged value)  displaySettingsChanged,required TResult Function( ProjectOverviewTaskCountsUpdated value)  taskCountsUpdated,required TResult Function( ProjectOverviewDeleteProject value)  deleteProject,}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested():
 return subscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion():
 return toggleProjectCompletion(_that);case ProjectOverviewSortChanged():
-return sortChanged(_that);case ProjectOverviewTaskCountsUpdated():
+return sortChanged(_that);case ProjectOverviewDisplaySettingsChanged():
+return displaySettingsChanged(_that);case ProjectOverviewTaskCountsUpdated():
 return taskCountsUpdated(_that);case ProjectOverviewDeleteProject():
 return deleteProject(_that);}
 }
@@ -103,13 +105,14 @@ return deleteProject(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult? Function( ProjectOverviewSortChanged value)?  sortChanged,TResult? Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,TResult? Function( ProjectOverviewDeleteProject value)?  deleteProject,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( ProjectOverviewToggleProjectCompletion value)?  toggleProjectCompletion,TResult? Function( ProjectOverviewSortChanged value)?  sortChanged,TResult? Function( ProjectOverviewDisplaySettingsChanged value)?  displaySettingsChanged,TResult? Function( ProjectOverviewTaskCountsUpdated value)?  taskCountsUpdated,TResult? Function( ProjectOverviewDeleteProject value)?  deleteProject,}){
 final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
 return toggleProjectCompletion(_that);case ProjectOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return sortChanged(_that);case ProjectOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
 return taskCountsUpdated(_that);case ProjectOverviewDeleteProject() when deleteProject != null:
 return deleteProject(_that);case _:
   return null;
@@ -128,12 +131,13 @@ return deleteProject(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( Project project)?  toggleProjectCompletion,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,TResult Function( Project project)?  deleteProject,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( Project project)?  toggleProjectCompletion,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,TResult Function( Project project)?  deleteProject,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
 return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return sortChanged(_that.preferences);case ProjectOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that.settings);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
 return taskCountsUpdated(_that.taskCounts);case ProjectOverviewDeleteProject() when deleteProject != null:
 return deleteProject(_that.project);case _:
   return orElse();
@@ -153,12 +157,13 @@ return deleteProject(_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( Project project)  toggleProjectCompletion,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( Map<String, ProjectTaskCounts> taskCounts)  taskCountsUpdated,required TResult Function( Project project)  deleteProject,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( Project project)  toggleProjectCompletion,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( PageDisplaySettings settings)  displaySettingsChanged,required TResult Function( Map<String, ProjectTaskCounts> taskCounts)  taskCountsUpdated,required TResult Function( Project project)  deleteProject,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested():
 return subscriptionRequested();case ProjectOverviewToggleProjectCompletion():
 return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged():
-return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated():
+return sortChanged(_that.preferences);case ProjectOverviewDisplaySettingsChanged():
+return displaySettingsChanged(_that.settings);case ProjectOverviewTaskCountsUpdated():
 return taskCountsUpdated(_that.taskCounts);case ProjectOverviewDeleteProject():
 return deleteProject(_that.project);}
 }
@@ -174,12 +179,13 @@ return deleteProject(_that.project);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( Project project)?  toggleProjectCompletion,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,TResult? Function( Project project)?  deleteProject,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( Project project)?  toggleProjectCompletion,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult? Function( Map<String, ProjectTaskCounts> taskCounts)?  taskCountsUpdated,TResult? Function( Project project)?  deleteProject,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case ProjectOverviewToggleProjectCompletion() when toggleProjectCompletion != null:
 return toggleProjectCompletion(_that.project);case ProjectOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
+return sortChanged(_that.preferences);case ProjectOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that.settings);case ProjectOverviewTaskCountsUpdated() when taskCountsUpdated != null:
 return taskCountsUpdated(_that.taskCounts);case ProjectOverviewDeleteProject() when deleteProject != null:
 return deleteProject(_that.project);case _:
   return null;
@@ -347,6 +353,72 @@ class _$ProjectOverviewSortChangedCopyWithImpl<$Res>
   return _then(ProjectOverviewSortChanged(
 preferences: null == preferences ? _self.preferences : preferences // ignore: cast_nullable_to_non_nullable
 as SortPreferences,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class ProjectOverviewDisplaySettingsChanged implements ProjectOverviewEvent {
+  const ProjectOverviewDisplaySettingsChanged({required this.settings});
+  
+
+ final  PageDisplaySettings settings;
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectOverviewDisplaySettingsChangedCopyWith<ProjectOverviewDisplaySettingsChanged> get copyWith => _$ProjectOverviewDisplaySettingsChangedCopyWithImpl<ProjectOverviewDisplaySettingsChanged>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewDisplaySettingsChanged&&(identical(other.settings, settings) || other.settings == settings));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,settings);
+
+@override
+String toString() {
+  return 'ProjectOverviewEvent.displaySettingsChanged(settings: $settings)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectOverviewDisplaySettingsChangedCopyWith<$Res> implements $ProjectOverviewEventCopyWith<$Res> {
+  factory $ProjectOverviewDisplaySettingsChangedCopyWith(ProjectOverviewDisplaySettingsChanged value, $Res Function(ProjectOverviewDisplaySettingsChanged) _then) = _$ProjectOverviewDisplaySettingsChangedCopyWithImpl;
+@useResult
+$Res call({
+ PageDisplaySettings settings
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectOverviewDisplaySettingsChangedCopyWithImpl<$Res>
+    implements $ProjectOverviewDisplaySettingsChangedCopyWith<$Res> {
+  _$ProjectOverviewDisplaySettingsChangedCopyWithImpl(this._self, this._then);
+
+  final ProjectOverviewDisplaySettingsChanged _self;
+  final $Res Function(ProjectOverviewDisplaySettingsChanged) _then;
+
+/// Create a copy of ProjectOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? settings = null,}) {
+  return _then(ProjectOverviewDisplaySettingsChanged(
+settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as PageDisplaySettings,
   ));
 }
 

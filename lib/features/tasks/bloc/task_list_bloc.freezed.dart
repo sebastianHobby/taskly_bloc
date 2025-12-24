@@ -55,13 +55,14 @@ extension TaskOverviewEventPatterns on TaskOverviewEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( TaskOverviewConfigChanged value)?  configChanged,TResult Function( TaskOverviewSortChanged value)?  sortChanged,TResult Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult Function( TaskOverviewDeleteTask value)?  deleteTask,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult Function( TaskOverviewConfigChanged value)?  configChanged,TResult Function( TaskOverviewSortChanged value)?  sortChanged,TResult Function( TaskOverviewDisplaySettingsChanged value)?  displaySettingsChanged,TResult Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult Function( TaskOverviewDeleteTask value)?  deleteTask,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that);case TaskOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
+return sortChanged(_that);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that);case TaskOverviewDeleteTask() when deleteTask != null:
 return deleteTask(_that);case _:
   return orElse();
@@ -81,13 +82,14 @@ return deleteTask(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( TaskOverviewConfigChanged value)  configChanged,required TResult Function( TaskOverviewSortChanged value)  sortChanged,required TResult Function( TaskOverviewToggleTaskCompletion value)  toggleTaskCompletion,required TResult Function( TaskOverviewDeleteTask value)  deleteTask,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskOverviewSubscriptionRequested value)  subscriptionRequested,required TResult Function( TaskOverviewConfigChanged value)  configChanged,required TResult Function( TaskOverviewSortChanged value)  sortChanged,required TResult Function( TaskOverviewDisplaySettingsChanged value)  displaySettingsChanged,required TResult Function( TaskOverviewToggleTaskCompletion value)  toggleTaskCompletion,required TResult Function( TaskOverviewDeleteTask value)  deleteTask,}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested(_that);case TaskOverviewConfigChanged():
 return configChanged(_that);case TaskOverviewSortChanged():
-return sortChanged(_that);case TaskOverviewToggleTaskCompletion():
+return sortChanged(_that);case TaskOverviewDisplaySettingsChanged():
+return displaySettingsChanged(_that);case TaskOverviewToggleTaskCompletion():
 return toggleTaskCompletion(_that);case TaskOverviewDeleteTask():
 return deleteTask(_that);}
 }
@@ -103,13 +105,14 @@ return deleteTask(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( TaskOverviewConfigChanged value)?  configChanged,TResult? Function( TaskOverviewSortChanged value)?  sortChanged,TResult? Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult? Function( TaskOverviewDeleteTask value)?  deleteTask,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskOverviewSubscriptionRequested value)?  subscriptionRequested,TResult? Function( TaskOverviewConfigChanged value)?  configChanged,TResult? Function( TaskOverviewSortChanged value)?  sortChanged,TResult? Function( TaskOverviewDisplaySettingsChanged value)?  displaySettingsChanged,TResult? Function( TaskOverviewToggleTaskCompletion value)?  toggleTaskCompletion,TResult? Function( TaskOverviewDeleteTask value)?  deleteTask,}){
 final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested(_that);case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that);case TaskOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
+return sortChanged(_that);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that);case TaskOverviewDeleteTask() when deleteTask != null:
 return deleteTask(_that);case _:
   return null;
@@ -128,12 +131,13 @@ return deleteTask(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskSelectorConfig config)?  configChanged,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( Task task)?  toggleTaskCompletion,TResult Function( Task task)?  deleteTask,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskSelectorConfig config)?  configChanged,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult Function( Task task)?  toggleTaskCompletion,TResult Function( Task task)?  deleteTask,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that.config);case TaskOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
+return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
 return deleteTask(_that.task);case _:
   return orElse();
@@ -153,12 +157,13 @@ return deleteTask(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskSelectorConfig config)  configChanged,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( Task task)  toggleTaskCompletion,required TResult Function( Task task)  deleteTask,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskSelectorConfig config)  configChanged,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( PageDisplaySettings settings)  displaySettingsChanged,required TResult Function( Task task)  toggleTaskCompletion,required TResult Function( Task task)  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested();case TaskOverviewConfigChanged():
 return configChanged(_that.config);case TaskOverviewSortChanged():
-return sortChanged(_that.preferences);case TaskOverviewToggleTaskCompletion():
+return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged():
+return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion():
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask():
 return deleteTask(_that.task);}
 }
@@ -174,12 +179,13 @@ return deleteTask(_that.task);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskSelectorConfig config)?  configChanged,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( Task task)?  toggleTaskCompletion,TResult? Function( Task task)?  deleteTask,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskSelectorConfig config)?  configChanged,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult? Function( Task task)?  toggleTaskCompletion,TResult? Function( Task task)?  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
 return configChanged(_that.config);case TaskOverviewSortChanged() when sortChanged != null:
-return sortChanged(_that.preferences);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
+return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
+return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
 return deleteTask(_that.task);case _:
   return null;
@@ -347,6 +353,72 @@ class _$TaskOverviewSortChangedCopyWithImpl<$Res>
   return _then(TaskOverviewSortChanged(
 preferences: null == preferences ? _self.preferences : preferences // ignore: cast_nullable_to_non_nullable
 as SortPreferences,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class TaskOverviewDisplaySettingsChanged implements TaskOverviewEvent {
+  const TaskOverviewDisplaySettingsChanged({required this.settings});
+  
+
+ final  PageDisplaySettings settings;
+
+/// Create a copy of TaskOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskOverviewDisplaySettingsChangedCopyWith<TaskOverviewDisplaySettingsChanged> get copyWith => _$TaskOverviewDisplaySettingsChangedCopyWithImpl<TaskOverviewDisplaySettingsChanged>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewDisplaySettingsChanged&&(identical(other.settings, settings) || other.settings == settings));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,settings);
+
+@override
+String toString() {
+  return 'TaskOverviewEvent.displaySettingsChanged(settings: $settings)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskOverviewDisplaySettingsChangedCopyWith<$Res> implements $TaskOverviewEventCopyWith<$Res> {
+  factory $TaskOverviewDisplaySettingsChangedCopyWith(TaskOverviewDisplaySettingsChanged value, $Res Function(TaskOverviewDisplaySettingsChanged) _then) = _$TaskOverviewDisplaySettingsChangedCopyWithImpl;
+@useResult
+$Res call({
+ PageDisplaySettings settings
+});
+
+
+
+
+}
+/// @nodoc
+class _$TaskOverviewDisplaySettingsChangedCopyWithImpl<$Res>
+    implements $TaskOverviewDisplaySettingsChangedCopyWith<$Res> {
+  _$TaskOverviewDisplaySettingsChangedCopyWithImpl(this._self, this._then);
+
+  final TaskOverviewDisplaySettingsChanged _self;
+  final $Res Function(TaskOverviewDisplaySettingsChanged) _then;
+
+/// Create a copy of TaskOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? settings = null,}) {
+  return _then(TaskOverviewDisplaySettingsChanged(
+settings: null == settings ? _self.settings : settings // ignore: cast_nullable_to_non_nullable
+as PageDisplaySettings,
   ));
 }
 

@@ -7,8 +7,8 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/shared/views/schedule_view_config.dart';
 import 'package:taskly_bloc/core/shared/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/core/shared/widgets/page_settings_modal.dart';
 import 'package:taskly_bloc/core/shared/widgets/section_header.dart';
-import 'package:taskly_bloc/core/shared/widgets/sort_bottom_sheet.dart';
 import 'package:taskly_bloc/core/shared/widgets/swipe_to_delete.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
@@ -106,6 +106,23 @@ class ScheduleView extends StatefulWidget {
 
 class _ScheduleViewState extends State<ScheduleView> {
   ScheduleViewConfig get _config => widget.config;
+  PageDisplaySettings? _displaySettings;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDisplaySettings();
+  }
+
+  Future<void> _loadDisplaySettings() async {
+    final bloc = context.read<TaskOverviewBloc>();
+    final settings = await bloc.loadDisplaySettings();
+    if (mounted) {
+      setState(() {
+        _displaySettings = settings;
+      });
+    }
+  }
 
   void _showTaskDetailSheet(BuildContext context, {String? taskId}) {
     unawaited(
@@ -127,7 +144,7 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 
-  Future<void> _openGroupSortSheet() async {
+  Future<void> _openPageSettings() async {
     final taskBloc = context.read<TaskOverviewBloc>();
     final projectBloc = context.read<ProjectOverviewBloc>();
 
@@ -139,11 +156,25 @@ class _ScheduleViewState extends State<ScheduleView> {
       ),
     );
 
-    await showSortBottomSheet(
+    await showPageSettingsModal(
       context: context,
-      current: SortPreferences(criteria: taskQuery.sortCriteria),
+      displaySettings: _displaySettings ?? const PageDisplaySettings(),
+      sortPreferences: SortPreferences(criteria: taskQuery.sortCriteria),
       availableSortFields: _config.availableSortFields,
-      onChanged: (updated) {
+      pageTitle: _config.titleBuilder(context),
+      showNextActionsBannerToggle: _config.showBannerToggleInSettings,
+      onDisplaySettingsChanged: (settings) {
+        setState(() {
+          _displaySettings = settings;
+        });
+        taskBloc.add(
+          TaskOverviewEvent.displaySettingsChanged(settings: settings),
+        );
+        projectBloc.add(
+          ProjectOverviewEvent.displaySettingsChanged(settings: settings),
+        );
+      },
+      onSortPreferencesChanged: (updated) {
         taskBloc.add(
           TaskOverviewEvent.sortChanged(preferences: updated),
         );
@@ -164,9 +195,9 @@ class _ScheduleViewState extends State<ScheduleView> {
         title: Text(_config.titleBuilder(context)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sort),
-            tooltip: context.l10n.sortMenuTitle,
-            onPressed: _openGroupSortSheet,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: _openPageSettings,
           ),
         ],
       ),
@@ -234,7 +265,12 @@ class _ScheduleViewState extends State<ScheduleView> {
     final hasTasks = tasks.isNotEmpty;
     final isEmpty = !hasProjects && !hasTasks;
 
-    final banner = _config.bannerBuilder?.call(context);
+    // Check if banner should be displayed based on settings
+    final displaySettings = _displaySettings ?? const PageDisplaySettings();
+    final shouldShowBanner = displaySettings.showNextActionsBanner;
+    final banner = shouldShowBanner
+        ? _config.bannerBuilder?.call(context)
+        : null;
 
     if (isEmpty) {
       if (banner != null) {
@@ -258,6 +294,15 @@ class _ScheduleViewState extends State<ScheduleView> {
           SectionHeader.simple(title: context.l10n.tasksTitle),
           TasksListView(
             tasks: tasks,
+            displaySettings: _displaySettings ?? const PageDisplaySettings(),
+            onDisplaySettingsChanged: (settings) {
+              setState(() {
+                _displaySettings = settings;
+              });
+              context.read<TaskOverviewBloc>().add(
+                TaskOverviewEvent.displaySettingsChanged(settings: settings),
+              );
+            },
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             onTap: (task) => _showTaskDetailSheet(context, taskId: task.id),

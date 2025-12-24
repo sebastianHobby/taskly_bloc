@@ -48,7 +48,6 @@ void main() {
       print('Saving settings with includeInboxTasks=true');
       await adapter.save(
         const NextActionsSettings(
-          includeInboxTasks: true,
           tasksPerProject: 10,
         ),
       );
@@ -84,7 +83,7 @@ void main() {
       print('Initial states count: ${stateChanges.length}');
 
       // Save settings change 1
-      await adapter.save(const NextActionsSettings(includeInboxTasks: true));
+      await adapter.save(const NextActionsSettings());
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
       print('After change 1, states count: ${stateChanges.length}');
@@ -124,7 +123,7 @@ void main() {
       // Save change 1
       print('Saving change 1...');
       await adapter.save(
-        const NextActionsSettings(includeInboxTasks: true, tasksPerProject: 3),
+        const NextActionsSettings(tasksPerProject: 3),
       );
       await Future<void>.delayed(const Duration(milliseconds: 300));
       print('After save 1, emissions: ${emissions.length}');

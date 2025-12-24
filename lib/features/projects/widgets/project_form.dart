@@ -5,6 +5,8 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/shared/form_fields/form_fields.dart';
 import 'package:taskly_bloc/core/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/core/shared/widgets/form_date_chip.dart';
+import 'package:taskly_bloc/core/shared/widgets/form_recurrence_chip.dart';
+import 'package:taskly_bloc/core/shared/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A modern form for creating or editing projects.
@@ -219,6 +221,49 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                                 ),
                                 onClear: field.value != null
                                     ? () => field.didChange(null)
+                                    : null,
+                              );
+                            },
+                          ),
+                          // Recurrence chip
+                          FormBuilderField<String?>(
+                            name: 'repeatIcalRrule',
+                            builder: (field) {
+                              return FormRecurrenceChip(
+                                rrule: field.value?.isEmpty ?? true
+                                    ? null
+                                    : field.value,
+                                onTap: () async {
+                                  final result = await showDialog<String?>(
+                                    context: context,
+                                    builder: (context) => Dialog(
+                                      child: ConstrainedBox(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 500,
+                                          maxHeight: 600,
+                                        ),
+                                        child: RecurrencePicker(
+                                          initialRRule:
+                                              field.value?.isEmpty ?? true
+                                              ? null
+                                              : field.value,
+                                          onRRuleChanged: (rrule) {
+                                            Navigator.of(context).pop(rrule);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                  if (result != null) {
+                                    field.didChange(result);
+                                    markDirty();
+                                  }
+                                },
+                                onClear: field.value?.isNotEmpty ?? false
+                                    ? () {
+                                        field.didChange(null);
+                                        markDirty();
+                                      }
                                     : null,
                               );
                             },

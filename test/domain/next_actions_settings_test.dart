@@ -6,7 +6,6 @@ void main() {
     test('includeInboxTasks true is preserved during JSON roundtrip', () {
       const settings = NextActionsSettings(
         tasksPerProject: 5,
-        includeInboxTasks: true,
       );
 
       final json = settings.toJson();
@@ -19,6 +18,7 @@ void main() {
     test('includeInboxTasks false is preserved during JSON roundtrip', () {
       const settings = NextActionsSettings(
         tasksPerProject: 3,
+        includeInboxTasks: false,
       );
 
       final json = settings.toJson();
@@ -31,7 +31,6 @@ void main() {
     test('AppSettings with includeInboxTasks true roundtrips correctly', () {
       const nextActions = NextActionsSettings(
         tasksPerProject: 7,
-        includeInboxTasks: true,
       );
       const appSettings = AppSettings(nextActions: nextActions);
 

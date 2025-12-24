@@ -28,7 +28,6 @@ void main() {
       // Save settings with includeInboxTasks = true
       const settings = NextActionsSettings(
         tasksPerProject: 5,
-        includeInboxTasks: true,
       );
       await adapter.save(settings);
 
@@ -103,7 +102,6 @@ void main() {
       // Step 1: Save with includeInboxTasks = true
       const original = NextActionsSettings(
         tasksPerProject: 3,
-        includeInboxTasks: true,
       );
       await adapter.save(original);
       print('Saved: includeInboxTasks=${original.includeInboxTasks}');
@@ -162,7 +160,6 @@ void main() {
       // Step 2: Update to includeInboxTasks = true, keep tasksPerProject
       const updated = NextActionsSettings(
         tasksPerProject: 10,
-        includeInboxTasks: true,
       );
       await adapter.save(updated);
 

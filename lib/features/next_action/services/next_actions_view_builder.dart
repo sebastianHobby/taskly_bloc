@@ -32,12 +32,51 @@ class NextActionsViewBuilder {
 
   final TaskSelector _taskSelector;
 
+  /// Filters bucket rules for evaluation based on settings.
+  /// Returns new bucket rules with filtered rule sets, preserving structure.
+  List<TaskPriorityBucketRule> _filterBucketRulesForEvaluation(
+    List<TaskPriorityBucketRule> bucketRules,
+    NextActionsSettings settings,
+  ) {
+    return bucketRules.map((bucket) {
+      final filteredRuleSets = bucket.ruleSets.map((ruleSet) {
+        final filteredRules = ruleSet.rules.where((rule) {
+          // Filter start date rules if excludeFutureStartDates is enabled
+          if (settings.excludeFutureStartDates && rule is DateRule) {
+            if (rule.field == DateRuleField.startDate) {
+              return false;
+            }
+          }
+
+          // Filter project null/not-null rules if includeInboxTasks is disabled
+          if (!settings.includeInboxTasks && rule is ProjectRule) {
+            if (rule.operator == ProjectRuleOperator.isNull ||
+                rule.operator == ProjectRuleOperator.isNotNull) {
+              return false;
+            }
+          }
+
+          return true;
+        }).toList();
+
+        return ruleSet.copyWith(rules: filteredRules);
+      }).toList();
+
+      return bucket.copyWith(ruleSets: filteredRuleSets);
+    }).toList();
+  }
+
   NextActionsSelection build({
     required List<Task> tasks,
     required NextActionsSettings settings,
     DateTime? now,
   }) {
     final bucketRules = settings.effectiveBucketRules;
+    // Filter rules for evaluation based on settings
+    final filteredBucketRules = _filterBucketRulesForEvaluation(
+      bucketRules,
+      settings,
+    );
     final bucketRuleByPriority = {
       for (final rule in bucketRules) rule.priority: rule,
     };
@@ -60,9 +99,10 @@ class NextActionsViewBuilder {
       // Could be extended with projects and labels if needed
     );
 
+    // Use filtered bucket rules for evaluation
     final bucketed = _taskSelector.groupByPriorityBuckets(
       tasks: tasks,
-      bucketRules: bucketRules,
+      bucketRules: filteredBucketRules,
       sortCriteria: criteria,
       now: today,
       context: evaluationContext,
@@ -72,12 +112,22 @@ class NextActionsViewBuilder {
     final projectsById = <String, Project>{};
     final projectTaskCounts = <String, int>{};
 
-    // Sort priorities to process higher priorities first
-    final sortedPriorities = bucketed.keys.toList()..sort();
+    // Include all configured priorities, not just those with tasks
+    // This ensures empty priority groups are displayed
+    final allPriorities = bucketRules.map((r) => r.priority).toSet();
+    final sortedPriorities = <int>{
+      ...allPriorities,
+      ...bucketed.keys.cast<int>(),
+    }.toList()..sort();
 
     // Process each priority bucket in order
     for (final priority in sortedPriorities) {
-      final bucketTasks = bucketed[priority]!;
+      final bucketTasks = bucketed[priority];
+      if (bucketTasks == null || bucketTasks.isEmpty) {
+        // Keep the priority in the list but with no tasks
+        continue;
+      }
+
       final criterion =
           bucketRuleByPriority[priority]?.sortCriterion ?? fallbackCriterion;
       final grouped = _groupTasksByProject(

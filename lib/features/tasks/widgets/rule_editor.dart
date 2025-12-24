@@ -162,8 +162,8 @@ extension DateRuleOperatorDisplay on DateRuleOperator {
     DateRuleOperator.on => 'On',
     DateRuleOperator.between => 'Between',
     DateRuleOperator.relative => 'Relative to Today',
-    DateRuleOperator.isNull => 'Is Empty',
-    DateRuleOperator.isNotNull => 'Has Value',
+    DateRuleOperator.isNull => 'Has No Date',
+    DateRuleOperator.isNotNull => 'Has Any Date',
   };
 
   String get description => switch (this) {
@@ -198,12 +198,14 @@ extension DateRuleFieldDisplay on DateRuleField {
   String get displayName => switch (this) {
     DateRuleField.startDate => 'Start Date',
     DateRuleField.deadlineDate => 'Deadline',
+    DateRuleField.createdAt => 'Created Date',
     DateRuleField.updatedAt => 'Updated Date',
   };
 
   IconData get icon => switch (this) {
     DateRuleField.startDate => Icons.calendar_today,
     DateRuleField.deadlineDate => Icons.flag,
+    DateRuleField.createdAt => Icons.add_circle_outline,
     DateRuleField.updatedAt => Icons.update,
   };
 }

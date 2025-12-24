@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/features/tasks/bloc/today_tasks_bloc.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
 /// Responsive breakpoints for navigation.
@@ -58,6 +60,27 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     }
   }
 
+  Widget _buildTodayIcon(BuildContext context, {bool selected = false}) {
+    return BlocBuilder<TodayTasksBloc, TodayTasksState>(
+      builder: (context, state) {
+        final icon = Icon(
+          selected ? Icons.calendar_today : Icons.calendar_today_outlined,
+        );
+
+        return state.maybeWhen(
+          loaded: (_, incompleteCount) {
+            if (incompleteCount == 0) return icon;
+            return Badge(
+              label: Text(incompleteCount.toString()),
+              child: icon,
+            );
+          },
+          orElse: () => icon,
+        );
+      },
+    );
+  }
+
   List<NavigationRailDestination> _buildRailDestinations(BuildContext context) {
     return [
       NavigationRailDestination(
@@ -67,8 +90,8 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
       ),
       NavigationRailDestination(
         label: Text(context.l10n.todayTitle),
-        icon: const Icon(Icons.calendar_today_outlined),
-        selectedIcon: const Icon(Icons.calendar_today),
+        icon: _buildTodayIcon(context),
+        selectedIcon: _buildTodayIcon(context, selected: true),
       ),
       NavigationRailDestination(
         label: Text(context.l10n.upcomingTitle),
@@ -108,8 +131,8 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
       ),
       NavigationDestination(
         label: context.l10n.todayTitle,
-        icon: const Icon(Icons.calendar_today_outlined),
-        selectedIcon: const Icon(Icons.calendar_today),
+        icon: _buildTodayIcon(context),
+        selectedIcon: _buildTodayIcon(context, selected: true),
       ),
       NavigationDestination(
         label: context.l10n.upcomingTitle,

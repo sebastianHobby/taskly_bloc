@@ -21,6 +21,7 @@ class ScheduleViewConfig {
       SortField.startDate,
       SortField.name,
     ],
+    this.showBannerToggleInSettings = false,
   });
 
   /// The settings key for persisting sort preferences (use SettingsPageKey constants).
@@ -64,6 +65,10 @@ class ScheduleViewConfig {
   /// Available sort fields shown in the sort sheet.
   final List<SortField> availableSortFields;
 
+  /// Whether to show the banner notification toggle in settings.
+  /// Only applicable for views that have a bannerBuilder.
+  final bool showBannerToggleInSettings;
+
   /// Returns the cutoff day for project matching.
   ///
   /// Override in subclasses to provide different cutoff logic.
@@ -83,6 +88,7 @@ class TodayScheduleConfig extends ScheduleViewConfig {
            sortCriteria: sortCriteria,
          ),
          projectMatcher: _matchesOnOrBeforeDay,
+         showBannerToggleInSettings: true,
        );
 
   static bool _matchesOnOrBeforeDay(

@@ -27,11 +27,13 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
   final _formKey = GlobalKey<FormState>();
   final _tasksPerProjectController = TextEditingController();
   late bool _includeInbox;
+  late bool _excludeFutureStartDates;
   late List<TaskPriorityBucketRule> _buckets;
 
   // Track initial state for change detection
   late String _initialTasksPerProject;
   late bool _initialIncludeInbox;
+  late bool _initialExcludeFutureStartDates;
   late List<TaskPriorityBucketRule> _initialBuckets;
 
   @override
@@ -45,11 +47,13 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
       _settings = await _settingsAdapter.load();
       _tasksPerProjectController.text = _settings.tasksPerProject.toString();
       _includeInbox = _settings.includeInboxTasks;
+      _excludeFutureStartDates = _settings.excludeFutureStartDates;
       _buckets = List.from(_settings.effectiveBucketRules);
 
       // Store initial state
       _initialTasksPerProject = _tasksPerProjectController.text;
       _initialIncludeInbox = _includeInbox;
+      _initialExcludeFutureStartDates = _excludeFutureStartDates;
       _initialBuckets = List.from(_buckets);
 
       if (mounted) setState(() {});
@@ -74,8 +78,9 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
 
   void _restoreDefaults() {
     setState(() {
-      _tasksPerProjectController.text = '5';
-      _includeInbox = false;
+      _tasksPerProjectController.text = '2';
+      _includeInbox = true;
+      _excludeFutureStartDates = true;
       _buckets = _createDefaultBuckets();
     });
   }
@@ -85,6 +90,9 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
       return true;
     }
     if (_includeInbox != _initialIncludeInbox) {
+      return true;
+    }
+    if (_excludeFutureStartDates != _initialExcludeFutureStartDates) {
       return true;
     }
     if (_buckets.length != _initialBuckets.length) {
@@ -156,6 +164,7 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
     final updatedSettings = NextActionsSettings(
       tasksPerProject: tasksPerProject,
       includeInboxTasks: _includeInbox,
+      excludeFutureStartDates: _excludeFutureStartDates,
       bucketRules: normalizedBuckets,
       sortPreferences: _settings.sortPreferences,
     );
@@ -216,8 +225,12 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
                     _BasicSettings(
                       tasksPerProjectController: _tasksPerProjectController,
                       includeInbox: _includeInbox,
+                      excludeFutureStartDates: _excludeFutureStartDates,
                       onIncludeInboxChanged: (value) {
                         setState(() => _includeInbox = value);
+                      },
+                      onExcludeFutureStartDatesChanged: (value) {
+                        setState(() => _excludeFutureStartDates = value);
                       },
                       onRestoreDefaults: _restoreDefaults,
                     ),
@@ -227,6 +240,7 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
                     // Priority buckets
                     PriorityBucketBuilder(
                       buckets: _buckets,
+                      excludeFutureStartDates: _excludeFutureStartDates,
                       onChanged: (buckets) {
                         setState(() => _buckets = buckets);
                       },
@@ -281,13 +295,17 @@ class _BasicSettings extends StatelessWidget {
   const _BasicSettings({
     required this.tasksPerProjectController,
     required this.includeInbox,
+    required this.excludeFutureStartDates,
     required this.onIncludeInboxChanged,
+    required this.onExcludeFutureStartDatesChanged,
     required this.onRestoreDefaults,
   });
 
   final TextEditingController tasksPerProjectController;
   final bool includeInbox;
+  final bool excludeFutureStartDates;
   final ValueChanged<bool> onIncludeInboxChanged;
+  final ValueChanged<bool> onExcludeFutureStartDatesChanged;
   final VoidCallback onRestoreDefaults;
 
   @override
@@ -344,6 +362,17 @@ class _BasicSettings extends StatelessWidget {
               ),
               value: includeInbox,
               onChanged: onIncludeInboxChanged,
+            ),
+
+            const SizedBox(height: 8),
+
+            SwitchListTile(
+              title: const Text('Exclude tasks with future start date'),
+              subtitle: const Text(
+                'Hide tasks that have a start date in the future',
+              ),
+              value: excludeFutureStartDates,
+              onChanged: onExcludeFutureStartDatesChanged,
             ),
           ],
         ),

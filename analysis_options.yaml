@@ -11,6 +11,7 @@ analyzer:
     avoid_positional_boolean_parameters: ignore
     strict_raw_type: ignore
     directives_ordering: ignore
+    avoid_print: ignore
   exclude:
     - lib/core/l10n/gen/*
     - lib/*/*.g.dart

@@ -46,7 +46,6 @@ void main() {
         // Simulate user changing includeInboxTasks to true and saving
         const updatedSettings = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
         await adapter.save(updatedSettings);
 
@@ -83,7 +82,6 @@ void main() {
         // Simulate user saving with includeInboxTasks=true
         const updatedSettings = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
         await adapter.save(updatedSettings);
 
@@ -167,7 +165,6 @@ void main() {
         );
         const settings2 = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
 
         expect(
@@ -212,7 +209,6 @@ void main() {
       () {
         const original = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
 
         final json = original.toJson();
@@ -278,7 +274,6 @@ void main() {
         // Step 3: User saves new settings (simulates settings page save)
         const updatedSettings = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
         await adapter.save(updatedSettings);
 
@@ -318,7 +313,6 @@ void main() {
         // Save with empty bucket rules (uses defaults via effectiveBucketRules)
         const settingsWithEmptyBuckets = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: true,
         );
         await adapter.save(settingsWithEmptyBuckets);
 

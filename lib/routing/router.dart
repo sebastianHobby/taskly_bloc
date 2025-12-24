@@ -11,7 +11,7 @@ import 'package:taskly_bloc/features/auth/auth.dart';
 import 'package:taskly_bloc/features/labels/labels.dart';
 import 'package:taskly_bloc/features/next_action/next_action.dart';
 import 'package:taskly_bloc/features/projects/projects.dart';
-import 'package:taskly_bloc/features/settings/view/next_actions_settings_page.dart';
+import 'package:taskly_bloc/features/next_action/view/next_actions_settings_page.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 import 'package:taskly_bloc/routing/widgets/scaffold_with_nested_navigation.dart';

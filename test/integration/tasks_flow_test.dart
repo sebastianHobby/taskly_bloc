@@ -209,6 +209,31 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
   }
 
   @override
+  Stream<PageDisplaySettings> watchPageDisplaySettings(String pageKey) async* {
+    yield _current.displaySettingsFor(pageKey);
+    yield* _controller.stream
+        .map((settings) => settings.displaySettingsFor(pageKey))
+        .distinct();
+  }
+
+  @override
+  Future<PageDisplaySettings> loadPageDisplaySettings(String pageKey) async {
+    return _current.displaySettingsFor(pageKey);
+  }
+
+  @override
+  Future<void> savePageDisplaySettings(
+    String pageKey,
+    PageDisplaySettings settings,
+  ) async {
+    _current = _current.upsertPageDisplaySettings(
+      pageKey: pageKey,
+      settings: settings,
+    );
+    _controller.add(_current);
+  }
+
+  @override
   Stream<AppSettings> watchAll() async* {
     yield _current;
     yield* _controller.stream;

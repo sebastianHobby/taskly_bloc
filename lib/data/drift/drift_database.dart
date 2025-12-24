@@ -4,6 +4,9 @@ part 'drift_database.g.dart';
 
 enum LabelType { label, value }
 
+/// Exception types for recurrence modifications
+enum ExceptionType { skip, reschedule }
+
 class ProjectTable extends Table {
   @override
   String get tableName => 'projects';
@@ -21,6 +24,16 @@ class ProjectTable extends Table {
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
   TextColumn get userId => text().nullable().named('user_id')();
+
+  /// When true, stops generating future occurrences for repeating projects
+  BoolColumn get seriesEnded =>
+      boolean().clientDefault(() => false).named('series_ended')();
+
+  /// When true, recurrence is anchored to last completion date instead of
+  /// original start date. Used for rolling/relative patterns like
+  /// "7 days after completion".
+  BoolColumn get repeatFromCompletion =>
+      boolean().clientDefault(() => false).named('repeat_from_completion')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -49,6 +62,16 @@ class TaskTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get repeatIcalRrule =>
       text().nullable().named('repeat_ical_rrule').clientDefault(() => '')();
+
+  /// When true, stops generating future occurrences for repeating tasks
+  BoolColumn get seriesEnded =>
+      boolean().clientDefault(() => false).named('series_ended')();
+
+  /// When true, recurrence is anchored to last completion date instead of
+  /// original start date. Used for rolling/relative patterns like
+  /// "7 days after completion".
+  BoolColumn get repeatFromCompletion =>
+      boolean().clientDefault(() => false).named('repeat_from_completion')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -150,6 +173,161 @@ class UserProfileTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+// =============================================================================
+// NEW TABLES FOR REPEATING TASKS
+// =============================================================================
+
+/// Tracks completion of task occurrences (both repeating and non-repeating)
+class TaskCompletionHistoryTable extends Table {
+  @override
+  String get tableName => 'task_completion_history';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+
+  /// The scheduled date of the occurrence. NULL for non-repeating tasks.
+  DateTimeColumn get occurrenceDate =>
+      dateTime().nullable().named('occurrence_date')();
+
+  /// Original RRULE-generated date. For rescheduled tasks, this differs from
+  /// occurrence_date. Used for on-time reporting.
+  DateTimeColumn get originalOccurrenceDate =>
+      dateTime().nullable().named('original_occurrence_date')();
+
+  DateTimeColumn get completedAt =>
+      dateTime().clientDefault(DateTime.now).named('completed_at')();
+  TextColumn get notes => text().nullable().named('notes')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {taskId, occurrenceDate},
+  ];
+}
+
+/// Tracks completion of project occurrences (both repeating and non-repeating)
+class ProjectCompletionHistoryTable extends Table {
+  @override
+  String get tableName => 'project_completion_history';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
+
+  /// The scheduled date of the occurrence. NULL for non-repeating projects.
+  DateTimeColumn get occurrenceDate =>
+      dateTime().nullable().named('occurrence_date')();
+
+  /// Original RRULE-generated date. Used for on-time reporting.
+  DateTimeColumn get originalOccurrenceDate =>
+      dateTime().nullable().named('original_occurrence_date')();
+
+  DateTimeColumn get completedAt =>
+      dateTime().clientDefault(DateTime.now).named('completed_at')();
+  TextColumn get notes => text().nullable().named('notes')();
+  TextColumn get userId => text().nullable().named('user_id')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {projectId, occurrenceDate},
+  ];
+}
+
+/// Modifications to individual task occurrences (skip or reschedule)
+class TaskRecurrenceExceptionsTable extends Table {
+  @override
+  String get tableName => 'task_recurrence_exceptions';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get taskId => text()
+      .named('task_id')
+      .references(TaskTable, #id, onDelete: KeyAction.cascade)();
+
+  /// The RRULE date being modified
+  DateTimeColumn get originalDate => dateTime().named('original_date')();
+
+  /// 'skip' = remove occurrence, 'reschedule' = move to new_date
+  TextColumn get exceptionType =>
+      textEnum<ExceptionType>().named('exception_type')();
+
+  /// Target date for reschedule. NULL if skip.
+  DateTimeColumn get newDate => dateTime().nullable().named('new_date')();
+
+  /// Override deadline for this occurrence. NULL = inherit from task.
+  DateTimeColumn get newDeadline =>
+      dateTime().nullable().named('new_deadline')();
+
+  TextColumn get userId => text().nullable().named('user_id')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {taskId, originalDate},
+  ];
+}
+
+/// Modifications to individual project occurrences (skip or reschedule)
+class ProjectRecurrenceExceptionsTable extends Table {
+  @override
+  String get tableName => 'project_recurrence_exceptions';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get projectId => text()
+      .named('project_id')
+      .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
+
+  /// The RRULE date being modified
+  DateTimeColumn get originalDate => dateTime().named('original_date')();
+
+  /// 'skip' = remove occurrence, 'reschedule' = move to new_date
+  TextColumn get exceptionType =>
+      textEnum<ExceptionType>().named('exception_type')();
+
+  /// Target date for reschedule. NULL if skip.
+  DateTimeColumn get newDate => dateTime().nullable().named('new_date')();
+
+  /// Override deadline for this occurrence. NULL = inherit from project.
+  DateTimeColumn get newDeadline =>
+      dateTime().nullable().named('new_deadline')();
+
+  TextColumn get userId => text().nullable().named('user_id')();
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {projectId, originalDate},
+  ];
+}
+
 @DriftDatabase(
   tables: [
     ProjectTable,
@@ -158,13 +336,17 @@ class UserProfileTable extends Table {
     ProjectLabelsTable,
     TaskLabelsTable,
     UserProfileTable,
+    TaskCompletionHistoryTable,
+    ProjectCompletionHistoryTable,
+    TaskRecurrenceExceptionsTable,
+    ProjectRecurrenceExceptionsTable,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

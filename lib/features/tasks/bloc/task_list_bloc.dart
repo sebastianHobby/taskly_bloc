@@ -23,6 +23,11 @@ sealed class TaskOverviewEvent with _$TaskOverviewEvent {
     required SortPreferences preferences,
   }) = TaskOverviewSortChanged;
 
+  /// Display settings changed event that persists to settings.
+  const factory TaskOverviewEvent.displaySettingsChanged({
+    required PageDisplaySettings settings,
+  }) = TaskOverviewDisplaySettingsChanged;
+
   const factory TaskOverviewEvent.toggleTaskCompletion({
     required Task task,
   }) = TaskOverviewToggleTaskCompletion;
@@ -67,6 +72,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
     on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<TaskOverviewConfigChanged>(_onConfigChanged);
     on<TaskOverviewSortChanged>(_onSortChanged);
+    on<TaskOverviewDisplaySettingsChanged>(_onDisplaySettingsChanged);
     on<TaskOverviewToggleTaskCompletion>(_onToggleTaskCompletion);
     on<TaskOverviewDeleteTask>(_onDeleteTask);
   }
@@ -77,6 +83,12 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
   final TaskSelector _selector;
 
   TaskSelectorConfig _config;
+
+  /// Load display settings for this page.
+  Future<PageDisplaySettings> loadDisplaySettings() async {
+    if (_sortAdapter == null) return const PageDisplaySettings();
+    return _sortAdapter.loadDisplaySettings();
+  }
 
   // ListBlocMixin implementation
   @override
@@ -164,6 +176,14 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
 
     // Persist to settings
     await _sortAdapter?.save(event.preferences);
+  }
+
+  Future<void> _onDisplaySettingsChanged(
+    TaskOverviewDisplaySettingsChanged event,
+    Emitter<TaskOverviewState> emit,
+  ) async {
+    // Persist to settings via adapter
+    await _sortAdapter?.saveDisplaySettings(event.settings);
   }
 
   Future<void> _onToggleTaskCompletion(

@@ -29,7 +29,6 @@ void main() {
         // Step 1: Save settings with includeInbox = true
         const settingsToSave = NextActionsSettings(
           tasksPerProject: 3,
-          includeInboxTasks: true,
         );
 
         print(
@@ -84,7 +83,6 @@ void main() {
       // Save new settings
       const newSettings = NextActionsSettings(
         tasksPerProject: 5,
-        includeInboxTasks: true,
       );
 
       print('STEP 2: Saving new settings');
@@ -128,19 +126,22 @@ void main() {
 
     test('Multiple saves in sequence all persist correctly', () async {
       // Save 1
-      await adapter.save(const NextActionsSettings(includeInboxTasks: true));
+      await adapter.save(const NextActionsSettings());
       var loaded = await adapter.load();
       expect(loaded.includeInboxTasks, true);
 
-      // Save 2
-      await adapter.save(const NextActionsSettings());
+      // Save 2 - explicitly set to false
+      await adapter.save(
+        const NextActionsSettings(
+          includeInboxTasks: false,
+        ),
+      );
       loaded = await adapter.load();
       expect(loaded.includeInboxTasks, false);
 
       // Save 3
       await adapter.save(
         const NextActionsSettings(
-          includeInboxTasks: true,
           tasksPerProject: 10,
         ),
       );

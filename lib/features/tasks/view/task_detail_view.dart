@@ -178,6 +178,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'deadlineDate',
                   );
+
                   final labelIds = extractStringListValue(
                     formValues,
                     'labelIds',

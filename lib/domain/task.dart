@@ -1,8 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/label.dart';
+import 'package:taskly_bloc/domain/occurrence_data.dart';
 import 'package:taskly_bloc/domain/project.dart';
 
 /// Domain representation of a Task used across the app.
+///
+/// When retrieved via occurrence expansion methods (`getOccurrences`,
+/// `watchOccurrences`), the [occurrence] field will be populated with
+/// occurrence-specific data. For base entities from CRUD methods,
+/// [occurrence] will be null.
 @immutable
 class Task {
   const Task({
@@ -16,8 +22,11 @@ class Task {
     this.description,
     this.projectId,
     this.repeatIcalRrule,
+    this.repeatFromCompletion = false,
+    this.seriesEnded = false,
     this.project,
     this.labels = const <Label>[],
+    this.occurrence,
   });
 
   final String id;
@@ -30,8 +39,27 @@ class Task {
   final String? description;
   final String? projectId;
   final String? repeatIcalRrule;
+
+  /// When true, recurrence is anchored to last completion date instead of
+  /// original start date. Used for rolling/relative patterns.
+  final bool repeatFromCompletion;
+
+  /// When true, stops generating future occurrences for this repeating task.
+  final bool seriesEnded;
+
   final Project? project;
   final List<Label> labels;
+
+  /// Occurrence-specific data. Only populated when this Task instance
+  /// represents an expanded occurrence from `getOccurrences`/`watchOccurrences`.
+  /// Null for base tasks retrieved via standard CRUD methods.
+  final OccurrenceData? occurrence;
+
+  /// True when this instance represents an expanded occurrence.
+  bool get isOccurrenceInstance => occurrence != null;
+
+  /// True if this task has a recurrence rule defined.
+  bool get isRepeating => repeatIcalRrule?.isNotEmpty ?? false;
 
   /// Creates a copy of this Task with the given fields replaced.
   Task copyWith({
@@ -45,8 +73,11 @@ class Task {
     String? description,
     String? projectId,
     String? repeatIcalRrule,
+    bool? repeatFromCompletion,
+    bool? seriesEnded,
     Project? project,
     List<Label>? labels,
+    OccurrenceData? occurrence,
   }) {
     return Task(
       id: id ?? this.id,
@@ -59,8 +90,11 @@ class Task {
       description: description ?? this.description,
       projectId: projectId ?? this.projectId,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
+      seriesEnded: seriesEnded ?? this.seriesEnded,
       project: project ?? this.project,
       labels: labels ?? this.labels,
+      occurrence: occurrence ?? this.occurrence,
     );
   }
 
@@ -78,8 +112,11 @@ class Task {
         other.description == description &&
         other.projectId == projectId &&
         other.repeatIcalRrule == repeatIcalRrule &&
+        other.repeatFromCompletion == repeatFromCompletion &&
+        other.seriesEnded == seriesEnded &&
         other.project == project &&
-        listEquals(other.labels, labels);
+        listEquals(other.labels, labels) &&
+        other.occurrence == occurrence;
   }
 
   @override
@@ -94,13 +131,17 @@ class Task {
     description,
     projectId,
     repeatIcalRrule,
+    repeatFromCompletion,
+    seriesEnded,
     project,
     Object.hashAll(labels),
+    occurrence,
   );
 
   @override
   String toString() {
     return 'Task(id: $id, name: $name, completed: $completed, '
-        'projectId: $projectId, labels: ${labels.length} labels)';
+        'projectId: $projectId, labels: ${labels.length} labels, '
+        'isOccurrence: $isOccurrenceInstance)';
   }
 }

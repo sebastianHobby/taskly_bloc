@@ -21,6 +21,9 @@ sealed class ProjectOverviewEvent with _$ProjectOverviewEvent {
   const factory ProjectOverviewEvent.sortChanged({
     required SortPreferences preferences,
   }) = ProjectOverviewSortChanged;
+  const factory ProjectOverviewEvent.displaySettingsChanged({
+    required PageDisplaySettings settings,
+  }) = ProjectOverviewDisplaySettingsChanged;
   const factory ProjectOverviewEvent.taskCountsUpdated({
     required Map<String, ProjectTaskCounts> taskCounts,
   }) = ProjectOverviewTaskCountsUpdated;
@@ -58,6 +61,7 @@ class ProjectOverviewBloc
     on<ProjectOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<ProjectOverviewToggleProjectCompletion>(_onToggleCompletion);
     on<ProjectOverviewSortChanged>(_onSortChanged);
+    on<ProjectOverviewDisplaySettingsChanged>(_onDisplaySettingsChanged);
     on<ProjectOverviewTaskCountsUpdated>(_onTaskCountsUpdated);
     on<ProjectOverviewDeleteProject>(_onDeleteProject);
   }
@@ -70,6 +74,12 @@ class ProjectOverviewBloc
   StreamSubscription<Map<String, ProjectTaskCounts>>? _taskCountsSubscription;
 
   SortPreferences get currentSortPreferences => _sortPreferences;
+
+  /// Load display settings for this page.
+  Future<PageDisplaySettings> loadDisplaySettings() async {
+    if (_sortAdapter == null) return const PageDisplaySettings();
+    return _sortAdapter.loadDisplaySettings();
+  }
 
   // ListBlocMixin implementation
   @override
@@ -207,6 +217,14 @@ class ProjectOverviewBloc
       ),
       orElse: () {},
     );
+  }
+
+  Future<void> _onDisplaySettingsChanged(
+    ProjectOverviewDisplaySettingsChanged event,
+    Emitter<ProjectOverviewState> emit,
+  ) async {
+    // Persist display settings via adapter
+    await _sortAdapter?.saveDisplaySettings(event.settings);
   }
 
   Future<void> _onDeleteProject(

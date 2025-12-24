@@ -22,7 +22,6 @@ void main() {
       // Save settings with includeInboxTasks=true
       const nextActions = NextActionsSettings(
         tasksPerProject: 5,
-        includeInboxTasks: true,
       );
 
       await repo.saveNextActionsSettings(nextActions);
@@ -48,7 +47,6 @@ void main() {
       // Update to includeInboxTasks=true
       const updatedSettings = NextActionsSettings(
         tasksPerProject: 3,
-        includeInboxTasks: true,
       );
       await repo.saveNextActionsSettings(updatedSettings);
 
@@ -84,15 +82,15 @@ void main() {
       // Allow initial emit
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
-      // Save first settings
-      const settings1 = NextActionsSettings();
+      // Save first settings with includeInboxTasks=false
+      const settings1 = NextActionsSettings(
+        includeInboxTasks: false,
+      );
       await repo.saveNextActionsSettings(settings1);
       await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Save second settings with includeInboxTasks=true
-      const settings2 = NextActionsSettings(
-        includeInboxTasks: true,
-      );
+      const settings2 = NextActionsSettings();
       await repo.saveNextActionsSettings(settings2);
       await Future<void>.delayed(const Duration(milliseconds: 100));
 

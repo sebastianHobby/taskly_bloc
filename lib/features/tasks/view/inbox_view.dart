@@ -13,7 +13,8 @@ import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/core/shared/widgets/sort_bottom_sheet.dart';
+import 'package:taskly_bloc/core/shared/widgets/page_settings_modal.dart';
+import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
@@ -68,6 +69,24 @@ class InboxView extends StatefulWidget {
 }
 
 class _InboxViewState extends State<InboxView> {
+  PageDisplaySettings? _displaySettings;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDisplaySettings();
+  }
+
+  Future<void> _loadDisplaySettings() async {
+    final bloc = context.read<TaskOverviewBloc>();
+    final settings = await bloc.loadDisplaySettings();
+    if (mounted) {
+      setState(() {
+        _displaySettings = settings;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,9 +94,9 @@ class _InboxViewState extends State<InboxView> {
         title: Text(context.l10n.inboxTitle),
         actions: [
           IconButton(
-            icon: const Icon(Icons.sort),
-            tooltip: context.l10n.sortMenuTitle,
-            onPressed: _openGroupSortSheet,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: _openPageSettings,
           ),
         ],
       ),
@@ -99,6 +118,19 @@ class _InboxViewState extends State<InboxView> {
               }
               return TasksListView(
                 tasks: tasks,
+                displaySettings:
+                    _displaySettings ?? const PageDisplaySettings(),
+                onDisplaySettingsChanged: (settings) {
+                  setState(() {
+                    _displaySettings = settings;
+                  });
+                  // Save to adapter
+                  context.read<TaskOverviewBloc>().add(
+                    TaskOverviewEvent.displaySettingsChanged(
+                      settings: settings,
+                    ),
+                  );
+                },
                 onTap: (task) => _showTaskDetailSheet(
                   context,
                   taskId: task.id,
@@ -141,22 +173,32 @@ class _InboxViewState extends State<InboxView> {
     );
   }
 
-  Future<void> _openGroupSortSheet() async {
+  Future<void> _openPageSettings() async {
     final bloc = context.read<TaskOverviewBloc>();
     final currentQuery = bloc.state.maybeWhen(
       loaded: (_, config) => config,
       orElse: TaskSelector.all,
     );
 
-    await showSortBottomSheet(
+    await showPageSettingsModal(
       context: context,
-      current: SortPreferences(criteria: currentQuery.sortCriteria),
+      displaySettings: _displaySettings ?? const PageDisplaySettings(),
+      sortPreferences: SortPreferences(criteria: currentQuery.sortCriteria),
       availableSortFields: const [
         SortField.deadlineDate,
         SortField.startDate,
         SortField.name,
       ],
-      onChanged: (updated) {
+      pageTitle: context.l10n.inboxTitle,
+      onDisplaySettingsChanged: (settings) {
+        setState(() {
+          _displaySettings = settings;
+        });
+        bloc.add(
+          TaskOverviewEvent.displaySettingsChanged(settings: settings),
+        );
+      },
+      onSortPreferencesChanged: (updated) {
         bloc.add(
           TaskOverviewEvent.sortChanged(preferences: updated),
         );

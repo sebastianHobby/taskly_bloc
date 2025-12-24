@@ -1037,8 +1037,16 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.2"
+  rrule:
+    dependency: "direct main"
+    description:
+      name: rrule
+      sha256: b7425410c594d4b6717c9f17ec8ef83c9d1ff2e513c428a135b5924fc2e8e045
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.17"
   rxdart:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: rxdart
       sha256: "5c3004a4a8dbb94bd4bf5412a4def4acdaa12e12f269737a5751369e12d1a962"
@@ -1354,6 +1362,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.14"
+  time:
+    dependency: transitive
+    description:
+      name: time
+      sha256: "46187cf30bffdab28c56be9a63861b36e4ab7347bf403297595d6a97e10c789f"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.6"
   typed_data:
     dependency: transitive
     description:

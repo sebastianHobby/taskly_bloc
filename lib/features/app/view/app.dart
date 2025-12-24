@@ -8,6 +8,8 @@ import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
+import 'package:taskly_bloc/features/tasks/bloc/today_tasks_bloc.dart';
+import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 import 'package:taskly_bloc/routing/router.dart';
 
 /// Root application widget with app-level bloc providers.
@@ -15,6 +17,7 @@ import 'package:taskly_bloc/routing/router.dart';
 /// Provides:
 /// - [AuthBloc]: Authentication state for the entire app
 /// - [NextActionsBloc]: Next actions data shared across features
+/// - [TodayTasksBloc]: Today's tasks with badge count for navigation
 class App extends StatelessWidget {
   const App({super.key});
 
@@ -38,6 +41,15 @@ class App extends StatelessWidget {
             taskRepository: getIt<TaskRepositoryContract>(),
             settingsAdapter: getIt<NextActionsSettingsAdapter>(),
           )..add(const NextActionsSubscriptionRequested()),
+        ),
+        // TodayTasksBloc: App-wide today's tasks with badge count
+        // Uses factory pattern for dynamic DateTime.now() evaluation
+        // Shares task stream via RxDart for performance
+        BlocProvider<TodayTasksBloc>(
+          create: (context) => TodayTasksBloc(
+            taskRepository: getIt<TaskRepositoryContract>(),
+            configFactory: () => TaskSelector.today(now: DateTime.now()),
+          )..add(const TodayTasksSubscriptionRequested()),
         ),
       ],
       child: MaterialApp.router(

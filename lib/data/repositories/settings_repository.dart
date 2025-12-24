@@ -140,6 +140,33 @@ class SettingsRepository implements SettingsRepositoryContract {
     await _saveToDatabase(updated);
   }
 
+  // Page Display Settings
+  @override
+  Stream<PageDisplaySettings> watchPageDisplaySettings(String pageKey) {
+    return _watchDatabase()
+        .map((appSettings) => appSettings.displaySettingsFor(pageKey))
+        .distinct();
+  }
+
+  @override
+  Future<PageDisplaySettings> loadPageDisplaySettings(String pageKey) async {
+    final settings = await loadAll();
+    return settings.displaySettingsFor(pageKey);
+  }
+
+  @override
+  Future<void> savePageDisplaySettings(
+    String pageKey,
+    PageDisplaySettings settings,
+  ) async {
+    final current = await loadAll();
+    final updated = current.upsertPageDisplaySettings(
+      pageKey: pageKey,
+      settings: settings,
+    );
+    await _saveToDatabase(updated);
+  }
+
   // Full settings access (for migration/debugging)
   @override
   Stream<AppSettings> watchAll() => _watchDatabase();
