@@ -113,7 +113,7 @@ class LabelListTile extends StatelessWidget {
                 Icons.chevron_right,
                 size: 20,
                 color: isValue
-                    ? textColor.withOpacity(0.5)
+                    ? textColor.withValues(alpha: 0.5)
                     : colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
               ),
             ],

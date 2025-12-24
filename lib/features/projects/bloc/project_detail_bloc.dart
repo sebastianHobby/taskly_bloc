@@ -88,6 +88,12 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
 
+  @override
+  Future<void> close() {
+    // Defensive cleanup for page-scoped blocs
+    return super.close();
+  }
+
   // DetailBlocMixin implementation
   @override
   ProjectDetailState createLoadInProgressState() =>

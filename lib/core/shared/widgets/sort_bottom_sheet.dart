@@ -167,7 +167,7 @@ class _SortBottomSheetContentState extends State<_SortBottomSheetContent> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -183,7 +183,7 @@ class _SortBottomSheetContentState extends State<_SortBottomSheetContent> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: colorScheme.outline.withOpacity(0.4),
+                color: colorScheme.outline.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -197,7 +197,7 @@ class _SortBottomSheetContentState extends State<_SortBottomSheetContent> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer.withOpacity(0.5),
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -306,13 +306,13 @@ class _SortSlotCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isActive
-            ? colorScheme.primaryContainer.withOpacity(0.15)
+            ? colorScheme.primaryContainer.withValues(alpha: 0.15)
             : colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
-              ? colorScheme.primary.withOpacity(0.3)
-              : colorScheme.outlineVariant.withOpacity(0.5),
+              ? colorScheme.primary.withValues(alpha: 0.3)
+              : colorScheme.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: Column(
@@ -327,7 +327,7 @@ class _SortSlotCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isFirst
                       ? colorScheme.primary
-                      : colorScheme.outline.withOpacity(0.3),
+                      : colorScheme.outline.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -429,7 +429,7 @@ class _SortFieldChip extends StatelessWidget {
             border: Border.all(
               color: isSelected
                   ? colorScheme.primary
-                  : colorScheme.outline.withOpacity(0.3),
+                  : colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -485,10 +485,10 @@ class _DirectionToggle extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: colorScheme.outlineVariant.withOpacity(0.5),
+              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
             ),
           ),
           child: Row(
@@ -517,7 +517,7 @@ class _DirectionToggle extends StatelessWidget {
               Icon(
                 Icons.swap_vert_rounded,
                 size: 16,
-                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
               ),
             ],
           ),

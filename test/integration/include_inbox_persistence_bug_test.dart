@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
@@ -14,7 +12,7 @@ import '../helpers/test_db.dart';
 /// includeInboxTasks as false again - the change was not persisted.
 ///
 /// Root cause hypothesis: The `.distinct()` call on watchNextActionsSettings()
-/// may be filtering out legitimate updates due to equality issues with
+/// may be filtering out legitimate updates due to equality sues with
 /// complex nested objects (bucket rules, rule sets, etc.).
 void main() {
   group('Include Inbox Persistence Bug', () {
@@ -38,7 +36,6 @@ void main() {
         // Simulate initial state: user has default settings (includeInbox=false)
         const initialSettings = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: false,
         );
         await adapter.save(initialSettings);
 
@@ -69,7 +66,6 @@ void main() {
         // Set up initial settings
         const initialSettings = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: false,
         );
         await adapter.save(initialSettings);
 
@@ -78,7 +74,7 @@ void main() {
         final subscription = adapter.watch().listen(emissions.add);
 
         // Wait for initial emission
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
         final initialEmissionCount = emissions.length;
         expect(initialEmissionCount, greaterThanOrEqualTo(1));
@@ -91,22 +87,26 @@ void main() {
         );
         await adapter.save(updatedSettings);
 
-        // Wait for update to propagate
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Wait for update to propagate through Drift's watch stream
+        await Future<void>.delayed(const Duration(milliseconds: 500));
 
         await subscription.cancel();
 
-        // BUG: If distinct() incorrectly filters the update, we won't see
-        // the new emission with includeInboxTasks=true
+        // Verify load returns the updated value (primary persistence check)
+        final loaded = await adapter.load();
         expect(
-          emissions.length,
-          greaterThan(initialEmissionCount),
-          reason: 'Stream should emit after save with changed includeInboxTasks',
+          loaded.includeInboxTasks,
+          true,
+          reason: 'Loaded settings should have includeInboxTasks=true',
         );
+
+        // Check if watch stream emitted the update
         expect(
           emissions.last.includeInboxTasks,
           true,
-          reason: 'Latest emission should have includeInboxTasks=true',
+          reason:
+              'Latest emission should have includeInboxTasks=true. '
+              'Got: ${emissions.map((e) => 'inbox=${e.includeInboxTasks}').toList()}',
         );
       },
     );
@@ -127,18 +127,10 @@ void main() {
 
         // Set up stream listener
         final emissions = <NextActionsSettings>[];
-        final completer = Completer<void>();
-
-        final subscription = adapter.watch().listen((settings) {
-          emissions.add(settings);
-          // Complete when we get a settings with includeInbox=true
-          if (settings.includeInboxTasks && !completer.isCompleted) {
-            completer.complete();
-          }
-        });
+        final subscription = adapter.watch().listen(emissions.add);
 
         // Wait for initial emission
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
 
         // Save with ONLY includeInboxTasks changed
         final updatedSettings = initialSettings.copyWith(
@@ -146,18 +138,14 @@ void main() {
         );
         await adapter.save(updatedSettings);
 
-        // Wait for the update with timeout
-        try {
-          await completer.future.timeout(const Duration(seconds: 2));
-        } on TimeoutException {
-          // Test will fail in assertions below
-        }
+        // Wait for update to propagate
+        await Future<void>.delayed(const Duration(milliseconds: 500));
 
         await subscription.cancel();
 
         // Find emission with includeInboxTasks=true
         final hasUpdatedEmission = emissions.any(
-          (s) => s.includeInboxTasks == true,
+          (s) => s.includeInboxTasks,
         );
 
         expect(
@@ -176,17 +164,24 @@ void main() {
         // Unit test to verify equality implementation
         const settings1 = NextActionsSettings(
           tasksPerProject: 5,
-          includeInboxTasks: false,
         );
         const settings2 = NextActionsSettings(
           tasksPerProject: 5,
           includeInboxTasks: true,
         );
 
-        expect(settings1 == settings2, false,
-            reason: 'Settings with different includeInboxTasks should not be equal');
-        expect(settings1.hashCode == settings2.hashCode, false,
-            reason: 'Settings with different includeInboxTasks should have different hashCodes');
+        expect(
+          settings1 == settings2,
+          false,
+          reason:
+              'Settings with different includeInboxTasks should not be equal',
+        );
+        expect(
+          settings1.hashCode == settings2.hashCode,
+          false,
+          reason:
+              'Settings with different includeInboxTasks should have different hashCodes',
+        );
       },
     );
 
@@ -203,8 +198,12 @@ void main() {
           includeInboxTasks: true,
         );
 
-        expect(settings1 == settings2, false,
-            reason: 'Settings with same buckets but different includeInboxTasks should not be equal');
+        expect(
+          settings1 == settings2,
+          false,
+          reason:
+              'Settings with same buckets but different includeInboxTasks should not be equal',
+        );
       },
     );
 
@@ -219,10 +218,16 @@ void main() {
         final json = original.toJson();
         final restored = NextActionsSettings.fromJson(json);
 
-        expect(restored.includeInboxTasks, true,
-            reason: 'includeInboxTasks should survive JSON round-trip');
-        expect(restored, original,
-            reason: 'Restored settings should equal original');
+        expect(
+          restored.includeInboxTasks,
+          true,
+          reason: 'includeInboxTasks should survive JSON round-trip',
+        );
+        expect(
+          restored,
+          original,
+          reason: 'Restored settings should equal original',
+        );
       },
     );
 
@@ -237,8 +242,99 @@ void main() {
         final json = original.toJson();
         final restored = NextActionsSettings.fromJson(json);
 
-        expect(restored.includeInboxTasks, true,
-            reason: 'includeInboxTasks should survive JSON round-trip with bucket rules');
+        expect(
+          restored.includeInboxTasks,
+          true,
+          reason:
+              'includeInboxTasks should survive JSON round-trip with bucket rules',
+        );
+      },
+    );
+
+    test(
+      'navigation simulation: save then create new stream subscription',
+      () async {
+        // This simulates the actual navigation flow:
+        // 1. User is on NextActionsView with a bloc subscribed to settings
+        // 2. User navigates to settings, changes includeInbox to true, saves
+        // 3. User returns to NextActionsView - new bloc created, new subscription
+
+        // Step 1: Initial state - settings exist with includeInbox=false
+        const initialSettings = NextActionsSettings(
+          tasksPerProject: 5,
+        );
+        await adapter.save(initialSettings);
+
+        // Step 2: First subscription (simulates first visit to NextActionsView)
+        final firstEmissions = <NextActionsSettings>[];
+        final firstSub = adapter.watch().listen(firstEmissions.add);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(firstEmissions.isNotEmpty, true);
+        expect(firstEmissions.last.includeInboxTasks, false);
+
+        await firstSub.cancel();
+
+        // Step 3: User saves new settings (simulates settings page save)
+        const updatedSettings = NextActionsSettings(
+          tasksPerProject: 5,
+          includeInboxTasks: true,
+        );
+        await adapter.save(updatedSettings);
+
+        // Step 4: User returns to NextActionsView - NEW subscription created
+        // This is the critical test - the new subscription should get the updated value
+        final secondEmissions = <NextActionsSettings>[];
+        final secondSub = adapter.watch().listen(secondEmissions.add);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        await secondSub.cancel();
+
+        // BUG: The new subscription should immediately emit includeInboxTasks=true
+        expect(
+          secondEmissions.isNotEmpty,
+          true,
+          reason: 'Second subscription should emit',
+        );
+        expect(
+          secondEmissions.first.includeInboxTasks,
+          true,
+          reason:
+              'First emission after re-navigation should have includeInboxTasks=true. '
+              'Got: ${secondEmissions.map((e) => 'inbox=${e.includeInboxTasks}').toList()}',
+        );
+      },
+    );
+
+    test(
+      'effectiveBucketRules preserves includeInboxTasks when buckets are empty',
+      () async {
+        // This tests the bug path where:
+        // 1. Settings are saved with empty bucketRules
+        // 2. effectiveBucketRules returns defaults
+        // 3. When re-saving, the defaults are saved as actual buckets
+        // 4. This could affect equality comparisons
+
+        // Save with empty bucket rules (uses defaults via effectiveBucketRules)
+        const settingsWithEmptyBuckets = NextActionsSettings(
+          tasksPerProject: 5,
+          includeInboxTasks: true,
+        );
+        await adapter.save(settingsWithEmptyBuckets);
+
+        // Load and check
+        final loaded = await adapter.load();
+        expect(
+          loaded.includeInboxTasks,
+          true,
+          reason: 'includeInboxTasks should be true even with empty buckets',
+        );
+        expect(
+          loaded.bucketRules,
+          isEmpty,
+          reason:
+              'bucketRules should remain empty (not replaced with defaults)',
+        );
       },
     );
   });

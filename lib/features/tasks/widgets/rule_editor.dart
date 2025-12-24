@@ -1163,7 +1163,7 @@ class _LabelRuleEditor extends StatelessWidget {
           side: BorderSide(
             color: isSelected
                 ? color
-                : theme.colorScheme.outline.withOpacity(0.3),
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         );
       }).toList(),
@@ -1320,7 +1320,7 @@ class _ValueRuleEditor extends StatelessWidget {
           side: BorderSide(
             color: isSelected
                 ? color
-                : theme.colorScheme.outline.withOpacity(0.3),
+                : theme.colorScheme.outline.withValues(alpha: 0.3),
           ),
         );
       }).toList(),

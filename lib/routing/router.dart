@@ -1,16 +1,17 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/auth/auth.dart';
 import 'package:taskly_bloc/features/labels/labels.dart';
 import 'package:taskly_bloc/features/next_action/next_action.dart';
 import 'package:taskly_bloc/features/projects/projects.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
+import 'package:taskly_bloc/features/settings/view/next_actions_settings_page.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 import 'package:taskly_bloc/routing/widgets/scaffold_with_nested_navigation.dart';
@@ -45,45 +46,25 @@ final router = GoRouter(
     GoRoute(
       name: 'sign-in',
       path: '/sign-in',
-      builder: (context, state) => BlocProvider(
-        create: (_) => AuthBloc(
-          authRepository: getIt<AuthRepositoryContract>(),
-        )..add(const AuthSubscriptionRequested()),
-        child: const SignInView(),
-      ),
+      builder: (context, state) => const SignInView(),
     ),
     GoRoute(
       name: 'sign-up',
       path: '/sign-up',
-      builder: (context, state) => BlocProvider(
-        create: (_) => AuthBloc(
-          authRepository: getIt<AuthRepositoryContract>(),
-        )..add(const AuthSubscriptionRequested()),
-        child: const SignUpView(),
-      ),
+      builder: (context, state) => const SignUpView(),
     ),
     GoRoute(
       name: 'forgot-password',
       path: '/forgot-password',
-      builder: (context, state) => BlocProvider(
-        create: (_) => AuthBloc(
-          authRepository: getIt<AuthRepositoryContract>(),
-        )..add(const AuthSubscriptionRequested()),
-        child: const ForgotPasswordView(),
-      ),
+      builder: (context, state) => const ForgotPasswordView(),
     ),
     // Protected routes
     StatefulShellRoute.indexedStack(
       // A builder that adds a navigation bar or rail depending on screen size
       // to all the branches below
       builder: (context, state, navigationShell) {
-        return BlocProvider(
-          create: (_) => SettingsBloc(
-            settingsRepository: getIt<SettingsRepositoryContract>(),
-          )..add(const SettingsSubscriptionRequested()),
-          child: ScaffoldWithNestedNavigation(
-            navigationShell: navigationShell,
-          ),
+        return ScaffoldWithNestedNavigation(
+          navigationShell: navigationShell,
         );
       },
       branches: [
@@ -96,6 +77,10 @@ final router = GoRouter(
                 taskRepository: getIt<TaskRepositoryContract>(),
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.inbox,
+                ),
               ),
             ),
           ],
@@ -109,6 +94,10 @@ final router = GoRouter(
                 taskRepository: getIt<TaskRepositoryContract>(),
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.today,
+                ),
               ),
             ),
           ],
@@ -122,6 +111,10 @@ final router = GoRouter(
                 taskRepository: getIt<TaskRepositoryContract>(),
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.upcoming,
+                ),
               ),
             ),
           ],
@@ -135,6 +128,10 @@ final router = GoRouter(
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 taskRepository: getIt<TaskRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.projects,
+                ),
               ),
               routes: [
                 GoRoute(
@@ -156,6 +153,10 @@ final router = GoRouter(
                 taskRepository: getIt<TaskRepositoryContract>(),
                 projectRepository: getIt<ProjectRepositoryContract>(),
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.tasks,
+                ),
               ),
             ),
             GoRoute(
@@ -163,6 +164,10 @@ final router = GoRouter(
               path: AppRoutePath.labels,
               builder: (context, state) => LabelOverviewPage(
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.labels,
+                ),
               ),
               routes: [
                 GoRoute(
@@ -182,6 +187,10 @@ final router = GoRouter(
               path: AppRoutePath.values,
               builder: (context, state) => ValueOverviewPage(
                 labelRepository: getIt<LabelRepositoryContract>(),
+                sortAdapter: PageSortAdapter(
+                  settingsRepository: getIt<SettingsRepositoryContract>(),
+                  pageKey: SettingsPageKey.values,
+                ),
               ),
             ),
 

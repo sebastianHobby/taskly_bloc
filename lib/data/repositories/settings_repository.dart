@@ -10,6 +10,13 @@ import 'package:taskly_bloc/domain/settings.dart';
 ///
 /// Provides granular access to settings by feature, while managing
 /// persistence of the full settings document internally.
+///
+/// ## Stream Pattern
+/// Uses the standard repository pattern aligned with TaskRepository,
+/// ProjectRepository, and LabelRepository:
+/// - Direct stream mapping (not async* generators)
+/// - Automatic initial value emission from Drift's .watch()
+/// - Synchronous transformation of database rows to domain objects
 class SettingsRepository implements SettingsRepositoryContract {
   SettingsRepository({required this.driftDb});
 
@@ -17,6 +24,12 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   static const AppSettings _defaultSettings = AppSettings();
 
+  /// Watch all profile rows ordered by updatedAt desc.
+  /// Returns a stream that automatically emits when the table changes.
+  Stream<List<UserProfileTableData>> get _profileStream =>
+      driftDb.select(driftDb.userProfileTable).watch();
+
+  /// Get the latest profile row by updatedAt, or null if none exists.
   Future<UserProfileTableData?> _selectProfile() {
     final query = driftDb.select(driftDb.userProfileTable)
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
@@ -24,6 +37,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     return query.getSingleOrNull();
   }
 
+  /// Convert a profile row to AppSettings, with fallback on parse errors.
   AppSettings _fromRow(UserProfileTableData row) {
     try {
       final decoded = jsonDecode(row.settings) as Map<String, dynamic>;
@@ -33,28 +47,19 @@ class SettingsRepository implements SettingsRepositoryContract {
     }
   }
 
-  /// Watch database for settings changes
-  Stream<AppSettings> _watchDatabase() async* {
-    // First emit current state from database
-    final profile = await _selectProfile();
-    if (profile != null) {
-      yield _fromRow(profile);
-    } else {
-      yield _defaultSettings;
-    }
-
-    // Then watch for changes
-    await for (final profile
-        in driftDb.select(driftDb.userProfileTable).watch()) {
-      if (profile.isEmpty) {
-        yield _defaultSettings;
-      } else {
-        final latest = profile.reduce(
-          (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
-        );
-        yield _fromRow(latest);
+  /// Watch database for settings changes.
+  /// Pattern aligned with other repositories - direct stream mapping.
+  Stream<AppSettings> _watchDatabase() {
+    return _profileStream.map((rows) {
+      if (rows.isEmpty) {
+        return _defaultSettings;
       }
-    }
+      // Find the latest row by updatedAt
+      final latest = rows.reduce(
+        (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
+      );
+      return _fromRow(latest);
+    });
   }
 
   /// Save settings to database
@@ -89,9 +94,10 @@ class SettingsRepository implements SettingsRepositoryContract {
   // Next Actions Settings
   @override
   Stream<NextActionsSettings> watchNextActionsSettings() {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.nextActions)
-        .distinct();
+    // Note: Removed .distinct() - equality issues with complex nested objects
+    // (TaskPriorityBucketRule, TaskRuleSet, etc.) caused legitimate updates
+    // to be filtered out, preventing settings changes from propagating.
+    return _watchDatabase().map((appSettings) => appSettings.nextActions);
   }
 
   @override

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
@@ -12,7 +12,6 @@ import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_db.dart';
@@ -238,18 +237,18 @@ void main() {
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
-    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
-    addTearDown(settingsBloc.close);
+    final sortAdapter = PageSortAdapter(
+      settingsRepository: settingsRepository,
+      pageKey: 'tasks',
+    );
 
     await pumpLocalizedApp(
       tester,
-      home: BlocProvider.value(
-        value: settingsBloc,
-        child: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          labelRepository: labelRepo,
-        ),
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        labelRepository: labelRepo,
+        sortAdapter: sortAdapter,
       ),
     );
     // push tasks after widget builds so the bloc subscription receives the value
@@ -291,18 +290,18 @@ void main() {
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
-    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
-    addTearDown(settingsBloc.close);
+    final sortAdapter = PageSortAdapter(
+      settingsRepository: settingsRepository,
+      pageKey: 'tasks',
+    );
 
     await pumpLocalizedApp(
       tester,
-      home: BlocProvider.value(
-        value: settingsBloc,
-        child: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          labelRepository: labelRepo,
-        ),
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        labelRepository: labelRepo,
+        sortAdapter: sortAdapter,
       ),
     );
     await tester.pump();
@@ -349,18 +348,18 @@ void main() {
     final projectRepo = ProjectRepository(driftDb: db);
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
-    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
-    addTearDown(settingsBloc.close);
+    final sortAdapter = PageSortAdapter(
+      settingsRepository: settingsRepository,
+      pageKey: 'tasks',
+    );
 
     await pumpLocalizedApp(
       tester,
-      home: BlocProvider.value(
-        value: settingsBloc,
-        child: TaskOverviewPage(
-          taskRepository: repo,
-          projectRepository: projectRepo,
-          labelRepository: labelRepo,
-        ),
+      home: TaskOverviewPage(
+        taskRepository: repo,
+        projectRepository: projectRepo,
+        labelRepository: labelRepo,
+        sortAdapter: sortAdapter,
       ),
     );
     await tester.pump();

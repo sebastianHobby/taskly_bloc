@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 
 import '../../../helpers/pump_app.dart';
 import '../../../mocks/repository_mocks.dart';
@@ -20,11 +19,14 @@ void main() {
     final labelRepository = MockLabelRepository();
     final settingsRepository = MockSettingsRepository();
 
-    when(settingsRepository.watchAll).thenAnswer(
-      (_) => Stream.value(const AppSettings()),
+    when(() => settingsRepository.loadPageSort(any())).thenAnswer(
+      (_) async => null,
     );
-    final settingsBloc = SettingsBloc(settingsRepository: settingsRepository);
-    addTearDown(settingsBloc.close);
+
+    final sortAdapter = PageSortAdapter(
+      settingsRepository: settingsRepository,
+      pageKey: 'tasks',
+    );
 
     when(
       () => taskRepository.watchAll(withRelated: any(named: 'withRelated')),
@@ -32,13 +34,11 @@ void main() {
 
     await pumpLocalizedApp(
       tester,
-      home: BlocProvider.value(
-        value: settingsBloc,
-        child: TaskOverviewPage(
-          taskRepository: taskRepository,
-          projectRepository: projectRepository,
-          labelRepository: labelRepository,
-        ),
+      home: TaskOverviewPage(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        labelRepository: labelRepository,
+        sortAdapter: sortAdapter,
       ),
     );
 

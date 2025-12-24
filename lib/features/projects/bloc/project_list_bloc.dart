@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/shared/utils/sort_utils.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
@@ -47,11 +48,12 @@ class ProjectOverviewBloc
     required ProjectRepositoryContract projectRepository,
     TaskRepositoryContract? taskRepository,
     bool withRelated = false,
-    SortPreferences initialSortPreferences = const SortPreferences(),
+    PageSortAdapter? sortAdapter,
   }) : _projectRepository = projectRepository,
        _taskRepository = taskRepository,
        _withRelated = withRelated,
-       _sortPreferences = initialSortPreferences,
+       _sortAdapter = sortAdapter,
+       _sortPreferences = const SortPreferences(),
        super(const ProjectOverviewInitial()) {
     on<ProjectOverviewSubscriptionRequested>(_onSubscriptionRequested);
     on<ProjectOverviewToggleProjectCompletion>(_onToggleCompletion);
@@ -63,6 +65,7 @@ class ProjectOverviewBloc
   final ProjectRepositoryContract _projectRepository;
   final TaskRepositoryContract? _taskRepository;
   final bool _withRelated;
+  final PageSortAdapter? _sortAdapter;
   SortPreferences _sortPreferences;
   StreamSubscription<Map<String, ProjectTaskCounts>>? _taskCountsSubscription;
 
@@ -137,6 +140,12 @@ class ProjectOverviewBloc
   ) async {
     emit(const ProjectOverviewLoading());
 
+    // Load initial sort preferences from adapter
+    final savedSort = await _sortAdapter?.load();
+    if (savedSort != null) {
+      _sortPreferences = savedSort;
+    }
+
     // Subscribe to task counts if task repository is available
     if (_taskRepository != null) {
       await _taskCountsSubscription?.cancel();
@@ -185,6 +194,10 @@ class ProjectOverviewBloc
     Emitter<ProjectOverviewState> emit,
   ) {
     _sortPreferences = event.preferences;
+
+    // Persist sort preferences via adapter (fire and forget)
+    unawaited(_sortAdapter?.save(event.preferences));
+
     state.maybeWhen(
       loaded: (projects, taskCounts) => emit(
         ProjectOverviewLoaded(

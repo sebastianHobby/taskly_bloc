@@ -196,7 +196,7 @@ class _ColorPickerDialog extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: availableColors.map((color) {
-                final isSelected = color.value == currentColor.value;
+                final isSelected = color == currentColor;
                 return GestureDetector(
                   onTap: () => Navigator.of(context).pop(color),
                   child: AnimatedContainer(

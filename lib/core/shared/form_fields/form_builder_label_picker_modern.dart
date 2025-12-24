@@ -194,9 +194,9 @@ class _FormBuilderLabelPickerModernState
       onPressed: widget.enabled
           ? () => _showSelectionDialog(type, onTap)
           : null,
-      backgroundColor: colorScheme.primaryContainer.withOpacity(0.3),
+      backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
       side: BorderSide(
-        color: colorScheme.primary.withOpacity(0.4),
+        color: colorScheme.primary.withValues(alpha: 0.4),
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -308,7 +308,9 @@ class _FormBuilderLabelPickerModernState
         selectedColor: selectedColor,
         checkmarkColor: Colors.transparent,
         side: BorderSide(
-          color: isSelected ? color : colorScheme.outline.withOpacity(0.3),
+          color: isSelected
+              ? color
+              : colorScheme.outline.withValues(alpha: 0.3),
           width: isSelected ? 2 : 1,
         ),
         shape: RoundedRectangleBorder(
@@ -317,7 +319,7 @@ class _FormBuilderLabelPickerModernState
         materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
         elevation: isSelected ? 2 : 0,
-        shadowColor: color.withOpacity(0.3),
+        shadowColor: color.withValues(alpha: 0.3),
       ),
     );
   }
@@ -404,7 +406,7 @@ class _SelectionDialogState extends State<_SelectionDialog> {
                           ? Icons.favorite_border
                           : Icons.label_off_outlined,
                       size: 48,
-                      color: colorScheme.onSurface.withOpacity(0.3),
+                      color: colorScheme.onSurface.withValues(alpha: 0.3),
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -412,14 +414,14 @@ class _SelectionDialogState extends State<_SelectionDialog> {
                           ? 'No values available'
                           : 'No labels available',
                       style: theme.textTheme.bodyLarge?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.6),
+                        color: colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Create your first one below',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurface.withOpacity(0.5),
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                     ),
                   ],
@@ -469,7 +471,9 @@ class _SelectionDialogState extends State<_SelectionDialog> {
                                 color: color,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: colorScheme.outline.withOpacity(0.2),
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
                                 ),
                               ),
                             ),

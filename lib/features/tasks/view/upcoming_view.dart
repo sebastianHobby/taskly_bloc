@@ -3,6 +3,7 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/shared/views/schedule_view.dart';
 import 'package:taskly_bloc/core/shared/views/schedule_view_config.dart';
 import 'package:taskly_bloc/core/shared/widgets/empty_state_widget.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
@@ -13,12 +14,14 @@ class UpcomingPage extends StatelessWidget {
     required this.taskRepository,
     required this.projectRepository,
     required this.labelRepository,
+    required this.sortAdapter,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
+  final PageSortAdapter sortAdapter;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +36,7 @@ class UpcomingPage extends StatelessWidget {
       taskRepository: taskRepository,
       projectRepository: projectRepository,
       labelRepository: labelRepository,
+      sortAdapter: sortAdapter,
     );
   }
 }

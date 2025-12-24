@@ -19,7 +19,7 @@ Future<bool> showDeleteConfirmationDialog({
       icon: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.errorContainer.withOpacity(0.3),
+          color: colorScheme.errorContainer.withValues(alpha: 0.3),
           shape: BoxShape.circle,
         ),
         child: Icon(

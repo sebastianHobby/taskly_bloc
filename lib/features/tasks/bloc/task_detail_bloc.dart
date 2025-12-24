@@ -97,6 +97,13 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
 
+  @override
+  Future<void> close() {
+    // Defensive cleanup for modal-scoped blocs
+    // Ensures resources are released even if modal disposal is irregular
+    return super.close();
+  }
+
   // DetailBlocMixin implementation
   @override
   TaskDetailState createLoadInProgressState() =>

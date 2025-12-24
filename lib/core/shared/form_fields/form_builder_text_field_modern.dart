@@ -139,13 +139,13 @@ class FormBuilderTextFieldModern extends StatelessWidget {
       ModernFieldType.description => OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
-          color: colorScheme.outline.withOpacity(0.3),
+          color: colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
       ModernFieldType.standard => OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: colorScheme.outline.withOpacity(0.3),
+          color: colorScheme.outline.withValues(alpha: 0.3),
         ),
       ),
     };
@@ -156,7 +156,7 @@ class FormBuilderTextFieldModern extends StatelessWidget {
       ModernFieldType.title => OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(
-          color: colorScheme.primary.withOpacity(0.3),
+          color: colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       ModernFieldType.description => OutlineInputBorder(

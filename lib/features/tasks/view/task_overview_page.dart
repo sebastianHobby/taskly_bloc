@@ -5,17 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/core/widgets/wolt_modal_helpers.dart';
+import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
-import 'package:taskly_bloc/features/settings/settings.dart';
 import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 class TaskOverviewPage extends StatelessWidget {
@@ -23,25 +22,22 @@ class TaskOverviewPage extends StatelessWidget {
     required this.taskRepository,
     required this.projectRepository,
     required this.labelRepository,
+    required this.sortAdapter,
     super.key,
   });
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
+  final PageSortAdapter sortAdapter;
 
   @override
   Widget build(BuildContext context) {
-    final settingsState = context.read<SettingsBloc>().state;
-    final savedSort = settingsState.settings?.sortFor(SettingsPageKey.tasks);
-    final initialConfig = savedSort == null
-        ? TaskSelector.all()
-        : TaskSelector.all(sortCriteria: savedSort.criteria);
-
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        initialConfig: initialConfig,
+        sortAdapter: sortAdapter,
+        initialConfig: TaskSelector.all(),
         withRelated: true,
       )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: TaskOverviewView(
@@ -114,18 +110,7 @@ class TaskOverviewView extends StatelessWidget {
         );
       case _TaskMenuAction.sortName:
         bloc.add(
-          TaskOverviewEvent.configChanged(
-            config: currentConfig.copyWith(
-              sortCriteria: const [
-                SortCriterion(field: SortField.name),
-                SortCriterion(field: SortField.deadlineDate),
-              ],
-            ),
-          ),
-        );
-        context.read<SettingsBloc>().add(
-          const SettingsUpdatePageSort(
-            pageKey: SettingsPageKey.tasks,
+          const TaskOverviewEvent.sortChanged(
             preferences: SortPreferences(
               criteria: [
                 SortCriterion(field: SortField.name),
@@ -136,18 +121,7 @@ class TaskOverviewView extends StatelessWidget {
         );
       case _TaskMenuAction.sortDeadline:
         bloc.add(
-          TaskOverviewEvent.configChanged(
-            config: currentConfig.copyWith(
-              sortCriteria: const [
-                SortCriterion(field: SortField.deadlineDate),
-                SortCriterion(field: SortField.name),
-              ],
-            ),
-          ),
-        );
-        context.read<SettingsBloc>().add(
-          const SettingsUpdatePageSort(
-            pageKey: SettingsPageKey.tasks,
+          const TaskOverviewEvent.sortChanged(
             preferences: SortPreferences(
               criteria: [
                 SortCriterion(field: SortField.deadlineDate),
@@ -202,98 +176,67 @@ class TaskOverviewView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<SettingsBloc, SettingsState>(
-      listenWhen: (previous, current) {
-        final previousSort = previous.settings
-            ?.sortFor(SettingsPageKey.tasks)
-            ?.criteria;
-        final currentSort = current.settings
-            ?.sortFor(SettingsPageKey.tasks)
-            ?.criteria;
-        return previousSort != currentSort;
-      },
-      listener: (context, state) {
-        final preferences = state.settings?.sortFor(SettingsPageKey.tasks);
-        if (preferences == null) return;
-
-        final bloc = context.read<TaskOverviewBloc>();
-        final currentConfig = bloc.state.maybeWhen(
-          loaded: (_, config) => config,
-          orElse: TaskSelector.all,
-        );
-
-        if (currentConfig.sortCriteria != preferences.criteria) {
-          bloc.add(
-            TaskOverviewEvent.configChanged(
-              config: currentConfig.copyWith(
-                sortCriteria: preferences.criteria,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(context.l10n.tasksTitle),
+        actions: [
+          BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
+            buildWhen: (previous, current) {
+              final previousSelection = previous.maybeWhen(
+                loaded: (_, query) => query,
+                orElse: () => null,
+              );
+              final currentSelection = current.maybeWhen(
+                loaded: (_, query) => query,
+                orElse: () => null,
+              );
+              return previousSelection != currentSelection;
+            },
+            builder: (context, state) {
+              final selectedQuery = state.maybeWhen(
+                loaded: (_, config) => config,
+                orElse: TaskSelector.all,
+              );
+              return PopupMenuButton<_TaskMenuAction>(
+                onSelected: (action) => _onMenuSelected(context, action),
+                itemBuilder: (_) => _buildMenuItems(
+                  l10n: context.l10n,
+                  selectedConfig: selectedQuery,
+                ),
+                icon: const Icon(Icons.tune),
+              );
+            },
+          ),
+        ],
+      ),
+      body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
+        builder: (context, state) {
+          return state.when(
+            initial: () => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            loading: () => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            loaded: (tasks, query) => TasksListView(
+              tasks: tasks,
+              onTap: (task) => _showTaskDetailSheet(
+                context,
+                taskId: task.id,
+              ),
+            ),
+            error: (error, _) => Center(
+              child: Text(
+                friendlyErrorMessageForUi(error, context.l10n),
               ),
             ),
           );
-        }
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(context.l10n.tasksTitle),
-          actions: [
-            BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
-              buildWhen: (previous, current) {
-                final previousSelection = previous.maybeWhen(
-                  loaded: (_, query) => query,
-                  orElse: () => null,
-                );
-                final currentSelection = current.maybeWhen(
-                  loaded: (_, query) => query,
-                  orElse: () => null,
-                );
-                return previousSelection != currentSelection;
-              },
-              builder: (context, state) {
-                final selectedQuery = state.maybeWhen(
-                  loaded: (_, config) => config,
-                  orElse: TaskSelector.all,
-                );
-                return PopupMenuButton<_TaskMenuAction>(
-                  onSelected: (action) => _onMenuSelected(context, action),
-                  itemBuilder: (_) => _buildMenuItems(
-                    l10n: context.l10n,
-                    selectedConfig: selectedQuery,
-                  ),
-                  icon: const Icon(Icons.tune),
-                );
-              },
-            ),
-          ],
-        ),
-        body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
-          builder: (context, state) {
-            return state.when(
-              initial: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              loaded: (tasks, query) => TasksListView(
-                tasks: tasks,
-                onTap: (task) => _showTaskDetailSheet(
-                  context,
-                  taskId: task.id,
-                ),
-              ),
-              error: (error, _) => Center(
-                child: Text(
-                  friendlyErrorMessageForUi(error, context.l10n),
-                ),
-              ),
-            );
-          },
-        ),
-        floatingActionButton: AddTaskFab(
-          taskRepository: taskRepository,
-          projectRepository: projectRepository,
-          labelRepository: labelRepository,
-        ),
+        },
+      ),
+      floatingActionButton: AddTaskFab(
+        taskRepository: taskRepository,
+        projectRepository: projectRepository,
+        labelRepository: labelRepository,
       ),
     );
   }

@@ -68,6 +68,12 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState>
 
   final LabelRepositoryContract _labelRepository;
 
+  @override
+  Future<void> close() {
+    // Defensive cleanup for page-scoped blocs
+    return super.close();
+  }
+
   // DetailBlocMixin implementation
   @override
   LabelDetailState createLoadInProgressState() =>

@@ -12,6 +12,12 @@ class AppBlocObserver extends BlocObserver {
   const AppBlocObserver();
 
   @override
+  void onCreate(BlocBase<dynamic> bloc) {
+    super.onCreate(bloc);
+    log('BLOC onCreate(${bloc.runtimeType})', name: 'BlocLifecycle');
+  }
+
+  @override
   void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
     super.onChange(bloc, change);
     log('BLOC onChange(${bloc.runtimeType}, $change)');
@@ -21,6 +27,12 @@ class AppBlocObserver extends BlocObserver {
   void onEvent(Bloc bloc, Object? event) {
     super.onEvent(bloc, event);
     log('BLOC onEvent(${bloc.runtimeType}, $event)');
+  }
+
+  @override
+  void onClose(BlocBase<dynamic> bloc) {
+    log('BLOC onClose(${bloc.runtimeType})', name: 'BlocLifecycle');
+    super.onClose(bloc);
   }
 
   @override
