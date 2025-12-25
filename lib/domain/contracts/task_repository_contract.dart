@@ -13,6 +13,18 @@ abstract class TaskRepositoryContract {
   /// All filtering happens at the database level for optimal performance.
   Stream<List<Task>> watchAll([TaskQuery? query]);
 
+  /// Count tasks matching the optional [query].
+  ///
+  /// When [query] includes `occurrenceExpansion`, this counts expanded
+  /// occurrences (virtual rows) instead of base task rows.
+  Future<int> count([TaskQuery? query]);
+
+  /// Watch the count of tasks matching the optional [query].
+  ///
+  /// When [query] includes `occurrenceExpansion`, this counts expanded
+  /// occurrences (virtual rows) instead of base task rows.
+  Stream<int> watchCount([TaskQuery? query]);
+
   /// Get a single task by ID with related entities.
   Future<Task?> getById(String id);
 

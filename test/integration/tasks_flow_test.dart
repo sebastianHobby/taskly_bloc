@@ -213,6 +213,13 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
   @override
   Future<void> convertToOneTime(String taskId) async {}
+
+  @override
+  Future<int> count([TaskQuery? query]) async => _last.length;
+
+  @override
+  Stream<int> watchCount([TaskQuery? query]) =>
+      _controller.stream.map((tasks) => tasks.length);
 }
 
 class FakeSettingsRepository implements SettingsRepositoryContract {

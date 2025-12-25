@@ -1,10 +1,23 @@
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 abstract class ProjectRepositoryContract {
   Stream<List<Project>> watchAll({bool withRelated = false});
   Future<List<Project>> getAll({bool withRelated = false});
   Stream<Project?> watch(String id, {bool withRelated = false});
   Future<Project?> get(String id, {bool withRelated = false});
+
+  /// Count projects matching the optional [query].
+  ///
+  /// When [query] includes `occurrenceExpansion`, this counts expanded
+  /// occurrences (virtual rows) instead of base project rows.
+  Future<int> count([ProjectQuery? query]);
+
+  /// Watch the count of projects matching the optional [query].
+  ///
+  /// When [query] includes `occurrenceExpansion`, this counts expanded
+  /// occurrences (virtual rows) instead of base project rows.
+  Stream<int> watchCount([ProjectQuery? query]);
 
   Future<void> create({
     required String name,

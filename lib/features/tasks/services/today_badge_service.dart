@@ -9,8 +9,8 @@ import 'package:taskly_bloc/domain/queries/task_query.dart';
 ///
 /// Architecture:
 /// - Single responsibility: badge count only
-/// - Uses repository's watchAll with TaskQuery.today() for filtering
-/// - Lightweight: maps to count, doesn't hold full task list in memory
+/// - Uses repository's watchCount with TaskQuery.today() for efficient SQL counts
+/// - Lightweight: delegates counting to the database layer
 class TodayBadgeService {
   TodayBadgeService({
     required TaskRepositoryContract taskRepository,
@@ -24,13 +24,10 @@ class TodayBadgeService {
   /// Watch stream of incomplete task count for today.
   ///
   /// Returns a stream that emits the count of incomplete tasks for today
-  /// whenever the underlying task data changes. Uses distinct() to prevent
-  /// unnecessary rebuilds when count hasn't changed.
+  /// whenever the underlying task data changes. The repository's watchCount
+  /// uses SQL COUNT for efficient database-level counting.
   Stream<int> watchIncompleteCount() {
     final now = _nowFactory();
-    return _taskRepository
-        .watchAll(TaskQuery.today(now: now))
-        .map((tasks) => tasks.where((t) => !t.completed).length)
-        .distinct();
+    return _taskRepository.watchCount(TaskQuery.today(now: now));
   }
 }

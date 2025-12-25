@@ -15,6 +15,27 @@ import 'package:taskly_bloc/domain/project_task_counts.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/task.dart';
 
+class _OccurrenceRangeKey {
+  const _OccurrenceRangeKey({
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
+
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is _OccurrenceRangeKey &&
+        other.rangeStart == rangeStart &&
+        other.rangeEnd == rangeEnd;
+  }
+
+  @override
+  int get hashCode => Object.hash(rangeStart, rangeEnd);
+}
+
 class TaskRepository implements TaskRepositoryContract {
   TaskRepository({
     required this.driftDb,
@@ -30,6 +51,9 @@ class TaskRepository implements TaskRepositoryContract {
   ValueStream<List<Task>>? _sharedInboxStream;
   ValueStream<List<Task>>? _sharedTodayStream;
   ValueStream<List<Task>>? _sharedUpcomingStream;
+
+  final Map<_OccurrenceRangeKey, ValueStream<List<Task>>>
+  _occurrenceStreamCache = {};
 
   /// Watch tasks with optional filtering, sorting, and occurrence expansion.
   ///
@@ -50,6 +74,58 @@ class TaskRepository implements TaskRepositoryContract {
 
     // Build unique query for non-common patterns
     return _buildAndExecuteQuery(query);
+  }
+
+  @override
+  Future<int> count([TaskQuery? query]) async {
+    query ??= TaskQuery.all();
+
+    if (query.shouldExpandOccurrences) {
+      return (await _buildAndExecuteQuery(query).first).length;
+    }
+
+    final countExp = driftDb.taskTable.id.count();
+    final statement = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([countExp]);
+
+    if (query.rules.isNotEmpty) {
+      final expressions = query.rules
+          .map((rule) => _ruleToExpression(rule, driftDb.taskTable))
+          .cast<Expression<bool>>()
+          .toList(growable: false);
+      statement.where(expressions.reduce((a, b) => a & b));
+    }
+
+    final row = await statement.getSingle();
+    return row.read(countExp) ?? 0;
+  }
+
+  @override
+  Stream<int> watchCount([TaskQuery? query]) {
+    query ??= TaskQuery.all();
+
+    if (query.shouldExpandOccurrences) {
+      return _buildAndExecuteQuery(
+        query,
+      ).map((items) => items.length).distinct();
+    }
+
+    final countExp = driftDb.taskTable.id.count();
+    final statement = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([countExp]);
+
+    if (query.rules.isNotEmpty) {
+      final expressions = query.rules
+          .map((rule) => _ruleToExpression(rule, driftDb.taskTable))
+          .cast<Expression<bool>>()
+          .toList(growable: false);
+      statement.where(expressions.reduce((a, b) => a & b));
+    }
+
+    return statement
+        .watchSingle()
+        .map((row) => row.read(countExp) ?? 0)
+        .distinct();
   }
 
   /// Get a single task by ID with related entities.
@@ -332,6 +408,18 @@ class TaskRepository implements TaskRepositoryContract {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) {
+    final normalizedRangeStart = dateOnly(rangeStart);
+    final normalizedRangeEnd = dateOnly(rangeEnd);
+    final key = _OccurrenceRangeKey(
+      rangeStart: normalizedRangeStart,
+      rangeEnd: normalizedRangeEnd,
+    );
+
+    final cached = _occurrenceStreamCache[key];
+    if (cached != null) {
+      return cached;
+    }
+
     // Create streams of domain objects
     final tasksStream = driftDb
         .select(driftDb.taskTable)
@@ -349,13 +437,17 @@ class TaskRepository implements TaskRepositoryContract {
         .map((rows) => rows.map(_toExceptionData).toList());
 
     // Use the expander (includes debounce)
-    return occurrenceExpander.expandTaskOccurrences(
+    final stream = occurrenceExpander.expandTaskOccurrences(
       tasksStream: tasksStream,
       completionsStream: completionsStream,
       exceptionsStream: exceptionsStream,
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
+      rangeStart: normalizedRangeStart,
+      rangeEnd: normalizedRangeEnd,
     );
+
+    final shared = stream.shareValue();
+    _occurrenceStreamCache[key] = shared;
+    return shared;
   }
 
   /// Converts a completion history row to a DTO.

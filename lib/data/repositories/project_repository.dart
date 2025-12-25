@@ -6,10 +6,12 @@ import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 class ProjectRepository implements ProjectRepositoryContract {
   ProjectRepository({
@@ -62,6 +64,217 @@ class ProjectRepository implements ProjectRepositoryContract {
       ).toProjects();
     }).shareValue();
     return _sharedProjectsWithRelated!;
+  }
+
+  @override
+  Future<int> count([ProjectQuery? query]) async {
+    query ??= ProjectQuery.all();
+
+    if (query.shouldExpandOccurrences) {
+      final expansion = query.occurrenceExpansion!;
+      final projectRows = await _buildProjectSelectForQuery(query).get();
+      final completionRows = await driftDb
+          .select(driftDb.projectCompletionHistoryTable)
+          .get();
+      final exceptionRows = await driftDb
+          .select(driftDb.projectRecurrenceExceptionsTable)
+          .get();
+
+      final expanded = occurrenceExpander.expandProjectOccurrencesSync(
+        projects: projectRows.map(projectFromTable).toList(),
+        completions: completionRows.map(_toCompletionData).toList(),
+        exceptions: exceptionRows.map(_toExceptionData).toList(),
+        rangeStart: expansion.rangeStart,
+        rangeEnd: expansion.rangeEnd,
+      );
+
+      return expanded.length;
+    }
+
+    final countExp = driftDb.projectTable.id.count();
+    final statement = driftDb.selectOnly(driftDb.projectTable)
+      ..addColumns([countExp]);
+
+    final rules = _rulesForSql(query);
+    if (rules.isNotEmpty) {
+      final expressions = rules
+          .map((rule) => _ruleToExpression(rule, driftDb.projectTable))
+          .cast<Expression<bool>>()
+          .toList(growable: false);
+      statement.where(expressions.reduce((a, b) => a & b));
+    }
+
+    final row = await statement.getSingle();
+    return row.read(countExp) ?? 0;
+  }
+
+  @override
+  Stream<int> watchCount([ProjectQuery? query]) {
+    query ??= ProjectQuery.all();
+
+    if (query.shouldExpandOccurrences) {
+      final expansion = query.occurrenceExpansion!;
+      final projectsStream = _buildProjectSelectForQuery(
+        query,
+      ).watch().map((rows) => rows.map(projectFromTable).toList());
+
+      final completionsStream = driftDb
+          .select(driftDb.projectCompletionHistoryTable)
+          .watch()
+          .map((rows) => rows.map(_toCompletionData).toList());
+
+      final exceptionsStream = driftDb
+          .select(driftDb.projectRecurrenceExceptionsTable)
+          .watch()
+          .map((rows) => rows.map(_toExceptionData).toList());
+
+      return occurrenceExpander
+          .expandProjectOccurrences(
+            projectsStream: projectsStream,
+            completionsStream: completionsStream,
+            exceptionsStream: exceptionsStream,
+            rangeStart: expansion.rangeStart,
+            rangeEnd: expansion.rangeEnd,
+          )
+          .map((items) => items.length)
+          .distinct();
+    }
+
+    final countExp = driftDb.projectTable.id.count();
+    final statement = driftDb.selectOnly(driftDb.projectTable)
+      ..addColumns([countExp]);
+
+    final rules = _rulesForSql(query);
+    if (rules.isNotEmpty) {
+      final expressions = rules
+          .map((rule) => _ruleToExpression(rule, driftDb.projectTable))
+          .cast<Expression<bool>>()
+          .toList(growable: false);
+      statement.where(expressions.reduce((a, b) => a & b));
+    }
+
+    return statement
+        .watchSingle()
+        .map((row) => row.read(countExp) ?? 0)
+        .distinct();
+  }
+
+  List<TaskRule> _rulesForSql(ProjectQuery query) {
+    if (!query.shouldExpandOccurrences) {
+      return query.rules;
+    }
+    return query.rules.where((r) => r is! DateRule).toList(growable: false);
+  }
+
+  SimpleSelectStatement<$ProjectTableTable, ProjectTableData>
+  _buildProjectSelectForQuery(ProjectQuery query) {
+    final select = driftDb.select(driftDb.projectTable);
+
+    final rules = _rulesForSql(query);
+    if (rules.isNotEmpty) {
+      final expressions = rules
+          .map((rule) => _ruleToExpression(rule, driftDb.projectTable))
+          .cast<Expression<bool>>()
+          .toList(growable: false);
+      select.where((_) => expressions.reduce((a, b) => a & b));
+    }
+
+    return select;
+  }
+
+  Expression<bool> _ruleToExpression(TaskRule rule, $ProjectTableTable p) {
+    return switch (rule) {
+      DateRule() => _dateRuleToExpression(rule, p),
+      BooleanRule() => _booleanRuleToExpression(rule, p),
+      LabelRule() => _labelRuleToExpression(rule, p),
+      _ => const Constant(true),
+    };
+  }
+
+  Expression<bool> _dateRuleToExpression(DateRule rule, $ProjectTableTable p) {
+    final column = switch (rule.field) {
+      DateRuleField.startDate => p.startDate,
+      DateRuleField.deadlineDate => p.deadlineDate,
+      DateRuleField.createdAt => p.createdAt,
+      DateRuleField.updatedAt => p.updatedAt,
+    };
+
+    DateTime? absoluteDate;
+    DateTime? absoluteEndDate;
+    if (rule.operator == DateRuleOperator.relative &&
+        rule.relativeDays != null) {
+      absoluteDate = _relativeToAbsolute(rule.relativeDays!);
+    } else {
+      absoluteDate = rule.date;
+      absoluteEndDate = rule.endDate;
+    }
+
+    return switch (rule.operator) {
+      DateRuleOperator.onOrAfter => column.isBiggerOrEqualValue(absoluteDate!),
+      DateRuleOperator.onOrBefore => column.isSmallerOrEqualValue(
+        absoluteDate!,
+      ),
+      DateRuleOperator.before => column.isSmallerThanValue(absoluteDate!),
+      DateRuleOperator.after => column.isBiggerThanValue(absoluteDate!),
+      DateRuleOperator.on => column.equals(absoluteDate!),
+      DateRuleOperator.between => column.isBetweenValues(
+        absoluteDate!,
+        absoluteEndDate!,
+      ),
+      DateRuleOperator.isNull => column.isNull(),
+      DateRuleOperator.isNotNull => column.isNotNull(),
+      DateRuleOperator.relative => column.isBiggerOrEqualValue(absoluteDate!),
+    };
+  }
+
+  DateTime _relativeToAbsolute(int days) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day).add(Duration(days: days));
+  }
+
+  Expression<bool> _booleanRuleToExpression(
+    BooleanRule rule,
+    $ProjectTableTable p,
+  ) {
+    final column = switch (rule.field) {
+      BooleanRuleField.completed => p.completed,
+    };
+
+    return switch (rule.operator) {
+      BooleanRuleOperator.isTrue => column.equals(true),
+      BooleanRuleOperator.isFalse => column.equals(false),
+    };
+  }
+
+  Expression<bool> _labelRuleToExpression(
+    LabelRule rule,
+    $ProjectTableTable p,
+  ) {
+    return switch (rule.operator) {
+      LabelRuleOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
+          ..where(driftDb.projectLabelsTable.labelId.isIn(rule.labelIds)),
+      ),
+      LabelRuleOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
+          ..where(driftDb.projectLabelsTable.labelId.isIn(rule.labelIds))
+          ..groupBy([driftDb.projectLabelsTable.projectId]),
+      ),
+      LabelRuleOperator.isNull => notExistsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
+      ),
+      LabelRuleOperator.isNotNull => existsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
+      ),
+    };
   }
 
   /// Creates the standard join query for projects with labels.
