@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/labels/bloc/label_detail_bloc.dart';
 import 'package:taskly_bloc/features/labels/view/label_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
@@ -43,8 +44,9 @@ class LabelDetailPage extends StatelessWidget {
         BlocProvider<TaskOverviewBloc>(
           create: (_) => TaskOverviewBloc(
             taskRepository: taskRepository,
-            initialConfig: TaskSelector.forLabel(labelId),
-            withRelated: true,
+            query: TaskQuery.forLabel(
+              labelId: labelId,
+            ),
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
       ],

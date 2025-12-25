@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 /// Full integration test from settings save to bloc state update
 void main() {
@@ -21,7 +22,11 @@ void main() {
     setUp(() {
       testDb = createTestDb();
       settingsRepo = SettingsRepository(driftDb: testDb);
-      taskRepo = TaskRepository(driftDb: testDb);
+      taskRepo = TaskRepository(
+        driftDb: testDb,
+        occurrenceExpander: MockOccurrenceStreamExpander(),
+        occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+      );
       adapter = NextActionsSettingsAdapter(settingsRepository: settingsRepo);
     });
 

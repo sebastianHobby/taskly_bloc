@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Configuration for a schedule view (Today, Upcoming, etc.).
 ///
@@ -30,11 +30,11 @@ class ScheduleViewConfig {
   /// Builds the page title, typically using localization.
   final String Function(BuildContext context) titleBuilder;
 
-  /// Factory to create a TaskSelectorConfig for this view.
+  /// Factory to create a TaskQuery for this view.
   ///
   /// [now] is the current DateTime, and [sortCriteria] are the current sort
   /// preferences to apply.
-  final TaskSelectorConfig Function(
+  final TaskQuery Function(
     DateTime now,
     List<SortCriterion> sortCriteria,
   )
@@ -83,7 +83,7 @@ class TodayScheduleConfig extends ScheduleViewConfig {
     super.bannerBuilder,
   }) : super(
          pageKey: SettingsPageKey.today,
-         taskSelectorFactory: (now, sortCriteria) => TaskSelector.today(
+         taskSelectorFactory: (now, sortCriteria) => TaskQuery.today(
            now: now,
            sortCriteria: sortCriteria,
          ),
@@ -116,8 +116,7 @@ class UpcomingScheduleConfig extends ScheduleViewConfig {
     required super.emptyStateBuilder,
   }) : super(
          pageKey: SettingsPageKey.upcoming,
-         taskSelectorFactory: (now, sortCriteria) => TaskSelector.upcoming(
-           now: now,
+         taskSelectorFactory: (now, sortCriteria) => TaskQuery.upcoming(
            sortCriteria: sortCriteria,
          ),
          projectMatcher: _matchesOnOrAfterDay,

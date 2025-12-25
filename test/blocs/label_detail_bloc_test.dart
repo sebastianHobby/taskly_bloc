@@ -89,6 +89,7 @@ void main() {
         type: LabelType.label,
       ),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.create,
@@ -115,6 +116,7 @@ void main() {
         type: LabelType.label,
       ),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 
@@ -139,6 +141,7 @@ void main() {
         type: LabelType.label,
       ),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.update,
@@ -167,6 +170,7 @@ void main() {
         type: LabelType.label,
       ),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 
@@ -177,6 +181,7 @@ void main() {
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
     act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'l1')),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       const LabelDetailState.operationSuccess(
         operation: EntityOperation.delete,
@@ -193,6 +198,7 @@ void main() {
     },
     build: () => LabelDetailBloc(labelRepository: mockRepository),
     act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'l1')),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[isA<LabelDetailOperationFailure>()],
   );
 }

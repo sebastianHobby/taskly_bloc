@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
+import 'package:taskly_bloc/domain/domain.dart';
 
 Label labelFromTable(drift.LabelTableData t) {
   return Label(
@@ -28,6 +28,8 @@ Project projectFromTable(
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
     repeatIcalRrule: t.repeatIcalRrule,
+    repeatFromCompletion: t.repeatFromCompletion,
+    seriesEnded: t.seriesEnded,
     labels: labels ?? const <Label>[],
   );
 }
@@ -48,6 +50,8 @@ Task taskFromTable(
     description: t.description,
     projectId: t.projectId,
     repeatIcalRrule: t.repeatIcalRrule,
+    repeatFromCompletion: t.repeatFromCompletion,
+    seriesEnded: t.seriesEnded,
     project: project,
     labels: labels ?? const <Label>[],
   );

@@ -11,12 +11,17 @@ abstract class OccurrenceStreamExpanderContract {
   ///
   /// The returned stream applies a 50ms debounce to prevent rapid re-expansions
   /// when multiple underlying tables update in quick succession.
+  ///
+  /// [postExpansionFilter] optionally applies filtering to expanded occurrences
+  /// AFTER expansion. This enables two-phase filtering where date rules are
+  /// applied to virtual occurrence dates rather than base task dates.
   Stream<List<Task>> expandTaskOccurrences({
     required Stream<List<Task>> tasksStream,
     required Stream<List<CompletionHistoryData>> completionsStream,
     required Stream<List<RecurrenceExceptionData>> exceptionsStream,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
   });
 
   /// Expands a stream of projects with their completion and exception data
@@ -34,12 +39,17 @@ abstract class OccurrenceStreamExpanderContract {
 
   /// Synchronously expands tasks for a given date range.
   /// Useful for one-off fetches rather than streams.
+  ///
+  /// [postExpansionFilter] optionally applies filtering to expanded occurrences
+  /// AFTER expansion. This enables two-phase filtering where date rules are
+  /// applied to virtual occurrence dates rather than base task dates.
   List<Task> expandTaskOccurrencesSync({
     required List<Task> tasks,
     required List<CompletionHistoryData> completions,
     required List<RecurrenceExceptionData> exceptions,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
   });
 
   /// Synchronously expands projects for a given date range.

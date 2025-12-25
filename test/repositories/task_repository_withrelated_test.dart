@@ -6,6 +6,7 @@ import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -15,8 +16,16 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    taskRepository = TaskRepository(driftDb: db);
-    projectRepository = ProjectRepository(driftDb: db);
+    taskRepository = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
+    projectRepository = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     labelRepository = LabelRepository(driftDb: db);
   });
 
@@ -25,7 +34,7 @@ void main() {
   });
 
   test(
-    'watchAll(withRelated: true) includes project and labels',
+    'watchById includes project and labels',
     () async {
       await projectRepository.create(name: 'Proj');
       await labelRepository.create(
@@ -55,13 +64,16 @@ void main() {
         labelIds: <String>[labelZId, labelMId],
       );
 
-      final tasks = await taskRepository.watchAll(withRelated: true).first;
+      // Get task ID from watchAll
+      final tasks = await taskRepository.watchAll().first;
       expect(tasks, hasLength(1));
 
-      final task = tasks.single;
-      expect(task.project, isNotNull);
+      // watchById always loads full related data
+      final task = await taskRepository.watchById(tasks.single.id).first;
+      expect(task, isNotNull);
+      expect(task!.project, isNotNull);
       expect(task.project!.id, projectId);
-      expect(task.labels.map((l) => l.name).toList(), <String>['M', 'Z']);
+      expect(task.labels.map((Label l) => l.name).toList(), <String>['M', 'Z']);
     },
   );
 
@@ -86,17 +98,17 @@ void main() {
       labelIds: <String>[labelId],
     );
 
-    final taskId = (await taskRepository.getAll())
-        .singleWhere((t) => t.name == 'Task2')
+    final taskId = (await taskRepository.watchAll().first)
+        .singleWhere((Task t) => t.name == 'Task2')
         .id;
 
     final watched = await taskRepository
-        .watch(taskId, withRelated: true)
-        .firstWhere((t) => t != null);
+        .watchById(taskId)
+        .firstWhere((Task? t) => t != null);
 
     expect(watched, isNotNull);
     expect(watched!.id, taskId);
     expect(watched.project, isNotNull);
-    expect(watched.labels.map((l) => l.id).toList(), <String>[labelId]);
+    expect(watched.labels.map((Label l) => l.id).toList(), <String>[labelId]);
   });
 }

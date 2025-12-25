@@ -33,9 +33,10 @@ void main() {
     test(
       'includeInboxTasks change from false to true persists through save/load cycle',
       () async {
-        // Simulate initial state: user has default settings (includeInbox=false)
+        // Simulate initial state: user starts with includeInboxTasks=false
         const initialSettings = NextActionsSettings(
           tasksPerProject: 5,
+          includeInboxTasks: false,
         );
         await adapter.save(initialSettings);
 
@@ -65,6 +66,7 @@ void main() {
         // Set up initial settings
         const initialSettings = NextActionsSettings(
           tasksPerProject: 5,
+          includeInboxTasks: false,
         );
         await adapter.save(initialSettings);
 
@@ -162,6 +164,7 @@ void main() {
         // Unit test to verify equality implementation
         const settings1 = NextActionsSettings(
           tasksPerProject: 5,
+          includeInboxTasks: false,
         );
         const settings2 = NextActionsSettings(
           tasksPerProject: 5,
@@ -258,6 +261,7 @@ void main() {
         // Step 1: Initial state - settings exist with includeInbox=false
         const initialSettings = NextActionsSettings(
           tasksPerProject: 5,
+          includeInboxTasks: false,
         );
         await adapter.save(initialSettings);
 

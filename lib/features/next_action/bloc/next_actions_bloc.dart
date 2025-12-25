@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/next_action/services/next_actions_view_builder.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 enum NextActionsStatus {
   initial,
@@ -111,11 +113,9 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
     required TaskRepositoryContract taskRepository,
     required NextActionsSettingsAdapter settingsAdapter,
     NextActionsViewBuilder? viewBuilder,
-    TaskSelector? taskSelector,
   }) : _taskRepository = taskRepository,
        _settingsAdapter = settingsAdapter,
        _viewBuilder = viewBuilder ?? NextActionsViewBuilder(),
-       _taskSelector = taskSelector ?? TaskSelector(),
        super(const NextActionsState()) {
     on<NextActionsSubscriptionRequested>(_onSubscriptionRequested);
     on<_NextActionsDataReceived>(_onDataReceived);
@@ -125,8 +125,8 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
 
   final TaskRepositoryContract _taskRepository;
   final NextActionsSettingsAdapter _settingsAdapter;
+  final _logger = AppLogger.forBloc('NextActions');
   final NextActionsViewBuilder _viewBuilder;
-  final TaskSelector _taskSelector;
 
   StreamSubscription<_CombinedData>? _dataSubscription;
 
@@ -144,15 +144,38 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
 
     await _dataSubscription?.cancel();
 
-    // Combine tasks and settings into a single stream using RxDart.
-    // This ensures atomic updates - whenever either source changes,
-    // we get a new combined value with the latest from both.
-    final combinedStream =
-        Rx.combineLatest2<List<Task>, NextActionsSettings, _CombinedData>(
-          _taskRepository.watchAll(withRelated: true),
-          _settingsAdapter.watch(),
-          (tasks, settings) => _CombinedData(tasks: tasks, settings: settings),
+    // Watch settings to get the current configuration
+    final settingsStream = _settingsAdapter.watch();
+
+    // Create a stream that switches to a new filtered task stream
+    // whenever settings change
+    final combinedStream = settingsStream.switchMap((settings) {
+      // Build TaskQuery based on current settings
+      final rules = <TaskRule>[
+        const BooleanRule(
+          field: BooleanRuleField.completed,
+          operator: BooleanRuleOperator.isFalse,
+        ),
+      ];
+
+      // Add project filter based on includeInboxTasks setting
+      if (!settings.includeInboxTasks) {
+        rules.add(
+          const ProjectRule(
+            operator: ProjectRuleOperator.isNotNull,
+          ),
         );
+      }
+
+      final query = TaskQuery(rules: rules);
+
+      // Combine tasks with settings
+      return _taskRepository
+          .watchAll(query)
+          .map(
+            (tasks) => _CombinedData(tasks: tasks, settings: settings),
+          );
+    });
 
     _dataSubscription = combinedStream.listen(
       (data) => add(
@@ -169,8 +192,8 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
     _NextActionsDataReceived event,
     Emitter<NextActionsState> emit,
   ) {
-    final filtered = _filterTasks(event.tasks, event.settings);
-    final view = _buildView(filtered, event.settings);
+    // Tasks are already filtered by the repository with finalized rules
+    final view = _buildView(event.tasks, event.settings);
     emit(
       state.copyWith(
         status: NextActionsStatus.success,
@@ -196,7 +219,12 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
         projectId: task.projectId,
         repeatIcalRrule: task.repeatIcalRrule,
       );
-    } catch (error, _) {
+    } catch (error, stackTrace) {
+      _logger.error(
+        'Failed to toggle task completion in next actions',
+        error,
+        stackTrace,
+      );
       emit(
         state.copyWith(
           status: NextActionsStatus.failure,
@@ -215,18 +243,6 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
         status: NextActionsStatus.failure,
         error: event.error,
       ),
-    );
-  }
-
-  List<Task> _filterTasks(List<Task> tasks, NextActionsSettings settings) {
-    final config = TaskSelector.nextActions(
-      includeInbox: settings.includeInboxTasks,
-    );
-    return _taskSelector.filter(
-      tasks: tasks,
-      ruleSets: config.ruleSets,
-      sortCriteria: config.sortCriteria,
-      now: DateTime.now(),
     );
   }
 

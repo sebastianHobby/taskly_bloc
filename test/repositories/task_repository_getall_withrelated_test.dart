@@ -6,6 +6,7 @@ import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -15,8 +16,16 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    taskRepository = TaskRepository(driftDb: db);
-    projectRepository = ProjectRepository(driftDb: db);
+    taskRepository = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
+    projectRepository = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     labelRepository = LabelRepository(driftDb: db);
   });
 
@@ -24,7 +33,7 @@ void main() {
     await db.close();
   });
 
-  test('getAll(withRelated: true) includes related entities', () async {
+  test('getById includes related entities', () async {
     await projectRepository.create(name: 'Proj');
     await labelRepository.create(
       name: 'Z',
@@ -53,17 +62,20 @@ void main() {
       labelIds: <String>[labelZId, labelMId],
     );
 
-    final tasks = await taskRepository.getAll(withRelated: true);
+    // Get task ID from watchAll
+    final tasks = await taskRepository.watchAll().first;
     expect(tasks, hasLength(1));
 
-    final task = tasks.single;
-    expect(task.project, isNotNull);
+    // getById always loads full related data
+    final task = await taskRepository.getById(tasks.single.id);
+    expect(task, isNotNull);
+    expect(task!.project, isNotNull);
     expect(task.project!.id, projectId);
-    expect(task.labels.map((l) => l.name).toList(), <String>['M', 'Z']);
+    expect(task.labels.map((Label l) => l.name).toList(), <String>['M', 'Z']);
   });
 
-  test('getAll(withRelated: true) returns empty when no tasks exist', () async {
-    final tasks = await taskRepository.getAll(withRelated: true);
+  test('watchAll returns empty when no tasks exist', () async {
+    final tasks = await taskRepository.watchAll().first;
     expect(tasks, isEmpty);
   });
 }

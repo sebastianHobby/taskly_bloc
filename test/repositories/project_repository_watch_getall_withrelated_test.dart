@@ -6,6 +6,7 @@ import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -14,7 +15,11 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    projectRepository = ProjectRepository(driftDb: db);
+    projectRepository = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     labelRepository = LabelRepository(driftDb: db);
   });
 

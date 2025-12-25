@@ -9,10 +9,12 @@ import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 /// Widget/integration test that simulates the exact user flow:
 /// 1. Open today view
@@ -31,8 +33,16 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    taskRepo = TaskRepository(driftDb: db);
-    projectRepo = ProjectRepository(driftDb: db);
+    taskRepo = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
+    projectRepo = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     labelRepo = LabelRepository(driftDb: db);
     settingsRepo = SettingsRepository(driftDb: db);
     sortAdapter = PageSortAdapter(
@@ -120,7 +130,7 @@ void main() {
 
       // For now, let's simulate the update directly since date picker
       // interaction is complex
-      final tasks = await taskRepo.getAll();
+      final tasks = await taskRepo.watchAll().first;
       final taskToUpdate = tasks.first;
 
       await taskRepo.update(
@@ -132,7 +142,7 @@ void main() {
         deadlineDate: tomorrow,
         projectId: taskToUpdate.project?.id,
         repeatIcalRrule: taskToUpdate.repeatIcalRrule,
-        labelIds: taskToUpdate.labels.map((l) => l.id).toList(),
+        labelIds: taskToUpdate.labels.map((Label l) => l.id).toList(),
       );
       print('✓ Step 3: Task deadline updated to tomorrow');
 
@@ -157,7 +167,7 @@ void main() {
       print('✓ Step 4: Task correctly removed from today view');
 
       // Verify the task still exists in database with updated deadline
-      final updatedTask = await taskRepo.get(taskToUpdate.id);
+      final updatedTask = await taskRepo.getById(taskToUpdate.id);
       expect(updatedTask?.deadlineDate, equals(tomorrow));
       print('✓ Verified: Task deadline persisted correctly in database');
     },
@@ -202,7 +212,7 @@ void main() {
       print('✓ Initial: Task visible in today view');
 
       // Update task deadline (simulating what happens when user saves)
-      final tasks = await taskRepo.getAll();
+      final tasks = await taskRepo.watchAll().first;
       await taskRepo.update(
         id: tasks.first.id,
         name: tasks.first.name,

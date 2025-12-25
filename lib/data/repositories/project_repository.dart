@@ -4,6 +4,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
+import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
@@ -318,6 +319,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   ) {
     return CompletionHistoryData(
       id: c.id,
+      entityId: c.projectId,
       occurrenceDate: c.occurrenceDate,
       originalOccurrenceDate: c.originalOccurrenceDate,
       completedAt: c.completedAt,
@@ -331,6 +333,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   ) {
     return RecurrenceExceptionData(
       id: e.id,
+      entityId: e.projectId,
       originalDate: e.originalDate,
       exceptionType: e.exceptionType == ExceptionType.skip
           ? RecurrenceExceptionType.skip

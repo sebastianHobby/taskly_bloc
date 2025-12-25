@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/mixins/detail_bloc_mixin.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
@@ -98,6 +99,9 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final LabelRepositoryContract _labelRepository;
 
   @override
+  final logger = AppLogger.forBloc('TaskDetail');
+
+  @override
   Future<void> close() {
     // Defensive cleanup for modal-scoped blocs
     // Ensures resources are released even if modal disposal is irregular
@@ -150,7 +154,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   ) async {
     emit(const TaskDetailState.loadInProgress());
     try {
-      final task = await _taskRepository.get(event.taskId, withRelated: true);
+      final task = await _taskRepository.getById(event.taskId);
       if (task == null) {
         emit(
           const TaskDetailState.operationFailure(

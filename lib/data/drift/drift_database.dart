@@ -26,8 +26,10 @@ class ProjectTable extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   /// When true, stops generating future occurrences for repeating projects
-  BoolColumn get seriesEnded =>
-      boolean().clientDefault(() => false).named('series_ended')();
+  BoolColumn get seriesEnded => boolean()
+      .clientDefault(() => false)
+      .withDefault(const Constant(false))
+      .named('series_ended')();
 
   /// When true, recurrence is anchored to last completion date instead of
   /// original start date. Used for rolling/relative patterns like
@@ -64,8 +66,10 @@ class TaskTable extends Table {
       text().nullable().named('repeat_ical_rrule').clientDefault(() => '')();
 
   /// When true, stops generating future occurrences for repeating tasks
-  BoolColumn get seriesEnded =>
-      boolean().clientDefault(() => false).named('series_ended')();
+  BoolColumn get seriesEnded => boolean()
+      .clientDefault(() => false)
+      .withDefault(const Constant(false))
+      .named('series_ended')();
 
   /// When true, recurrence is anchored to last completion date instead of
   /// original start date. Used for rolling/relative patterns like

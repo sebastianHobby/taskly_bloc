@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 
 // ============================================================================
 // Helper Functions

@@ -37,7 +37,7 @@ void main() {
     'get emits loadInProgress then loadSuccess when repository returns a task',
     setUp: () {
       when(
-        () => mockRepository.get('t1', withRelated: true),
+        () => mockRepository.getById('t1'),
       ).thenAnswer((_) async => sampleTask);
     },
     build: () => TaskDetailBloc(
@@ -56,7 +56,7 @@ void main() {
     'get emits operationFailure when repository returns null',
     setUp: () {
       when(
-        () => mockRepository.get('missing', withRelated: true),
+        () => mockRepository.getById('missing'),
       ).thenAnswer((_) async => null);
     },
     build: () => TaskDetailBloc(
@@ -92,6 +92,7 @@ void main() {
     ),
     act: (bloc) =>
         bloc.add(const TaskDetailEvent.create(name: 'n', description: null)),
+    wait: const Duration(milliseconds: 100),
     expect: () => <Object>[
       isA<TaskDetailLoadInProgress>(),
       isA<TaskDetailInitialDataLoadSuccess>(),
@@ -103,7 +104,7 @@ void main() {
     'update emits operationSuccess on successful update',
     setUp: () {
       when(
-        () => mockRepository.get('t1', withRelated: true),
+        () => mockRepository.getById('t1'),
       ).thenAnswer((_) async => sampleTask);
       when(
         () => mockRepository.update(
@@ -136,7 +137,7 @@ void main() {
         ),
       );
     },
-    wait: const Duration(milliseconds: 10),
+    wait: const Duration(milliseconds: 100),
     expect: () => <Object>[
       isA<TaskDetailLoadInProgress>(),
       isA<TaskDetailLoadSuccess>(),

@@ -7,6 +7,7 @@ import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 // removed unused direct import; test uses createTestDb from helpers
 import 'package:taskly_bloc/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
@@ -15,6 +16,7 @@ import 'package:taskly_bloc/features/tasks/widgets/task_form.dart';
 
 import '../helpers/pump_app.dart';
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 // Minimal in-test fake repository to avoid external test helper dependency.
 class FakeTaskRepository implements TaskRepositoryContract {
@@ -30,29 +32,25 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Stream<List<Task>> watchAll({bool withRelated = false}) => _controller.stream;
+  Stream<List<Task>> watchAll([TaskQuery? query]) => _controller.stream;
 
   @override
-  Future<List<Task>> getAll({bool withRelated = false}) async => _last;
-
-  @override
-  Stream<Task?> watch(String id, {bool withRelated = false}) =>
-      _controller.stream.map((rows) {
-        try {
-          return rows.firstWhere((r) => r.id == id);
-        } catch (_) {
-          return null;
-        }
-      });
-
-  @override
-  Future<Task?> get(String id, {bool withRelated = false}) async {
+  Future<Task?> getById(String id) async {
     try {
       return _last.firstWhere((r) => r.id == id);
     } catch (_) {
       return null;
     }
   }
+
+  @override
+  Stream<Task?> watchById(String id) => _controller.stream.map((rows) {
+    try {
+      return rows.firstWhere((r) => r.id == id);
+    } catch (_) {
+      return null;
+    }
+  });
 
   @override
   Future<void> update({
@@ -64,6 +62,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
+    bool? repeatFromCompletion,
     List<String>? labelIds,
   }) async {
     final idx = _last.indexWhere((t) => t.id == id);
@@ -99,6 +98,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
     List<String>? labelIds,
   }) async {
     final now = DateTime.now();
@@ -130,7 +130,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     return _controller.stream.map(_aggregateCounts);
   }
 
-  @override
   Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject() async {
     return _aggregateCounts(_last);
   }
@@ -158,6 +157,62 @@ class FakeTaskRepository implements TaskRepositoryContract {
       ),
     );
   }
+
+  // Stub implementations for occurrence methods
+  @override
+  Future<List<Task>> getOccurrences({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) async => _last;
+
+  @override
+  Stream<List<Task>> watchOccurrences({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) => _controller.stream;
+
+  @override
+  Future<void> completeOccurrence({
+    required String taskId,
+    DateTime? occurrenceDate,
+    DateTime? originalOccurrenceDate,
+    String? notes,
+  }) async {}
+
+  @override
+  Future<void> uncompleteOccurrence({
+    required String taskId,
+    DateTime? occurrenceDate,
+  }) async {}
+
+  @override
+  Future<void> skipOccurrence({
+    required String taskId,
+    required DateTime originalDate,
+  }) async {}
+
+  @override
+  Future<void> rescheduleOccurrence({
+    required String taskId,
+    required DateTime originalDate,
+    required DateTime newDate,
+    DateTime? newDeadline,
+  }) async {}
+
+  @override
+  Future<void> removeException({
+    required String taskId,
+    required DateTime originalDate,
+  }) async {}
+
+  @override
+  Future<void> stopSeries(String taskId) async {}
+
+  @override
+  Future<void> completeSeries(String taskId) async {}
+
+  @override
+  Future<void> convertToOneTime(String taskId) async {}
 }
 
 class FakeSettingsRepository implements SettingsRepositoryContract {
@@ -259,7 +314,11 @@ void main() {
     );
 
     final db = createTestDb();
-    final projectRepo = ProjectRepository(driftDb: db);
+    final projectRepo = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
     final sortAdapter = PageSortAdapter(
@@ -312,7 +371,11 @@ void main() {
   testWidgets('create task via UI updates list', (tester) async {
     final repo = FakeTaskRepository();
     final db = createTestDb();
-    final projectRepo = ProjectRepository(driftDb: db);
+    final projectRepo = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
     final sortAdapter = PageSortAdapter(
@@ -370,7 +433,11 @@ void main() {
       completed: false,
     );
     final db = createTestDb();
-    final projectRepo = ProjectRepository(driftDb: db);
+    final projectRepo = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     final labelRepo = LabelRepository(driftDb: db);
     final settingsRepository = FakeSettingsRepository();
     final sortAdapter = PageSortAdapter(
@@ -413,7 +480,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
     await repo.updateCalled!.future;
 
-    final updatedTask = await repo.get(sample.id);
+    final updatedTask = await repo.getById(sample.id);
     expect(updatedTask?.name, 'Updated UI');
 
     // Dismiss the sheet if still open, then settle animations.

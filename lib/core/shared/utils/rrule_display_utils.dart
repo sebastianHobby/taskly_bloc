@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 
 /// Utility class for converting iCal RRULE strings to human-readable format.
 class RruleDisplayUtils {
@@ -132,7 +133,11 @@ class RruleDisplayUtils {
         final day = int.parse(until.substring(6, 8));
         return DateTime(year, month, day);
       }
-    } catch (_) {
+    } catch (e) {
+      AppLogger('util.rrule_display').debug(
+        'Failed to parse UNTIL date: $until',
+        e,
+      );
       // Return null on parse error
     }
     return null;

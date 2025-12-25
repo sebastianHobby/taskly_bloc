@@ -2,7 +2,8 @@ import 'package:collection/collection.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 
 class NextActionsSelection {
   const NextActionsSelection({
@@ -24,13 +25,9 @@ class NextActionsSelection {
       .sum;
 }
 
-/// Builds next actions groupings using TaskSelector for bucketing and sorting.
+/// Builds next actions groupings for bucketing and sorting.
 class NextActionsViewBuilder {
-  NextActionsViewBuilder({
-    TaskSelector? taskSelector,
-  }) : _taskSelector = taskSelector ?? TaskSelector();
-
-  final TaskSelector _taskSelector;
+  NextActionsViewBuilder();
 
   /// Filters bucket rules for evaluation based on settings.
   /// Returns new bucket rules with filtered rule sets, preserving structure.
@@ -99,14 +96,16 @@ class NextActionsViewBuilder {
       // Could be extended with projects and labels if needed
     );
 
-    // Use filtered bucket rules for evaluation
-    final bucketed = _taskSelector.groupByPriorityBuckets(
-      tasks: tasks,
-      bucketRules: filteredBucketRules,
-      sortCriteria: criteria,
-      now: today,
-      context: evaluationContext,
-    );
+    // Group tasks by priority buckets by evaluating bucket rules
+    final bucketed = <int, List<Task>>{};
+    for (final task in tasks) {
+      for (final bucketRule in filteredBucketRules) {
+        if (bucketRule.evaluate(task, evaluationContext)) {
+          bucketed.putIfAbsent(bucketRule.priority, () => []).add(task);
+          break; // Task assigned to first matching bucket
+        }
+      }
+    }
 
     final priorityBuckets = <int, Map<String, List<Task>>>{};
     final projectsById = <String, Project>{};

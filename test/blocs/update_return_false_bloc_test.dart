@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 
@@ -51,7 +52,10 @@ void main() {
         ),
       ).thenAnswer((_) async => throw Exception('update fail'));
     },
-    build: () => TaskOverviewBloc(taskRepository: mockTaskRepo),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockTaskRepo,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(
       TaskOverviewEvent.toggleTaskCompletion(task: sampleTask),
     ),

@@ -55,11 +55,10 @@ class SchedulePage extends StatelessWidget {
         BlocProvider<TaskOverviewBloc>(
           create: (context) => TaskOverviewBloc(
             taskRepository: taskRepository,
-            initialConfig: config.taskSelectorFactory(
+            query: config.taskSelectorFactory(
               now,
               config.defaultSortPreferences.criteria,
             ),
-            withRelated: true,
             sortAdapter: sortAdapter,
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
@@ -67,7 +66,6 @@ class SchedulePage extends StatelessWidget {
           create: (context) => ProjectOverviewBloc(
             projectRepository: projectRepository,
             taskRepository: taskRepository,
-            withRelated: true,
             sortAdapter: sortAdapter,
           )..add(const ProjectOverviewEvent.subscriptionRequested()),
         ),

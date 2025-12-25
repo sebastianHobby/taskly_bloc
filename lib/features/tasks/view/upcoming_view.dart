@@ -14,7 +14,7 @@ import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/services/upcoming_tasks_grouper.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_list_tile.dart';
@@ -36,15 +36,10 @@ class UpcomingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        initialConfig: TaskSelector.upcoming(
-          now: now,
-        ),
-        withRelated: true,
+        query: TaskQuery.upcoming(),
         sortAdapter: sortAdapter,
       )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: UpcomingView(

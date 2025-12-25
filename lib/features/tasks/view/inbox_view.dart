@@ -9,6 +9,7 @@ import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
@@ -17,7 +18,6 @@ import 'package:taskly_bloc/core/shared/widgets/page_settings_modal.dart';
 import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 import 'package:taskly_bloc/core/shared/widgets/empty_state_widget.dart';
 
 class InboxPage extends StatelessWidget {
@@ -39,8 +39,7 @@ class InboxPage extends StatelessWidget {
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        initialConfig: TaskSelector.inbox(),
-        withRelated: true,
+        query: TaskQuery.inbox(),
         sortAdapter: sortAdapter,
       )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: InboxView(
@@ -176,8 +175,8 @@ class _InboxViewState extends State<InboxView> {
   Future<void> _openPageSettings() async {
     final bloc = context.read<TaskOverviewBloc>();
     final currentQuery = bloc.state.maybeWhen(
-      loaded: (_, config) => config,
-      orElse: TaskSelector.all,
+      loaded: (_, query) => query,
+      orElse: TaskQuery.inbox,
     );
 
     await showPageSettingsModal(

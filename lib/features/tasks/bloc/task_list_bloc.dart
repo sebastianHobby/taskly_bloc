@@ -2,11 +2,11 @@ import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/data/adapters/page_sort_adapter.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 part 'task_list_bloc.freezed.dart';
 
 @freezed
@@ -15,7 +15,7 @@ sealed class TaskOverviewEvent with _$TaskOverviewEvent {
       TaskOverviewSubscriptionRequested;
 
   const factory TaskOverviewEvent.configChanged({
-    required TaskSelectorConfig config,
+    required TaskQuery query,
   }) = TaskOverviewConfigChanged;
 
   /// Sort changed event that also persists to settings.
@@ -43,7 +43,7 @@ sealed class TaskOverviewState with _$TaskOverviewState {
   const factory TaskOverviewState.loading() = TaskOverviewLoading;
   const factory TaskOverviewState.loaded({
     required List<Task> tasks,
-    required TaskSelectorConfig config,
+    required TaskQuery query,
   }) = TaskOverviewLoaded;
   const factory TaskOverviewState.error({
     required Object error,
@@ -57,20 +57,13 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
         CachedListBlocMixin<TaskOverviewEvent, TaskOverviewState, Task> {
   TaskOverviewBloc({
     required TaskRepositoryContract taskRepository,
+    required TaskQuery query,
     PageSortAdapter? sortAdapter,
-    TaskSelectorConfig initialConfig = const TaskSelectorConfig(
-      ruleSets: [],
-      sortCriteria: TaskSelector.defaultSortCriteria,
-    ),
-    bool withRelated = false,
   }) : _taskRepository = taskRepository,
+       _query = query,
        _sortAdapter = sortAdapter,
-       _config = initialConfig,
-       _withRelated = withRelated,
-       _selector = TaskSelector(),
        super(const TaskOverviewState.initial()) {
     on<TaskOverviewSubscriptionRequested>(_onSubscriptionRequested);
-    on<TaskOverviewConfigChanged>(_onConfigChanged);
     on<TaskOverviewSortChanged>(_onSortChanged);
     on<TaskOverviewDisplaySettingsChanged>(_onDisplaySettingsChanged);
     on<TaskOverviewToggleTaskCompletion>(_onToggleTaskCompletion);
@@ -78,11 +71,9 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
   }
 
   final TaskRepositoryContract _taskRepository;
+  final TaskQuery _query;
   final PageSortAdapter? _sortAdapter;
-  final bool _withRelated;
-  final TaskSelector _selector;
-
-  TaskSelectorConfig _config;
+  final _logger = AppLogger.forBloc('TaskOverview');
 
   /// Load display settings for this page.
   Future<PageDisplaySettings> loadDisplaySettings() async {
@@ -100,16 +91,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
 
   @override
   TaskOverviewState createLoadedState(List<Task> items) =>
-      TaskOverviewLoaded(tasks: items, config: _config);
-
-  List<Task> _applyConfig(List<Task> tasks) {
-    return _selector.filter(
-      tasks: tasks,
-      ruleSets: _config.ruleSets,
-      sortCriteria: _config.sortCriteria,
-      now: DateTime.now(),
-    );
-  }
+      TaskOverviewLoaded(tasks: items, query: _query);
 
   @override
   Future<void> close() {
@@ -123,21 +105,13 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
   ) async {
     emit(const TaskOverviewState.loading());
 
-    // Load sort preferences from adapter if available
-    if (_sortAdapter != null) {
-      final savedSort = await _sortAdapter.load();
-      if (savedSort != null) {
-        _config = _config.copyWith(sortCriteria: savedSort.criteria);
-      }
-    }
-
     await emit.forEach<List<Task>>(
-      _taskRepository.watchAll(withRelated: _withRelated),
+      _taskRepository.watchAll(_query),
       onData: (tasks) {
         updateCache(tasks);
         return TaskOverviewState.loaded(
-          tasks: _applyConfig(tasks),
-          config: _config,
+          tasks: tasks,
+          query: _query,
         );
       },
       onError: (error, stackTrace) => TaskOverviewState.error(
@@ -147,35 +121,13 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
     );
   }
 
-  void _emitLoadedFromSnapshot(Emitter<TaskOverviewState> emit) {
-    if (!hasSnapshot) return;
-
-    emit(
-      TaskOverviewState.loaded(
-        tasks: _applyConfig(cachedItems),
-        config: _config,
-      ),
-    );
-  }
-
-  void _onConfigChanged(
-    TaskOverviewConfigChanged event,
-    Emitter<TaskOverviewState> emit,
-  ) {
-    _config = event.config;
-    _emitLoadedFromSnapshot(emit);
-  }
-
   Future<void> _onSortChanged(
     TaskOverviewSortChanged event,
     Emitter<TaskOverviewState> emit,
   ) async {
-    // Update local config
-    _config = _config.copyWith(sortCriteria: event.preferences.criteria);
-    _emitLoadedFromSnapshot(emit);
-
     // Persist to settings
     await _sortAdapter?.save(event.preferences);
+    // Note: Sort changes require bloc recreation with new filterConfig
   }
 
   Future<void> _onDisplaySettingsChanged(
@@ -204,6 +156,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
         repeatIcalRrule: task.repeatIcalRrule,
       );
     } catch (error, stacktrace) {
+      _logger.error('Failed to toggle task completion', error, stacktrace);
       emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
     }
   }
@@ -215,6 +168,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
     try {
       await _taskRepository.delete(event.task.id);
     } catch (error, stacktrace) {
+      _logger.error('Failed to delete task', error, stacktrace);
       emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
     }
   }

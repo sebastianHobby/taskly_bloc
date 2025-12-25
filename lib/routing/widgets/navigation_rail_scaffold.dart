@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/features/tasks/bloc/today_tasks_bloc.dart';
+import 'package:taskly_bloc/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/routing/routes.dart';
 
 /// Responsive breakpoints for navigation.
@@ -61,21 +61,19 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
   }
 
   Widget _buildTodayIcon(BuildContext context, {bool selected = false}) {
-    return BlocBuilder<TodayTasksBloc, TodayTasksState>(
-      builder: (context, state) {
-        final icon = Icon(
-          selected ? Icons.calendar_today : Icons.calendar_today_outlined,
-        );
+    final badgeService = context.read<TodayBadgeService>();
+    final icon = Icon(
+      selected ? Icons.calendar_today : Icons.calendar_today_outlined,
+    );
 
-        return state.maybeWhen(
-          loaded: (_, incompleteCount) {
-            if (incompleteCount == 0) return icon;
-            return Badge(
-              label: Text(incompleteCount.toString()),
-              child: icon,
-            );
-          },
-          orElse: () => icon,
+    return StreamBuilder<int>(
+      stream: badgeService.watchIncompleteCount(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        if (count == 0) return icon;
+        return Badge(
+          label: Text(count.toString()),
+          child: icon,
         );
       },
     );

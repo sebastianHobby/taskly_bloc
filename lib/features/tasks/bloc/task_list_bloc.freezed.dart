@@ -131,11 +131,11 @@ return deleteTask(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskSelectorConfig config)?  configChanged,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult Function( Task task)?  toggleTaskCompletion,TResult Function( Task task)?  deleteTask,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  subscriptionRequested,TResult Function( TaskQuery query)?  configChanged,TResult Function( SortPreferences preferences)?  sortChanged,TResult Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult Function( Task task)?  toggleTaskCompletion,TResult Function( Task task)?  deleteTask,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
-return configChanged(_that.config);case TaskOverviewSortChanged() when sortChanged != null:
+return configChanged(_that.query);case TaskOverviewSortChanged() when sortChanged != null:
 return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
 return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
@@ -157,11 +157,11 @@ return deleteTask(_that.task);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskSelectorConfig config)  configChanged,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( PageDisplaySettings settings)  displaySettingsChanged,required TResult Function( Task task)  toggleTaskCompletion,required TResult Function( Task task)  deleteTask,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  subscriptionRequested,required TResult Function( TaskQuery query)  configChanged,required TResult Function( SortPreferences preferences)  sortChanged,required TResult Function( PageDisplaySettings settings)  displaySettingsChanged,required TResult Function( Task task)  toggleTaskCompletion,required TResult Function( Task task)  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested():
 return subscriptionRequested();case TaskOverviewConfigChanged():
-return configChanged(_that.config);case TaskOverviewSortChanged():
+return configChanged(_that.query);case TaskOverviewSortChanged():
 return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged():
 return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion():
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask():
@@ -179,11 +179,11 @@ return deleteTask(_that.task);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskSelectorConfig config)?  configChanged,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult? Function( Task task)?  toggleTaskCompletion,TResult? Function( Task task)?  deleteTask,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  subscriptionRequested,TResult? Function( TaskQuery query)?  configChanged,TResult? Function( SortPreferences preferences)?  sortChanged,TResult? Function( PageDisplaySettings settings)?  displaySettingsChanged,TResult? Function( Task task)?  toggleTaskCompletion,TResult? Function( Task task)?  deleteTask,}) {final _that = this;
 switch (_that) {
 case TaskOverviewSubscriptionRequested() when subscriptionRequested != null:
 return subscriptionRequested();case TaskOverviewConfigChanged() when configChanged != null:
-return configChanged(_that.config);case TaskOverviewSortChanged() when sortChanged != null:
+return configChanged(_that.query);case TaskOverviewSortChanged() when sortChanged != null:
 return sortChanged(_that.preferences);case TaskOverviewDisplaySettingsChanged() when displaySettingsChanged != null:
 return displaySettingsChanged(_that.settings);case TaskOverviewToggleTaskCompletion() when toggleTaskCompletion != null:
 return toggleTaskCompletion(_that.task);case TaskOverviewDeleteTask() when deleteTask != null:
@@ -231,10 +231,10 @@ String toString() {
 
 
 class TaskOverviewConfigChanged implements TaskOverviewEvent {
-  const TaskOverviewConfigChanged({required this.config});
+  const TaskOverviewConfigChanged({required this.query});
   
 
- final  TaskSelectorConfig config;
+ final  TaskQuery query;
 
 /// Create a copy of TaskOverviewEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -246,16 +246,16 @@ $TaskOverviewConfigChangedCopyWith<TaskOverviewConfigChanged> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewConfigChanged&&(identical(other.config, config) || other.config == config));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewConfigChanged&&(identical(other.query, query) || other.query == query));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,config);
+int get hashCode => Object.hash(runtimeType,query);
 
 @override
 String toString() {
-  return 'TaskOverviewEvent.configChanged(config: $config)';
+  return 'TaskOverviewEvent.configChanged(query: $query)';
 }
 
 
@@ -266,7 +266,7 @@ abstract mixin class $TaskOverviewConfigChangedCopyWith<$Res> implements $TaskOv
   factory $TaskOverviewConfigChangedCopyWith(TaskOverviewConfigChanged value, $Res Function(TaskOverviewConfigChanged) _then) = _$TaskOverviewConfigChangedCopyWithImpl;
 @useResult
 $Res call({
- TaskSelectorConfig config
+ TaskQuery query
 });
 
 
@@ -283,10 +283,10 @@ class _$TaskOverviewConfigChangedCopyWithImpl<$Res>
 
 /// Create a copy of TaskOverviewEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? config = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? query = null,}) {
   return _then(TaskOverviewConfigChanged(
-config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
-as TaskSelectorConfig,
+query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as TaskQuery,
   ));
 }
 
@@ -671,12 +671,12 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Task> tasks,  TaskSelectorConfig config)?  loaded,TResult Function( Object error,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Task> tasks,  TaskQuery query)?  loaded,TResult Function( Object error,  StackTrace stacktrace)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
 return loading();case TaskOverviewLoaded() when loaded != null:
-return loaded(_that.tasks,_that.config);case TaskOverviewError() when error != null:
+return loaded(_that.tasks,_that.query);case TaskOverviewError() when error != null:
 return error(_that.error,_that.stacktrace);case _:
   return orElse();
 
@@ -695,12 +695,12 @@ return error(_that.error,_that.stacktrace);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Task> tasks,  TaskSelectorConfig config)  loaded,required TResult Function( Object error,  StackTrace stacktrace)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Task> tasks,  TaskQuery query)  loaded,required TResult Function( Object error,  StackTrace stacktrace)  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial():
 return initial();case TaskOverviewLoading():
 return loading();case TaskOverviewLoaded():
-return loaded(_that.tasks,_that.config);case TaskOverviewError():
+return loaded(_that.tasks,_that.query);case TaskOverviewError():
 return error(_that.error,_that.stacktrace);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -715,12 +715,12 @@ return error(_that.error,_that.stacktrace);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Task> tasks,  TaskSelectorConfig config)?  loaded,TResult? Function( Object error,  StackTrace stacktrace)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Task> tasks,  TaskQuery query)?  loaded,TResult? Function( Object error,  StackTrace stacktrace)?  error,}) {final _that = this;
 switch (_that) {
 case TaskOverviewInitial() when initial != null:
 return initial();case TaskOverviewLoading() when loading != null:
 return loading();case TaskOverviewLoaded() when loaded != null:
-return loaded(_that.tasks,_that.config);case TaskOverviewError() when error != null:
+return loaded(_that.tasks,_that.query);case TaskOverviewError() when error != null:
 return error(_that.error,_that.stacktrace);case _:
   return null;
 
@@ -797,7 +797,7 @@ String toString() {
 
 
 class TaskOverviewLoaded implements TaskOverviewState {
-  const TaskOverviewLoaded({required final  List<Task> tasks, required this.config}): _tasks = tasks;
+  const TaskOverviewLoaded({required final  List<Task> tasks, required this.query}): _tasks = tasks;
   
 
  final  List<Task> _tasks;
@@ -807,7 +807,7 @@ class TaskOverviewLoaded implements TaskOverviewState {
   return EqualUnmodifiableListView(_tasks);
 }
 
- final  TaskSelectorConfig config;
+ final  TaskQuery query;
 
 /// Create a copy of TaskOverviewState
 /// with the given fields replaced by the non-null parameter values.
@@ -819,16 +819,16 @@ $TaskOverviewLoadedCopyWith<TaskOverviewLoaded> get copyWith => _$TaskOverviewLo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewLoaded&&const DeepCollectionEquality().equals(other._tasks, _tasks)&&(identical(other.config, config) || other.config == config));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskOverviewLoaded&&const DeepCollectionEquality().equals(other._tasks, _tasks)&&(identical(other.query, query) || other.query == query));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_tasks),config);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_tasks),query);
 
 @override
 String toString() {
-  return 'TaskOverviewState.loaded(tasks: $tasks, config: $config)';
+  return 'TaskOverviewState.loaded(tasks: $tasks, query: $query)';
 }
 
 
@@ -839,7 +839,7 @@ abstract mixin class $TaskOverviewLoadedCopyWith<$Res> implements $TaskOverviewS
   factory $TaskOverviewLoadedCopyWith(TaskOverviewLoaded value, $Res Function(TaskOverviewLoaded) _then) = _$TaskOverviewLoadedCopyWithImpl;
 @useResult
 $Res call({
- List<Task> tasks, TaskSelectorConfig config
+ List<Task> tasks, TaskQuery query
 });
 
 
@@ -856,11 +856,11 @@ class _$TaskOverviewLoadedCopyWithImpl<$Res>
 
 /// Create a copy of TaskOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? tasks = null,Object? config = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? tasks = null,Object? query = null,}) {
   return _then(TaskOverviewLoaded(
 tasks: null == tasks ? _self._tasks : tasks // ignore: cast_nullable_to_non_nullable
-as List<Task>,config: null == config ? _self.config : config // ignore: cast_nullable_to_non_nullable
-as TaskSelectorConfig,
+as List<Task>,query: null == query ? _self.query : query // ignore: cast_nullable_to_non_nullable
+as TaskQuery,
   ));
 }
 

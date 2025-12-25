@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 
 /// A sealed class representing the result of an operation that can either
 /// succeed with a value or fail with a [Failure].
@@ -124,13 +124,8 @@ sealed class Failure {
 
   /// Logs this failure with full details for debugging.
   void log({String? name}) {
-    developer.log(
-      'Failure: $message',
-      name: name ?? 'AppFailure',
-      error: error,
-      stackTrace: stackTrace,
-      level: 900, // Warning level
-    );
+    final logger = AppLogger(name ?? 'app.failure');
+    logger.warning('Failure: $message', error, stackTrace);
   }
 }
 

@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/mixins/detail_bloc_mixin.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
@@ -87,6 +88,9 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
 
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
+
+  @override
+  final logger = AppLogger.forBloc('ProjectDetail');
 
   @override
   Future<void> close() {

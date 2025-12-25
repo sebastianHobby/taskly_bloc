@@ -15,7 +15,7 @@ import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/features/tasks/widgets/tasks_list.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 class TaskOverviewPage extends StatelessWidget {
   const TaskOverviewPage({
@@ -37,8 +37,7 @@ class TaskOverviewPage extends StatelessWidget {
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
         sortAdapter: sortAdapter,
-        initialConfig: TaskSelector.all(),
-        withRelated: true,
+        query: TaskQuery.all(),
       )..add(const TaskOverviewEvent.subscriptionRequested()),
       child: TaskOverviewView(
         taskRepository: taskRepository,
@@ -83,31 +82,7 @@ class TaskOverviewView extends StatelessWidget {
 
   void _onMenuSelected(BuildContext context, _TaskMenuAction action) {
     final bloc = context.read<TaskOverviewBloc>();
-    final currentConfig = bloc.state.maybeWhen(
-      loaded: (_, config) => config,
-      orElse: TaskSelector.all,
-    );
     switch (action) {
-      case _TaskMenuAction.filterAll:
-        bloc.add(
-          TaskOverviewEvent.configChanged(
-            config: currentConfig.withCompletion(TaskCompletionFilter.all),
-          ),
-        );
-      case _TaskMenuAction.filterActive:
-        bloc.add(
-          TaskOverviewEvent.configChanged(
-            config: currentConfig.withCompletion(TaskCompletionFilter.active),
-          ),
-        );
-      case _TaskMenuAction.filterCompleted:
-        bloc.add(
-          TaskOverviewEvent.configChanged(
-            config: currentConfig.withCompletion(
-              TaskCompletionFilter.completed,
-            ),
-          ),
-        );
       case _TaskMenuAction.sortName:
         bloc.add(
           const TaskOverviewEvent.sortChanged(
@@ -135,32 +110,14 @@ class TaskOverviewView extends StatelessWidget {
 
   List<PopupMenuEntry<_TaskMenuAction>> _buildMenuItems({
     required AppLocalizations l10n,
-    required TaskSelectorConfig selectedConfig,
+    required TaskQuery selectedQuery,
   }) {
     SortField? activePrimaryField;
-    if (selectedConfig.sortCriteria.isNotEmpty) {
-      activePrimaryField = selectedConfig.sortCriteria.first.field;
+    if (selectedQuery.sortCriteria.isNotEmpty) {
+      activePrimaryField = selectedQuery.sortCriteria.first.field;
     }
 
-    final completion = selectedConfig.completionFilter;
-
     return [
-      CheckedPopupMenuItem<_TaskMenuAction>(
-        value: _TaskMenuAction.filterAll,
-        checked: completion == TaskCompletionFilter.all,
-        child: Text(l10n.taskFilterAll),
-      ),
-      CheckedPopupMenuItem<_TaskMenuAction>(
-        value: _TaskMenuAction.filterActive,
-        checked: completion == TaskCompletionFilter.active,
-        child: Text(l10n.taskFilterActive),
-      ),
-      CheckedPopupMenuItem<_TaskMenuAction>(
-        value: _TaskMenuAction.filterCompleted,
-        checked: completion == TaskCompletionFilter.completed,
-        child: Text(l10n.taskFilterCompleted),
-      ),
-      const PopupMenuDivider(),
       CheckedPopupMenuItem<_TaskMenuAction>(
         value: _TaskMenuAction.sortName,
         checked: activePrimaryField == SortField.name,
@@ -194,14 +151,14 @@ class TaskOverviewView extends StatelessWidget {
             },
             builder: (context, state) {
               final selectedQuery = state.maybeWhen(
-                loaded: (_, config) => config,
-                orElse: TaskSelector.all,
+                loaded: (_, query) => query,
+                orElse: TaskQuery.all,
               );
               return PopupMenuButton<_TaskMenuAction>(
                 onSelected: (action) => _onMenuSelected(context, action),
                 itemBuilder: (_) => _buildMenuItems(
                   l10n: context.l10n,
-                  selectedConfig: selectedQuery,
+                  selectedQuery: selectedQuery,
                 ),
                 icon: const Icon(Icons.tune),
               );
@@ -243,9 +200,6 @@ class TaskOverviewView extends StatelessWidget {
 }
 
 enum _TaskMenuAction {
-  filterAll,
-  filterActive,
-  filterCompleted,
   sortName,
   sortDeadline,
 }

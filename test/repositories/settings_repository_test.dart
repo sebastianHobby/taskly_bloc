@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/settings.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 
 import '../helpers/test_db.dart';
 
@@ -69,7 +69,7 @@ void main() {
   });
 
   test('persists next actions settings', () async {
-    const nextActionsSettings = NextActionsSettings(
+    final nextActionsSettings = NextActionsSettings(
       tasksPerProject: 5,
       bucketRules: [
         TaskPriorityBucketRule(

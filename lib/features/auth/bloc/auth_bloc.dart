@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 
 part 'auth_event.dart';
@@ -16,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   AuthBloc({required AuthRepositoryContract authRepository})
     : _authRepository = authRepository,
       super(const AppAuthState()) {
+    _logger.info('AuthBloc initialized');
     on<AuthSubscriptionRequested>(_onSubscriptionRequested);
     on<AuthSignInRequested>(_onSignInRequested);
     on<AuthSignUpRequested>(_onSignUpRequested);
@@ -25,6 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   }
 
   final AuthRepositoryContract _authRepository;
+  final _logger = AppLogger.forBloc('Auth');
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
@@ -112,7 +115,8 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           ),
         );
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logger.error('Sign in failed', error, stackTrace);
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -150,7 +154,8 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           ),
         );
       }
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logger.error('Sign up failed', error, stackTrace);
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -171,7 +176,8 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           status: AuthStatus.unauthenticated,
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logger.error('Sign out failed', error, stackTrace);
       emit(
         state.copyWith(
           error: error.toString(),
@@ -196,7 +202,8 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
           message: 'Password reset email sent',
         ),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logger.error('Password reset failed', error, stackTrace);
       emit(
         state.copyWith(
           status: state.status == AuthStatus.authenticated

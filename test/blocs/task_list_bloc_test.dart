@@ -1,18 +1,21 @@
-import 'dart:async';
-
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 import '../mocks/repository_mocks.dart';
+
+class _FakeTaskQuery extends Fake implements TaskQuery {}
 
 void main() {
   late MockTaskRepository mockRepository;
   late Task sampleTask;
-  late Task completedTask;
+
+  setUpAll(() {
+    registerFallbackValue(_FakeTaskQuery());
+  });
 
   setUp(() {
     mockRepository = MockTaskRepository();
@@ -24,62 +27,23 @@ void main() {
       name: 'Task 1',
       completed: false,
     );
-
-    completedTask = Task(
-      id: 't2',
-      createdAt: now,
-      updatedAt: now,
-      name: 'Task 2',
-      completed: true,
-    );
   });
 
   blocTest<TaskOverviewBloc, TaskOverviewState>(
     'emits loading then loaded when subscriptionRequested and repository provides tasks',
     setUp: () {
       when(
-        () => mockRepository.watchAll(),
+        () => mockRepository.watchAll(any()),
       ).thenAnswer((_) => Stream.value([sampleTask]));
     },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockRepository,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[
       isA<TaskOverviewLoading>(),
       isA<TaskOverviewLoaded>(),
-    ],
-  );
-
-  blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'filterChanged re-emits loaded with filtered tasks',
-    setUp: () {
-      when(
-        () => mockRepository.watchAll(),
-      ).thenAnswer((_) => Stream.value([sampleTask, completedTask]));
-    },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
-    act: (bloc) async {
-      bloc.add(const TaskOverviewEvent.subscriptionRequested());
-      await Future<void>.delayed(Duration.zero);
-      bloc.add(
-        TaskOverviewEvent.configChanged(
-          config: TaskSelector.all().withCompletion(
-            TaskCompletionFilter.completed,
-          ),
-        ),
-      );
-    },
-    expect: () => <TaskOverviewState>[
-      const TaskOverviewState.loading(),
-      TaskOverviewState.loaded(
-        tasks: [sampleTask, completedTask],
-        config: TaskSelector.all(),
-      ),
-      TaskOverviewState.loaded(
-        tasks: [completedTask],
-        config: TaskSelector.all().withCompletion(
-          TaskCompletionFilter.completed,
-        ),
-      ),
     ],
   );
 
@@ -99,7 +63,10 @@ void main() {
         ),
       ).thenAnswer((_) async {});
     },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockRepository,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(
       TaskOverviewEvent.toggleTaskCompletion(task: sampleTask),
     ),
@@ -121,7 +88,7 @@ void main() {
   );
 
   blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'today query includes tasks with start date or deadline on/before today',
+    'today query returns filtered tasks from repository',
     setUp: () {
       final now = DateTime(2025, 1, 15, 10, 30);
       final today = DateTime(now.year, now.month, now.day);
@@ -144,41 +111,18 @@ void main() {
         deadlineDate: today,
       );
 
-      final taskWithDeadlineTomorrow = Task(
-        id: 't5',
-        createdAt: now,
-        updatedAt: now,
-        name: 'C deadline tomorrow',
-        completed: false,
-        deadlineDate: today.add(const Duration(days: 1)),
-      );
-
-      final taskWithoutDates = Task(
-        id: 't6',
-        createdAt: now,
-        updatedAt: now,
-        name: 'D no dates',
-        completed: false,
-      );
-
+      // Repository returns already-filtered results based on query
       when(
-        () => mockRepository.watchAll(),
+        () => mockRepository.watchAll(any()),
       ).thenAnswer(
-        (_) => Stream.value(
-          [
-            taskWithDeadlineTomorrow,
-            taskWithoutDates,
-            taskWithDeadlineToday,
-            taskWithStartYesterday,
-          ],
-        ),
+        (_) => Stream.value([taskWithDeadlineToday, taskWithStartYesterday]),
       );
     },
     build: () {
       final now = DateTime(2025, 1, 15, 10, 30);
       return TaskOverviewBloc(
         taskRepository: mockRepository,
-        initialConfig: TaskSelector.today(now: now),
+        query: TaskQuery.today(now: now),
       );
     },
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
@@ -193,7 +137,7 @@ void main() {
   );
 
   blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'upcoming query includes tasks with start date or deadline on/after tomorrow',
+    'upcoming query returns filtered tasks from repository',
     setUp: () {
       final now = DateTime(2025, 1, 15, 10, 30);
       final today = DateTime(now.year, now.month, now.day);
@@ -217,15 +161,6 @@ void main() {
         deadlineDate: tomorrow.add(const Duration(days: 7)),
       );
 
-      final taskWithDeadlineToday = Task(
-        id: 'u3',
-        createdAt: now,
-        updatedAt: now,
-        name: 'C deadline today',
-        completed: false,
-        deadlineDate: today,
-      );
-
       final taskWithStartYesterdayDeadlineTomorrow = Task(
         id: 'u4',
         createdAt: now,
@@ -236,33 +171,21 @@ void main() {
         deadlineDate: tomorrow,
       );
 
-      final taskWithoutDates = Task(
-        id: 'u5',
-        createdAt: now,
-        updatedAt: now,
-        name: 'E no dates',
-        completed: false,
-      );
-
+      // Repository returns already-filtered results based on query
       when(
-        () => mockRepository.watchAll(),
+        () => mockRepository.watchAll(any()),
       ).thenAnswer(
-        (_) => Stream.value(
-          [
-            taskWithDeadlineToday,
-            taskWithoutDates,
-            taskWithDeadlineNextWeek,
-            taskWithStartYesterdayDeadlineTomorrow,
-            taskWithStartTomorrow,
-          ],
-        ),
+        (_) => Stream.value([
+          taskWithStartYesterdayDeadlineTomorrow,
+          taskWithDeadlineNextWeek,
+          taskWithStartTomorrow,
+        ]),
       );
     },
     build: () {
-      final now = DateTime(2025, 1, 15, 10, 30);
       return TaskOverviewBloc(
         taskRepository: mockRepository,
-        initialConfig: TaskSelector.upcoming(now: now),
+        query: TaskQuery.upcoming(),
       );
     },
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
@@ -277,7 +200,7 @@ void main() {
   );
 
   blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'projectId query includes only tasks linked to project',
+    'projectId query returns filtered tasks from repository',
     setUp: () {
       final now = DateTime(2025, 1, 15, 10, 30);
 
@@ -290,30 +213,14 @@ void main() {
         projectId: 'p1',
       );
 
-      final p2Task = Task(
-        id: 'p2t1',
-        createdAt: now,
-        updatedAt: now,
-        name: 'B other project task',
-        completed: false,
-        projectId: 'p2',
-      );
-
-      final noProjectTask = Task(
-        id: 'np1',
-        createdAt: now,
-        updatedAt: now,
-        name: 'C no project',
-        completed: false,
-      );
-
+      // Repository returns already-filtered results based on query
       when(
-        () => mockRepository.watchAll(),
-      ).thenAnswer((_) => Stream.value([p2Task, noProjectTask, p1Task]));
+        () => mockRepository.watchAll(any()),
+      ).thenAnswer((_) => Stream.value([p1Task]));
     },
     build: () => TaskOverviewBloc(
       taskRepository: mockRepository,
-      initialConfig: TaskSelector.forProject('p1'),
+      query: TaskQuery.forProject(projectId: 'p1'),
     ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[
@@ -327,12 +234,11 @@ void main() {
   );
 
   blocTest<TaskOverviewBloc, TaskOverviewState>(
-    'labelId query includes only tasks linked to label',
+    'labelId query returns filtered tasks from repository',
     setUp: () {
       final now = DateTime(2025, 1, 15, 10, 30);
 
       final l1 = Label(id: 'l1', createdAt: now, updatedAt: now, name: 'L1');
-      final l2 = Label(id: 'l2', createdAt: now, updatedAt: now, name: 'L2');
 
       final a = Task(
         id: 'lt1',
@@ -343,23 +249,14 @@ void main() {
         labels: [l1],
       );
 
-      final b = Task(
-        id: 'lt2',
-        createdAt: now,
-        updatedAt: now,
-        name: 'B other label task',
-        completed: false,
-        labels: [l2],
-      );
-
+      // Repository returns already-filtered results based on query
       when(
-        () => mockRepository.watchAll(withRelated: true),
-      ).thenAnswer((_) => Stream.value([b, a]));
+        () => mockRepository.watchAll(any()),
+      ).thenAnswer((_) => Stream.value([a]));
     },
     build: () => TaskOverviewBloc(
       taskRepository: mockRepository,
-      initialConfig: TaskSelector.forLabel('l1'),
-      withRelated: true,
+      query: TaskQuery.forLabel(labelId: 'l1'),
     ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[

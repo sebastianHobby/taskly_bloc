@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/settings.dart';
@@ -42,7 +43,12 @@ class SettingsRepository implements SettingsRepositoryContract {
     try {
       final decoded = jsonDecode(row.settings) as Map<String, dynamic>;
       return AppSettings.fromJson(decoded);
-    } catch (_) {
+    } catch (e, stackTrace) {
+      AppLogger.forRepository('Settings').warning(
+        'Failed to parse settings JSON, using defaults',
+        e,
+        stackTrace,
+      );
       return _defaultSettings;
     }
   }

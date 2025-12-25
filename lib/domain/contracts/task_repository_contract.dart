@@ -1,18 +1,27 @@
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 abstract class TaskRepositoryContract {
-  Stream<List<Task>> watchAll({bool withRelated = false});
-  Future<List<Task>> getAll({bool withRelated = false});
-  Stream<Task?> watch(String id, {bool withRelated = false});
-  Future<Task?> get(String id, {bool withRelated = false});
+  /// Watch tasks with optional filtering, sorting, and occurrence expansion.
+  ///
+  /// If [query] is null, returns all tasks with related entities.
+  /// Query configuration determines:
+  /// - Which tasks to include (via rules)
+  /// - How to sort results (via sortCriteria)
+  /// - Whether to expand repeating tasks into occurrences (via occurrenceExpansion)
+  ///
+  /// All filtering happens at the database level for optimal performance.
+  Stream<List<Task>> watchAll([TaskQuery? query]);
+
+  /// Get a single task by ID with related entities.
+  Future<Task?> getById(String id);
+
+  /// Watch a single task by ID with related entities.
+  Stream<Task?> watchById(String id);
 
   /// Watch task counts for all projects.
   /// Returns a stream of maps where keys are project IDs.
   Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject();
-
-  /// Get task counts for all projects.
-  /// Returns a map where keys are project IDs.
-  Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject();
 
   Future<void> create({
     required String name,

@@ -4,6 +4,7 @@ import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -11,7 +12,11 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    repo = TaskRepository(driftDb: db);
+    repo = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
   });
 
   tearDown(() async {
@@ -23,8 +28,8 @@ void main() {
     expect(first, isEmpty);
   });
 
-  test('get returns null when missing', () async {
-    final res = await repo.get('non-existent');
+  test('getById returns null when missing', () async {
+    final res = await repo.getById('non-existent');
     expect(res, isNull);
   });
 

@@ -6,6 +6,7 @@ import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -14,7 +15,11 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    taskRepository = TaskRepository(driftDb: db);
+    taskRepository = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
     labelRepository = LabelRepository(driftDb: db);
   });
 
@@ -35,7 +40,7 @@ void main() {
       labelIds: <String>[label.id],
     );
 
-    final task = (await taskRepository.getAll()).single;
+    final task = (await taskRepository.watchAll().first).single;
 
     final labelLinks = await (db.select(
       db.taskLabelsTable,
@@ -56,7 +61,7 @@ void main() {
       labelIds: <String>[label.id, label.id],
     );
 
-    final task = (await taskRepository.getAll()).single;
+    final task = (await taskRepository.watchAll().first).single;
 
     final labelLinks = await (db.select(
       db.taskLabelsTable,
@@ -88,7 +93,7 @@ void main() {
       labelIds: <String>[label1Id],
     );
 
-    final taskId = (await taskRepository.getAll()).single.id;
+    final taskId = (await taskRepository.watchAll().first).single.id;
 
     await taskRepository.update(
       id: taskId,
@@ -97,9 +102,9 @@ void main() {
       labelIds: <String>[label2Id],
     );
 
-    final after = await taskRepository.get(taskId, withRelated: true);
+    final after = await taskRepository.getById(taskId);
     expect(after, isNotNull);
-    expect(after!.labels.map((l) => l.id).toList(), <String>[label2Id]);
+    expect(after!.labels.map((Label l) => l.id).toList(), <String>[label2Id]);
 
     final labelLinks = await (db.select(
       db.taskLabelsTable,
@@ -130,7 +135,7 @@ void main() {
       labelIds: <String>[label1Id, label2Id],
     );
 
-    final taskId = (await taskRepository.getAll()).single.id;
+    final taskId = (await taskRepository.watchAll().first).single.id;
 
     final beforeLabelLinks = await (db.select(
       db.taskLabelsTable,
@@ -164,12 +169,12 @@ void main() {
 
   test('delete removes task and does not throw twice', () async {
     await taskRepository.create(name: 'To delete');
-    final taskId = (await taskRepository.getAll()).single.id;
+    final taskId = (await taskRepository.watchAll().first).single.id;
 
     await taskRepository.delete(taskId);
-    expect(await taskRepository.getAll(), isEmpty);
+    expect(await taskRepository.watchAll().first, isEmpty);
 
     await taskRepository.delete(taskId);
-    expect(await taskRepository.getAll(), isEmpty);
+    expect(await taskRepository.watchAll().first, isEmpty);
   });
 }

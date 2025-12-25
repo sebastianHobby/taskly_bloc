@@ -16,6 +16,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/features/tasks/tasks.dart';
@@ -48,8 +49,9 @@ class ProjectDetailPage extends StatelessWidget {
         BlocProvider<TaskOverviewBloc>(
           create: (_) => TaskOverviewBloc(
             taskRepository: taskRepository,
-            initialConfig: TaskSelector.forProject(projectId),
-            withRelated: true,
+            query: TaskQuery.forProject(
+              projectId: projectId,
+            ),
           )..add(const TaskOverviewEvent.subscriptionRequested()),
         ),
       ],

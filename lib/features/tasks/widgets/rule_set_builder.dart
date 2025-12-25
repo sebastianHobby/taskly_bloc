@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/features/tasks/widgets/rule_editor.dart';
 
 /// Represents all available fields that can be used for task filtering
@@ -588,7 +589,11 @@ class _RuleSummaryTile extends StatelessWidget {
       try {
         final hexColor = label.color!.replaceFirst('#', '');
         chipColor = Color(int.parse('FF$hexColor', radix: 16));
-      } catch (_) {
+      } catch (e) {
+        AppLogger('ui.rule_builder').debug(
+          'Failed to parse color for label ${label.name}: ${label.color}',
+          e,
+        );
         // Use default color if parsing fails
       }
     }
@@ -865,7 +870,14 @@ class _PriorityBucketBuilderState extends State<PriorityBucketBuilder> {
       ruleSets: [
         TaskRuleSet(
           operator: RuleSetOperator.and,
-          rules: [RuleRegistry.createDefaultRule(RuleType.date)],
+          rules: [
+            DateRule(
+              field: DateRuleField.deadlineDate,
+              operator: DateRuleOperator.relative,
+              relativeComparison: RelativeComparison.onOrBefore,
+              relativeDays: 0,
+            ),
+          ],
         ),
       ],
     );

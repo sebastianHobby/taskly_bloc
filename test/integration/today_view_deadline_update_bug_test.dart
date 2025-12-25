@@ -3,8 +3,10 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 /// Integration test to reproduce the bug:
 /// 1. Task has deadline of today
@@ -15,14 +17,21 @@ import '../helpers/test_db.dart';
 void main() {
   late AppDatabase db;
   late TaskRepository taskRepo;
-  late ProjectRepository projectRepo;
-  late LabelRepository labelRepo;
 
   setUp(() {
     db = createTestDb();
-    taskRepo = TaskRepository(driftDb: db);
-    projectRepo = ProjectRepository(driftDb: db);
-    labelRepo = LabelRepository(driftDb: db);
+    taskRepo = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
+    // Initialize repositories for database setup
+    ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
+    LabelRepository(driftDb: db);
   });
 
   tearDown(() async {
@@ -47,7 +56,7 @@ void main() {
     print('\n1. Created task with today deadline');
 
     // Verify task was created
-    var allTasks = await taskRepo.getAll();
+    var allTasks = await taskRepo.watchAll().first;
     expect(allTasks, hasLength(1));
     final taskId = allTasks.first.id;
     print('   Task ID: $taskId');
@@ -55,7 +64,7 @@ void main() {
 
     // Step 2: Verify task appears in "today" filter
     // Tasks with deadline today or earlier should appear
-    final tasksForToday = allTasks.where((t) {
+    final tasksForToday = allTasks.where((Task t) {
       final deadline = t.deadlineDate;
       return deadline != null && !deadline.isAfter(today);
     }).toList();
@@ -74,12 +83,12 @@ void main() {
       deadlineDate: tomorrow, // Changed from today to tomorrow
       projectId: taskToUpdate.project?.id,
       repeatIcalRrule: taskToUpdate.repeatIcalRrule,
-      labelIds: taskToUpdate.labels.map((l) => l.id).toList(),
+      labelIds: taskToUpdate.labels.map((Label l) => l.id).toList(),
     );
     print('\n3. Updated task deadline to tomorrow');
 
     // Step 4: Verify the update was persisted in database
-    final updatedTask = await taskRepo.get(taskId, withRelated: true);
+    final updatedTask = await taskRepo.getById(taskId);
     print('\n4. Checking if update was persisted:');
     print('   Updated deadline in DB: ${updatedTask?.deadlineDate}');
     print('   Expected deadline: $tomorrow');
@@ -92,8 +101,8 @@ void main() {
     );
 
     // Step 5: Verify task no longer appears in "today" filter
-    allTasks = await taskRepo.getAll();
-    final tasksForTodayAfterUpdate = allTasks.where((t) {
+    allTasks = await taskRepo.watchAll().first;
+    final tasksForTodayAfterUpdate = allTasks.where((Task t) {
       final deadline = t.deadlineDate;
       return deadline != null && !deadline.isAfter(today);
     }).toList();
@@ -109,7 +118,7 @@ void main() {
     );
 
     // Step 6: Verify task appears in "tomorrow" filter
-    final tasksForTomorrow = allTasks.where((t) {
+    final tasksForTomorrow = allTasks.where((Task t) {
       final deadline = t.deadlineDate;
       if (deadline == null) return false;
       final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
@@ -145,7 +154,7 @@ void main() {
       );
 
       // Get the task ID
-      final tasks = await taskRepo.getAll();
+      final tasks = await taskRepo.watchAll().first;
       final taskId = tasks.first.id;
       print('  Created task: $taskId with deadline: $today');
 
@@ -158,7 +167,7 @@ void main() {
       });
 
       // Wait for initial stream event
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       expect(
         streamEvents,
         isNotEmpty,
@@ -176,12 +185,12 @@ void main() {
         deadlineDate: tomorrow,
         projectId: task.project?.id,
         repeatIcalRrule: task.repeatIcalRrule,
-        labelIds: task.labels.map((l) => l.id).toList(),
+        labelIds: task.labels.map((Label l) => l.id).toList(),
       );
       print('  Updated task deadline to: $tomorrow');
 
       // Wait for stream to emit updated data
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verify stream emitted at least 2 events (initial + update)
       expect(
@@ -219,7 +228,7 @@ void main() {
       deadlineDate: today,
     );
 
-    final tasks = await taskRepo.getAll();
+    final tasks = await taskRepo.watchAll().first;
     final taskId = tasks.first.id;
     print('  Created task: $taskId');
 
@@ -232,7 +241,7 @@ void main() {
     );
     print('  Update 1: Changed deadline to tomorrow');
 
-    var task = await taskRepo.get(taskId);
+    var task = await taskRepo.getById(taskId);
     expect(task?.deadlineDate, equals(tomorrow));
 
     // Update 2: Change to day after tomorrow
@@ -244,7 +253,7 @@ void main() {
     );
     print('  Update 2: Changed deadline to day after tomorrow');
 
-    task = await taskRepo.get(taskId);
+    task = await taskRepo.getById(taskId);
     expect(task?.deadlineDate, equals(dayAfterTomorrow));
 
     // Update 3: Remove deadline
@@ -255,7 +264,7 @@ void main() {
     );
     print('  Update 3: Removed deadline');
 
-    task = await taskRepo.get(taskId);
+    task = await taskRepo.getById(taskId);
     expect(task?.deadlineDate, isNull);
 
     print('  ✅ All updates persisted correctly');

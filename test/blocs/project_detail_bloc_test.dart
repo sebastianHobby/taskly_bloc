@@ -67,6 +67,7 @@ void main() {
     act: (bloc) => bloc.add(
       const ProjectDetailEvent.create(name: 'n'),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
         operation: EntityOperation.create,

@@ -18,6 +18,37 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
   /// preventing unnecessary recomputation during batch updates.
   static const _debounceDuration = Duration(milliseconds: 50);
 
+  /// Cache for parsed RRULE objects.
+  /// RRULE parsing (~1ms per parse) is expensive but strings rarely change.
+  /// Limited to 100 entries to prevent unbounded memory growth.
+  static final _rruleCache = <String, RecurrenceRule>{};
+  static const _rruleCacheMaxSize = 100;
+
+  /// Parse an RRULE string, using cache when available.
+  static RecurrenceRule? _parseRrule(String rruleString) {
+    // Check cache first
+    final cached = _rruleCache[rruleString];
+    if (cached != null) return cached;
+
+    // Parse and cache
+    try {
+      final rrule = RecurrenceRule.fromString(rruleString);
+
+      // Evict oldest entries if cache is full (simple LRU approximation)
+      if (_rruleCache.length >= _rruleCacheMaxSize) {
+        final keysToRemove = _rruleCache.keys.take(10).toList();
+        for (final key in keysToRemove) {
+          _rruleCache.remove(key);
+        }
+      }
+
+      _rruleCache[rruleString] = rrule;
+      return rrule;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Stream<List<Task>> expandTaskOccurrences({
     required Stream<List<Task>> tasksStream,
@@ -25,6 +56,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required Stream<List<RecurrenceExceptionData>> exceptionsStream,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
   }) {
     return Rx.combineLatest3(
       tasksStream,
@@ -36,6 +68,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         exceptions: exceptions,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        postExpansionFilter: postExpansionFilter,
       ),
     ).debounceTime(_debounceDuration);
   }
@@ -69,6 +102,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required List<RecurrenceExceptionData> exceptions,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Task)? postExpansionFilter,
   }) {
     // Group completions and exceptions by entity ID for efficient lookup
     final completionsByTask = _groupBy(completions, (c) => c.entityId);
@@ -92,18 +126,23 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         exceptions: taskExceptions,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-        builder: (occurrence) => task.copyWith(occurrence: occurrence),
+        builder: (occurrence) => _normalizeTaskOccurrence(task, occurrence),
       );
 
       allOccurrences.addAll(expanded);
     }
 
+    // Apply post-expansion filter if provided (for two-phase filtering)
+    final filtered = postExpansionFilter != null
+        ? allOccurrences.where(postExpansionFilter).toList()
+        : allOccurrences;
+
     // Sort by occurrence date
-    allOccurrences.sort(
+    filtered.sort(
       (a, b) => a.occurrence!.date.compareTo(b.occurrence!.date),
     );
 
-    return allOccurrences;
+    return filtered;
   }
 
   @override
@@ -136,7 +175,8 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         exceptions: projectExceptions,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-        builder: (occurrence) => project.copyWith(occurrence: occurrence),
+        builder: (occurrence) =>
+            _normalizeProjectOccurrence(project, occurrence),
       );
 
       allOccurrences.addAll(expanded);
@@ -253,11 +293,9 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeEnd,
     required T Function(OccurrenceData occurrence) builder,
   }) {
-    // Parse RRULE
-    final RecurrenceRule rrule;
-    try {
-      rrule = RecurrenceRule.fromString(repeatIcalRrule);
-    } catch (e) {
+    // Parse RRULE (using cache for performance)
+    final rrule = _parseRrule(repeatIcalRrule);
+    if (rrule == null) {
       // Invalid RRULE - treat as non-repeating
       return _expandNonRepeating(
         entity: entity,
@@ -280,17 +318,38 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       anchorDate = lastCompletion.completedAt;
     }
 
-    // Generate RRULE dates
+    // Generate RRULE dates.
+    // The rrule package asserts that `after >= start`, so clamp the window.
+    final after = rangeStart.subtract(const Duration(days: 1));
+    final safeAfter = after.isBefore(anchorDate) ? anchorDate : after;
+
     final rruleDates = rrule
         .getInstances(
           start: anchorDate,
-          after: rangeStart.subtract(const Duration(days: 1)),
+          after: safeAfter,
           before: rangeEnd.add(const Duration(days: 1)),
         )
         .toList();
 
+    // When `after == start`, the rrule package returns instances strictly
+    // after the start. For our use-case, the anchor date is itself a valid
+    // occurrence, so include it explicitly.
+    if (safeAfter.isAtSameMomentAs(anchorDate)) {
+      rruleDates.insert(0, anchorDate);
+    }
+
+    rruleDates.sort();
+
+    // Deduplicate (rrule output + manual insertion can overlap).
+    final uniqueDates = <DateTime>[];
+    for (final date in rruleDates) {
+      if (uniqueDates.isEmpty || !uniqueDates.last.isAtSameMomentAs(date)) {
+        uniqueDates.add(date);
+      }
+    }
+
     // Filter to exact range and respect seriesEnded
-    final filteredDates = rruleDates
+    final filteredDates = uniqueDates
         .where(
           (d) =>
               !d.isBefore(rangeStart) &&
@@ -391,6 +450,33 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     }
 
     return occurrences;
+  }
+
+  // ===========================================================================
+  // NORMALIZATION
+  // ===========================================================================
+
+  /// Normalizes a task occurrence by setting the task's start and deadline
+  /// dates to match the computed occurrence dates.
+  Task _normalizeTaskOccurrence(Task task, OccurrenceData occurrence) {
+    return task.copyWith(
+      startDate: occurrence.date,
+      deadlineDate: occurrence.deadline,
+      occurrence: occurrence,
+    );
+  }
+
+  /// Normalizes a project occurrence by setting the project's start and
+  /// deadline dates to match the computed occurrence dates.
+  Project _normalizeProjectOccurrence(
+    Project project,
+    OccurrenceData occurrence,
+  ) {
+    return project.copyWith(
+      startDate: occurrence.date,
+      deadlineDate: occurrence.deadline,
+      occurrence: occurrence,
+    );
   }
 
   // ===========================================================================

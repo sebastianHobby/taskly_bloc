@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 
@@ -41,6 +42,9 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
   /// Creates the operation failure state with error details.
   S createOperationFailureState(DetailBlocError<T> error);
 
+  /// Logger for this BLoC.
+  AppLogger get logger;
+
   /// Executes a repository operation with consistent error handling.
   ///
   /// This helper wraps the operation in a try-catch and emits the appropriate
@@ -56,12 +60,19 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
     Future<void> Function() execute,
   ) async {
     try {
+      logger.debug('Executing operation: ${operation.name}');
       await execute();
       // Brief delay to allow stream updates to propagate to parent BLoCs
       // This ensures UI updates before modal closes
       await Future<void>.delayed(const Duration(milliseconds: 50));
+      logger.debug('Operation successful: ${operation.name}');
       emit(createOperationSuccessState(operation));
     } catch (error, stackTrace) {
+      logger.error(
+        'Operation failed: ${operation.name}',
+        error,
+        stackTrace,
+      );
       emit(
         createOperationFailureState(
           DetailBlocError<T>(error: error, stackTrace: stackTrace),
@@ -89,18 +100,22 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
   }) async {
     emit(createLoadInProgressState());
     try {
+      logger.debug('Loading entity...');
       final result = await load();
       if (result == null) {
         if (onNotFound != null) {
           final error = onNotFound();
           if (error != null) {
+            logger.warning('Entity not found');
             emit(createOperationFailureState(error));
           }
         }
         return;
       }
+      logger.debug('Entity loaded successfully');
       emit(onSuccess(result));
     } catch (error, stackTrace) {
+      logger.error('Failed to load entity', error, stackTrace);
       emit(
         createOperationFailureState(
           DetailBlocError<T>(error: error, stackTrace: stackTrace),

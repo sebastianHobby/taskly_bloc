@@ -3,6 +3,7 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -10,7 +11,11 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    repo = ProjectRepository(driftDb: db);
+    repo = ProjectRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
   });
 
   tearDown(() async {

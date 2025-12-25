@@ -1,17 +1,21 @@
-import 'dart:async';
-
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/features/tasks/bloc/task_list_bloc.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
 
 import '../mocks/repository_mocks.dart';
+
+class _FakeTaskQuery extends Fake implements TaskQuery {}
 
 void main() {
   late MockTaskRepository mockRepository;
   late Task sampleTask;
+
+  setUpAll(() {
+    registerFallbackValue(_FakeTaskQuery());
+  });
 
   setUp(() {
     mockRepository = MockTaskRepository();
@@ -29,10 +33,13 @@ void main() {
     'emits loading then loaded when subscriptionRequested and repository provides tasks',
     setUp: () {
       when(
-        () => mockRepository.watchAll(),
+        () => mockRepository.watchAll(any()),
       ).thenAnswer((_) => Stream.value([sampleTask]));
     },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockRepository,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
     expect: () => <Object>[
       isA<TaskOverviewLoading>(),
@@ -43,18 +50,21 @@ void main() {
   blocTest<TaskOverviewBloc, TaskOverviewState>(
     'emits loading then loaded when subscriptionRequested and repository provides no tasks',
     setUp: () {
-      when(() => mockRepository.watchAll()).thenAnswer((_) => Stream.value([]));
+      when(
+        () => mockRepository.watchAll(any()),
+      ).thenAnswer((_) => Stream.value([]));
     },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockRepository,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(const TaskOverviewEvent.subscriptionRequested()),
-    expect: () => <TaskOverviewState>[
+    expect: () => <Object>[
       const TaskOverviewState.loading(),
-      const TaskOverviewState.loaded(
-        tasks: [],
-        config: TaskSelectorConfig(
-          ruleSets: [],
-          sortCriteria: TaskSelector.defaultSortCriteria,
-        ),
+      isA<TaskOverviewLoaded>().having(
+        (s) => s.tasks,
+        'tasks',
+        isEmpty,
       ),
     ],
   );
@@ -75,7 +85,10 @@ void main() {
         ),
       ).thenAnswer((_) async {});
     },
-    build: () => TaskOverviewBloc(taskRepository: mockRepository),
+    build: () => TaskOverviewBloc(
+      taskRepository: mockRepository,
+      query: TaskQuery.all(),
+    ),
     act: (bloc) => bloc.add(
       TaskOverviewEvent.toggleTaskCompletion(task: sampleTask),
     ),

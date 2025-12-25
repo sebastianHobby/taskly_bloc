@@ -3,6 +3,7 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 
 import '../helpers/test_db.dart';
+import '../mocks/repository_mocks.dart';
 
 void main() {
   late AppDatabase db;
@@ -10,7 +11,11 @@ void main() {
 
   setUp(() {
     db = createTestDb();
-    repo = TaskRepository(driftDb: db);
+    repo = TaskRepository(
+      driftDb: db,
+      occurrenceExpander: MockOccurrenceStreamExpander(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+    );
   });
 
   tearDown(() async {
@@ -21,7 +26,7 @@ void main() {
     await repo.create(name: 'GBY Task');
     final created = (await repo.watchAll().first).single;
 
-    final fetched = await repo.get(created.id);
+    final fetched = await repo.getById(created.id);
     expect(fetched, isNotNull);
     expect(fetched!.id, created.id);
     expect(fetched.name, 'GBY Task');

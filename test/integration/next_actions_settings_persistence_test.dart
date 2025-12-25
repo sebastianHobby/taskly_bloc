@@ -37,6 +37,7 @@ void main() {
       // Save initial settings with includeInboxTasks=false
       const initialSettings = NextActionsSettings(
         tasksPerProject: 3,
+        includeInboxTasks: false,
       );
       await repo.saveNextActionsSettings(initialSettings);
 
@@ -64,6 +65,7 @@ void main() {
       // Save with tasksPerProject=7
       const nextActionsSettings = NextActionsSettings(
         tasksPerProject: 7,
+        includeInboxTasks: false,
       );
       await repo.saveNextActionsSettings(nextActionsSettings);
 

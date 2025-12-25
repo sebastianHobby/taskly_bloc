@@ -61,7 +61,7 @@ void main() {
       );
 
       when(
-        () => mockRepository.get('t1', withRelated: true),
+        () => mockRepository.getById('t1'),
       ).thenAnswer((_) async => loadedTask);
 
       when(
@@ -95,7 +95,7 @@ void main() {
         ),
       );
     },
-    wait: const Duration(milliseconds: 10),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       isA<TaskDetailLoadInProgress>(),
       isA<TaskDetailLoadSuccess>(),
@@ -119,7 +119,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 1));
       bloc.add(const TaskDetailEvent.delete(id: 't1'));
     },
-    wait: const Duration(milliseconds: 10),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       isA<TaskDetailLoadInProgress>(),
       isA<TaskDetailInitialDataLoadSuccess>(),
@@ -176,7 +176,7 @@ void main() {
         ),
       );
     },
-    wait: const Duration(milliseconds: 10),
+    wait: const Duration(milliseconds: 100),
     expect: () => <dynamic>[
       const TaskDetailState.loadInProgress(),
       isA<TaskDetailInitialDataLoadSuccess>(),

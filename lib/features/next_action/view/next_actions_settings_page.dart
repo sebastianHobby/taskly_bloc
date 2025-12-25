@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/features/tasks/widgets/priority_bucket_builder.dart';
 
 /// Next actions settings page using the adapter pattern.

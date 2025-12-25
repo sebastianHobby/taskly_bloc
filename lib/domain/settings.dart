@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/features/tasks/utils/task_selector.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 
 /// Display settings for a specific page.
 class PageDisplaySettings {
