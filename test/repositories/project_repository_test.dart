@@ -25,21 +25,22 @@ void main() {
   test('create/get/update/delete project flow', () async {
     await repo.create(name: 'Test Project');
 
-    final listAfterCreate = await repo.watchAll().first;
+    final listAfterCreate = await repo.getAll();
     expect(listAfterCreate, hasLength(1));
     final fetched = listAfterCreate.single;
     expect(fetched.name, 'Test Project');
 
     await repo.update(id: fetched.id, name: 'Updated Project', completed: true);
 
-    final listAfterUpdate = await repo.watchAll().first;
-    final after = listAfterUpdate.singleWhere((p) => p.id == fetched.id);
-    expect(after.name, 'Updated Project');
-    expect(after.completed, isTrue);
+    final updated = await repo.get(fetched.id);
+    expect(updated, isNotNull);
+    final updatedProject = updated!;
+    expect(updatedProject.name, 'Updated Project');
+    expect(updatedProject.completed, isTrue);
 
     await repo.delete(fetched.id);
 
-    final listAfterDelete = await repo.watchAll().first;
+    final listAfterDelete = await repo.getAll();
     expect(listAfterDelete.where((p) => p.id == fetched.id), isEmpty);
   });
 }

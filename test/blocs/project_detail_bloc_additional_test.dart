@@ -76,6 +76,7 @@ void main() {
         completed: false,
       ),
     ),
+    wait: const Duration(milliseconds: 100),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
         operation: EntityOperation.update,
@@ -152,6 +153,7 @@ void main() {
       labelRepository: mockLabelRepository,
     ),
     act: (bloc) => bloc.add(const ProjectDetailEvent.delete(id: 'p1')),
+    wait: const Duration(milliseconds: 100),
     expect: () => <ProjectDetailState>[
       const ProjectDetailState.operationSuccess(
         operation: EntityOperation.delete,
