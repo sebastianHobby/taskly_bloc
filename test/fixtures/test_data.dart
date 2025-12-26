@@ -171,7 +171,6 @@ class TestData {
 
   static AnalyticsInsight insight({
     String? id,
-    String userId = 'test-user',
     InsightType insightType = InsightType.correlationDiscovery,
     String title = 'Test Insight',
     String description = 'Test insight description',
@@ -186,7 +185,6 @@ class TestData {
     final now = DateTime.now();
     return AnalyticsInsight(
       id: id ?? _nextId('insight'),
-      userId: userId,
       insightType: insightType,
       title: title,
       description: description,
@@ -215,7 +213,6 @@ class TestData {
 
   static JournalEntry journalEntry({
     String? id,
-    String userId = 'test-user',
     DateTime? entryDate,
     DateTime? entryTime,
     DateTime? createdAt,
@@ -227,7 +224,6 @@ class TestData {
     final now = DateTime.now();
     return JournalEntry(
       id: id ?? _nextId('journal'),
-      userId: userId,
       entryDate: entryDate ?? now,
       entryTime: entryTime ?? now,
       createdAt: createdAt ?? now,
@@ -240,7 +236,6 @@ class TestData {
 
   static Tracker tracker({
     String? id,
-    String userId = 'test-user',
     String name = 'Test Tracker',
     TrackerResponseType responseType = TrackerResponseType.scale,
     TrackerResponseConfig? config,
@@ -253,7 +248,6 @@ class TestData {
     final now = DateTime.now();
     return Tracker(
       id: id ?? _nextId('tracker'),
-      userId: userId,
       name: name,
       responseType: responseType,
       config: config ?? const TrackerResponseConfig.scale(),
@@ -288,7 +282,6 @@ class TestData {
 
   static Review review({
     String? id,
-    String userId = 'test-user',
     String name = 'Test Review',
     ReviewQuery? query,
     String rrule = 'FREQ=WEEKLY',
@@ -302,7 +295,6 @@ class TestData {
     final now = DateTime.now();
     return Review(
       id: id ?? _nextId('review'),
-      userId: userId,
       name: name,
       query:
           query ??
@@ -325,12 +317,10 @@ class TestData {
     List<String>? labelIds,
     List<String>? valueIds,
     bool? includeCompleted,
-    bool? includeArchived,
     DateTime? completedBefore,
     DateTime? completedAfter,
     DateTime? createdBefore,
     DateTime? createdAfter,
-    int? limit,
   }) {
     return ReviewQuery(
       entityType: entityType,
@@ -338,12 +328,10 @@ class TestData {
       labelIds: labelIds,
       valueIds: valueIds,
       includeCompleted: includeCompleted,
-      includeArchived: includeArchived,
       completedBefore: completedBefore,
       completedAfter: completedAfter,
       createdBefore: createdBefore,
       createdAfter: createdAfter,
-      limit: limit,
     );
   }
 

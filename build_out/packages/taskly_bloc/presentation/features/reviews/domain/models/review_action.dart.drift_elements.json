@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:freezed_annotation/freezed_annotation.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/features/reviews/domain/models/review_action_type.dart","transitive":false}],"elements":[]}

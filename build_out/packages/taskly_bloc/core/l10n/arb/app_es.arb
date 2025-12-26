@@ -1,0 +1,625 @@
+{
+    "@@locale": "es",
+    "counterAppBarTitle": "Contador",
+    "@counterAppBarTitle": {
+        "description": "Texto mostrado en la AppBar de la página del contador"
+    },
+    "editLabel": "Editar",
+    "@editLabel": {
+        "description": "Etiqueta de acción genérica de editar"
+    },
+    "cancelLabel": "Cancelar",
+    "@cancelLabel": {
+        "description": "Etiqueta de acción genérica de cancelar"
+    },
+    "deleteLabel": "Eliminar",
+    "@deleteLabel": {
+        "description": "Etiqueta de acción genérica de eliminar"
+    },
+    "projectsTitle": "Proyectos",
+    "@projectsTitle": {
+        "description": "Título para la sección de Proyectos"
+    },
+    "tasksTitle": "Tareas",
+    "@tasksTitle": {
+        "description": "Título para la sección de Tareas"
+    },
+    "labelsTitle": "Etiquetas",
+    "@labelsTitle": {
+        "description": "Título para la sección de Etiquetas"
+    },
+    "valuesTitle": "Valores",
+    "@valuesTitle": {
+        "description": "Título/etiqueta para la sección de Valores"
+    },
+    "browseTitle": "Explorar",
+    "@browseTitle": {
+        "description": "Título/etiqueta para el destino de navegación Explorar"
+    },
+    "noProjectsFound": "No se encontraron proyectos.",
+    "@noProjectsFound": {
+        "description": "Estado vacío cuando no hay proyectos"
+    },
+    "createProjectTooltip": "Crear proyecto",
+    "@createProjectTooltip": {
+        "description": "Tooltip del botón flotante para crear proyecto"
+    },
+    "createTaskTooltip": "Crear tarea",
+    "@createTaskTooltip": {
+        "description": "Tooltip del botón flotante para crear tarea"
+    },
+    "createLabelTooltip": "Crear etiqueta",
+    "@createLabelTooltip": {
+        "description": "Tooltip del botón flotante para crear etiqueta"
+    },
+    "createLabelOption": "Crear etiqueta",
+    "@createLabelOption": {
+        "description": "Texto de opción para crear una etiqueta"
+    },
+    "createValueOption": "Crear valor",
+    "@createValueOption": {
+        "description": "Texto de opción para crear un valor"
+    },
+    "labelTypeLabelHeading": "Etiqueta",
+    "@labelTypeLabelHeading": {
+        "description": "Encabezado mostrado encima de la lista de etiquetas"
+    },
+    "labelTypeValueHeading": "Valor",
+    "@labelTypeValueHeading": {
+        "description": "Encabezado mostrado encima de la lista de valores"
+    },
+    "noLabelsFound": "No se encontraron etiquetas.",
+    "@noLabelsFound": {
+        "description": "Estado vacío cuando no hay etiquetas"
+    },
+    "noValuesFound": "No se encontraron valores.",
+    "@noValuesFound": {
+        "description": "Estado vacío cuando no hay valores"
+    },
+    "genericErrorFallback": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "@genericErrorFallback": {
+        "description": "Error de respaldo mostrado para errores inesperados"
+    },
+    "taskNotFound": "No se encontró la tarea.",
+    "@taskNotFound": {
+        "description": "Error mostrado cuando no se encuentra una tarea"
+    },
+    "projectNotFound": "No se encontró el proyecto.",
+    "@projectNotFound": {
+        "description": "Error mostrado cuando no se encuentra un proyecto"
+    },
+    "labelNotFound": "No se encontró la etiqueta.",
+    "@labelNotFound": {
+        "description": "Error mostrado cuando no se encuentra una etiqueta"
+    },
+    "taskFilterAll": "Todas las tareas",
+    "@taskFilterAll": {
+        "description": "Opción de filtro en la vista de tareas para mostrar todas las tareas"
+    },
+    "taskFilterActive": "Tareas activas",
+    "@taskFilterActive": {
+        "description": "Opción de filtro en la vista de tareas para mostrar solo tareas activas (no completadas)"
+    },
+    "taskFilterCompleted": "Tareas completadas",
+    "@taskFilterCompleted": {
+        "description": "Opción de filtro en la vista de tareas para mostrar solo tareas completadas"
+    },
+    "taskSortByName": "Ordenar por nombre",
+    "@taskSortByName": {
+        "description": "Opción de ordenación en la vista de tareas para ordenar por nombre"
+    },
+    "taskSortByDeadline": "Ordenar por fecha límite",
+    "@taskSortByDeadline": {
+        "description": "Opción de ordenación en la vista de tareas para ordenar por fecha límite"
+    },
+    "groupSortMenuTitle": "Agrupar y ordenar",
+    "@groupSortMenuTitle": {
+        "description": "Título de la hoja para agrupar y ordenar"
+    },
+    "groupSortGroupingLabel": "Agrupación",
+    "@groupSortGroupingLabel": {
+        "description": "Etiqueta mostrada encima de las opciones de agrupación"
+    },
+    "groupSortSortingLabel": "Ordenamiento",
+    "@groupSortSortingLabel": {
+        "description": "Etiqueta mostrada encima de los controles de ordenamiento"
+    },
+    "groupOptionNone": "Sin agrupación",
+    "@groupOptionNone": {
+        "description": "Opción para desactivar la agrupación"
+    },
+    "groupOptionLabels": "Agrupar por etiquetas",
+    "@groupOptionLabels": {
+        "description": "Opción para agrupar elementos por etiquetas"
+    },
+    "groupOptionValues": "Agrupar por valores",
+    "@groupOptionValues": {
+        "description": "Opción para agrupar elementos por valores"
+    },
+    "sortFieldNameLabel": "Nombre",
+    "@sortFieldNameLabel": {
+        "description": "Etiqueta para el campo de orden por nombre"
+    },
+    "sortFieldStartDateLabel": "Fecha de inicio",
+    "@sortFieldStartDateLabel": {
+        "description": "Etiqueta para el campo de orden por fecha de inicio"
+    },
+    "sortFieldDeadlineDateLabel": "Fecha límite",
+    "@sortFieldDeadlineDateLabel": {
+        "description": "Etiqueta para el campo de orden por fecha límite"
+    },
+    "sortFieldNoneLabel": "Ninguno",
+    "@sortFieldNoneLabel": {
+        "description": "Opción para limpiar un nivel de orden"
+    },
+    "sortSlotPrimaryLabel": "Orden principal",
+    "@sortSlotPrimaryLabel": {
+        "description": "Etiqueta para el orden principal"
+    },
+    "sortSlotSecondaryLabel": "Orden secundario",
+    "@sortSlotSecondaryLabel": {
+        "description": "Etiqueta para el orden secundario"
+    },
+    "sortSlotTertiaryLabel": "Orden terciario",
+    "@sortSlotTertiaryLabel": {
+        "description": "Etiqueta para el orden terciario"
+    },
+    "sortMenuTitle": "Ordenar",
+    "@sortMenuTitle": {
+        "description": "Título para la hoja de ordenamiento"
+    },
+    "sortSortingLabel": "Orden",
+    "@sortSortingLabel": {
+        "description": "Etiqueta mostrada encima de los controles de orden"
+    },
+    "sortDirectionLabel": "Dirección",
+    "@sortDirectionLabel": {
+        "description": "Etiqueta para la dirección de orden"
+    },
+    "sortDirectionAscending": "Ascendente",
+    "@sortDirectionAscending": {
+        "description": "Etiqueta para la dirección ascendente"
+    },
+    "sortDirectionDescending": "Descendente",
+    "@sortDirectionDescending": {
+        "description": "Etiqueta para la dirección descendente"
+    },
+    "groupingMissingLabels": "Sin etiquetas",
+    "@groupingMissingLabels": {
+        "description": "Encabezado mostrado cuando un elemento no tiene etiquetas"
+    },
+    "groupingMissingValues": "Sin valores",
+    "@groupingMissingValues": {
+        "description": "Encabezado mostrado cuando un elemento no tiene valores"
+    },
+    "groupSortApplyButton": "Aplicar",
+    "@groupSortApplyButton": {
+        "description": "Texto del botón para aplicar la configuración"
+    },
+    "inboxTitle": "Bandeja de entrada",
+    "@inboxTitle": {
+        "description": "Título para la sección de la bandeja de entrada"
+    },
+    "todayTitle": "Hoy",
+    "@todayTitle": {
+        "description": "Título para la sección de hoy"
+    },
+    "upcomingTitle": "Próximas",
+    "@upcomingTitle": {
+        "description": "Título para la sección de próximas"
+    },
+    "nextActionsTitle": "Siguientes acciones",
+    "@nextActionsTitle": {
+        "description": "Título para la sección de siguientes acciones"
+    },
+    "taskCreatedSuccessfully": "Tarea creada correctamente.",
+    "@taskCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear una tarea"
+    },
+    "taskUpdatedSuccessfully": "Tarea actualizada correctamente.",
+    "@taskUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar una tarea"
+    },
+    "taskDeletedSuccessfully": "Tarea eliminada correctamente.",
+    "@taskDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar una tarea"
+    },
+    "projectCreatedSuccessfully": "Proyecto creado correctamente.",
+    "@projectCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear un proyecto"
+    },
+    "projectUpdatedSuccessfully": "Proyecto actualizado correctamente.",
+    "@projectUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar un proyecto"
+    },
+    "projectDeletedSuccessfully": "Proyecto eliminado correctamente.",
+    "@projectDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar un proyecto"
+    },
+    "valueCreatedSuccessfully": "Valor creado correctamente.",
+    "@valueCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear un valor"
+    },
+    "valueUpdatedSuccessfully": "Valor actualizado correctamente.",
+    "@valueUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar un valor"
+    },
+    "valueDeletedSuccessfully": "Valor eliminado correctamente.",
+    "@valueDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar un valor"
+    },
+    "labelCreatedSuccessfully": "Etiqueta creada correctamente.",
+    "@labelCreatedSuccessfully": {
+        "description": "Mensaje mostrado después de crear una etiqueta"
+    },
+    "labelUpdatedSuccessfully": "Etiqueta actualizada correctamente.",
+    "@labelUpdatedSuccessfully": {
+        "description": "Mensaje mostrado después de actualizar una etiqueta"
+    },
+    "labelDeletedSuccessfully": "Etiqueta eliminada correctamente.",
+    "@labelDeletedSuccessfully": {
+        "description": "Mensaje mostrado después de eliminar una etiqueta"
+    },
+    "actionCreate": "Crear",
+    "@actionCreate": {
+        "description": "Etiqueta/tooltip genérico para la acción de crear"
+    },
+    "actionUpdate": "Actualizar",
+    "@actionUpdate": {
+        "description": "Etiqueta/tooltip genérico para la acción de actualizar"
+    },
+    "projectFormTitleHint": "Título",
+    "@projectFormTitleHint": {
+        "description": "Texto de sugerencia para el campo de título del proyecto"
+    },
+    "projectFormTitleRequired": "El título es obligatorio",
+    "@projectFormTitleRequired": {
+        "description": "Error de validación mostrado cuando falta el título del proyecto"
+    },
+    "projectFormTitleEmpty": "El título no puede estar vacío",
+    "@projectFormTitleEmpty": {
+        "description": "Error de validación mostrado cuando el título del proyecto está vacío"
+    },
+    "projectFormTitleTooLong": "El título debe tener 120 caracteres o menos",
+    "@projectFormTitleTooLong": {
+        "description": "Error de validación mostrado cuando el título del proyecto es demasiado largo"
+    },
+    "projectFormDescriptionHint": "Descripción",
+    "@projectFormDescriptionHint": {
+        "description": "Texto de sugerencia para el campo de descripción del proyecto"
+    },
+    "projectFormDescriptionTooLong": "La descripción es demasiado larga",
+    "@projectFormDescriptionTooLong": {
+        "description": "Error de validación mostrado cuando la descripción del proyecto es demasiado larga"
+    },
+    "projectFormStartDateHint": "Fecha de inicio (opcional)",
+    "@projectFormStartDateHint": {
+        "description": "Texto de sugerencia para el campo opcional de fecha de inicio del proyecto"
+    },
+    "projectFormDeadlineDateHint": "Fecha límite (opcional)",
+    "@projectFormDeadlineDateHint": {
+        "description": "Texto de sugerencia para el campo opcional de fecha límite del proyecto"
+    },
+    "projectFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "@projectFormDeadlineAfterStartError": {
+        "description": "Error de validación mostrado cuando la fecha límite es anterior a la fecha de inicio"
+    },
+    "projectFormCompletedLabel": "Completado",
+    "@projectFormCompletedLabel": {
+        "description": "Etiqueta para la casilla de completado en el formulario de proyecto"
+    },
+    "projectFormValuesLabel": "Valores",
+    "@projectFormValuesLabel": {
+        "description": "Etiqueta para la selección de valores en el formulario de proyecto"
+    },
+    "projectFormLabelsLabel": "Etiquetas",
+    "@projectFormLabelsLabel": {
+        "description": "Etiqueta para la selección de etiquetas en el formulario de proyecto"
+    },
+    "projectFormRepeatRuleHint": "Regla de repetición (RRULE, opcional)",
+    "@projectFormRepeatRuleHint": {
+        "description": "Texto de sugerencia para el campo opcional de regla RRULE"
+    },
+    "projectFormRepeatRuleTooLong": "La regla de repetición es demasiado larga",
+    "@projectFormRepeatRuleTooLong": {
+        "description": "Error de validación mostrado cuando la regla RRULE es demasiado larga"
+    },
+    "emptyInboxTitle": "Tu bandeja de entrada está vacía",
+    "@emptyInboxTitle": {
+        "description": "Título mostrado cuando la bandeja de entrada no tiene tareas"
+    },
+    "emptyInboxDescription": "Las tareas sin proyecto aparecerán aquí",
+    "@emptyInboxDescription": {
+        "description": "Descripción mostrada cuando la bandeja de entrada no tiene tareas"
+    },
+    "emptyTodayTitle": "Nada para hoy",
+    "@emptyTodayTitle": {
+        "description": "Título mostrado cuando no hay tareas o proyectos para hoy"
+    },
+    "emptyTodayDescription": "Las tareas y proyectos del día aparecerán aquí",
+    "@emptyTodayDescription": {
+        "description": "Descripción mostrada cuando no hay tareas o proyectos para hoy"
+    },
+    "emptyUpcomingTitle": "Nada próximo",
+    "@emptyUpcomingTitle": {
+        "description": "Título mostrado cuando no hay tareas o proyectos próximos"
+    },
+    "emptyUpcomingDescription": "Las tareas y proyectos futuros aparecerán aquí",
+    "@emptyUpcomingDescription": {
+        "description": "Descripción mostrada cuando no hay tareas o proyectos próximos"
+    },
+    "emptyProjectsTitle": "Sin proyectos aún",
+    "@emptyProjectsTitle": {
+        "description": "Título mostrado cuando no hay proyectos"
+    },
+    "emptyProjectsDescription": "Crea un proyecto para organizar tus tareas",
+    "@emptyProjectsDescription": {
+        "description": "Descripción mostrada cuando no hay proyectos"
+    },
+    "emptyTasksTitle": "Sin tareas aún",
+    "@emptyTasksTitle": {
+        "description": "Título mostrado cuando no hay tareas"
+    },
+    "emptyTasksDescription": "Añade una tarea para empezar",
+    "@emptyTasksDescription": {
+        "description": "Descripción mostrada cuando no hay tareas"
+    },
+    "addTaskAction": "Añadir tarea",
+    "@addTaskAction": {
+        "description": "Texto del botón de acción para añadir una tarea"
+    },
+    "addProjectAction": "Añadir proyecto",
+    "@addProjectAction": {
+        "description": "Texto del botón de acción para añadir un proyecto"
+    },
+    "taskFormNameHint": "Nombre de la tarea",
+    "@taskFormNameHint": {
+        "description": "Texto de sugerencia para el campo de nombre de tarea"
+    },
+    "taskFormDescriptionHint": "Descripción",
+    "@taskFormDescriptionHint": {
+        "description": "Texto de sugerencia para el campo de descripción de tarea"
+    },
+    "taskFormStartDateHint": "Fecha de inicio (opcional)",
+    "@taskFormStartDateHint": {
+        "description": "Texto de sugerencia para el campo de fecha de inicio de tarea"
+    },
+    "taskFormDeadlineDateHint": "Fecha límite (opcional)",
+    "@taskFormDeadlineDateHint": {
+        "description": "Texto de sugerencia para el campo de fecha límite de tarea"
+    },
+    "taskFormProjectHint": "Proyecto (opcional)",
+    "@taskFormProjectHint": {
+        "description": "Texto de sugerencia para el campo de proyecto de tarea"
+    },
+    "taskFormCompletedLabel": "Completada",
+    "@taskFormCompletedLabel": {
+        "description": "Etiqueta para la casilla de completada en el formulario de tarea"
+    },
+    "taskFormNameRequired": "El nombre es obligatorio",
+    "@taskFormNameRequired": {
+        "description": "Error de validación cuando falta el nombre de la tarea"
+    },
+    "taskFormNameEmpty": "El nombre no puede estar vacío",
+    "@taskFormNameEmpty": {
+        "description": "Error de validación cuando el nombre de la tarea está vacío"
+    },
+    "taskFormNameTooLong": "El nombre debe tener 120 caracteres o menos",
+    "@taskFormNameTooLong": {
+        "description": "Error de validación cuando el nombre de la tarea es muy largo"
+    },
+    "taskFormDescriptionTooLong": "La descripción es muy larga",
+    "@taskFormDescriptionTooLong": {
+        "description": "Error de validación cuando la descripción de la tarea es muy larga"
+    },
+    "taskFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
+    "@taskFormDeadlineAfterStartError": {
+        "description": "Error de validación cuando la fecha límite es anterior a la fecha de inicio"
+    },
+    "dateToday": "Hoy",
+    "@dateToday": {
+        "description": "Etiqueta de fecha relativa para hoy"
+    },
+    "dateTomorrow": "Mañana",
+    "@dateTomorrow": {
+        "description": "Etiqueta de fecha relativa para mañana"
+    },
+    "dateYesterday": "Ayer",
+    "@dateYesterday": {
+        "description": "Etiqueta de fecha relativa para ayer"
+    },
+    "dateInDays": "En {days} días",
+    "@dateInDays": {
+        "description": "Etiqueta de fecha relativa para días en el futuro",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "dateDaysAgo": "Hace {days} días",
+    "@dateDaysAgo": {
+        "description": "Etiqueta de fecha relativa para días en el pasado",
+        "placeholders": {
+            "days": {
+                "type": "int",
+                "example": "3"
+            }
+        }
+    },
+    "repeatsLabel": "Se repite",
+    "@repeatsLabel": {
+        "description": "Etiqueta mostrada para tareas/proyectos repetitivos"
+    },
+    "labelTypeLabel": "Etiqueta",
+    "@labelTypeLabel": {
+        "description": "Nombre para mostrar del tipo etiqueta"
+    },
+    "labelTypeValue": "Valor",
+    "@labelTypeValue": {
+        "description": "Nombre para mostrar del tipo valor"
+    },
+    "retryButton": "Reintentar",
+    "@retryButton": {
+        "description": "Texto para el botón de acción de reintentar"
+    },
+    "rruleDaily": "Cada día",
+    "@rruleDaily": {
+        "description": "Frecuencia RRULE: diario"
+    },
+    "rruleWeekly": "Cada semana",
+    "@rruleWeekly": {
+        "description": "Frecuencia RRULE: semanal"
+    },
+    "rruleMonthly": "Cada mes",
+    "@rruleMonthly": {
+        "description": "Frecuencia RRULE: mensual"
+    },
+    "rruleYearly": "Cada año",
+    "@rruleYearly": {
+        "description": "Frecuencia RRULE: anual"
+    },
+    "rruleEveryNDays": "Cada {n} días",
+    "@rruleEveryNDays": {
+        "description": "Frecuencia RRULE: cada n días",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNWeeks": "Cada {n} semanas",
+    "@rruleEveryNWeeks": {
+        "description": "Frecuencia RRULE: cada n semanas",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNMonths": "Cada {n} meses",
+    "@rruleEveryNMonths": {
+        "description": "Frecuencia RRULE: cada n meses",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleEveryNYears": "Cada {n} años",
+    "@rruleEveryNYears": {
+        "description": "Frecuencia RRULE: cada n años",
+        "placeholders": {
+            "n": {
+                "type": "int",
+                "example": "2"
+            }
+        }
+    },
+    "rruleOn": "el",
+    "@rruleOn": {
+        "description": "RRULE: preposición para días"
+    },
+    "rruleOnDay": "el día",
+    "@rruleOnDay": {
+        "description": "RRULE: preposición para día del mes"
+    },
+    "rruleTimes": "{count, plural, =1{1 vez} other{{count} veces}}",
+    "@rruleTimes": {
+        "description": "RRULE: número de ocurrencias",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "rruleUntil": "hasta",
+    "@rruleUntil": {
+        "description": "RRULE: preposición para fecha de fin"
+    },
+    "dayMon": "Lun",
+    "@dayMon": {
+        "description": "Nombre de día abreviado: Lunes"
+    },
+    "dayTue": "Mar",
+    "@dayTue": {
+        "description": "Nombre de día abreviado: Martes"
+    },
+    "dayWed": "Mié",
+    "@dayWed": {
+        "description": "Nombre de día abreviado: Miércoles"
+    },
+    "dayThu": "Jue",
+    "@dayThu": {
+        "description": "Nombre de día abreviado: Jueves"
+    },
+    "dayFri": "Vie",
+    "@dayFri": {
+        "description": "Nombre de día abreviado: Viernes"
+    },
+    "daySat": "Sáb",
+    "@daySat": {
+        "description": "Nombre de día abreviado: Sábado"
+    },
+    "daySun": "Dom",
+    "@daySun": {
+        "description": "Nombre de día abreviado: Domingo"
+    },
+    "projectDetailTasksTitle": "Tareas",
+    "@projectDetailTasksTitle": {
+        "description": "Título de la sección de tareas en detalle del proyecto"
+    },
+    "projectDetailTaskCount": "{count, plural, =0{Sin tareas} =1{1 tarea} other{{count} tareas}}",
+    "@projectDetailTaskCount": {
+        "description": "Recuento de tareas en detalle del proyecto",
+        "placeholders": {
+            "count": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailCompletedCount": "{completed} de {total} completadas",
+    "@projectDetailCompletedCount": {
+        "description": "Recuento de tareas completadas",
+        "placeholders": {
+            "completed": {
+                "type": "int",
+                "example": "3"
+            },
+            "total": {
+                "type": "int",
+                "example": "5"
+            }
+        }
+    },
+    "projectDetailEmptyTasksDescription": "Añade tareas a este proyecto para seguir tu progreso",
+    "@projectDetailEmptyTasksDescription": {
+        "description": "Descripción mostrada cuando el proyecto no tiene tareas"
+    },
+    "projectStatusCompleted": "Completado",
+    "@projectStatusCompleted": {
+        "description": "Insignia de estado para proyectos completados"
+    },
+    "projectStatusActive": "Activo",
+    "@projectStatusActive": {
+        "description": "Insignia de estado para proyectos activos"
+    },
+    "deleteProjectAction": "Eliminar proyecto",
+    "@deleteProjectAction": {
+        "description": "Acción del menú para eliminar un proyecto"
+    },
+    "markCompleteAction": "Marcar como completado",
+    "@markCompleteAction": {
+        "description": "Acción del menú para marcar un proyecto como completado"
+    },
+    "markIncompleteAction": "Marcar como incompleto",
+    "@markIncompleteAction": {
+        "description": "Acción del menú para marcar un proyecto como incompleto"
+    }
+}

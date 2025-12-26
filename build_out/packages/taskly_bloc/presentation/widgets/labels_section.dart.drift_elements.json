@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:flutter/material.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/widgets/truncated_label_chips.dart","transitive":false},{"uri":"package:taskly_bloc/domain/domain.dart","transitive":false}],"elements":[]}

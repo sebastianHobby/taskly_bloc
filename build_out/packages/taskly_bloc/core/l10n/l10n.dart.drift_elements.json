@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:taskly_bloc/core/l10n/gen/app_localizations.dart","transitive":true},{"uri":"package:flutter/widgets.dart","transitive":false},{"uri":"package:taskly_bloc/core/l10n/gen/app_localizations.dart","transitive":false}],"elements":[]}

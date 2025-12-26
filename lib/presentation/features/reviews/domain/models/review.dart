@@ -6,9 +6,9 @@ part 'review.g.dart';
 
 @freezed
 abstract class Review with _$Review {
+  @JsonSerializable(explicitToJson: true)
   const factory Review({
     required String id,
-    required String userId,
     required String name,
     required ReviewQuery query,
     required String rrule,

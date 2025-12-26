@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:freezed_annotation/freezed_annotation.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/features/analytics/domain/models/date_range.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/features/analytics/domain/models/entity_type.dart","transitive":false}],"elements":[]}

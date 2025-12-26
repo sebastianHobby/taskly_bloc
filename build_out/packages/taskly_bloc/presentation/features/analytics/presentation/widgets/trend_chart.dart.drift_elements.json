@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:fl_chart/fl_chart.dart","transitive":false},{"uri":"package:flutter/material.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/features/analytics/domain/models/trend_data.dart","transitive":false}],"elements":[]}

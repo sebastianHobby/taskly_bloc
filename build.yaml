@@ -1,10 +1,10 @@
 targets:
   $default:
     builders:
-      json_serializable:
+      json_serializable:json_serializable:
         options:
           field_rename: snake
-      drift_dev:
+      drift_dev:drift_dev:
         options:
           store_date_time_values_as_text: true
           sql:

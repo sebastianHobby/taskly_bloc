@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"reviews","dart_name":"Reviews"},{"kind":"table","name":"review_completion_history","dart_name":"ReviewCompletionHistory"},{"kind":"table","name":"review_entity_history","dart_name":"ReviewEntityHistory"}]}

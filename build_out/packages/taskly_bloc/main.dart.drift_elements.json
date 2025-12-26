@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:taskly_bloc/bootstrap.dart","transitive":false},{"uri":"package:taskly_bloc/presentation/features/app/app.dart","transitive":false}],"elements":[]}

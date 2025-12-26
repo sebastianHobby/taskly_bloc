@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:flutter/material.dart","transitive":false},{"uri":"package:flutter_test/flutter_test.dart","transitive":false},{"uri":"package:go_router/go_router.dart","transitive":false},{"uri":"package:taskly_bloc/core/l10n/l10n.dart","transitive":false},{"uri":"package:taskly_bloc/core/theme/app_theme.dart","transitive":false}],"elements":[]}

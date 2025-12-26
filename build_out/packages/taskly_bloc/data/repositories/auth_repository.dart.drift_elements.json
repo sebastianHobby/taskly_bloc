@@ -1,0 +1,1 @@
+{"valid_import":true,"imports":[{"uri":"package:supabase_flutter/supabase_flutter.dart","transitive":false},{"uri":"package:taskly_bloc/domain/contracts/auth_repository_contract.dart","transitive":false}],"elements":[]}
