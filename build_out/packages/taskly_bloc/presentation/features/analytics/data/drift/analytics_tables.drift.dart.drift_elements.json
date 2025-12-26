@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"analytics_snapshots","dart_name":"AnalyticsSnapshots"},{"kind":"table","name":"analytics_correlations","dart_name":"AnalyticsCorrelations"},{"kind":"table","name":"analytics_insights","dart_name":"AnalyticsInsights"}]}
