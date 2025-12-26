@@ -39,6 +39,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 build/
+build_out/
 flutter_*.png
 linked_*.ds
 unlinked.ds
