@@ -41,8 +41,9 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, loaded] when entry is found',
         build: () {
-          when(() => repository.getJournalEntryById('entry-1'))
-              .thenAnswer((_) async => testEntry);
+          when(
+            () => repository.getJournalEntryById('entry-1'),
+          ).thenAnswer((_) async => testEntry);
           return bloc;
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.load('entry-1')),
@@ -58,12 +59,12 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, loaded(null)] when entry is not found',
         build: () {
-          when(() => repository.getJournalEntryById('non-existent'))
-              .thenAnswer((_) async => null);
+          when(
+            () => repository.getJournalEntryById('non-existent'),
+          ).thenAnswer((_) async => null);
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(const JournalEntryEvent.load('non-existent')),
+        act: (bloc) => bloc.add(const JournalEntryEvent.load('non-existent')),
         expect: () => [
           const JournalEntryState.loading(),
           const JournalEntryState.loaded(null),
@@ -73,8 +74,9 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, error] when repository throws',
         build: () {
-          when(() => repository.getJournalEntryById(any()))
-              .thenThrow(Exception('Database error'));
+          when(
+            () => repository.getJournalEntryById(any()),
+          ).thenThrow(Exception('Database error'));
           return bloc;
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.load('entry-1')),
@@ -89,31 +91,32 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, loaded] when entry is found for date',
         build: () {
-          when(() => repository.getJournalEntryByDate(date: testDate))
-              .thenAnswer((_) async => testEntry);
+          when(
+            () => repository.getJournalEntryByDate(date: testDate),
+          ).thenAnswer((_) async => testEntry);
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
+        act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
           const JournalEntryState.loading(),
           JournalEntryState.loaded(testEntry),
         ],
         verify: (_) {
-          verify(() => repository.getJournalEntryByDate(date: testDate))
-              .called(1);
+          verify(
+            () => repository.getJournalEntryByDate(date: testDate),
+          ).called(1);
         },
       );
 
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, loaded(null)] when no entry exists for date',
         build: () {
-          when(() => repository.getJournalEntryByDate(date: testDate))
-              .thenAnswer((_) async => null);
+          when(
+            () => repository.getJournalEntryByDate(date: testDate),
+          ).thenAnswer((_) async => null);
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
+        act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
           const JournalEntryState.loading(),
           const JournalEntryState.loaded(null),
@@ -123,12 +126,12 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, error] when repository throws',
         build: () {
-          when(() => repository.getJournalEntryByDate(date: any(named: 'date')))
-              .thenThrow(Exception('Query failed'));
+          when(
+            () => repository.getJournalEntryByDate(date: any(named: 'date')),
+          ).thenThrow(Exception('Query failed'));
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
+        act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
           const JournalEntryState.loading(),
           const JournalEntryState.error('Exception: Query failed'),
@@ -140,8 +143,9 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, saved] when save succeeds',
         build: () {
-          when(() => repository.saveJournalEntry(testEntry))
-              .thenAnswer((_) async => {});
+          when(
+            () => repository.saveJournalEntry(testEntry),
+          ).thenAnswer((_) async => {});
           return bloc;
         },
         act: (bloc) => bloc.add(JournalEntryEvent.save(testEntry)),
@@ -157,8 +161,9 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, error] when save fails',
         build: () {
-          when(() => repository.saveJournalEntry(any()))
-              .thenThrow(Exception('Save failed'));
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenThrow(Exception('Save failed'));
           return bloc;
         },
         act: (bloc) => bloc.add(JournalEntryEvent.save(testEntry)),
@@ -173,12 +178,12 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, saved] when delete succeeds',
         build: () {
-          when(() => repository.deleteJournalEntry('entry-1'))
-              .thenAnswer((_) async => {});
+          when(
+            () => repository.deleteJournalEntry('entry-1'),
+          ).thenAnswer((_) async => {});
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(const JournalEntryEvent.delete('entry-1')),
+        act: (bloc) => bloc.add(const JournalEntryEvent.delete('entry-1')),
         expect: () => [
           const JournalEntryState.loading(),
           const JournalEntryState.saved(),
@@ -191,12 +196,12 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'emits [loading, error] when delete fails',
         build: () {
-          when(() => repository.deleteJournalEntry(any()))
-              .thenThrow(Exception('Delete failed'));
+          when(
+            () => repository.deleteJournalEntry(any()),
+          ).thenThrow(Exception('Delete failed'));
           return bloc;
         },
-        act: (bloc) =>
-            bloc.add(const JournalEntryEvent.delete('entry-1')),
+        act: (bloc) => bloc.add(const JournalEntryEvent.delete('entry-1')),
         expect: () => [
           const JournalEntryState.loading(),
           const JournalEntryState.error('Exception: Delete failed'),
@@ -208,10 +213,12 @@ void main() {
       blocTest<JournalEntryBloc, JournalEntryState>(
         'can perform multiple operations in sequence',
         build: () {
-          when(() => repository.getJournalEntryById('entry-1'))
-              .thenAnswer((_) async => testEntry);
-          when(() => repository.saveJournalEntry(any()))
-              .thenAnswer((_) async => {});
+          when(
+            () => repository.getJournalEntryById('entry-1'),
+          ).thenAnswer((_) async => testEntry);
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenAnswer((_) async => {});
           return bloc;
         },
         act: (bloc) async {

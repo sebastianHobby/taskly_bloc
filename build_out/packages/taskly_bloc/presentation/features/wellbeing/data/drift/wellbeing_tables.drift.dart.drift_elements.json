@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:drift/drift.dart","transitive":false}],"elements":[{"kind":"table","name":"journal_entries","dart_name":"JournalEntries"},{"kind":"table","name":"trackers","dart_name":"Trackers"},{"kind":"table","name":"tracker_responses","dart_name":"TrackerResponses"}]}
