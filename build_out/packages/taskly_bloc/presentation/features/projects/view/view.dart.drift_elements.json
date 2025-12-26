@@ -1,1 +1,0 @@
-{"valid_import":true,"imports":[{"uri":"package:taskly_bloc/presentation/features/projects/view/project_overview_view.dart","transitive":true},{"uri":"package:taskly_bloc/presentation/features/projects/view/project_detail_page.dart","transitive":true},{"uri":"package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart","transitive":true}],"elements":[]}
