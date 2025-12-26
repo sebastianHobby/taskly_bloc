@@ -1,4 +1,4 @@
-/// Domain query models for building type-safe database queries.
+﻿/// Domain query models for building type-safe database queries.
 library;
 
 export 'occurrence_expansion.dart';

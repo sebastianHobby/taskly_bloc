@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 
 /// Implementation of authentication repository using Supabase.

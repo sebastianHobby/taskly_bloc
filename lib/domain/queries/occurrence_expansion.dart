@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 /// Configuration for expanding repeating tasks into occurrences within a date range.
 @immutable

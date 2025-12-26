@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/theme/app_colors.dart';
 
 /// Centralized application theme.

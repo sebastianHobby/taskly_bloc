@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/domain.dart';
+﻿import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 abstract class ProjectRepositoryContract {

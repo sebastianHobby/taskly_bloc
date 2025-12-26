@@ -1,7 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/streams/occurrence_stream_expander.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
-import 'package:taskly_bloc/domain/task.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 
 void main() {
   late OccurrenceStreamExpander expander;
@@ -342,10 +342,10 @@ void main() {
         rangeEnd: rangeEnd,
       );
 
-      // Wait for debounce
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      final result = await resultStream.first;
+      // Use first emission with timeout instead of arbitrary delay
+      final result = await resultStream.first.timeout(
+        const Duration(seconds: 2),
+      );
 
       expect(result.length, 1);
       expect(result.first.id, 't1');

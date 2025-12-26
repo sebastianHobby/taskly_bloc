@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show driftRuntimeOptions;
+﻿import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 

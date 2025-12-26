@@ -1,4 +1,4 @@
-// Not using positional boolean parameters as the calling code is json_serializable generated and does not support named parameters
+﻿// Not using positional boolean parameters as the calling code is json_serializable generated and does not support named parameters
 // ignore_for_file: avoid_positional_boolean_parameters
 
 import 'package:uuid/uuid.dart';

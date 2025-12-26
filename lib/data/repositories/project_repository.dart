@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';

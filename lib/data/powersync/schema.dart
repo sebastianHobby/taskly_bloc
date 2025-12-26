@@ -1,4 +1,4 @@
-import 'package:powersync/powersync.dart';
+﻿import 'package:powersync/powersync.dart';
 
 //Generated from powersync dashboard --> Client setup
 // Note powersync expects everything as SQLITE types of text,integer or real

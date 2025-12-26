@@ -1,8 +1,8 @@
-import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/label.dart';
-import 'package:taskly_bloc/domain/task.dart';
+import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Priority bucket rule for grouping tasks by priority.
 class TaskPriorityBucketRule {

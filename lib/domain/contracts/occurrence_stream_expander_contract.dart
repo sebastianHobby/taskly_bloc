@@ -1,5 +1,5 @@
-import 'package:taskly_bloc/domain/project.dart';
-import 'package:taskly_bloc/domain/task.dart';
+﻿import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Contract for the occurrence stream expander.
 ///

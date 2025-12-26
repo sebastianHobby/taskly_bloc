@@ -1,4 +1,4 @@
-/// Contract for the occurrence write helper.
+﻿/// Contract for the occurrence write helper.
 ///
 /// Handles all write operations for occurrence-specific mutations such as
 /// completing, skipping, and rescheduling occurrences.
@@ -44,7 +44,7 @@ abstract class OccurrenceWriteHelperContract {
   /// Reschedules a task occurrence to a new date.
   ///
   /// If [newDeadline] is not provided, the deadline will be calculated
-  /// by applying the original start→deadline offset to [newDate].
+  /// by applying the original startâ†’deadline offset to [newDate].
   ///
   /// [taskId] - The task's unique identifier
   /// [originalDate] - The RRULE-generated date being rescheduled
@@ -125,7 +125,7 @@ abstract class OccurrenceWriteHelperContract {
   /// Reschedules a project occurrence to a new date.
   ///
   /// If [newDeadline] is not provided, the deadline will be calculated
-  /// by applying the original start→deadline offset to [newDate].
+  /// by applying the original startâ†’deadline offset to [newDate].
   ///
   /// [projectId] - The project's unique identifier
   /// [originalDate] - The RRULE-generated date being rescheduled

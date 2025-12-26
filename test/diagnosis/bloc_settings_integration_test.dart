@@ -1,12 +1,9 @@
-import 'dart:async';
-
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/features/next_action/bloc/next_actions_bloc.dart';
 
 import '../helpers/test_db.dart';
 import '../mocks/repository_mocks.dart';
@@ -17,7 +14,6 @@ void main() {
     late AppDatabase testDb;
     late SettingsRepository settingsRepo;
     late TaskRepository taskRepo;
-    late NextActionsSettingsAdapter adapter;
 
     setUp(() {
       testDb = createTestDb();
@@ -27,7 +23,6 @@ void main() {
         occurrenceExpander: MockOccurrenceStreamExpander(),
         occurrenceWriteHelper: MockOccurrenceWriteHelper(),
       );
-      adapter = NextActionsSettingsAdapter(settingsRepository: settingsRepo);
     });
 
     tearDown(() async {
@@ -38,7 +33,7 @@ void main() {
       // Create bloc
       final bloc = NextActionsBloc(
         taskRepository: taskRepo,
-        settingsAdapter: adapter,
+        settingsRepository: settingsRepo,
       );
 
       // Start subscription
@@ -51,7 +46,7 @@ void main() {
 
       // Save new settings
       print('Saving settings with includeInboxTasks=true');
-      await adapter.save(
+      await settingsRepo.saveNextActionsSettings(
         const NextActionsSettings(
           tasksPerProject: 10,
         ),
@@ -75,7 +70,7 @@ void main() {
     test('Settings stream emits multiple updates to bloc', () async {
       final bloc = NextActionsBloc(
         taskRepository: taskRepo,
-        settingsAdapter: adapter,
+        settingsRepository: settingsRepo,
       );
 
       final stateChanges = <NextActionsState>[];
@@ -88,13 +83,15 @@ void main() {
       print('Initial states count: ${stateChanges.length}');
 
       // Save settings change 1
-      await adapter.save(const NextActionsSettings());
+      await settingsRepo.saveNextActionsSettings(const NextActionsSettings());
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
       print('After change 1, states count: ${stateChanges.length}');
 
       // Save settings change 2
-      await adapter.save(const NextActionsSettings(tasksPerProject: 15));
+      await settingsRepo.saveNextActionsSettings(
+        const NextActionsSettings(tasksPerProject: 15),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
       print('After change 2, states count: ${stateChanges.length}');
@@ -114,7 +111,9 @@ void main() {
       print('=== Direct Settings Watch Test ===');
 
       final emissions = <NextActionsSettings>[];
-      final subscription = adapter.watch().listen((settings) {
+      final subscription = settingsRepo.watchNextActionsSettings().listen((
+        settings,
+      ) {
         print(
           'Settings emitted: includeInbox=${settings.includeInboxTasks}, tasksPerProject=${settings.tasksPerProject}',
         );
@@ -127,7 +126,7 @@ void main() {
 
       // Save change 1
       print('Saving change 1...');
-      await adapter.save(
+      await settingsRepo.saveNextActionsSettings(
         const NextActionsSettings(tasksPerProject: 3),
       );
       await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -135,7 +134,9 @@ void main() {
 
       // Save change 2
       print('Saving change 2...');
-      await adapter.save(const NextActionsSettings(tasksPerProject: 7));
+      await settingsRepo.saveNextActionsSettings(
+        const NextActionsSettings(tasksPerProject: 7),
+      );
       await Future<void>.delayed(const Duration(milliseconds: 300));
       print('After save 2, emissions: ${emissions.length}');
 

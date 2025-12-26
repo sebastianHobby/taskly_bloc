@@ -1,0 +1,54 @@
+# Dart test configuration
+# https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md
+
+# Test tags for selective execution
+tags:
+  # Unit tests - fast, isolated tests with mocks
+  unit:
+  
+  # Integration tests - slower tests using real databases or multiple components
+  integration:
+    timeout: 2x
+  
+  # Widget tests - Flutter widget tests
+  widget:
+  
+  # Tests that are known to be slow
+  slow:
+    timeout: 3x
+  
+  # Tests for specific features
+  analytics:
+  auth:
+  reviews:
+  wellbeing:
+  tasks:
+
+# Define test name patterns
+presets:
+  # Run only fast unit tests (for CI quick checks)
+  fast:
+    exclude-tags: [integration, slow]
+    
+  # Run integration tests only
+  integration:
+    include-tags: [integration]
+    
+  # Run all tests except slow ones
+  quick:
+    exclude-tags: [slow]
+
+# Test execution settings
+concurrency: 4
+reporter: expanded
+
+# Test retry configuration (for flaky tests)
+# retry: 2
+
+# Paths
+# paths:
+#   - test/
+
+# Exclude patterns (if needed)
+# exclude:
+#   - test/integration/**

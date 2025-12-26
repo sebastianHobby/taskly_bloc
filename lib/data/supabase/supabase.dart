@@ -1,4 +1,4 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+﻿import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
 
 Future<void> loadSupabase() async {

@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
@@ -11,9 +11,9 @@ import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract
 import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
-import 'package:taskly_bloc/domain/project_task_counts.dart';
+import 'package:taskly_bloc/domain/models/project_task_counts.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/task.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 
 class _OccurrenceRangeKey {
   const _OccurrenceRangeKey({

@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+﻿import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
@@ -190,7 +190,7 @@ class AppLogger {
 
   static String _formatStackTrace(StackTrace stackTrace) {
     final lines = stackTrace.toString().split('\n');
-    final relevantLines = lines.take(10).map((line) => '  → $line');
+    final relevantLines = lines.take(10).map((line) => '  â†’ $line');
     return relevantLines.join('\n');
   }
 

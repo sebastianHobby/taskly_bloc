@@ -1,11 +1,10 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/features/next_action/bloc/next_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/features/next_action/bloc/next_actions_bloc.dart';
 
 import '../helpers/test_db.dart';
 import '../mocks/repository_mocks.dart';
@@ -16,7 +15,6 @@ void main() {
     late AppDatabase testDb;
     late SettingsRepository settingsRepo;
     late TaskRepository taskRepo;
-    late NextActionsSettingsAdapter adapter;
     late NextActionsBloc bloc;
 
     setUp(() async {
@@ -27,7 +25,6 @@ void main() {
         occurrenceExpander: MockOccurrenceStreamExpander(),
         occurrenceWriteHelper: MockOccurrenceWriteHelper(),
       );
-      adapter = NextActionsSettingsAdapter(settingsRepository: settingsRepo);
 
       // Create the project FIRST (for foreign key constraint)
       await testDb
@@ -55,7 +52,7 @@ void main() {
       // Create bloc with initial settings (includeInboxTasks = false)
       bloc = NextActionsBloc(
         taskRepository: taskRepo,
-        settingsAdapter: adapter,
+        settingsRepository: settingsRepo,
       );
 
       // Start subscription
@@ -92,7 +89,7 @@ void main() {
         tasksPerProject: 5,
       );
 
-      await adapter.save(newSettings);
+      await settingsRepo.saveNextActionsSettings(newSettings);
       print('Settings saved');
 
       // Wait for bloc to receive and process the update
@@ -104,7 +101,7 @@ void main() {
       print('Groups: ${bloc.state.groups.length}');
 
       // Verify the settings were actually saved
-      final loaded = await adapter.load();
+      final loaded = await settingsRepo.loadNextActionsSettings();
       expect(
         loaded.includeInboxTasks,
         true,
@@ -133,29 +130,29 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 200));
 
       // Change 1
-      await adapter.save(const NextActionsSettings());
+      await settingsRepo.saveNextActionsSettings(const NextActionsSettings());
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      var loaded = await adapter.load();
+      var loaded = await settingsRepo.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, true);
 
       // Change 2 - explicitly set includeInboxTasks to false
-      await adapter.save(
+      await settingsRepo.saveNextActionsSettings(
         const NextActionsSettings(
           tasksPerProject: 10,
           includeInboxTasks: false,
         ),
       );
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      loaded = await adapter.load();
+      loaded = await settingsRepo.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, false);
       expect(loaded.tasksPerProject, 10);
 
       // Change 3
-      await adapter.save(
+      await settingsRepo.saveNextActionsSettings(
         const NextActionsSettings(tasksPerProject: 3),
       );
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      loaded = await adapter.load();
+      loaded = await settingsRepo.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, true);
       expect(loaded.tasksPerProject, 3);
 
@@ -163,3 +160,4 @@ void main() {
     });
   });
 }
+

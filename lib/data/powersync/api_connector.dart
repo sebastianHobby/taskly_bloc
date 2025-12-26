@@ -1,4 +1,4 @@
-// This file performs setup of the PowerSync database
+﻿// This file performs setup of the PowerSync database
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:path/path.dart';
@@ -12,10 +12,10 @@ final log = Logger('powersync-supabase');
 
 /// Postgres Response codes that we cannot recover from by retrying.
 final List<RegExp> fatalResponseCodes = [
-  // Class 22 — Data Exception
+  // Class 22 â€” Data Exception
   // Examples include data type mismatch.
   RegExp(r'^22...$'),
-  // Class 23 — Integrity Constraint Violation.
+  // Class 23 â€” Integrity Constraint Violation.
   // Examples include NOT NULL, FOREIGN KEY and UNIQUE violations.
   RegExp(r'^23...$'),
   // INSUFFICIENT PRIVILEGE - typically a row-level security violation

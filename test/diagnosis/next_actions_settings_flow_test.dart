@@ -1,8 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
-import 'package:taskly_bloc/domain/settings.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 
 import '../helpers/test_db.dart';
 
@@ -11,12 +10,10 @@ void main() {
   group('Next Actions Settings Data Flow Diagnosis', () {
     late AppDatabase testDb;
     late SettingsRepository repository;
-    late NextActionsSettingsAdapter adapter;
 
     setUp(() {
       testDb = createTestDb();
       repository = SettingsRepository(driftDb: testDb);
-      adapter = NextActionsSettingsAdapter(settingsRepository: repository);
     });
 
     tearDown(() async {
@@ -38,11 +35,11 @@ void main() {
           }}',
         );
 
-        await adapter.save(settingsToSave);
+        await repository.saveNextActionsSettings(settingsToSave);
 
         // Step 2: Immediately load back
         print('STEP 2: Loading settings back immediately after save');
-        final loaded = await adapter.load();
+        final loaded = await repository.loadNextActionsSettings();
 
         print(
           'LOADED: ${{
@@ -69,7 +66,9 @@ void main() {
       // Start watching
       print('STEP 1: Starting watch stream');
       final emissions = <NextActionsSettings>[];
-      final subscription = adapter.watch().listen(emissions.add);
+      final subscription = repository.watchNextActionsSettings().listen(
+        emissions.add,
+      );
 
       // Wait for initial emission
       await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -86,7 +85,7 @@ void main() {
       );
 
       print('STEP 2: Saving new settings');
-      await adapter.save(newSettings);
+      await repository.saveNextActionsSettings(newSettings);
 
       // Wait for stream to emit
       await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -126,26 +125,26 @@ void main() {
 
     test('Multiple saves in sequence all persist correctly', () async {
       // Save 1
-      await adapter.save(const NextActionsSettings());
-      var loaded = await adapter.load();
+      await repository.saveNextActionsSettings(const NextActionsSettings());
+      var loaded = await repository.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, true);
 
       // Save 2 - explicitly set to false
-      await adapter.save(
+      await repository.saveNextActionsSettings(
         const NextActionsSettings(
           includeInboxTasks: false,
         ),
       );
-      loaded = await adapter.load();
+      loaded = await repository.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, false);
 
       // Save 3
-      await adapter.save(
+      await repository.saveNextActionsSettings(
         const NextActionsSettings(
           tasksPerProject: 10,
         ),
       );
-      loaded = await adapter.load();
+      loaded = await repository.loadNextActionsSettings();
       expect(loaded.includeInboxTasks, true);
       expect(loaded.tasksPerProject, 10);
     });

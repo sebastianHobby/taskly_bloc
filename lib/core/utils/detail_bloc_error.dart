@@ -1,4 +1,4 @@
-/// Generic error class for detail BLoCs
+﻿/// Generic error class for detail BLoCs
 class DetailBlocError<T> {
   const DetailBlocError({
     required this.error,

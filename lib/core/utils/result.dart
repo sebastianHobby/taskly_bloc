@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+﻿import 'package:taskly_bloc/core/utils/app_logger.dart';
 
 /// A sealed class representing the result of an operation that can either
 /// succeed with a value or fail with a [Failure].

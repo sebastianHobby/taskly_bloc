@@ -1,13 +1,11 @@
-// Todo setup get it / work out how to handle DI simply/effectively
+﻿// Todo setup get it / work out how to handle DI simply/effectively
 import 'package:drift/drift.dart';
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:get_it/get_it.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/core/helpers/occurrence_write_helper.dart';
-import 'package:taskly_bloc/core/streams/occurrence_stream_expander.dart';
-import 'package:taskly_bloc/data/adapters/next_actions_settings_adapter.dart';
-import 'package:taskly_bloc/data/adapters/page_sort_settings_adapter.dart';
+import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
+import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
 import 'package:taskly_bloc/data/repositories/auth_repository.dart';
@@ -23,6 +21,15 @@ import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.da
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/presentation/features/analytics/data/repositories/analytics_repository_impl.dart';
+import 'package:taskly_bloc/presentation/features/analytics/data/services/analytics_service_impl.dart';
+import 'package:taskly_bloc/presentation/features/analytics/domain/repositories/analytics_repository.dart';
+import 'package:taskly_bloc/presentation/features/analytics/domain/services/analytics_service.dart';
+import 'package:taskly_bloc/presentation/features/reviews/data/repositories/reviews_repository_impl.dart';
+import 'package:taskly_bloc/presentation/features/reviews/domain/repositories/reviews_repository.dart';
+import 'package:taskly_bloc/presentation/features/reviews/domain/services/review_action_service.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/data/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -76,16 +83,28 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<SettingsRepositoryContract>(
       () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
-    // Adapters provide feature-specific interfaces to settings
-    ..registerLazySingleton<NextActionsSettingsAdapter>(
-      () => NextActionsSettingsAdapter(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
+    // Analytics
+    ..registerLazySingleton<AnalyticsRepository>(
+      () => AnalyticsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<AnalyticsService>(
+      () => AnalyticsServiceImpl(
+        taskRepo: getIt<TaskRepositoryContract>(),
+        projectRepo: getIt<ProjectRepositoryContract>(),
+        labelRepo: getIt<LabelRepositoryContract>(),
+        wellbeingRepo: getIt<WellbeingRepository>(),
+        analyticsRepo: getIt<AnalyticsRepository>(),
       ),
     )
-    ..registerFactoryParam<PageSortSettingsAdapter, String, void>(
-      (pageKey, _) => PageSortSettingsAdapter(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        pageKey: pageKey,
-      ),
+    // Wellbeing
+    ..registerLazySingleton<WellbeingRepository>(
+      () => WellbeingRepositoryImpl(getIt<AppDatabase>()),
+    )
+    // Reviews
+    ..registerLazySingleton<ReviewsRepository>(
+      () => ReviewsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<ReviewActionService>(
+      () => ReviewActionService(getIt<TaskRepositoryContract>()),
     );
 }

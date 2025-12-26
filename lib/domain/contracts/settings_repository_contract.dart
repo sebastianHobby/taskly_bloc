@@ -1,5 +1,6 @@
-import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/settings.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/page_key.dart';
 
 /// Repository contract for managing feature-specific application settings.
 ///
@@ -13,15 +14,15 @@ abstract class SettingsRepositoryContract {
   Future<void> saveNextActionsSettings(NextActionsSettings settings);
 
   // Page Sort Preferences
-  Stream<SortPreferences?> watchPageSort(String pageKey);
-  Future<SortPreferences?> loadPageSort(String pageKey);
-  Future<void> savePageSort(String pageKey, SortPreferences preferences);
+  Stream<SortPreferences?> watchPageSort(PageKey pageKey);
+  Future<SortPreferences?> loadPageSort(PageKey pageKey);
+  Future<void> savePageSort(PageKey pageKey, SortPreferences preferences);
 
   // Page Display Settings
-  Stream<PageDisplaySettings> watchPageDisplaySettings(String pageKey);
-  Future<PageDisplaySettings> loadPageDisplaySettings(String pageKey);
+  Stream<PageDisplaySettings> watchPageDisplaySettings(PageKey pageKey);
+  Future<PageDisplaySettings> loadPageDisplaySettings(PageKey pageKey);
   Future<void> savePageDisplaySettings(
-    String pageKey,
+    PageKey pageKey,
     PageDisplaySettings settings,
   );
 

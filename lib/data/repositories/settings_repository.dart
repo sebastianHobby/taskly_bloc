@@ -1,11 +1,12 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/core/shared/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/settings.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/page_key.dart';
 
 /// Repository for managing feature-specific application settings.
 ///
@@ -121,26 +122,26 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   // Page Sort Preferences
   @override
-  Stream<SortPreferences?> watchPageSort(String pageKey) {
+  Stream<SortPreferences?> watchPageSort(PageKey pageKey) {
     return _watchDatabase()
-        .map((appSettings) => appSettings.sortFor(pageKey))
+        .map((appSettings) => appSettings.sortFor(pageKey.key))
         .distinct();
   }
 
   @override
-  Future<SortPreferences?> loadPageSort(String pageKey) async {
+  Future<SortPreferences?> loadPageSort(PageKey pageKey) async {
     final settings = await loadAll();
-    return settings.sortFor(pageKey);
+    return settings.sortFor(pageKey.key);
   }
 
   @override
   Future<void> savePageSort(
-    String pageKey,
+    PageKey pageKey,
     SortPreferences preferences,
   ) async {
     final current = await loadAll();
     final updated = current.upsertPageSort(
-      pageKey: pageKey,
+      pageKey: pageKey.key,
       preferences: preferences,
     );
     await _saveToDatabase(updated);
@@ -148,26 +149,26 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   // Page Display Settings
   @override
-  Stream<PageDisplaySettings> watchPageDisplaySettings(String pageKey) {
+  Stream<PageDisplaySettings> watchPageDisplaySettings(PageKey pageKey) {
     return _watchDatabase()
-        .map((appSettings) => appSettings.displaySettingsFor(pageKey))
+        .map((appSettings) => appSettings.displaySettingsFor(pageKey.key))
         .distinct();
   }
 
   @override
-  Future<PageDisplaySettings> loadPageDisplaySettings(String pageKey) async {
+  Future<PageDisplaySettings> loadPageDisplaySettings(PageKey pageKey) async {
     final settings = await loadAll();
-    return settings.displaySettingsFor(pageKey);
+    return settings.displaySettingsFor(pageKey.key);
   }
 
   @override
   Future<void> savePageDisplaySettings(
-    String pageKey,
+    PageKey pageKey,
     PageDisplaySettings settings,
   ) async {
     final current = await loadAll();
     final updated = current.upsertPageDisplaySettings(
-      pageKey: pageKey,
+      pageKey: pageKey.key,
       settings: settings,
     );
     await _saveToDatabase(updated);
