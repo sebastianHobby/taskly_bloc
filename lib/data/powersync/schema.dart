@@ -4,9 +4,6 @@
 // Note powersync expects everything as SQLITE types of text,integer or real
 // Casts it to appropiate type when syncing
 const schema = Schema([
-  // -------------------------------------------------------------------------
-  // EXISTING TABLES
-  // -------------------------------------------------------------------------
   Table('tasks', [
     Column.text('created_at'),
     Column.text('updated_at'),
@@ -18,8 +15,14 @@ const schema = Schema([
     Column.text('project_id'),
     Column.text('user_id'),
     Column.text('repeat_ical_rrule'),
-    Column.integer('series_ended'), // NEW: stops generating future occurrences
-    Column.integer('repeat_from_completion'), // NEW: anchor to last completion
+    Column.integer('series_ended'),
+    Column.integer('repeat_from_completion'),
+    Column.text('last_reviewed_at'),
+    Column.text('review_notes'),
+    Column.integer('is_next_action'),
+    Column.integer('next_action_priority'),
+    Column.text('marked_next_action_at'),
+    Column.text('next_action_notes'),
   ]),
   Table('projects', [
     Column.text('name'),
@@ -32,8 +35,11 @@ const schema = Schema([
     Column.text('deadline_date'),
     Column.text('repeat_ical_rrule'),
     Column.text('last_review_date'),
-    Column.integer('series_ended'), // NEW: stops generating future occurrences
-    Column.integer('repeat_from_completion'), // NEW: anchor to last completion
+    Column.integer('series_ended'),
+    Column.integer('repeat_from_completion'),
+    Column.text('last_reviewed_at'),
+    Column.integer('priority_rank'),
+    Column.real('priority_weight'),
   ]),
   Table('labels', [
     Column.text('name'),
@@ -43,16 +49,18 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('type'),
     Column.text('icon_name'),
+    Column.integer('priority_rank'),
+    Column.real('priority_weight'),
   ]),
-  Table('task_labels', [
-    Column.text('task_id'),
+  Table('project_labels', [
+    Column.text('project_id'),
     Column.text('label_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
   ]),
-  Table('project_labels', [
-    Column.text('project_id'),
+  Table('task_labels', [
+    Column.text('task_id'),
     Column.text('label_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
@@ -64,60 +72,204 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
-
-  // -------------------------------------------------------------------------
-  // NEW TABLES FOR REPEATING TASKS
-  // -------------------------------------------------------------------------
-
-  /// Tracks completion of task occurrences (both repeating and non-repeating)
+  Table('priority_rankings', [
+    Column.text('user_id'),
+    Column.text('ranking_type'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ]),
+  Table('ranked_items', [
+    Column.text('ranking_id'),
+    Column.text('entity_id'),
+    Column.text('entity_type'),
+    Column.integer('weight'),
+    Column.integer('sort_order'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('user_id'),
+  ]),
+  Table('allocation_preferences', [
+    Column.text('user_id'),
+    Column.text('strategy_type'),
+    Column.real('urgency_influence'),
+    Column.integer('minimum_tasks_per_category'),
+    Column.integer('top_n_categories'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ]),
+  Table('screen_definitions', [
+    Column.text('user_id'),
+    Column.text('screen_type'),
+    Column.text('screen_id'),
+    Column.text('name'),
+    Column.text('icon_name'),
+    Column.integer('is_system'),
+    Column.integer('is_active'),
+    Column.integer('sort_order'),
+    Column.text('entity_type'),
+    Column.text('selector_config'),
+    Column.text('display_config'),
+    Column.text('trigger_config'),
+    Column.text('completion_criteria'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('trigger_type'),
+    Column.text('next_trigger_at'),
+  ]),
+  Table('pending_notifications', [
+    Column.text('user_id'),
+    Column.text('screen_definition_id'),
+    Column.text('scheduled_for'),
+    Column.text('status'),
+    Column.text('payload'),
+    Column.text('created_at'),
+    Column.text('delivered_at'),
+    Column.text('seen_at'),
+  ]),
   Table('task_completion_history', [
     Column.text('task_id'),
-    Column.text('occurrence_date'), // NULL for non-repeating tasks
-    Column.text(
-      'original_occurrence_date',
-    ), // Original RRULE date (for on-time tracking)
+    Column.text('occurrence_date'),
+    Column.text('original_occurrence_date'),
     Column.text('completed_at'),
     Column.text('notes'),
     Column.text('user_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
-
-  /// Tracks completion of project occurrences (both repeating and non-repeating)
   Table('project_completion_history', [
     Column.text('project_id'),
-    Column.text('occurrence_date'), // NULL for non-repeating projects
-    Column.text(
-      'original_occurrence_date',
-    ), // Original RRULE date (for on-time tracking)
+    Column.text('occurrence_date'),
+    Column.text('original_occurrence_date'),
     Column.text('completed_at'),
     Column.text('notes'),
     Column.text('user_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
-
-  /// Modifications to individual task occurrences (skip or reschedule)
   Table('task_recurrence_exceptions', [
     Column.text('task_id'),
-    Column.text('original_date'), // The RRULE date being modified
-    Column.text('exception_type'), // 'skip' | 'reschedule'
-    Column.text('new_date'), // Target date for reschedule (NULL if skip)
-    Column.text('new_deadline'), // Override deadline (NULL = inherit)
+    Column.text('original_date'),
+    Column.text('exception_type'),
+    Column.text('new_date'),
+    Column.text('new_deadline'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
     Column.text('user_id'),
+  ]),
+  Table('project_recurrence_exceptions', [
+    Column.text('project_id'),
+    Column.text('original_date'),
+    Column.text('exception_type'),
+    Column.text('new_date'),
+    Column.text('new_deadline'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('user_id'),
+  ]),
+  Table('workflow_sessions', [
+    Column.text('user_id'),
+    Column.text('screen_id'),
+    Column.text('status'),
+    Column.text('started_at'),
+    Column.text('completed_at'),
+    Column.integer('total_items'),
+    Column.integer('items_reviewed'),
+    Column.integer('items_skipped'),
+    Column.text('session_notes'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
-
-  /// Modifications to individual project occurrences (skip or reschedule)
-  Table('project_recurrence_exceptions', [
-    Column.text('project_id'),
-    Column.text('original_date'), // The RRULE date being modified
-    Column.text('exception_type'), // 'skip' | 'reschedule'
-    Column.text('new_date'), // Target date for reschedule (NULL if skip)
-    Column.text('new_deadline'), // Override deadline (NULL = inherit)
-    Column.text('user_id'),
+  Table('workflow_item_reviews', [
+    Column.text('session_id'),
+    Column.text('entity_id'),
+    Column.text('entity_type'),
+    Column.text('action'),
+    Column.text('review_notes'),
+    Column.text('reviewed_at'),
     Column.text('created_at'),
     Column.text('updated_at'),
+    Column.text('user_id'),
+  ]),
+  Table('problem_acknowledgments', [
+    Column.text('user_id'),
+    Column.text('problem_type'),
+    Column.text('entity_id'),
+    Column.text('entity_type'),
+    Column.text('acknowledged_at'),
+    Column.text('resolution_action'),
+    Column.text('snooze_until'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+  ]),
+  Table('analytics_snapshots', [
+    Column.text('user_id'),
+    Column.text('entity_type'),
+    Column.text('entity_id'),
+    Column.text('snapshot_date'),
+    Column.text('metrics'),
+    Column.text('created_at'),
+  ]),
+  Table('analytics_correlations', [
+    Column.text('user_id'),
+    Column.text('correlation_type'),
+    Column.text('source_type'),
+    Column.text('source_id'),
+    Column.text('target_type'),
+    Column.text('target_id'),
+    Column.text('period_start'),
+    Column.text('period_end'),
+    Column.text('coefficient'),
+    Column.integer('sample_size'),
+    Column.text('strength'),
+    Column.text('insight'),
+    Column.text('value_with_source'),
+    Column.text('value_without_source'),
+    Column.text('computed_at'),
+    Column.text('statistical_significance'),
+    Column.text('performance_metrics'),
+  ]),
+  Table('analytics_insights', [
+    Column.text('user_id'),
+    Column.text('insight_type'),
+    Column.text('title'),
+    Column.text('description'),
+    Column.text('metadata'),
+    Column.text('score'),
+    Column.text('confidence'),
+    Column.integer('is_positive'),
+    Column.text('generated_at'),
+    Column.text('period_start'),
+    Column.text('period_end'),
+    Column.text('created_at'),
+  ]),
+  Table('journal_entries', [
+    Column.text('user_id'),
+    Column.text('entry_date'),
+    Column.text('entry_time'),
+    Column.integer('mood_rating'),
+    Column.text('journal_text'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('deleted_at'),
+  ]),
+  Table('trackers', [
+    Column.text('user_id'),
+    Column.text('name'),
+    Column.text('description'),
+    Column.text('response_type'),
+    Column.text('response_config'),
+    Column.text('entry_scope'),
+    Column.integer('sort_order'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('deleted_at'),
+  ]),
+  Table('tracker_responses', [
+    Column.text('journal_entry_id'),
+    Column.text('tracker_id'),
+    Column.text('response_value'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('user_id'),
   ]),
 ]);

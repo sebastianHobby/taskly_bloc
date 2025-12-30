@@ -1,13 +1,8 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
-/// Responsive breakpoints for navigation.
+/// Responsive breakpoints for navigew ation.
 class _NavigationBreakpoints {
-  static const double mobile = 600;
   static const double tablet = 840;
 }
 
@@ -19,170 +14,21 @@ class _NavigationBreakpoints {
 class ScaffoldWithNavigationRail extends StatelessWidget {
   const ScaffoldWithNavigationRail({
     required this.body,
-    required this.selectedIndex,
+    required this.destinations,
+    required this.activeScreenId,
     required this.onDestinationSelected,
     super.key,
   });
 
   final Widget body;
-  final int selectedIndex;
-  final ValueChanged<int> onDestinationSelected;
-
-  int _effectiveSelectedIndex(BuildContext context) {
-    if (selectedIndex != 3) return selectedIndex;
-
-    final path = GoRouterState.of(context).uri.path;
-    if (path.startsWith(AppRoutePath.taskNextActions)) return 4;
-    if (path.startsWith(AppRoutePath.labels)) return 5;
-    if (path.startsWith(AppRoutePath.values)) return 6;
-    if (path.startsWith(AppRoutePath.reviews)) return 7;
-    if (path.startsWith(AppRoutePath.wellbeing)) return 8;
-    return 3;
-  }
-
-  void _onDestinationSelected(BuildContext context, int index) {
-    switch (index) {
-      case 0:
-      case 1:
-      case 2:
-        onDestinationSelected(index);
-        return;
-      case 3:
-        context.goNamed(AppRouteName.projects);
-        return;
-      case 4:
-        context.goNamed(AppRouteName.taskNextActions);
-        return;
-      case 5:
-        context.goNamed(AppRouteName.labels);
-        return;
-      case 6:
-        context.goNamed(AppRouteName.values);
-        return;
-      case 7:
-        context.goNamed(AppRouteName.reviews);
-        return;
-      case 8:
-        context.goNamed(AppRouteName.wellbeing);
-        return;
-    }
-  }
-
-  Widget _buildTodayIcon(BuildContext context, {bool selected = false}) {
-    final badgeService = context.read<TodayBadgeService>();
-    final icon = Icon(
-      selected ? Icons.calendar_today : Icons.calendar_today_outlined,
-    );
-
-    return StreamBuilder<int>(
-      stream: badgeService.watchIncompleteCount(),
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        if (count == 0) return icon;
-        return Badge(
-          label: Text(count.toString()),
-          child: icon,
-        );
-      },
-    );
-  }
-
-  List<NavigationRailDestination> _buildRailDestinations(BuildContext context) {
-    return [
-      NavigationRailDestination(
-        label: Text(context.l10n.inboxTitle),
-        icon: const Icon(Icons.inbox_outlined),
-        selectedIcon: const Icon(Icons.inbox),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.todayTitle),
-        icon: _buildTodayIcon(context),
-        selectedIcon: _buildTodayIcon(context, selected: true),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.upcomingTitle),
-        icon: const Icon(Icons.event_outlined),
-        selectedIcon: const Icon(Icons.event),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.projectsTitle),
-        icon: const Icon(Icons.folder_outlined),
-        selectedIcon: const Icon(Icons.folder),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.nextActionsTitle),
-        icon: const Icon(Icons.playlist_play_outlined),
-        selectedIcon: const Icon(Icons.playlist_play),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.labelsTitle),
-        icon: const Icon(Icons.label_outline),
-        selectedIcon: const Icon(Icons.label),
-      ),
-      NavigationRailDestination(
-        label: Text(context.l10n.valuesTitle),
-        icon: const Icon(Icons.favorite_border),
-        selectedIcon: const Icon(Icons.favorite),
-      ),
-      NavigationRailDestination(
-        label: const Text('Reviews'),
-        icon: const Icon(Icons.rate_review_outlined),
-        selectedIcon: const Icon(Icons.rate_review),
-      ),
-      NavigationRailDestination(
-        label: const Text('Wellbeing'),
-        icon: const Icon(Icons.psychology_outlined),
-        selectedIcon: const Icon(Icons.psychology),
-      ),
-    ];
-  }
-
-  List<NavigationDestination> _buildBarDestinations(BuildContext context) {
-    // For mobile, show only the main 4 destinations
-    return [
-      NavigationDestination(
-        label: context.l10n.inboxTitle,
-        icon: const Icon(Icons.inbox_outlined),
-        selectedIcon: const Icon(Icons.inbox),
-      ),
-      NavigationDestination(
-        label: context.l10n.todayTitle,
-        icon: _buildTodayIcon(context),
-        selectedIcon: _buildTodayIcon(context, selected: true),
-      ),
-      NavigationDestination(
-        label: context.l10n.upcomingTitle,
-        icon: const Icon(Icons.event_outlined),
-        selectedIcon: const Icon(Icons.event),
-      ),
-      NavigationDestination(
-        label: context.l10n.projectsTitle,
-        icon: const Icon(Icons.folder_outlined),
-        selectedIcon: const Icon(Icons.folder),
-      ),
-    ];
-  }
+  final List<NavigationDestinationVm> destinations;
+  final String? activeScreenId;
+  final ValueChanged<String> onDestinationSelected;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final effectiveIndex = _effectiveSelectedIndex(context);
-
-    // Mobile: Bottom navigation bar
-    if (screenWidth < _NavigationBreakpoints.mobile) {
-      // Map extended indices back to the 4 visible destinations
-      final mobileIndex = effectiveIndex.clamp(0, 3);
-
-      return Scaffold(
-        body: body,
-        bottomNavigationBar: NavigationBar(
-          selectedIndex: mobileIndex,
-          onDestinationSelected: (index) =>
-              _onDestinationSelected(context, index),
-          destinations: _buildBarDestinations(context),
-        ),
-      );
-    }
+    final selectedIndex = _selectedIndex();
 
     // Tablet: Compact rail, Desktop: Extended rail
     final isExtended = screenWidth >= _NavigationBreakpoints.tablet;
@@ -191,9 +37,9 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
       body: Row(
         children: [
           NavigationRail(
-            selectedIndex: effectiveIndex,
+            selectedIndex: selectedIndex,
             onDestinationSelected: (index) =>
-                _onDestinationSelected(context, index),
+                onDestinationSelected(destinations[index].screenId),
             extended: isExtended,
             labelType: isExtended
                 ? NavigationRailLabelType.none
@@ -229,7 +75,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
                       size: 32,
                     ),
                   ),
-            destinations: _buildRailDestinations(context),
+            destinations: destinations.map(_toRailDestination).toList(),
             useIndicator: true,
             minWidth: 72,
             minExtendedWidth: 200,
@@ -238,6 +84,37 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
           Expanded(child: body),
         ],
       ),
+    );
+  }
+
+  int _selectedIndex() {
+    final idx = destinations.indexWhere((d) => d.screenId == activeScreenId);
+    if (idx == -1) return 0;
+    return idx;
+  }
+
+  NavigationRailDestination _toRailDestination(
+    NavigationDestinationVm destination,
+  ) {
+    return NavigationRailDestination(
+      label: Text(destination.label),
+      icon: _buildIcon(destination),
+      selectedIcon: _buildIcon(destination, selected: true),
+    );
+  }
+
+  Widget _buildIcon(NavigationDestinationVm dest, {bool selected = false}) {
+    final baseIcon = Icon(selected ? dest.selectedIcon : dest.icon);
+    final badgeStream = dest.badgeStream;
+    if (badgeStream == null) return baseIcon;
+
+    return StreamBuilder<int>(
+      stream: badgeStream,
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        if (count <= 0) return baseIcon;
+        return Badge(label: Text(count.toString()), child: baseIcon);
+      },
     );
   }
 }

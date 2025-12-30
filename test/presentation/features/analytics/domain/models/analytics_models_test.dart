@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/analytics_insight.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/correlation_result.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/trend_data.dart';
+import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
+import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
+import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
 
 void main() {
   group('AnalyticsInsight', () {
@@ -12,7 +12,6 @@ void main() {
     test('creates instance with required fields', () {
       final insight = AnalyticsInsight(
         id: 'insight-1',
-        userId: 'user-1',
         insightType: InsightType.correlationDiscovery,
         title: 'High Correlation Found',
         description: 'Strong correlation between task completion and mood',
@@ -22,7 +21,6 @@ void main() {
       );
 
       expect(insight.id, 'insight-1');
-      expect(insight.userId, 'user-1');
       expect(insight.insightType, InsightType.correlationDiscovery);
       expect(insight.title, 'High Correlation Found');
       expect(insight.description, contains('correlation'));
@@ -44,7 +42,6 @@ void main() {
 
       final insight = AnalyticsInsight(
         id: 'insight-1',
-        userId: 'user-1',
         insightType: InsightType.productivityPattern,
         title: 'Peak Productivity Pattern',
         description: 'Most productive in the morning',
@@ -65,7 +62,6 @@ void main() {
     test('toJson serializes correctly', () {
       final insight = AnalyticsInsight(
         id: 'insight-1',
-        userId: 'user-1',
         insightType: InsightType.trendAlert,
         title: 'Declining Trend',
         description: 'Task completion rate declining',
@@ -90,7 +86,6 @@ void main() {
     test('fromJson deserializes correctly', () {
       final insight = AnalyticsInsight(
         id: 'insight-1',
-        userId: 'user-1',
         insightType: InsightType.anomalyDetection,
         title: 'Unusual Activity',
         description: 'Spike in task creation detected',
@@ -103,7 +98,6 @@ void main() {
       final restored = AnalyticsInsight.fromJson(json);
 
       expect(restored.id, insight.id);
-      expect(restored.userId, insight.userId);
       expect(restored.insightType, InsightType.anomalyDetection);
       expect(restored.title, insight.title);
     });
@@ -121,7 +115,6 @@ void main() {
       for (final type in types) {
         final insight = AnalyticsInsight(
           id: 'insight-1',
-          userId: 'user-1',
           insightType: type,
           title: 'Test',
           description: 'Test',
@@ -136,7 +129,6 @@ void main() {
     test('copyWith creates new instance with updated fields', () {
       final insight = AnalyticsInsight(
         id: 'insight-1',
-        userId: 'user-1',
         insightType: InsightType.recommendation,
         title: 'Original Title',
         description: 'Original Description',

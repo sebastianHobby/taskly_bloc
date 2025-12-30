@@ -207,7 +207,7 @@ void main() {
           .into(db.taskTable)
           .insert(
             drift.TaskTableCompanion.insert(
-              id: 'task-1',
+              id: const Value('task-1'),
               name: 'Task 1',
               completed: const Value(false),
               projectId: const Value('proj-1'),
@@ -276,7 +276,7 @@ void main() {
           .into(db.taskTable)
           .insert(
             drift.TaskTableCompanion.insert(
-              id: 'task-1',
+              id: const Value('task-1'),
               name: 'Task 1',
               completed: const Value(false),
               createdAt: Value(createdAt),

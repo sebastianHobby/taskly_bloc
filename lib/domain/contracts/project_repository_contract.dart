@@ -7,6 +7,21 @@ abstract class ProjectRepositoryContract {
   Stream<Project?> watch(String id, {bool withRelated = false});
   Future<Project?> get(String id, {bool withRelated = false});
 
+  /// Watch projects matching a [query].
+  ///
+  /// This mirrors `TaskRepositoryContract.watchAll([TaskQuery?])` and enables
+  /// list retrieval for features that need SQL-level filtering.
+  Stream<List<Project>> watchAllByQuery(
+    ProjectQuery query, {
+    bool withRelated = false,
+  });
+
+  /// Get projects matching a [query].
+  Future<List<Project>> getAllByQuery(
+    ProjectQuery query, {
+    bool withRelated = false,
+  });
+
   /// Count projects matching the optional [query].
   ///
   /// When [query] includes `occurrenceExpansion`, this counts expanded

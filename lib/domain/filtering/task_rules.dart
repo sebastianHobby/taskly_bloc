@@ -233,15 +233,9 @@ class DateRule extends TaskRule {
       operator: DateRuleOperator.values.byName(
         json['operator'] as String? ?? DateRuleOperator.onOrAfter.name,
       ),
-      date: json['date'] == null
-          ? null
-          : DateTime.tryParse(json['date'] as String),
-      startDate: json['startDate'] == null
-          ? null
-          : DateTime.tryParse(json['startDate'] as String),
-      endDate: json['endDate'] == null
-          ? null
-          : DateTime.tryParse(json['endDate'] as String),
+      date: tryParseDateOnly(json['date'] as String?),
+      startDate: tryParseDateOnly(json['startDate'] as String?),
+      endDate: tryParseDateOnly(json['endDate'] as String?),
       relativeComparison: json['relativeComparison'] == null
           ? null
           : RelativeComparison.values.byName(
@@ -365,6 +359,7 @@ class DateRule extends TaskRule {
       DateRuleField.deadlineDate => task.deadlineDate,
       DateRuleField.createdAt => task.createdAt,
       DateRuleField.updatedAt => task.updatedAt,
+      DateRuleField.completedAt => task.occurrence?.completedAt,
     };
   }
 
@@ -376,9 +371,9 @@ class DateRule extends TaskRule {
     'type': type.name,
     'field': field.name,
     'operator': operator.name,
-    'date': date?.toIso8601String(),
-    'startDate': startDate?.toIso8601String(),
-    'endDate': endDate?.toIso8601String(),
+    'date': encodeDateOnlyOrNull(date),
+    'startDate': encodeDateOnlyOrNull(startDate),
+    'endDate': encodeDateOnlyOrNull(endDate),
     'relativeComparison': relativeComparison?.name,
     'relativeDays': relativeDays,
   };
@@ -688,6 +683,7 @@ class ProjectRule extends TaskRule {
   const ProjectRule({
     required this.operator,
     this.projectId,
+    this.projectIds = const <String>[],
   });
 
   factory ProjectRule.fromJson(Map<String, dynamic> json) {
@@ -696,11 +692,15 @@ class ProjectRule extends TaskRule {
         json['operator'] as String? ?? ProjectRuleOperator.matches.name,
       ),
       projectId: json['projectId'] as String?,
+      projectIds: (json['projectIds'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<String>()
+          .toList(growable: false),
     );
   }
 
   final ProjectRuleOperator operator;
   final String? projectId;
+  final List<String> projectIds;
 
   @override
   RuleType get type => RuleType.project;
@@ -719,6 +719,15 @@ class ProjectRule extends TaskRule {
         if (projectId == null || projectId!.trim().isEmpty) {
           errors.add('Matches operator requires a project ID');
         }
+      case ProjectRuleOperator.matchesAny:
+        if (projectIds.isEmpty) {
+          errors.add('matchesAny operator requires at least one project ID');
+        } else {
+          final nonEmpty = projectIds.where((id) => id.trim().isNotEmpty);
+          if (nonEmpty.isEmpty) {
+            errors.add('All project IDs are empty');
+          }
+        }
       case ProjectRuleOperator.isNull:
       case ProjectRuleOperator.isNotNull:
         // No additional validation needed
@@ -734,6 +743,8 @@ class ProjectRule extends TaskRule {
     return switch (operator) {
       ProjectRuleOperator.matches =>
         id != null && projectId != null && id == projectId,
+      ProjectRuleOperator.matchesAny =>
+        id != null && projectIds.where((p) => p.isNotEmpty).contains(id),
       ProjectRuleOperator.isNull => id == null,
       ProjectRuleOperator.isNotNull => id != null,
     };
@@ -744,6 +755,7 @@ class ProjectRule extends TaskRule {
     'type': type.name,
     'operator': operator.name,
     'projectId': projectId,
+    'projectIds': projectIds,
   };
 
   @override
@@ -751,11 +763,13 @@ class ProjectRule extends TaskRule {
     if (identical(this, other)) return true;
     return other is ProjectRule &&
         other.operator == operator &&
-        other.projectId == projectId;
+        other.projectId == projectId &&
+        _listEquals(other.projectIds, projectIds);
   }
 
   @override
-  int get hashCode => Object.hash(operator, projectId);
+  int get hashCode =>
+      Object.hash(operator, projectId, Object.hashAll(projectIds));
 }
 
 enum RuleType {
@@ -768,7 +782,13 @@ enum RuleType {
 
 enum RuleSetOperator { and, or }
 
-enum DateRuleField { startDate, deadlineDate, createdAt, updatedAt }
+enum DateRuleField {
+  startDate,
+  deadlineDate,
+  createdAt,
+  updatedAt,
+  completedAt,
+}
 
 enum DateRuleOperator {
   onOrAfter,
@@ -792,7 +812,7 @@ enum LabelRuleOperator { hasAll, hasAny, isNull, isNotNull }
 
 enum ValueRuleOperator { hasAll, hasAny, isNull, isNotNull }
 
-enum ProjectRuleOperator { matches, isNull, isNotNull }
+enum ProjectRuleOperator { matches, matchesAny, isNull, isNotNull }
 
 bool _listEquals<T>(List<T> a, List<T> b) {
   if (identical(a, b)) return true;

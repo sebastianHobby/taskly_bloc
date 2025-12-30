@@ -12,6 +12,8 @@ analyzer:
     strict_raw_type: ignore
     directives_ordering: ignore
     avoid_print: ignore
+    avoid_equals_and_hash_code_on_mutable_classes: ignore
+    cascade_invocations: ignore
   exclude:
     - lib/core/l10n/gen/*
     - lib/*/*.g.dart

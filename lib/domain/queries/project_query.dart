@@ -1,7 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
+import 'package:taskly_bloc/domain/queries/project_predicate.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart'
+    show BoolOperator, DateOperator;
 
 /// Unified query configuration for fetching projects.
 ///
@@ -14,7 +17,7 @@ import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 @immutable
 class ProjectQuery {
   const ProjectQuery({
-    this.rules = const <TaskRule>[],
+    this.filter = const QueryFilter<ProjectPredicate>.matchAll(),
     this.sortCriteria = const <SortCriterion>[],
     this.occurrenceExpansion,
   });
@@ -31,12 +34,14 @@ class ProjectQuery {
   /// Factory: Incomplete projects only.
   factory ProjectQuery.incomplete({List<SortCriterion>? sortCriteria}) {
     return ProjectQuery(
-      rules: const [
-        BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-      ],
+      filter: const QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -50,18 +55,20 @@ class ProjectQuery {
     List<SortCriterion>? sortCriteria,
   }) {
     return ProjectQuery(
-      rules: [
-        const BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-        DateRule(
-          field: DateRuleField.startDate,
-          operator: DateRuleOperator.between,
-          startDate: rangeStart,
-          endDate: rangeEnd,
-        ),
-      ],
+      filter: QueryFilter<ProjectPredicate>(
+        shared: [
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          ProjectDatePredicate(
+            field: ProjectDateField.startDate,
+            operator: DateOperator.between,
+            startDate: rangeStart,
+            endDate: rangeEnd,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
       occurrenceExpansion: OccurrenceExpansion(
         rangeStart: rangeStart,
@@ -70,8 +77,8 @@ class ProjectQuery {
     );
   }
 
-  /// Filtering rules to apply (AND logic between rules).
-  final List<TaskRule> rules;
+  /// Filtering predicates to apply.
+  final QueryFilter<ProjectPredicate> filter;
 
   /// Sort criteria for ordering results.
   final List<SortCriterion> sortCriteria;
@@ -94,21 +101,21 @@ class ProjectQuery {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is ProjectQuery &&
-        listEquals(other.rules, rules) &&
+        other.filter == filter &&
         listEquals(other.sortCriteria, sortCriteria) &&
         other.occurrenceExpansion == occurrenceExpansion;
   }
 
   @override
   int get hashCode => Object.hash(
-    Object.hashAll(rules),
+    filter,
     Object.hashAll(sortCriteria),
     occurrenceExpansion,
   );
 
   @override
   String toString() {
-    return 'ProjectQuery(rules: $rules, sortCriteria: $sortCriteria, '
+    return 'ProjectQuery(filter: $filter, sortCriteria: $sortCriteria, '
         'occurrenceExpansion: $occurrenceExpansion)';
   }
 

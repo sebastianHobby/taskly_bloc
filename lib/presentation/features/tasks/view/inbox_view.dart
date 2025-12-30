@@ -26,6 +26,7 @@ class InboxPage extends StatelessWidget {
     required this.labelRepository,
     required this.settingsRepository,
     required this.pageKey,
+    this.queryOverride,
     super.key,
   });
 
@@ -34,13 +35,14 @@ class InboxPage extends StatelessWidget {
   final LabelRepositoryContract labelRepository;
   final SettingsRepositoryContract settingsRepository;
   final PageKey pageKey;
+  final TaskQuery? queryOverride;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        query: TaskQuery.inbox(),
+        query: queryOverride ?? TaskQuery.inbox(),
         settingsRepository: settingsRepository,
         pageKey: pageKey,
       )..add(const TaskOverviewEvent.subscriptionRequested()),
@@ -75,7 +77,7 @@ class _InboxViewState extends State<InboxView> {
   @override
   void initState() {
     super.initState();
-    _loadDisplaySettings();
+    unawaited(_loadDisplaySettings());
   }
 
   Future<void> _loadDisplaySettings() async {

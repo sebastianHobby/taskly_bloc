@@ -112,7 +112,7 @@ class _ScheduleViewState extends State<ScheduleView> {
   @override
   void initState() {
     super.initState();
-    _loadDisplaySettings();
+    unawaited(_loadDisplaySettings());
   }
 
   Future<void> _loadDisplaySettings() async {

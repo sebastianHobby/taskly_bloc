@@ -1,17 +1,12 @@
 ﻿import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/analytics_insight.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/correlation_result.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/date_range.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/models/review.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/models/review_action.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/models/review_action_type.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/models/review_query.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/entity_type.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/journal_entry.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
+import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
+import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 
 /// Test data builders (Object Mother pattern) for creating domain objects
 /// in tests with sensible defaults and optional overrides.
@@ -176,7 +171,7 @@ class TestData {
     String description = 'Test insight description',
     DateTime? generatedAt,
     DateTime? periodStart,
-    DateTime? periodEnd,
+     DateTime? periodEnd,
     Map<String, dynamic> metadata = const {},
     double? score,
     double? confidence,
@@ -275,75 +270,6 @@ class TestData {
       value: value ?? const TrackerResponseValue.scale(value: 5),
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
-    );
-  }
-
-  // === Reviews ===
-
-  static Review review({
-    String? id,
-    String name = 'Test Review',
-    ReviewQuery? query,
-    String rrule = 'FREQ=WEEKLY',
-    DateTime? nextDueDate,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? description,
-    DateTime? lastCompletedAt,
-    DateTime? deletedAt,
-  }) {
-    final now = DateTime.now();
-    return Review(
-      id: id ?? _nextId('review'),
-      name: name,
-      query:
-          query ??
-          const ReviewQuery(
-            entityType: EntityType.task,
-          ),
-      rrule: rrule,
-      nextDueDate: nextDueDate ?? now.add(const Duration(days: 7)),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      description: description,
-      lastCompletedAt: lastCompletedAt,
-      deletedAt: deletedAt,
-    );
-  }
-
-  static ReviewQuery reviewQuery({
-    EntityType entityType = EntityType.task,
-    List<String>? projectIds,
-    List<String>? labelIds,
-    List<String>? valueIds,
-    bool? includeCompleted,
-    DateTime? completedBefore,
-    DateTime? completedAfter,
-    DateTime? createdBefore,
-    DateTime? createdAfter,
-  }) {
-    return ReviewQuery(
-      entityType: entityType,
-      projectIds: projectIds,
-      labelIds: labelIds,
-      valueIds: valueIds,
-      includeCompleted: includeCompleted,
-      completedBefore: completedBefore,
-      completedAfter: completedAfter,
-      createdBefore: createdBefore,
-      createdAfter: createdAfter,
-    );
-  }
-
-  static ReviewAction reviewAction({
-    ReviewActionType type = ReviewActionType.skip,
-    Map<String, dynamic>? updateData,
-    String? notes,
-  }) {
-    return ReviewAction(
-      type: type,
-      updateData: updateData,
-      notes: notes,
     );
   }
 

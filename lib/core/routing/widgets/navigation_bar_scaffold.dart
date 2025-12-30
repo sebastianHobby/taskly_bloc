@@ -1,125 +1,118 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
-class ScaffoldWithNavigationBar extends StatefulWidget {
+class ScaffoldWithNavigationBar extends StatelessWidget {
   const ScaffoldWithNavigationBar({
     required this.body,
-    required this.selectedIndex,
+    required this.destinations,
+    required this.activeScreenId,
+    required this.bottomVisibleCount,
     required this.onDestinationSelected,
     super.key,
   });
 
   final Widget body;
-  final int selectedIndex;
-  final ValueChanged<int> onDestinationSelected;
-
-  @override
-  State<ScaffoldWithNavigationBar> createState() =>
-      _ScaffoldWithNavigationBarState();
-}
-
-class _ScaffoldWithNavigationBarState extends State<ScaffoldWithNavigationBar> {
-  static const _browseIndex = 3;
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  void _onDestinationSelected(int index) {
-    if (index == _browseIndex) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scaffoldKey.currentState?.openDrawer();
-      });
-      return;
-    }
-
-    widget.onDestinationSelected(index);
-  }
+  final List<NavigationDestinationVm> destinations;
+  final String? activeScreenId;
+  final int bottomVisibleCount;
+  final ValueChanged<String> onDestinationSelected;
 
   @override
   Widget build(BuildContext context) {
+    final visible = destinations.take(bottomVisibleCount).toList();
+    final overflow = destinations.skip(bottomVisibleCount).toList();
+    final hasOverflow = overflow.isNotEmpty;
+
+    final selectedIndex = _selectedIndex(visibleLength: visible.length);
+
     return Scaffold(
-      key: _scaffoldKey,
-      drawer: Drawer(
-        child: SafeArea(
-          child: ListView(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.home_outlined),
-                title: Text(context.l10n.projectsTitle),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.goNamed(AppRouteName.projects);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.playlist_play_outlined),
-                title: Text(context.l10n.nextActionsTitle),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.goNamed(AppRouteName.taskNextActions);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.label_outline),
-                title: Text(context.l10n.labelsTitle),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.goNamed(AppRouteName.labels);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.favorite_border_rounded),
-                title: Text(context.l10n.labelTypeValueHeading),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.goNamed(AppRouteName.values);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: widget.body,
+      body: body,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: widget.selectedIndex,
+        selectedIndex: selectedIndex,
         destinations: [
-          NavigationDestination(
-            label: context.l10n.inboxTitle,
-            icon: const Icon(Icons.inbox_outlined),
-          ),
-          NavigationDestination(
-            label: context.l10n.todayTitle,
-            icon: _buildTodayIcon(),
-          ),
-          NavigationDestination(
-            label: context.l10n.upcomingTitle,
-            icon: const Icon(Icons.event_outlined),
-          ),
-          NavigationDestination(
-            label: context.l10n.browseTitle,
-            icon: const Icon(Icons.menu),
-          ),
+          ...visible.map(_toNavDestination),
+          if (hasOverflow)
+            const NavigationDestination(
+              label: 'More',
+              icon: Icon(Icons.more_horiz),
+            ),
         ],
-        onDestinationSelected: _onDestinationSelected,
+        onDestinationSelected: (index) async {
+          if (index < visible.length) {
+            onDestinationSelected(visible[index].screenId);
+            return;
+          }
+          if (!hasOverflow) return;
+          await _openOverflowSheet(context, overflow);
+        },
       ),
     );
   }
 
-  Widget _buildTodayIcon() {
-    final badgeService = context.read<TodayBadgeService>();
+  int _selectedIndex({required int visibleLength}) {
+    final idx = destinations.indexWhere((d) => d.screenId == activeScreenId);
+    if (idx == -1) return 0;
+    if (idx < visibleLength) return idx;
+    return visibleLength; // Highlight "More" when selection is in overflow.
+  }
+
+  NavigationDestination _toNavDestination(NavigationDestinationVm dest) {
+    return NavigationDestination(
+      label: dest.label,
+      icon: _buildIcon(dest),
+      selectedIcon: _buildIcon(dest, selected: true),
+    );
+  }
+
+  Widget _buildIcon(NavigationDestinationVm dest, {bool selected = false}) {
+    final baseIcon = Icon(selected ? dest.selectedIcon : dest.icon);
+    final badgeStream = dest.badgeStream;
+    if (badgeStream == null) return baseIcon;
+
     return StreamBuilder<int>(
-      stream: badgeService.watchIncompleteCount(),
+      stream: badgeStream,
       builder: (context, snapshot) {
         final count = snapshot.data ?? 0;
-        if (count > 0) {
-          return Badge(
-            label: Text(count.toString()),
-            child: const Icon(Icons.calendar_today_outlined),
-          );
-        }
-        return const Icon(Icons.calendar_today_outlined);
+        if (count <= 0) return baseIcon;
+        return Badge(label: Text(count.toString()), child: baseIcon);
+      },
+    );
+  }
+
+  Future<void> _openOverflowSheet(
+    BuildContext context,
+    List<NavigationDestinationVm> overflow,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView.builder(
+            itemCount: overflow.length,
+            itemBuilder: (context, index) {
+              final dest = overflow[index];
+              return ListTile(
+                leading: Icon(dest.icon),
+                title: Text(dest.label),
+                trailing: dest.badgeStream == null
+                    ? null
+                    : StreamBuilder<int>(
+                        stream: dest.badgeStream,
+                        builder: (context, snapshot) {
+                          final count = snapshot.data ?? 0;
+                          if (count <= 0) return const SizedBox.shrink();
+                          return Badge(label: Text(count.toString()));
+                        },
+                      ),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onDestinationSelected(dest.screenId);
+                },
+              );
+            },
+          ),
+        );
       },
     );
   }

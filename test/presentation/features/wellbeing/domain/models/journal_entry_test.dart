@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/journal_entry.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 
 void main() {
   group('JournalEntry', () {
@@ -209,20 +209,20 @@ void main() {
         final json = entry.toJson();
 
         expect(json['id'], equals('je-1'));
-        expect(json['journalText'], equals('Great day!'));
-        expect(json, containsKey('entryDate'));
-        expect(json, containsKey('createdAt'));
+        expect(json['journal_text'], equals('Great day!'));
+        expect(json.containsKey('entry_date'), isTrue);
+        expect(json.containsKey('created_at'), isTrue);
       });
 
       test('fromJson deserializes correctly', () {
         final json = {
           'id': 'je-1',
-          'entryDate': now.toIso8601String(),
-          'entryTime': now.toIso8601String(),
-          'createdAt': now.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-          'journalText': 'Test entry',
-          'trackerResponses': <Map<String, dynamic>>[],
+          'entry_date': now.toIso8601String(),
+          'entry_time': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+          'journal_text': 'Test entry',
+          'tracker_responses': <Map<String, dynamic>>[],
         };
 
         final entry = JournalEntry.fromJson(json);

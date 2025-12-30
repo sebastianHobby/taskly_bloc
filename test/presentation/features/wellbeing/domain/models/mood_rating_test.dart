@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 
 void main() {
   group('MoodRating', () {

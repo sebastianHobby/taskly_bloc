@@ -35,6 +35,7 @@ abstract class OccurrenceStreamExpanderContract {
     required Stream<List<RecurrenceExceptionData>> exceptionsStream,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
   });
 
   /// Synchronously expands tasks for a given date range.
@@ -60,6 +61,7 @@ abstract class OccurrenceStreamExpanderContract {
     required List<RecurrenceExceptionData> exceptions,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
   });
 }
 

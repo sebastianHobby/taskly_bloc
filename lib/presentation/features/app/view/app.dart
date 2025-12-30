@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
@@ -7,10 +8,12 @@ import 'package:taskly_bloc/core/theme/app_theme.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/next_action/bloc/next_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/core/routing/router.dart';
+import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 
 /// Root application widget with app-level bloc providers.
 ///
@@ -53,15 +56,63 @@ class App extends StatelessWidget {
             )..add(const NextActionsSubscriptionRequested()),
           ),
         ],
-        child: MaterialApp.router(
-          theme: AppTheme.lightTheme(),
-          darkTheme: AppTheme.darkTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          routerConfig: router,
-          debugShowCheckedModeBanner: false,
+        child: StreamBuilder<GlobalSettings>(
+          stream: getIt<SettingsRepositoryContract>().watchGlobalSettings(),
+          builder: (context, snapshot) {
+            final settings = snapshot.data ?? const GlobalSettings();
+
+            return MaterialApp.router(
+              theme: AppTheme.lightTheme(seedColor: settings.colorSchemeSeed),
+              darkTheme: AppTheme.darkTheme(
+                seedColor: settings.colorSchemeSeed,
+              ),
+              themeMode: settings.themeMode,
+              locale: settings.locale,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+              debugShowCheckedModeBanner: false,
+              builder: (context, child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(settings.textScaleFactor),
+                  ),
+                  child: _NotificationsBootstrapper(child: child!),
+                );
+              },
+            );
+          },
         ),
       ),
     );
   }
+}
+
+class _NotificationsBootstrapper extends StatefulWidget {
+  const _NotificationsBootstrapper({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_NotificationsBootstrapper> createState() =>
+      _NotificationsBootstrapperState();
+}
+
+class _NotificationsBootstrapperState
+    extends State<_NotificationsBootstrapper> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Web is a secondary client: it should not consume/mark-delivered
+    // notifications that mobile/desktop are expected to present.
+    if (kIsWeb) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      getIt<PendingNotificationsProcessor>().start();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

@@ -52,6 +52,10 @@ Task taskFromTable(
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
+    isNextAction: t.isNextAction,
+    nextActionPriority: t.nextActionPriority,
+    markedNextActionAt: t.markedNextActionAt,
+    nextActionNotes: t.nextActionNotes,
     project: project,
     labels: labels ?? const <Label>[],
   );

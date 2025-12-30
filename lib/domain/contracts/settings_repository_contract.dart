@@ -8,6 +8,16 @@ import 'package:taskly_bloc/domain/models/page_key.dart';
 /// features' settings. The repository handles orchestrating all settings
 /// into a single JSON document for persistence.
 abstract class SettingsRepositoryContract {
+  // Global Settings
+  Stream<GlobalSettings> watchGlobalSettings();
+  Future<GlobalSettings> loadGlobalSettings();
+  Future<void> saveGlobalSettings(GlobalSettings settings);
+
+  // Soft Gates Settings
+  Stream<SoftGatesSettings> watchSoftGatesSettings();
+  Future<SoftGatesSettings> loadSoftGatesSettings();
+  Future<void> saveSoftGatesSettings(SoftGatesSettings settings);
+
   // Next Actions Settings
   Stream<NextActionsSettings> watchNextActionsSettings();
   Future<NextActionsSettings> loadNextActionsSettings();

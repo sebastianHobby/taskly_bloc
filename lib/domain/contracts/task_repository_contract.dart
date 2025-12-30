@@ -45,6 +45,9 @@ abstract class TaskRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
+    bool isNextAction = false,
+    int? nextActionPriority,
+    String? nextActionNotes,
   });
 
   Future<void> update({
@@ -58,6 +61,17 @@ abstract class TaskRepositoryContract {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     List<String>? labelIds,
+  });
+
+  /// Update explicit next-action metadata.
+  ///
+  /// When [isNextAction] is set to false, this clears the related fields
+  /// (priority, notes, and markedAt).
+  Future<void> updateNextAction({
+    required String id,
+    required bool isNextAction,
+    int? nextActionPriority,
+    String? nextActionNotes,
   });
 
   Future<void> delete(String id);

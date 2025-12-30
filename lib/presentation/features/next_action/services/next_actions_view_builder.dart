@@ -98,11 +98,37 @@ class NextActionsViewBuilder {
     // Group tasks by priority buckets by evaluating bucket rules
     final bucketed = <int, List<Task>>{};
     for (final task in tasks) {
+      // Explicit tagging: only tasks explicitly marked as next action.
+      if (!task.isNextAction) continue;
+
+      // Respect settings toggles for filtering.
+      if (!includeInbox && task.project == null && task.projectId == null) {
+        continue;
+      }
+      if (settings.excludeFutureStartDates && task.startDate != null) {
+        final start = dateOnly(task.startDate!);
+        if (start.isAfter(today)) continue;
+      }
+
+      // Manual priority override wins.
+      final manualPriority = task.nextActionPriority;
+      if (manualPriority != null) {
+        bucketed.putIfAbsent(manualPriority, () => []).add(task);
+        continue;
+      }
+
+      var matched = false;
       for (final bucketRule in filteredBucketRules) {
         if (bucketRule.evaluate(task, evaluationContext)) {
           bucketed.putIfAbsent(bucketRule.priority, () => []).add(task);
+          matched = true;
           break; // Task assigned to first matching bucket
         }
+      }
+
+      // If it didn't match any rule, keep it visible.
+      if (!matched) {
+        bucketed.putIfAbsent(9999, () => []).add(task);
       }
     }
 
@@ -217,6 +243,13 @@ class NextActionsViewBuilder {
     Task b,
     List<SortCriterion> criteria,
   ) {
+    int compareNullableInt(int? a, int? b) {
+      if (a == null && b == null) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      return a.compareTo(b);
+    }
+
     for (final criterion in criteria) {
       final compare = switch (criterion.field) {
         SortField.name => a.name.compareTo(b.name),
@@ -227,6 +260,10 @@ class NextActionsViewBuilder {
         ),
         SortField.createdDate => _compareNullableDate(a.createdAt, b.createdAt),
         SortField.updatedDate => _compareNullableDate(a.updatedAt, b.updatedAt),
+        SortField.nextActionPriority => compareNullableInt(
+          a.nextActionPriority,
+          b.nextActionPriority,
+        ),
       };
 
       if (compare == 0) continue;

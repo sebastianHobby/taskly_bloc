@@ -1,8 +1,10 @@
 ﻿import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
-import 'package:taskly_bloc/presentation/features/analytics/data/drift/analytics_tables.drift.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/data/drift/wellbeing_tables.drift.dart';
-import 'package:taskly_bloc/presentation/features/reviews/data/drift/reviews_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/analytics_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/wellbeing_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/priority_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
 part 'drift_database.g.dart';
 
 enum LabelType { label, value }
@@ -17,9 +19,10 @@ class ProjectTable extends Table {
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get description => text().nullable().named('description')();
   BoolColumn get completed => boolean().named('completed')();
-  DateTimeColumn get startDate => dateTime().nullable().named('start_date')();
-  DateTimeColumn get deadlineDate =>
-      dateTime().nullable().named('deadline_date')();
+  TextColumn get startDate =>
+      text().map(dateOnlyStringConverter).nullable().named('start_date')();
+  TextColumn get deadlineDate =>
+      text().map(dateOnlyStringConverter).nullable().named('deadline_date')();
   TextColumn get repeatIcalRrule =>
       text().nullable().named('repeat_ical_rrule').clientDefault(() => '')();
   DateTimeColumn get createdAt =>
@@ -38,6 +41,16 @@ class ProjectTable extends Table {
   BoolColumn get repeatFromCompletion =>
       boolean().clientDefault(() => false).named('repeat_from_completion')();
 
+  /// Timestamp of last per-item review (standardized field)
+  DateTimeColumn get lastReviewedAt =>
+      dateTime().nullable().named('last_reviewed_at')();
+
+  /// User-defined priority rank for project
+  IntColumn get priorityRank => integer().nullable().named('priority_rank')();
+
+  /// Computed priority weight (0-10) for allocation
+  RealColumn get priorityWeight => real().nullable().named('priority_weight')();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -46,7 +59,7 @@ class TaskTable extends Table {
   @override
   String get tableName => 'tasks';
 
-  TextColumn get id => text().named('id')();
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -54,9 +67,10 @@ class TaskTable extends Table {
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   BoolColumn get completed =>
       boolean().clientDefault(() => false).named('completed')();
-  DateTimeColumn get startDate => dateTime().nullable().named('start_date')();
-  DateTimeColumn get deadlineDate =>
-      dateTime().nullable().named('deadline_date')();
+  TextColumn get startDate =>
+      text().map(dateOnlyStringConverter).nullable().named('start_date')();
+  TextColumn get deadlineDate =>
+      text().map(dateOnlyStringConverter).nullable().named('deadline_date')();
   TextColumn get description => text().nullable().named('description')();
   TextColumn get projectId => text()
       .nullable()
@@ -75,6 +89,29 @@ class TaskTable extends Table {
   /// "7 days after completion".
   BoolColumn get repeatFromCompletion =>
       boolean().clientDefault(() => false).named('repeat_from_completion')();
+
+  /// Timestamp of last per-item review
+  DateTimeColumn get lastReviewedAt =>
+      dateTime().nullable().named('last_reviewed_at')();
+
+  /// Optional notes from last review
+  TextColumn get reviewNotes => text().nullable().named('review_notes')();
+
+  /// Explicit next action flag (hybrid approach)
+  BoolColumn get isNextAction =>
+      boolean().clientDefault(() => false).named('is_next_action')();
+
+  /// Manual priority override (1-100, lower = higher priority)
+  IntColumn get nextActionPriority =>
+      integer().nullable().named('next_action_priority')();
+
+  /// When the task was marked as next action
+  DateTimeColumn get markedNextActionAt =>
+      dateTime().nullable().named('marked_next_action_at')();
+
+  /// Optional notes for why this is a next action
+  TextColumn get nextActionNotes =>
+      text().nullable().named('next_action_notes')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -96,6 +133,13 @@ class LabelTable extends Table {
       dateTime().clientDefault(DateTime.now).named('updated_at')();
   TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get iconName => text().nullable().named('icon_name')();
+
+  /// User-defined priority rank for value/context
+  IntColumn get priorityRank => integer().nullable().named('priority_rank')();
+
+  /// Computed priority weight (0-10) for allocation
+  RealColumn get priorityWeight => real().nullable().named('priority_weight')();
+
   @override
   List<String> get customConstraints => [
     "CHECK (color IS NULL OR color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]')",
@@ -351,17 +395,23 @@ class ProjectRecurrenceExceptionsTable extends Table {
     JournalEntries,
     Trackers,
     TrackerResponses,
-    // Reviews tables
-    Reviews,
-    ReviewCompletionHistory,
-    ReviewEntityHistory,
+    // Priority rankings system
+    PriorityRankings,
+    RankedItems,
+    AllocationPreferences,
+    // Generic screen/workflow system
+    ScreenDefinitions,
+    PendingNotifications,
+    WorkflowSessions,
+    WorkflowItemReviews,
+    ProblemAcknowledgments,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

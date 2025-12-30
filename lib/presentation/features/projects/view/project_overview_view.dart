@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
@@ -67,7 +69,7 @@ class _ProjectOverviewViewState extends State<ProjectOverviewView> {
   @override
   void initState() {
     super.initState();
-    _loadDisplaySettings();
+    unawaited(_loadDisplaySettings());
   }
 
   Future<void> _loadDisplaySettings() async {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 
 void main() {
   group('Tracker', () {
@@ -171,23 +171,23 @@ void main() {
         expect(json['id'], equals('t-1'));
         expect(json['name'], equals('Exercise'));
         expect(json['description'], equals('Daily exercise'));
-        expect(json['sortOrder'], equals(3));
+        expect(json['sort_order'], equals(3));
       });
 
       test('fromJson deserializes correctly', () {
         final json = {
           'id': 't-1',
           'name': 'Water',
-          'responseType': 'scale',
+          'response_type': 'scale',
           'config': {
             'runtimeType': 'scale',
             'min': 1,
             'max': 10,
           },
-          'entryScope': 'allDay',
-          'createdAt': now.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
-          'sortOrder': 2,
+          'entry_scope': 'allDay',
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
+          'sort_order': 2,
         };
 
         final tracker = Tracker.fromJson(json);

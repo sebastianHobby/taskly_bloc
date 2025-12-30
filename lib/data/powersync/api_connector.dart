@@ -129,9 +129,6 @@ class SupabaseConnector extends PowerSyncBackendConnector {
   }
 }
 
-/// Global reference to the database
-late final PowerSyncDatabase db;
-
 bool isLoggedIn() {
   return Supabase.instance.client.auth.currentSession?.accessToken != null;
 }
@@ -152,8 +149,7 @@ Future<String> getDatabasePath() async {
 }
 
 Future<PowerSyncDatabase> openDatabase() async {
-  // Open the local database
-  db = PowerSyncDatabase(
+  final db = PowerSyncDatabase(
     schema: schema,
     path: await getDatabasePath(),
     logger: attachedLogger,
@@ -185,10 +181,4 @@ Future<PowerSyncDatabase> openDatabase() async {
     }
   });
   return db;
-}
-
-/// Explicit sign out - clear database and log out.
-Future<void> logout() async {
-  await Supabase.instance.client.auth.signOut();
-  await db.disconnectAndClear();
 }

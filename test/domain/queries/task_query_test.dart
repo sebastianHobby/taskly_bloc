@@ -1,23 +1,31 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 void main() {
   group('TaskQuery factories', () {
     group('inbox', () {
-      test('creates query with completed=false rule', () {
+      test('creates query with completed=false and project is null', () {
         final query = TaskQuery.inbox();
 
-        expect(query.rules.length, 1);
-        expect(query.rules.first, isA<BooleanRule>());
+        expect(query.filter.orGroups, isEmpty);
+        expect(query.filter.shared, hasLength(2));
 
-        final rule = query.rules.first as BooleanRule;
-        expect(rule.field, BooleanRuleField.completed);
-        expect(rule.operator, BooleanRuleOperator.isFalse);
+        final completed = query.filter.shared
+            .whereType<TaskBoolPredicate>()
+            .first;
+        expect(completed.field, TaskBoolField.completed);
+        expect(completed.operator, BoolOperator.isFalse);
+
+        final project = query.filter.shared
+            .whereType<TaskProjectPredicate>()
+            .first;
+        expect(project.operator, ProjectOperator.isNull);
       });
 
       test('uses default sort criteria', () {
@@ -42,28 +50,32 @@ void main() {
         final now = DateTime(2025, 12, 25, 14, 30);
         final query = TaskQuery.today(now: now);
 
-        expect(query.rules.length, 2);
+        expect(query.filter.shared, hasLength(2));
 
-        // Boolean rule for incomplete
-        final boolRule = query.rules.whereType<BooleanRule>().first;
-        expect(boolRule.field, BooleanRuleField.completed);
-        expect(boolRule.operator, BooleanRuleOperator.isFalse);
+        final completed = query.filter.shared
+            .whereType<TaskBoolPredicate>()
+            .first;
+        expect(completed.field, TaskBoolField.completed);
+        expect(completed.operator, BoolOperator.isFalse);
 
-        // Date rule for deadline
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.field, DateRuleField.deadlineDate);
-        expect(dateRule.operator, DateRuleOperator.onOrBefore);
-        expect(dateRule.date, dateOnly(now));
+        final deadline = query.filter.shared
+            .whereType<TaskDatePredicate>()
+            .first;
+        expect(deadline.field, TaskDateField.deadlineDate);
+        expect(deadline.operator, DateOperator.onOrBefore);
+        expect(deadline.date, dateOnly(now));
       });
 
       test('normalizes date to midnight', () {
         final now = DateTime(2025, 12, 25, 14, 30, 45);
         final query = TaskQuery.today(now: now);
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.date?.hour, 0);
-        expect(dateRule.date?.minute, 0);
-        expect(dateRule.date?.second, 0);
+        final predicate = query.filter.shared
+            .whereType<TaskDatePredicate>()
+            .first;
+        expect(predicate.date?.hour, 0);
+        expect(predicate.date?.minute, 0);
+        expect(predicate.date?.second, 0);
       });
     });
 
@@ -71,14 +83,18 @@ void main() {
       test('creates query with completed=false and deadline!=null rules', () {
         final query = TaskQuery.upcoming();
 
-        expect(query.rules.length, 2);
+        expect(query.filter.shared, hasLength(2));
 
-        final boolRule = query.rules.whereType<BooleanRule>().first;
-        expect(boolRule.operator, BooleanRuleOperator.isFalse);
+        final completed = query.filter.shared
+            .whereType<TaskBoolPredicate>()
+            .first;
+        expect(completed.operator, BoolOperator.isFalse);
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.field, DateRuleField.deadlineDate);
-        expect(dateRule.operator, DateRuleOperator.isNotNull);
+        final deadline = query.filter.shared
+            .whereType<TaskDatePredicate>()
+            .first;
+        expect(deadline.field, TaskDateField.deadlineDate);
+        expect(deadline.operator, DateOperator.isNotNull);
       });
     });
 
@@ -86,12 +102,12 @@ void main() {
       test('creates query with project filter', () {
         final query = TaskQuery.forProject(projectId: 'proj-123');
 
-        expect(query.rules.length, 1);
-        expect(query.rules.first, isA<ProjectRule>());
+        expect(query.filter.shared, hasLength(1));
+        expect(query.filter.shared.first, isA<TaskProjectPredicate>());
 
-        final rule = query.rules.first as ProjectRule;
-        expect(rule.operator, ProjectRuleOperator.matches);
-        expect(rule.projectId, 'proj-123');
+        final predicate = query.filter.shared.first as TaskProjectPredicate;
+        expect(predicate.operator, ProjectOperator.matches);
+        expect(predicate.projectId, 'proj-123');
       });
     });
 
@@ -99,12 +115,12 @@ void main() {
       test('creates query with label filter', () {
         final query = TaskQuery.forLabel(labelId: 'label-456');
 
-        expect(query.rules.length, 1);
-        expect(query.rules.first, isA<LabelRule>());
+        expect(query.filter.shared, hasLength(1));
+        expect(query.filter.shared.first, isA<TaskLabelPredicate>());
 
-        final rule = query.rules.first as LabelRule;
-        expect(rule.operator, LabelRuleOperator.hasAll);
-        expect(rule.labelIds, ['label-456']);
+        final predicate = query.filter.shared.first as TaskLabelPredicate;
+        expect(predicate.operator, LabelOperator.hasAll);
+        expect(predicate.labelIds, ['label-456']);
       });
 
       test('accepts custom label type', () {
@@ -113,22 +129,26 @@ void main() {
           labelType: LabelType.value,
         );
 
-        final rule = query.rules.first as LabelRule;
-        expect(rule.labelType, LabelType.value);
+        final predicate = query.filter.shared.first as TaskLabelPredicate;
+        expect(predicate.labelType, LabelType.value);
       });
     });
 
     group('nextActions', () {
-      test('creates query with completed=false and project=null rules', () {
+      test('creates query with completed=false and project is not null', () {
         final query = TaskQuery.nextActions();
 
-        expect(query.rules.length, 2);
+        expect(query.filter.shared, hasLength(2));
 
-        final boolRule = query.rules.whereType<BooleanRule>().first;
-        expect(boolRule.operator, BooleanRuleOperator.isFalse);
+        final completed = query.filter.shared
+            .whereType<TaskBoolPredicate>()
+            .first;
+        expect(completed.operator, BoolOperator.isFalse);
 
-        final projectRule = query.rules.whereType<ProjectRule>().first;
-        expect(projectRule.operator, ProjectRuleOperator.isNull);
+        final project = query.filter.shared
+            .whereType<TaskProjectPredicate>()
+            .first;
+        expect(project.operator, ProjectOperator.isNotNull);
       });
     });
 
@@ -138,7 +158,7 @@ void main() {
         final end = DateTime(2025, 12, 31);
         final query = TaskQuery.schedule(rangeStart: start, rangeEnd: end);
 
-        expect(query.rules.length, 2);
+        expect(query.filter.shared, hasLength(2));
         expect(query.occurrenceExpansion, isNotNull);
         expect(query.occurrenceExpansion?.rangeStart, start);
         expect(query.occurrenceExpansion?.rangeEnd, end);
@@ -149,7 +169,7 @@ void main() {
       test('creates query with no rules', () {
         final query = TaskQuery.all();
 
-        expect(query.rules, isEmpty);
+        expect(query.filter, const QueryFilter<TaskPredicate>.matchAll());
       });
 
       test('uses default sort criteria', () {
@@ -161,12 +181,12 @@ void main() {
   });
 
   group('TaskQuery helper properties', () {
-    test('needsLabels returns true when LabelRule present', () {
+    test('needsLabels returns true when label predicate present', () {
       final query = TaskQuery.forLabel(labelId: 'label-1');
       expect(query.needsLabels, isTrue);
     });
 
-    test('needsLabels returns false when no LabelRule', () {
+    test('needsLabels returns false when no label predicate', () {
       final query = TaskQuery.inbox();
       expect(query.needsLabels, isFalse);
     });
@@ -184,40 +204,44 @@ void main() {
       expect(query.shouldExpandOccurrences, isFalse);
     });
 
-    test('hasProjectFilter returns true when ProjectRule present', () {
+    test('hasProjectFilter returns true when project predicate present', () {
       final query = TaskQuery.forProject(projectId: 'p1');
       expect(query.hasProjectFilter, isTrue);
     });
 
-    test('hasDateFilter returns true when DateRule present', () {
+    test('hasDateFilter returns true when date predicate present', () {
       final query = TaskQuery.today(now: DateTime.now());
       expect(query.hasDateFilter, isTrue);
     });
   });
 
   group('TaskQuery modification methods', () {
-    test('copyWith creates new instance with modified rules', () {
+    test('copyWith creates new instance with modified filter', () {
       final original = TaskQuery.inbox();
-      final modified = original.copyWith(
-        rules: [
-          const ProjectRule(operator: ProjectRuleOperator.isNull),
+      const modifiedFilter = QueryFilter<TaskPredicate>(
+        shared: [
+          TaskProjectPredicate(operator: ProjectOperator.isNull),
         ],
       );
 
-      expect(modified.rules.length, 1);
-      expect(modified.rules.first, isA<ProjectRule>());
-      expect(original.rules.first, isA<BooleanRule>()); // Original unchanged
+      final modified = original.copyWith(filter: modifiedFilter);
+
+      expect(modified.filter, modifiedFilter);
+      expect(original.filter.shared, isNotEmpty); // Original unchanged
     });
 
-    test('withAdditionalRules appends rules', () {
+    test('withAdditionalPredicates appends shared predicates', () {
       final original = TaskQuery.inbox();
-      final modified = original.withAdditionalRules([
-        const ProjectRule(operator: ProjectRuleOperator.isNull),
+      final modified = original.withAdditionalPredicates(const [
+        TaskLabelPredicate(
+          operator: LabelOperator.hasAny,
+          labelIds: ['l1'],
+          labelType: LabelType.label,
+        ),
       ]);
 
-      expect(modified.rules.length, 2);
-      expect(modified.rules.first, isA<BooleanRule>());
-      expect(modified.rules.last, isA<ProjectRule>());
+      expect(modified.filter.shared.length, original.filter.shared.length + 1);
+      expect(modified.filter.shared.last, isA<TaskLabelPredicate>());
     });
 
     test('withSortCriteria replaces sort criteria', () {
@@ -226,7 +250,7 @@ void main() {
       final modified = original.withSortCriteria(newSort);
 
       expect(modified.sortCriteria, newSort);
-      expect(modified.rules, original.rules); // Rules unchanged
+      expect(modified.filter, original.filter); // Filter unchanged
     });
 
     test('withOccurrenceExpansion adds expansion', () {
@@ -299,7 +323,7 @@ void main() {
       final str = query.toString();
 
       expect(str, contains('TaskQuery'));
-      expect(str, contains('rules'));
+      expect(str, contains('filter'));
       expect(str, contains('sortCriteria'));
     });
   });

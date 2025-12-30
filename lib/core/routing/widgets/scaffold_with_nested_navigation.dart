@@ -1,47 +1,75 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_rail_scaffold.dart';
+import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
+import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNestedNavigation extends StatelessWidget {
   const ScaffoldWithNestedNavigation({
-    required this.navigationShell,
-    Key? key,
-  }) : super(
-         key: key ?? const ValueKey<String>('ScaffoldWithNestedNavigation'),
-       );
-  final StatefulNavigationShell navigationShell;
+    required this.child,
+    required this.activeScreenId,
+    this.bottomVisibleCount = 4,
+    super.key,
+  });
 
-  void _goBranch(int index) {
-    navigationShell.goBranch(
-      index,
-      // A common pattern when using bottom navigation bars is to support
-      // navigating to the initial location when tapping the item that is
-      // already active. This example demonstrates how to support this behavior,
-      // using the initialLocation parameter of goBranch.
-      initialLocation: index == navigationShell.currentIndex,
-    );
-  }
+  final Widget child;
+  final String? activeScreenId;
+  final int bottomVisibleCount;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // layout breakpoint: tweak as needed
-        if (constraints.maxWidth < 600) {
-          return ScaffoldWithNavigationBar(
-            body: navigationShell,
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: _goBranch,
-          );
-        } else {
-          return ScaffoldWithNavigationRail(
-            body: navigationShell,
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: _goBranch,
-          );
-        }
+    return BlocBuilder<NavigationBloc, NavigationState>(
+      builder: (context, state) {
+        return switch (state.status) {
+          NavigationStatus.loading => const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          ),
+          NavigationStatus.failure => Scaffold(
+            body: Center(
+              child: Text(state.error ?? 'Failed to load navigation'),
+            ),
+          ),
+          NavigationStatus.ready => LayoutBuilder(
+            builder: (context, constraints) {
+              final destinations = state.destinations;
+              if (destinations.isEmpty) return child;
+
+              if (constraints.maxWidth < 600) {
+                return ScaffoldWithNavigationBar(
+                  body: child,
+                  destinations: destinations,
+                  activeScreenId: activeScreenId,
+                  bottomVisibleCount: bottomVisibleCount,
+                  onDestinationSelected: (screenId) =>
+                      _goTo(context, destinations, screenId),
+                );
+              }
+
+              return ScaffoldWithNavigationRail(
+                body: child,
+                destinations: destinations,
+                activeScreenId: activeScreenId,
+                onDestinationSelected: (screenId) =>
+                    _goTo(context, destinations, screenId),
+              );
+            },
+          ),
+        };
       },
     );
+  }
+
+  void _goTo(
+    BuildContext context,
+    List<NavigationDestinationVm> destinations,
+    String screenId,
+  ) {
+    final dest = destinations.firstWhere(
+      (d) => d.screenId == screenId,
+      orElse: () => destinations.first,
+    );
+    context.go(dest.route);
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 
 void main() {
   group('TrackerResponseConfig', () {
@@ -10,20 +10,23 @@ void main() {
         );
 
         expect(config, isA<ChoiceConfig>());
-        expect(config.options, equals(['Morning', 'Afternoon', 'Evening']));
+        expect(
+          (config as ChoiceConfig).options,
+          equals(['Morning', 'Afternoon', 'Evening']),
+        );
         expect(config.options.length, equals(3));
       });
 
       test('creates choice config with single option', () {
         const config = TrackerResponseConfig.choice(options: ['Only Option']);
 
-        expect(config.options.length, equals(1));
+        expect((config as ChoiceConfig).options.length, equals(1));
       });
 
       test('creates choice config with empty options list', () {
-        const config = TrackerResponseConfig.choice(options: []);
+        const config = TrackerResponseConfig.choice(options: <String>[]);
 
-        expect(config.options, isEmpty);
+        expect((config as ChoiceConfig).options, isEmpty);
       });
 
       test('two choice configs with same options are equal', () {
@@ -39,7 +42,7 @@ void main() {
           options: ['First', 'Second', 'Third'],
         );
 
-        expect(config.options[0], equals('First'));
+        expect((config as ChoiceConfig).options[0], equals('First'));
         expect(config.options[1], equals('Second'));
         expect(config.options[2], equals('Third'));
       });
@@ -50,7 +53,7 @@ void main() {
         const config = TrackerResponseConfig.scale();
 
         expect(config, isA<ScaleConfig>());
-        expect(config.min, equals(1));
+        expect((config as ScaleConfig).min, equals(1));
         expect(config.max, equals(5));
         expect(config.minLabel, isNull);
         expect(config.maxLabel, isNull);
@@ -59,7 +62,7 @@ void main() {
       test('creates scale config with custom min and max', () {
         const config = TrackerResponseConfig.scale(min: 0, max: 10);
 
-        expect(config.min, equals(0));
+        expect((config as ScaleConfig).min, equals(0));
         expect(config.max, equals(10));
       });
 
@@ -70,14 +73,14 @@ void main() {
           maxLabel: 'Extremely',
         );
 
-        expect(config.minLabel, equals('Not at all'));
+        expect((config as ScaleConfig).minLabel, equals('Not at all'));
         expect(config.maxLabel, equals('Extremely'));
       });
 
       test('allows negative min value', () {
         const config = TrackerResponseConfig.scale(min: -5);
 
-        expect(config.min, equals(-5));
+        expect((config as ScaleConfig).min, equals(-5));
       });
 
       test('two scale configs with same values are equal', () {
@@ -143,6 +146,7 @@ void main() {
           ChoiceConfig(:final options) => 'Choice with ${options.length}',
           ScaleConfig(:final min, :final max) => 'Scale from $min to $max',
           YesNoConfig() => 'YesNo',
+          _ => 'Unknown',
         };
 
         expect(result, equals('Scale from 1 to 10'));
@@ -157,7 +161,7 @@ void main() {
 
         final json = config.toJson();
 
-        expect(json, containsKey('options'));
+        expect(json.containsKey('options'), isTrue);
         expect(json['options'], equals(['A', 'B', 'C']));
       });
 
@@ -173,8 +177,8 @@ void main() {
 
         expect(json['min'], equals(0));
         expect(json['max'], equals(10));
-        expect(json['minLabel'], equals('None'));
-        expect(json['maxLabel'], equals('Max'));
+        expect(json['min_label'], equals('None'));
+        expect(json['max_label'], equals('Max'));
       });
 
       test('yesNo config serializes correctly', () {
@@ -226,7 +230,8 @@ void main() {
       test('scale config with same min and max', () {
         const config = TrackerResponseConfig.scale(min: 5);
 
-        expect(config.min, equals(config.max));
+        const scale = config as ScaleConfig;
+        expect(scale.min, equals(scale.max));
       });
 
       test('choice config with duplicate options', () {
@@ -234,14 +239,16 @@ void main() {
           options: ['A', 'A', 'B'],
         );
 
-        expect(config.options.length, equals(3));
-        expect(config.options[0], equals(config.options[1]));
+        const choice = config as ChoiceConfig;
+        expect(choice.options.length, equals(3));
+        expect(choice.options[0], equals(choice.options[1]));
       });
 
       test('scale config with very large range', () {
         const config = TrackerResponseConfig.scale(min: 0, max: 1000000);
 
-        expect(config.max - config.min, equals(1000000));
+        const scale = config as ScaleConfig;
+        expect(scale.max - scale.min, equals(1000000));
       });
     });
   });

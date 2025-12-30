@@ -1,6 +1,6 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/correlation_request.dart';
+import 'package:taskly_bloc/domain/models/analytics/correlation_request.dart';
 
 import '../fixtures/test_data.dart';
 
@@ -45,8 +45,4 @@ void registerAllFallbackValues() {
   // Wellbeing
   registerFallbackValue(TestData.journalEntry());
   registerFallbackValue(TestData.tracker());
-
-  // Reviews
-  registerFallbackValue(TestData.review());
-  registerFallbackValue(TestData.reviewQuery());
 }

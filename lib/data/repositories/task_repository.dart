@@ -10,8 +10,11 @@ import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
+import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/models/project_task_counts.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_filter_evaluator.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
@@ -88,13 +91,8 @@ class TaskRepository implements TaskRepositoryContract {
     final statement = driftDb.selectOnly(driftDb.taskTable)
       ..addColumns([countExp]);
 
-    if (query.rules.isNotEmpty) {
-      final expressions = query.rules
-          .map((rule) => _ruleToExpression(rule, driftDb.taskTable))
-          .cast<Expression<bool>>()
-          .toList(growable: false);
-      statement.where(expressions.reduce((a, b) => a & b));
-    }
+    final where = _whereExpressionFromFilter(query.filter, driftDb.taskTable);
+    if (where != null) statement.where(where);
 
     final row = await statement.getSingle();
     return row.read(countExp) ?? 0;
@@ -114,13 +112,8 @@ class TaskRepository implements TaskRepositoryContract {
     final statement = driftDb.selectOnly(driftDb.taskTable)
       ..addColumns([countExp]);
 
-    if (query.rules.isNotEmpty) {
-      final expressions = query.rules
-          .map((rule) => _ruleToExpression(rule, driftDb.taskTable))
-          .cast<Expression<bool>>()
-          .toList(growable: false);
-      statement.where(expressions.reduce((a, b) => a & b));
-    }
+    final where = _whereExpressionFromFilter(query.filter, driftDb.taskTable);
+    if (where != null) statement.where(where);
 
     return statement
         .watchSingle()
@@ -196,9 +189,21 @@ class TaskRepository implements TaskRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
+    bool isNextAction = false,
+    int? nextActionPriority,
+    String? nextActionNotes,
   }) async {
     final now = DateTime.now();
     final id = uuid.v4();
+
+    if (nextActionPriority != null &&
+        (nextActionPriority < 1 || nextActionPriority > 100)) {
+      throw ArgumentError.value(
+        nextActionPriority,
+        'nextActionPriority',
+        'Must be between 1 and 100',
+      );
+    }
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
@@ -221,6 +226,12 @@ class TaskRepository implements TaskRepositoryContract {
                   ? const Value.absent()
                   : Value(repeatIcalRrule),
               repeatFromCompletion: Value(repeatFromCompletion),
+              isNextAction: Value(isNextAction),
+              nextActionPriority: Value(
+                isNextAction ? nextActionPriority : null,
+              ),
+              markedNextActionAt: Value(isNextAction ? now : null),
+              nextActionNotes: Value(isNextAction ? nextActionNotes : null),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -240,6 +251,47 @@ class TaskRepository implements TaskRepositoryContract {
         }
       }
     });
+  }
+
+  @override
+  Future<void> updateNextAction({
+    required String id,
+    required bool isNextAction,
+    int? nextActionPriority,
+    String? nextActionNotes,
+  }) async {
+    if (nextActionPriority != null &&
+        (nextActionPriority < 1 || nextActionPriority > 100)) {
+      throw ArgumentError.value(
+        nextActionPriority,
+        'nextActionPriority',
+        'Must be between 1 and 100',
+      );
+    }
+
+    final existing = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (existing == null) {
+      throw RepositoryNotFoundException('No task found to update');
+    }
+
+    final now = DateTime.now();
+    final markedAt = isNextAction
+        ? (existing.isNextAction ? (existing.markedNextActionAt ?? now) : now)
+        : null;
+
+    await (driftDb.update(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(id))).write(
+      TaskTableCompanion(
+        isNextAction: Value(isNextAction),
+        nextActionPriority: Value(isNextAction ? nextActionPriority : null),
+        markedNextActionAt: Value(markedAt),
+        nextActionNotes: Value(isNextAction ? nextActionNotes : null),
+        updatedAt: Value(now),
+      ),
+    );
   }
 
   @override
@@ -556,55 +608,84 @@ class TaskRepository implements TaskRepositoryContract {
   /// For queries WITHOUT occurrence expansion:
   /// - All rules applied at SQL level for optimal performance
   Stream<List<Task>> _buildAndExecuteQuery(TaskQuery query) {
-    // Separate date rules for two-phase filtering when expansion is needed
-    final List<TaskRule> sqlRules;
-    final List<DateRule> dateRulesForPostExpansion;
-
-    if (query.shouldExpandOccurrences) {
-      // Two-phase: non-date rules to SQL, date rules applied after expansion
-      sqlRules = query.rules.where((r) => r is! DateRule).toList();
-      dateRulesForPostExpansion = query.rules.whereType<DateRule>().toList();
-    } else {
-      // Single-phase: all rules go to SQL
-      sqlRules = query.rules;
-      dateRulesForPostExpansion = [];
-    }
+    final QueryFilter<TaskPredicate> sqlFilter = query.shouldExpandOccurrences
+        ? _removeDatePredicates(query.filter)
+        : query.filter;
 
     // Start with base query
     final select = driftDb.select(driftDb.taskTable);
 
-    // Build WHERE clause from SQL rules
-    if (sqlRules.isNotEmpty) {
-      select.where((t) {
-        final expressions = sqlRules
-            .map((rule) => _ruleToExpression(rule, t))
-            .cast<Expression<bool>>()
-            .toList();
-
-        return expressions.reduce((a, b) => a & b);
-      });
-    }
+    select.where((t) {
+      return _whereExpressionFromFilter(sqlFilter, t) ?? const Constant(true);
+    });
 
     // Apply ordering
     if (query.sortCriteria.isNotEmpty) {
-      final orderingFuncs = query.sortCriteria.map((criterion) {
-        return ($TaskTableTable t) {
-          final expression = switch (criterion.field) {
-            SortField.name => t.name,
-            SortField.startDate => t.startDate,
-            SortField.deadlineDate => t.deadlineDate,
-            SortField.createdDate => t.createdAt,
-            SortField.updatedDate => t.updatedAt,
-          };
-
-          return OrderingTerm(
-            expression: expression,
-            mode: criterion.direction == SortDirection.ascending
-                ? OrderingMode.asc
-                : OrderingMode.desc,
-          );
-        };
-      }).toList();
+      final orderingFuncs = <OrderingTerm Function($TaskTableTable)>[];
+      for (final criterion in query.sortCriteria) {
+        switch (criterion.field) {
+          case SortField.nextActionPriority:
+            // Keep nulls consistently last.
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.nextActionPriority.isNull(),
+              ),
+            );
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.nextActionPriority,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+          case SortField.name:
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.name,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+          case SortField.startDate:
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.startDate,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+          case SortField.deadlineDate:
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.deadlineDate,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+          case SortField.createdDate:
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.createdAt,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+          case SortField.updatedDate:
+            orderingFuncs.add(
+              ($TaskTableTable t) => OrderingTerm(
+                expression: t.updatedAt,
+                mode: criterion.direction == SortDirection.ascending
+                    ? OrderingMode.asc
+                    : OrderingMode.desc,
+              ),
+            );
+        }
+      }
       select.orderBy(orderingFuncs);
     }
 
@@ -663,10 +744,11 @@ class TaskRepository implements TaskRepositoryContract {
           .watch()
           .map((rows) => rows.map(_toExceptionData).toList());
 
-      // Build post-expansion filter from date rules
-      final postExpansionFilter = _buildPostExpansionFilter(
-        dateRulesForPostExpansion,
-      );
+      final evaluator = TaskFilterEvaluator();
+      final context = EvaluationContext();
+      bool postExpansionFilter(Task task) {
+        return evaluator.matches(task, query.filter, context);
+      }
 
       stream = occurrenceExpander.expandTaskOccurrences(
         tasksStream: stream,
@@ -681,114 +763,267 @@ class TaskRepository implements TaskRepositoryContract {
     return stream;
   }
 
-  /// Builds a post-expansion filter function from date rules.
-  ///
-  /// Used for two-phase filtering: date rules are applied to expanded
-  /// occurrences (virtual dates) rather than base task dates.
-  bool Function(Task)? _buildPostExpansionFilter(List<DateRule> dateRules) {
-    if (dateRules.isEmpty) return null;
+  QueryFilter<TaskPredicate> _removeDatePredicates(
+    QueryFilter<TaskPredicate> filter,
+  ) {
+    final shared = filter.shared
+        .where((p) => p is! TaskDatePredicate)
+        .toList(growable: false);
 
-    return (Task task) {
-      for (final rule in dateRules) {
-        if (!_evaluateDateRuleOnTask(rule, task)) {
-          return false;
-        }
-      }
-      return true;
-    };
+    final orGroups = filter.orGroups
+        .map(
+          (group) => group
+              .where((p) => p is! TaskDatePredicate)
+              .toList(growable: false),
+        )
+        .toList(growable: false);
+
+    return QueryFilter<TaskPredicate>(shared: shared, orGroups: orGroups);
   }
 
-  /// Evaluates a date rule against a task's current dates.
-  ///
-  /// When called on an expanded occurrence, task.startDate and task.deadlineDate
-  /// are the virtual occurrence dates, enabling filtering on occurrence dates.
-  bool _evaluateDateRuleOnTask(DateRule rule, Task task) {
-    final DateTime? fieldValue = switch (rule.field) {
-      DateRuleField.startDate => task.startDate,
-      DateRuleField.deadlineDate => task.deadlineDate,
-      DateRuleField.createdAt => task.createdAt,
-      DateRuleField.updatedAt => task.updatedAt,
-    };
+  Expression<bool>? _whereExpressionFromFilter(
+    QueryFilter<TaskPredicate> filter,
+    $TaskTableTable t,
+  ) {
+    if (filter.isMatchAll) return null;
 
-    // Convert relative dates to absolute
-    DateTime? absoluteDate;
-    DateTime? absoluteEndDate;
-    if (rule.operator == DateRuleOperator.relative &&
-        rule.relativeDays != null) {
-      absoluteDate = _relativeToAbsolute(rule.relativeDays!);
+    Expression<bool> sharedExpr;
+    if (filter.shared.isEmpty) {
+      sharedExpr = const Constant(true);
     } else {
-      absoluteDate = rule.date;
-      absoluteEndDate = rule.endDate;
+      final expressions = filter.shared
+          .map((p) => _predicateToExpression(p, t))
+          .toList(growable: false);
+      sharedExpr = expressions.reduce((a, b) => a & b);
     }
 
-    return switch (rule.operator) {
-      DateRuleOperator.onOrAfter =>
-        fieldValue != null && !fieldValue.isBefore(absoluteDate!),
-      DateRuleOperator.onOrBefore =>
-        fieldValue != null && !fieldValue.isAfter(absoluteDate!),
-      DateRuleOperator.before =>
-        fieldValue != null && fieldValue.isBefore(absoluteDate!),
-      DateRuleOperator.after =>
-        fieldValue != null && fieldValue.isAfter(absoluteDate!),
-      DateRuleOperator.on =>
-        fieldValue != null && dateOnly(fieldValue) == dateOnly(absoluteDate!),
-      DateRuleOperator.between =>
-        fieldValue != null &&
-            !fieldValue.isBefore(absoluteDate!) &&
-            !fieldValue.isAfter(absoluteEndDate!),
-      DateRuleOperator.isNull => fieldValue == null,
-      DateRuleOperator.isNotNull => fieldValue != null,
-      DateRuleOperator.relative =>
-        fieldValue != null && !fieldValue.isBefore(absoluteDate!),
+    if (filter.orGroups.isEmpty) return sharedExpr;
+
+    final orExprs = filter.orGroups
+        .map((group) {
+          if (group.isEmpty) return const Constant(true);
+          final groupExprs = group
+              .map((p) => _predicateToExpression(p, t))
+              .toList(growable: false);
+          return groupExprs.reduce((a, b) => a & b);
+        })
+        .toList(growable: false);
+
+    final orExpr = orExprs.reduce((a, b) => a | b);
+    return sharedExpr & orExpr;
+  }
+
+  Expression<bool> _predicateToExpression(
+    TaskPredicate predicate,
+    $TaskTableTable t,
+  ) {
+    return switch (predicate) {
+      TaskBoolPredicate() => switch (predicate.operator) {
+        BoolOperator.isTrue => t.completed.equals(true),
+        BoolOperator.isFalse => t.completed.equals(false),
+      },
+      TaskProjectPredicate() => switch (predicate.operator) {
+        ProjectOperator.matches =>
+          predicate.projectId == null
+              ? const Constant(false)
+              : t.projectId.equals(predicate.projectId!),
+        ProjectOperator.matchesAny =>
+          predicate.projectIds.isEmpty
+              ? const Constant(false)
+              : t.projectId.isIn(
+                  predicate.projectIds.where((id) => id.isNotEmpty).toList(),
+                ),
+        ProjectOperator.isNull => t.projectId.isNull(),
+        ProjectOperator.isNotNull => t.projectId.isNotNull(),
+      },
+      TaskLabelPredicate() => _labelPredicateToExpression(predicate, t),
+      TaskDatePredicate() => _datePredicateToExpression(predicate, t),
     };
   }
 
-  /// Converts a TaskRule to a Drift expression with 100% SQL coverage.
-  Expression<bool> _ruleToExpression(TaskRule rule, $TaskTableTable t) {
-    return switch (rule) {
-      DateRule() => _dateRuleToExpression(rule, t),
-      BooleanRule() => _booleanRuleToExpression(rule, t),
-      ProjectRule() => _projectRuleToExpression(rule, t),
-      LabelRule() => _labelRuleToExpression(rule, t),
-      _ => const Constant(true), // Should not happen
+  Expression<bool> _labelPredicateToExpression(
+    TaskLabelPredicate predicate,
+    $TaskTableTable t,
+  ) {
+    return switch (predicate.operator) {
+      LabelOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.taskLabelsTable)
+          ..addColumns([driftDb.taskLabelsTable.taskId])
+          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
+          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds)),
+      ),
+      LabelOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.taskLabelsTable)
+          ..addColumns([driftDb.taskLabelsTable.taskId])
+          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
+          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds))
+          ..groupBy([driftDb.taskLabelsTable.taskId]),
+      ),
+      LabelOperator.isNull => notExistsQuery(
+        driftDb.selectOnly(driftDb.taskLabelsTable)
+          ..addColumns([driftDb.taskLabelsTable.taskId])
+          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
+      ),
+      LabelOperator.isNotNull => existsQuery(
+        driftDb.selectOnly(driftDb.taskLabelsTable)
+          ..addColumns([driftDb.taskLabelsTable.taskId])
+          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
+      ),
     };
   }
 
-  /// Converts a DateRule to a Drift expression with relative date support.
-  Expression<bool> _dateRuleToExpression(DateRule rule, $TaskTableTable t) {
-    final column = switch (rule.field) {
-      DateRuleField.startDate => t.startDate,
-      DateRuleField.deadlineDate => t.deadlineDate,
-      DateRuleField.createdAt => t.createdAt,
-      DateRuleField.updatedAt => t.updatedAt,
-    };
-
-    // Convert relative dates to absolute at query build time
-    DateTime? absoluteDate;
-    DateTime? absoluteEndDate;
-    if (rule.operator == DateRuleOperator.relative &&
-        rule.relativeDays != null) {
-      absoluteDate = _relativeToAbsolute(rule.relativeDays!);
-    } else {
-      absoluteDate = rule.date;
-      absoluteEndDate = rule.endDate;
+  Expression<bool> _datePredicateToExpression(
+    TaskDatePredicate predicate,
+    $TaskTableTable t,
+  ) {
+    if (predicate.field == TaskDateField.completedAt) {
+      return _completedAtDatePredicateToExpression(predicate, t);
     }
 
-    return switch (rule.operator) {
-      DateRuleOperator.onOrAfter => column.isBiggerOrEqualValue(absoluteDate!),
-      DateRuleOperator.onOrBefore => column.isSmallerOrEqualValue(
-        absoluteDate!,
+    final dynamic column = switch (predicate.field) {
+      TaskDateField.startDate => t.startDate,
+      TaskDateField.deadlineDate => t.deadlineDate,
+      TaskDateField.createdAt => t.createdAt,
+      TaskDateField.updatedAt => t.updatedAt,
+      TaskDateField.completedAt => t.updatedAt,
+    };
+
+    if (predicate.operator == DateOperator.relative) {
+      final comp = predicate.relativeComparison;
+      final days = predicate.relativeDays;
+      if (comp == null || days == null) return const Constant(false);
+
+      final pivot = _relativeToAbsolute(days);
+      return (switch (comp) {
+            RelativeComparison.on => column.equals(pivot),
+            RelativeComparison.before => column.isSmallerThanValue(pivot),
+            RelativeComparison.after => column.isBiggerThanValue(pivot),
+            RelativeComparison.onOrAfter => column.isBiggerOrEqualValue(pivot),
+            RelativeComparison.onOrBefore => column.isSmallerOrEqualValue(
+              pivot,
+            ),
+          })
+          as Expression<bool>;
+    }
+
+    final date = predicate.date;
+    final start = predicate.startDate;
+    final end = predicate.endDate;
+
+    return (switch (predicate.operator) {
+          DateOperator.onOrAfter => column.isBiggerOrEqualValue(date!),
+          DateOperator.onOrBefore => column.isSmallerOrEqualValue(date!),
+          DateOperator.before => column.isSmallerThanValue(date!),
+          DateOperator.after => column.isBiggerThanValue(date!),
+          DateOperator.on => column.equals(date!),
+          DateOperator.between => column.isBetweenValues(start!, end!),
+          DateOperator.isNull => column.isNull(),
+          DateOperator.isNotNull => column.isNotNull(),
+          DateOperator.relative => const Constant(false),
+        })
+        as Expression<bool>;
+  }
+
+  Expression<bool> _completedAtDatePredicateToExpression(
+    TaskDatePredicate predicate,
+    $TaskTableTable t,
+  ) {
+    final history = driftDb.taskCompletionHistoryTable;
+
+    if (predicate.operator == DateOperator.relative) {
+      final comp = predicate.relativeComparison;
+      final days = predicate.relativeDays;
+      if (comp == null || days == null) return const Constant(false);
+
+      final absoluteDate = _relativeToAbsolute(days);
+      return switch (comp) {
+        RelativeComparison.on => existsQuery(
+          driftDb.selectOnly(history)
+            ..addColumns([history.taskId])
+            ..where(history.taskId.equalsExp(t.id))
+            ..where(history.completedAt.equals(absoluteDate)),
+        ),
+        RelativeComparison.before => existsQuery(
+          driftDb.selectOnly(history)
+            ..addColumns([history.taskId])
+            ..where(history.taskId.equalsExp(t.id))
+            ..where(history.completedAt.isSmallerThanValue(absoluteDate)),
+        ),
+        RelativeComparison.after => existsQuery(
+          driftDb.selectOnly(history)
+            ..addColumns([history.taskId])
+            ..where(history.taskId.equalsExp(t.id))
+            ..where(history.completedAt.isBiggerThanValue(absoluteDate)),
+        ),
+        RelativeComparison.onOrAfter => existsQuery(
+          driftDb.selectOnly(history)
+            ..addColumns([history.taskId])
+            ..where(history.taskId.equalsExp(t.id))
+            ..where(history.completedAt.isBiggerOrEqualValue(absoluteDate)),
+        ),
+        RelativeComparison.onOrBefore => existsQuery(
+          driftDb.selectOnly(history)
+            ..addColumns([history.taskId])
+            ..where(history.taskId.equalsExp(t.id))
+            ..where(history.completedAt.isSmallerOrEqualValue(absoluteDate)),
+        ),
+      };
+    }
+
+    final absoluteDate = predicate.date;
+    final absoluteStart = predicate.startDate;
+    final absoluteEnd = predicate.endDate;
+
+    return switch (predicate.operator) {
+      DateOperator.onOrAfter => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(history.completedAt.isBiggerOrEqualValue(absoluteDate!)),
       ),
-      DateRuleOperator.before => column.isSmallerThanValue(absoluteDate!),
-      DateRuleOperator.after => column.isBiggerThanValue(absoluteDate!),
-      DateRuleOperator.on => column.equals(absoluteDate!),
-      DateRuleOperator.between => column.isBetweenValues(
-        absoluteDate!,
-        absoluteEndDate!,
+      DateOperator.onOrBefore => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(history.completedAt.isSmallerOrEqualValue(absoluteDate!)),
       ),
-      DateRuleOperator.isNull => column.isNull(),
-      DateRuleOperator.isNotNull => column.isNotNull(),
-      DateRuleOperator.relative => column.isBiggerOrEqualValue(absoluteDate!),
+      DateOperator.before => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(history.completedAt.isSmallerThanValue(absoluteDate!)),
+      ),
+      DateOperator.after => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(history.completedAt.isBiggerThanValue(absoluteDate!)),
+      ),
+      DateOperator.on => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(history.completedAt.equals(absoluteDate!)),
+      ),
+      DateOperator.between => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id))
+          ..where(
+            history.completedAt.isBetweenValues(absoluteStart!, absoluteEnd!),
+          ),
+      ),
+      DateOperator.isNull => notExistsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id)),
+      ),
+      DateOperator.isNotNull => existsQuery(
+        driftDb.selectOnly(history)
+          ..addColumns([history.taskId])
+          ..where(history.taskId.equalsExp(t.id)),
+      ),
+      DateOperator.relative => const Constant(false),
     };
   }
 
@@ -798,80 +1033,21 @@ class TaskRepository implements TaskRepositoryContract {
     return DateTime(now.year, now.month, now.day).add(Duration(days: days));
   }
 
-  /// Converts a BooleanRule to a Drift expression.
-  Expression<bool> _booleanRuleToExpression(
-    BooleanRule rule,
-    $TaskTableTable t,
-  ) {
-    final column = switch (rule.field) {
-      BooleanRuleField.completed => t.completed,
-    };
-
-    return switch (rule.operator) {
-      BooleanRuleOperator.isTrue => column.equals(true),
-      BooleanRuleOperator.isFalse => column.equals(false),
-    };
-  }
-
-  /// Converts a ProjectRule to a Drift expression.
-  Expression<bool> _projectRuleToExpression(
-    ProjectRule rule,
-    $TaskTableTable t,
-  ) {
-    return switch (rule.operator) {
-      ProjectRuleOperator.matches => t.projectId.equals(rule.projectId!),
-      ProjectRuleOperator.isNull => t.projectId.isNull(),
-      ProjectRuleOperator.isNotNull => t.projectId.isNotNull(),
-    };
-  }
-
-  /// Converts a LabelRule to a Drift expression using EXISTS subquery.
-  ///
-  /// Supports:
-  /// - matchesAny: Tasks with at least one of the specified labels
-  /// - matchesAll: Tasks with all specified labels (uses GROUP BY + HAVING)
-  /// - hasNoLabels: Tasks with no labels at all
-  Expression<bool> _labelRuleToExpression(LabelRule rule, $TaskTableTable t) {
-    return switch (rule.operator) {
-      LabelRuleOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(rule.labelIds)),
-      ),
-      LabelRuleOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(rule.labelIds))
-          ..groupBy([driftDb.taskLabelsTable.taskId]),
-      ),
-      LabelRuleOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
-      ),
-      LabelRuleOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
-      ),
-    };
-  }
-
   /// Checks if a query matches the inbox tier.
   bool _isInboxQuery(TaskQuery query) {
-    if (query.rules.length != 2) return false;
+    if (query.filter.orGroups.isNotEmpty) return false;
+    final predicates = query.filter.shared;
+    if (predicates.length != 2) return false;
 
-    final hasNotCompleted = query.rules.any(
-      (r) =>
-          r is BooleanRule &&
-          r.field == BooleanRuleField.completed &&
-          r.operator == BooleanRuleOperator.isFalse,
+    final hasNotCompleted = predicates.any(
+      (p) =>
+          p is TaskBoolPredicate &&
+          p.field == TaskBoolField.completed &&
+          p.operator == BoolOperator.isFalse,
     );
 
-    final hasNoProject = query.rules.any(
-      (r) => r is ProjectRule && r.operator == ProjectRuleOperator.isNull,
+    final hasNoProject = predicates.any(
+      (p) => p is TaskProjectPredicate && p.operator == ProjectOperator.isNull,
     );
 
     return hasNotCompleted && hasNoProject;
@@ -879,44 +1055,47 @@ class TaskRepository implements TaskRepositoryContract {
 
   /// Checks if a query matches the today tier.
   bool _isTodayQuery(TaskQuery query) {
-    if (query.rules.length != 2) return false;
+    if (query.filter.orGroups.isNotEmpty) return false;
+    final predicates = query.filter.shared;
+    if (predicates.length != 2) return false;
 
-    final hasNotCompleted = query.rules.any(
-      (r) =>
-          r is BooleanRule &&
-          r.field == BooleanRuleField.completed &&
-          r.operator == BooleanRuleOperator.isFalse,
+    final hasNotCompleted = predicates.any(
+      (p) =>
+          p is TaskBoolPredicate &&
+          p.field == TaskBoolField.completed &&
+          p.operator == BoolOperator.isFalse,
     );
 
-    final hasStartDateToday = query.rules.any((r) {
-      if (r is! DateRule) return false;
-      if (r.field != DateRuleField.startDate) return false;
-      if (r.operator != DateRuleOperator.onOrBefore) return false;
-
-      final today = DateTime.now();
-      final targetDate = DateTime(today.year, today.month, today.day);
-      return r.date?.isAtSameMomentAs(targetDate) ?? false;
+    final hasDeadlineOnOrBefore = predicates.any((p) {
+      if (p is! TaskDatePredicate) return false;
+      return p.field == TaskDateField.deadlineDate &&
+          p.operator == DateOperator.onOrBefore;
     });
 
-    return hasNotCompleted && hasStartDateToday;
+    return hasNotCompleted && hasDeadlineOnOrBefore;
   }
 
   /// Checks if a query matches the upcoming tier.
   bool _isUpcomingQuery(TaskQuery query) {
-    if (query.rules.length != 2) return false;
+    if (query.filter.orGroups.isNotEmpty) return false;
+    final predicates = query.filter.shared;
+    if (predicates.length != 2) return false;
 
-    final hasNotCompleted = query.rules.any(
-      (r) =>
-          r is BooleanRule &&
-          r.field == BooleanRuleField.completed &&
-          r.operator == BooleanRuleOperator.isFalse,
+    final hasNotCompleted = predicates.any(
+      (p) =>
+          p is TaskBoolPredicate &&
+          p.field == TaskBoolField.completed &&
+          p.operator == BoolOperator.isFalse,
     );
 
-    final hasProjectNotNull = query.rules.any(
-      (r) => r is ProjectRule && r.operator == ProjectRuleOperator.isNotNull,
+    final hasDeadlineNotNull = predicates.any(
+      (p) =>
+          p is TaskDatePredicate &&
+          p.field == TaskDateField.deadlineDate &&
+          p.operator == DateOperator.isNotNull,
     );
 
-    return hasNotCompleted && hasProjectNotNull;
+    return hasNotCompleted && hasDeadlineNotNull;
   }
 
   /// Gets or creates the shared inbox stream with tier-based caching.

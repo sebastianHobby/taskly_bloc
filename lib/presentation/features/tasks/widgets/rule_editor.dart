@@ -200,6 +200,7 @@ extension DateRuleFieldDisplay on DateRuleField {
     DateRuleField.deadlineDate => 'Deadline',
     DateRuleField.createdAt => 'Created Date',
     DateRuleField.updatedAt => 'Updated Date',
+    DateRuleField.completedAt => 'Completed Date',
   };
 
   IconData get icon => switch (this) {
@@ -207,6 +208,7 @@ extension DateRuleFieldDisplay on DateRuleField {
     DateRuleField.deadlineDate => Icons.flag,
     DateRuleField.createdAt => Icons.add_circle_outline,
     DateRuleField.updatedAt => Icons.update,
+    DateRuleField.completedAt => Icons.check_circle_outline,
   };
 }
 
@@ -304,11 +306,14 @@ extension ValueRuleOperatorDisplay on ValueRuleOperator {
 extension ProjectRuleOperatorDisplay on ProjectRuleOperator {
   String get displayName => switch (this) {
     ProjectRuleOperator.matches => 'Is In Project',
+    ProjectRuleOperator.matchesAny => 'Is In Any Of Projects',
     ProjectRuleOperator.isNull => 'Has No Project',
     ProjectRuleOperator.isNotNull => 'Has Any Project',
   };
 
-  bool get requiresSelection => this == ProjectRuleOperator.matches;
+  bool get requiresSelection =>
+      this == ProjectRuleOperator.matches ||
+      this == ProjectRuleOperator.matchesAny;
 }
 
 // ============================================================================
@@ -1523,6 +1528,7 @@ extension TaskRuleDescription on TaskRule {
   String _describeProjectRule(ProjectRule rule) {
     return switch (rule.operator) {
       ProjectRuleOperator.matches => 'In selected project',
+      ProjectRuleOperator.matchesAny => 'In any selected project',
       ProjectRuleOperator.isNull => 'Has no project',
       ProjectRuleOperator.isNotNull => 'Has a project',
     };

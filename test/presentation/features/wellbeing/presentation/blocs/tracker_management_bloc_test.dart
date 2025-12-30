@@ -1,10 +1,10 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/blocs/tracker_management/tracker_management_bloc.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
 
 class MockWellbeingRepository extends Mock implements WellbeingRepository {}
 
@@ -88,7 +88,7 @@ void main() {
       blocTest<TrackerManagementBloc, TrackerManagementState>(
         'emits [loading, saved] when saveTracker succeeds',
         build: () {
-          when(() => repository.saveTracker(any())).thenAnswer((_) async => {});
+          when(() => repository.saveTracker(any())).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) =>
@@ -125,7 +125,7 @@ void main() {
         build: () {
           when(
             () => repository.deleteTracker(any()),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) =>
@@ -162,7 +162,7 @@ void main() {
         build: () {
           when(
             () => repository.reorderTrackers(any()),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) => bloc.add(
@@ -199,7 +199,7 @@ void main() {
         build: () {
           when(
             () => repository.reorderTrackers(any()),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) =>
@@ -214,7 +214,7 @@ void main() {
       blocTest<TrackerManagementBloc, TrackerManagementState>(
         'can transition from saved back to loading',
         build: () {
-          when(() => repository.saveTracker(any())).thenAnswer((_) async => {});
+          when(() => repository.saveTracker(any())).thenAnswer((_) async {});
           when(
             () => repository.getAllTrackers(),
           ).thenAnswer((_) async => [testTracker]);

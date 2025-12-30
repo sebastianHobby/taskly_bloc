@@ -1,13 +1,14 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 
-/// A modern color picker field displayed as a chip with color circle.
+/// A modern color picker field for FormBuilder using flex_color_picker.
 ///
 /// Features:
-/// - Material 3 chip design
-/// - Predefined color palette
-/// - Visual color circle in chip
+/// - Material 3 design
+/// - Full color selection with wheel, shades, and predefined palettes
+/// - Visual color circle in action chip
+/// - Integrates with FormBuilder validation
 class FormBuilderColorPickerModern extends StatelessWidget {
   const FormBuilderColorPickerModern({
     required this.name,
@@ -19,6 +20,8 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     this.isRequired = false,
     this.showLabel = true,
     this.compact = false,
+    this.showMaterialName = false,
+    this.enableOpacity = false,
     super.key,
   });
 
@@ -36,28 +39,11 @@ class FormBuilderColorPickerModern extends StatelessWidget {
   /// If true, removes padding for inline use.
   final bool compact;
 
-  static const List<Color> _availableColors = [
-    Colors.red,
-    Colors.pink,
-    Colors.purple,
-    Colors.deepPurple,
-    Colors.indigo,
-    Colors.blue,
-    Colors.lightBlue,
-    Colors.cyan,
-    Colors.teal,
-    Colors.green,
-    Colors.lightGreen,
-    Colors.lime,
-    Colors.yellow,
-    Colors.amber,
-    Colors.orange,
-    Colors.deepOrange,
-    Colors.brown,
-    Colors.grey,
-    Colors.blueGrey,
-    Colors.black,
-  ];
+  /// Whether to show the material color name.
+  final bool showMaterialName;
+
+  /// Whether to enable opacity/alpha channel.
+  final bool enableOpacity;
 
   @override
   Widget build(BuildContext context) {
@@ -73,9 +59,6 @@ class FormBuilderColorPickerModern extends StatelessWidget {
         initialValue: initialValue,
         validator: validator,
         enabled: enabled,
-        valueTransformer: (Color? color) {
-          return color != null ? ColorUtils.toHexWithHash(color) : null;
-        },
         builder: (FormFieldState<Color> field) {
           final currentColor = field.value ?? initialValue;
 
@@ -105,7 +88,7 @@ class FormBuilderColorPickerModern extends StatelessWidget {
                     ),
                   ),
                 ),
-                label: Text(showLabel ? 'Color' : 'Color'),
+                label: Text(ColorTools.nameThatColor(currentColor)),
                 onPressed: enabled
                     ? () => _showColorPickerDialog(context, field)
                     : null,
@@ -137,110 +120,29 @@ class FormBuilderColorPickerModern extends StatelessWidget {
     BuildContext context,
     FormFieldState<Color> field,
   ) async {
-    final selectedColor = await showDialog<Color>(
-      context: context,
-      builder: (context) => _ColorPickerDialog(
-        currentColor: field.value ?? initialValue,
-        availableColors: _availableColors,
+    final pickedColor = await showColorPickerDialog(
+      context,
+      field.value ?? initialValue,
+      title: Text(label ?? 'Select color'),
+      pickersEnabled: const <ColorPickerType, bool>{
+        ColorPickerType.primary: true,
+        ColorPickerType.accent: true,
+        ColorPickerType.wheel: true,
+      },
+      enableOpacity: enableOpacity,
+      showMaterialName: showMaterialName,
+      showColorName: true,
+      showColorCode: true,
+      colorCodeHasColor: true,
+      copyPasteBehavior: const ColorPickerCopyPasteBehavior(
+        copyButton: true,
+        pasteButton: true,
+        longPressMenu: true,
       ),
     );
 
-    if (selectedColor != null) {
-      field.didChange(selectedColor);
+    if (pickedColor != field.value) {
+      field.didChange(pickedColor);
     }
-  }
-}
-
-class _ColorPickerDialog extends StatelessWidget {
-  const _ColorPickerDialog({
-    required this.currentColor,
-    required this.availableColors,
-  });
-
-  final Color currentColor;
-  final List<Color> availableColors;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(28),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Select Color',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: availableColors.map((color) {
-                final isSelected = color == currentColor;
-                return GestureDetector(
-                  onTap: () => Navigator.of(context).pop(color),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected
-                            ? colorScheme.primary
-                            : colorScheme.outline,
-                        width: isSelected ? 3 : 1,
-                      ),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: color.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: isSelected
-                        ? Icon(
-                            Icons.check,
-                            color: _getContrastColor(color),
-                            size: 24,
-                          )
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Color _getContrastColor(Color color) {
-    final luminance = color.computeLuminance();
-    return luminance > 0.5 ? Colors.black : Colors.white;
   }
 }

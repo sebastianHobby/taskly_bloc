@@ -85,6 +85,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required Stream<List<RecurrenceExceptionData>> exceptionsStream,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
   }) {
     return Rx.combineLatest3(
       projectsStream,
@@ -96,6 +97,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         exceptions: exceptions,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        postExpansionFilter: postExpansionFilter,
       ),
     ).debounceTime(_debounceDuration);
   }
@@ -109,6 +111,9 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeEnd,
     bool Function(Task)? postExpansionFilter,
   }) {
+    final normalizedRangeStart = _normalizeDate(rangeStart);
+    final normalizedRangeEnd = _normalizeDate(rangeEnd);
+
     // Group completions and exceptions by entity ID for efficient lookup
     final completionsByTask = _groupBy(completions, (c) => c.entityId);
     final exceptionsByTask = _groupBy(exceptions, (e) => e.entityId);
@@ -129,8 +134,8 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         seriesEnded: task.seriesEnded,
         completions: taskCompletions,
         exceptions: taskExceptions,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: normalizedRangeStart,
+        rangeEnd: normalizedRangeEnd,
         builder: (occurrence) => _normalizeTaskOccurrence(task, occurrence),
       );
 
@@ -157,7 +162,11 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required List<RecurrenceExceptionData> exceptions,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    bool Function(Project)? postExpansionFilter,
   }) {
+    final normalizedRangeStart = _normalizeDate(rangeStart);
+    final normalizedRangeEnd = _normalizeDate(rangeEnd);
+
     // Group completions and exceptions by entity ID for efficient lookup
     final completionsByProject = _groupBy(completions, (c) => c.entityId);
     final exceptionsByProject = _groupBy(exceptions, (e) => e.entityId);
@@ -178,8 +187,8 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         seriesEnded: project.seriesEnded,
         completions: projectCompletions,
         exceptions: projectExceptions,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: normalizedRangeStart,
+        rangeEnd: normalizedRangeEnd,
         builder: (occurrence) =>
             _normalizeProjectOccurrence(project, occurrence),
       );
@@ -187,12 +196,15 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       allOccurrences.addAll(expanded);
     }
 
-    // Sort by occurrence date
-    allOccurrences.sort(
-      (a, b) => a.occurrence!.date.compareTo(b.occurrence!.date),
-    );
+    // Apply post-expansion filter if provided (for two-phase filtering)
+    final filtered = postExpansionFilter != null
+        ? allOccurrences.where(postExpansionFilter).toList()
+        : allOccurrences;
 
-    return allOccurrences;
+    // Sort by occurrence date
+    filtered.sort((a, b) => a.occurrence!.date.compareTo(b.occurrence!.date));
+
+    return filtered;
   }
 
   // ===========================================================================
@@ -260,8 +272,11 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     required DateTime rangeEnd,
     required T Function(OccurrenceData occurrence) builder,
   }) {
+    final normalizedStartDate = _normalizeDate(startDate);
+
     // Check if entity's start date is in range
-    if (startDate.isBefore(rangeStart) || startDate.isAfter(rangeEnd)) {
+    if (normalizedStartDate.isBefore(rangeStart) ||
+        normalizedStartDate.isAfter(rangeEnd)) {
       return [];
     }
 
@@ -271,7 +286,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         .firstOrNull;
 
     final occurrence = OccurrenceData(
-      date: startDate,
+      date: normalizedStartDate,
       deadline: deadlineDate,
       isRescheduled: false,
       completionId: completion?.id,
@@ -313,21 +328,23 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       );
     }
 
-    // Determine anchor date for RRULE expansion
-    DateTime anchorDate = startDate;
+    // Determine anchor date for RRULE expansion.
+    // We use UTC date-times for the rrule package (it asserts the start is a
+    // valid RRULE DateTime), but normalize outputs/keys to local date-only.
+    DateTime anchorLocalDate = _normalizeDate(startDate);
     if (repeatFromCompletion && completions.isNotEmpty) {
       // For rolling recurrence, anchor from last completion
       final lastCompletion = completions.reduce(
         (a, b) => a.completedAt.isAfter(b.completedAt) ? a : b,
       );
-      anchorDate = lastCompletion.completedAt;
+      anchorLocalDate = _normalizeDate(lastCompletion.completedAt);
     }
 
-    final anchorUtc = anchorDate.toUtc();
-    final rangeStartUtc = rangeStart.toUtc();
-    final rangeEndUtc = rangeEnd.toUtc();
+    final anchorUtc = _normalizeDateUtcForRrule(anchorLocalDate);
+    final rangeStartUtc = _normalizeDateUtcForRrule(rangeStart);
+    final rangeEndUtc = _normalizeDateUtcForRrule(rangeEnd);
 
-    // Generate RRULE dates in UTC to satisfy rrule constraints.
+    // Generate RRULE dates.
     // The rrule package asserts that `after >= start`, so clamp the window.
     final afterUtc = rangeStartUtc.subtract(const Duration(days: 1));
     final safeAfterUtc = afterUtc.isBefore(anchorUtc) ? anchorUtc : afterUtc;
@@ -354,9 +371,11 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     // Keep dates in UTC for consistency: the DB values and tests are UTC-based,
     // and converting to local time can shift the time-of-day unexpectedly.
     final uniqueDates = <DateTime>[];
-    for (final date in rruleDatesUtc) {
-      if (uniqueDates.isEmpty || !uniqueDates.last.isAtSameMomentAs(date)) {
-        uniqueDates.add(date);
+    for (final dateUtc in rruleDatesUtc) {
+      final normalizedLocal = _normalizeDate(dateUtc);
+      if (uniqueDates.isEmpty ||
+          !uniqueDates.last.isAtSameMomentAs(normalizedLocal)) {
+        uniqueDates.add(normalizedLocal);
       }
     }
 
@@ -394,7 +413,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
         continue;
       }
 
-      final actualDate = exception?.newDate ?? date;
+      final actualDate = _normalizeDate(exception?.newDate ?? date);
       final completion = completionsMap[normalizedDate];
 
       // Calculate occurrence deadline
@@ -425,13 +444,13 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
     for (final exception in exceptions) {
       if (exception.exceptionType == RecurrenceExceptionType.reschedule &&
           exception.newDate != null) {
-        final newDate = exception.newDate!;
+        final newDate = _normalizeDate(exception.newDate!);
         final originalNormalized = _normalizeDate(exception.originalDate);
 
         // Check if original date was outside range but new date is inside
         final originalInRange =
-            !_normalizeDate(exception.originalDate).isBefore(rangeStart) &&
-            !_normalizeDate(exception.originalDate).isAfter(rangeEnd);
+            !originalNormalized.isBefore(rangeStart) &&
+            !originalNormalized.isAfter(rangeEnd);
 
         if (!originalInRange &&
             !newDate.isBefore(rangeStart) &&
@@ -449,7 +468,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
           final occurrence = OccurrenceData(
             date: newDate,
             deadline: occurrenceDeadline,
-            originalDate: exception.originalDate,
+            originalDate: originalNormalized,
             isRescheduled: true,
             completionId: completion?.id,
             completedAt: completion?.completedAt,
@@ -497,11 +516,16 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
 
   /// Normalizes a DateTime to midnight (date only, no time component).
   DateTime _normalizeDate(DateTime date) {
-    if (date.isUtc) {
-      return DateTime.utc(date.year, date.month, date.day);
-    }
+    final utc = date.toUtc();
+    return DateTime.utc(utc.year, utc.month, utc.day);
+  }
 
-    return DateTime(date.year, date.month, date.day);
+  /// Normalizes a DateTime to a UTC midnight DateTime for rrule inputs.
+  ///
+  /// The rrule package requires `start` and bounds to be valid RRULE
+  /// DateTimes (UTC-based), but our app treats occurrences as date-only.
+  DateTime _normalizeDateUtcForRrule(DateTime date) {
+    return _normalizeDate(date);
   }
 
   /// Groups a list by a key function.

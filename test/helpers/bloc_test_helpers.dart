@@ -79,7 +79,6 @@ class BlocTestContext {
     settingsRepo = MockSettingsRepository();
     analyticsRepo = MockAnalyticsRepository();
     wellbeingRepo = MockWellbeingRepository();
-    reviewsRepo = MockReviewsRepository();
 
     // Default stubs for common repository calls
     _stubDefaultBehaviors();
@@ -90,7 +89,6 @@ class BlocTestContext {
   late MockSettingsRepository settingsRepo;
   late MockAnalyticsRepository analyticsRepo;
   late MockWellbeingRepository wellbeingRepo;
-  late MockReviewsRepository reviewsRepo;
 
   void _stubDefaultBehaviors() {
     // Empty lists for get operations

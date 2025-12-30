@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
@@ -38,7 +40,7 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    unawaited(_loadSettings());
   }
 
   Future<void> _loadSettings() async {
@@ -141,8 +143,13 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
 
   Future<void> _handleBack() async {
     if (_hasUnsavedChanges()) {
-      await _confirmDiscard();
+      final discard = await _confirmDiscard();
+      if (!mounted) return;
+      if (discard) {
+        Navigator.of(context).pop();
+      }
     } else {
+      if (!mounted) return;
       Navigator.of(context).pop();
     }
   }
@@ -171,16 +178,13 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
     try {
       // Save directly through adapter (optimistic update in repository)
       await _settingsRepository.saveNextActionsSettings(updatedSettings);
-
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
+      if (!mounted) return;
+      Navigator.of(context).pop();
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save settings: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save settings: $e')),
+      );
     }
   }
 
@@ -197,7 +201,9 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
           title: const Text('Next Actions Settings'),
           actions: [
             TextButton(
-              onPressed: _save,
+              onPressed: () {
+                unawaited(_save());
+              },
               child: const Text('Save'),
             ),
           ],
@@ -254,7 +260,7 @@ class _NextActionsSettingsPageState extends State<NextActionsSettingsPage> {
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
-                          onPressed: _handleBack,
+                          onPressed: () async => _handleBack(),
                           child: const Text('Cancel'),
                         ),
                         const SizedBox(width: 12),
