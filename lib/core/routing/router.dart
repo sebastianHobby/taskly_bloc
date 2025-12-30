@@ -1,35 +1,40 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/core/routing/widgets/scaffold_with_nested_navigation.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/page_key.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/services/analytics_service.dart';
+import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
+import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
+import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 import 'package:taskly_bloc/presentation/features/auth/auth.dart';
-import 'package:taskly_bloc/presentation/features/labels/labels.dart';
-import 'package:taskly_bloc/presentation/features/next_action/next_action.dart';
-import 'package:taskly_bloc/presentation/features/projects/projects.dart';
+import 'package:taskly_bloc/presentation/features/labels/view/label_detail_page.dart';
+import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
+import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/next_action/view/next_actions_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/repositories/reviews_repository.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/services/review_action_service.dart';
-import 'package:taskly_bloc/presentation/features/reviews/presentation/blocs/review_detail/review_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/reviews/presentation/blocs/reviews_list/reviews_list_bloc.dart';
-import 'package:taskly_bloc/presentation/features/reviews/presentation/screens/reviews_list_screen.dart';
-import 'package:taskly_bloc/presentation/features/reviews/presentation/screens/review_detail_screen.dart';
-import 'package:taskly_bloc/presentation/features/tasks/tasks.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/blocs/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/blocs/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/screens/wellbeing_dashboard_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/screens/journal_screen.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
-import 'package:taskly_bloc/core/routing/widgets/scaffold_with_nested_navigation.dart';
+import 'package:taskly_bloc/presentation/features/projects/projects.dart';
+import 'package:taskly_bloc/presentation/features/screens/view/screen_host_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
 
 final router = GoRouter(
-  initialLocation: AppRoutePath.inbox,
+  initialLocation: '${AppRoutePath.screenBase}/inbox',
   redirect: (context, state) async {
     final authRepository = getIt<AuthRepositoryContract>();
     final authState = await authRepository.watchAuthState().first;
@@ -70,197 +75,147 @@ final router = GoRouter(
       path: '/forgot-password',
       builder: (context, state) => const ForgotPasswordView(),
     ),
-    // Protected routes
-    StatefulShellRoute.indexedStack(
-      // A builder that adds a navigation bar or rail depending on screen size
-      // to all the branches below
-      builder: (context, state, navigationShell) {
-        return ScaffoldWithNestedNavigation(
-          navigationShell: navigationShell,
+    // Legacy aliases redirect to dynamic screen routes
+    GoRoute(
+      name: AppRouteName.inbox,
+      path: '/inbox',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/inbox',
+    ),
+    GoRoute(
+      name: AppRouteName.today,
+      path: '/tasks/today',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/today',
+    ),
+    GoRoute(
+      name: AppRouteName.upcoming,
+      path: '/tasks/upcoming',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/upcoming',
+    ),
+    GoRoute(
+      name: AppRouteName.projects,
+      path: '/projects',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/projects',
+    ),
+    GoRoute(
+      name: AppRouteName.labels,
+      path: '/labels',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/labels',
+    ),
+    GoRoute(
+      name: AppRouteName.values,
+      path: '/values',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/values',
+    ),
+    GoRoute(
+      name: AppRouteName.taskNextActions,
+      path: '/tasks/next-actions',
+      redirect: (_, __) => '${AppRoutePath.screenBase}/next_actions',
+    ),
+    ShellRoute(
+      builder: (context, state, child) {
+        return BlocProvider(
+          create: (_) => NavigationBloc(
+            screensRepository: getIt<ScreenDefinitionsRepository>(),
+            badgeService: NavigationBadgeService(
+              queryBuilder: getIt<ScreenQueryBuilder>(),
+              taskRepository: getIt<TaskRepositoryContract>(),
+              projectRepository: getIt<ProjectRepositoryContract>(),
+            ),
+            iconResolver: const NavigationIconResolver(),
+            routeBuilder: (screenId) => '${AppRoutePath.screenBase}/$screenId',
+          )..add(const NavigationStarted()),
+          child: ScaffoldWithNestedNavigation(
+            activeScreenId: state.pathParameters['screenId'],
+            child: child,
+          ),
         );
       },
-      branches: [
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.inbox,
-              path: AppRoutePath.inbox,
-              builder: (context, state) => InboxPage(
-                taskRepository: getIt<TaskRepositoryContract>(),
-                projectRepository: getIt<ProjectRepositoryContract>(),
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.tasksInbox,
-              ),
-            ),
-          ],
+      routes: [
+        GoRoute(
+          name: AppRouteName.screen,
+          path: AppRoutePath.screen,
+          builder: (context, state) => ScreenHostPage(
+            screenId: state.pathParameters['screenId']!,
+            screensRepository: getIt<ScreenDefinitionsRepository>(),
+            queryBuilder: getIt<ScreenQueryBuilder>(),
+            supportBlockComputer: getIt<SupportBlockComputer>(),
+            workflowSessionsRepository: getIt<WorkflowSessionsRepository>(),
+            workflowItemReviewsRepository:
+                getIt<WorkflowItemReviewsRepository>(),
+            problemAcknowledgmentsRepository:
+                getIt<ProblemAcknowledgmentsRepository>(),
+            taskRepository: getIt<TaskRepositoryContract>(),
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            labelRepository: getIt<LabelRepositoryContract>(),
+            settingsRepository: getIt<SettingsRepositoryContract>(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.today,
-              path: AppRoutePath.today,
-              builder: (context, state) => TodayPage(
-                taskRepository: getIt<TaskRepositoryContract>(),
-                projectRepository: getIt<ProjectRepositoryContract>(),
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.tasksToday,
-              ),
-            ),
-          ],
+        GoRoute(
+          name: AppRouteName.navigationSettings,
+          path: AppRoutePath.navigationSettings,
+          builder: (context, state) => NavigationSettingsPage(
+            screensRepository: getIt<ScreenDefinitionsRepository>(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.upcoming,
-              path: AppRoutePath.upcoming,
-              builder: (context, state) => UpcomingPage(
-                taskRepository: getIt<TaskRepositoryContract>(),
-                projectRepository: getIt<ProjectRepositoryContract>(),
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.tasksUpcoming,
-              ),
-            ),
-          ],
+        GoRoute(
+          name: AppRouteName.appSettings,
+          path: AppRoutePath.appSettings,
+          builder: (context, state) => const SettingsScreen(),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.projects,
-              path: AppRoutePath.projects,
-              builder: (context, state) => ProjectOverviewPage(
-                projectRepository: getIt<ProjectRepositoryContract>(),
-                taskRepository: getIt<TaskRepositoryContract>(),
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.projectOverview,
-              ),
-              routes: [
-                GoRoute(
-                  name: AppRouteName.projectDetail,
-                  path: ':projectId',
-                  builder: (context, state) => ProjectDetailPage(
-                    projectId: state.pathParameters['projectId']!,
-                    projectRepository: getIt<ProjectRepositoryContract>(),
-                    taskRepository: getIt<TaskRepositoryContract>(),
-                    labelRepository: getIt<LabelRepositoryContract>(),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        GoRoute(
+          name: AppRouteName.projectDetail,
+          path: AppRoutePath.projectDetail,
+          builder: (context, state) => ProjectDetailPage(
+            projectId: state.pathParameters['projectId']!,
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            taskRepository: getIt<TaskRepositoryContract>(),
+            labelRepository: getIt<LabelRepositoryContract>(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.taskNextActions,
-              path: AppRoutePath.taskNextActions,
-              builder: (context, state) => TaskNextActionsPage(
-                projectRepository: getIt<ProjectRepositoryContract>(),
-                taskRepository: getIt<TaskRepositoryContract>(),
-                labelRepository: getIt<LabelRepositoryContract>(),
-              ),
-            ),
-            GoRoute(
-              name: AppRouteName.taskNextActionsSettings,
-              path: AppRoutePath.taskNextActionsSettings,
-              builder: (context, state) => const NextActionsSettingsPage(),
-            ),
-          ],
+        GoRoute(
+          name: AppRouteName.taskNextActionsSettings,
+          path: AppRoutePath.taskNextActionsSettings,
+          builder: (context, state) => const NextActionsSettingsPage(),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.labels,
-              path: AppRoutePath.labels,
-              builder: (context, state) => LabelOverviewPage(
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.labelOverview,
-              ),
-              routes: [
-                GoRoute(
-                  name: AppRouteName.labelDetail,
-                  path: ':labelId',
-                  builder: (context, state) => LabelDetailPage(
-                    labelId: state.pathParameters['labelId']!,
-                    labelRepository: getIt<LabelRepositoryContract>(),
-                    taskRepository: getIt<TaskRepositoryContract>(),
-                    projectRepository: getIt<ProjectRepositoryContract>(),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        GoRoute(
+          name: AppRouteName.labelDetail,
+          path: '${AppRoutePath.labels}/:labelId',
+          builder: (context, state) => LabelDetailPage(
+            labelId: state.pathParameters['labelId']!,
+            labelRepository: getIt<LabelRepositoryContract>(),
+            taskRepository: getIt<TaskRepositoryContract>(),
+            projectRepository: getIt<ProjectRepositoryContract>(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.values,
-              path: AppRoutePath.values,
-              builder: (context, state) => ValueOverviewPage(
-                labelRepository: getIt<LabelRepositoryContract>(),
-                settingsRepository: getIt<SettingsRepositoryContract>(),
-                pageKey: PageKey.labelValueOverview,
-              ),
+        GoRoute(
+          name: AppRouteName.wellbeing,
+          path: AppRoutePath.wellbeing,
+          builder: (context, state) => BlocProvider(
+            create: (context) => WellbeingDashboardBloc(
+              getIt<AnalyticsService>(),
             ),
-          ],
+            child: const WellbeingDashboardScreen(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.reviews,
-              path: AppRoutePath.reviews,
-              builder: (context, state) => BlocProvider(
-                create: (context) => ReviewsListBloc(
-                  getIt<ReviewsRepository>(),
-                ),
-                child: const ReviewsListScreen(),
-              ),
-              routes: [
-                GoRoute(
-                  name: AppRouteName.reviewDetail,
-                  path: ':reviewId',
-                  builder: (context, state) => BlocProvider(
-                    create: (context) => ReviewDetailBloc(
-                      getIt<ReviewsRepository>(),
-                      getIt<ReviewActionService>(),
-                      getIt<TaskRepositoryContract>(),
-                    ),
-                    child: ReviewDetailScreen(
-                      reviewId: state.pathParameters['reviewId']!,
-                    ),
-                  ),
-                ),
-              ],
+        GoRoute(
+          name: AppRouteName.journal,
+          path: AppRoutePath.journal,
+          builder: (context, state) => BlocProvider(
+            create: (context) => JournalEntryBloc(
+              getIt<WellbeingRepository>(),
             ),
-          ],
+            child: const JournalScreen(),
+          ),
         ),
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              name: AppRouteName.wellbeing,
-              path: AppRoutePath.wellbeing,
-              builder: (context, state) => BlocProvider(
-                create: (context) => WellbeingDashboardBloc(
-                  getIt<AnalyticsService>(),
-                ),
-                child: const WellbeingDashboardScreen(),
-              ),
+        GoRoute(
+          name: AppRouteName.trackerManagement,
+          path: AppRoutePath.trackerManagement,
+          builder: (context, state) => BlocProvider(
+            create: (context) => TrackerManagementBloc(
+              getIt<WellbeingRepository>(),
             ),
-            GoRoute(
-              name: AppRouteName.journal,
-              path: AppRoutePath.journal,
-              builder: (context, state) => BlocProvider(
-                create: (context) => JournalEntryBloc(
-                  getIt<WellbeingRepository>(),
-                ),
-                child: const JournalScreen(),
-              ),
-            ),
-          ],
+            child: const TrackerManagementScreen(),
+          ),
         ),
       ],
     ),

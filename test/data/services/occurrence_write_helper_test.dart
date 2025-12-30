@@ -34,7 +34,7 @@ void main() {
           .into(db.taskTable)
           .insert(
             TaskTableCompanion.insert(
-              id: 'task-1',
+              id: const Value('task-1'),
               name: 'Test Task',
               projectId: const Value('proj-1'),
             ),
@@ -77,7 +77,7 @@ void main() {
 
         expect(completions, hasLength(1));
         expect(completions.first.taskId, 'task-1');
-        expect(completions.first.occurrenceDate, DateTime(2025, 1, 15));
+        expect(completions.first.occurrenceDate, DateTime.utc(2025, 1, 15));
       });
 
       test('sets completedAt to current time', () async {
@@ -112,10 +112,10 @@ void main() {
               .select(db.taskCompletionHistoryTable)
               .get();
 
-          expect(completions.first.occurrenceDate, DateTime(2025, 1, 20));
+          expect(completions.first.occurrenceDate, DateTime.utc(2025, 1, 20));
           expect(
             completions.first.originalOccurrenceDate,
-            DateTime(2025, 1, 15),
+            DateTime.utc(2025, 1, 15),
           );
         },
       );
@@ -203,7 +203,7 @@ void main() {
             .get();
 
         expect(completions, hasLength(1));
-        expect(completions.first.occurrenceDate, DateTime(2025, 1, 16));
+        expect(completions.first.occurrenceDate, DateTime.utc(2025, 1, 16));
       });
 
       test('does not throw when completion does not exist', () async {
@@ -249,7 +249,7 @@ void main() {
         expect(exceptions, hasLength(1));
         expect(exceptions.first.taskId, 'task-1');
         expect(exceptions.first.exceptionType, ExceptionType.skip);
-        expect(exceptions.first.originalDate, DateTime(2025, 1, 15));
+        expect(exceptions.first.originalDate, DateTime.utc(2025, 1, 15));
       });
 
       test('normalizes original date', () async {
@@ -262,7 +262,7 @@ void main() {
             .select(db.taskRecurrenceExceptionsTable)
             .get();
 
-        expect(exceptions.first.originalDate, DateTime(2025, 1, 15));
+        expect(exceptions.first.originalDate, DateTime.utc(2025, 1, 15));
       });
 
       test('sets createdAt and updatedAt', () async {
@@ -294,8 +294,8 @@ void main() {
 
         expect(exceptions, hasLength(1));
         expect(exceptions.first.exceptionType, ExceptionType.reschedule);
-        expect(exceptions.first.originalDate, DateTime(2025, 1, 15));
-        expect(exceptions.first.newDate, DateTime(2025, 1, 20));
+        expect(exceptions.first.originalDate, DateTime.utc(2025, 1, 15));
+        expect(exceptions.first.newDate, DateTime.utc(2025, 1, 20));
       });
 
       test('includes new deadline when provided', () async {
@@ -310,7 +310,7 @@ void main() {
             .select(db.taskRecurrenceExceptionsTable)
             .get();
 
-        expect(exceptions.first.newDeadline, DateTime(2025, 1, 25));
+        expect(exceptions.first.newDeadline, DateTime.utc(2025, 1, 25));
       });
 
       test('normalizes dates', () async {
@@ -324,8 +324,8 @@ void main() {
             .select(db.taskRecurrenceExceptionsTable)
             .get();
 
-        expect(exceptions.first.originalDate, DateTime(2025, 1, 15));
-        expect(exceptions.first.newDate, DateTime(2025, 1, 20));
+        expect(exceptions.first.originalDate, DateTime.utc(2025, 1, 15));
+        expect(exceptions.first.newDate, DateTime.utc(2025, 1, 20));
       });
     });
 
@@ -469,7 +469,7 @@ void main() {
             .select(db.taskCompletionHistoryTable)
             .get();
 
-        expect(completions.first.occurrenceDate, DateTime(2099, 12, 31));
+        expect(completions.first.occurrenceDate, DateTime.utc(2099, 12, 31));
       });
 
       test('handles dates far in the past', () async {
@@ -483,7 +483,7 @@ void main() {
             .select(db.taskCompletionHistoryTable)
             .get();
 
-        expect(completions.first.occurrenceDate, DateTime(2000));
+        expect(completions.first.occurrenceDate, DateTime.utc(2000));
       });
 
       test('generates unique IDs for each operation', () async {

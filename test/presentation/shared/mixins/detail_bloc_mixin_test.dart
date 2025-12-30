@@ -82,7 +82,7 @@ class TestDetailBloc extends Bloc<TestEvent, TestState>
   Future<void> _onCreate(TestCreate event, Emitter<TestState> emit) async {
     await executeCreateOperation(
       emit,
-      operation: () async {
+      () async {
         final entity = TestEntity('new-id', event.data);
         _storage[entity.id] = entity;
       },
@@ -92,7 +92,7 @@ class TestDetailBloc extends Bloc<TestEvent, TestState>
   Future<void> _onUpdate(TestUpdate event, Emitter<TestState> emit) async {
     await executeUpdateOperation(
       emit,
-      operation: () async {
+      () async {
         if (!_storage.containsKey(event.id)) {
           throw Exception('Entity not found');
         }
@@ -104,7 +104,7 @@ class TestDetailBloc extends Bloc<TestEvent, TestState>
   Future<void> _onDelete(TestDelete event, Emitter<TestState> emit) async {
     await executeDeleteOperation(
       emit,
-      operation: () async {
+      () async {
         if (!_storage.containsKey(event.id)) {
           throw Exception('Entity not found');
         }
@@ -123,7 +123,7 @@ class TestDetailBloc extends Bloc<TestEvent, TestState>
         }
         return entity;
       },
-      onSuccess: createLoadSuccessState,
+      onSuccess: TestLoadSuccess.new,
     );
   }
 
@@ -138,7 +138,6 @@ class TestDetailBloc extends Bloc<TestEvent, TestState>
   TestState createOperationFailureState(DetailBlocError<TestEntity> error) =>
       TestOperationFailure(error);
 
-  @override
   TestState createLoadSuccessState(TestEntity entity) =>
       TestLoadSuccess(entity);
 }
@@ -159,7 +158,7 @@ class TestErrorBloc extends Bloc<TestEvent, TestState>
   Future<void> _onCreate(TestCreate event, Emitter<TestState> emit) async {
     await executeCreateOperation(
       emit,
-      operation: () async {
+      () async {
         throw Exception('Create failed');
       },
     );
@@ -168,7 +167,7 @@ class TestErrorBloc extends Bloc<TestEvent, TestState>
   Future<void> _onUpdate(TestUpdate event, Emitter<TestState> emit) async {
     await executeUpdateOperation(
       emit,
-      operation: () async {
+      () async {
         throw Exception('Update failed');
       },
     );
@@ -177,19 +176,19 @@ class TestErrorBloc extends Bloc<TestEvent, TestState>
   Future<void> _onDelete(TestDelete event, Emitter<TestState> emit) async {
     await executeDeleteOperation(
       emit,
-      operation: () async {
+      () async {
         throw Exception('Delete failed');
       },
     );
   }
 
   Future<void> _onLoad(TestLoad event, Emitter<TestState> emit) async {
-    await executeLoadOperation(
+    await executeLoadOperation<TestEntity>(
       emit,
       load: () async {
         throw Exception('Load failed');
       },
-      onSuccess: (entity) => createLoadSuccessState(entity),
+      onSuccess: TestLoadSuccess.new,
     );
   }
 
@@ -204,7 +203,6 @@ class TestErrorBloc extends Bloc<TestEvent, TestState>
   TestState createOperationFailureState(DetailBlocError<TestEntity> error) =>
       TestOperationFailure(error);
 
-  @override
   TestState createLoadSuccessState(TestEntity entity) =>
       TestLoadSuccess(entity);
 }

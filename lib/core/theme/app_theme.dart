@@ -7,22 +7,19 @@ import 'package:taskly_bloc/core/theme/app_colors.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Primary seed color for the color scheme.
-  static const Color _seedColor = AppColors.blueberry80;
-
-  /// Light theme configuration.
-  static ThemeData lightTheme() {
+  /// Light theme configuration with optional seed color.
+  static ThemeData lightTheme({Color? seedColor}) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
+      seedColor: seedColor ?? AppColors.blueberry80,
     );
 
     return _buildTheme(colorScheme);
   }
 
-  /// Dark theme configuration.
-  static ThemeData darkTheme() {
+  /// Dark theme configuration with optional seed color.
+  static ThemeData darkTheme({Color? seedColor}) {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: _seedColor,
+      seedColor: seedColor ?? AppColors.blueberry80,
       brightness: Brightness.dark,
     );
 

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/presentation/features/analytics/data/repositories/analytics_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/analytics_insight.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/analytics_snapshot.dart';
+import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
+import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
+import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
 
 import '../../../../../fixtures/test_data.dart';
 import '../../../../../helpers/test_db.dart';
@@ -112,14 +112,14 @@ void main() {
           entityType: 'task',
           entityId: 'task-1',
           snapshotDate: DateTime(2025),
-          metrics: {},
+          metrics: <String, dynamic>{},
         ),
         AnalyticsSnapshot(
           id: 'snap-2',
           entityType: 'task',
           entityId: 'task-2',
           snapshotDate: DateTime(2025),
-          metrics: {},
+          metrics: <String, dynamic>{},
         ),
       ]);
 
@@ -159,7 +159,6 @@ void main() {
         await repo.saveCorrelation(correlation);
 
         final results = await repo.getCachedCorrelations(
-          userId: 'test-user',
           correlationType: 'task_tracker',
           range: TestData.dateRange(),
         );
@@ -191,7 +190,6 @@ void main() {
       await repo.saveCorrelation(correlation);
 
       final results = await repo.getCachedCorrelations(
-        userId: 'test-user',
         correlationType: 'task_tracker',
         range: TestData.dateRange(),
       );
@@ -224,7 +222,6 @@ void main() {
       await repo.saveCorrelation(correlation);
 
       final results = await repo.getCachedCorrelations(
-        userId: 'test-user',
         correlationType: 'task_tracker',
         range: TestData.dateRange(),
       );
@@ -283,7 +280,6 @@ void main() {
       await repo.saveCorrelations(correlations);
 
       final results = await repo.getCachedCorrelations(
-        userId: 'test-user',
         correlationType: 'task_tracker',
         range: TestData.dateRange(),
       );
@@ -304,7 +300,6 @@ void main() {
       await repo.saveInsight(insight);
 
       final results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
       );
 
@@ -327,7 +322,6 @@ void main() {
       }
 
       final results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
         limit: 3,
       );
@@ -350,7 +344,6 @@ void main() {
       );
 
       final results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(
           start: DateTime(2025),
           end: DateTime(2025, 2),
@@ -366,7 +359,6 @@ void main() {
       await repo.saveInsight(insight);
 
       var results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
       );
       expect(results, hasLength(1));
@@ -374,7 +366,6 @@ void main() {
       await repo.dismissInsight('insight-1');
 
       results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
       );
       expect(results, isEmpty);
@@ -394,7 +385,6 @@ void main() {
       await repo.saveInsight(insight2);
 
       final results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
       );
 
@@ -423,7 +413,6 @@ void main() {
       );
 
       final results = await repo.getRecentInsights(
-        userId: 'test-user',
         range: TestData.dateRange(),
       );
 
@@ -449,7 +438,6 @@ void main() {
       'getCachedCorrelations returns empty list when no correlations exist',
       () async {
         final results = await repo.getCachedCorrelations(
-          userId: 'test-user',
           correlationType: 'task_tracker',
           range: TestData.dateRange(),
         );
@@ -462,7 +450,6 @@ void main() {
       'getRecentInsights returns empty list when no insights exist',
       () async {
         final results = await repo.getRecentInsights(
-          userId: 'test-user',
           range: TestData.dateRange(),
         );
 

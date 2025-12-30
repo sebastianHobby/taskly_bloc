@@ -98,6 +98,46 @@ class SettingsRepository implements SettingsRepositoryContract {
     );
   }
 
+  // Global Settings
+  @override
+  Stream<GlobalSettings> watchGlobalSettings() {
+    return _watchDatabase().map((appSettings) => appSettings.global).distinct();
+  }
+
+  @override
+  Future<GlobalSettings> loadGlobalSettings() async {
+    final settings = await loadAll();
+    return settings.global;
+  }
+
+  @override
+  Future<void> saveGlobalSettings(GlobalSettings settings) async {
+    final current = await loadAll();
+    final updated = current.updateGlobal(settings);
+    await _saveToDatabase(updated);
+  }
+
+  // Soft Gates Settings
+  @override
+  Stream<SoftGatesSettings> watchSoftGatesSettings() {
+    return _watchDatabase()
+        .map((appSettings) => appSettings.softGates)
+        .distinct();
+  }
+
+  @override
+  Future<SoftGatesSettings> loadSoftGatesSettings() async {
+    final settings = await loadAll();
+    return settings.softGates;
+  }
+
+  @override
+  Future<void> saveSoftGatesSettings(SoftGatesSettings settings) async {
+    final current = await loadAll();
+    final updated = current.updateSoftGates(settings);
+    await _saveToDatabase(updated);
+  }
+
   // Next Actions Settings
   @override
   Stream<NextActionsSettings> watchNextActionsSettings() {

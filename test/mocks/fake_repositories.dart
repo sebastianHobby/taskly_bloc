@@ -73,6 +73,10 @@ class FakeTaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
+      isNextAction: old.isNextAction,
+      nextActionPriority: old.nextActionPriority,
+      markedNextActionAt: old.markedNextActionAt,
+      nextActionNotes: old.nextActionNotes,
       labels: old.labels,
     );
 
@@ -92,6 +96,9 @@ class FakeTaskRepository implements TaskRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
+    bool isNextAction = false,
+    int? nextActionPriority,
+    String? nextActionNotes,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -106,8 +113,40 @@ class FakeTaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
+      isNextAction: isNextAction,
+      nextActionPriority: isNextAction ? nextActionPriority : null,
+      markedNextActionAt: isNextAction ? now : null,
+      nextActionNotes: isNextAction ? nextActionNotes : null,
     );
     _last = [..._last, newTask];
+    _controller.add(_last);
+  }
+
+  @override
+  Future<void> updateNextAction({
+    required String id,
+    required bool isNextAction,
+    int? nextActionPriority,
+    String? nextActionNotes,
+  }) async {
+    final idx = _last.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    final now = DateTime.now();
+
+    final updated = [..._last];
+    updated[idx] = old.copyWith(
+      updatedAt: now,
+      isNextAction: isNextAction,
+      nextActionPriority: isNextAction ? nextActionPriority : null,
+      markedNextActionAt: isNextAction
+          ? (old.isNextAction ? (old.markedNextActionAt ?? now) : now)
+          : null,
+      nextActionNotes: isNextAction ? nextActionNotes : null,
+    );
+
+    _last = updated;
     _controller.add(_last);
   }
 
@@ -225,6 +264,39 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
   final _controller = StreamController<AppSettings>.broadcast();
   AppSettings _current;
+  GlobalSettings _globalSettings = const GlobalSettings();
+
+  @override
+  Stream<GlobalSettings> watchGlobalSettings() async* {
+    yield _globalSettings;
+  }
+
+  @override
+  Future<GlobalSettings> loadGlobalSettings() async {
+    return _globalSettings;
+  }
+
+  @override
+  Future<void> saveGlobalSettings(GlobalSettings settings) async {
+    _globalSettings = settings;
+  }
+
+  @override
+  Stream<SoftGatesSettings> watchSoftGatesSettings() async* {
+    yield _current.softGates;
+    yield* _controller.stream.map((settings) => settings.softGates).distinct();
+  }
+
+  @override
+  Future<SoftGatesSettings> loadSoftGatesSettings() async {
+    return _current.softGates;
+  }
+
+  @override
+  Future<void> saveSoftGatesSettings(SoftGatesSettings settings) async {
+    _current = _current.updateSoftGates(settings);
+    _controller.add(_current);
+  }
 
   @override
   Stream<NextActionsSettings> watchNextActionsSettings() async* {

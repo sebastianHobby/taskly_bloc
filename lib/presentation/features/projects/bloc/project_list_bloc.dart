@@ -123,6 +123,7 @@ class ProjectOverviewBloc
             a.updatedAt,
             b.updatedAt,
           ),
+          SortField.nextActionPriority => 0,
         };
         return value * modifier;
       }

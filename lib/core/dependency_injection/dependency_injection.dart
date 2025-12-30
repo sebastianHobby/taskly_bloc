@@ -21,15 +21,31 @@ import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.da
 import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/analytics/data/repositories/analytics_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/analytics/data/services/analytics_service_impl.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/repositories/analytics_repository.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/services/analytics_service.dart';
-import 'package:taskly_bloc/presentation/features/reviews/data/repositories/reviews_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/repositories/reviews_repository.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/services/review_action_service.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/data/repositories/wellbeing_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
+import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
+import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/problem_acknowledgments_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/workflow_item_reviews_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/workflow_sessions_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/services/screen_system_seeder.dart';
+import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
+import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
+import 'package:taskly_bloc/domain/repositories/analytics_repository.dart';
+import 'package:taskly_bloc/domain/repositories/pending_notifications_repository.dart';
+import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
+import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
+import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/services/screens/entity_grouper.dart';
+import 'package:taskly_bloc/domain/services/screens/trigger_evaluator.dart';
+import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
+import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
+import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
+import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -100,11 +116,47 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<WellbeingRepository>(
       () => WellbeingRepositoryImpl(getIt<AppDatabase>()),
     )
-    // Reviews
-    ..registerLazySingleton<ReviewsRepository>(
-      () => ReviewsRepositoryImpl(getIt<AppDatabase>()),
+    // Screens
+    ..registerLazySingleton<ScreenDefinitionsRepository>(
+      () => ScreenDefinitionsRepositoryImpl(getIt<AppDatabase>()),
     )
-    ..registerLazySingleton<ReviewActionService>(
-      () => ReviewActionService(getIt<TaskRepositoryContract>()),
+    ..registerLazySingleton<WorkflowSessionsRepository>(
+      () => WorkflowSessionsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<WorkflowItemReviewsRepository>(
+      () => WorkflowItemReviewsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<ProblemAcknowledgmentsRepository>(
+      () => ProblemAcknowledgmentsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<ScreenQueryBuilder>(ScreenQueryBuilder.new)
+    ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
+    ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
+    ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
+    ..registerLazySingleton<SupportBlockComputer>(
+      () => SupportBlockComputer(
+        getIt<TaskStatsCalculator>(),
+        getIt<AnalyticsService>(),
+      ),
     );
+
+  // Notifications (server-enqueued + PowerSync synced)
+  getIt
+    ..registerLazySingleton<NotificationPresenter>(
+      () => LoggingNotificationPresenter().call,
+    )
+    ..registerLazySingleton<PendingNotificationsRepository>(
+      () => PendingNotificationsRepositoryImpl(getIt<AppDatabase>()),
+    )
+    ..registerSingleton<PendingNotificationsProcessor>(
+      PendingNotificationsProcessor(
+        repository: getIt<PendingNotificationsRepository>(),
+        presenter: getIt<NotificationPresenter>(),
+      ),
+    );
+
+  // Seed required system screens if missing.
+  await ScreenSystemSeeder(
+    screensRepository: getIt<ScreenDefinitionsRepository>(),
+  ).seedDefaults();
 }

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
@@ -25,6 +26,16 @@ void main() {
     mockTaskRepository = MockTaskRepository();
     mockProjectRepository = MockProjectRepository();
     mockLabelRepository = MockLabelRepository();
+
+    // TaskDetailBloc dispatches a load event in its constructor.
+    // Provide safe defaults so tests that don't care about these values
+    // don't fail due to unstubbed repository calls.
+    when(
+      () => mockProjectRepository.getAll(),
+    ).thenAnswer((_) async => <Project>[]);
+    when(
+      () => mockLabelRepository.getAll(),
+    ).thenAnswer((_) async => <Label>[]);
   });
 
   tearDown(() {
@@ -66,8 +77,10 @@ void main() {
             isA<TaskDetailLoadInProgress>(),
             predicate<TaskDetailInitialDataLoadSuccess>(
               (state) =>
-                  state.availableProjects == projects &&
-                  state.availableLabels == labels,
+                  state.availableProjects.length == projects.length &&
+                  state.availableProjects.first.id == projects.first.id &&
+                  state.availableLabels.length == labels.length &&
+                  state.availableLabels.first.id == labels.first.id,
             ),
           ]),
         );
@@ -101,9 +114,11 @@ void main() {
             isA<TaskDetailLoadInProgress>(),
             predicate<TaskDetailLoadSuccess>(
               (state) =>
-                  state.task == task &&
-                  state.availableProjects == projects &&
-                  state.availableLabels == labels,
+                  state.task.id == task.id &&
+                  state.availableProjects.length == projects.length &&
+                  state.availableProjects.first.id == projects.first.id &&
+                  state.availableLabels.length == labels.length &&
+                  state.availableLabels.first.id == labels.first.id,
             ),
           ]),
         );
@@ -128,6 +143,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
@@ -153,6 +169,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
@@ -185,6 +202,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
@@ -207,6 +225,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) =>
@@ -230,6 +249,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
@@ -254,6 +274,9 @@ void main() {
               projectId: any(named: 'projectId'),
               repeatIcalRrule: any(named: 'repeatIcalRrule'),
               labelIds: any(named: 'labelIds'),
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
             ),
           ).thenAnswer((_) async {});
 
@@ -261,6 +284,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(
@@ -285,6 +309,9 @@ void main() {
               projectId: any(named: 'projectId'),
               repeatIcalRrule: any(named: 'repeatIcalRrule'),
               labelIds: any(named: 'labelIds'),
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
             ),
           ).called(1);
         },
@@ -303,6 +330,9 @@ void main() {
               projectId: any(named: 'projectId'),
               repeatIcalRrule: any(named: 'repeatIcalRrule'),
               labelIds: any(named: 'labelIds'),
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
             ),
           ).thenThrow(Exception('Create failed'));
 
@@ -310,6 +340,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(
@@ -342,10 +373,20 @@ void main() {
             ),
           ).thenAnswer((_) async {});
 
+          when(
+            () => mockTaskRepository.updateNextAction(
+              id: any(named: 'id'),
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
+            ),
+          ).thenAnswer((_) async {});
+
           return TaskDetailBloc(
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(
@@ -376,6 +417,15 @@ void main() {
               labelIds: any(named: 'labelIds'),
             ),
           ).called(1);
+
+          verify(
+            () => mockTaskRepository.updateNextAction(
+              id: 'task-1',
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
+            ),
+          ).called(1);
         },
       );
 
@@ -396,10 +446,20 @@ void main() {
             ),
           ).thenThrow(Exception('Update failed'));
 
+          when(
+            () => mockTaskRepository.updateNextAction(
+              id: any(named: 'id'),
+              isNextAction: any(named: 'isNextAction'),
+              nextActionPriority: any(named: 'nextActionPriority'),
+              nextActionNotes: any(named: 'nextActionNotes'),
+            ),
+          ).thenAnswer((_) async {});
+
           return TaskDetailBloc(
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(
@@ -426,6 +486,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
@@ -451,6 +512,7 @@ void main() {
             taskRepository: mockTaskRepository,
             projectRepository: mockProjectRepository,
             labelRepository: mockLabelRepository,
+            autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),

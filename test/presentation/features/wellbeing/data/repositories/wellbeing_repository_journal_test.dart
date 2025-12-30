@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/date_range.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/data/repositories/wellbeing_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
 
 import '../../../../../fixtures/test_data.dart';
 import '../../../../../helpers/test_db.dart';
@@ -25,7 +25,6 @@ void main() {
     test('saves new journal entry', () async {
       final entry = TestData.journalEntry(
         id: 'entry-1',
-        userId: 'user-1',
         entryDate: DateTime(2025, 1, 20),
         moodRating: MoodRating.good,
         journalText: 'Today was a good day!',
@@ -69,17 +68,13 @@ void main() {
       final date = DateTime(2025, 1, 20);
       final entry = TestData.journalEntry(
         id: 'entry-1',
-        userId: 'user-1',
         entryDate: date,
         journalText: 'Entry for Jan 20',
       );
 
       await repository.saveJournalEntry(entry);
 
-      final retrieved = await repository.getJournalEntryByDate(
-        userId: 'user-1',
-        date: date,
-      );
+      final retrieved = await repository.getJournalEntryByDate(date: date);
 
       expect(retrieved, isNotNull);
       expect(retrieved!.entryDate, date);
@@ -88,7 +83,6 @@ void main() {
 
     test('getJournalEntryByDate returns null when no entry for date', () async {
       final result = await repository.getJournalEntryByDate(
-        userId: 'user-1',
         date: DateTime(2025, 1, 20),
       );
 
@@ -108,19 +102,17 @@ void main() {
     test('watchJournalEntries returns stream of all entries', () async {
       final entry1 = TestData.journalEntry(
         id: 'entry-1',
-        userId: 'user-1',
         entryDate: DateTime(2025, 1, 20),
       );
       final entry2 = TestData.journalEntry(
         id: 'entry-2',
-        userId: 'user-1',
         entryDate: DateTime(2025, 1, 21),
       );
 
       await repository.saveJournalEntry(entry1);
       await repository.saveJournalEntry(entry2);
 
-      final stream = repository.watchJournalEntries(userId: 'user-1');
+      final stream = repository.watchJournalEntries();
       final entries = await stream.first;
 
       expect(entries.length, 2);
@@ -133,21 +125,18 @@ void main() {
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-1',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 15),
         ),
       );
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-2',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 20),
         ),
       );
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-3',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 25),
         ),
       );
@@ -157,10 +146,7 @@ void main() {
         end: DateTime(2025, 1, 22),
       );
 
-      final stream = repository.watchJournalEntries(
-        userId: 'user-1',
-        range: range,
-      );
+      final stream = repository.watchJournalEntries(range: range);
       final entries = await stream.first;
 
       expect(entries.length, 1);
@@ -171,7 +157,6 @@ void main() {
       for (final mood in MoodRating.values) {
         final entry = TestData.journalEntry(
           id: 'entry-${mood.name}',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, mood.value),
           moodRating: mood,
         );
@@ -229,7 +214,6 @@ void main() {
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-1',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 20),
           moodRating: MoodRating.good, // value: 4
         ),
@@ -237,7 +221,6 @@ void main() {
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-2',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 21),
           moodRating: MoodRating.excellent, // value: 5
         ),
@@ -245,7 +228,6 @@ void main() {
       await repository.saveJournalEntry(
         TestData.journalEntry(
           id: 'entry-3',
-          userId: 'user-1',
           entryDate: DateTime(2025, 1, 22),
           moodRating: MoodRating.neutral, // value: 3
         ),
@@ -310,19 +292,17 @@ void main() {
         await repository.saveJournalEntry(
           TestData.journalEntry(
             id: 'entry-1',
-            userId: 'user-1',
             entryDate: DateTime(2025, 1, 20),
           ),
         );
         await repository.saveJournalEntry(
           TestData.journalEntry(
             id: 'entry-2',
-            userId: 'user-1',
             entryDate: DateTime(2025, 1, 21),
           ),
         );
 
-        final stream = repository.watchJournalEntries(userId: 'user-1');
+        final stream = repository.watchJournalEntries();
         final entries = await stream.first;
 
         expect(entries.length, 2);
@@ -337,7 +317,7 @@ void main() {
 
       await repository.saveJournalEntry(entry);
 
-      final stream = repository.watchJournalEntries(userId: entry.userId);
+      final stream = repository.watchJournalEntries();
       final entries = await stream.first;
 
       expect(entries.length, 1);

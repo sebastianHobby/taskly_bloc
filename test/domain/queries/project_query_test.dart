@@ -1,27 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
+import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
+import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart'
+    show BoolOperator, DateOperator, LabelOperator;
 
 void main() {
   group('ProjectQuery', () {
     test('default constructor creates instance with empty lists', () {
       const query = ProjectQuery();
 
-      expect(query.rules, isEmpty);
+      expect(query.filter, const QueryFilter<ProjectPredicate>.matchAll());
       expect(query.sortCriteria, isEmpty);
       expect(query.occurrenceExpansion, isNull);
       expect(query.shouldExpandOccurrences, isFalse);
     });
 
     test('constructor accepts all parameters', () {
-      final rules = [
-        const BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-      ];
+      const filter = QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      );
       final sortCriteria = [
         const SortCriterion(field: SortField.name),
       ];
@@ -31,12 +37,12 @@ void main() {
       );
 
       final query = ProjectQuery(
-        rules: rules,
+        filter: filter,
         sortCriteria: sortCriteria,
         occurrenceExpansion: expansion,
       );
 
-      expect(query.rules, rules);
+      expect(query.filter, filter);
       expect(query.sortCriteria, sortCriteria);
       expect(query.occurrenceExpansion, expansion);
       expect(query.shouldExpandOccurrences, isTrue);
@@ -46,7 +52,7 @@ void main() {
       test('creates query with no filtering rules', () {
         final query = ProjectQuery.all();
 
-        expect(query.rules, isEmpty);
+        expect(query.filter, const QueryFilter<ProjectPredicate>.matchAll());
         expect(query.occurrenceExpansion, isNull);
       });
 
@@ -75,12 +81,13 @@ void main() {
       test('creates query with completed=false rule', () {
         final query = ProjectQuery.incomplete();
 
-        expect(query.rules, hasLength(1));
-        expect(query.rules.first, isA<BooleanRule>());
+        expect(query.filter.orGroups, isEmpty);
+        expect(query.filter.shared, hasLength(1));
+        expect(query.filter.shared.first, isA<ProjectBoolPredicate>());
 
-        final rule = query.rules.first as BooleanRule;
-        expect(rule.field, BooleanRuleField.completed);
-        expect(rule.operator, BooleanRuleOperator.isFalse);
+        final predicate = query.filter.shared.first as ProjectBoolPredicate;
+        expect(predicate.field, ProjectBoolField.completed);
+        expect(predicate.operator, BoolOperator.isFalse);
       });
 
       test('uses default sort criteria', () {
@@ -117,17 +124,22 @@ void main() {
           rangeEnd: rangeEnd,
         );
 
-        expect(query.rules, hasLength(2));
+        expect(query.filter.orGroups, isEmpty);
+        expect(query.filter.shared, hasLength(2));
 
-        final boolRule = query.rules.whereType<BooleanRule>().first;
-        expect(boolRule.field, BooleanRuleField.completed);
-        expect(boolRule.operator, BooleanRuleOperator.isFalse);
+        final boolPredicate = query.filter.shared
+            .whereType<ProjectBoolPredicate>()
+            .first;
+        expect(boolPredicate.field, ProjectBoolField.completed);
+        expect(boolPredicate.operator, BoolOperator.isFalse);
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.field, DateRuleField.startDate);
-        expect(dateRule.operator, DateRuleOperator.between);
-        expect(dateRule.startDate, rangeStart);
-        expect(dateRule.endDate, rangeEnd);
+        final datePredicate = query.filter.shared
+            .whereType<ProjectDatePredicate>()
+            .first;
+        expect(datePredicate.field, ProjectDateField.startDate);
+        expect(datePredicate.operator, DateOperator.between);
+        expect(datePredicate.startDate, rangeStart);
+        expect(datePredicate.endDate, rangeEnd);
       });
 
       test('enables occurrence expansion with date range', () {
@@ -159,7 +171,6 @@ void main() {
         final customSort = [
           const SortCriterion(
             field: SortField.startDate,
-            direction: SortDirection.ascending,
           ),
         ];
 
@@ -180,9 +191,11 @@ void main() {
           rangeEnd: date,
         );
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.startDate, date);
-        expect(dateRule.endDate, date);
+        final datePredicate = query.filter.shared
+            .whereType<ProjectDatePredicate>()
+            .first;
+        expect(datePredicate.startDate, date);
+        expect(datePredicate.endDate, date);
       });
 
       test('handles range spanning multiple months', () {
@@ -194,9 +207,11 @@ void main() {
           rangeEnd: rangeEnd,
         );
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.startDate!.month, 1);
-        expect(dateRule.endDate!.month, 6);
+        final datePredicate = query.filter.shared
+            .whereType<ProjectDatePredicate>()
+            .first;
+        expect(datePredicate.startDate!.month, 1);
+        expect(datePredicate.endDate!.month, 6);
       });
 
       test('handles range spanning year boundary', () {
@@ -208,9 +223,11 @@ void main() {
           rangeEnd: rangeEnd,
         );
 
-        final dateRule = query.rules.whereType<DateRule>().first;
-        expect(dateRule.startDate!.year, 2025);
-        expect(dateRule.endDate!.year, 2026);
+        final datePredicate = query.filter.shared
+            .whereType<ProjectDatePredicate>()
+            .first;
+        expect(datePredicate.startDate!.year, 2025);
+        expect(datePredicate.endDate!.year, 2026);
       });
     });
 
@@ -242,36 +259,42 @@ void main() {
       });
 
       test('queries with same parameters are equal', () {
-        final rules = [
-          const BooleanRule(
-            field: BooleanRuleField.completed,
-            operator: BooleanRuleOperator.isFalse,
-          ),
-        ];
+        const filter = QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+        );
 
-        final query1 = ProjectQuery(rules: rules);
-        final query2 = ProjectQuery(rules: rules);
+        final query1 = ProjectQuery(filter: filter);
+        final query2 = ProjectQuery(filter: filter);
 
         expect(query1, equals(query2));
       });
 
       test('queries with different rules are not equal', () {
         final query1 = ProjectQuery(
-          rules: const [
-            BooleanRule(
-              field: BooleanRuleField.completed,
-              operator: BooleanRuleOperator.isFalse,
-            ),
-          ],
+          filter: const QueryFilter<ProjectPredicate>(
+            shared: [
+              ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+            ],
+          ),
         );
 
         final query2 = ProjectQuery(
-          rules: const [
-            BooleanRule(
-              field: BooleanRuleField.completed,
-              operator: BooleanRuleOperator.isTrue,
-            ),
-          ],
+          filter: const QueryFilter<ProjectPredicate>(
+            shared: [
+              ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isTrue,
+              ),
+            ],
+          ),
         );
 
         expect(query1, isNot(equals(query2)));
@@ -327,15 +350,17 @@ void main() {
       });
 
       test('queries with same rules have same hashCode', () {
-        final rules = [
-          const BooleanRule(
-            field: BooleanRuleField.completed,
-            operator: BooleanRuleOperator.isFalse,
-          ),
-        ];
+        const filter = QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+        );
 
-        final query1 = ProjectQuery(rules: rules);
-        final query2 = ProjectQuery(rules: rules);
+        final query1 = ProjectQuery(filter: filter);
+        final query2 = ProjectQuery(filter: filter);
 
         expect(query1.hashCode, equals(query2.hashCode));
       });
@@ -348,24 +373,26 @@ void main() {
         final string = query.toString();
 
         expect(string, contains('ProjectQuery'));
-        expect(string, contains('rules'));
+        expect(string, contains('filter'));
         expect(string, contains('sortCriteria'));
         expect(string, contains('occurrenceExpansion'));
       });
 
-      test('includes rule information', () {
+      test('includes filter information', () {
         final query = ProjectQuery(
-          rules: const [
-            BooleanRule(
-              field: BooleanRuleField.completed,
-              operator: BooleanRuleOperator.isFalse,
-            ),
-          ],
+          filter: const QueryFilter<ProjectPredicate>(
+            shared: [
+              ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+            ],
+          ),
         );
 
         final string = query.toString();
 
-        expect(string, contains('BooleanRule'));
+        expect(string, contains('ProjectBoolPredicate'));
       });
 
       test('includes sort criteria information', () {
@@ -382,43 +409,44 @@ void main() {
     });
 
     group('complex queries', () {
-      test('can combine multiple rule types', () {
+      test('can combine multiple predicate types', () {
         final query = ProjectQuery(
-          rules: [
-            const BooleanRule(
-              field: BooleanRuleField.completed,
-              operator: BooleanRuleOperator.isFalse,
-            ),
-            DateRule(
-              field: DateRuleField.deadlineDate,
-              operator: DateRuleOperator.onOrBefore,
-              date: DateTime(2025, 12, 31),
-            ),
-            const LabelRule(
-              operator: LabelRuleOperator.hasAny,
-              labelIds: ['label-1', 'label-2'],
-            ),
-          ],
+          filter: QueryFilter<ProjectPredicate>(
+            shared: [
+              const ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+              ProjectDatePredicate(
+                field: ProjectDateField.deadlineDate,
+                operator: DateOperator.onOrBefore,
+                date: DateTime(2025, 12, 31),
+              ),
+              const ProjectLabelPredicate(
+                operator: LabelOperator.hasAny,
+                labelType: LabelType.label,
+                labelIds: ['label-1', 'label-2'],
+              ),
+            ],
+          ),
         );
 
-        expect(query.rules, hasLength(3));
-        expect(query.rules[0], isA<BooleanRule>());
-        expect(query.rules[1], isA<DateRule>());
-        expect(query.rules[2], isA<LabelRule>());
+        expect(query.filter.shared, hasLength(3));
+        expect(query.filter.shared[0], isA<ProjectBoolPredicate>());
+        expect(query.filter.shared[1], isA<ProjectDatePredicate>());
+        expect(query.filter.shared[2], isA<ProjectLabelPredicate>());
       });
 
       test('can have multiple sort criteria', () {
         final query = ProjectQuery(
-          sortCriteria: [
-            const SortCriterion(
+          sortCriteria: const [
+            SortCriterion(
               field: SortField.deadlineDate,
-              direction: SortDirection.ascending,
             ),
-            const SortCriterion(
+            SortCriterion(
               field: SortField.name,
-              direction: SortDirection.ascending,
             ),
-            const SortCriterion(
+            SortCriterion(
               field: SortField.createdDate,
               direction: SortDirection.descending,
             ),
@@ -430,12 +458,14 @@ void main() {
 
       test('can combine rules, sort, and expansion', () {
         final query = ProjectQuery(
-          rules: const [
-            BooleanRule(
-              field: BooleanRuleField.completed,
-              operator: BooleanRuleOperator.isFalse,
-            ),
-          ],
+          filter: const QueryFilter<ProjectPredicate>(
+            shared: [
+              ProjectBoolPredicate(
+                field: ProjectBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+            ],
+          ),
           sortCriteria: const [
             SortCriterion(field: SortField.name),
           ],
@@ -445,17 +475,18 @@ void main() {
           ),
         );
 
-        expect(query.rules, isNotEmpty);
+        expect(query.filter.shared, isNotEmpty);
         expect(query.sortCriteria, isNotEmpty);
         expect(query.shouldExpandOccurrences, isTrue);
       });
     });
 
     group('edge cases', () {
-      test('handles empty rules list', () {
+      test('handles empty filter', () {
         const query = ProjectQuery();
 
-        expect(query.rules, isEmpty);
+        expect(query.filter.shared, isEmpty);
+        expect(query.filter.orGroups, isEmpty);
       });
 
       test('handles empty sort criteria list', () {
@@ -471,18 +502,20 @@ void main() {
         expect(query.shouldExpandOccurrences, isFalse);
       });
 
-      test('handles very large number of rules', () {
-        final rules = List.generate(
+      test('handles very large number of predicates', () {
+        final predicates = List.generate(
           100,
-          (i) => const BooleanRule(
-            field: BooleanRuleField.completed,
-            operator: BooleanRuleOperator.isFalse,
+          (i) => const ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
           ),
         );
 
-        final query = ProjectQuery(rules: rules);
+        final query = ProjectQuery(
+          filter: QueryFilter<ProjectPredicate>(shared: predicates),
+        );
 
-        expect(query.rules, hasLength(100));
+        expect(query.filter.shared, hasLength(100));
       });
 
       test('handles very large number of sort criteria', () {

@@ -7,6 +7,7 @@ enum SortField {
   deadlineDate,
   createdDate,
   updatedDate,
+  nextActionPriority,
 }
 
 /// Sort direction per criterion.
@@ -22,10 +23,17 @@ class SortCriterion {
   factory SortCriterion.fromJson(Map<String, dynamic> json) {
     final fieldName = json['field'] as String?;
     final directionName = json['direction'] as String?;
+
+    final normalizedDirection = switch (directionName) {
+      'asc' => SortDirection.ascending.name,
+      'desc' => SortDirection.descending.name,
+      _ => directionName,
+    };
+
     return SortCriterion(
       field: SortField.values.byName(fieldName ?? SortField.name.name),
       direction: SortDirection.values.byName(
-        directionName ?? SortDirection.ascending.name,
+        normalizedDirection ?? SortDirection.ascending.name,
       ),
     );
   }

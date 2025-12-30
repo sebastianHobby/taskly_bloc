@@ -115,6 +115,23 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'labelIds',
                   );
+                  final isNextAction = extractBoolValue(
+                    formValues,
+                    'isNextAction',
+                  );
+                  final nextActionPriorityRaw = extractNullableStringValue(
+                    formValues,
+                    'nextActionPriority',
+                  );
+                  final nextActionPriority =
+                      (nextActionPriorityRaw == null ||
+                          nextActionPriorityRaw.trim().isEmpty)
+                      ? null
+                      : int.tryParse(nextActionPriorityRaw.trim());
+                  final nextActionNotes = extractNullableStringValue(
+                    formValues,
+                    'nextActionNotes',
+                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -128,6 +145,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
+                      isNextAction: isNextAction,
+                      nextActionPriority: nextActionPriority,
+                      nextActionNotes:
+                          (nextActionNotes == null ||
+                              nextActionNotes.trim().isEmpty)
+                          ? null
+                          : nextActionNotes.trim(),
                       labels: selectedLabels,
                     ),
                   );
@@ -183,6 +207,23 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'labelIds',
                   );
+                  final isNextAction = extractBoolValue(
+                    formValues,
+                    'isNextAction',
+                  );
+                  final nextActionPriorityRaw = extractNullableStringValue(
+                    formValues,
+                    'nextActionPriority',
+                  );
+                  final nextActionPriority =
+                      (nextActionPriorityRaw == null ||
+                          nextActionPriorityRaw.trim().isEmpty)
+                      ? null
+                      : int.tryParse(nextActionPriorityRaw.trim());
+                  final nextActionNotes = extractNullableStringValue(
+                    formValues,
+                    'nextActionNotes',
+                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -197,6 +238,13 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
+                      isNextAction: isNextAction,
+                      nextActionPriority: nextActionPriority,
+                      nextActionNotes:
+                          (nextActionNotes == null ||
+                              nextActionNotes.trim().isEmpty)
+                          ? null
+                          : nextActionNotes.trim(),
                       labels: selectedLabels,
                     ),
                   );

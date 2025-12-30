@@ -646,14 +646,14 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
           Label(
             id: 'label-2',
             name: 'Label 2',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
           Label(
             id: 'label-3',
@@ -683,8 +683,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -708,8 +708,8 @@ void main() {
           Label(
             id: 'label-2',
             name: 'Label 2',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -748,8 +748,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -775,14 +775,14 @@ void main() {
             id: 'value-1',
             name: 'Value 1',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -837,15 +837,15 @@ void main() {
             id: 'value-1',
             name: 'Value 1',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
           Label(
             id: 'value-2',
             name: 'Value 2',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -870,8 +870,8 @@ void main() {
             id: 'value-2',
             name: 'Value 2',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );
@@ -895,8 +895,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
+            createdAt: DateTime(2025, 1),
+            updatedAt: DateTime(2025, 1),
           ),
         ],
       );

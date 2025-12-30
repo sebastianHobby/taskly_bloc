@@ -1,6 +1,128 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+
+/// Common date format patterns for use with intl DateFormat.
+/// These follow the ICU date format patterns.
+class DateFormatPatterns {
+  static const String short = 'yMd'; // 12/30/2025
+  static const String medium = 'yMMMd'; // Dec 30, 2025
+  static const String long = 'yMMMMd'; // December 30, 2025
+  static const String full = 'yMMMMEEEEd'; // Monday, December 30, 2025
+
+  static const String defaultPattern = medium;
+
+  /// Get localized DateFormat for the given pattern and locale
+  static DateFormat getFormat(String pattern, [String? locale]) {
+    try {
+      return DateFormat(pattern, locale);
+    } catch (e) {
+      // Fallback to default pattern if invalid
+      return DateFormat(defaultPattern, locale);
+    }
+  }
+}
+
+/// Global application settings
+class GlobalSettings {
+  const GlobalSettings({
+    this.themeMode = ThemeMode.system,
+    this.colorSchemeSeed = _defaultSeedColor,
+    this.locale,
+    this.dateFormatPattern = DateFormatPatterns.defaultPattern,
+    this.textScaleFactor = 1.0,
+    this.onboardingCompleted = false,
+  });
+
+  factory GlobalSettings.fromJson(Map<String, dynamic> json) {
+    return GlobalSettings(
+      themeMode: ThemeMode.values.firstWhere(
+        (e) => e.name == json['themeMode'],
+        orElse: () => ThemeMode.system,
+      ),
+      colorSchemeSeed: ColorUtils.fromHex(
+        json['colorSchemeSeed'] as String?,
+        fallback: _defaultSeedColor,
+      ),
+      locale: json['locale'] != null ? Locale(json['locale'] as String) : null,
+      dateFormatPattern:
+          json['dateFormatPattern'] as String? ??
+          DateFormatPatterns.defaultPattern,
+      textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
+      onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
+    );
+  }
+
+  static const Color _defaultSeedColor = Color(0xFF6750A4);
+
+  final ThemeMode themeMode;
+  final Color colorSchemeSeed;
+  final Locale? locale;
+
+  /// ICU date format pattern (e.g., 'yMd', 'yMMMd', 'yMMMMd')
+  final String dateFormatPattern;
+  final double textScaleFactor;
+  final bool onboardingCompleted;
+
+  /// Get a DateFormat instance for this settings' pattern and locale
+  DateFormat getDateFormat() {
+    return DateFormatPatterns.getFormat(
+      dateFormatPattern,
+      locale?.languageCode,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'themeMode': themeMode.name,
+    'colorSchemeSeed': ColorUtils.toHexWithHash(colorSchemeSeed),
+    'locale': locale?.languageCode,
+    'dateFormatPattern': dateFormatPattern,
+    'textScaleFactor': textScaleFactor,
+    'onboardingCompleted': onboardingCompleted,
+  };
+
+  GlobalSettings copyWith({
+    ThemeMode? themeMode,
+    Color? colorSchemeSeed,
+    Locale? locale,
+    String? dateFormatPattern,
+    double? textScaleFactor,
+    bool? onboardingCompleted,
+  }) {
+    return GlobalSettings(
+      themeMode: themeMode ?? this.themeMode,
+      colorSchemeSeed: colorSchemeSeed ?? this.colorSchemeSeed,
+      locale: locale ?? this.locale,
+      dateFormatPattern: dateFormatPattern ?? this.dateFormatPattern,
+      textScaleFactor: textScaleFactor ?? this.textScaleFactor,
+      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is GlobalSettings &&
+        other.themeMode == themeMode &&
+        other.colorSchemeSeed == colorSchemeSeed &&
+        other.locale == locale &&
+        other.dateFormatPattern == dateFormatPattern &&
+        other.textScaleFactor == textScaleFactor &&
+        other.onboardingCompleted == onboardingCompleted;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    themeMode,
+    colorSchemeSeed,
+    locale,
+    dateFormatPattern,
+    textScaleFactor,
+    onboardingCompleted,
+  );
+}
 
 /// Display settings for a specific page.
 class PageDisplaySettings {
@@ -61,12 +183,20 @@ class PageDisplaySettings {
 
 class AppSettings {
   const AppSettings({
+    this.global = const GlobalSettings(),
     this.pageSortPreferences = const <String, SortPreferences>{},
     this.pageDisplaySettings = const <String, PageDisplaySettings>{},
+    SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,
-  }) : nextActions = nextActions ?? const NextActionsSettings();
+  }) : softGates = softGates ?? const SoftGatesSettings(),
+       nextActions = nextActions ?? const NextActionsSettings();
 
   factory AppSettings.fromJson(Map<String, dynamic> json) {
+    final globalJson = json['global'] as Map<String, dynamic>?;
+    final global = globalJson != null
+        ? GlobalSettings.fromJson(globalJson)
+        : const GlobalSettings();
+
     final rawSorts = json['pageSortPreferences'] as Map<String, dynamic>?;
     final sorts = <String, SortPreferences>{};
     rawSorts?.forEach((key, value) {
@@ -88,37 +218,60 @@ class AppSettings {
     final nextActions = nextActionsJson == null
         ? NextActionsSettings.withDefaults()
         : NextActionsSettings.fromJson(nextActionsJson);
+
+    final softGatesJson = json['softGates'] as Map<String, dynamic>?;
+    final softGates = softGatesJson == null
+        ? const SoftGatesSettings()
+        : SoftGatesSettings.fromJson(softGatesJson);
     return AppSettings(
+      global: global,
       pageSortPreferences: sorts,
       pageDisplaySettings: displaySettings,
+      softGates: softGates,
       nextActions: nextActions,
     );
   }
 
+  final GlobalSettings global;
   final Map<String, SortPreferences> pageSortPreferences;
   final Map<String, PageDisplaySettings> pageDisplaySettings;
+  final SoftGatesSettings softGates;
   final NextActionsSettings nextActions;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+    'global': global.toJson(),
     'pageSortPreferences': pageSortPreferences.map(
       (key, value) => MapEntry(key, value.toJson()),
     ),
     'pageDisplaySettings': pageDisplaySettings.map(
       (key, value) => MapEntry(key, value.toJson()),
     ),
+    'softGates': softGates.toJson(),
     'nextActions': nextActions.toJson(),
   };
 
   AppSettings copyWith({
+    GlobalSettings? global,
     Map<String, SortPreferences>? pageSortPreferences,
     Map<String, PageDisplaySettings>? pageDisplaySettings,
+    SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,
   }) {
     return AppSettings(
+      global: global ?? this.global,
       pageSortPreferences: pageSortPreferences ?? this.pageSortPreferences,
       pageDisplaySettings: pageDisplaySettings ?? this.pageDisplaySettings,
+      softGates: softGates ?? this.softGates,
       nextActions: nextActions ?? this.nextActions,
     );
+  }
+
+  AppSettings updateGlobal(GlobalSettings value) {
+    return copyWith(global: value);
+  }
+
+  AppSettings updateSoftGates(SoftGatesSettings value) {
+    return copyWith(softGates: value);
   }
 
   SortPreferences? sortFor(String pageKey) => pageSortPreferences[pageKey];
@@ -166,7 +319,7 @@ class AppSettings {
       final otherValue = other.pageDisplaySettings[entry.key];
       if (otherValue != entry.value) return false;
     }
-    return other.nextActions == nextActions;
+    return other.softGates == softGates && other.nextActions == nextActions;
   }
 
   @override
@@ -177,8 +330,71 @@ class AppSettings {
     pageDisplaySettings.entries
         .map((e) => Object.hash(e.key, e.value))
         .fold<int>(0, (prev, element) => prev ^ element.hashCode),
+    softGates,
     nextActions,
   );
+}
+
+/// Settings controlling workflow-run soft gates (warnings).
+class SoftGatesSettings {
+  const SoftGatesSettings({
+    this.urgentDeadlineWithinDays = 7,
+    this.staleAfterDaysWithoutUpdates = 30,
+  });
+
+  factory SoftGatesSettings.fromJson(Map<String, dynamic> json) {
+    int clampPositiveInt(Object? value, int fallback) {
+      final parsed = value is int ? value : (value is num ? value.toInt() : 0);
+      if (parsed <= 0) return fallback;
+      return parsed;
+    }
+
+    return SoftGatesSettings(
+      urgentDeadlineWithinDays: clampPositiveInt(
+        json['urgentDeadlineWithinDays'],
+        7,
+      ),
+      staleAfterDaysWithoutUpdates: clampPositiveInt(
+        json['staleAfterDaysWithoutUpdates'],
+        30,
+      ),
+    );
+  }
+
+  /// A task is urgent when its deadline is due within this many days
+  /// (or overdue).
+  final int urgentDeadlineWithinDays;
+
+  /// A task is stale when it has not been updated within this many days.
+  final int staleAfterDaysWithoutUpdates;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'urgentDeadlineWithinDays': urgentDeadlineWithinDays,
+    'staleAfterDaysWithoutUpdates': staleAfterDaysWithoutUpdates,
+  };
+
+  SoftGatesSettings copyWith({
+    int? urgentDeadlineWithinDays,
+    int? staleAfterDaysWithoutUpdates,
+  }) {
+    return SoftGatesSettings(
+      urgentDeadlineWithinDays:
+          urgentDeadlineWithinDays ?? this.urgentDeadlineWithinDays,
+      staleAfterDaysWithoutUpdates:
+          staleAfterDaysWithoutUpdates ?? this.staleAfterDaysWithoutUpdates,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is SoftGatesSettings &&
+        other.urgentDeadlineWithinDays == urgentDeadlineWithinDays &&
+        other.staleAfterDaysWithoutUpdates == staleAfterDaysWithoutUpdates;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(urgentDeadlineWithinDays, staleAfterDaysWithoutUpdates);
 }
 
 /// Keys for persisted page-specific settings.

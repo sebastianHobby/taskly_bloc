@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
 /// Unified query configuration for fetching tasks with filtering, sorting, and occurrence expansion.
 ///
@@ -12,7 +13,7 @@ import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 @immutable
 class TaskQuery {
   const TaskQuery({
-    this.rules = const [],
+    this.filter = const QueryFilter<TaskPredicate>.matchAll(),
     this.sortCriteria = const [],
     this.occurrenceExpansion,
   });
@@ -21,15 +22,18 @@ class TaskQuery {
   // Factory Methods
   // ========================================================================
 
-  /// Factory: Inbox view (incomplete tasks only).
+  /// Factory: Inbox view (incomplete tasks with no project).
   factory TaskQuery.inbox({List<SortCriterion>? sortCriteria}) {
     return TaskQuery(
-      rules: const [
-        BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-      ],
+      filter: const QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          TaskProjectPredicate(operator: ProjectOperator.isNull),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -41,17 +45,19 @@ class TaskQuery {
   }) {
     final today = dateOnly(now);
     return TaskQuery(
-      rules: [
-        const BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-        DateRule(
-          field: DateRuleField.deadlineDate,
-          operator: DateRuleOperator.onOrBefore,
-          date: today,
-        ),
-      ],
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.deadlineDate,
+            operator: DateOperator.onOrBefore,
+            date: today,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -59,16 +65,18 @@ class TaskQuery {
   /// Factory: Upcoming view (incomplete tasks with deadlines).
   factory TaskQuery.upcoming({List<SortCriterion>? sortCriteria}) {
     return TaskQuery(
-      rules: const [
-        BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-        DateRule(
-          field: DateRuleField.deadlineDate,
-          operator: DateRuleOperator.isNotNull,
-        ),
-      ],
+      filter: const QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.deadlineDate,
+            operator: DateOperator.isNotNull,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -79,12 +87,14 @@ class TaskQuery {
     List<SortCriterion>? sortCriteria,
   }) {
     return TaskQuery(
-      rules: [
-        ProjectRule(
-          operator: ProjectRuleOperator.matches,
-          projectId: projectId,
-        ),
-      ],
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          TaskProjectPredicate(
+            operator: ProjectOperator.matches,
+            projectId: projectId,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -96,29 +106,31 @@ class TaskQuery {
     List<SortCriterion>? sortCriteria,
   }) {
     return TaskQuery(
-      rules: [
-        LabelRule(
-          operator: LabelRuleOperator.hasAll,
-          labelIds: [labelId],
-          labelType: labelType,
-        ),
-      ],
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          TaskLabelPredicate(
+            operator: LabelOperator.hasAll,
+            labelIds: [labelId],
+            labelType: labelType,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
 
-  /// Factory: Next Actions view (incomplete, no project).
+  /// Factory: Next Actions view (incomplete tasks that belong to a project).
   factory TaskQuery.nextActions({List<SortCriterion>? sortCriteria}) {
     return TaskQuery(
-      rules: const [
-        BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-        ProjectRule(
-          operator: ProjectRuleOperator.isNull,
-        ),
-      ],
+      filter: const QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          TaskProjectPredicate(operator: ProjectOperator.isNotNull),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
     );
   }
@@ -130,18 +142,20 @@ class TaskQuery {
     List<SortCriterion>? sortCriteria,
   }) {
     return TaskQuery(
-      rules: [
-        const BooleanRule(
-          field: BooleanRuleField.completed,
-          operator: BooleanRuleOperator.isFalse,
-        ),
-        DateRule(
-          field: DateRuleField.startDate,
-          operator: DateRuleOperator.between,
-          startDate: rangeStart,
-          endDate: rangeEnd,
-        ),
-      ],
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.startDate,
+            operator: DateOperator.between,
+            startDate: rangeStart,
+            endDate: rangeEnd,
+          ),
+        ],
+      ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,
       occurrenceExpansion: OccurrenceExpansion(
         rangeStart: rangeStart,
@@ -157,8 +171,8 @@ class TaskQuery {
     );
   }
 
-  /// Filtering rules to apply (AND logic between rules).
-  final List<TaskRule> rules;
+  /// Filtering predicates to apply.
+  final QueryFilter<TaskPredicate> filter;
 
   /// Sort criteria for ordering results.
   final List<SortCriterion> sortCriteria;
@@ -172,7 +186,8 @@ class TaskQuery {
 
   /// Whether this query requires label data to be loaded.
   bool get needsLabels {
-    return rules.any((rule) => rule is LabelRule);
+    return filter.shared.any((p) => p is TaskLabelPredicate) ||
+        filter.orGroups.expand((g) => g).any((p) => p is TaskLabelPredicate);
   }
 
   /// Whether this query should expand repeating tasks into occurrences.
@@ -180,12 +195,14 @@ class TaskQuery {
 
   /// Whether this query filters by project.
   bool get hasProjectFilter {
-    return rules.any((rule) => rule is ProjectRule);
+    return filter.shared.any((p) => p is TaskProjectPredicate) ||
+        filter.orGroups.expand((g) => g).any((p) => p is TaskProjectPredicate);
   }
 
   /// Whether this query has any date-based filtering rules.
   bool get hasDateFilter {
-    return rules.any((rule) => rule is DateRule);
+    return filter.shared.any((p) => p is TaskDatePredicate) ||
+        filter.orGroups.expand((g) => g).any((p) => p is TaskDatePredicate);
   }
 
   // ========================================================================
@@ -193,13 +210,13 @@ class TaskQuery {
   // ========================================================================
 
   TaskQuery copyWith({
-    List<TaskRule>? rules,
+    QueryFilter<TaskPredicate>? filter,
     List<SortCriterion>? sortCriteria,
     OccurrenceExpansion? occurrenceExpansion,
     bool clearOccurrenceExpansion = false,
   }) {
     return TaskQuery(
-      rules: rules ?? this.rules,
+      filter: filter ?? this.filter,
       sortCriteria: sortCriteria ?? this.sortCriteria,
       occurrenceExpansion: clearOccurrenceExpansion
           ? null
@@ -207,10 +224,10 @@ class TaskQuery {
     );
   }
 
-  /// Creates a copy with additional rules added.
-  TaskQuery withAdditionalRules(List<TaskRule> additionalRules) {
+  /// Creates a copy with additional shared predicates added.
+  TaskQuery withAdditionalPredicates(List<TaskPredicate> predicates) {
     return copyWith(
-      rules: [...rules, ...additionalRules],
+      filter: filter.copyWith(shared: [...filter.shared, ...predicates]),
     );
   }
 
@@ -232,21 +249,21 @@ class TaskQuery {
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is TaskQuery &&
-        _listEquals(other.rules, rules) &&
+        other.filter == filter &&
         _listEquals(other.sortCriteria, sortCriteria) &&
         other.occurrenceExpansion == occurrenceExpansion;
   }
 
   @override
   int get hashCode => Object.hash(
-    Object.hashAll(rules),
+    filter,
     Object.hashAll(sortCriteria),
     occurrenceExpansion,
   );
 
   @override
   String toString() {
-    return 'TaskQuery(rules: $rules, sortCriteria: $sortCriteria, '
+    return 'TaskQuery(filter: $filter, sortCriteria: $sortCriteria, '
         'occurrenceExpansion: $occurrenceExpansion)';
   }
 

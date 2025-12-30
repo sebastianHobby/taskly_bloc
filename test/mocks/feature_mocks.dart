@@ -1,9 +1,8 @@
 ﻿import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/repositories/analytics_repository.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/services/analytics_service.dart';
-import 'package:taskly_bloc/presentation/features/reviews/domain/repositories/reviews_repository.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/repositories/analytics_repository.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 /// Mock implementations for feature-level repositories and services.
 ///
@@ -19,10 +18,6 @@ class MockAnalyticsService extends Mock implements AnalyticsService {}
 // === Wellbeing Feature ===
 
 class MockWellbeingRepository extends Mock implements WellbeingRepository {}
-
-// === Reviews Feature ===
-
-class MockReviewsRepository extends Mock implements ReviewsRepository {}
 
 // === Auth Feature ===
 

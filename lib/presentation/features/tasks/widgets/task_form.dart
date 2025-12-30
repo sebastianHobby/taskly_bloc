@@ -50,6 +50,14 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   @override
   VoidCallback? get onClose => widget.onClose;
 
+  late bool _isNextAction;
+
+  @override
+  void initState() {
+    super.initState();
+    _isNextAction = widget.initialData?.isNextAction ?? false;
+  }
+
   Future<void> _showDatePicker(
     BuildContext context,
     DateTime? initialDate,
@@ -87,6 +95,10 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           .map((Label e) => e.id)
           .toList(),
       'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
+      'isNextAction': widget.initialData?.isNextAction ?? false,
+      'nextActionPriority':
+          widget.initialData?.nextActionPriority?.toString() ?? '',
+      'nextActionNotes': widget.initialData?.nextActionNotes ?? '',
     };
 
     return Container(
@@ -244,6 +256,115 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         200,
                         errorText: l10n.taskFormDescriptionTooLong,
                         checkNullOrEmpty: false,
+                      ),
+                    ),
+
+                    // Next Action (explicit tagging)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Card(
+                        elevation: 0,
+                        color: colorScheme.surfaceContainerLow,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Column(
+                            children: [
+                              FormBuilderField<bool>(
+                                name: 'isNextAction',
+                                builder: (field) {
+                                  return SwitchListTile(
+                                    value: field.value ?? false,
+                                    title: Text(
+                                      context.l10n.nextActionsTitle,
+                                    ),
+                                    onChanged: (value) {
+                                      field.didChange(value);
+                                      setState(() {
+                                        _isNextAction = value;
+                                      });
+
+                                      if (!value) {
+                                        widget
+                                            .formKey
+                                            .currentState
+                                            ?.fields['nextActionPriority']
+                                            ?.didChange('');
+                                        widget
+                                            .formKey
+                                            .currentState
+                                            ?.fields['nextActionNotes']
+                                            ?.didChange('');
+                                      }
+
+                                      markDirty();
+                                    },
+                                  );
+                                },
+                              ),
+
+                              if (_isNextAction) ...[
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    8,
+                                  ),
+                                  child: FormBuilderTextField(
+                                    name: 'nextActionPriority',
+                                    decoration: InputDecoration(
+                                      labelText: 'Next action priority (1-100)',
+                                      filled: true,
+                                      fillColor: colorScheme.surface,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    validator: FormBuilderValidators.compose([
+                                      FormBuilderValidators.integer(
+                                        errorText: 'Enter a number',
+                                        checkNullOrEmpty: false,
+                                      ),
+                                      FormBuilderValidators.min(
+                                        1,
+                                        errorText: 'Must be at least 1',
+                                        checkNullOrEmpty: false,
+                                      ),
+                                      FormBuilderValidators.max(
+                                        100,
+                                        errorText: 'Must be at most 100',
+                                        checkNullOrEmpty: false,
+                                      ),
+                                    ]),
+                                  ),
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    0,
+                                    16,
+                                    8,
+                                  ),
+                                  child: FormBuilderTextField(
+                                    name: 'nextActionNotes',
+                                    decoration: InputDecoration(
+                                      labelText: 'Next action notes (optional)',
+                                      filled: true,
+                                      fillColor: colorScheme.surface,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                    ),
+                                    maxLines: 2,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
 

@@ -1,5 +1,6 @@
 ﻿import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
 
@@ -102,7 +103,9 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.reschedule,
             newDate: Value(_normalizeDate(newDate)),
-            newDeadline: Value(newDeadline),
+            newDeadline: Value(
+              newDeadline == null ? null : _normalizeDate(newDeadline),
+            ),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -252,7 +255,9 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.reschedule,
             newDate: Value(_normalizeDate(newDate)),
-            newDeadline: Value(newDeadline),
+            newDeadline: Value(
+              newDeadline == null ? null : _normalizeDate(newDeadline),
+            ),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -318,6 +323,6 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
 
   /// Normalizes a DateTime to midnight (date only, no time component).
   DateTime _normalizeDate(DateTime date) {
-    return DateTime(date.year, date.month, date.day);
+    return dateOnly(date);
   }
 }

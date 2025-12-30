@@ -1,12 +1,13 @@
 ﻿import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/presentation/features/analytics/domain/models/date_range.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/journal_entry.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
 
 class WellbeingRepositoryImpl implements WellbeingRepository {
   WellbeingRepositoryImpl(this._database);
@@ -28,7 +29,14 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
 
     query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
 
-    return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
+    return query.watch().asyncMap((rows) async {
+      final entries = <JournalEntry>[];
+      for (final row in rows) {
+        final responses = await _getTrackerResponsesForEntry(row.id);
+        entries.add(_mapToJournalEntry(row, responses));
+      }
+      return entries;
+    });
   }
 
   @override
@@ -37,7 +45,9 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
       ..where((e) => e.id.equals(id));
 
     final result = await query.getSingleOrNull();
-    return result != null ? _mapToJournalEntry(result) : null;
+    if (result == null) return null;
+    final responses = await _getTrackerResponsesForEntry(result.id);
+    return _mapToJournalEntry(result, responses);
   }
 
   @override
@@ -49,28 +59,41 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
       ..where((e) => e.entryDate.equals(dateOnly));
 
     final result = await query.getSingleOrNull();
-    return result != null ? _mapToJournalEntry(result) : null;
+    if (result == null) return null;
+    final responses = await _getTrackerResponsesForEntry(result.id);
+    return _mapToJournalEntry(result, responses);
   }
 
   @override
   Future<void> saveJournalEntry(JournalEntry entry) async {
+    final entryId = entry.id.isEmpty ? _generateId() : entry.id;
+
     await _database
         .into(_database.journalEntries)
         .insertOnConflictUpdate(
           JournalEntriesCompanion(
-            id: Value(entry.id.isEmpty ? _generateId() : entry.id),
+            id: Value(entryId),
             entryDate: Value(entry.entryDate),
             entryTime: Value(entry.entryTime),
             moodRating: Value(entry.moodRating?.value),
-            journalText: Value(entry.journalText ?? ''),
+            journalText: Value(entry.journalText),
             createdAt: Value(entry.createdAt),
             updatedAt: Value(entry.updatedAt),
           ),
         );
+
+    await _syncTrackerResponses(
+      journalEntryId: entryId,
+      responses: entry.trackerResponses,
+    );
   }
 
   @override
   Future<void> deleteJournalEntry(String id) async {
+    await (_database.delete(
+      _database.trackerResponses,
+    )..where((r) => r.journalEntryId.equals(id))).go();
+
     await (_database.delete(
       _database.journalEntries,
     )..where((e) => e.id.equals(id))).go();
@@ -208,7 +231,10 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
     return values;
   }
 
-  JournalEntry _mapToJournalEntry(JournalEntryEntity entity) {
+  JournalEntry _mapToJournalEntry(
+    JournalEntryEntity entity,
+    List<TrackerResponse> trackerResponses,
+  ) {
     return JournalEntry(
       id: entity.id,
       entryDate: entity.entryDate,
@@ -220,9 +246,51 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
             )
           : null,
       journalText: entity.journalText,
+      trackerResponses: trackerResponses,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );
+  }
+
+  Future<List<TrackerResponse>> _getTrackerResponsesForEntry(
+    String journalEntryId,
+  ) async {
+    final query = _database.select(_database.trackerResponses)
+      ..where((r) => r.journalEntryId.equals(journalEntryId));
+    final rows = await query.get();
+    return rows.map(_mapToTrackerResponse).toList();
+  }
+
+  TrackerResponse _mapToTrackerResponse(TrackerResponseEntity entity) {
+    final valueJson = jsonDecode(entity.responseValue) as Map<String, dynamic>;
+    return TrackerResponse(
+      id: entity.id,
+      journalEntryId: entity.journalEntryId,
+      trackerId: entity.trackerId,
+      value: TrackerResponseValue.fromJson(valueJson),
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    );
+  }
+
+  Future<void> _syncTrackerResponses({
+    required String journalEntryId,
+    required List<TrackerResponse> responses,
+  }) async {
+    for (final response in responses) {
+      await _database
+          .into(_database.trackerResponses)
+          .insertOnConflictUpdate(
+            TrackerResponsesCompanion(
+              id: Value(response.id),
+              journalEntryId: Value(journalEntryId),
+              trackerId: Value(response.trackerId),
+              responseValue: Value(jsonEncode(response.value.toJson())),
+              createdAt: Value(response.createdAt),
+              updatedAt: Value(response.updatedAt),
+            ),
+          );
+    }
   }
 
   Tracker _mapToTracker(TrackerEntity entity) {

@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/core/l10n/gen/app_localizations.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
+import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
+import 'package:taskly_bloc/presentation/widgets/form_recurrence_chip.dart';
 
 import '../../../../fixtures/test_data.dart';
 
@@ -25,6 +29,8 @@ void main() {
       VoidCallback? onClose,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: TaskForm(
             formKey: formKey,
@@ -132,9 +138,10 @@ void main() {
       await tester.pumpWidget(buildTaskForm());
       await tester.pumpAndSettle();
 
-      // Name field should be present
       expect(
-        find.widgetWithText(FormBuilderTextField, 'Task Name'),
+        find.byWidgetPredicate(
+          (w) => w is FormBuilderTextField && w.name == 'name',
+        ),
         findsOneWidget,
       );
     });
@@ -143,11 +150,7 @@ void main() {
       await tester.pumpWidget(buildTaskForm());
       await tester.pumpAndSettle();
 
-      // Description field should be present
-      expect(
-        find.widgetWithText(FormBuilderTextField, 'Description'),
-        findsOneWidget,
-      );
+      expect(find.byType(FormBuilderTextFieldModern), findsOneWidget);
     });
 
     testWidgets('displays completed checkbox when editing', (tester) async {
@@ -159,7 +162,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Completed checkbox should be present
-      expect(find.byType(FormBuilderCheckbox), findsOneWidget);
+      expect(find.byType(Checkbox), findsOneWidget);
     });
 
     testWidgets('pre-fills form with initial data', (tester) async {
@@ -186,7 +189,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find name field and enter text
-      final nameField = find.widgetWithText(FormBuilderTextField, 'Task Name');
+      final nameField = find.byWidgetPredicate(
+        (w) => w is FormBuilderTextField && w.name == 'name',
+      );
       await tester.enterText(nameField, 'New Task Name');
       await tester.pumpAndSettle();
 
@@ -199,11 +204,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find description field and enter text
-      final descField = find.widgetWithText(
-        FormBuilderTextField,
-        'Description',
+      final descField = find.byType(FormBuilderTextFieldModern);
+      await tester.enterText(
+        find.descendant(
+          of: descField,
+          matching: find.byType(EditableText),
+        ),
+        'New Description',
       );
-      await tester.enterText(descField, 'New Description');
       await tester.pumpAndSettle();
 
       // Verify text was entered
@@ -218,8 +226,8 @@ void main() {
       formKey.currentState?.saveAndValidate();
       await tester.pumpAndSettle();
 
-      // Should show validation error
-      expect(find.text('This field is required'), findsOneWidget);
+      expect(formKey.currentState?.fields['name']?.hasError, isTrue);
+      expect(formKey.currentState?.fields['name']?.errorText, isNotEmpty);
     });
 
     testWidgets('shows project selector when projects available', (
@@ -235,8 +243,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Project dropdown should be present
-      expect(find.byType(FormBuilderDropdown<String>), findsWidgets);
+      // Project chip should be present
+      expect(find.text('Add project'), findsOneWidget);
     });
 
     testWidgets('shows label selector when labels available', (tester) async {
@@ -250,8 +258,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Label selector should be present
-      expect(find.byType(FormBuilderFilterChips<String>), findsOneWidget);
+      // Modern label picker should be present
+      expect(find.byType(FormBuilderLabelPickerModern), findsOneWidget);
     });
 
     testWidgets('sets default project when provided', (tester) async {
@@ -269,7 +277,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify default project is selected in form state
-      expect(formKey.currentState?.value['projectId'], equals('p2'));
+      expect(formKey.currentState?.fields['projectId']?.value, equals('p2'));
     });
 
     testWidgets('displays date chips for start and deadline', (tester) async {

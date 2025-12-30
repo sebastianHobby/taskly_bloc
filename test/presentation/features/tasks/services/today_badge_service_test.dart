@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/filtering/filtering.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 
@@ -59,26 +59,26 @@ void main() {
           verify(() => mockRepository.watchCount(captureAny())).captured.single
               as TaskQuery;
 
-      // Verify it's a today query by checking rules
-      expect(captured.rules.length, 2);
+      // Verify it's a today query by checking filter predicates.
+      expect(captured.filter.shared, hasLength(2));
+
       expect(
-        captured.rules.any(
-          (r) =>
-              r is BooleanRule &&
-              r.field == BooleanRuleField.completed &&
-              r.operator == BooleanRuleOperator.isFalse,
+        captured.filter.shared,
+        contains(
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
         ),
-        isTrue,
       );
-      expect(
-        captured.rules.any(
-          (r) =>
-              r is DateRule &&
-              r.field == DateRuleField.deadlineDate &&
-              r.operator == DateRuleOperator.onOrBefore,
-        ),
-        isTrue,
+
+      final datePredicate = captured.filter.shared.whereType<TaskDatePredicate>()
+          .firstWhere(
+        (p) =>
+            p.field == TaskDateField.deadlineDate &&
+            p.operator == DateOperator.onOrBefore,
       );
+      expect(datePredicate.date, isNotNull);
     });
 
     test('uses provided nowFactory for date calculation', () async {
@@ -98,14 +98,15 @@ void main() {
           verify(() => mockRepository.watchCount(captureAny())).captured.single
               as TaskQuery;
 
-      // Find the date rule and verify it uses our custom date
-      final dateRule = captured.rules.whereType<DateRule>().firstWhere(
-        (r) => r.field == DateRuleField.deadlineDate,
+      // Find the date predicate and verify it uses our custom date
+      final datePredicate =
+          captured.filter.shared.whereType<TaskDatePredicate>().firstWhere(
+        (p) => p.field == TaskDateField.deadlineDate,
       );
 
-      expect(dateRule.date?.year, 2024);
-      expect(dateRule.date?.month, 6);
-      expect(dateRule.date?.day, 15);
+      expect(datePredicate.date?.year, 2024);
+      expect(datePredicate.date?.month, 6);
+      expect(datePredicate.date?.day, 15);
     });
 
     test('uses DateTime.now when no nowFactory provided', () {

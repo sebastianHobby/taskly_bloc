@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Direction for the swipe to delete gesture.
@@ -73,12 +75,12 @@ class SwipeToDelete extends StatelessWidget {
       dismissThresholds: dismissThresholds,
       confirmDismiss: confirmDismiss != null
           ? (_) async {
-              HapticFeedback.mediumImpact();
+              await HapticFeedback.mediumImpact();
               return confirmDismiss!();
             }
           : null,
       onDismissed: (_) {
-        HapticFeedback.heavyImpact();
+        unawaited(HapticFeedback.heavyImpact());
         onDismissed();
       },
       background: _buildBackground(

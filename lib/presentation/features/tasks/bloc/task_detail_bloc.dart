@@ -24,6 +24,9 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
+    @Default(false) bool isNextAction,
+    int? nextActionPriority,
+    String? nextActionNotes,
     List<Label>? labels,
   }) = _TaskDetailUpdate;
   const factory TaskDetailEvent.delete({
@@ -38,6 +41,9 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
+    @Default(false) bool isNextAction,
+    int? nextActionPriority,
+    String? nextActionNotes,
     List<Label>? labels,
   }) = _TaskDetailCreate;
 
@@ -77,6 +83,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     required ProjectRepositoryContract projectRepository,
     required LabelRepositoryContract labelRepository,
     String? taskId,
+    bool autoLoad = true,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _labelRepository = labelRepository,
@@ -87,10 +94,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     on<_TaskDetailUpdate>(_onUpdate);
     on<_TaskDetailDelete>(_onDelete);
 
-    if (taskId != null && taskId.isNotEmpty) {
-      add(TaskDetailEvent.get(taskId: taskId));
-    } else {
-      add(const TaskDetailEvent.loadInitialData());
+    if (autoLoad) {
+      if (taskId != null && taskId.isNotEmpty) {
+        add(TaskDetailEvent.get(taskId: taskId));
+      } else {
+        add(const TaskDetailEvent.loadInitialData());
+      }
     }
   }
 
@@ -201,6 +210,9 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         projectId: event.projectId,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+        isNextAction: event.isNextAction,
+        nextActionPriority: event.nextActionPriority,
+        nextActionNotes: event.nextActionNotes,
       ),
     );
   }
@@ -211,17 +223,26 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   ) async {
     await executeUpdateOperation(
       emit,
-      () => _taskRepository.update(
-        id: event.id,
-        name: event.name,
-        description: event.description,
-        completed: event.completed,
-        projectId: event.projectId,
-        startDate: event.startDate,
-        deadlineDate: event.deadlineDate,
-        repeatIcalRrule: event.repeatIcalRrule,
-        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
-      ),
+      () async {
+        await _taskRepository.update(
+          id: event.id,
+          name: event.name,
+          description: event.description,
+          completed: event.completed,
+          projectId: event.projectId,
+          startDate: event.startDate,
+          deadlineDate: event.deadlineDate,
+          repeatIcalRrule: event.repeatIcalRrule,
+          labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+        );
+
+        await _taskRepository.updateNextAction(
+          id: event.id,
+          isNextAction: event.isNextAction,
+          nextActionPriority: event.nextActionPriority,
+          nextActionNotes: event.nextActionNotes,
+        );
+      },
     );
   }
 

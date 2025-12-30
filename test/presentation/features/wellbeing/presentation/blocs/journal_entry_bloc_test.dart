@@ -1,16 +1,29 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/journal_entry.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/mood_rating.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/presentation/blocs/journal_entry/journal_entry_bloc.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
 
 class MockWellbeingRepository extends Mock implements WellbeingRepository {}
 
 void main() {
   late MockWellbeingRepository repository;
   late JournalEntryBloc bloc;
+
+  setUpAll(() {
+    final fallbackDate = DateTime(2000);
+    registerFallbackValue(
+      JournalEntry(
+        id: 'fallback',
+        entryDate: fallbackDate,
+        entryTime: fallbackDate,
+        createdAt: fallbackDate,
+        updatedAt: fallbackDate,
+      ),
+    );
+  });
 
   final testDate = DateTime(2025, 12, 27);
   final testEntry = JournalEntry(
@@ -145,7 +158,7 @@ void main() {
         build: () {
           when(
             () => repository.saveJournalEntry(testEntry),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) => bloc.add(JournalEntryEvent.save(testEntry)),
@@ -180,7 +193,7 @@ void main() {
         build: () {
           when(
             () => repository.deleteJournalEntry('entry-1'),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.delete('entry-1')),
@@ -218,7 +231,7 @@ void main() {
           ).thenAnswer((_) async => testEntry);
           when(
             () => repository.saveJournalEntry(any()),
-          ).thenAnswer((_) async => {});
+          ).thenAnswer((_) async {});
           return bloc;
         },
         act: (bloc) async {

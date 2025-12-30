@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 
 void main() {
   group('TrackerResponse', () {
@@ -153,22 +153,22 @@ void main() {
         final json = response.toJson();
 
         expect(json['id'], equals('tr-1'));
-        expect(json['journalEntryId'], equals('je-1'));
-        expect(json['trackerId'], equals('t-1'));
-        expect(json, containsKey('value'));
+        expect(json['journal_entry_id'], equals('je-1'));
+        expect(json['tracker_id'], equals('t-1'));
+        expect(json.containsKey('value'), isTrue);
       });
 
       test('fromJson deserializes correctly', () {
         final json = {
           'id': 'tr-1',
-          'journalEntryId': 'je-1',
-          'trackerId': 't-1',
+          'journal_entry_id': 'je-1',
+          'tracker_id': 't-1',
           'value': {
             'runtimeType': 'scale',
             'value': 7,
           },
-          'createdAt': now.toIso8601String(),
-          'updatedAt': now.toIso8601String(),
+          'created_at': now.toIso8601String(),
+          'updated_at': now.toIso8601String(),
         };
 
         final response = TrackerResponse.fromJson(json);
@@ -202,7 +202,7 @@ void main() {
         const value = TrackerResponseValue.choice(selected: 'Option A');
 
         expect(value, isA<ChoiceValue>());
-        expect(value.selected, equals('Option A'));
+        expect((value as ChoiceValue).selected, equals('Option A'));
       });
 
       test('two choice values with same selection are equal', () {
@@ -220,6 +220,7 @@ void main() {
           ChoiceValue(:final selected) => 'Choice: $selected',
           ScaleValue() => 'Scale',
           YesNoValue() => 'YesNo',
+          _ => 'Unknown',
         };
 
         expect(result, equals('Choice: Test'));
@@ -231,17 +232,17 @@ void main() {
         const value = TrackerResponseValue.scale(value: 8);
 
         expect(value, isA<ScaleValue>());
-        expect(value.value, equals(8));
+        expect((value as ScaleValue).value, equals(8));
       });
 
       test('accepts minimum value', () {
         const value = TrackerResponseValue.scale(value: 1);
-        expect(value.value, equals(1));
+        expect((value as ScaleValue).value, equals(1));
       });
 
       test('accepts maximum value', () {
         const value = TrackerResponseValue.scale(value: 10);
-        expect(value.value, equals(10));
+        expect((value as ScaleValue).value, equals(10));
       });
 
       test('two scale values with same number are equal', () {
@@ -259,6 +260,7 @@ void main() {
           ChoiceValue() => 'Choice',
           ScaleValue(:final value) => 'Scale: $value',
           YesNoValue() => 'YesNo',
+          _ => 'Unknown',
         };
 
         expect(result, equals('Scale: 7'));
@@ -270,14 +272,14 @@ void main() {
         const value = TrackerResponseValue.yesNo(value: true);
 
         expect(value, isA<YesNoValue>());
-        expect(value.value, isTrue);
+        expect((value as YesNoValue).value, isTrue);
       });
 
       test('creates yesNo value with false', () {
         const value = TrackerResponseValue.yesNo(value: false);
 
         expect(value, isA<YesNoValue>());
-        expect(value.value, isFalse);
+        expect((value as YesNoValue).value, isFalse);
       });
 
       test('two yesNo values with same boolean are equal', () {
@@ -295,6 +297,7 @@ void main() {
           ChoiceValue() => 'Choice',
           ScaleValue() => 'Scale',
           YesNoValue(:final value) => 'YesNo: $value',
+          _ => 'Unknown',
         };
 
         expect(result, equals('YesNo: false'));

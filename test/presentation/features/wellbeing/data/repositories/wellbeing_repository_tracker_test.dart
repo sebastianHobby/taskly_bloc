@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/data/repositories/wellbeing_repository_impl.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/models/tracker_response_config.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
 
 import '../../../../../fixtures/test_data.dart';
 import '../../../../../helpers/test_db.dart';
@@ -145,7 +145,7 @@ void main() {
         TestData.tracker(id: 'tracker-2', sortOrder: 1),
       );
 
-      final stream = repository.watchTrackers('user-1');
+      final stream = repository.watchTrackers();
       final trackers = await stream.first;
 
       expect(trackers.length, 2);
@@ -165,10 +165,7 @@ void main() {
       );
 
       // Reorder: 3, 1, 2
-      await repository.reorderTrackers(
-        'user-1',
-        ['tracker-3', 'tracker-1', 'tracker-2'],
-      );
+      await repository.reorderTrackers(['tracker-3', 'tracker-1', 'tracker-2']);
 
       final trackers = await repository.getAllTrackers();
 

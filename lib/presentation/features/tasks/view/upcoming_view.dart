@@ -28,6 +28,7 @@ class UpcomingPage extends StatelessWidget {
     required this.labelRepository,
     required this.settingsRepository,
     required this.pageKey,
+    this.queryOverride,
     super.key,
   });
 
@@ -36,13 +37,14 @@ class UpcomingPage extends StatelessWidget {
   final LabelRepositoryContract labelRepository;
   final SettingsRepositoryContract settingsRepository;
   final PageKey pageKey;
+  final TaskQuery? queryOverride;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider<TaskOverviewBloc>(
       create: (context) => TaskOverviewBloc(
         taskRepository: taskRepository,
-        query: TaskQuery.upcoming(),
+        query: queryOverride ?? TaskQuery.upcoming(),
         settingsRepository: settingsRepository,
         pageKey: pageKey,
       )..add(const TaskOverviewEvent.subscriptionRequested()),

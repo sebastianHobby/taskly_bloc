@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
+import 'package:taskly_bloc/domain/queries/legacy_rule_converters.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/next_action/services/next_actions_view_builder.dart';
 
@@ -167,7 +168,7 @@ class NextActionsBloc extends Bloc<NextActionsEvent, NextActionsState> {
         );
       }
 
-      final query = TaskQuery(rules: rules);
+      final query = TaskQuery(filter: taskFilterFromLegacyRules(rules));
 
       // Combine tasks with settings
       return _taskRepository
