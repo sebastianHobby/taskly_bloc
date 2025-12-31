@@ -523,7 +523,6 @@ class TaskRepository implements TaskRepositoryContract {
     newDeadline: newDeadline,
   );
 
-  @override
   Future<void> removeException({
     required String taskId,
     required DateTime originalDate,
@@ -532,15 +531,12 @@ class TaskRepository implements TaskRepositoryContract {
     originalDate: originalDate,
   );
 
-  @override
   Future<void> stopSeries(String taskId) =>
       occurrenceWriteHelper.stopTaskSeries(taskId);
 
-  @override
   Future<void> completeSeries(String taskId) =>
       occurrenceWriteHelper.completeTaskSeries(taskId);
 
-  @override
   Future<void> convertToOneTime(String taskId) =>
       occurrenceWriteHelper.convertTaskToOneTime(taskId);
 

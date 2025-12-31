@@ -649,7 +649,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     );
   }
 
-  @override
   Future<void> removeException({
     required String projectId,
     required DateTime originalDate,
@@ -660,17 +659,14 @@ class ProjectRepository implements ProjectRepositoryContract {
     );
   }
 
-  @override
   Future<void> stopSeries(String projectId) {
     return occurrenceWriteHelper.stopProjectSeries(projectId);
   }
 
-  @override
   Future<void> completeSeries(String projectId) {
     return occurrenceWriteHelper.completeProjectSeries(projectId);
   }
 
-  @override
   Future<void> convertToOneTime(String projectId) {
     return occurrenceWriteHelper.convertProjectToOneTime(projectId);
   }
