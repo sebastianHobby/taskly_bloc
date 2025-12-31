@@ -215,7 +215,7 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
                 yesNo: (_) => 'yesNo',
               ),
             ),
-            config: Value(jsonEncode(_configToJson(tracker.config))),
+            responseConfig: Value(jsonEncode(_configToJson(tracker.config))),
             sortOrder: Value(tracker.sortOrder),
             createdAt: Value(tracker.createdAt),
             updatedAt: Value(tracker.updatedAt),
@@ -461,7 +461,8 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
   }
 
   Tracker _mapToTracker(TrackerEntity entity) {
-    final configJson = jsonDecode(entity.config) as Map<String, dynamic>;
+    final configJson =
+        jsonDecode(entity.responseConfig) as Map<String, dynamic>;
 
     // Parse responseType from string
     final responseType = TrackerResponseType.values.firstWhere(
