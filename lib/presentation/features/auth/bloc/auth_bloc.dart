@@ -140,21 +140,20 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         password: event.password,
       );
 
-      if (response.session != null) {
-        emit(
-          state.copyWith(
-            status: AuthStatus.authenticated,
-            user: response.user,
-          ),
+      // Let the auth subscription handle authenticated state emission
+      // to avoid double navigation. Only handle error cases here.
+      if (response.session == null) {
+        talker.warning(
+          '[AuthBloc] Sign in succeeded but no session returned',
         );
-      } else {
         emit(
           state.copyWith(
             status: AuthStatus.unauthenticated,
-            error: 'Sign in failed',
+            error: 'Sign in failed - no session',
           ),
         );
       }
+      // Success case: onAuthStateChange will emit authenticated state
     } catch (error, stackTrace) {
       talker.handle(error, stackTrace, '[AuthBloc] Sign in failed');
       emit(
@@ -179,14 +178,15 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       );
 
       if (response.session != null) {
-        emit(
-          state.copyWith(
-            status: AuthStatus.authenticated,
-            user: response.user,
-          ),
-        );
+        // Let the auth subscription handle authenticated state emission
+        // to avoid double navigation
+        talker.info('[AuthBloc] Sign up succeeded with session');
+        // Success case: onAuthStateChange will emit authenticated state
       } else {
         // Email confirmation might be required
+        talker.info(
+          '[AuthBloc] Sign up succeeded but requires email confirmation',
+        );
         emit(
           state.copyWith(
             status: AuthStatus.unauthenticated,

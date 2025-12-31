@@ -13,6 +13,7 @@ class JournalEntries extends Table {
   TextColumn get journalText => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
   DateTimeColumn get updatedAt => dateTime().clientDefault(DateTime.now)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -25,11 +26,12 @@ class Trackers extends Table {
   TextColumn get name => text().withLength(min: 1, max: 100)();
   TextColumn get description => text().nullable()();
   TextColumn get responseType => text().withLength(min: 1, max: 50)();
-  TextColumn get config => text().clientDefault(() => '{}')(); // JSON
+  TextColumn get responseConfig => text().clientDefault(() => '{}')(); // JSON
   TextColumn get entryScope => text().withLength(min: 1, max: 50)();
   IntColumn get sortOrder => integer().clientDefault(() => 0)();
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
   DateTimeColumn get updatedAt => dateTime().clientDefault(DateTime.now)();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
