@@ -1,21 +1,30 @@
-import 'package:envied/envied.dart';
+/// Environment configuration using compile-time constants.
+///
+/// Values are provided via --dart-define flags at build/run time.
+/// For local development, use .vscode/launch.json or a helper script.
+class Env {
+  /// Supabase project URL
+  static const String supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+  );
 
-part 'env.g.dart';
+  /// Supabase anonymous/public key
+  static const String supabasePublishableKey = String.fromEnvironment(
+    'SUPABASE_PUBLISHABLE_KEY',
+  );
 
-@Envied(path: '.env', useConstantCase: true, requireEnvFile: true)
-abstract class Env {
-  @EnviedField(varName: 'SUPABASE_URL', obfuscate: true)
-  static final String supabaseUrl = _Env.supabaseUrl;
+  /// PowerSync instance URL
+  static const String powersyncUrl = String.fromEnvironment(
+    'POWERSYNC_URL',
+  );
 
-  @EnviedField(varName: 'SUPABASE_PUBLISHABLE_KEY', obfuscate: true)
-  static final String supabasePublishableKey = _Env.supabasePublishableKey;
+  /// Development/test username
+  static const String devUsername = String.fromEnvironment(
+    'DEV_USERNAME',
+  );
 
-  @EnviedField(varName: 'POWERSYNC_URL', obfuscate: true)
-  static final String powersyncUrl = _Env.powersyncUrl;
-
-  @EnviedField(varName: 'DEV_USERNAME', obfuscate: true)
-  static final String devUsername = _Env.devUsername;
-
-  @EnviedField(varName: 'DEV_PASSWORD', obfuscate: true)
-  static final String devPassword = _Env.devPassword;
+  /// Development/test password
+  static const String devPassword = String.fromEnvironment(
+    'DEV_PASSWORD',
+  );
 }

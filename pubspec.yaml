@@ -13,7 +13,6 @@ dependencies:
   drift_flutter: ^0.2.8
   drift_sqlite_async: ^0.2.6
   emoji_picker_flutter: ^4.4.0
-  envied: ^1.3.2
   flex_color_picker: ^3.6.0
   flutter:
     sdk: flutter
@@ -44,7 +43,6 @@ dev_dependencies:
   bloc_test: ^10.0.0
   build_runner: ^2.10.4
   drift_dev: ^2.30.0
-  envied_generator: ^1.3.2
   flutter_test:
     sdk: flutter
   freezed: ^3.2.3
@@ -52,9 +50,6 @@ dev_dependencies:
   json_serializable: ^6.9.5
   mocktail: ^1.0.4
   very_good_analysis: ^10.0.0
-
-dependency_overrides:
-  envied_generator: 1.3.2
 
 flutter:
   generate: true
