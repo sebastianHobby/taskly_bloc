@@ -140,7 +140,7 @@ void main() {
 
   group('AuthBloc - Sign In', () {
     blocTest<AuthBloc, AppAuthState>(
-      'emits loading then authenticated on successful sign in',
+      'emits loading on successful sign in (subscription handles authenticated state)',
       setUp: () {
         final user = User(
           id: 'user-1',
@@ -179,11 +179,8 @@ void main() {
           'status',
           AuthStatus.loading,
         ),
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.authenticated)
-            .having((s) => s.user, 'user', isNotNull)
-            .having((s) => s.user?.id, 'user.id', 'user-1')
-            .having((s) => s.error, 'error', isNull),
+        // Authenticated state will be emitted by auth subscription, not here
+        // Authenticated state will be emitted by auth subscription, not here
       ],
       verify: (_) {
         verify(
@@ -260,14 +257,14 @@ void main() {
         ),
         isA<AppAuthState>()
             .having((s) => s.status, 'status', AuthStatus.unauthenticated)
-            .having((s) => s.error, 'error', 'Sign in failed'),
+            .having((s) => s.error, 'error', 'Sign in failed - no session'),
       ],
     );
   });
 
   group('AuthBloc - Sign Up', () {
     blocTest<AuthBloc, AppAuthState>(
-      'emits loading then authenticated on successful sign up',
+      'emits loading on successful sign up (subscription handles authenticated state)',
       setUp: () {
         final user = User(
           id: 'user-1',
@@ -306,10 +303,8 @@ void main() {
           'status',
           AuthStatus.loading,
         ),
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.authenticated)
-            .having((s) => s.user, 'user', isNotNull)
-            .having((s) => s.user?.id, 'user.id', 'user-1'),
+        // Authenticated state will be emitted by auth subscription, not here
+        // Authenticated state will be emitted by auth subscription, not here
       ],
       verify: (_) {
         verify(

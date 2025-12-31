@@ -94,7 +94,6 @@ const schema = Schema([
     Column.integer('top_n_categories'),
     Column.integer('daily_task_limit'),
     Column.integer('show_excluded_urgent_warning'),
-    Column.integer('urgency_threshold_days'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),

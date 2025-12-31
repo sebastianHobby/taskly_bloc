@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_auth_ui/supabase_auth_ui.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 /// Sign in view using Supabase Auth UI.
 class SignInView extends StatelessWidget {
@@ -14,8 +16,11 @@ class SignInView extends StatelessWidget {
       body: BlocListener<AuthBloc, AppAuthState>(
         listener: (context, state) {
           if (state.isAuthenticated) {
-            // Navigate to home when authenticated
-            context.go('/');
+            // Navigate to inbox when authenticated
+            talker.debug(
+              '[SignInView] User authenticated, navigating to ${AppRoutePath.inbox}',
+            );
+            context.go(AppRoutePath.inbox);
           } else if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
