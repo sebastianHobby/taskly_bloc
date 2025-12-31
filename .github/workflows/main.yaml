@@ -44,19 +44,17 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
-      - name: Create .env file
-        run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
-          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
-          echo "DEV_USERNAME=ci_user" >> .env
-          echo "DEV_PASSWORD=ci_pass" >> .env
-      
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
       - name: Run tests with coverage
-        run: flutter test --coverage --reporter=expanded
+        run: |
+          flutter test --coverage --reporter=expanded \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
+            --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \
+            --dart-define=DEV_USERNAME="ci_user" \
+            --dart-define=DEV_PASSWORD="ci_pass"
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -92,14 +90,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
-      - name: Create .env file
-        run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
-          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
-          echo "DEV_USERNAME=ci_user" >> .env
-          echo "DEV_PASSWORD=ci_pass" >> .env
-      
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
@@ -121,13 +111,10 @@ jobs:
         include:
           - os: ubuntu-latest
             build-target: web
-            build-command: flutter build web --release
           - os: macos-latest
             build-target: ios
-            build-command: flutter build ios --release --no-codesign
           - os: windows-latest
             build-target: windows
-            build-command: flutter build windows --release
     
     steps:
       - name: Checkout code
@@ -143,19 +130,17 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
-      - name: Create .env file
-        run: |
-          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
-          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
-          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
-          echo "DEV_USERNAME=ci_user" >> .env
-          echo "DEV_PASSWORD=ci_pass" >> .env
-      
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
       - name: Build ${{ matrix.build-target }}
-        run: ${{ matrix.build-command }}
+        run: |
+          ${{ matrix.build-target == 'ios' && 'flutter build ios --release --no-codesign' || format('flutter build {0} --release', matrix.build-target) }} \
+            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
+            --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \
+            --dart-define=DEV_USERNAME="ci_user" \
+            --dart-define=DEV_PASSWORD="ci_pass"
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
