@@ -134,6 +134,7 @@ jobs:
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
       - name: Build ${{ matrix.build-target }}
+        shell: bash
         run: |
           ${{ matrix.build-target == 'ios' && 'flutter build ios --release --no-codesign' || format('flutter build {0} --release', matrix.build-target) }} \
             --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
