@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger.dart';
@@ -14,9 +15,8 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   // Note: File logging observer defers initialization until first log to ensure bindings ready
   initializeTalker();
 
-  // Wrap everything in runZonedGuarded to catch uncaught async errors
-  // ignore: unawaited_futures
-  runZonedGuarded(
+  // Wrap everything in runZonedGuarded to catch uncaught async errors.
+  await runZonedGuarded<Future<void>>(
     () async {
       WidgetsFlutterBinding.ensureInitialized();
 
@@ -51,29 +51,72 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
         ),
       );
 
-      // Load environment configuration
-      talker.debug('Loading environment configuration...');
-      await Env.load();
-      talker.debug('Environment configuration loaded');
+      try {
+        // Load environment configuration
+        talker.debug('Loading environment configuration...');
+        await Env.load();
+        Env.logDiagnostics();
+        Env.validateRequired();
+        talker.debug('Environment configuration loaded');
 
-      talker.info('Initializing dependencies...');
-      await setupDependencies();
-      talker.info('Dependencies initialized successfully');
+        talker.info('Initializing dependencies...');
+        await setupDependencies();
+        talker.info('Dependencies initialized successfully');
 
-      await _maybeDevAutoLogin();
+        await _maybeDevAutoLogin();
 
-      // Add cross-flavor configuration here
+        // Add cross-flavor configuration here
 
-      talker.info('Starting application...');
-      talker.debug('>>> bootstrap: calling runApp()...');
-      runApp(await builder());
-      talker.debug('<<< bootstrap: runApp() returned');
+        talker.info('Starting application...');
+        talker.debug('>>> bootstrap: calling runApp()...');
+        runApp(await builder());
+        talker.debug('<<< bootstrap: runApp() returned');
+      } catch (error, stackTrace) {
+        talker.handle(error, stackTrace, 'Bootstrap failed before runApp()');
+        runApp(_BootstrapFailureApp(error: error, stackTrace: stackTrace));
+      }
     },
     // Zone error handler - catches any async errors that escape try/catch blocks
     (error, stack) {
       talker.handle(error, stack, 'Uncaught zone error');
     },
   );
+}
+
+class _BootstrapFailureApp extends StatelessWidget {
+  const _BootstrapFailureApp({
+    required this.error,
+    required this.stackTrace,
+  });
+
+  final Object error;
+  final StackTrace stackTrace;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: SingleChildScrollView(
+              child: SelectionArea(
+                child: Text(
+                  'App failed to start.\n\n'
+                  'Error: $error\n\n'
+                  'Hints:\n'
+                  '- Web (Chrome) cannot read .env; use --dart-define or '
+                  '--dart-define-from-file=dart_defines.json\n'
+                  '- Desktop/mobile debug can use .env (see ENVIRONMENT_SETUP.md)\n\n'
+                  'StackTrace:\n$stackTrace',
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _maybeDevAutoLogin() async {

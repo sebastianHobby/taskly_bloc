@@ -49,10 +49,24 @@ DEV_PASSWORD=your_dev_password
 ### 3. Run the app
 
 ```bash
-flutter run -d windows  # or -d chrome, -d ios, etc.
+flutter run -d windows
 ```
 
-The app automatically detects debug mode and loads from `.env`!
+The app automatically detects debug mode and loads from `.env` on non-web platforms.
+
+### ⚠️ Web (Chrome) local development
+
+Web builds cannot read `.env` from your filesystem, so you must provide values via
+`--dart-define`.
+
+Recommended (uses the repo's `dart_defines.json`):
+
+```bash
+flutter run -d chrome --dart-define-from-file=dart_defines.json
+```
+
+If you use VS Code, you can also start the existing launch config:
+`taskly_bloc (dev - web)`.
 
 ## 🚀 Production Builds
 
