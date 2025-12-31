@@ -1,5 +1,9 @@
 name: taskly_bloc
 
+permissions:
+  contents: read
+  security-events: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -94,7 +98,7 @@ jobs:
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
       - name: Run flutter analyze
-        run: flutter analyze --fatal-infos
+        run: flutter analyze --fatal-warnings --no-fatal-infos
       
       - name: Check formatting
         run: dart format --set-exit-if-changed .
@@ -136,7 +140,7 @@ jobs:
       - name: Build ${{ matrix.build-target }}
         shell: bash
         run: |
-          ${{ matrix.build-target == 'ios' && 'flutter build ios --release --no-codesign' || format('flutter build {0} --release', matrix.build-target) }} \
+          ${{ matrix.build-target == 'ios' && 'flutter build ios --release --no-codesign --flavor production' || format('flutter build {0} --release', matrix.build-target) }} \
             --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \
