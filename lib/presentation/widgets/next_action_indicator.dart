@@ -65,8 +65,6 @@ class NextActionIndicator extends StatelessWidget {
   }
 
   Future<void> _showInfoDialog(BuildContext context) async {
-    final l10n = context.l10n;
-
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => _NextActionInfoDialog(

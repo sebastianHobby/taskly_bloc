@@ -340,7 +340,7 @@ void main() {
           TaskOverviewEvent.sortChanged(preferences: testPreferences),
         ),
         // No errors, no state changes
-        expect: () => [],
+        expect: () => <TaskOverviewState>[],
       );
 
       blocTest<TaskOverviewBloc, TaskOverviewState>(
@@ -416,7 +416,7 @@ void main() {
           TaskOverviewEvent.displaySettingsChanged(settings: testSettings),
         ),
         // No errors, no state changes
-        expect: () => [],
+        expect: () => <TaskOverviewState>[],
       );
 
       blocTest<TaskOverviewBloc, TaskOverviewState>(
@@ -433,7 +433,7 @@ void main() {
           TaskOverviewEvent.displaySettingsChanged(settings: testSettings),
         ),
         // verify: Nothing to verify - just ensure no error occurs
-        expect: () => [],
+        expect: () => <TaskOverviewState>[],
       );
     });
 

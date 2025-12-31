@@ -33,8 +33,10 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       widget.rankingsRepository;
   LabelRepositoryContract get _labelRepo => widget.labelRepository;
 
+  // ignore: unused_field
   AllocationPreference? _preferences;
   PriorityRanking? _valueRanking;
+  // ignore: unused_field
   List<Label> _valueLabels = [];
   bool _isLoading = true;
   bool _hasChanges = false;

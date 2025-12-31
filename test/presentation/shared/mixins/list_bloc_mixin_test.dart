@@ -182,7 +182,7 @@ void main() {
         act: (bloc) => bloc.add(
           DeleteEvent(delete: () async {}),
         ),
-        expect: () => [],
+        expect: () => <TestState>[],
       );
 
       blocTest<TestListBloc, TestState>(
@@ -204,7 +204,7 @@ void main() {
         act: (bloc) => bloc.add(
           ToggleEvent(toggle: () async {}),
         ),
-        expect: () => [],
+        expect: () => <TestState>[],
       );
 
       blocTest<TestListBloc, TestState>(
