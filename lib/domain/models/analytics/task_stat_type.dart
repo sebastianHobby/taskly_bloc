@@ -1,4 +1,4 @@
-﻿/// Types of task statistics available
+/// Types of task statistics available
 enum TaskStatType {
   totalCount,
   completedCount,

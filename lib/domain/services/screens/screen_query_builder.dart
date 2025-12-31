@@ -134,8 +134,6 @@ class ScreenQueryBuilder {
         sort_preferences.SortField.deadlineDate,
       screen_models.SortField.startDate => sort_preferences.SortField.startDate,
       screen_models.SortField.priority => null,
-      screen_models.SortField.nextActionPriority =>
-        sort_preferences.SortField.nextActionPriority,
     };
 
     if (field == null) return null;

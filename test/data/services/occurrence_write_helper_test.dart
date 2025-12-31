@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
 
-import '../../helpers/drift_test_helper.dart';
+import '../../helpers/test_db.dart';
 
 void main() {
   group('OccurrenceWriteHelper', () {

@@ -13,8 +13,8 @@ void main() {
     db = createTestDb();
     repo = ProjectRepository(
       driftDb: db,
-      occurrenceExpander: MockOccurrenceStreamExpander(),
-      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+      occurrenceExpander: MockOccurrenceStreamExpanderContract(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelperContract(),
     );
   });
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
@@ -73,10 +73,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
-      isNextAction: old.isNextAction,
-      nextActionPriority: old.nextActionPriority,
-      markedNextActionAt: old.markedNextActionAt,
-      nextActionNotes: old.nextActionNotes,
       labels: old.labels,
     );
 
@@ -96,9 +92,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
-    bool isNextAction = false,
-    int? nextActionPriority,
-    String? nextActionNotes,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -113,40 +106,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
       deadlineDate: deadlineDate,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
-      isNextAction: isNextAction,
-      nextActionPriority: isNextAction ? nextActionPriority : null,
-      markedNextActionAt: isNextAction ? now : null,
-      nextActionNotes: isNextAction ? nextActionNotes : null,
     );
     _last = [..._last, newTask];
-    _controller.add(_last);
-  }
-
-  @override
-  Future<void> updateNextAction({
-    required String id,
-    required bool isNextAction,
-    int? nextActionPriority,
-    String? nextActionNotes,
-  }) async {
-    final idx = _last.indexWhere((t) => t.id == id);
-    if (idx == -1) return;
-
-    final old = _last[idx];
-    final now = DateTime.now();
-
-    final updated = [..._last];
-    updated[idx] = old.copyWith(
-      updatedAt: now,
-      isNextAction: isNextAction,
-      nextActionPriority: isNextAction ? nextActionPriority : null,
-      markedNextActionAt: isNextAction
-          ? (old.isNextAction ? (old.markedNextActionAt ?? now) : now)
-          : null,
-      nextActionNotes: isNextAction ? nextActionNotes : null,
-    );
-
-    _last = updated;
     _controller.add(_last);
   }
 

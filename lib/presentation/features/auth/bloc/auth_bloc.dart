@@ -1,10 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
-import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/data/services/user_data_seeder.dart';
+import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
@@ -14,20 +15,27 @@ part 'auth_state.dart';
 /// Listens to auth state changes from the repository and provides
 /// actions for sign in, sign up, sign out, and password reset.
 class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
-  AuthBloc({required AuthRepositoryContract authRepository})
-    : _authRepository = authRepository,
-      super(const AppAuthState()) {
-    _logger.info('AuthBloc initialized');
+  AuthBloc({
+    required AuthRepositoryContract authRepository,
+    required UserDataSeeder userDataSeeder,
+  }) : _authRepository = authRepository,
+       _userDataSeeder = userDataSeeder,
+       super(const AppAuthState()) {
+    talker.blocLog('Auth', 'AuthBloc CONSTRUCTOR called');
     on<AuthSubscriptionRequested>(_onSubscriptionRequested);
     on<AuthSignInRequested>(_onSignInRequested);
     on<AuthSignUpRequested>(_onSignUpRequested);
     on<AuthSignOutRequested>(_onSignOutRequested);
     on<AuthPasswordResetRequested>(_onPasswordResetRequested);
     on<_AuthStateChanged>(_onAuthStateChanged);
+    talker.blocLog(
+      'Auth',
+      'AuthBloc CONSTRUCTOR done, event handlers registered',
+    );
   }
 
   final AuthRepositoryContract _authRepository;
-  final _logger = AppLogger.forBloc('Auth');
+  final UserDataSeeder _userDataSeeder;
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
@@ -44,14 +52,30 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
 
     // Emit initial state based on current session
     final session = _authRepository.currentSession;
+    talker.blocLog(
+      'Auth',
+      '_onSubscriptionRequested: session=${session != null ? "exists" : "null"}',
+    );
     if (session != null) {
+      talker.blocLog(
+        'Auth',
+        'Initial session found, emitting authenticated state',
+      );
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
           user: session.user,
         ),
       );
+      // Seed user data for existing session (user was already logged in)
+      // This ensures system labels and screens exist
+      talker.blocLog('Auth', 'Seeding user data for existing session');
+      _userDataSeeder.seedAll().ignore();
     } else {
+      talker.blocLog(
+        'Auth',
+        'No initial session, emitting unauthenticated state',
+      );
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -71,15 +95,31 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     _AuthStateChanged event,
     Emitter<AppAuthState> emit,
   ) {
+    talker.blocLog(
+      'Auth',
+      'Auth state changed: event=${event.authState.event}',
+    );
     final session = event.authState.session;
     if (session != null) {
+      talker.blocLog(
+        'Auth',
+        'Session found in auth state change, emitting authenticated',
+      );
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
           user: session.user,
         ),
       );
+      // Seed user data after successful authentication
+      // This ensures system labels and screens exist for the user
+      talker.blocLog('Auth', 'Seeding user data after auth state change');
+      _userDataSeeder.seedAll().ignore();
     } else {
+      talker.blocLog(
+        'Auth',
+        'No session in auth state change, emitting unauthenticated',
+      );
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -116,7 +156,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         );
       }
     } catch (error, stackTrace) {
-      _logger.error('Sign in failed', error, stackTrace);
+      talker.handle(error, stackTrace, '[AuthBloc] Sign in failed');
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -155,7 +195,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         );
       }
     } catch (error, stackTrace) {
-      _logger.error('Sign up failed', error, stackTrace);
+      talker.handle(error, stackTrace, '[AuthBloc] Sign up failed');
       emit(
         state.copyWith(
           status: AuthStatus.unauthenticated,
@@ -177,7 +217,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         ),
       );
     } catch (error, stackTrace) {
-      _logger.error('Sign out failed', error, stackTrace);
+      talker.handle(error, stackTrace, '[AuthBloc] Sign out failed');
       emit(
         state.copyWith(
           error: error.toString(),
@@ -203,7 +243,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         ),
       );
     } catch (error, stackTrace) {
-      _logger.error('Password reset failed', error, stackTrace);
+      talker.handle(error, stackTrace, '[AuthBloc] Password reset failed');
       emit(
         state.copyWith(
           status: state.status == AuthStatus.authenticated

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/widgets/truncated_label_chips.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 

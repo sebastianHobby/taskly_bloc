@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/workflow_item.dart';
@@ -11,9 +11,9 @@ import 'package:taskly_bloc/domain/models/screens/workflow_progress.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector.dart';
@@ -31,7 +31,8 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState<Task>> {
     required WorkflowScreen screen,
     required TaskRepositoryContract taskRepository,
     required SettingsRepositoryContract settingsRepository,
-    required ProblemAcknowledgmentsRepository problemAcknowledgmentsRepository,
+    required ProblemAcknowledgmentsRepositoryContract
+    problemAcknowledgmentsRepository,
     required ProblemDetector problemDetector,
     required ScreenQueryBuilder queryBuilder,
     required SupportBlockComputer supportBlockComputer,
@@ -58,11 +59,11 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState<Task>> {
   final WorkflowScreen _screen;
   final TaskRepositoryContract _taskRepository;
   final SettingsRepositoryContract _settingsRepository;
-  final ProblemAcknowledgmentsRepository _problemAcknowledgmentsRepository;
+  final ProblemAcknowledgmentsRepositoryContract
+  _problemAcknowledgmentsRepository;
   final ProblemDetector _problemDetector;
   final ScreenQueryBuilder _queryBuilder;
   final SupportBlockComputer _supportBlockComputer;
-  final _logger = AppLogger.forBloc('WorkflowRun');
 
   static const _defaultSnoozeDays = 7;
 
@@ -130,7 +131,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState<Task>> {
         ),
       );
     } catch (e, st) {
-      _logger.error('Failed to start workflow', e, st);
+      talker.handle(e, st, 'Failed to start workflow');
       emit(
         state.copyWith(
           status: WorkflowRunStatus.error,

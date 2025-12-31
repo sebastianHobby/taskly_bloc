@@ -1,10 +1,18 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/features/analytics_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/wellbeing_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/priority_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
+import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
+// Domain models needed by TypeConverters in generated code
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
+    hide EntityType;
+import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
 part 'drift_database.g.dart';
 
 enum LabelType { label, value }
@@ -97,22 +105,6 @@ class TaskTable extends Table {
   /// Optional notes from last review
   TextColumn get reviewNotes => text().nullable().named('review_notes')();
 
-  /// Explicit next action flag (hybrid approach)
-  BoolColumn get isNextAction =>
-      boolean().clientDefault(() => false).named('is_next_action')();
-
-  /// Manual priority override (1-100, lower = higher priority)
-  IntColumn get nextActionPriority =>
-      integer().nullable().named('next_action_priority')();
-
-  /// When the task was marked as next action
-  DateTimeColumn get markedNextActionAt =>
-      dateTime().nullable().named('marked_next_action_at')();
-
-  /// Optional notes for why this is a next action
-  TextColumn get nextActionNotes =>
-      text().nullable().named('next_action_notes')();
-
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -133,6 +125,16 @@ class LabelTable extends Table {
       dateTime().clientDefault(DateTime.now).named('updated_at')();
   TextColumn get userId => text().nullable().named('user_id')();
   TextColumn get iconName => text().nullable().named('icon_name')();
+
+  /// Whether this is a system-managed label
+  BoolColumn get isSystemLabel => boolean()
+      .nullable()
+      .withDefault(const Constant(false))
+      .named('is_system_label')();
+
+  /// Type of system label (if isSystemLabel is true)
+  TextColumn get systemLabelType =>
+      text().nullable().named('system_label_type')();
 
   /// User-defined priority rank for value/context
   IntColumn get priorityRank => integer().nullable().named('priority_rank')();
@@ -208,8 +210,10 @@ class UserProfileTable extends Table {
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
   TextColumn get userId => text().nullable().named('user_id')();
 
-  /// JSON blob stored as a text column (e.g. serialized settings map).
-  TextColumn get settings => text().named('settings')();
+  /// Application settings stored as JSON text.
+  /// Uses [appSettingsConverter] for automatic serialization.
+  TextColumn get settings =>
+      text().map(appSettingsConverter).named('settings')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
@@ -395,6 +399,7 @@ class ProjectRecurrenceExceptionsTable extends Table {
     JournalEntries,
     Trackers,
     TrackerResponses,
+    DailyTrackerResponses,
     // Priority rankings system
     PriorityRankings,
     RankedItems,

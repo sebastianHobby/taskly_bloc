@@ -4,11 +4,11 @@ import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart'
     as db_screens;
 import 'package:taskly_bloc/domain/models/workflow/workflow_session.dart'
     as domain;
-import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
-/// Drift implementation of [WorkflowSessionsRepository].
-class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepository {
+/// Drift implementation of [WorkflowSessionsRepositoryContract].
+class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContract {
   WorkflowSessionsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -47,7 +47,6 @@ class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepository {
         .insert(
           db.WorkflowSessionsCompanion.insert(
             id: Value(id),
-            userId: const Value(''),
             screenId: screenId,
             status: Value(db_screens.WorkflowStatus.inProgress),
             startedAt: Value(now),

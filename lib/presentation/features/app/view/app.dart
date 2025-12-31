@@ -1,16 +1,17 @@
-﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/theme/app_theme.dart';
-import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:taskly_bloc/data/services/user_data_seeder.dart';
+import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
-import 'package:taskly_bloc/presentation/features/next_action/bloc/next_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/core/routing/router.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
@@ -19,7 +20,6 @@ import 'package:taskly_bloc/domain/services/notifications/pending_notifications_
 ///
 /// Provides:
 /// - [AuthBloc]: Authentication state for the entire app
-/// - [NextActionsBloc]: Next actions data shared across features
 /// - [TodayBadgeService]: Today's incomplete task count for navigation badge
 class App extends StatelessWidget {
   const App({super.key});
@@ -42,18 +42,21 @@ class App extends StatelessWidget {
           // Single instance eliminates redundant stream subscriptions
           // and preserves state across auth screens
           BlocProvider<AuthBloc>(
-            create: (context) => AuthBloc(
-              authRepository: getIt<AuthRepositoryContract>(),
-            )..add(const AuthSubscriptionRequested()),
-          ),
-          // NextActionsBloc: App-wide next actions data
-          // Single instance shared between Today page banner and
-          // Next Actions full page, eliminating duplicate processing
-          BlocProvider<NextActionsBloc>(
-            create: (context) => NextActionsBloc(
-              taskRepository: getIt<TaskRepositoryContract>(),
-              settingsRepository: getIt<SettingsRepositoryContract>(),
-            )..add(const NextActionsSubscriptionRequested()),
+            lazy: false, // Force immediate creation to trigger seeding
+            create: (context) {
+              talker.debug('[app] Creating AuthBloc...');
+              try {
+                final bloc = AuthBloc(
+                  authRepository: getIt<AuthRepositoryContract>(),
+                  userDataSeeder: getIt<UserDataSeeder>(),
+                )..add(const AuthSubscriptionRequested());
+                talker.debug('[app] AuthBloc created successfully');
+                return bloc;
+              } catch (e, st) {
+                talker.handle(e, st, '[app] AuthBloc creation FAILED');
+                rethrow;
+              }
+            },
           ),
         ],
         child: StreamBuilder<GlobalSettings>(
@@ -62,12 +65,16 @@ class App extends StatelessWidget {
             final settings = snapshot.data ?? const GlobalSettings();
 
             return MaterialApp.router(
-              theme: AppTheme.lightTheme(seedColor: settings.colorSchemeSeed),
-              darkTheme: AppTheme.darkTheme(
-                seedColor: settings.colorSchemeSeed,
+              theme: AppTheme.lightTheme(
+                seedColor: Color(settings.colorSchemeSeedArgb),
               ),
-              themeMode: settings.themeMode,
-              locale: settings.locale,
+              darkTheme: AppTheme.darkTheme(
+                seedColor: Color(settings.colorSchemeSeedArgb),
+              ),
+              themeMode: _toFlutterThemeMode(settings.themeMode),
+              locale: settings.localeCode == null
+                  ? null
+                  : Locale(settings.localeCode!),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               routerConfig: router,
@@ -85,6 +92,14 @@ class App extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  ThemeMode _toFlutterThemeMode(AppThemeMode mode) {
+    return switch (mode) {
+      AppThemeMode.system => ThemeMode.system,
+      AppThemeMode.light => ThemeMode.light,
+      AppThemeMode.dark => ThemeMode.dark,
+    };
   }
 }
 

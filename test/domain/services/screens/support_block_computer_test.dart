@@ -11,18 +11,13 @@ import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 
+import '../../../fixtures/test_data.dart';
+import '../../../helpers/fallback_values.dart';
+
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(
-      DateRange(
-        start: DateTime(2000),
-        end: DateTime(2000, 1, 2),
-      ),
-    );
-    registerFallbackValue(TrendGranularity.daily);
-  });
+  setUpAll(registerAllFallbackValues);
 
   group('SupportBlockComputer', () {
     late TaskStatsCalculator statsCalculator;
@@ -38,49 +33,45 @@ void main() {
     group('computeBreakdown', () {
       test('groups by project and computes stat per group', () async {
         final tasks = [
-          Task(
+          TestData.task(
             id: 't1',
             createdAt: DateTime(2025),
             updatedAt: DateTime(2025),
             name: 'A',
-            completed: false,
             projectId: 'p1',
-            project: Project(
+            project: TestData.project(
               id: 'p1',
               createdAt: DateTime(2025),
               updatedAt: DateTime(2025),
               name: 'Work',
-              completed: false,
             ),
           ),
-          Task(
+          TestData.task(
             id: 't2',
             createdAt: DateTime(2025, 1, 2),
             updatedAt: DateTime(2025, 1, 2),
             name: 'B',
             completed: true,
             projectId: 'p1',
-            project: Project(
+            project: TestData.project(
               id: 'p1',
               createdAt: DateTime(2025),
               updatedAt: DateTime(2025),
               name: 'Work',
-              completed: false,
             ),
           ),
-          Task(
+          TestData.task(
             id: 't3',
             createdAt: DateTime(2025, 1, 3),
             updatedAt: DateTime(2025, 1, 3),
             name: 'C',
             completed: true,
             projectId: 'p2',
-            project: Project(
+            project: TestData.project(
               id: 'p2',
               createdAt: DateTime(2025),
               updatedAt: DateTime(2025),
               name: 'Home',
-              completed: false,
             ),
           ),
         ];
@@ -102,13 +93,13 @@ void main() {
       test(
         'groups by label type and allows tasks in multiple groups',
         () async {
-          final label1 = Label(
+          final label1 = TestData.label(
             id: 'l1',
             name: 'Errands',
             createdAt: DateTime(2025),
             updatedAt: DateTime(2025),
           );
-          final label2 = Label(
+          final label2 = TestData.label(
             id: 'l2',
             name: 'Health',
             createdAt: DateTime(2025),
@@ -116,20 +107,18 @@ void main() {
           );
 
           final tasks = [
-            Task(
+            TestData.task(
               id: 't1',
               createdAt: DateTime(2025),
               updatedAt: DateTime(2025),
               name: 'A',
-              completed: false,
               labels: [label1, label2],
             ),
-            Task(
+            TestData.task(
               id: 't2',
               createdAt: DateTime(2025, 1, 2),
               updatedAt: DateTime(2025, 1, 2),
               name: 'B',
-              completed: false,
               labels: [label2],
             ),
           ];
@@ -152,14 +141,13 @@ void main() {
     group('computeFilteredTasks', () {
       test('filters tasks using QueryFilter<TaskPredicate> JSON', () async {
         final tasks = [
-          Task(
+          TestData.task(
             id: 't1',
             createdAt: DateTime(2025),
             updatedAt: DateTime(2025),
             name: 'Open',
-            completed: false,
           ),
-          Task(
+          TestData.task(
             id: 't2',
             createdAt: DateTime(2025, 1, 2),
             updatedAt: DateTime(2025, 1, 2),
@@ -252,12 +240,11 @@ void main() {
           // Tasks created on the activity days.
           final tasks = activityDays
               .map(
-                (d) => Task(
+                (d) => TestData.task(
                   id: d.toIso8601String(),
                   createdAt: d.add(const Duration(hours: 12)),
                   updatedAt: d.add(const Duration(hours: 12)),
                   name: 'Task',
-                  completed: false,
                 ),
               )
               .toList(growable: false);

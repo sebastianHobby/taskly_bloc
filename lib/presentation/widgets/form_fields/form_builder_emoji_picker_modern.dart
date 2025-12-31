@@ -1,6 +1,7 @@
-﻿import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// A modern emoji picker field displayed as a chip.
 ///
@@ -71,7 +72,7 @@ class FormBuilderEmojiPickerModern extends StatelessWidget {
                 avatar: hasEmoji
                     ? Text(
                         field.value!,
-                        style: const TextStyle(fontSize: 18),
+                        style: EmojiUtils.emojiTextStyle(fontSize: 18),
                       )
                     : Icon(
                         Icons.emoji_emotions_outlined,
@@ -187,6 +188,8 @@ class _EmojiPickerDialogState extends State<_EmojiPickerDialog> {
                 },
                 config: Config(
                   height: 400,
+                  // Use custom emoji font on Windows/Linux for proper rendering
+                  emojiTextStyle: EmojiUtils.emojiPickerTextStyle,
                   emojiViewConfig: EmojiViewConfig(
                     backgroundColor: colorScheme.surface,
                   ),

@@ -6,12 +6,12 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as domain_screens;
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart'
     as domain_workflow;
-import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
-/// Drift implementation of [ProblemAcknowledgmentsRepository].
+/// Drift implementation of [ProblemAcknowledgmentsRepositoryContract].
 class ProblemAcknowledgmentsRepositoryImpl
-    implements ProblemAcknowledgmentsRepository {
+    implements ProblemAcknowledgmentsRepositoryContract {
   ProblemAcknowledgmentsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -57,7 +57,6 @@ class ProblemAcknowledgmentsRepositoryImpl
         .insert(
           db.ProblemAcknowledgmentsCompanion.insert(
             id: Value(id),
-            userId: const Value(''),
             problemType: _problemTypeToDb(problemType),
             entityId: entityId,
             entityType: _mapEntityTypeToDrift(entityType),

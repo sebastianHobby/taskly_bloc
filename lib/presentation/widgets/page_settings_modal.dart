@@ -150,7 +150,6 @@ class _PageSettingsModalContentState extends State<_PageSettingsModalContent>
       SortField.deadlineDate => l10n.sortFieldDeadlineDateLabel,
       SortField.createdDate => 'Created date',
       SortField.updatedDate => 'Updated date',
-      SortField.nextActionPriority => 'Next action priority',
     };
   }
 
@@ -161,7 +160,6 @@ class _PageSettingsModalContentState extends State<_PageSettingsModalContent>
       SortField.deadlineDate => Icons.flag_rounded,
       SortField.createdDate => Icons.add_circle_outline_rounded,
       SortField.updatedDate => Icons.update_rounded,
-      SortField.nextActionPriority => Icons.low_priority_rounded,
     };
   }
 

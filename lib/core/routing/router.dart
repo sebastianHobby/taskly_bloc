@@ -1,17 +1,21 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/routing/widgets/scaffold_with_nested_navigation.dart';
-import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
@@ -21,8 +25,10 @@ import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_blo
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/next_action/view/next_actions_settings_page.dart';
+import 'package:taskly_bloc/presentation/features/next_action/view/allocation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/projects.dart';
+import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
+import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_host_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
@@ -31,10 +37,11 @@ import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashb
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 final router = GoRouter(
   initialLocation: '${AppRoutePath.screenBase}/inbox',
+  observers: [TalkerRouteObserver(talker)],
   redirect: (context, state) async {
     final authRepository = getIt<AuthRepositoryContract>();
     final authState = await authRepository.watchAuthState().first;
@@ -115,7 +122,7 @@ final router = GoRouter(
       builder: (context, state, child) {
         return BlocProvider(
           create: (_) => NavigationBloc(
-            screensRepository: getIt<ScreenDefinitionsRepository>(),
+            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
             badgeService: NavigationBadgeService(
               queryBuilder: getIt<ScreenQueryBuilder>(),
               taskRepository: getIt<TaskRepositoryContract>(),
@@ -136,14 +143,15 @@ final router = GoRouter(
           path: AppRoutePath.screen,
           builder: (context, state) => ScreenHostPage(
             screenId: state.pathParameters['screenId']!,
-            screensRepository: getIt<ScreenDefinitionsRepository>(),
+            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
             queryBuilder: getIt<ScreenQueryBuilder>(),
             supportBlockComputer: getIt<SupportBlockComputer>(),
-            workflowSessionsRepository: getIt<WorkflowSessionsRepository>(),
+            workflowSessionsRepository:
+                getIt<WorkflowSessionsRepositoryContract>(),
             workflowItemReviewsRepository:
-                getIt<WorkflowItemReviewsRepository>(),
+                getIt<WorkflowItemReviewsRepositoryContract>(),
             problemAcknowledgmentsRepository:
-                getIt<ProblemAcknowledgmentsRepository>(),
+                getIt<ProblemAcknowledgmentsRepositoryContract>(),
             taskRepository: getIt<TaskRepositoryContract>(),
             projectRepository: getIt<ProjectRepositoryContract>(),
             labelRepository: getIt<LabelRepositoryContract>(),
@@ -154,13 +162,15 @@ final router = GoRouter(
           name: AppRouteName.navigationSettings,
           path: AppRoutePath.navigationSettings,
           builder: (context, state) => NavigationSettingsPage(
-            screensRepository: getIt<ScreenDefinitionsRepository>(),
+            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
           ),
         ),
         GoRoute(
           name: AppRouteName.appSettings,
           path: AppRoutePath.appSettings,
-          builder: (context, state) => const SettingsScreen(),
+          builder: (context, state) => SettingsScreen(
+            settingsRepository: getIt<SettingsRepositoryContract>(),
+          ),
         ),
         GoRoute(
           name: AppRouteName.projectDetail,
@@ -173,9 +183,27 @@ final router = GoRouter(
           ),
         ),
         GoRoute(
+          name: AppRouteName.taskDetail,
+          path: AppRoutePath.taskDetail,
+          builder: (context, state) => BlocProvider(
+            create: (_) => TaskDetailBloc(
+              taskId: state.pathParameters['taskId'],
+              taskRepository: getIt<TaskRepositoryContract>(),
+              projectRepository: getIt<ProjectRepositoryContract>(),
+              labelRepository: getIt<LabelRepositoryContract>(),
+            ),
+            child: const TaskDetailSheet(),
+          ),
+        ),
+        GoRoute(
           name: AppRouteName.taskNextActionsSettings,
           path: AppRoutePath.taskNextActionsSettings,
-          builder: (context, state) => const NextActionsSettingsPage(),
+          builder: (context, state) => AllocationSettingsPage(
+            preferencesRepository:
+                getIt<AllocationPreferencesRepositoryContract>(),
+            rankingsRepository: getIt<PriorityRankingsRepositoryContract>(),
+            labelRepository: getIt<LabelRepositoryContract>(),
+          ),
         ),
         GoRoute(
           name: AppRouteName.labelDetail,
@@ -202,7 +230,7 @@ final router = GoRouter(
           path: AppRoutePath.journal,
           builder: (context, state) => BlocProvider(
             create: (context) => JournalEntryBloc(
-              getIt<WellbeingRepository>(),
+              getIt<WellbeingRepositoryContract>(),
             ),
             child: const JournalScreen(),
           ),
@@ -212,7 +240,7 @@ final router = GoRouter(
           path: AppRoutePath.trackerManagement,
           builder: (context, state) => BlocProvider(
             create: (context) => TrackerManagementBloc(
-              getIt<WellbeingRepository>(),
+              getIt<WellbeingRepositoryContract>(),
             ),
             child: const TrackerManagementScreen(),
           ),

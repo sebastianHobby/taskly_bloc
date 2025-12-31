@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// A reusable error state widget that displays an error icon, message,
 /// and optional retry action.

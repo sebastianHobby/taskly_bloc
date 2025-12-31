@@ -1,4 +1,4 @@
-﻿class HeroTable {
+class HeroTable {
   HeroTable._();
 
   static const String tableName = 'heroes';

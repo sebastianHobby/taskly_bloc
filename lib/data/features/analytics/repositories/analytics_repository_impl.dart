@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
@@ -6,9 +6,9 @@ import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/repositories/analytics_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 
-class AnalyticsRepositoryImpl implements AnalyticsRepository {
+class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
   AnalyticsRepositoryImpl(this._database);
   final AppDatabase _database;
 

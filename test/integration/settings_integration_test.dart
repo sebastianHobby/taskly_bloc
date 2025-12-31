@@ -1,3 +1,6 @@
+@Tags(['integration', 'repository'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
@@ -11,6 +14,13 @@ import '../helpers/test_db.dart';
 ///
 /// These tests verify settings management including NextActionsSettings,
 /// PageSort preferences, and PageDisplaySettings.
+///
+/// Coverage:
+/// - ✅ Default settings when empty
+/// - ✅ NextActionsSettings CRUD
+/// - ✅ PageSort preferences
+/// - ✅ PageDisplaySettings
+/// - ✅ Stream reactivity
 void main() {
   late AppDatabase db;
   late SettingsRepository settingsRepo;

@@ -1,7 +1,9 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+
+import '../../fixtures/test_data.dart';
 
 void main() {
   late OccurrenceStreamExpander expander;
@@ -14,32 +16,13 @@ void main() {
     rangeEnd = DateTime.utc(2025, 12, 31);
   });
 
-  Task createTask({
-    required String id,
-    required DateTime startDate,
-    DateTime? deadlineDate,
-    String? repeatIcalRrule,
-    bool repeatFromCompletion = false,
-    bool seriesEnded = false,
-  }) {
-    return Task(
-      id: id,
-      createdAt: DateTime.utc(2025),
-      updatedAt: DateTime.utc(2025),
-      name: 'Task $id',
-      completed: false,
-      startDate: startDate,
-      deadlineDate: deadlineDate,
-      repeatIcalRrule: repeatIcalRrule,
-      repeatFromCompletion: repeatFromCompletion,
-      seriesEnded: seriesEnded,
-    );
-  }
-
   group('OccurrenceStreamExpander - Non-repeating tasks', () {
     test('returns single occurrence for non-repeating task in range', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12, 15),
       );
 
@@ -58,8 +41,11 @@ void main() {
     });
 
     test('returns empty for non-repeating task outside range', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 11, 15), // Before range
       );
 
@@ -75,8 +61,11 @@ void main() {
     });
 
     test('includes deadline in occurrence', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12, 15),
         deadlineDate: DateTime.utc(2025, 12, 20),
       );
@@ -95,8 +84,11 @@ void main() {
 
   group('OccurrenceStreamExpander - Repeating tasks', () {
     test('expands daily RRULE into multiple occurrences', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=5',
       );
@@ -118,8 +110,11 @@ void main() {
     });
 
     test('expands weekly RRULE correctly', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12), // Monday
         repeatIcalRrule: 'RRULE:FREQ=WEEKLY;COUNT=3',
       );
@@ -139,8 +134,11 @@ void main() {
     });
 
     test('handles invalid RRULE by treating as non-repeating', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12, 15),
         repeatIcalRrule: 'INVALID_RRULE',
       );
@@ -160,8 +158,11 @@ void main() {
 
     test('calculates deadline offset for each occurrence', () {
       // Task starts Dec 1 with deadline Dec 3 (2 days offset)
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         deadlineDate: DateTime.utc(2025, 12, 3),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=3',
@@ -184,8 +185,11 @@ void main() {
 
   group('OccurrenceStreamExpander - Completions', () {
     test('marks occurrence as completed when completion exists', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=3',
       );
@@ -220,8 +224,11 @@ void main() {
 
   group('OccurrenceStreamExpander - Exceptions', () {
     test('skips occurrence when skip exception exists', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=5',
       );
@@ -249,8 +256,11 @@ void main() {
     });
 
     test('reschedules occurrence when reschedule exception exists', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=3',
       );
@@ -285,9 +295,27 @@ void main() {
   group('OccurrenceStreamExpander - Post-expansion filter', () {
     test('applies post-expansion filter', () {
       final tasks = [
-        createTask(id: 't1', startDate: DateTime.utc(2025, 12, 5)),
-        createTask(id: 't2', startDate: DateTime.utc(2025, 12, 10)),
-        createTask(id: 't3', startDate: DateTime.utc(2025, 12, 15)),
+        TestData.task(
+          id: 't1',
+          name: 'Task t1',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 5),
+        ),
+        TestData.task(
+          id: 't2',
+          name: 'Task t2',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 10),
+        ),
+        TestData.task(
+          id: 't3',
+          name: 'Task t3',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 15),
+        ),
       ];
 
       final result = expander.expandTaskOccurrencesSync(
@@ -307,9 +335,27 @@ void main() {
   group('OccurrenceStreamExpander - Sorting', () {
     test('sorts occurrences by date', () {
       final tasks = [
-        createTask(id: 't3', startDate: DateTime.utc(2025, 12, 20)),
-        createTask(id: 't1', startDate: DateTime.utc(2025, 12, 5)),
-        createTask(id: 't2', startDate: DateTime.utc(2025, 12, 10)),
+        TestData.task(
+          id: 't3',
+          name: 'Task t3',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 20),
+        ),
+        TestData.task(
+          id: 't1',
+          name: 'Task t1',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 5),
+        ),
+        TestData.task(
+          id: 't2',
+          name: 'Task t2',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 10),
+        ),
       ];
 
       final result = expander.expandTaskOccurrencesSync(
@@ -329,7 +375,13 @@ void main() {
   group('OccurrenceStreamExpander - Stream behavior', () {
     test('expandTaskOccurrences combines and debounces streams', () async {
       final tasksStream = Stream.value(<Task>[
-        createTask(id: 't1', startDate: DateTime.utc(2025, 12, 15)),
+        TestData.task(
+          id: 't1',
+          name: 'Task t1',
+          createdAt: DateTime.utc(2025),
+          updatedAt: DateTime.utc(2025),
+          startDate: DateTime.utc(2025, 12, 15),
+        ),
       ]);
       final completionsStream = Stream.value(<CompletionHistoryData>[]);
       final exceptionsStream = Stream.value(<RecurrenceExceptionData>[]);
@@ -355,8 +407,11 @@ void main() {
   group('OccurrenceStreamExpander - RRULE caching', () {
     test('caches parsed RRULE for reuse', () {
       // First call should parse and cache
-      final task1 = createTask(
+      final task1 = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=2',
       );
@@ -370,8 +425,11 @@ void main() {
       );
 
       // Second call with same RRULE should use cache
-      final task2 = createTask(
+      final task2 = TestData.task(
         id: 't2',
+        name: 'Task t2',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=2', // Same RRULE
       );
@@ -403,8 +461,11 @@ void main() {
     });
 
     test('handles task with empty RRULE string', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12, 15),
         repeatIcalRrule: '',
       );
@@ -422,8 +483,11 @@ void main() {
     });
 
     test('handles seriesEnded flag', () {
-      final task = createTask(
+      final task = TestData.task(
         id: 't1',
+        name: 'Task t1',
+        createdAt: DateTime.utc(2025),
+        updatedAt: DateTime.utc(2025),
         startDate: DateTime.utc(2025, 12),
         repeatIcalRrule: 'RRULE:FREQ=DAILY;COUNT=100',
         seriesEnded: true,

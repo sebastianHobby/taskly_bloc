@@ -17,8 +17,8 @@ void main() {
     db = createTestDb();
     projectRepository = ProjectRepository(
       driftDb: db,
-      occurrenceExpander: MockOccurrenceStreamExpander(),
-      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+      occurrenceExpander: MockOccurrenceStreamExpanderContract(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelperContract(),
     );
     labelRepository = LabelRepository(driftDb: db);
   });

@@ -19,11 +19,8 @@ abstract class AllocationResult with _$AllocationResult {
 abstract class AllocatedTask with _$AllocatedTask {
   const factory AllocatedTask({
     required Task task,
-    required String categoryId, // Value/Project/Context ID
-    required String categoryName,
+    required String qualifyingValueId, // Value that qualified this task
     required double allocationScore,
-    required int position, // Position within category
-    String? allocationReason,
   }) = _AllocatedTask;
 }
 

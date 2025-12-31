@@ -6,7 +6,7 @@ import 'package:taskly_bloc/domain/models/label.dart' as domain;
 import 'package:taskly_bloc/domain/models/project.dart' as domain;
 import 'package:taskly_bloc/domain/models/task.dart' as domain;
 
-import '../../helpers/drift_test_helper.dart';
+import '../../helpers/test_db.dart';
 
 void main() {
   const defaultColor = '#000000';

@@ -464,4 +464,190 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get markIncompleteAction => 'Mark incomplete';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get noTasksToFocusOn => 'No tasks to focus on';
+
+  @override
+  String get pinnedTasksSection => 'Pinned Tasks';
+
+  @override
+  String get unpinTask => 'Unpin task';
+
+  @override
+  String get pinTask => 'Pin task';
+
+  @override
+  String excludedUrgentTasksWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count urgent tasks excluded',
+      one: '1 urgent task excluded',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewExcludedTasks => 'Review';
+
+  @override
+  String get dismissWarning => 'Dismiss';
+
+  @override
+  String get recurrenceRepeatTitle => 'Repeat';
+
+  @override
+  String get recurrenceNever => 'Never';
+
+  @override
+  String get recurrenceDaily => 'Daily';
+
+  @override
+  String get recurrenceWeekly => 'Weekly';
+
+  @override
+  String get recurrenceMonthly => 'Monthly';
+
+  @override
+  String get recurrenceYearly => 'Yearly';
+
+  @override
+  String get recurrenceEvery => 'Every';
+
+  @override
+  String get recurrenceOnDays => 'On days';
+
+  @override
+  String get recurrenceEnds => 'Ends';
+
+  @override
+  String get recurrenceAfter => 'After';
+
+  @override
+  String get recurrenceTimesLabel => 'times';
+
+  @override
+  String get recurrenceOn => 'On';
+
+  @override
+  String get recurrenceSelectDate => 'Select date';
+
+  @override
+  String get recurrenceDoesNotRepeat => 'Does not repeat';
+
+  @override
+  String get validationRequired => 'Required';
+
+  @override
+  String get validationInvalid => 'Invalid';
+
+  @override
+  String get validationMustBeGreaterThanZero => 'Must be > 0';
+
+  @override
+  String validationMaxValue(int max) {
+    return 'Max $max';
+  }
+
+  @override
+  String get doneButton => 'Done';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsAppearanceSection => 'Appearance';
+
+  @override
+  String get settingsLanguageRegionSection => 'Language & Region';
+
+  @override
+  String get settingsAdvancedSection => 'Advanced';
+
+  @override
+  String get settingsThemeMode => 'Theme Mode';
+
+  @override
+  String get settingsThemeModeSubtitle => 'Choose between light, dark, or system theme';
+
+  @override
+  String get settingsTextSize => 'Text Size';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLanguageSubtitle => 'Select your preferred language';
+
+  @override
+  String get settingsLanguageSystem => 'System';
+
+  @override
+  String get settingsDateFormat => 'Date Format';
+
+  @override
+  String get settingsDateFormatShort => 'Short';
+
+  @override
+  String get settingsDateFormatMedium => 'Medium';
+
+  @override
+  String get settingsDateFormatLong => 'Long';
+
+  @override
+  String get settingsDateFormatFull => 'Full';
+
+  @override
+  String get settingsDateFormatCustom => 'Custom';
+
+  @override
+  String settingsDateFormatExample(String example) {
+    return 'Example: $example';
+  }
+
+  @override
+  String get settingsResetToDefaults => 'Reset to Defaults';
+
+  @override
+  String get settingsResetTitle => 'Reset Settings';
+
+  @override
+  String get settingsResetConfirmation => 'Are you sure you want to reset all settings to their default values?';
+
+  @override
+  String get settingsResetSuccess => 'Settings reset to defaults';
+
+  @override
+  String get resetButton => 'Reset';
+
+  @override
+  String get sortFieldCreatedDate => 'Created date';
+
+  @override
+  String get sortFieldUpdatedDate => 'Updated date';
+
+  @override
+  String get sortFieldNextActionPriority => 'Next action priority';
+
+  @override
+  String get sortOrderHelp => 'Choose how to order items';
+
+  @override
+  String get saveButton => 'Save';
+
+  @override
+  String get discardButton => 'Discard';
+
+  @override
+  String get unsavedChangesTitle => 'Unsaved Changes';
+
+  @override
+  String get confirmButton => 'Confirm';
 }

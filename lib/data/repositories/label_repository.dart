@@ -1,9 +1,13 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:uuid/uuid.dart';
+
+const uuid = Uuid();
 
 class LabelRepository implements LabelRepositoryContract {
   LabelRepository({required this.driftDb});
@@ -84,6 +88,53 @@ class LabelRepository implements LabelRepositoryContract {
     return data == null ? null : labelFromTable(data);
   }
 
+  @override
+  Future<Label?> getSystemLabel(SystemLabelType type) async {
+    final result =
+        await (driftDb.select(driftDb.labelTable)
+              ..where((l) => l.isSystemLabel.equals(true))
+              ..where((l) => l.systemLabelType.equals(type.name)))
+            .getSingleOrNull();
+    return result == null ? null : labelFromTable(result);
+  }
+
+  @override
+  Future<Label> getOrCreateSystemLabel(SystemLabelType type) async {
+    final existing = await getSystemLabel(type);
+    if (existing != null) return existing;
+
+    // Create system label
+    // Note: user_id is set automatically by Supabase/PowerSync based on session
+    final now = DateTime.now();
+    final labelData = switch (type) {
+      SystemLabelType.pinned => (
+        name: 'Pinned',
+        color: '#9C27B0', // Purple
+        icon: 'push_pin',
+      ),
+    };
+
+    final id = uuid.v4();
+    await driftDb
+        .into(driftDb.labelTable)
+        .insert(
+          drift.LabelTableCompanion(
+            id: Value(id),
+            name: Value(labelData.name),
+            color: Value(labelData.color),
+            type: Value(drift.LabelType.label),
+            iconName: Value(labelData.icon),
+            isSystemLabel: Value(true),
+            systemLabelType: Value(type.name),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+
+    final created = await _getLabelById(id);
+    return labelFromTable(created!);
+  }
+
   Future<void> _updateLabel(drift.LabelTableCompanion updateCompanion) async {
     await driftDb.update(driftDb.labelTable).replace(updateCompanion);
   }
@@ -103,6 +154,7 @@ class LabelRepository implements LabelRepositoryContract {
     required LabelType type,
     String? iconName,
   }) async {
+    talker.debug('[LabelRepository] create: name="$name", type=${type.name}');
     final now = DateTime.now();
     final driftLabel = switch (type) {
       LabelType.label => drift.LabelType.label,
@@ -129,8 +181,10 @@ class LabelRepository implements LabelRepositoryContract {
     required LabelType type,
     String? iconName,
   }) async {
+    talker.debug('[LabelRepository] update: id=$id, name="$name"');
     final existing = await _getLabelById(id);
     if (existing == null) {
+      talker.warning('[LabelRepository] update failed: label not found id=$id');
       throw RepositoryNotFoundException('No label found to update');
     }
 
@@ -149,6 +203,43 @@ class LabelRepository implements LabelRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
+    talker.debug('[LabelRepository] delete: id=$id');
     await _deleteLabel(drift.LabelTableCompanion(id: Value(id)));
+  }
+
+  @override
+  Future<void> addLabelToTask({
+    required String taskId,
+    required String labelId,
+  }) async {
+    // Check if label association already exists
+    final existing =
+        await (driftDb.select(driftDb.taskLabelsTable)..where(
+              (tl) => tl.taskId.equals(taskId) & tl.labelId.equals(labelId),
+            ))
+            .getSingleOrNull();
+
+    if (existing != null) return; // Already exists
+
+    // Add new label association
+    await driftDb
+        .into(driftDb.taskLabelsTable)
+        .insert(
+          drift.TaskLabelsTableCompanion.insert(
+            taskId: taskId,
+            labelId: labelId,
+          ),
+        );
+  }
+
+  @override
+  Future<void> removeLabelFromTask({
+    required String taskId,
+    required String labelId,
+  }) async {
+    await (driftDb.delete(
+          driftDb.taskLabelsTable,
+        )..where((tl) => tl.taskId.equals(taskId) & tl.labelId.equals(labelId)))
+        .go();
   }
 }

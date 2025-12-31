@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/occurrence_data.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
@@ -24,10 +24,6 @@ class Task {
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
-    this.isNextAction = false,
-    this.nextActionPriority,
-    this.markedNextActionAt,
-    this.nextActionNotes,
     this.project,
     this.labels = const <Label>[],
     this.occurrence,
@@ -50,18 +46,6 @@ class Task {
 
   /// When true, stops generating future occurrences for this repeating task.
   final bool seriesEnded;
-
-  /// Explicit next action flag (hybrid approach).
-  final bool isNextAction;
-
-  /// Manual next action priority override (1-100, lower = higher priority).
-  final int? nextActionPriority;
-
-  /// When the task was marked as a next action.
-  final DateTime? markedNextActionAt;
-
-  /// Optional notes for why this is a next action.
-  final String? nextActionNotes;
 
   final Project? project;
   final List<Label> labels;
@@ -91,10 +75,6 @@ class Task {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
-    bool? isNextAction,
-    int? nextActionPriority,
-    DateTime? markedNextActionAt,
-    String? nextActionNotes,
     Project? project,
     List<Label>? labels,
     OccurrenceData? occurrence,
@@ -112,10 +92,6 @@ class Task {
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
-      isNextAction: isNextAction ?? this.isNextAction,
-      nextActionPriority: nextActionPriority ?? this.nextActionPriority,
-      markedNextActionAt: markedNextActionAt ?? this.markedNextActionAt,
-      nextActionNotes: nextActionNotes ?? this.nextActionNotes,
       project: project ?? this.project,
       labels: labels ?? this.labels,
       occurrence: occurrence ?? this.occurrence,
@@ -138,10 +114,6 @@ class Task {
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
-        other.isNextAction == isNextAction &&
-        other.nextActionPriority == nextActionPriority &&
-        other.markedNextActionAt == markedNextActionAt &&
-        other.nextActionNotes == nextActionNotes &&
         other.project == project &&
         listEquals(other.labels, labels) &&
         other.occurrence == occurrence;
@@ -161,10 +133,6 @@ class Task {
     repeatIcalRrule,
     repeatFromCompletion,
     seriesEnded,
-    isNextAction,
-    nextActionPriority,
-    markedNextActionAt,
-    nextActionNotes,
     project,
     Object.hashAll(labels),
     occurrence,

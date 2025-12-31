@@ -1,4 +1,4 @@
-﻿import 'dart:math' as math;
+import 'dart:math' as math;
 
 import 'package:ml_linalg/linalg.dart';
 import 'package:statistics/statistics.dart';
@@ -259,7 +259,7 @@ class CorrelationCalculator {
       );
     }
 
-    // Calculate t-statistic: t = r * sqrt((n-2) / (1-rÂ²))
+    // Calculate t-statistic: t = r * sqrt((n-2) / (1-r²))
     final df = n - 2;
     final rSquared = r * r;
 
@@ -371,7 +371,7 @@ class CorrelationCalculator {
       sampleSize: sampleSize,
       strength: CorrelationStrength.negligible,
       insight:
-          'âš ï¸ Insufficient data: $reason. Keep tracking to discover patterns.',
+          '⚠️ Insufficient data: $reason. Keep tracking to discover patterns.',
     );
   }
 
@@ -400,9 +400,9 @@ class CorrelationCalculator {
     // Show data quality indicators
     if (!isSignificant) {
       if (sampleSize < 20) {
-        return 'âš ï¸ Early pattern detected (n=$sampleSize) - collect more data to confirm correlation between $sourceLabel and $targetLabel';
+        return '⚠️ Early pattern detected (n=$sampleSize) - collect more data to confirm correlation between $sourceLabel and $targetLabel';
       }
-      return 'No statistically significant correlation found between $sourceLabel and $targetLabel (p â‰¥ 0.05)';
+      return 'No statistically significant correlation found between $sourceLabel and $targetLabel (p ≥ 0.05)';
     }
 
     if (strength == CorrelationStrength.negligible) {
@@ -413,7 +413,7 @@ class CorrelationCalculator {
     final absPercent = (differencePercent?.abs() ?? 0).toStringAsFixed(0);
 
     if (valueWithSource != null && valueWithoutSource != null) {
-      return 'âœ“ When you engage with $sourceLabel, your $targetLabel is $absPercent% $direction (statistically significant, n=$sampleSize)';
+      return '✓ When you engage with $sourceLabel, your $targetLabel is $absPercent% $direction (statistically significant, n=$sampleSize)';
     }
 
     final strengthText = switch (strength) {
@@ -428,6 +428,6 @@ class CorrelationCalculator {
       _ => 'not significantly associated with',
     };
 
-    return 'âœ“ $sourceLabel is $strengthText $targetLabel (p < 0.05, n=$sampleSize)';
+    return '✓ $sourceLabel is $strengthText $targetLabel (p < 0.05, n=$sampleSize)';
   }
 }

@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 /// A sealed class representing the result of an operation that can either
 /// succeed with a value or fail with a [Failure].
@@ -124,8 +124,7 @@ sealed class Failure {
 
   /// Logs this failure with full details for debugging.
   void log({String? name}) {
-    final logger = AppLogger(name ?? 'app.failure');
-    logger.warning('Failure: $message', error, stackTrace);
+    talker.warning('Failure: $message', error, stackTrace);
   }
 }
 

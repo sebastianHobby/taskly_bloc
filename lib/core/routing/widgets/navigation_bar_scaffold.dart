@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {

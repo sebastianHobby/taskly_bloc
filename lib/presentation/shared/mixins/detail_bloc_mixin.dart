@@ -1,5 +1,5 @@
-﻿import 'package:bloc/bloc.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:bloc/bloc.dart';
+import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 
@@ -42,8 +42,8 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
   /// Creates the operation failure state with error details.
   S createOperationFailureState(DetailBlocError<T> error);
 
-  /// Logger for this BLoC.
-  AppLogger get logger;
+  /// Logger for this BLoC - now uses Talker.
+  Talker get logger;
 
   /// Executes a repository operation with consistent error handling.
   ///
@@ -68,10 +68,10 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
       logger.debug('Operation successful: ${operation.name}');
       emit(createOperationSuccessState(operation));
     } catch (error, stackTrace) {
-      logger.error(
-        'Operation failed: ${operation.name}',
+      logger.handle(
         error,
         stackTrace,
+        'Operation failed: ${operation.name}',
       );
       emit(
         createOperationFailureState(
@@ -115,7 +115,7 @@ mixin DetailBlocMixin<E, S, T> on Bloc<E, S> {
       logger.debug('Entity loaded successfully');
       emit(onSuccess(result));
     } catch (error, stackTrace) {
-      logger.error('Failed to load entity', error, stackTrace);
+      logger.handle(error, stackTrace, 'Failed to load entity');
       emit(
         createOperationFailureState(
           DetailBlocError<T>(error: error, stackTrace: stackTrace),

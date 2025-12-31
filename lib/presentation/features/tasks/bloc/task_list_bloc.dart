@@ -1,10 +1,10 @@
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 part 'task_list_bloc.freezed.dart';
 
@@ -75,7 +75,6 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
   final TaskQuery _query;
   final SettingsRepositoryContract? _settingsRepository;
   final PageKey? _pageKey;
-  final _logger = AppLogger.forBloc('TaskOverview');
 
   /// Load display settings for this page.
   Future<PageDisplaySettings> loadDisplaySettings() async {
@@ -167,7 +166,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
         repeatIcalRrule: task.repeatIcalRrule,
       );
     } catch (error, stacktrace) {
-      _logger.error('Failed to toggle task completion', error, stacktrace);
+      talker.handle(error, stacktrace, '[TaskListBloc] Failed to toggle task');
       emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
     }
   }
@@ -179,7 +178,7 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
     try {
       await _taskRepository.delete(event.task.id);
     } catch (error, stacktrace) {
-      _logger.error('Failed to delete task', error, stacktrace);
+      talker.handle(error, stacktrace, '[TaskListBloc] Failed to delete task');
       emit(TaskOverviewState.error(error: error, stacktrace: stacktrace));
     }
   }

@@ -1,7 +1,9 @@
-﻿import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 part 'tracker_management_bloc.freezed.dart';
 
@@ -38,15 +40,17 @@ class TrackerManagementBloc
     on<_DeleteTracker>(_onDeleteTracker);
     on<_ReorderTrackers>(_onReorderTrackers);
   }
-  final WellbeingRepository _repository;
+
+  final WellbeingRepositoryContract _repository;
 
   Future<void> _onLoadTrackers(_LoadTrackers event, Emitter emit) async {
     emit(const TrackerManagementState.loading());
     try {
       final trackers = await _repository.getAllTrackers();
       emit(TrackerManagementState.loaded(trackers));
-    } catch (e) {
-      emit(TrackerManagementState.error(e.toString()));
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to load trackers');
+      emit(TrackerManagementState.error(friendlyErrorMessage(e)));
     }
   }
 
@@ -55,8 +59,9 @@ class TrackerManagementBloc
     try {
       await _repository.saveTracker(event.tracker);
       emit(const TrackerManagementState.saved());
-    } catch (e) {
-      emit(TrackerManagementState.error(e.toString()));
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to save tracker');
+      emit(TrackerManagementState.error(friendlyErrorMessage(e)));
     }
   }
 
@@ -65,8 +70,9 @@ class TrackerManagementBloc
     try {
       await _repository.deleteTracker(event.trackerId);
       emit(const TrackerManagementState.saved());
-    } catch (e) {
-      emit(TrackerManagementState.error(e.toString()));
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to delete tracker');
+      emit(TrackerManagementState.error(friendlyErrorMessage(e)));
     }
   }
 
@@ -74,8 +80,9 @@ class TrackerManagementBloc
     try {
       await _repository.reorderTrackers(event.trackerIds);
       emit(const TrackerManagementState.saved());
-    } catch (e) {
-      emit(TrackerManagementState.error(e.toString()));
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to reorder trackers');
+      emit(TrackerManagementState.error(friendlyErrorMessage(e)));
     }
   }
 }

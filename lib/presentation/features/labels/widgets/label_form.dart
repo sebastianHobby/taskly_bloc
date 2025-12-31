@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
@@ -38,7 +38,7 @@ class LabelForm extends StatefulWidget {
   final VoidCallback? onClose;
 
   static const _defaultColorHex = '#000000';
-  static const _defaultValueEmoji = 'â¤ï¸';
+  static const _defaultValueEmoji = '❤️';
 
   @override
   State<LabelForm> createState() => _LabelFormState();

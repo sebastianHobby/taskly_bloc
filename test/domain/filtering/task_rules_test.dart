@@ -1,3 +1,6 @@
+@Tags(['unit'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
@@ -5,6 +8,16 @@ import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
+/// Tests for task filtering rules including bucket rules, date rules, and boolean rules.
+///
+/// Coverage:
+/// - ✅ TaskPriorityBucketRule serialization
+/// - ✅ TaskRuleSet evaluation (AND/OR operators)
+/// - ✅ DateRule evaluation
+/// - ✅ BooleanRule evaluation
+/// - ✅ ProjectRule evaluation
+/// - ✅ LabelRule evaluation
+/// - ✅ Rule validation
 void main() {
   group('TaskPriorityBucketRule', () {
     test('fromJson creates instance with default values', () {
@@ -646,14 +659,14 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
           Label(
             id: 'label-2',
             name: 'Label 2',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
           Label(
             id: 'label-3',
@@ -683,8 +696,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -708,8 +721,8 @@ void main() {
           Label(
             id: 'label-2',
             name: 'Label 2',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -748,8 +761,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -775,14 +788,14 @@ void main() {
             id: 'value-1',
             name: 'Value 1',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -837,15 +850,15 @@ void main() {
             id: 'value-1',
             name: 'Value 1',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
           Label(
             id: 'value-2',
             name: 'Value 2',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -870,8 +883,8 @@ void main() {
             id: 'value-2',
             name: 'Value 2',
             type: LabelType.value,
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );
@@ -895,8 +908,8 @@ void main() {
           Label(
             id: 'label-1',
             name: 'Label 1',
-            createdAt: DateTime(2025, 1),
-            updatedAt: DateTime(2025, 1),
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
           ),
         ],
       );

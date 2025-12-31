@@ -55,13 +55,15 @@ extension JournalEntryEventPatterns on JournalEntryEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Load value)?  load,TResult Function( _LoadByDate value)?  loadByDate,TResult Function( _Save value)?  save,TResult Function( _Delete value)?  delete,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Load value)?  load,TResult Function( _LoadByDate value)?  loadByDate,TResult Function( _LoadEntriesForDate value)?  loadEntriesForDate,TResult Function( _Save value)?  save,TResult Function( _SaveWithDailyResponses value)?  saveWithDailyResponses,TResult Function( _Delete value)?  delete,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Load() when load != null:
 return load(_that);case _LoadByDate() when loadByDate != null:
-return loadByDate(_that);case _Save() when save != null:
-return save(_that);case _Delete() when delete != null:
+return loadByDate(_that);case _LoadEntriesForDate() when loadEntriesForDate != null:
+return loadEntriesForDate(_that);case _Save() when save != null:
+return save(_that);case _SaveWithDailyResponses() when saveWithDailyResponses != null:
+return saveWithDailyResponses(_that);case _Delete() when delete != null:
 return delete(_that);case _:
   return orElse();
 
@@ -80,13 +82,15 @@ return delete(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Load value)  load,required TResult Function( _LoadByDate value)  loadByDate,required TResult Function( _Save value)  save,required TResult Function( _Delete value)  delete,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Load value)  load,required TResult Function( _LoadByDate value)  loadByDate,required TResult Function( _LoadEntriesForDate value)  loadEntriesForDate,required TResult Function( _Save value)  save,required TResult Function( _SaveWithDailyResponses value)  saveWithDailyResponses,required TResult Function( _Delete value)  delete,}){
 final _that = this;
 switch (_that) {
 case _Load():
 return load(_that);case _LoadByDate():
-return loadByDate(_that);case _Save():
-return save(_that);case _Delete():
+return loadByDate(_that);case _LoadEntriesForDate():
+return loadEntriesForDate(_that);case _Save():
+return save(_that);case _SaveWithDailyResponses():
+return saveWithDailyResponses(_that);case _Delete():
 return delete(_that);case _:
   throw StateError('Unexpected subclass');
 
@@ -104,13 +108,15 @@ return delete(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Load value)?  load,TResult? Function( _LoadByDate value)?  loadByDate,TResult? Function( _Save value)?  save,TResult? Function( _Delete value)?  delete,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Load value)?  load,TResult? Function( _LoadByDate value)?  loadByDate,TResult? Function( _LoadEntriesForDate value)?  loadEntriesForDate,TResult? Function( _Save value)?  save,TResult? Function( _SaveWithDailyResponses value)?  saveWithDailyResponses,TResult? Function( _Delete value)?  delete,}){
 final _that = this;
 switch (_that) {
 case _Load() when load != null:
 return load(_that);case _LoadByDate() when loadByDate != null:
-return loadByDate(_that);case _Save() when save != null:
-return save(_that);case _Delete() when delete != null:
+return loadByDate(_that);case _LoadEntriesForDate() when loadEntriesForDate != null:
+return loadEntriesForDate(_that);case _Save() when save != null:
+return save(_that);case _SaveWithDailyResponses() when saveWithDailyResponses != null:
+return saveWithDailyResponses(_that);case _Delete() when delete != null:
 return delete(_that);case _:
   return null;
 
@@ -128,12 +134,14 @@ return delete(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String entryId)?  load,TResult Function( DateTime date)?  loadByDate,TResult Function( JournalEntry entry)?  save,TResult Function( String entryId)?  delete,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String entryId)?  load,TResult Function( DateTime date)?  loadByDate,TResult Function( DateTime date)?  loadEntriesForDate,TResult Function( JournalEntry entry)?  save,TResult Function( JournalEntry entry,  List<DailyTrackerResponse> dailyResponses)?  saveWithDailyResponses,TResult Function( String entryId)?  delete,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Load() when load != null:
 return load(_that.entryId);case _LoadByDate() when loadByDate != null:
-return loadByDate(_that.date);case _Save() when save != null:
-return save(_that.entry);case _Delete() when delete != null:
+return loadByDate(_that.date);case _LoadEntriesForDate() when loadEntriesForDate != null:
+return loadEntriesForDate(_that.date);case _Save() when save != null:
+return save(_that.entry);case _SaveWithDailyResponses() when saveWithDailyResponses != null:
+return saveWithDailyResponses(_that.entry,_that.dailyResponses);case _Delete() when delete != null:
 return delete(_that.entryId);case _:
   return orElse();
 
@@ -152,12 +160,14 @@ return delete(_that.entryId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String entryId)  load,required TResult Function( DateTime date)  loadByDate,required TResult Function( JournalEntry entry)  save,required TResult Function( String entryId)  delete,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String entryId)  load,required TResult Function( DateTime date)  loadByDate,required TResult Function( DateTime date)  loadEntriesForDate,required TResult Function( JournalEntry entry)  save,required TResult Function( JournalEntry entry,  List<DailyTrackerResponse> dailyResponses)  saveWithDailyResponses,required TResult Function( String entryId)  delete,}) {final _that = this;
 switch (_that) {
 case _Load():
 return load(_that.entryId);case _LoadByDate():
-return loadByDate(_that.date);case _Save():
-return save(_that.entry);case _Delete():
+return loadByDate(_that.date);case _LoadEntriesForDate():
+return loadEntriesForDate(_that.date);case _Save():
+return save(_that.entry);case _SaveWithDailyResponses():
+return saveWithDailyResponses(_that.entry,_that.dailyResponses);case _Delete():
 return delete(_that.entryId);case _:
   throw StateError('Unexpected subclass');
 
@@ -175,12 +185,14 @@ return delete(_that.entryId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String entryId)?  load,TResult? Function( DateTime date)?  loadByDate,TResult? Function( JournalEntry entry)?  save,TResult? Function( String entryId)?  delete,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String entryId)?  load,TResult? Function( DateTime date)?  loadByDate,TResult? Function( DateTime date)?  loadEntriesForDate,TResult? Function( JournalEntry entry)?  save,TResult? Function( JournalEntry entry,  List<DailyTrackerResponse> dailyResponses)?  saveWithDailyResponses,TResult? Function( String entryId)?  delete,}) {final _that = this;
 switch (_that) {
 case _Load() when load != null:
 return load(_that.entryId);case _LoadByDate() when loadByDate != null:
-return loadByDate(_that.date);case _Save() when save != null:
-return save(_that.entry);case _Delete() when delete != null:
+return loadByDate(_that.date);case _LoadEntriesForDate() when loadEntriesForDate != null:
+return loadEntriesForDate(_that.date);case _Save() when save != null:
+return save(_that.entry);case _SaveWithDailyResponses() when saveWithDailyResponses != null:
+return saveWithDailyResponses(_that.entry,_that.dailyResponses);case _Delete() when delete != null:
 return delete(_that.entryId);case _:
   return null;
 
@@ -324,6 +336,72 @@ as DateTime,
 /// @nodoc
 
 
+class _LoadEntriesForDate implements JournalEntryEvent {
+  const _LoadEntriesForDate({required this.date});
+  
+
+ final  DateTime date;
+
+/// Create a copy of JournalEntryEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$LoadEntriesForDateCopyWith<_LoadEntriesForDate> get copyWith => __$LoadEntriesForDateCopyWithImpl<_LoadEntriesForDate>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LoadEntriesForDate&&(identical(other.date, date) || other.date == date));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,date);
+
+@override
+String toString() {
+  return 'JournalEntryEvent.loadEntriesForDate(date: $date)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$LoadEntriesForDateCopyWith<$Res> implements $JournalEntryEventCopyWith<$Res> {
+  factory _$LoadEntriesForDateCopyWith(_LoadEntriesForDate value, $Res Function(_LoadEntriesForDate) _then) = __$LoadEntriesForDateCopyWithImpl;
+@useResult
+$Res call({
+ DateTime date
+});
+
+
+
+
+}
+/// @nodoc
+class __$LoadEntriesForDateCopyWithImpl<$Res>
+    implements _$LoadEntriesForDateCopyWith<$Res> {
+  __$LoadEntriesForDateCopyWithImpl(this._self, this._then);
+
+  final _LoadEntriesForDate _self;
+  final $Res Function(_LoadEntriesForDate) _then;
+
+/// Create a copy of JournalEntryEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? date = null,}) {
+  return _then(_LoadEntriesForDate(
+date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
 class _Save implements JournalEntryEvent {
   const _Save(this.entry);
   
@@ -381,6 +459,89 @@ class __$SaveCopyWithImpl<$Res>
   return _then(_Save(
 null == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
 as JournalEntry,
+  ));
+}
+
+/// Create a copy of JournalEntryEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$JournalEntryCopyWith<$Res> get entry {
+  
+  return $JournalEntryCopyWith<$Res>(_self.entry, (value) {
+    return _then(_self.copyWith(entry: value));
+  });
+}
+}
+
+/// @nodoc
+
+
+class _SaveWithDailyResponses implements JournalEntryEvent {
+  const _SaveWithDailyResponses({required this.entry, required final  List<DailyTrackerResponse> dailyResponses}): _dailyResponses = dailyResponses;
+  
+
+ final  JournalEntry entry;
+ final  List<DailyTrackerResponse> _dailyResponses;
+ List<DailyTrackerResponse> get dailyResponses {
+  if (_dailyResponses is EqualUnmodifiableListView) return _dailyResponses;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_dailyResponses);
+}
+
+
+/// Create a copy of JournalEntryEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$SaveWithDailyResponsesCopyWith<_SaveWithDailyResponses> get copyWith => __$SaveWithDailyResponsesCopyWithImpl<_SaveWithDailyResponses>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SaveWithDailyResponses&&(identical(other.entry, entry) || other.entry == entry)&&const DeepCollectionEquality().equals(other._dailyResponses, _dailyResponses));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,entry,const DeepCollectionEquality().hash(_dailyResponses));
+
+@override
+String toString() {
+  return 'JournalEntryEvent.saveWithDailyResponses(entry: $entry, dailyResponses: $dailyResponses)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$SaveWithDailyResponsesCopyWith<$Res> implements $JournalEntryEventCopyWith<$Res> {
+  factory _$SaveWithDailyResponsesCopyWith(_SaveWithDailyResponses value, $Res Function(_SaveWithDailyResponses) _then) = __$SaveWithDailyResponsesCopyWithImpl;
+@useResult
+$Res call({
+ JournalEntry entry, List<DailyTrackerResponse> dailyResponses
+});
+
+
+$JournalEntryCopyWith<$Res> get entry;
+
+}
+/// @nodoc
+class __$SaveWithDailyResponsesCopyWithImpl<$Res>
+    implements _$SaveWithDailyResponsesCopyWith<$Res> {
+  __$SaveWithDailyResponsesCopyWithImpl(this._self, this._then);
+
+  final _SaveWithDailyResponses _self;
+  final $Res Function(_SaveWithDailyResponses) _then;
+
+/// Create a copy of JournalEntryEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? entry = null,Object? dailyResponses = null,}) {
+  return _then(_SaveWithDailyResponses(
+entry: null == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
+as JournalEntry,dailyResponses: null == dailyResponses ? _self._dailyResponses : dailyResponses // ignore: cast_nullable_to_non_nullable
+as List<DailyTrackerResponse>,
   ));
 }
 
@@ -506,13 +667,14 @@ extension JournalEntryStatePatterns on JournalEntryState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Initial value)?  initial,TResult Function( _Loading value)?  loading,TResult Function( _Loaded value)?  loaded,TResult Function( _Saved value)?  saved,TResult Function( _Error value)?  error,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _Initial value)?  initial,TResult Function( _Loading value)?  loading,TResult Function( _Loaded value)?  loaded,TResult Function( _EntriesLoaded value)?  entriesLoaded,TResult Function( _Saved value)?  saved,TResult Function( _Error value)?  error,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial(_that);case _Loading() when loading != null:
 return loading(_that);case _Loaded() when loaded != null:
-return loaded(_that);case _Saved() when saved != null:
+return loaded(_that);case _EntriesLoaded() when entriesLoaded != null:
+return entriesLoaded(_that);case _Saved() when saved != null:
 return saved(_that);case _Error() when error != null:
 return error(_that);case _:
   return orElse();
@@ -532,13 +694,14 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Initial value)  initial,required TResult Function( _Loading value)  loading,required TResult Function( _Loaded value)  loaded,required TResult Function( _Saved value)  saved,required TResult Function( _Error value)  error,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _Initial value)  initial,required TResult Function( _Loading value)  loading,required TResult Function( _Loaded value)  loaded,required TResult Function( _EntriesLoaded value)  entriesLoaded,required TResult Function( _Saved value)  saved,required TResult Function( _Error value)  error,}){
 final _that = this;
 switch (_that) {
 case _Initial():
 return initial(_that);case _Loading():
 return loading(_that);case _Loaded():
-return loaded(_that);case _Saved():
+return loaded(_that);case _EntriesLoaded():
+return entriesLoaded(_that);case _Saved():
 return saved(_that);case _Error():
 return error(_that);case _:
   throw StateError('Unexpected subclass');
@@ -557,13 +720,14 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Initial value)?  initial,TResult? Function( _Loading value)?  loading,TResult? Function( _Loaded value)?  loaded,TResult? Function( _Saved value)?  saved,TResult? Function( _Error value)?  error,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _Initial value)?  initial,TResult? Function( _Loading value)?  loading,TResult? Function( _Loaded value)?  loaded,TResult? Function( _EntriesLoaded value)?  entriesLoaded,TResult? Function( _Saved value)?  saved,TResult? Function( _Error value)?  error,}){
 final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial(_that);case _Loading() when loading != null:
 return loading(_that);case _Loaded() when loaded != null:
-return loaded(_that);case _Saved() when saved != null:
+return loaded(_that);case _EntriesLoaded() when entriesLoaded != null:
+return entriesLoaded(_that);case _Saved() when saved != null:
 return saved(_that);case _Error() when error != null:
 return error(_that);case _:
   return null;
@@ -582,12 +746,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( JournalEntry? entry)?  loaded,TResult Function()?  saved,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( JournalEntry? entry)?  loaded,TResult Function( List<JournalEntry> entries,  List<DailyTrackerResponse> dailyResponses,  DateTime date)?  entriesLoaded,TResult Function()?  saved,TResult Function( String message)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _Loading() when loading != null:
 return loading();case _Loaded() when loaded != null:
-return loaded(_that.entry);case _Saved() when saved != null:
+return loaded(_that.entry);case _EntriesLoaded() when entriesLoaded != null:
+return entriesLoaded(_that.entries,_that.dailyResponses,_that.date);case _Saved() when saved != null:
 return saved();case _Error() when error != null:
 return error(_that.message);case _:
   return orElse();
@@ -607,12 +772,13 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( JournalEntry? entry)  loaded,required TResult Function()  saved,required TResult Function( String message)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( JournalEntry? entry)  loaded,required TResult Function( List<JournalEntry> entries,  List<DailyTrackerResponse> dailyResponses,  DateTime date)  entriesLoaded,required TResult Function()  saved,required TResult Function( String message)  error,}) {final _that = this;
 switch (_that) {
 case _Initial():
 return initial();case _Loading():
 return loading();case _Loaded():
-return loaded(_that.entry);case _Saved():
+return loaded(_that.entry);case _EntriesLoaded():
+return entriesLoaded(_that.entries,_that.dailyResponses,_that.date);case _Saved():
 return saved();case _Error():
 return error(_that.message);case _:
   throw StateError('Unexpected subclass');
@@ -631,12 +797,13 @@ return error(_that.message);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( JournalEntry? entry)?  loaded,TResult? Function()?  saved,TResult? Function( String message)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( JournalEntry? entry)?  loaded,TResult? Function( List<JournalEntry> entries,  List<DailyTrackerResponse> dailyResponses,  DateTime date)?  entriesLoaded,TResult? Function()?  saved,TResult? Function( String message)?  error,}) {final _that = this;
 switch (_that) {
 case _Initial() when initial != null:
 return initial();case _Loading() when loading != null:
 return loading();case _Loaded() when loaded != null:
-return loaded(_that.entry);case _Saved() when saved != null:
+return loaded(_that.entry);case _EntriesLoaded() when entriesLoaded != null:
+return entriesLoaded(_that.entries,_that.dailyResponses,_that.date);case _Saved() when saved != null:
 return saved();case _Error() when error != null:
 return error(_that.message);case _:
   return null;
@@ -786,6 +953,88 @@ $JournalEntryCopyWith<$Res>? get entry {
     return _then(_self.copyWith(entry: value));
   });
 }
+}
+
+/// @nodoc
+
+
+class _EntriesLoaded implements JournalEntryState {
+  const _EntriesLoaded({required final  List<JournalEntry> entries, required final  List<DailyTrackerResponse> dailyResponses, required this.date}): _entries = entries,_dailyResponses = dailyResponses;
+  
+
+ final  List<JournalEntry> _entries;
+ List<JournalEntry> get entries {
+  if (_entries is EqualUnmodifiableListView) return _entries;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_entries);
+}
+
+ final  List<DailyTrackerResponse> _dailyResponses;
+ List<DailyTrackerResponse> get dailyResponses {
+  if (_dailyResponses is EqualUnmodifiableListView) return _dailyResponses;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_dailyResponses);
+}
+
+ final  DateTime date;
+
+/// Create a copy of JournalEntryState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$EntriesLoadedCopyWith<_EntriesLoaded> get copyWith => __$EntriesLoadedCopyWithImpl<_EntriesLoaded>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EntriesLoaded&&const DeepCollectionEquality().equals(other._entries, _entries)&&const DeepCollectionEquality().equals(other._dailyResponses, _dailyResponses)&&(identical(other.date, date) || other.date == date));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_entries),const DeepCollectionEquality().hash(_dailyResponses),date);
+
+@override
+String toString() {
+  return 'JournalEntryState.entriesLoaded(entries: $entries, dailyResponses: $dailyResponses, date: $date)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$EntriesLoadedCopyWith<$Res> implements $JournalEntryStateCopyWith<$Res> {
+  factory _$EntriesLoadedCopyWith(_EntriesLoaded value, $Res Function(_EntriesLoaded) _then) = __$EntriesLoadedCopyWithImpl;
+@useResult
+$Res call({
+ List<JournalEntry> entries, List<DailyTrackerResponse> dailyResponses, DateTime date
+});
+
+
+
+
+}
+/// @nodoc
+class __$EntriesLoadedCopyWithImpl<$Res>
+    implements _$EntriesLoadedCopyWith<$Res> {
+  __$EntriesLoadedCopyWithImpl(this._self, this._then);
+
+  final _EntriesLoaded _self;
+  final $Res Function(_EntriesLoaded) _then;
+
+/// Create a copy of JournalEntryState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? entries = null,Object? dailyResponses = null,Object? date = null,}) {
+  return _then(_EntriesLoaded(
+entries: null == entries ? _self._entries : entries // ignore: cast_nullable_to_non_nullable
+as List<JournalEntry>,dailyResponses: null == dailyResponses ? _self._dailyResponses : dailyResponses // ignore: cast_nullable_to_non_nullable
+as List<DailyTrackerResponse>,date: null == date ? _self.date : date // ignore: cast_nullable_to_non_nullable
+as DateTime,
+  ));
+}
+
+
 }
 
 /// @nodoc

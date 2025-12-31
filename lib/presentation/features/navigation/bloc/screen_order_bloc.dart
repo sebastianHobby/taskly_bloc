@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 
 @immutable
 abstract class ScreenOrderEvent {
@@ -57,7 +59,7 @@ class ScreenOrderState {
 }
 
 class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
-  ScreenOrderBloc({required ScreenDefinitionsRepository screensRepository})
+  ScreenOrderBloc({required ScreenDefinitionsRepositoryContract screensRepository})
     : _screensRepository = screensRepository,
       super(const ScreenOrderState.loading()) {
     on<ScreenOrderStarted>(_onStarted);
@@ -65,7 +67,7 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     on<ScreenOrderReordered>(_onReordered);
   }
 
-  final ScreenDefinitionsRepository _screensRepository;
+  final ScreenDefinitionsRepositoryContract _screensRepository;
   StreamSubscription<List<ScreenDefinition>>? _sub;
 
   Future<void> _onStarted(
@@ -75,9 +77,10 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     await _sub?.cancel();
     _sub = _screensRepository.watchAllScreens().listen(
       (screens) => add(ScreenOrderScreensChanged(screens)),
-      onError: (Object error, StackTrace _) => emit(
-        ScreenOrderState.failure(error.toString()),
-      ),
+      onError: (Object error, StackTrace stack) {
+        talker.handle(error, stack, 'Failed to watch screens for ordering');
+        emit(ScreenOrderState.failure(friendlyErrorMessage(error)));
+      },
     );
   }
 
@@ -110,8 +113,9 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     try {
       final orderedIds = current.map((s) => s.id).toList(growable: false);
       await _screensRepository.reorderScreens(orderedIds);
-    } catch (e) {
-      emit(ScreenOrderState.failure(e.toString()));
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to reorder screens');
+      emit(ScreenOrderState.failure(friendlyErrorMessage(e)));
     }
   }
 

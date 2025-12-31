@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 /// Settings screen for global app configuration.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({required this.settingsRepository, super.key});
+
+  final SettingsRepositoryContract settingsRepository;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final SettingsRepositoryContract _settingsRepo =
-      getIt<SettingsRepositoryContract>();
+  SettingsRepositoryContract get _settingsRepo => widget.settingsRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -31,30 +34,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           final settings = snapshot.data!;
 
-          return ListView(
-            children: [
-              _buildSection(
-                title: 'Appearance',
-                children: [
-                  _buildThemeModeSelector(settings),
-                  _buildColorPicker(settings),
-                  _buildTextSizeSlider(settings),
-                ],
-              ),
-              _buildSection(
-                title: 'Language & Region',
-                children: [
-                  _buildLanguageSelector(settings),
-                  _buildDateFormatSelector(settings),
-                ],
-              ),
-              _buildSection(
-                title: 'Advanced',
-                children: [
-                  _buildResetButton(),
-                ],
-              ),
-            ],
+          return ResponsiveBody(
+            child: ListView(
+              children: [
+                _buildSection(
+                  title: 'Appearance',
+                  children: [
+                    _buildThemeModeSelector(settings),
+                    _buildColorPicker(settings),
+                    _buildTextSizeSlider(settings),
+                  ],
+                ),
+                _buildSection(
+                  title: 'Language & Region',
+                  children: [
+                    _buildLanguageSelector(settings),
+                    _buildDateFormatSelector(settings),
+                  ],
+                ),
+                _buildSection(
+                  title: 'Advanced',
+                  children: [
+                    _buildResetButton(),
+                  ],
+                ),
+                _buildSection(
+                  title: 'Developer',
+                  children: [
+                    _buildViewLogsItem(),
+                  ],
+                ),
+              ],
+            ),
           );
         },
       ),
@@ -87,23 +98,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       title: const Text('Theme Mode'),
       subtitle: const Text('Choose between light, dark, or system theme'),
-      trailing: SegmentedButton<ThemeMode>(
+      trailing: SegmentedButton<AppThemeMode>(
         segments: const [
           ButtonSegment(
-            value: ThemeMode.light,
+            value: AppThemeMode.light,
             icon: Icon(Icons.light_mode, size: 16),
           ),
           ButtonSegment(
-            value: ThemeMode.dark,
+            value: AppThemeMode.dark,
             icon: Icon(Icons.dark_mode, size: 16),
           ),
           ButtonSegment(
-            value: ThemeMode.system,
+            value: AppThemeMode.system,
             icon: Icon(Icons.brightness_auto, size: 16),
           ),
         ],
         selected: {settings.themeMode},
-        onSelectionChanged: (Set<ThemeMode> newSelection) async {
+        onSelectionChanged: (Set<AppThemeMode> newSelection) async {
           final updated = settings.copyWith(themeMode: newSelection.first);
           await _settingsRepo.saveGlobalSettings(updated);
         },
@@ -115,9 +126,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ColorPickerField(
-        color: settings.colorSchemeSeed,
+        color: Color(settings.colorSchemeSeedArgb),
         onColorChanged: (color) async {
-          final updated = settings.copyWith(colorSchemeSeed: color);
+          final updated = settings.copyWith(colorSchemeSeedArgb: color.value);
           await _settingsRepo.saveGlobalSettings(updated);
         },
         label: 'Theme Color',
@@ -151,23 +162,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return ListTile(
       title: const Text('Language'),
       subtitle: const Text('Select your preferred language'),
-      trailing: DropdownButton<Locale?>(
-        value: settings.locale,
+      trailing: DropdownButton<String?>(
+        value: settings.localeCode,
         items: const [
           DropdownMenuItem(
             child: Text('System'),
           ),
           DropdownMenuItem(
-            value: Locale('en'),
+            value: 'en',
             child: Text('English'),
           ),
           DropdownMenuItem(
-            value: Locale('es'),
+            value: 'es',
             child: Text('Español'),
           ),
         ],
-        onChanged: (locale) async {
-          final updated = settings.copyWith(locale: locale);
+        onChanged: (localeCode) async {
+          final updated = settings.copyWith(localeCode: localeCode);
           await _settingsRepo.saveGlobalSettings(updated);
         },
       ),
@@ -214,6 +225,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           foregroundColor: Theme.of(context).colorScheme.error,
         ),
       ),
+    );
+  }
+
+  Widget _buildViewLogsItem() {
+    return ListTile(
+      leading: const Icon(Icons.bug_report_outlined),
+      title: const Text('View App Logs'),
+      subtitle: const Text('View and share app logs for debugging'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TalkerScreen(talker: talker),
+          ),
+        );
+      },
     );
   }
 

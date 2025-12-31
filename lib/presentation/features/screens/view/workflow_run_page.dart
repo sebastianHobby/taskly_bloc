@@ -5,16 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
-import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/workflow_run/workflow_run_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/workflow_progress_bar.dart';
@@ -44,7 +44,8 @@ class WorkflowRunPage extends StatelessWidget {
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
   final SettingsRepositoryContract settingsRepository;
-  final ProblemAcknowledgmentsRepository problemAcknowledgmentsRepository;
+  final ProblemAcknowledgmentsRepositoryContract
+  problemAcknowledgmentsRepository;
   final ScreenQueryBuilder queryBuilder;
   final SupportBlockComputer supportBlockComputer;
   final ProblemDetector problemDetector;
@@ -323,7 +324,7 @@ class WorkflowRunView extends StatelessWidget {
 
     final bloc = context.read<WorkflowRunBloc>();
 
-    // TODO: Show notes input dialog if needed
+    // Note: Notes can be added via task detail screen
     bloc.add(
       WorkflowRunEvent.itemMarkedReviewed(
         entityId: state.currentItem!.entityId,

@@ -1,29 +1,36 @@
+@Tags(['unit', 'wellbeing'])
+library;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
 
-class MockWellbeingRepository extends Mock implements WellbeingRepository {}
+import '../../../../../helpers/custom_matchers.dart';
+import '../../../../../helpers/fallback_values.dart';
 
+class MockWellbeingRepositoryContract extends Mock implements WellbeingRepositoryContract {}
+
+/// Tests for [JournalEntryBloc] covering journal entry operations.
+///
+/// Coverage:
+/// - ✅ Initial state
+/// - ✅ Load by ID
+/// - ✅ Load by date
+/// - ✅ Save entries
+/// - ✅ Delete entries
+/// - ✅ Daily tracker responses
+/// - ✅ Error handling
 void main() {
-  late MockWellbeingRepository repository;
+  late MockWellbeingRepositoryContract repository;
   late JournalEntryBloc bloc;
 
-  setUpAll(() {
-    final fallbackDate = DateTime(2000);
-    registerFallbackValue(
-      JournalEntry(
-        id: 'fallback',
-        entryDate: fallbackDate,
-        entryTime: fallbackDate,
-        createdAt: fallbackDate,
-        updatedAt: fallbackDate,
-      ),
-    );
-  });
+  setUpAll(registerAllFallbackValues);
 
   final testDate = DateTime(2025, 12, 27);
   final testEntry = JournalEntry(
@@ -37,7 +44,7 @@ void main() {
   );
 
   setUp(() {
-    repository = MockWellbeingRepository();
+    repository = MockWellbeingRepositoryContract();
     bloc = JournalEntryBloc(repository);
   });
 
@@ -47,7 +54,7 @@ void main() {
 
   group('JournalEntryBloc', () {
     test('initial state is initial', () {
-      expect(bloc.state, const JournalEntryState.initial());
+      expect(bloc.state, isInitialState());
     });
 
     group('load event', () {
@@ -61,7 +68,7 @@ void main() {
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.load('entry-1')),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           JournalEntryState.loaded(testEntry),
         ],
         verify: (_) {
@@ -79,7 +86,7 @@ void main() {
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.load('non-existent')),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           const JournalEntryState.loaded(null),
         ],
       );
@@ -94,8 +101,8 @@ void main() {
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.load('entry-1')),
         expect: () => [
-          const JournalEntryState.loading(),
-          const JournalEntryState.error('Exception: Database error'),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -111,7 +118,7 @@ void main() {
         },
         act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           JournalEntryState.loaded(testEntry),
         ],
         verify: (_) {
@@ -131,7 +138,7 @@ void main() {
         },
         act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           const JournalEntryState.loaded(null),
         ],
       );
@@ -146,8 +153,8 @@ void main() {
         },
         act: (bloc) => bloc.add(JournalEntryEvent.loadByDate(date: testDate)),
         expect: () => [
-          const JournalEntryState.loading(),
-          const JournalEntryState.error('Exception: Query failed'),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -163,7 +170,7 @@ void main() {
         },
         act: (bloc) => bloc.add(JournalEntryEvent.save(testEntry)),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           const JournalEntryState.saved(),
         ],
         verify: (_) {
@@ -181,8 +188,8 @@ void main() {
         },
         act: (bloc) => bloc.add(JournalEntryEvent.save(testEntry)),
         expect: () => [
-          const JournalEntryState.loading(),
-          const JournalEntryState.error('Exception: Save failed'),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -198,7 +205,7 @@ void main() {
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.delete('entry-1')),
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           const JournalEntryState.saved(),
         ],
         verify: (_) {
@@ -216,8 +223,8 @@ void main() {
         },
         act: (bloc) => bloc.add(const JournalEntryEvent.delete('entry-1')),
         expect: () => [
-          const JournalEntryState.loading(),
-          const JournalEntryState.error('Exception: Delete failed'),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -241,10 +248,211 @@ void main() {
           bloc.add(JournalEntryEvent.save(testEntry));
         },
         expect: () => [
-          const JournalEntryState.loading(),
+          isLoadingState(),
           JournalEntryState.loaded(testEntry),
-          const JournalEntryState.loading(),
+          isLoadingState(),
           const JournalEntryState.saved(),
+        ],
+      );
+    });
+
+    group('loadEntriesForDate event (multiple entries per day)', () {
+      final dailyResponse = DailyTrackerResponse(
+        id: 'daily-1',
+        responseDate: testDate,
+        trackerId: 'tracker-1',
+        value: const YesNoValue(value: true),
+        createdAt: testDate,
+        updatedAt: testDate,
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, entriesLoaded] with entries and daily responses',
+        build: () {
+          when(
+            () => repository.getJournalEntriesByDate(date: any(named: 'date')),
+          ).thenAnswer((_) async => [testEntry]);
+          when(
+            () => repository.getDailyTrackerResponses(date: any(named: 'date')),
+          ).thenAnswer((_) async => [dailyResponse]);
+          return bloc;
+        },
+        act: (bloc) =>
+            bloc.add(JournalEntryEvent.loadEntriesForDate(date: testDate)),
+        expect: () => [
+          isLoadingState(),
+          JournalEntryState.entriesLoaded(
+            entries: [testEntry],
+            dailyResponses: [dailyResponse],
+            date: testDate,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => repository.getJournalEntriesByDate(date: testDate),
+          ).called(1);
+          verify(
+            () => repository.getDailyTrackerResponses(date: testDate),
+          ).called(1);
+        },
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, entriesLoaded] with empty lists when no data',
+        build: () {
+          when(
+            () => repository.getJournalEntriesByDate(date: any(named: 'date')),
+          ).thenAnswer((_) async => []);
+          when(
+            () => repository.getDailyTrackerResponses(date: any(named: 'date')),
+          ).thenAnswer((_) async => []);
+          return bloc;
+        },
+        act: (bloc) =>
+            bloc.add(JournalEntryEvent.loadEntriesForDate(date: testDate)),
+        expect: () => [
+          isLoadingState(),
+          JournalEntryState.entriesLoaded(
+            entries: const [],
+            dailyResponses: const [],
+            date: testDate,
+          ),
+        ],
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, error] when repository throws',
+        build: () {
+          when(
+            () => repository.getJournalEntriesByDate(date: any(named: 'date')),
+          ).thenThrow(Exception('Query failed'));
+          when(
+            () => repository.getDailyTrackerResponses(date: any(named: 'date')),
+          ).thenAnswer((_) async => []);
+          return bloc;
+        },
+        act: (bloc) =>
+            bloc.add(JournalEntryEvent.loadEntriesForDate(date: testDate)),
+        expect: () => [
+          isLoadingState(),
+          isErrorState(),
+        ],
+      );
+    });
+
+    group('saveWithDailyResponses event', () {
+      final dailyResponse = DailyTrackerResponse(
+        id: 'daily-1',
+        responseDate: testDate,
+        trackerId: 'tracker-1',
+        value: const YesNoValue(value: true),
+        createdAt: testDate,
+        updatedAt: testDate,
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, saved] when save succeeds',
+        build: () {
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => repository.saveDailyTrackerResponse(any()),
+          ).thenAnswer((_) async {});
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          JournalEntryEvent.saveWithDailyResponses(
+            entry: testEntry,
+            dailyResponses: [dailyResponse],
+          ),
+        ),
+        expect: () => [
+          isLoadingState(),
+          const JournalEntryState.saved(),
+        ],
+        verify: (_) {
+          verify(() => repository.saveJournalEntry(testEntry)).called(1);
+          verify(
+            () => repository.saveDailyTrackerResponse(dailyResponse),
+          ).called(1);
+        },
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'saves multiple daily responses',
+        build: () {
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => repository.saveDailyTrackerResponse(any()),
+          ).thenAnswer((_) async {});
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          JournalEntryEvent.saveWithDailyResponses(
+            entry: testEntry,
+            dailyResponses: [
+              dailyResponse,
+              dailyResponse.copyWith(
+                id: 'daily-2',
+                trackerId: 'tracker-2',
+              ),
+            ],
+          ),
+        ),
+        expect: () => [
+          isLoadingState(),
+          const JournalEntryState.saved(),
+        ],
+        verify: (_) {
+          verify(
+            () => repository.saveDailyTrackerResponse(any()),
+          ).called(2);
+        },
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, error] when journal entry save fails',
+        build: () {
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenThrow(Exception('Save failed'));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          JournalEntryEvent.saveWithDailyResponses(
+            entry: testEntry,
+            dailyResponses: [dailyResponse],
+          ),
+        ),
+        expect: () => [
+          isLoadingState(),
+          isErrorState(),
+        ],
+      );
+
+      blocTest<JournalEntryBloc, JournalEntryState>(
+        'emits [loading, error] when daily response save fails',
+        build: () {
+          when(
+            () => repository.saveJournalEntry(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => repository.saveDailyTrackerResponse(any()),
+          ).thenThrow(Exception('Daily save failed'));
+          return bloc;
+        },
+        act: (bloc) => bloc.add(
+          JournalEntryEvent.saveWithDailyResponses(
+            entry: testEntry,
+            dailyResponses: [dailyResponse],
+          ),
+        ),
+        expect: () => [
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });

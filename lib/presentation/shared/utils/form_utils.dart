@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// Shows a dialog asking the user to confirm discarding unsaved changes.
 ///

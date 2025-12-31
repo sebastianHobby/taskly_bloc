@@ -1,117 +1,99 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
-
-/// BLoC observer that logs all BLoC lifecycle events and errors.
-class AppBlocObserver extends BlocObserver {
-  const AppBlocObserver();
-
-  static final _logger = AppLogger('bloc.observer');
-
-  @override
-  void onCreate(BlocBase<dynamic> bloc) {
-    super.onCreate(bloc);
-    _logger.debug('onCreate: ${bloc.runtimeType}');
-  }
-
-  @override
-  void onChange(BlocBase<dynamic> bloc, Change<dynamic> change) {
-    super.onChange(bloc, change);
-    if (kDebugMode) {
-      _logger.trace('onChange: ${bloc.runtimeType} - $change');
-    }
-  }
-
-  @override
-  void onEvent(Bloc bloc, Object? event) {
-    super.onEvent(bloc, event);
-    _logger.debug('onEvent: ${bloc.runtimeType} - $event');
-  }
-
-  @override
-  void onClose(BlocBase<dynamic> bloc) {
-    _logger.debug('onClose: ${bloc.runtimeType}');
-    super.onClose(bloc);
-  }
-
-  @override
-  void onError(BlocBase<dynamic> bloc, Object error, StackTrace stackTrace) {
-    _logger.error(
-      'BLoC Error in ${bloc.runtimeType}',
-      error,
-      stackTrace,
-    );
-    super.onError(bloc, error, stackTrace);
-  }
-}
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
-  // Initialize logging system
-  AppLogger.initialize(
-    minimumLevel: kDebugMode ? LogLevel.debug : LogLevel.info,
+  // Initialize Talker logging system first (outside zone so it's always available)
+  // Note: File logging observer defers initialization until first log to ensure bindings ready
+  initializeTalker();
+
+  // Wrap everything in runZonedGuarded to catch uncaught async errors
+  // ignore: unawaited_futures
+  runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Trigger the file observer initialization now that bindings are ready
+      talker.info('Bootstrap: Bindings initialized, logging ready');
+
+      // Capture Flutter framework errors (widget build failures, layout errors)
+      FlutterError.onError = (details) {
+        talker.handle(
+          details.exception,
+          details.stack,
+          'Flutter framework error: ${details.exceptionAsString()}',
+        );
+      };
+
+      // Capture errors outside of Flutter that escape the zone
+      PlatformDispatcher.instance.onError = (error, stack) {
+        talker.handle(error, stack, 'Uncaught platform error');
+        return true;
+      };
+
+      // Use TalkerBlocObserver for unified BLoC logging
+      Bloc.observer = TalkerBlocObserver(
+        talker: talker,
+        settings: TalkerBlocLoggerSettings(
+          printCreations: true,
+          printClosings: true,
+          printTransitions: false, // Reduce noise, events are sufficient
+          printChanges: kDebugMode,
+          printEventFullData: false, // Truncate for cleaner logs
+          printStateFullData: false,
+        ),
+      );
+
+      talker.info('Initializing dependencies...');
+      await setupDependencies();
+      talker.info('Dependencies initialized successfully');
+
+      await _maybeDevAutoLogin();
+
+      // Add cross-flavor configuration here
+
+      talker.info('Starting application...');
+      talker.debug('>>> bootstrap: calling runApp()...');
+      runApp(await builder());
+      talker.debug('<<< bootstrap: runApp() returned');
+    },
+    // Zone error handler - catches any async errors that escape try/catch blocks
+    (error, stack) {
+      talker.handle(error, stack, 'Uncaught zone error');
+    },
   );
-
-  final logger = AppLogger('app.bootstrap');
-
-  // Capture Flutter framework errors
-  FlutterError.onError = (details) {
-    logger.error(
-      'Flutter framework error',
-      details.exception,
-      details.stack,
-    );
-  };
-
-  // Capture errors outside of Flutter (async errors)
-  PlatformDispatcher.instance.onError = (error, stack) {
-    logger.critical('Uncaught platform error', error, stack);
-    return true;
-  };
-
-  Bloc.observer = const AppBlocObserver();
-
-  logger.info('Initializing dependencies...');
-  await setupDependencies();
-  logger.info('Dependencies initialized successfully');
-
-  await _maybeDevAutoLogin();
-
-  // Add cross-flavor configuration here
-
-  logger.info('Starting application...');
-  runApp(await builder());
 }
 
 Future<void> _maybeDevAutoLogin() async {
   if (!kDebugMode) return;
 
-  final logger = AppLogger('app.dev_auth');
   final supabase = Supabase.instance.client;
 
   if (supabase.auth.currentSession != null) {
-    logger.debug('Already authenticated, skipping dev auto-login');
+    talker.debug('[auth] Already authenticated, skipping dev auto-login');
     return;
   }
 
   if (Env.devUsername.isEmpty || Env.devPassword.isEmpty) {
-    logger.debug('Dev credentials not configured, skipping auto-login');
+    talker.debug('[auth] Dev credentials not configured, skipping auto-login');
     return;
   }
 
   try {
-    logger.info('Attempting dev auto-login...');
+    talker.info('[auth] Attempting dev auto-login...');
     await supabase.auth.signInWithPassword(
       email: Env.devUsername,
       password: Env.devPassword,
     );
-    logger.info('Dev auto-login successful');
+    talker.info('[auth] Dev auto-login successful');
   } catch (error, stackTrace) {
-    logger.warning('Dev auto-login failed', error, stackTrace);
+    talker.handle(error, stackTrace, 'Dev auto-login failed');
   }
 }

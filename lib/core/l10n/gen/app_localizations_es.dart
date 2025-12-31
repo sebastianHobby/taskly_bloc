@@ -464,4 +464,190 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get markIncompleteAction => 'Marcar como incompleto';
+
+  @override
+  String get settings => 'Configuración';
+
+  @override
+  String get retry => 'Reintentar';
+
+  @override
+  String get noTasksToFocusOn => 'No hay tareas en las que enfocarse';
+
+  @override
+  String get pinnedTasksSection => 'Tareas Fijadas';
+
+  @override
+  String get unpinTask => 'Desfijar tarea';
+
+  @override
+  String get pinTask => 'Fijar tarea';
+
+  @override
+  String excludedUrgentTasksWarning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas urgentes excluidas',
+      one: '1 tarea urgente excluida',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reviewExcludedTasks => 'Revisar';
+
+  @override
+  String get dismissWarning => 'Descartar';
+
+  @override
+  String get recurrenceRepeatTitle => 'Repetir';
+
+  @override
+  String get recurrenceNever => 'Nunca';
+
+  @override
+  String get recurrenceDaily => 'Diario';
+
+  @override
+  String get recurrenceWeekly => 'Semanal';
+
+  @override
+  String get recurrenceMonthly => 'Mensual';
+
+  @override
+  String get recurrenceYearly => 'Anual';
+
+  @override
+  String get recurrenceEvery => 'Cada';
+
+  @override
+  String get recurrenceOnDays => 'En los días';
+
+  @override
+  String get recurrenceEnds => 'Termina';
+
+  @override
+  String get recurrenceAfter => 'Después de';
+
+  @override
+  String get recurrenceTimesLabel => 'veces';
+
+  @override
+  String get recurrenceOn => 'El';
+
+  @override
+  String get recurrenceSelectDate => 'Seleccionar fecha';
+
+  @override
+  String get recurrenceDoesNotRepeat => 'No se repite';
+
+  @override
+  String get validationRequired => 'Requerido';
+
+  @override
+  String get validationInvalid => 'Inválido';
+
+  @override
+  String get validationMustBeGreaterThanZero => 'Debe ser > 0';
+
+  @override
+  String validationMaxValue(int max) {
+    return 'Máx $max';
+  }
+
+  @override
+  String get doneButton => 'Listo';
+
+  @override
+  String get settingsTitle => 'Configuración';
+
+  @override
+  String get settingsAppearanceSection => 'Apariencia';
+
+  @override
+  String get settingsLanguageRegionSection => 'Idioma y región';
+
+  @override
+  String get settingsAdvancedSection => 'Avanzado';
+
+  @override
+  String get settingsThemeMode => 'Modo de tema';
+
+  @override
+  String get settingsThemeModeSubtitle => 'Elige entre tema claro, oscuro o del sistema';
+
+  @override
+  String get settingsTextSize => 'Tamaño del texto';
+
+  @override
+  String get settingsLanguage => 'Idioma';
+
+  @override
+  String get settingsLanguageSubtitle => 'Selecciona tu idioma preferido';
+
+  @override
+  String get settingsLanguageSystem => 'Sistema';
+
+  @override
+  String get settingsDateFormat => 'Formato de fecha';
+
+  @override
+  String get settingsDateFormatShort => 'Corto';
+
+  @override
+  String get settingsDateFormatMedium => 'Medio';
+
+  @override
+  String get settingsDateFormatLong => 'Largo';
+
+  @override
+  String get settingsDateFormatFull => 'Completo';
+
+  @override
+  String get settingsDateFormatCustom => 'Personalizado';
+
+  @override
+  String settingsDateFormatExample(String example) {
+    return 'Ejemplo: $example';
+  }
+
+  @override
+  String get settingsResetToDefaults => 'Restablecer valores predeterminados';
+
+  @override
+  String get settingsResetTitle => 'Restablecer configuración';
+
+  @override
+  String get settingsResetConfirmation => '¿Estás seguro de que quieres restablecer toda la configuración a sus valores predeterminados?';
+
+  @override
+  String get settingsResetSuccess => 'Configuración restablecida a valores predeterminados';
+
+  @override
+  String get resetButton => 'Restablecer';
+
+  @override
+  String get sortFieldCreatedDate => 'Fecha de creación';
+
+  @override
+  String get sortFieldUpdatedDate => 'Fecha de actualización';
+
+  @override
+  String get sortFieldNextActionPriority => 'Prioridad de próxima acción';
+
+  @override
+  String get sortOrderHelp => 'Elige cómo ordenar los elementos';
+
+  @override
+  String get saveButton => 'Guardar';
+
+  @override
+  String get discardButton => 'Descartar';
+
+  @override
+  String get unsavedChangesTitle => 'Cambios sin guardar';
+
+  @override
+  String get confirmButton => 'Confirmar';
 }

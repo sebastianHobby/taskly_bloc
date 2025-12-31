@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 
 import '../mocks/feature_mocks.dart';
 import '../mocks/repository_mocks.dart';
@@ -67,28 +69,99 @@ Future<T?> waitForStreamMatch<T>(
   }
 }
 
+/// Expects a stream to emit a value matching the given matcher.
+///
+/// Returns the emitted value for further assertions.
+///
+/// Usage:
+/// ```dart
+/// final state = await expectStreamEmits(
+///   bloc.stream,
+///   isA<SuccessState>(),
+/// );
+/// expect(state.data, isNotNull);
+/// ```
+Future<T> expectStreamEmits<T>(
+  Stream<T> stream,
+  Matcher matcher, {
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final value = await stream.first.timeout(timeout);
+  expect(value, matcher);
+  return value;
+}
+
+/// Expects a stream to emit values matching the given matchers in order.
+///
+/// Usage:
+/// ```dart
+/// await expectStreamEmitsInOrder(
+///   bloc.stream,
+///   [isLoadingState(), isSuccessState()],
+/// );
+/// ```
+Future<void> expectStreamEmitsInOrder<T>(
+  Stream<T> stream,
+  List<Matcher> matchers, {
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final values = await waitForStreamEmissions(
+    stream,
+    count: matchers.length,
+    timeout: timeout,
+  );
+
+  for (var i = 0; i < matchers.length; i++) {
+    expect(
+      values[i],
+      matchers[i],
+      reason: 'Emission $i did not match expected pattern',
+    );
+  }
+}
+
+/// Expects a stream to complete without emitting any values.
+///
+/// Usage:
+/// ```dart
+/// await expectStreamEmpty(emptyStream);
+/// ```
+Future<void> expectStreamEmpty<T>(
+  Stream<T> stream, {
+  Duration timeout = const Duration(milliseconds: 500),
+}) async {
+  try {
+    await stream.first.timeout(timeout);
+    fail('Expected empty stream, but it emitted a value');
+  } on TimeoutException {
+    // Success - stream didn't emit
+  } on StateError {
+    // Success - stream completed without emitting
+  }
+}
+
 /// Helper class for setting up BLoC tests with common dependencies.
 ///
 /// Reduces boilerplate in BLoC tests by providing pre-configured mocks
 /// and default stub behaviors.
 class BlocTestContext {
   BlocTestContext() {
-    taskRepo = MockTaskRepository();
-    projectRepo = MockProjectRepository();
-    labelRepo = MockLabelRepository();
-    settingsRepo = MockSettingsRepository();
-    analyticsRepo = MockAnalyticsRepository();
-    wellbeingRepo = MockWellbeingRepository();
+    taskRepo = MockTaskRepositoryContract();
+    projectRepo = MockProjectRepositoryContract();
+    labelRepo = MockLabelRepositoryContract();
+    settingsRepo = MockSettingsRepositoryContract();
+    analyticsRepo = MockAnalyticsRepositoryContract();
+    wellbeingRepo = MockWellbeingRepositoryContract();
 
     // Default stubs for common repository calls
     _stubDefaultBehaviors();
   }
-  late MockTaskRepository taskRepo;
-  late MockProjectRepository projectRepo;
-  late MockLabelRepository labelRepo;
-  late MockSettingsRepository settingsRepo;
-  late MockAnalyticsRepository analyticsRepo;
-  late MockWellbeingRepository wellbeingRepo;
+  late MockTaskRepositoryContract taskRepo;
+  late MockProjectRepositoryContract projectRepo;
+  late MockLabelRepositoryContract labelRepo;
+  late MockSettingsRepositoryContract settingsRepo;
+  late MockAnalyticsRepositoryContract analyticsRepo;
+  late MockWellbeingRepositoryContract wellbeingRepo;
 
   void _stubDefaultBehaviors() {
     // Empty lists for get operations
@@ -223,5 +296,106 @@ class WellbeingBlocTestContext extends BlocTestContext {
 class ReviewsBlocTestContext extends BlocTestContext {
   ReviewsBlocTestContext() : super() {
     // Add reviews-specific default stubs if needed
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BlocTestContext Extensions
+// ──────────────────────────────────────────────────────────────────────────────
+
+/// Extension methods for BlocTestContext to reduce boilerplate.
+extension BlocTestContextExtensions on BlocTestContext {
+  /// Stub all repositories to return empty responses.
+  ///
+  /// Useful for tests that don't care about data, only behavior.
+  void stubAllEmpty() {
+    when(() => taskRepo.watchAll()).thenAnswer((_) => Stream.value([]));
+    when(() => projectRepo.watchAll()).thenAnswer((_) => Stream.value([]));
+    when(() => projectRepo.getAll()).thenAnswer((_) async => []);
+    when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+  }
+
+  /// Stub all repositories to throw the specified error.
+  ///
+  /// Useful for testing error handling scenarios.
+  void stubAllThrow(Exception error) {
+    when(() => taskRepo.watchAll()).thenThrow(error);
+    when(() => projectRepo.watchAll()).thenThrow(error);
+    when(() => projectRepo.getAll()).thenThrow(error);
+    when(() => labelRepo.getAll()).thenThrow(error);
+  }
+
+  /// Verify no unexpected repository calls were made.
+  ///
+  /// Call this at the end of tests to ensure the test only made
+  /// expected repository calls.
+  void verifyNoMoreRepoInteractions() {
+    verifyNoMoreInteractions(taskRepo);
+    verifyNoMoreInteractions(projectRepo);
+    verifyNoMoreInteractions(labelRepo);
+  }
+
+  /// Stub task repository to return specific tasks.
+  void stubTasksReturn(List<Task> tasks) {
+    when(() => taskRepo.watchAll()).thenAnswer((_) => Stream.value(tasks));
+  }
+
+  /// Stub project repository to return specific projects.
+  void stubProjectsReturn(List<Project> projects) {
+    when(
+      () => projectRepo.watchAll(),
+    ).thenAnswer((_) => Stream.value(projects));
+    when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
+  }
+
+  /// Stub label repository to return specific labels.
+  void stubLabelsReturn(List<Label> labels) {
+    when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+  }
+
+  /// Stub a single task by ID.
+  void stubTaskById(String id, Task task) {
+    when(() => taskRepo.getById(id)).thenAnswer((_) async => task);
+    when(() => taskRepo.watchById(id)).thenAnswer((_) => Stream.value(task));
+  }
+
+  /// Stub task creation to succeed.
+  void stubTaskCreateSuccess() {
+    when(
+      () => taskRepo.create(
+        name: any(named: 'name'),
+        description: any(named: 'description'),
+        completed: any(named: 'completed'),
+        startDate: any(named: 'startDate'),
+        deadlineDate: any(named: 'deadlineDate'),
+        projectId: any(named: 'projectId'),
+        repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        labelIds: any(named: 'labelIds'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+
+  /// Stub task update to succeed.
+  void stubTaskUpdateSuccess() {
+    when(
+      () => taskRepo.update(
+        id: any(named: 'id'),
+        name: any(named: 'name'),
+        completed: any(named: 'completed'),
+        description: any(named: 'description'),
+        startDate: any(named: 'startDate'),
+        deadlineDate: any(named: 'deadlineDate'),
+        projectId: any(named: 'projectId'),
+        repeatIcalRrule: any(named: 'repeatIcalRrule'),
+        repeatFromCompletion: any(named: 'repeatFromCompletion'),
+        labelIds: any(named: 'labelIds'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+
+  /// Stub task delete to succeed.
+  void stubTaskDeleteSuccess() {
+    when(() => taskRepo.delete(any())).thenAnswer((_) async {});
   }
 }

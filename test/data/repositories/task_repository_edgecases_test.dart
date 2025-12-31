@@ -14,8 +14,8 @@ void main() {
     db = createTestDb();
     repo = TaskRepository(
       driftDb: db,
-      occurrenceExpander: MockOccurrenceStreamExpander(),
-      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+      occurrenceExpander: MockOccurrenceStreamExpanderContract(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelperContract(),
     );
   });
 

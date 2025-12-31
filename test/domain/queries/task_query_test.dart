@@ -134,24 +134,6 @@ void main() {
       });
     });
 
-    group('nextActions', () {
-      test('creates query with completed=false and project is not null', () {
-        final query = TaskQuery.nextActions();
-
-        expect(query.filter.shared, hasLength(2));
-
-        final completed = query.filter.shared
-            .whereType<TaskBoolPredicate>()
-            .first;
-        expect(completed.operator, BoolOperator.isFalse);
-
-        final project = query.filter.shared
-            .whereType<TaskProjectPredicate>()
-            .first;
-        expect(project.operator, ProjectOperator.isNotNull);
-      });
-    });
-
     group('schedule', () {
       test('creates query with date range and occurrence expansion', () {
         final start = DateTime(2025, 12);

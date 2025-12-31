@@ -1,4 +1,4 @@
-﻿class Constants {
+class Constants {
   Constants._();
 
   static const String tag = 'FMR';

@@ -32,6 +32,9 @@ abstract class AllocationPreference with _$AllocationPreference {
     @Default(0.4) double urgencyInfluence, // For urgency_weighted (0-1)
     @Default(1) int minimumTasksPerCategory, // For minimum_viable
     @Default(3) int topNCategories, // For top_categories
+    @Default(10) int dailyTaskLimit, // Maximum focus tasks per day
+    @Default(true) bool showExcludedUrgentWarning, // Show urgent task warnings
+    @Default(3) int urgencyThresholdDays, // Days before deadline = urgent
   }) = _AllocationPreference;
 
   factory AllocationPreference.fromJson(Map<String, dynamic> json) =>

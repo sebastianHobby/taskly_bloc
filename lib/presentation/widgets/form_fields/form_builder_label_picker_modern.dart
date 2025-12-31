@@ -1,6 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A modern label picker with improved chip design and organization.
@@ -72,11 +73,15 @@ class _FormBuilderLabelPickerModernState
           FormBuilderLabelPickerModern,
           List<String>
         > {
-  List<Label> get _labelTypeLabels =>
-      widget.availableLabels.where((l) => l.type == LabelType.label).toList();
+  /// Returns user-visible labels (excludes system labels like 'pinned')
+  List<Label> get _labelTypeLabels => widget.availableLabels
+      .where((l) => l.type == LabelType.label && l.systemLabelType == null)
+      .toList();
 
-  List<Label> get _labelTypeValues =>
-      widget.availableLabels.where((l) => l.type == LabelType.value).toList();
+  /// Returns user-visible values (excludes system labels)
+  List<Label> get _labelTypeValues => widget.availableLabels
+      .where((l) => l.type == LabelType.value && l.systemLabelType == null)
+      .toList();
 
   List<String> get _selected => List<String>.from(value ?? const <String>[]);
 
@@ -264,10 +269,10 @@ class _FormBuilderLabelPickerModernState
     if (isValue) {
       final emoji = label.iconName?.isNotEmpty ?? false
           ? label.iconName!
-          : 'â¤ï¸';
+          : '❤️';
       icon = Text(
         emoji,
-        style: const TextStyle(fontSize: 14),
+        style: EmojiUtils.emojiTextStyle(fontSize: 14),
       );
     } else {
       icon = Icon(
@@ -462,7 +467,7 @@ class _SelectionDialogState extends State<_SelectionDialog> {
                       secondary: hasEmoji
                           ? Text(
                               item.iconName!,
-                              style: const TextStyle(fontSize: 24),
+                              style: EmojiUtils.emojiTextStyle(fontSize: 24),
                             )
                           : Container(
                               width: 24,

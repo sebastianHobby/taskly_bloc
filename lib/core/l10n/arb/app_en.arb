@@ -621,5 +621,254 @@
     "markIncompleteAction": "Mark incomplete",
     "@markIncompleteAction": {
         "description": "Menu action to mark a project incomplete"
+    },
+    "settings": "Settings",
+    "@settings": {
+        "description": "Settings label"
+    },
+    "retry": "Retry",
+    "@retry": {
+        "description": "Retry action label"
+    },
+    "noTasksToFocusOn": "No tasks to focus on",
+    "@noTasksToFocusOn": {
+        "description": "Empty state message when no tasks are allocated"
+    },
+    "pinnedTasksSection": "Pinned Tasks",
+    "@pinnedTasksSection": {
+        "description": "Section title for pinned tasks"
+    },
+    "unpinTask": "Unpin task",
+    "@unpinTask": {
+        "description": "Action to remove pin from a task"
+    },
+    "pinTask": "Pin task",
+    "@pinTask": {
+        "description": "Action to pin a task to top"
+    },
+    "excludedUrgentTasksWarning": "{count, plural, =1{1 urgent task excluded} other{{count} urgent tasks excluded}}",
+    "@excludedUrgentTasksWarning": {
+        "description": "Warning message for excluded urgent tasks",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "reviewExcludedTasks": "Review",
+    "@reviewExcludedTasks": {
+        "description": "Action to review excluded urgent tasks"
+    },
+    "dismissWarning": "Dismiss",
+    "@dismissWarning": {
+        "description": "Action to dismiss a warning"
+    },
+    "recurrenceRepeatTitle": "Repeat",
+    "@recurrenceRepeatTitle": {
+        "description": "Title for recurrence picker dialog"
+    },
+    "recurrenceNever": "Never",
+    "@recurrenceNever": {
+        "description": "Recurrence option: no repeat"
+    },
+    "recurrenceDaily": "Daily",
+    "@recurrenceDaily": {
+        "description": "Recurrence option: daily"
+    },
+    "recurrenceWeekly": "Weekly",
+    "@recurrenceWeekly": {
+        "description": "Recurrence option: weekly"
+    },
+    "recurrenceMonthly": "Monthly",
+    "@recurrenceMonthly": {
+        "description": "Recurrence option: monthly"
+    },
+    "recurrenceYearly": "Yearly",
+    "@recurrenceYearly": {
+        "description": "Recurrence option: yearly"
+    },
+    "recurrenceEvery": "Every",
+    "@recurrenceEvery": {
+        "description": "Prefix for interval: Every X days"
+    },
+    "recurrenceOnDays": "On days",
+    "@recurrenceOnDays": {
+        "description": "Label for weekday selection in weekly recurrence"
+    },
+    "recurrenceEnds": "Ends",
+    "@recurrenceEnds": {
+        "description": "Label for end condition section"
+    },
+    "recurrenceAfter": "After",
+    "@recurrenceAfter": {
+        "description": "End condition: after X times"
+    },
+    "recurrenceTimesLabel": "times",
+    "@recurrenceTimesLabel": {
+        "description": "Suffix for occurrence count"
+    },
+    "recurrenceOn": "On",
+    "@recurrenceOn": {
+        "description": "End condition: on specific date"
+    },
+    "recurrenceSelectDate": "Select date",
+    "@recurrenceSelectDate": {
+        "description": "Placeholder for date selection"
+    },
+    "recurrenceDoesNotRepeat": "Does not repeat",
+    "@recurrenceDoesNotRepeat": {
+        "description": "Text shown when no recurrence is set"
+    },
+    "validationRequired": "Required",
+    "@validationRequired": {
+        "description": "Validation error: field is required"
+    },
+    "validationInvalid": "Invalid",
+    "@validationInvalid": {
+        "description": "Validation error: value is invalid"
+    },
+    "validationMustBeGreaterThanZero": "Must be > 0",
+    "@validationMustBeGreaterThanZero": {
+        "description": "Validation error: value must be greater than zero"
+    },
+    "validationMaxValue": "Max {max}",
+    "@validationMaxValue": {
+        "description": "Validation error: value exceeds maximum",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "999"
+            }
+        }
+    },
+    "doneButton": "Done",
+    "@doneButton": {
+        "description": "Done action button"
+    },
+    "settingsTitle": "Settings",
+    "@settingsTitle": {
+        "description": "Title for settings screen"
+    },
+    "settingsAppearanceSection": "Appearance",
+    "@settingsAppearanceSection": {
+        "description": "Settings section: appearance"
+    },
+    "settingsLanguageRegionSection": "Language & Region",
+    "@settingsLanguageRegionSection": {
+        "description": "Settings section: language and region"
+    },
+    "settingsAdvancedSection": "Advanced",
+    "@settingsAdvancedSection": {
+        "description": "Settings section: advanced options"
+    },
+    "settingsThemeMode": "Theme Mode",
+    "@settingsThemeMode": {
+        "description": "Theme mode setting label"
+    },
+    "settingsThemeModeSubtitle": "Choose between light, dark, or system theme",
+    "@settingsThemeModeSubtitle": {
+        "description": "Theme mode setting subtitle"
+    },
+    "settingsTextSize": "Text Size",
+    "@settingsTextSize": {
+        "description": "Text size setting label"
+    },
+    "settingsLanguage": "Language",
+    "@settingsLanguage": {
+        "description": "Language setting label"
+    },
+    "settingsLanguageSubtitle": "Select your preferred language",
+    "@settingsLanguageSubtitle": {
+        "description": "Language setting subtitle"
+    },
+    "settingsLanguageSystem": "System",
+    "@settingsLanguageSystem": {
+        "description": "Language option: system default"
+    },
+    "settingsDateFormat": "Date Format",
+    "@settingsDateFormat": {
+        "description": "Date format setting label"
+    },
+    "settingsDateFormatShort": "Short",
+    "@settingsDateFormatShort": {
+        "description": "Date format option: short"
+    },
+    "settingsDateFormatMedium": "Medium",
+    "@settingsDateFormatMedium": {
+        "description": "Date format option: medium"
+    },
+    "settingsDateFormatLong": "Long",
+    "@settingsDateFormatLong": {
+        "description": "Date format option: long"
+    },
+    "settingsDateFormatFull": "Full",
+    "@settingsDateFormatFull": {
+        "description": "Date format option: full"
+    },
+    "settingsDateFormatCustom": "Custom",
+    "@settingsDateFormatCustom": {
+        "description": "Date format option: custom"
+    },
+    "settingsDateFormatExample": "Example: {example}",
+    "@settingsDateFormatExample": {
+        "description": "Date format example display",
+        "placeholders": {
+            "example": {
+                "type": "String",
+                "example": "Dec 30, 2025"
+            }
+        }
+    },
+    "settingsResetToDefaults": "Reset to Defaults",
+    "@settingsResetToDefaults": {
+        "description": "Button to reset settings"
+    },
+    "settingsResetTitle": "Reset Settings",
+    "@settingsResetTitle": {
+        "description": "Dialog title for reset confirmation"
+    },
+    "settingsResetConfirmation": "Are you sure you want to reset all settings to their default values?",
+    "@settingsResetConfirmation": {
+        "description": "Reset confirmation message"
+    },
+    "settingsResetSuccess": "Settings reset to defaults",
+    "@settingsResetSuccess": {
+        "description": "Success message after resetting settings"
+    },
+    "resetButton": "Reset",
+    "@resetButton": {
+        "description": "Reset action button"
+    },
+    "sortFieldCreatedDate": "Created date",
+    "@sortFieldCreatedDate": {
+        "description": "Sort field: created date"
+    },
+    "sortFieldUpdatedDate": "Updated date",
+    "@sortFieldUpdatedDate": {
+        "description": "Sort field: updated date"
+    },
+    "sortFieldNextActionPriority": "Next action priority",
+    "@sortFieldNextActionPriority": {
+        "description": "Sort field: next action priority"
+    },
+    "sortOrderHelp": "Choose how to order items",
+    "@sortOrderHelp": {
+        "description": "Help text for sort configuration"
+    },
+    "saveButton": "Save",
+    "@saveButton": {
+        "description": "Save action button"
+    },
+    "discardButton": "Discard",
+    "@discardButton": {
+        "description": "Discard action button"
+    },
+    "unsavedChangesTitle": "Unsaved Changes",
+    "@unsavedChangesTitle": {
+        "description": "Dialog title for unsaved changes"
+    },
+    "confirmButton": "Confirm",
+    "@confirmButton": {
+        "description": "Confirm action button"
     }
 }

@@ -1,4 +1,4 @@
-﻿/// Domain layer filtering classes for task queries.
+/// Domain layer filtering classes for task queries.
 ///
 /// This module provides task filter rules and evaluation context for
 /// query-based filtering. Used by TaskQuery for SQL-level filtering.

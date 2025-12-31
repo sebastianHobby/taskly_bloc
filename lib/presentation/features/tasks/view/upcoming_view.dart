@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,10 +8,11 @@ import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/presentation/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/upcoming_tasks_grouper.dart';
@@ -19,6 +20,7 @@ import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 /// The Upcoming page displaying tasks organized by date in agenda format.
 class UpcomingPage extends StatelessWidget {
@@ -41,13 +43,22 @@ class UpcomingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<TaskOverviewBloc>(
-      create: (context) => TaskOverviewBloc(
-        taskRepository: taskRepository,
-        query: queryOverride ?? TaskQuery.upcoming(),
-        settingsRepository: settingsRepository,
-        pageKey: pageKey,
-      )..add(const TaskOverviewEvent.subscriptionRequested()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<TaskOverviewBloc>(
+          create: (context) => TaskOverviewBloc(
+            taskRepository: taskRepository,
+            query: queryOverride ?? TaskQuery.upcoming(),
+            settingsRepository: settingsRepository,
+            pageKey: pageKey,
+          )..add(const TaskOverviewEvent.subscriptionRequested()),
+        ),
+        BlocProvider<ProjectOverviewBloc>(
+          create: (context) => ProjectOverviewBloc(
+            projectRepository: projectRepository,
+          )..add(const ProjectOverviewEvent.subscriptionRequested()),
+        ),
+      ],
       child: UpcomingView(
         taskRepository: taskRepository,
         projectRepository: projectRepository,
@@ -102,15 +113,51 @@ class _UpcomingViewState extends State<UpcomingView> {
         title: Text(context.l10n.upcomingTitle),
       ),
       body: BlocBuilder<TaskOverviewBloc, TaskOverviewState>(
-        builder: (context, state) {
-          return state.when(
-            initial: () => const Center(child: CircularProgressIndicator()),
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text(friendlyErrorMessageForUi(error, context.l10n)),
-            ),
-            loaded: (tasks, _) {
-              if (tasks.isEmpty) {
+        builder: (context, taskState) {
+          return BlocBuilder<ProjectOverviewBloc, ProjectOverviewState>(
+            builder: (context, projectState) {
+              // Show loading if either is loading
+              final tasksLoading = taskState.maybeWhen(
+                initial: () => true,
+                loading: () => true,
+                orElse: () => false,
+              );
+              final projectsLoading = projectState.maybeWhen(
+                initial: () => true,
+                loading: () => true,
+                orElse: () => false,
+              );
+              if (tasksLoading || projectsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              // Check for errors
+              final taskError = taskState.maybeWhen(
+                error: (error, _) => error,
+                orElse: () => null,
+              );
+              if (taskError != null) {
+                return Center(
+                  child: Text(
+                    friendlyErrorMessageForUi(taskError, context.l10n),
+                  ),
+                );
+              }
+
+              // Get data from both blocs
+              final tasks = taskState.maybeWhen(
+                loaded: (tasks, _) => tasks,
+                orElse: () => <Task>[],
+              );
+              final projects = projectState.maybeWhen(
+                loaded: (projects, _) => projects,
+                orElse: () => <Project>[],
+              );
+
+              if (tasks.isEmpty &&
+                  projects.every(
+                    (p) => p.startDate == null && p.deadlineDate == null,
+                  )) {
                 return EmptyStateWidget.upcoming(
                   title: context.l10n.emptyUpcomingTitle,
                   description: context.l10n.emptyUpcomingDescription,
@@ -118,20 +165,21 @@ class _UpcomingViewState extends State<UpcomingView> {
               }
 
               final now = DateTime.now();
-              // Use large number to get all future tasks
-              final groupedTasks = UpcomingTasksGrouper.groupByDate(
+              // Use large number to get all future items
+              final groupedItems = UpcomingTasksGrouper.groupAllByDate(
                 tasks: tasks,
+                projects: projects,
                 now: now,
-                daysAhead: 3650, // ~10 years to capture all future tasks
+                daysAhead: 3650, // ~10 years to capture all future items
               );
 
-              // Filter to show only dates with tasks (agenda view)
-              final sortedDates = groupedTasks.keys.toList()..sort();
-              final datesWithTasks = sortedDates
-                  .where((date) => groupedTasks[date]!.isNotEmpty)
+              // Filter to show only dates with items (agenda view)
+              final sortedDates = groupedItems.keys.toList()..sort();
+              final datesWithItems = sortedDates
+                  .where((date) => groupedItems[date]!.isNotEmpty)
                   .toList();
 
-              if (datesWithTasks.isEmpty) {
+              if (datesWithItems.isEmpty) {
                 return Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
@@ -143,7 +191,7 @@ class _UpcomingViewState extends State<UpcomingView> {
                           size: 64,
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.5),
+                          ).colorScheme.primary.withValues(alpha: 0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -152,7 +200,7 @@ class _UpcomingViewState extends State<UpcomingView> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'No upcoming tasks with deadlines',
+                          'No upcoming tasks or projects with deadlines',
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: Theme.of(
@@ -167,16 +215,18 @@ class _UpcomingViewState extends State<UpcomingView> {
                 );
               }
 
-              return CustomScrollView(
-                slivers: [
-                  for (int index = 0; index < datesWithTasks.length; index++)
-                    ..._buildDateSectionSlivers(
-                      context,
-                      date: datesWithTasks[index],
-                      entries: groupedTasks[datesWithTasks[index]]!,
-                      now: now,
-                    ),
-                ],
+              return ResponsiveBody(
+                child: CustomScrollView(
+                  slivers: [
+                    for (int index = 0; index < datesWithItems.length; index++)
+                      ..._buildDateSectionSlivers(
+                        context,
+                        date: datesWithItems[index],
+                        entries: groupedItems[datesWithItems[index]]!,
+                        now: now,
+                      ),
+                  ],
+                ),
               );
             },
           );
@@ -193,7 +243,7 @@ class _UpcomingViewState extends State<UpcomingView> {
   List<Widget> _buildDateSectionSlivers(
     BuildContext context, {
     required DateTime date,
-    required List<TaskDateEntry> entries,
+    required List<UpcomingDateEntry> entries,
     required DateTime now,
   }) {
     final dateFormatter = DateFormat.MMMEd(); // Shorter format: "Dec 25, Wed"
@@ -228,7 +278,7 @@ class _UpcomingViewState extends State<UpcomingView> {
         padding: const EdgeInsets.only(bottom: 16),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildTaskEntry(context, entries[index]),
+            (context, index) => _buildEntry(context, entries[index]),
             childCount: entries.length,
           ),
         ),
@@ -236,15 +286,80 @@ class _UpcomingViewState extends State<UpcomingView> {
     ];
   }
 
-  Widget _buildTaskEntry(BuildContext context, TaskDateEntry entry) {
-    return TaskListTile(
-      task: entry.task,
-      onTap: (task) => _showTaskDetailSheet(context, taskId: task.id),
-      onCheckboxChanged: (task, _) {
-        context.read<TaskOverviewBloc>().add(
-          TaskOverviewEvent.toggleTaskCompletion(task: task),
-        );
-      },
+  Widget _buildEntry(BuildContext context, UpcomingDateEntry entry) {
+    return switch (entry) {
+      UpcomingTaskEntry(:final task) => TaskListTile(
+        task: task,
+        onTap: (task) => _showTaskDetailSheet(context, taskId: task.id),
+        onCheckboxChanged: (task, _) {
+          context.read<TaskOverviewBloc>().add(
+            TaskOverviewEvent.toggleTaskCompletion(task: task),
+          );
+        },
+      ),
+      UpcomingProjectEntry(:final project) => _buildProjectEntry(
+        context,
+        project,
+        entry.dateType,
+      ),
+    };
+  }
+
+  Widget _buildProjectEntry(
+    BuildContext context,
+    Project project,
+    TaskDateType dateType,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.folder_outlined,
+            color: colorScheme.onPrimaryContainer,
+            size: 20,
+          ),
+        ),
+        title: Text(
+          project.name,
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Row(
+          children: [
+            Icon(
+              dateType == TaskDateType.deadline
+                  ? Icons.flag_outlined
+                  : Icons.play_arrow_outlined,
+              size: 14,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              dateType == TaskDateType.deadline
+                  ? 'Project deadline'
+                  : 'Project starts',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        trailing: Icon(
+          Icons.chevron_right,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        onTap: () {
+          // TODO: Navigate to project detail
+        },
+      ),
     );
   }
 }
@@ -276,10 +391,10 @@ class _DateHeaderDelegate extends SliverPersistentHeaderDelegate {
 
     return Container(
       decoration: BoxDecoration(
-        color: colorScheme.surface.withOpacity(0.95),
+        color: colorScheme.surface.withValues(alpha: 0.95),
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.outlineVariant.withOpacity(0.5),
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
       ),

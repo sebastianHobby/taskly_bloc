@@ -1,4 +1,4 @@
-﻿import 'package:powersync/powersync.dart';
+import 'package:powersync/powersync.dart';
 
 //Generated from powersync dashboard --> Client setup
 // Note powersync expects everything as SQLITE types of text,integer or real
@@ -19,10 +19,6 @@ const schema = Schema([
     Column.integer('repeat_from_completion'),
     Column.text('last_reviewed_at'),
     Column.text('review_notes'),
-    Column.integer('is_next_action'),
-    Column.integer('next_action_priority'),
-    Column.text('marked_next_action_at'),
-    Column.text('next_action_notes'),
   ]),
   Table('projects', [
     Column.text('name'),
@@ -51,6 +47,8 @@ const schema = Schema([
     Column.text('icon_name'),
     Column.integer('priority_rank'),
     Column.real('priority_weight'),
+    Column.integer('is_system_label'),
+    Column.text('system_label_type'),
   ]),
   Table('project_labels', [
     Column.text('project_id'),
@@ -94,6 +92,9 @@ const schema = Schema([
     Column.real('urgency_influence'),
     Column.integer('minimum_tasks_per_category'),
     Column.integer('top_n_categories'),
+    Column.integer('daily_task_limit'),
+    Column.integer('show_excluded_urgent_warning'),
+    Column.integer('urgency_threshold_days'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),
@@ -266,6 +267,14 @@ const schema = Schema([
   ]),
   Table('tracker_responses', [
     Column.text('journal_entry_id'),
+    Column.text('tracker_id'),
+    Column.text('response_value'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('user_id'),
+  ]),
+  Table('daily_tracker_responses', [
+    Column.text('response_date'),
     Column.text('tracker_id'),
     Column.text('response_value'),
     Column.text('created_at'),

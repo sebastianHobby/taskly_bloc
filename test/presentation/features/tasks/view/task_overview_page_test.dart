@@ -7,24 +7,20 @@ import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_overview_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 
+import '../../../../helpers/fallback_values.dart';
 import '../../../../helpers/pump_app.dart';
 import '../../../../mocks/repository_mocks.dart';
 
-class _FakeTaskQuery extends Fake implements TaskQuery {}
-
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_FakeTaskQuery());
-    registerFallbackValue(PageKey.taskOverview);
-  });
+  setUpAll(registerAllFallbackValues);
 
   testWidgets('TaskOverviewPage builds and shows app bar + fab', (
     tester,
   ) async {
-    final taskRepository = MockTaskRepository();
-    final projectRepository = MockProjectRepository();
-    final labelRepository = MockLabelRepository();
-    final settingsRepository = MockSettingsRepository();
+    final taskRepository = MockTaskRepositoryContract();
+    final projectRepository = MockProjectRepositoryContract();
+    final labelRepository = MockLabelRepositoryContract();
+    final settingsRepository = MockSettingsRepositoryContract();
 
     when(() => settingsRepository.loadPageSort(any())).thenAnswer(
       (_) async => null,

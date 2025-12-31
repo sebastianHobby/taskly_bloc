@@ -1,4 +1,4 @@
-﻿// drift types are provided by the generated database import below
+// drift types are provided by the generated database import below
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,8 +9,8 @@ import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dar
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
 

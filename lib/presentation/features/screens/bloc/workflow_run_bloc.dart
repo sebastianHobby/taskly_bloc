@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_session.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 
 part 'workflow_run_bloc.freezed.dart';
@@ -76,8 +76,8 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
     required WorkflowScreen screen,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required WorkflowSessionsRepository sessionsRepository,
-    required WorkflowItemReviewsRepository itemReviewsRepository,
+    required WorkflowSessionsRepositoryContract sessionsRepository,
+    required WorkflowItemReviewsRepositoryContract itemReviewsRepository,
     required ScreenQueryBuilder queryBuilder,
   }) : _screen = screen,
        _taskRepository = taskRepository,
@@ -97,8 +97,8 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
   final WorkflowScreen _screen;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final WorkflowSessionsRepository _sessionsRepository;
-  final WorkflowItemReviewsRepository _itemReviewsRepository;
+  final WorkflowSessionsRepositoryContract _sessionsRepository;
+  final WorkflowItemReviewsRepositoryContract _itemReviewsRepository;
   final ScreenQueryBuilder _queryBuilder;
 
   StreamSubscription<WorkflowSession?>? _sessionSub;

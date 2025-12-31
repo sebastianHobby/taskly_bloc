@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/correlation_card.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/trend_chart.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 class WellbeingDashboardScreen extends StatelessWidget {
   const WellbeingDashboardScreen({super.key});
@@ -43,56 +44,58 @@ class WellbeingDashboardScreen extends StatelessWidget {
                 ),
               );
             },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () =>
-                              context.goNamed(AppRouteName.journal),
-                          child: const Text('Journal'),
+            child: ResponsiveBody(
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () =>
+                                context.goNamed(AppRouteName.journal),
+                            child: const Text('Journal'),
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                context.goNamed(AppRouteName.trackerManagement),
+                            child: const Text('Manage Trackers'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (state.moodTrend != null) ...[
+                      Text(
+                        'Mood Trend',
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () =>
-                              context.goNamed(AppRouteName.trackerManagement),
-                          child: const Text('Manage Trackers'),
+                      const SizedBox(height: 16),
+                      TrendChart(data: state.moodTrend!),
+                      const SizedBox(height: 32),
+                    ],
+                    if (state.topCorrelations != null &&
+                        state.topCorrelations!.isNotEmpty) ...[
+                      Text(
+                        'Top Mood Correlations',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      ...state.topCorrelations!.map(
+                        (correlation) => Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: CorrelationCard(correlation: correlation),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 24),
-                  if (state.moodTrend != null) ...[
-                    Text(
-                      'Mood Trend',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    TrendChart(data: state.moodTrend!),
-                    const SizedBox(height: 32),
                   ],
-                  if (state.topCorrelations != null &&
-                      state.topCorrelations!.isNotEmpty) ...[
-                    Text(
-                      'Top Mood Correlations',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 16),
-                    ...state.topCorrelations!.map(
-                      (correlation) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: CorrelationCard(correlation: correlation),
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
           );

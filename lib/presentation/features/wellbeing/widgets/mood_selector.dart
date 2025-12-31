@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 
 class MoodSelector extends StatelessWidget {
@@ -23,7 +23,7 @@ class MoodSelector extends StatelessWidget {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isSelected
-                  ? _getMoodColor(mood).withOpacity(0.2)
+                  ? _getMoodColor(mood).withValues(alpha: 0.2)
                   : Colors.transparent,
               border: Border.all(
                 color: isSelected

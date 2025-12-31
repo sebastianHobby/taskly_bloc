@@ -1,8 +1,8 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 
 /// Implementation of [OccurrenceWriteHelperContract].
 ///

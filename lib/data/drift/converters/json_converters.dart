@@ -1,0 +1,78 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart';
+import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
+import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+
+/// Handles potentially double-encoded JSON data.
+///
+/// Some data in the database may have been incorrectly double-encoded
+/// (stored as a JSON string containing another JSON string). This helper
+/// detects and handles that case.
+Map<String, dynamic> _parseJsonWithDoubleEncodingFallback(Object? json) {
+  if (json == null) {
+    throw ArgumentError('JSON value cannot be null');
+  }
+  if (json is Map<String, dynamic>) {
+    return json;
+  }
+  if (json is String) {
+    // Data was double-encoded - parse the string as JSON
+    final decoded = jsonDecode(json);
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    throw ArgumentError(
+      'Expected Map<String, dynamic> after decoding String, got ${decoded.runtimeType}',
+    );
+  }
+  throw ArgumentError(
+    'Expected Map<String, dynamic> or String, got ${json.runtimeType}',
+  );
+}
+
+/// Type converter for [AppSettings] stored as JSON text.
+///
+/// Uses [TypeConverter.json2] which properly handles JSON serialization
+/// without double-encoding issues.
+final JsonTypeConverter2<AppSettings, String, Object?> appSettingsConverter =
+    TypeConverter.json2(
+      fromJson: (json) =>
+          AppSettings.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
+      toJson: (AppSettings settings) => settings.toJson(),
+    );
+
+/// Type converter for [EntitySelector] stored as JSON text.
+final JsonTypeConverter2<EntitySelector, String, Object?>
+entitySelectorConverter = TypeConverter.json2(
+  fromJson: (json) =>
+      EntitySelector.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
+  toJson: (EntitySelector selector) => selector.toJson(),
+);
+
+/// Type converter for [DisplayConfig] stored as JSON text.
+final JsonTypeConverter2<DisplayConfig, String, Object?>
+displayConfigConverter = TypeConverter.json2(
+  fromJson: (json) =>
+      DisplayConfig.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
+  toJson: (DisplayConfig config) => config.toJson(),
+);
+
+/// Type converter for [TriggerConfig] stored as JSON text.
+final JsonTypeConverter2<TriggerConfig, String, Object?>
+triggerConfigConverter = TypeConverter.json2(
+  fromJson: (json) =>
+      TriggerConfig.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
+  toJson: (TriggerConfig config) => config.toJson(),
+);
+
+/// Type converter for [CompletionCriteria] stored as JSON text.
+final JsonTypeConverter2<CompletionCriteria, String, Object?>
+completionCriteriaConverter = TypeConverter.json2(
+  fromJson: (json) =>
+      CompletionCriteria.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
+  toJson: (CompletionCriteria criteria) => criteria.toJson(),
+);

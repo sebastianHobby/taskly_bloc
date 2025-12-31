@@ -4,6 +4,8 @@ import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
+import '../../fixtures/test_data.dart';
+
 void main() {
   group('TaskValueInheritance', () {
     late Label valueHealth;
@@ -14,7 +16,7 @@ void main() {
     setUp(() {
       final now = DateTime(2024);
 
-      valueHealth = Label(
+      valueHealth = TestData.label(
         id: 'value-health',
         name: 'Health',
         color: '#FF0000',
@@ -23,7 +25,7 @@ void main() {
         updatedAt: now,
       );
 
-      valueFamily = Label(
+      valueFamily = TestData.label(
         id: 'value-family',
         name: 'Family',
         color: '#00FF00',
@@ -32,7 +34,7 @@ void main() {
         updatedAt: now,
       );
 
-      valueWork = Label(
+      valueWork = TestData.label(
         id: 'value-work',
         name: 'Work',
         color: '#0000FF',
@@ -41,7 +43,7 @@ void main() {
         updatedAt: now,
       );
 
-      labelCategory = Label(
+      labelCategory = TestData.label(
         id: 'label-urgent',
         name: 'Urgent',
         color: '#FFFF00',
@@ -51,12 +53,11 @@ void main() {
     });
 
     test('getEffectiveValues returns only task values when no project', () {
-      final task = Task(
+      final now = DateTime(2024);
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork, labelCategory],
       );
 
@@ -67,21 +68,19 @@ void main() {
     });
 
     test('getEffectiveValues combines task and project values additively', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
         name: 'Health Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, valueFamily],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork],
         project: project,
         projectId: project.id,
@@ -100,21 +99,19 @@ void main() {
     test(
       'getEffectiveValues removes duplicates when task has same value as project',
       () {
-        final project = Project(
+        final now = DateTime(2024);
+        final project = TestData.project(
           id: 'p1',
           name: 'Health Project',
-          completed: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: now,
+          updatedAt: now,
           labels: [valueHealth, valueFamily],
         );
 
-        final task = Task(
+        final task = TestData.task(
           id: 't1',
-          name: 'Test Task',
-          completed: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
+          createdAt: now,
+          updatedAt: now,
           labels: [valueHealth, valueWork], // Health is duplicate
           project: project,
           projectId: project.id,
@@ -129,21 +126,18 @@ void main() {
     );
 
     test('getEffectiveValues excludes non-value labels', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, labelCategory], // Has both value and label
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork, labelCategory],
         project: project,
         projectId: project.id,
@@ -160,21 +154,18 @@ void main() {
     });
 
     test('getDirectValues returns only task values, not inherited', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, valueFamily],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork],
         project: project,
         projectId: project.id,
@@ -187,21 +178,18 @@ void main() {
     });
 
     test('getInheritedValues returns only project values not on task', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, valueFamily],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork],
         project: project,
         projectId: project.id,
@@ -217,21 +205,18 @@ void main() {
     });
 
     test('getInheritedValues excludes values already on task', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, valueFamily, valueWork],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork], // Work is on both task and project
         project: project,
         projectId: project.id,
@@ -247,21 +232,18 @@ void main() {
     });
 
     test('isValueInherited returns true for inherited value', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork],
         project: project,
         projectId: project.id,
@@ -273,20 +255,18 @@ void main() {
     });
 
     test('handles empty project labels', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
         name: 'Empty Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueWork],
         project: project,
         projectId: project.id,
@@ -301,21 +281,18 @@ void main() {
     });
 
     test('handles empty task labels with project values', () {
-      final project = Project(
+      final now = DateTime(2024);
+      final project = TestData.project(
         id: 'p1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         labels: [valueHealth, valueFamily],
       );
 
-      final task = Task(
+      final task = TestData.task(
         id: 't1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         project: project,
         projectId: project.id,
       );

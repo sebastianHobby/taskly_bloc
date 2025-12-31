@@ -1,4 +1,4 @@
-﻿/// Domain models (entities and value objects).
+/// Domain models (entities and value objects).
 library;
 
 export 'label.dart';

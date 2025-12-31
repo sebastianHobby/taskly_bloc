@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 
+import '../../../../fixtures/test_data.dart';
 import '../../../../helpers/pump_app.dart';
 
 void main() {
@@ -14,12 +15,11 @@ void main() {
     final now = DateTime.now();
     final farFutureStart = now.add(const Duration(days: 30));
     final farFutureDeadline = now.add(const Duration(days: 31));
-    final task = Task(
+    final task = TestData.task(
       id: 't1',
       createdAt: now,
       updatedAt: now,
       name: 'Task name',
-      completed: false,
       description: 'Do something important',
       startDate: farFutureStart,
       deadlineDate: farFutureDeadline,
@@ -59,12 +59,11 @@ void main() {
     tester,
   ) async {
     final now = DateTime(2025, 12, 21);
-    final task = Task(
+    final task = TestData.task(
       id: 't1',
       createdAt: now,
       updatedAt: now,
       name: 'Task name',
-      completed: false,
     );
 
     await pumpLocalizedApp(

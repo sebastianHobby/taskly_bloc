@@ -1,10 +1,11 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rrule_display_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/date_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -13,9 +14,9 @@ import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
@@ -596,8 +597,8 @@ class _LabelsSection extends StatelessWidget {
                       Text(
                         label.iconName?.isNotEmpty ?? false
                             ? label.iconName!
-                            : 'â¤ï¸',
-                        style: const TextStyle(fontSize: 12),
+                            : '❤️',
+                        style: EmojiUtils.emojiTextStyle(fontSize: 12),
                       )
                     else
                       Icon(

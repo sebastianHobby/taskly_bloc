@@ -1,7 +1,7 @@
-﻿import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_request.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
@@ -11,8 +11,8 @@ import 'package:taskly_bloc/domain/models/analytics/mood_summary.dart';
 import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
-import 'package:taskly_bloc/domain/repositories/analytics_repository.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/correlation_calculator.dart';
 import 'package:taskly_bloc/domain/services/analytics/mood_stats_calculator.dart';
@@ -21,11 +21,11 @@ import 'package:taskly_bloc/domain/services/analytics/trend_calculator.dart';
 
 class AnalyticsServiceImpl implements AnalyticsService {
   AnalyticsServiceImpl({
-    required AnalyticsRepository analyticsRepo,
+    required AnalyticsRepositoryContract analyticsRepo,
     required TaskRepositoryContract taskRepo,
     required ProjectRepositoryContract projectRepo,
     required LabelRepositoryContract labelRepo,
-    required WellbeingRepository wellbeingRepo,
+    required WellbeingRepositoryContract wellbeingRepo,
   }) : _analyticsRepo = analyticsRepo,
        _taskRepo = taskRepo,
        _projectRepo = projectRepo,
@@ -35,11 +35,11 @@ class AnalyticsServiceImpl implements AnalyticsService {
        _trendCalculator = TrendCalculator(),
        _moodStatsCalculator = MoodStatsCalculator(TrendCalculator()),
        _correlationCalculator = CorrelationCalculator();
-  final AnalyticsRepository _analyticsRepo;
+  final AnalyticsRepositoryContract _analyticsRepo;
   final TaskRepositoryContract _taskRepo;
   final ProjectRepositoryContract _projectRepo;
   final LabelRepositoryContract _labelRepo;
-  final WellbeingRepository _wellbeingRepo;
+  final WellbeingRepositoryContract _wellbeingRepo;
   final TaskStatsCalculator _taskStatsCalculator;
   final CorrelationCalculator _correlationCalculator;
   final MoodStatsCalculator _moodStatsCalculator;

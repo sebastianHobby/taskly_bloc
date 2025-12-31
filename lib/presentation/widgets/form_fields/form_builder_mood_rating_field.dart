@@ -57,7 +57,7 @@ class FormBuilderMoodRatingField
                                      _getMoodColor(
                                        mood,
                                        colorScheme,
-                                     ).withOpacity(0.2))
+                                     ).withValues(alpha: 0.2))
                                : Colors.transparent,
                            border: Border.all(
                              color: isSelected

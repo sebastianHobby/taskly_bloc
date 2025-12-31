@@ -1,16 +1,11 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/utils/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
-
-/// Responsive breakpoints for navigew ation.
-class _NavigationBreakpoints {
-  static const double tablet = 840;
-}
 
 /// A scaffold with responsive navigation that adapts to screen size.
 ///
-/// - Mobile (< 600dp): Bottom navigation bar
-/// - Tablet (600-840dp): Compact navigation rail
-/// - Desktop (> 840dp): Extended navigation rail
+/// - Tablet (600-839dp): Compact navigation rail
+/// - Desktop (840dp+): Extended navigation rail with labels
 class ScaffoldWithNavigationRail extends StatelessWidget {
   const ScaffoldWithNavigationRail({
     required this.body,
@@ -31,7 +26,7 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     final selectedIndex = _selectedIndex();
 
     // Tablet: Compact rail, Desktop: Extended rail
-    final isExtended = screenWidth >= _NavigationBreakpoints.tablet;
+    final isExtended = screenWidth >= Breakpoints.medium;
 
     return Scaffold(
       body: Row(

@@ -1,7 +1,8 @@
-﻿import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/contracts/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/repositories/analytics_repository.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/data/services/user_data_seeder.dart';
+import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 /// Mock implementations for feature-level repositories and services.
@@ -11,14 +12,19 @@ import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 // === Analytics Feature ===
 
-class MockAnalyticsRepository extends Mock implements AnalyticsRepository {}
+class MockAnalyticsRepositoryContract extends Mock
+    implements AnalyticsRepositoryContract {}
 
 class MockAnalyticsService extends Mock implements AnalyticsService {}
 
 // === Wellbeing Feature ===
 
-class MockWellbeingRepository extends Mock implements WellbeingRepository {}
+class MockWellbeingRepositoryContract extends Mock
+    implements WellbeingRepositoryContract {}
 
 // === Auth Feature ===
 
-class MockAuthRepository extends Mock implements AuthRepositoryContract {}
+class MockAuthRepositoryContract extends Mock
+    implements AuthRepositoryContract {}
+
+class MockUserDataSeeder extends Mock implements UserDataSeeder {}
