@@ -119,8 +119,7 @@ class ScreenDefinitionsRepositoryImpl
             isSystem: Value(_extractIsSystem(screen)),
             isActive: Value(_extractIsActive(screen)),
             sortOrder: Value(_extractSortOrder(screen)),
-            category: Value(_toDbCategory(_extractCategory(screen))),
-            entityType: Value(_toDbEntityType(selector.entityType)),
+            entityType: _toDbEntityType(selector.entityType),
             selectorConfig: Value(selector),
             displayConfig: Value(display),
             triggerConfig: Value(trigger),
@@ -154,7 +153,6 @@ class ScreenDefinitionsRepositoryImpl
         isSystem: Value(_extractIsSystem(screen)),
         isActive: Value(_extractIsActive(screen)),
         sortOrder: Value(_extractSortOrder(screen)),
-        category: Value(_toDbCategory(_extractCategory(screen))),
         entityType: Value(_toDbEntityType(selector.entityType)),
         selectorConfig: Value(selector),
         displayConfig: Value(display),
@@ -229,7 +227,6 @@ class ScreenDefinitionsRepositoryImpl
 
     // Map category from Drift enum to domain enum
     final category = switch (e.category) {
-      null => ScreenCategory.workspace,
       db_screens.ScreenCategory.workspace => ScreenCategory.workspace,
       db_screens.ScreenCategory.wellbeing => ScreenCategory.wellbeing,
       db_screens.ScreenCategory.settings => ScreenCategory.settings,
@@ -291,54 +288,8 @@ class ScreenDefinitionsRepositoryImpl
     return db_screens.EntityType.values.byName(type.name);
   }
 
-  domain_screens.EntityType _fromDbEntityType(db_screens.EntityType? type) {
-    return switch (type) {
-      null => domain_screens.EntityType.task,
-      _ => domain_screens.EntityType.values.byName(type.name),
-    };
-  }
-
-  db_screens.ScreenCategory _toDbCategory(ScreenCategory category) {
-    return db_screens.ScreenCategory.values.byName(category.name);
-  }
-
-  ScreenCategory _extractCategory(ScreenDefinition screen) {
-    return screen.when(
-      collection:
-          (
-            id,
-            userId,
-            screenId,
-            name,
-            selector,
-            display,
-            createdAt,
-            updatedAt,
-            iconName,
-            isSystem,
-            isActive,
-            sortOrder,
-            category,
-          ) => category,
-      workflow:
-          (
-            id,
-            userId,
-            screenId,
-            name,
-            selector,
-            display,
-            createdAt,
-            updatedAt,
-            iconName,
-            isSystem,
-            isActive,
-            sortOrder,
-            category,
-            trigger,
-            completionCriteria,
-          ) => category,
-    );
+  domain_screens.EntityType _fromDbEntityType(db_screens.EntityType type) {
+    return domain_screens.EntityType.values.byName(type.name);
   }
 
   (
