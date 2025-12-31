@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart'
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as screen_models;
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
@@ -11,8 +12,9 @@ import 'package:uuid/uuid.dart';
 
 /// Seeds the required built-in system screens if they are missing.
 class ScreenSystemSeeder {
-  ScreenSystemSeeder({required ScreenDefinitionsRepositoryContract screensRepository})
-    : _screensRepository = screensRepository;
+  ScreenSystemSeeder({
+    required ScreenDefinitionsRepositoryContract screensRepository,
+  }) : _screensRepository = screensRepository;
 
   final ScreenDefinitionsRepositoryContract _screensRepository;
   final Uuid _uuid = const Uuid();
@@ -129,6 +131,69 @@ class ScreenSystemSeeder {
         sortOrder: 6,
       ),
     );
+
+    // Wellbeing screens
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'wellbeing',
+        name: 'Wellbeing',
+        iconName: 'wellbeing',
+        sortOrder: 100,
+        category: ScreenCategory.wellbeing,
+      ),
+    );
+
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'journal',
+        name: 'Journal',
+        iconName: 'journal',
+        sortOrder: 101,
+        category: ScreenCategory.wellbeing,
+      ),
+    );
+
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'trackers',
+        name: 'Trackers',
+        iconName: 'trackers',
+        sortOrder: 102,
+        category: ScreenCategory.wellbeing,
+      ),
+    );
+
+    // Settings screens
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'allocation_settings',
+        name: 'Allocation',
+        iconName: 'allocation_settings',
+        sortOrder: 200,
+        category: ScreenCategory.settings,
+      ),
+    );
+
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'navigation_settings',
+        name: 'Navigation',
+        iconName: 'navigation_settings',
+        sortOrder: 201,
+        category: ScreenCategory.settings,
+      ),
+    );
+
+    await _ensureScreen(
+      screen: _utilityScreen(
+        screenId: 'settings',
+        name: 'Settings',
+        iconName: 'settings',
+        sortOrder: 202,
+        category: ScreenCategory.settings,
+      ),
+    );
+
     talker.serviceLog(
       'ScreenSystemSeeder',
       'seedDefaults END - all screens seeded',
@@ -225,6 +290,36 @@ class ScreenSystemSeeder {
       isSystem: true,
       sortOrder: sortOrder,
       iconName: iconName,
+    );
+  }
+
+  /// Creates a utility screen (wellbeing, settings) with no entity selector
+  ScreenDefinition _utilityScreen({
+    required String screenId,
+    required String name,
+    required String iconName,
+    required int sortOrder,
+    required ScreenCategory category,
+  }) {
+    final now = DateTime.now();
+    return ScreenDefinition.collection(
+      id: _uuid.v4(),
+      userId: '',
+      screenId: screenId,
+      name: name,
+      selector: screen_models.EntitySelector(
+        entityType: screen_models.EntityType.task,
+        taskFilter: const QueryFilter.matchAll(),
+      ),
+      display: const screen_models.DisplayConfig(
+        showCompleted: false,
+      ),
+      createdAt: now,
+      updatedAt: now,
+      isSystem: true,
+      sortOrder: sortOrder,
+      iconName: iconName,
+      category: category,
     );
   }
 

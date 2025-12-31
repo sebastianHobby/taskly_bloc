@@ -7,13 +7,15 @@ import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as domain_screens;
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// Drift implementation of [ScreenDefinitionsRepositoryContract].
-class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryContract {
+class ScreenDefinitionsRepositoryImpl
+    implements ScreenDefinitionsRepositoryContract {
   ScreenDefinitionsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -219,6 +221,13 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
     final trigger = e.triggerConfig;
     final completionCriteria = e.completionCriteria;
 
+    // Map category from Drift enum to domain enum
+    final category = switch (e.category) {
+      db_screens.ScreenCategory.workspace => ScreenCategory.workspace,
+      db_screens.ScreenCategory.wellbeing => ScreenCategory.wellbeing,
+      db_screens.ScreenCategory.settings => ScreenCategory.settings,
+    };
+
     final base = (
       id: e.id,
       userId: e.userId ?? '',
@@ -232,6 +241,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
       isSystem: e.isSystem,
       isActive: e.isActive,
       sortOrder: e.sortOrder,
+      category: category,
     );
 
     return switch (e.screenType) {
@@ -248,6 +258,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
         isSystem: base.isSystem,
         isActive: base.isActive,
         sortOrder: base.sortOrder,
+        category: base.category,
       ),
       db_screens.ScreenType.workflow => ScreenDefinition.workflow(
         id: base.id,
@@ -262,6 +273,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
         isSystem: base.isSystem,
         isActive: base.isActive,
         sortOrder: base.sortOrder,
+        category: base.category,
         trigger: trigger,
         completionCriteria: completionCriteria,
       ),
@@ -295,6 +307,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => (
             db_screens.ScreenType.collection,
             selector,
@@ -316,6 +329,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => (
@@ -350,6 +364,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => id,
       workflow:
           (
@@ -365,6 +380,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => id,
@@ -387,6 +403,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => screenId,
       workflow:
           (
@@ -402,6 +419,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => screenId,
@@ -424,6 +442,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => name,
       workflow:
           (
@@ -439,6 +458,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => name,
@@ -461,6 +481,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => iconName,
       workflow:
           (
@@ -476,6 +497,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => iconName,
@@ -506,6 +528,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => isSystem,
       workflow:
           (
@@ -521,6 +544,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => isSystem,
@@ -543,6 +567,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => isActive,
       workflow:
           (
@@ -558,6 +583,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => isActive,
@@ -580,6 +606,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
           ) => sortOrder,
       workflow:
           (
@@ -595,6 +622,7 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryCont
             isSystem,
             isActive,
             sortOrder,
+            category,
             trigger,
             completionCriteria,
           ) => sortOrder,

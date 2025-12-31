@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
@@ -356,8 +358,11 @@ class _UpcomingViewState extends State<UpcomingView> {
           Icons.chevron_right,
           color: colorScheme.onSurfaceVariant,
         ),
-        onTap: () {
-          // TODO: Navigate to project detail
+        onTap: () async {
+          await context.pushNamed(
+            AppRouteName.projectDetail,
+            pathParameters: {'projectId': project.id},
+          );
         },
       ),
     );
