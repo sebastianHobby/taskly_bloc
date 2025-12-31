@@ -3,8 +3,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';

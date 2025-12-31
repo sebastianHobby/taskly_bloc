@@ -1,11 +1,5 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/domain/queries/operators/bool_comparison.dart'
-    show BoolComparison;
-import 'package:taskly_bloc/domain/queries/operators/date_comparison.dart'
-    show DateComparison;
-import 'package:taskly_bloc/domain/queries/operators/label_comparison.dart'
-    show LabelComparison;
 import 'package:taskly_bloc/domain/queries/operators/operators.dart'
     show BoolComparison, DateComparison, LabelComparison;
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'

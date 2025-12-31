@@ -1,11 +1,9 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart'
     show TaskRepository;
-import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
@@ -330,7 +328,9 @@ void main() {
               nextActionPriority: any(named: 'nextActionPriority'),
               nextActionNotes: any(named: 'nextActionNotes'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async {
+            return null;
+          });
 
           return TaskDetailBloc(
             taskRepository: ctx.taskRepo,
@@ -401,7 +401,9 @@ void main() {
               nextActionPriority: any(named: 'nextActionPriority'),
               nextActionNotes: any(named: 'nextActionNotes'),
             ),
-          ).thenAnswer((_) async {});
+          ).thenAnswer((_) async {
+            return null;
+          });
 
           return TaskDetailBloc(
             taskRepository: ctx.taskRepo,

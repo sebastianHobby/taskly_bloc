@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
 
 import '../../fixtures/test_data.dart';
 

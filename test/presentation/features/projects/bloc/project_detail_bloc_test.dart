@@ -6,11 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
-import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
-import '../../../../helpers/bloc_test_helpers.dart';
 import '../../../../helpers/custom_matchers.dart';
 import '../../../../helpers/fallback_values.dart';
 import '../../../../mocks/repository_mocks.dart';
