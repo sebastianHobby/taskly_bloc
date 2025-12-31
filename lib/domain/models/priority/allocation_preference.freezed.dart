@@ -17,7 +17,10 @@ mixin _$AllocationPreference {
 
  String get id; String get userId; DateTime get createdAt; DateTime get updatedAt; AllocationStrategyType get strategyType; double get urgencyInfluence;// For urgency_weighted (0-1)
  int get minimumTasksPerCategory;// For minimum_viable
- int get topNCategories;
+ int get topNCategories;// For top_categories
+ int get dailyTaskLimit;// Maximum focus tasks per day
+ bool get showExcludedUrgentWarning;// Show urgent task warnings
+ int get urgencyThresholdDays;
 /// Create a copy of AllocationPreference
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -30,16 +33,16 @@ $AllocationPreferenceCopyWith<AllocationPreference> get copyWith => _$Allocation
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationPreference&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.strategyType, strategyType) || other.strategyType == strategyType)&&(identical(other.urgencyInfluence, urgencyInfluence) || other.urgencyInfluence == urgencyInfluence)&&(identical(other.minimumTasksPerCategory, minimumTasksPerCategory) || other.minimumTasksPerCategory == minimumTasksPerCategory)&&(identical(other.topNCategories, topNCategories) || other.topNCategories == topNCategories));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationPreference&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.strategyType, strategyType) || other.strategyType == strategyType)&&(identical(other.urgencyInfluence, urgencyInfluence) || other.urgencyInfluence == urgencyInfluence)&&(identical(other.minimumTasksPerCategory, minimumTasksPerCategory) || other.minimumTasksPerCategory == minimumTasksPerCategory)&&(identical(other.topNCategories, topNCategories) || other.topNCategories == topNCategories)&&(identical(other.dailyTaskLimit, dailyTaskLimit) || other.dailyTaskLimit == dailyTaskLimit)&&(identical(other.showExcludedUrgentWarning, showExcludedUrgentWarning) || other.showExcludedUrgentWarning == showExcludedUrgentWarning)&&(identical(other.urgencyThresholdDays, urgencyThresholdDays) || other.urgencyThresholdDays == urgencyThresholdDays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,createdAt,updatedAt,strategyType,urgencyInfluence,minimumTasksPerCategory,topNCategories);
+int get hashCode => Object.hash(runtimeType,id,userId,createdAt,updatedAt,strategyType,urgencyInfluence,minimumTasksPerCategory,topNCategories,dailyTaskLimit,showExcludedUrgentWarning,urgencyThresholdDays);
 
 @override
 String toString() {
-  return 'AllocationPreference(id: $id, userId: $userId, createdAt: $createdAt, updatedAt: $updatedAt, strategyType: $strategyType, urgencyInfluence: $urgencyInfluence, minimumTasksPerCategory: $minimumTasksPerCategory, topNCategories: $topNCategories)';
+  return 'AllocationPreference(id: $id, userId: $userId, createdAt: $createdAt, updatedAt: $updatedAt, strategyType: $strategyType, urgencyInfluence: $urgencyInfluence, minimumTasksPerCategory: $minimumTasksPerCategory, topNCategories: $topNCategories, dailyTaskLimit: $dailyTaskLimit, showExcludedUrgentWarning: $showExcludedUrgentWarning, urgencyThresholdDays: $urgencyThresholdDays)';
 }
 
 
@@ -50,7 +53,7 @@ abstract mixin class $AllocationPreferenceCopyWith<$Res>  {
   factory $AllocationPreferenceCopyWith(AllocationPreference value, $Res Function(AllocationPreference) _then) = _$AllocationPreferenceCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, DateTime createdAt, DateTime updatedAt, AllocationStrategyType strategyType, double urgencyInfluence, int minimumTasksPerCategory, int topNCategories
+ String id, String userId, DateTime createdAt, DateTime updatedAt, AllocationStrategyType strategyType, double urgencyInfluence, int minimumTasksPerCategory, int topNCategories, int dailyTaskLimit, bool showExcludedUrgentWarning, int urgencyThresholdDays
 });
 
 
@@ -67,7 +70,7 @@ class _$AllocationPreferenceCopyWithImpl<$Res>
 
 /// Create a copy of AllocationPreference
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? createdAt = null,Object? updatedAt = null,Object? strategyType = null,Object? urgencyInfluence = null,Object? minimumTasksPerCategory = null,Object? topNCategories = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? createdAt = null,Object? updatedAt = null,Object? strategyType = null,Object? urgencyInfluence = null,Object? minimumTasksPerCategory = null,Object? topNCategories = null,Object? dailyTaskLimit = null,Object? showExcludedUrgentWarning = null,Object? urgencyThresholdDays = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -77,6 +80,9 @@ as DateTime,strategyType: null == strategyType ? _self.strategyType : strategyTy
 as AllocationStrategyType,urgencyInfluence: null == urgencyInfluence ? _self.urgencyInfluence : urgencyInfluence // ignore: cast_nullable_to_non_nullable
 as double,minimumTasksPerCategory: null == minimumTasksPerCategory ? _self.minimumTasksPerCategory : minimumTasksPerCategory // ignore: cast_nullable_to_non_nullable
 as int,topNCategories: null == topNCategories ? _self.topNCategories : topNCategories // ignore: cast_nullable_to_non_nullable
+as int,dailyTaskLimit: null == dailyTaskLimit ? _self.dailyTaskLimit : dailyTaskLimit // ignore: cast_nullable_to_non_nullable
+as int,showExcludedUrgentWarning: null == showExcludedUrgentWarning ? _self.showExcludedUrgentWarning : showExcludedUrgentWarning // ignore: cast_nullable_to_non_nullable
+as bool,urgencyThresholdDays: null == urgencyThresholdDays ? _self.urgencyThresholdDays : urgencyThresholdDays // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }
@@ -162,10 +168,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories,  int dailyTaskLimit,  bool showExcludedUrgentWarning,  int urgencyThresholdDays)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AllocationPreference() when $default != null:
-return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories);case _:
+return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories,_that.dailyTaskLimit,_that.showExcludedUrgentWarning,_that.urgencyThresholdDays);case _:
   return orElse();
 
 }
@@ -183,10 +189,10 @@ return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.stra
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories,  int dailyTaskLimit,  bool showExcludedUrgentWarning,  int urgencyThresholdDays)  $default,) {final _that = this;
 switch (_that) {
 case _AllocationPreference():
-return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories);case _:
+return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories,_that.dailyTaskLimit,_that.showExcludedUrgentWarning,_that.urgencyThresholdDays);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -203,10 +209,10 @@ return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.stra
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  DateTime createdAt,  DateTime updatedAt,  AllocationStrategyType strategyType,  double urgencyInfluence,  int minimumTasksPerCategory,  int topNCategories,  int dailyTaskLimit,  bool showExcludedUrgentWarning,  int urgencyThresholdDays)?  $default,) {final _that = this;
 switch (_that) {
 case _AllocationPreference() when $default != null:
-return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories);case _:
+return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.strategyType,_that.urgencyInfluence,_that.minimumTasksPerCategory,_that.topNCategories,_that.dailyTaskLimit,_that.showExcludedUrgentWarning,_that.urgencyThresholdDays);case _:
   return null;
 
 }
@@ -218,7 +224,7 @@ return $default(_that.id,_that.userId,_that.createdAt,_that.updatedAt,_that.stra
 @JsonSerializable()
 
 class _AllocationPreference implements AllocationPreference {
-  const _AllocationPreference({required this.id, required this.userId, required this.createdAt, required this.updatedAt, this.strategyType = AllocationStrategyType.proportional, this.urgencyInfluence = 0.4, this.minimumTasksPerCategory = 1, this.topNCategories = 3});
+  const _AllocationPreference({required this.id, required this.userId, required this.createdAt, required this.updatedAt, this.strategyType = AllocationStrategyType.proportional, this.urgencyInfluence = 0.4, this.minimumTasksPerCategory = 1, this.topNCategories = 3, this.dailyTaskLimit = 10, this.showExcludedUrgentWarning = true, this.urgencyThresholdDays = 3});
   factory _AllocationPreference.fromJson(Map<String, dynamic> json) => _$AllocationPreferenceFromJson(json);
 
 @override final  String id;
@@ -231,6 +237,12 @@ class _AllocationPreference implements AllocationPreference {
 @override@JsonKey() final  int minimumTasksPerCategory;
 // For minimum_viable
 @override@JsonKey() final  int topNCategories;
+// For top_categories
+@override@JsonKey() final  int dailyTaskLimit;
+// Maximum focus tasks per day
+@override@JsonKey() final  bool showExcludedUrgentWarning;
+// Show urgent task warnings
+@override@JsonKey() final  int urgencyThresholdDays;
 
 /// Create a copy of AllocationPreference
 /// with the given fields replaced by the non-null parameter values.
@@ -245,16 +257,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationPreference&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.strategyType, strategyType) || other.strategyType == strategyType)&&(identical(other.urgencyInfluence, urgencyInfluence) || other.urgencyInfluence == urgencyInfluence)&&(identical(other.minimumTasksPerCategory, minimumTasksPerCategory) || other.minimumTasksPerCategory == minimumTasksPerCategory)&&(identical(other.topNCategories, topNCategories) || other.topNCategories == topNCategories));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationPreference&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.strategyType, strategyType) || other.strategyType == strategyType)&&(identical(other.urgencyInfluence, urgencyInfluence) || other.urgencyInfluence == urgencyInfluence)&&(identical(other.minimumTasksPerCategory, minimumTasksPerCategory) || other.minimumTasksPerCategory == minimumTasksPerCategory)&&(identical(other.topNCategories, topNCategories) || other.topNCategories == topNCategories)&&(identical(other.dailyTaskLimit, dailyTaskLimit) || other.dailyTaskLimit == dailyTaskLimit)&&(identical(other.showExcludedUrgentWarning, showExcludedUrgentWarning) || other.showExcludedUrgentWarning == showExcludedUrgentWarning)&&(identical(other.urgencyThresholdDays, urgencyThresholdDays) || other.urgencyThresholdDays == urgencyThresholdDays));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,createdAt,updatedAt,strategyType,urgencyInfluence,minimumTasksPerCategory,topNCategories);
+int get hashCode => Object.hash(runtimeType,id,userId,createdAt,updatedAt,strategyType,urgencyInfluence,minimumTasksPerCategory,topNCategories,dailyTaskLimit,showExcludedUrgentWarning,urgencyThresholdDays);
 
 @override
 String toString() {
-  return 'AllocationPreference(id: $id, userId: $userId, createdAt: $createdAt, updatedAt: $updatedAt, strategyType: $strategyType, urgencyInfluence: $urgencyInfluence, minimumTasksPerCategory: $minimumTasksPerCategory, topNCategories: $topNCategories)';
+  return 'AllocationPreference(id: $id, userId: $userId, createdAt: $createdAt, updatedAt: $updatedAt, strategyType: $strategyType, urgencyInfluence: $urgencyInfluence, minimumTasksPerCategory: $minimumTasksPerCategory, topNCategories: $topNCategories, dailyTaskLimit: $dailyTaskLimit, showExcludedUrgentWarning: $showExcludedUrgentWarning, urgencyThresholdDays: $urgencyThresholdDays)';
 }
 
 
@@ -265,7 +277,7 @@ abstract mixin class _$AllocationPreferenceCopyWith<$Res> implements $Allocation
   factory _$AllocationPreferenceCopyWith(_AllocationPreference value, $Res Function(_AllocationPreference) _then) = __$AllocationPreferenceCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, DateTime createdAt, DateTime updatedAt, AllocationStrategyType strategyType, double urgencyInfluence, int minimumTasksPerCategory, int topNCategories
+ String id, String userId, DateTime createdAt, DateTime updatedAt, AllocationStrategyType strategyType, double urgencyInfluence, int minimumTasksPerCategory, int topNCategories, int dailyTaskLimit, bool showExcludedUrgentWarning, int urgencyThresholdDays
 });
 
 
@@ -282,7 +294,7 @@ class __$AllocationPreferenceCopyWithImpl<$Res>
 
 /// Create a copy of AllocationPreference
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? createdAt = null,Object? updatedAt = null,Object? strategyType = null,Object? urgencyInfluence = null,Object? minimumTasksPerCategory = null,Object? topNCategories = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? createdAt = null,Object? updatedAt = null,Object? strategyType = null,Object? urgencyInfluence = null,Object? minimumTasksPerCategory = null,Object? topNCategories = null,Object? dailyTaskLimit = null,Object? showExcludedUrgentWarning = null,Object? urgencyThresholdDays = null,}) {
   return _then(_AllocationPreference(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -292,6 +304,9 @@ as DateTime,strategyType: null == strategyType ? _self.strategyType : strategyTy
 as AllocationStrategyType,urgencyInfluence: null == urgencyInfluence ? _self.urgencyInfluence : urgencyInfluence // ignore: cast_nullable_to_non_nullable
 as double,minimumTasksPerCategory: null == minimumTasksPerCategory ? _self.minimumTasksPerCategory : minimumTasksPerCategory // ignore: cast_nullable_to_non_nullable
 as int,topNCategories: null == topNCategories ? _self.topNCategories : topNCategories // ignore: cast_nullable_to_non_nullable
+as int,dailyTaskLimit: null == dailyTaskLimit ? _self.dailyTaskLimit : dailyTaskLimit // ignore: cast_nullable_to_non_nullable
+as int,showExcludedUrgentWarning: null == showExcludedUrgentWarning ? _self.showExcludedUrgentWarning : showExcludedUrgentWarning // ignore: cast_nullable_to_non_nullable
+as bool,urgencyThresholdDays: null == urgencyThresholdDays ? _self.urgencyThresholdDays : urgencyThresholdDays // ignore: cast_nullable_to_non_nullable
 as int,
   ));
 }

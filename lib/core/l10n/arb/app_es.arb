@@ -621,5 +621,254 @@
     "markIncompleteAction": "Marcar como incompleto",
     "@markIncompleteAction": {
         "description": "Acción del menú para marcar un proyecto como incompleto"
+    },
+    "settings": "Configuración",
+    "@settings": {
+        "description": "Etiqueta de configuración"
+    },
+    "retry": "Reintentar",
+    "@retry": {
+        "description": "Etiqueta de acción de reintentar"
+    },
+    "noTasksToFocusOn": "No hay tareas en las que enfocarse",
+    "@noTasksToFocusOn": {
+        "description": "Mensaje de estado vacío cuando no hay tareas asignadas"
+    },
+    "pinnedTasksSection": "Tareas Fijadas",
+    "@pinnedTasksSection": {
+        "description": "Título de sección para tareas fijadas"
+    },
+    "unpinTask": "Desfijar tarea",
+    "@unpinTask": {
+        "description": "Acción para quitar el fijado de una tarea"
+    },
+    "pinTask": "Fijar tarea",
+    "@pinTask": {
+        "description": "Acción para fijar una tarea arriba"
+    },
+    "excludedUrgentTasksWarning": "{count, plural, =1{1 tarea urgente excluida} other{{count} tareas urgentes excluidas}}",
+    "@excludedUrgentTasksWarning": {
+        "description": "Mensaje de advertencia para tareas urgentes excluidas",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "reviewExcludedTasks": "Revisar",
+    "@reviewExcludedTasks": {
+        "description": "Acción para revisar tareas urgentes excluidas"
+    },
+    "dismissWarning": "Descartar",
+    "@dismissWarning": {
+        "description": "Acción para descartar una advertencia"
+    },
+    "recurrenceRepeatTitle": "Repetir",
+    "@recurrenceRepeatTitle": {
+        "description": "Título del selector de recurrencia"
+    },
+    "recurrenceNever": "Nunca",
+    "@recurrenceNever": {
+        "description": "Opción de recurrencia: no repetir"
+    },
+    "recurrenceDaily": "Diario",
+    "@recurrenceDaily": {
+        "description": "Opción de recurrencia: diario"
+    },
+    "recurrenceWeekly": "Semanal",
+    "@recurrenceWeekly": {
+        "description": "Opción de recurrencia: semanal"
+    },
+    "recurrenceMonthly": "Mensual",
+    "@recurrenceMonthly": {
+        "description": "Opción de recurrencia: mensual"
+    },
+    "recurrenceYearly": "Anual",
+    "@recurrenceYearly": {
+        "description": "Opción de recurrencia: anual"
+    },
+    "recurrenceEvery": "Cada",
+    "@recurrenceEvery": {
+        "description": "Prefijo para intervalo: Cada X días"
+    },
+    "recurrenceOnDays": "En los días",
+    "@recurrenceOnDays": {
+        "description": "Etiqueta para selección de días de la semana"
+    },
+    "recurrenceEnds": "Termina",
+    "@recurrenceEnds": {
+        "description": "Etiqueta para sección de condición de fin"
+    },
+    "recurrenceAfter": "Después de",
+    "@recurrenceAfter": {
+        "description": "Condición de fin: después de X veces"
+    },
+    "recurrenceTimesLabel": "veces",
+    "@recurrenceTimesLabel": {
+        "description": "Sufijo para cantidad de ocurrencias"
+    },
+    "recurrenceOn": "El",
+    "@recurrenceOn": {
+        "description": "Condición de fin: en fecha específica"
+    },
+    "recurrenceSelectDate": "Seleccionar fecha",
+    "@recurrenceSelectDate": {
+        "description": "Texto para selección de fecha"
+    },
+    "recurrenceDoesNotRepeat": "No se repite",
+    "@recurrenceDoesNotRepeat": {
+        "description": "Texto cuando no hay recurrencia"
+    },
+    "validationRequired": "Requerido",
+    "@validationRequired": {
+        "description": "Error de validación: campo requerido"
+    },
+    "validationInvalid": "Inválido",
+    "@validationInvalid": {
+        "description": "Error de validación: valor inválido"
+    },
+    "validationMustBeGreaterThanZero": "Debe ser > 0",
+    "@validationMustBeGreaterThanZero": {
+        "description": "Error de validación: debe ser mayor que cero"
+    },
+    "validationMaxValue": "Máx {max}",
+    "@validationMaxValue": {
+        "description": "Error de validación: valor excede el máximo",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "999"
+            }
+        }
+    },
+    "doneButton": "Listo",
+    "@doneButton": {
+        "description": "Botón de acción listo"
+    },
+    "settingsTitle": "Configuración",
+    "@settingsTitle": {
+        "description": "Título de la pantalla de configuración"
+    },
+    "settingsAppearanceSection": "Apariencia",
+    "@settingsAppearanceSection": {
+        "description": "Sección de configuración: apariencia"
+    },
+    "settingsLanguageRegionSection": "Idioma y región",
+    "@settingsLanguageRegionSection": {
+        "description": "Sección de configuración: idioma y región"
+    },
+    "settingsAdvancedSection": "Avanzado",
+    "@settingsAdvancedSection": {
+        "description": "Sección de configuración: opciones avanzadas"
+    },
+    "settingsThemeMode": "Modo de tema",
+    "@settingsThemeMode": {
+        "description": "Etiqueta de configuración de modo de tema"
+    },
+    "settingsThemeModeSubtitle": "Elige entre tema claro, oscuro o del sistema",
+    "@settingsThemeModeSubtitle": {
+        "description": "Subtítulo de configuración de modo de tema"
+    },
+    "settingsTextSize": "Tamaño del texto",
+    "@settingsTextSize": {
+        "description": "Etiqueta de configuración de tamaño de texto"
+    },
+    "settingsLanguage": "Idioma",
+    "@settingsLanguage": {
+        "description": "Etiqueta de configuración de idioma"
+    },
+    "settingsLanguageSubtitle": "Selecciona tu idioma preferido",
+    "@settingsLanguageSubtitle": {
+        "description": "Subtítulo de configuración de idioma"
+    },
+    "settingsLanguageSystem": "Sistema",
+    "@settingsLanguageSystem": {
+        "description": "Opción de idioma: predeterminado del sistema"
+    },
+    "settingsDateFormat": "Formato de fecha",
+    "@settingsDateFormat": {
+        "description": "Etiqueta de configuración de formato de fecha"
+    },
+    "settingsDateFormatShort": "Corto",
+    "@settingsDateFormatShort": {
+        "description": "Opción de formato de fecha: corto"
+    },
+    "settingsDateFormatMedium": "Medio",
+    "@settingsDateFormatMedium": {
+        "description": "Opción de formato de fecha: medio"
+    },
+    "settingsDateFormatLong": "Largo",
+    "@settingsDateFormatLong": {
+        "description": "Opción de formato de fecha: largo"
+    },
+    "settingsDateFormatFull": "Completo",
+    "@settingsDateFormatFull": {
+        "description": "Opción de formato de fecha: completo"
+    },
+    "settingsDateFormatCustom": "Personalizado",
+    "@settingsDateFormatCustom": {
+        "description": "Opción de formato de fecha: personalizado"
+    },
+    "settingsDateFormatExample": "Ejemplo: {example}",
+    "@settingsDateFormatExample": {
+        "description": "Ejemplo de formato de fecha",
+        "placeholders": {
+            "example": {
+                "type": "String",
+                "example": "30 dic 2025"
+            }
+        }
+    },
+    "settingsResetToDefaults": "Restablecer valores predeterminados",
+    "@settingsResetToDefaults": {
+        "description": "Botón para restablecer configuración"
+    },
+    "settingsResetTitle": "Restablecer configuración",
+    "@settingsResetTitle": {
+        "description": "Título del diálogo de confirmación de restablecimiento"
+    },
+    "settingsResetConfirmation": "¿Estás seguro de que quieres restablecer toda la configuración a sus valores predeterminados?",
+    "@settingsResetConfirmation": {
+        "description": "Mensaje de confirmación de restablecimiento"
+    },
+    "settingsResetSuccess": "Configuración restablecida a valores predeterminados",
+    "@settingsResetSuccess": {
+        "description": "Mensaje de éxito después de restablecer configuración"
+    },
+    "resetButton": "Restablecer",
+    "@resetButton": {
+        "description": "Botón de acción restablecer"
+    },
+    "sortFieldCreatedDate": "Fecha de creación",
+    "@sortFieldCreatedDate": {
+        "description": "Campo de orden: fecha de creación"
+    },
+    "sortFieldUpdatedDate": "Fecha de actualización",
+    "@sortFieldUpdatedDate": {
+        "description": "Campo de orden: fecha de actualización"
+    },
+    "sortFieldNextActionPriority": "Prioridad de próxima acción",
+    "@sortFieldNextActionPriority": {
+        "description": "Campo de orden: prioridad de próxima acción"
+    },
+    "sortOrderHelp": "Elige cómo ordenar los elementos",
+    "@sortOrderHelp": {
+        "description": "Texto de ayuda para configuración de orden"
+    },
+    "saveButton": "Guardar",
+    "@saveButton": {
+        "description": "Botón de acción guardar"
+    },
+    "discardButton": "Descartar",
+    "@discardButton": {
+        "description": "Botón de acción descartar"
+    },
+    "unsavedChangesTitle": "Cambios sin guardar",
+    "@unsavedChangesTitle": {
+        "description": "Título del diálogo de cambios sin guardar"
+    },
+    "confirmButton": "Confirmar",
+    "@confirmButton": {
+        "description": "Botón de acción confirmar"
     }
 }

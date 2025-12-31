@@ -4,12 +4,12 @@ import 'package:taskly_bloc/data/drift/features/priority_tables.drift.dart'
     as db_priority;
 import 'package:taskly_bloc/domain/models/priority/allocation_preference.dart'
     as model;
-import 'package:taskly_bloc/domain/repositories/allocation_preferences_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// Drift implementation of allocation preferences repository
 class AllocationPreferencesRepositoryImpl
-    implements AllocationPreferencesRepository {
+    implements AllocationPreferencesRepositoryContract {
   AllocationPreferencesRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -17,9 +17,12 @@ class AllocationPreferencesRepositoryImpl
 
   @override
   Stream<model.AllocationPreference?> watchPreferences() {
-    return _db.select(_db.allocationPreferences).watchSingleOrNull().map(
-      (pref) {
-        if (pref == null) return null;
+    // Use watch() instead of watchSingleOrNull() to handle multiple rows gracefully
+    return _db.select(_db.allocationPreferences).watch().map(
+      (prefs) {
+        if (prefs.isEmpty) return null;
+        // Take first if multiple exist (cleanup happens in getPreferences)
+        final pref = prefs.first;
         return model.AllocationPreference(
           id: pref.id,
           userId: pref.userId ?? '',
@@ -29,6 +32,9 @@ class AllocationPreferencesRepositoryImpl
           urgencyInfluence: pref.urgencyInfluence,
           minimumTasksPerCategory: pref.minimumTasksPerCategory,
           topNCategories: pref.topNCategories,
+          dailyTaskLimit: pref.dailyTaskLimit,
+          showExcludedUrgentWarning: pref.showExcludedUrgentWarning == 1,
+          urgencyThresholdDays: pref.urgencyThresholdDays,
         );
       },
     );
@@ -36,9 +42,16 @@ class AllocationPreferencesRepositoryImpl
 
   @override
   Future<model.AllocationPreference?> getPreferences() async {
-    final pref = await _db.select(_db.allocationPreferences).getSingleOrNull();
-    if (pref == null) return null;
+    // Use get() instead of getSingleOrNull() to handle multiple rows gracefully
+    final prefs = await _db.select(_db.allocationPreferences).get();
+    if (prefs.isEmpty) return null;
 
+    // If there are duplicates, clean them up (keep only the first one)
+    if (prefs.length > 1) {
+      await _cleanupDuplicatePreferences(prefs);
+    }
+
+    final pref = prefs.first;
     return model.AllocationPreference(
       id: pref.id,
       userId: pref.userId ?? '',
@@ -48,7 +61,23 @@ class AllocationPreferencesRepositoryImpl
       urgencyInfluence: pref.urgencyInfluence,
       minimumTasksPerCategory: pref.minimumTasksPerCategory,
       topNCategories: pref.topNCategories,
+      dailyTaskLimit: pref.dailyTaskLimit,
+      showExcludedUrgentWarning: pref.showExcludedUrgentWarning == 1,
+      urgencyThresholdDays: pref.urgencyThresholdDays,
     );
+  }
+
+  /// Removes duplicate preference rows, keeping only the first one.
+  Future<void> _cleanupDuplicatePreferences(
+    List<db.AllocationPreferenceEntity> prefs,
+  ) async {
+    // Keep the first, delete the rest
+    final idsToDelete = prefs.skip(1).map((p) => p.id).toList();
+    if (idsToDelete.isNotEmpty) {
+      await (_db.delete(
+        _db.allocationPreferences,
+      )..where((t) => t.id.isIn(idsToDelete))).go();
+    }
   }
 
   @override
@@ -57,11 +86,19 @@ class AllocationPreferencesRepositoryImpl
     double? urgencyInfluence,
     int? minimumTasksPerCategory,
     int? topNCategories,
+    int? dailyTaskLimit,
+    bool? showExcludedUrgentWarning,
+    int? urgencyThresholdDays,
   }) async {
     final now = DateTime.now();
-    final existing = await _db
-        .select(_db.allocationPreferences)
-        .getSingleOrNull();
+    // Use get() to handle multiple rows gracefully
+    final allPrefs = await _db.select(_db.allocationPreferences).get();
+    final existing = allPrefs.isNotEmpty ? allPrefs.first : null;
+
+    // Clean up duplicates if any
+    if (allPrefs.length > 1) {
+      await _cleanupDuplicatePreferences(allPrefs);
+    }
 
     final resolvedUrgencyInfluence =
         urgencyInfluence ?? existing?.urgencyInfluence ?? 0.4;
@@ -69,6 +106,13 @@ class AllocationPreferencesRepositoryImpl
         minimumTasksPerCategory ?? existing?.minimumTasksPerCategory ?? 1;
     final resolvedTopNCategories =
         topNCategories ?? existing?.topNCategories ?? 3;
+    final resolvedDailyTaskLimit =
+        dailyTaskLimit ?? existing?.dailyTaskLimit ?? 10;
+    final resolvedShowExcludedUrgentWarning =
+        showExcludedUrgentWarning ??
+        ((existing?.showExcludedUrgentWarning ?? 1) == 1);
+    final resolvedUrgencyThresholdDays =
+        urgencyThresholdDays ?? existing?.urgencyThresholdDays ?? 3;
 
     if (existing == null) {
       // Create new
@@ -77,11 +121,15 @@ class AllocationPreferencesRepositoryImpl
           .insert(
             db.AllocationPreferencesCompanion.insert(
               id: Value(_uuid.v4()),
-              userId: const Value(''), // server-side trigger will set
               strategyType: Value(_mapStrategyTypeToDrift(strategyType)),
               urgencyInfluence: Value(resolvedUrgencyInfluence),
               minimumTasksPerCategory: Value(resolvedMinimumTasksPerCategory),
               topNCategories: Value(resolvedTopNCategories),
+              dailyTaskLimit: Value(resolvedDailyTaskLimit),
+              showExcludedUrgentWarning: Value(
+                resolvedShowExcludedUrgentWarning ? 1 : 0,
+              ),
+              urgencyThresholdDays: Value(resolvedUrgencyThresholdDays),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -96,6 +144,11 @@ class AllocationPreferencesRepositoryImpl
           urgencyInfluence: Value(resolvedUrgencyInfluence),
           minimumTasksPerCategory: Value(resolvedMinimumTasksPerCategory),
           topNCategories: Value(resolvedTopNCategories),
+          dailyTaskLimit: Value(resolvedDailyTaskLimit),
+          showExcludedUrgentWarning: Value(
+            resolvedShowExcludedUrgentWarning ? 1 : 0,
+          ),
+          urgencyThresholdDays: Value(resolvedUrgencyThresholdDays),
           updatedAt: Value(now),
         ),
       );
@@ -104,10 +157,16 @@ class AllocationPreferencesRepositoryImpl
 
   @override
   Future<void> resetToDefaults() async {
-    final existing = await _db
-        .select(_db.allocationPreferences)
-        .getSingleOrNull();
-    if (existing == null) return;
+    // Use get() to handle multiple rows gracefully
+    final allPrefs = await _db.select(_db.allocationPreferences).get();
+    if (allPrefs.isEmpty) return;
+
+    final existing = allPrefs.first;
+
+    // Clean up duplicates if any
+    if (allPrefs.length > 1) {
+      await _cleanupDuplicatePreferences(allPrefs);
+    }
 
     await (_db.update(
       _db.allocationPreferences,
@@ -117,6 +176,9 @@ class AllocationPreferencesRepositoryImpl
         urgencyInfluence: const Value(0.4),
         minimumTasksPerCategory: const Value(1),
         topNCategories: const Value(3),
+        dailyTaskLimit: const Value(10),
+        showExcludedUrgentWarning: const Value(1),
+        urgencyThresholdDays: const Value(3),
         updatedAt: Value(DateTime.now()),
       ),
     );

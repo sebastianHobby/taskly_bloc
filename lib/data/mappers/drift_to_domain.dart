@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -11,6 +11,10 @@ Label labelFromTable(drift.LabelTableData t) {
     color: t.color,
     type: LabelType.values.byName(t.type.name),
     iconName: t.iconName,
+    isSystemLabel: t.isSystemLabel ?? false,
+    systemLabelType: t.systemLabelType != null
+        ? SystemLabelType.values.byName(t.systemLabelType!)
+        : null,
   );
 }
 
@@ -52,10 +56,6 @@ Task taskFromTable(
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
-    isNextAction: t.isNextAction,
-    nextActionPriority: t.nextActionPriority,
-    markedNextActionAt: t.markedNextActionAt,
-    nextActionNotes: t.nextActionNotes,
     project: project,
     labels: labels ?? const <Label>[],
   );

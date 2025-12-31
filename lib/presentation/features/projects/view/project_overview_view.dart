@@ -5,15 +5,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/projects_list.dart';
 import 'package:taskly_bloc/presentation/widgets/page_settings_modal.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 class ProjectOverviewPage extends StatelessWidget {
   const ProjectOverviewPage({
@@ -163,20 +164,22 @@ class _ProjectOverviewViewState extends State<ProjectOverviewView> {
         description: context.l10n.emptyProjectsDescription,
       );
     }
-    return ProjectsListView(
-      projects: projects,
-      projectRepository: widget.projectRepository,
-      labelRepository: widget.labelRepository,
-      taskCounts: taskCounts,
-      displaySettings: _displaySettings ?? const PageDisplaySettings(),
-      onDisplaySettingsChanged: (PageDisplaySettings settings) {
-        setState(() {
-          _displaySettings = settings;
-        });
-        context.read<ProjectOverviewBloc>().add(
-          ProjectOverviewEvent.displaySettingsChanged(settings: settings),
-        );
-      },
+    return ResponsiveBody(
+      child: ProjectsListView(
+        projects: projects,
+        projectRepository: widget.projectRepository,
+        labelRepository: widget.labelRepository,
+        taskCounts: taskCounts,
+        displaySettings: _displaySettings ?? const PageDisplaySettings(),
+        onDisplaySettingsChanged: (PageDisplaySettings settings) {
+          setState(() {
+            _displaySettings = settings;
+          });
+          context.read<ProjectOverviewBloc>().add(
+            ProjectOverviewEvent.displaySettingsChanged(settings: settings),
+          );
+        },
+      ),
     );
   }
 }

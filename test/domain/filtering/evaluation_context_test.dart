@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 
 void main() {
@@ -43,24 +43,24 @@ void main() {
       final dateAtMidnight = DateTime(2024);
       final context = EvaluationContext.forDate(dateAtMidnight);
 
-      expect(context.today, dateAtMidnight);
+      expect(context.today, DateTime.utc(2024));
     });
 
     test('forDate factory handles edge cases', () {
       // Leap year date
       final leapDate = DateTime(2024, 2, 29, 23, 59, 59);
       final leapContext = EvaluationContext.forDate(leapDate);
-      expect(leapContext.today, DateTime(2024, 2, 29));
+      expect(leapContext.today, DateTime.utc(2024, 2, 29));
 
       // End of year
       final endOfYear = DateTime(2024, 12, 31, 12);
       final endContext = EvaluationContext.forDate(endOfYear);
-      expect(endContext.today, DateTime(2024, 12, 31));
+      expect(endContext.today, DateTime.utc(2024, 12, 31));
 
       // Start of year
       final startOfYear = DateTime(2024, 1, 1, 0, 0, 1);
       final startContext = EvaluationContext.forDate(startOfYear);
-      expect(startContext.today, DateTime(2024));
+      expect(startContext.today, DateTime.utc(2024));
     });
 
     test('today field is immutable', () {

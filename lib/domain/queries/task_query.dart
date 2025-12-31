@@ -119,22 +119,6 @@ class TaskQuery {
     );
   }
 
-  /// Factory: Next Actions view (incomplete tasks that belong to a project).
-  factory TaskQuery.nextActions({List<SortCriterion>? sortCriteria}) {
-    return TaskQuery(
-      filter: const QueryFilter<TaskPredicate>(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-          TaskProjectPredicate(operator: ProjectOperator.isNotNull),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
   /// Factory: Schedule view (incomplete tasks with start or due dates in range).
   factory TaskQuery.schedule({
     required DateTime rangeStart,

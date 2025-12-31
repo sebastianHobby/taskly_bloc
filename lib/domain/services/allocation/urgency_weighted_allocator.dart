@@ -1,6 +1,5 @@
 import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 
@@ -24,24 +23,21 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       'Urgent tasks get boosted even if in lower-priority categories.';
 
   @override
-  Future<AllocationResult> allocate({
-    required List<Task> tasks,
-    required PriorityRanking ranking,
-    required int totalLimit,
-    Map<String, dynamic>? parameters,
-  }) async {
-    final urgencyInfluence =
-        (parameters?['urgency_influence'] as double?) ?? 0.4;
+  AllocationResult allocate(AllocationParameters parameters) {
+    final tasks = parameters.tasks;
+    final categories = parameters.categories;
+    final totalLimit = parameters.maxTasks;
+    final urgencyInfluence = parameters.urgencyInfluence;
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
     final warnings = <AllocationWarning>[];
+    final categoryWeights = categories;
 
-    // Calculate category weights
-    final categoryWeights = <String, double>{};
-    final totalWeight = ranking.items.fold<int>(
+    // Calculate total weight
+    final totalWeight = categories.values.fold<double>(
       0,
-      (sum, item) => sum + item.weight,
+      (sum, weight) => sum + weight,
     );
 
     if (totalWeight == 0) {
@@ -65,10 +61,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       );
     }
 
-    for (final item in ranking.items) {
-      categoryWeights[item.entityId] = item.weight / totalWeight;
-    }
-
     // Score all tasks
     final scoredTasks = <ScoredTask>[];
 
@@ -88,8 +80,8 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       final effectiveValues = task.getEffectiveValues();
       final categoryIds = effectiveValues.map((v) => v.id).toSet();
 
-      final matchedCategories = ranking.items
-          .where((item) => categoryIds.contains(item.entityId))
+      final matchedCategories = categories.keys
+          .where(categoryIds.contains)
           .toList();
 
       if (matchedCategories.isEmpty) {
@@ -105,9 +97,11 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       }
 
       // Use highest category weight
-      matchedCategories.sort((a, b) => b.weight.compareTo(a.weight));
-      final topCategory = matchedCategories.first;
-      final priorityScore = categoryWeights[topCategory.entityId]!;
+      matchedCategories.sort(
+        (a, b) => categories[b]!.compareTo(categories[a]!),
+      );
+      final topCategoryId = matchedCategories.first;
+      final priorityScore = categoryWeights[topCategoryId]! / totalWeight;
 
       // Calculate urgency score (0-1, where 1 = most urgent)
       final urgencyScore = _calculateUrgencyScore(task);
@@ -120,7 +114,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       scoredTasks.add(
         ScoredTask(
           task: task,
-          categoryId: topCategory.entityId,
+          categoryId: topCategoryId,
           priorityScore: priorityScore,
           urgencyScore: urgencyScore,
           finalScore: finalScore,
@@ -145,14 +139,8 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       allocatedTasks.add(
         AllocatedTask(
           task: scored.task,
-          categoryId: scored.categoryId,
-          categoryName: _getCategoryName(ranking, scored.categoryId),
+          qualifyingValueId: scored.categoryId,
           allocationScore: scored.finalScore,
-          position: i,
-          allocationReason:
-              'Score: ${scored.finalScore.toStringAsFixed(2)} '
-              '(priority: ${(scored.priorityScore * 100).toInt()}%, '
-              'urgency: ${(scored.urgencyScore * 100).toInt()}%)',
         ),
       );
     }
@@ -231,12 +219,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
     final now = DateTime.now();
     final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
     return daysUntilDeadline <= 1;
-  }
-
-  String _getCategoryName(PriorityRanking ranking, String categoryId) {
-    return ranking.items
-        .firstWhere((item) => item.entityId == categoryId)
-        .entityId;
   }
 }
 

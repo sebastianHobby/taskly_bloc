@@ -1,9 +1,14 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 /// Type of label - either a category label or a value tag.
 enum LabelType {
   label,
   value,
+}
+
+/// System label types for special functionality.
+enum SystemLabelType {
+  pinned,
 }
 
 /// Domain representation of a Label used across the app.
@@ -17,6 +22,8 @@ class Label {
     this.color,
     this.type = LabelType.label,
     this.iconName,
+    this.isSystemLabel = false,
+    this.systemLabelType,
   });
 
   final String id;
@@ -26,6 +33,8 @@ class Label {
   final String? color;
   final LabelType type;
   final String? iconName;
+  final bool isSystemLabel;
+  final SystemLabelType? systemLabelType;
 
   /// Creates a copy of this Label with the given fields replaced.
   Label copyWith({
@@ -36,6 +45,8 @@ class Label {
     String? color,
     LabelType? type,
     String? iconName,
+    bool? isSystemLabel,
+    SystemLabelType? systemLabelType,
   }) {
     return Label(
       id: id ?? this.id,
@@ -45,6 +56,8 @@ class Label {
       color: color ?? this.color,
       type: type ?? this.type,
       iconName: iconName ?? this.iconName,
+      isSystemLabel: isSystemLabel ?? this.isSystemLabel,
+      systemLabelType: systemLabelType ?? this.systemLabelType,
     );
   }
 
@@ -58,7 +71,9 @@ class Label {
         other.name == name &&
         other.color == color &&
         other.type == type &&
-        other.iconName == iconName;
+        other.iconName == iconName &&
+        other.isSystemLabel == isSystemLabel &&
+        other.systemLabelType == systemLabelType;
   }
 
   @override
@@ -70,11 +85,14 @@ class Label {
     color,
     type,
     iconName,
+    isSystemLabel,
+    systemLabelType,
   );
 
   @override
   String toString() {
     return 'Label(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, '
-        'name: $name, color: $color, type: $type, iconName: $iconName)';
+        'name: $name, color: $color, type: $type, iconName: $iconName, '
+        'isSystemLabel: $isSystemLabel, systemLabelType: $systemLabelType)';
   }
 }

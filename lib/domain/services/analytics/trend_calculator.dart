@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
 
 /// Calculates time series trends

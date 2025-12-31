@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
@@ -22,9 +22,12 @@ class LabelsListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filter out system labels (e.g., pinned) - they shouldn't be user-editable
+    final userLabels = labels.where((l) => l.systemLabelType == null).toList();
+
     return ListView(
       children: [
-        for (final label in labels)
+        for (final label in userLabels)
           SwipeToDelete(
             itemKey: ValueKey(label.id),
             enabled: enableSwipeToDelete,

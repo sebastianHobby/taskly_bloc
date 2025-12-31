@@ -1,15 +1,17 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:taskly_bloc/data/repositories/mappers/task_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/models/project_task_counts.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -44,10 +46,12 @@ class TaskRepository implements TaskRepositoryContract {
     required this.driftDb,
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
-  });
+  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb);
+
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
+  final TaskPredicateMapper _predicateMapper;
 
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
@@ -189,21 +193,10 @@ class TaskRepository implements TaskRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
-    bool isNextAction = false,
-    int? nextActionPriority,
-    String? nextActionNotes,
   }) async {
+    talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
     final now = DateTime.now();
     final id = uuid.v4();
-
-    if (nextActionPriority != null &&
-        (nextActionPriority < 1 || nextActionPriority > 100)) {
-      throw ArgumentError.value(
-        nextActionPriority,
-        'nextActionPriority',
-        'Must be between 1 and 100',
-      );
-    }
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
@@ -226,12 +219,6 @@ class TaskRepository implements TaskRepositoryContract {
                   ? const Value.absent()
                   : Value(repeatIcalRrule),
               repeatFromCompletion: Value(repeatFromCompletion),
-              isNextAction: Value(isNextAction),
-              nextActionPriority: Value(
-                isNextAction ? nextActionPriority : null,
-              ),
-              markedNextActionAt: Value(isNextAction ? now : null),
-              nextActionNotes: Value(isNextAction ? nextActionNotes : null),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -254,47 +241,6 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Future<void> updateNextAction({
-    required String id,
-    required bool isNextAction,
-    int? nextActionPriority,
-    String? nextActionNotes,
-  }) async {
-    if (nextActionPriority != null &&
-        (nextActionPriority < 1 || nextActionPriority > 100)) {
-      throw ArgumentError.value(
-        nextActionPriority,
-        'nextActionPriority',
-        'Must be between 1 and 100',
-      );
-    }
-
-    final existing = await (driftDb.select(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (existing == null) {
-      throw RepositoryNotFoundException('No task found to update');
-    }
-
-    final now = DateTime.now();
-    final markedAt = isNextAction
-        ? (existing.isNextAction ? (existing.markedNextActionAt ?? now) : now)
-        : null;
-
-    await (driftDb.update(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).write(
-      TaskTableCompanion(
-        isNextAction: Value(isNextAction),
-        nextActionPriority: Value(isNextAction ? nextActionPriority : null),
-        markedNextActionAt: Value(markedAt),
-        nextActionNotes: Value(isNextAction ? nextActionNotes : null),
-        updatedAt: Value(now),
-      ),
-    );
-  }
-
-  @override
   Future<void> update({
     required String id,
     required String name,
@@ -307,10 +253,12 @@ class TaskRepository implements TaskRepositoryContract {
     bool? repeatFromCompletion,
     List<String>? labelIds,
   }) async {
+    talker.debug('[TaskRepository] update: id=$id, name="$name"');
     final existing = await (driftDb.select(
       driftDb.taskTable,
     )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (existing == null) {
+      talker.warning('[TaskRepository] update failed: task not found id=$id');
       throw RepositoryNotFoundException('No task found to update');
     }
 
@@ -378,6 +326,7 @@ class TaskRepository implements TaskRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
+    talker.debug('[TaskRepository] delete: id=$id');
     await driftDb
         .delete(driftDb.taskTable)
         .delete(TaskTableCompanion(id: Value(id)));
@@ -624,21 +573,6 @@ class TaskRepository implements TaskRepositoryContract {
       final orderingFuncs = <OrderingTerm Function($TaskTableTable)>[];
       for (final criterion in query.sortCriteria) {
         switch (criterion.field) {
-          case SortField.nextActionPriority:
-            // Keep nulls consistently last.
-            orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
-                expression: t.nextActionPriority.isNull(),
-              ),
-            );
-            orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
-                expression: t.nextActionPriority,
-                mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
-              ),
-            );
           case SortField.name:
             orderingFuncs.add(
               ($TaskTableTable t) => OrderingTerm(
@@ -785,252 +719,11 @@ class TaskRepository implements TaskRepositoryContract {
     QueryFilter<TaskPredicate> filter,
     $TaskTableTable t,
   ) {
-    if (filter.isMatchAll) return null;
-
-    Expression<bool> sharedExpr;
-    if (filter.shared.isEmpty) {
-      sharedExpr = const Constant(true);
-    } else {
-      final expressions = filter.shared
-          .map((p) => _predicateToExpression(p, t))
-          .toList(growable: false);
-      sharedExpr = expressions.reduce((a, b) => a & b);
-    }
-
-    if (filter.orGroups.isEmpty) return sharedExpr;
-
-    final orExprs = filter.orGroups
-        .map((group) {
-          if (group.isEmpty) return const Constant(true);
-          final groupExprs = group
-              .map((p) => _predicateToExpression(p, t))
-              .toList(growable: false);
-          return groupExprs.reduce((a, b) => a & b);
-        })
-        .toList(growable: false);
-
-    final orExpr = orExprs.reduce((a, b) => a | b);
-    return sharedExpr & orExpr;
-  }
-
-  Expression<bool> _predicateToExpression(
-    TaskPredicate predicate,
-    $TaskTableTable t,
-  ) {
-    return switch (predicate) {
-      TaskBoolPredicate() => switch (predicate.operator) {
-        BoolOperator.isTrue => t.completed.equals(true),
-        BoolOperator.isFalse => t.completed.equals(false),
-      },
-      TaskProjectPredicate() => switch (predicate.operator) {
-        ProjectOperator.matches =>
-          predicate.projectId == null
-              ? const Constant(false)
-              : t.projectId.equals(predicate.projectId!),
-        ProjectOperator.matchesAny =>
-          predicate.projectIds.isEmpty
-              ? const Constant(false)
-              : t.projectId.isIn(
-                  predicate.projectIds.where((id) => id.isNotEmpty).toList(),
-                ),
-        ProjectOperator.isNull => t.projectId.isNull(),
-        ProjectOperator.isNotNull => t.projectId.isNotNull(),
-      },
-      TaskLabelPredicate() => _labelPredicateToExpression(predicate, t),
-      TaskDatePredicate() => _datePredicateToExpression(predicate, t),
-    };
-  }
-
-  Expression<bool> _labelPredicateToExpression(
-    TaskLabelPredicate predicate,
-    $TaskTableTable t,
-  ) {
-    return switch (predicate.operator) {
-      LabelOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds)),
-      ),
-      LabelOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds))
-          ..groupBy([driftDb.taskLabelsTable.taskId]),
-      ),
-      LabelOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
-      ),
-      LabelOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
-      ),
-    };
-  }
-
-  Expression<bool> _datePredicateToExpression(
-    TaskDatePredicate predicate,
-    $TaskTableTable t,
-  ) {
-    if (predicate.field == TaskDateField.completedAt) {
-      return _completedAtDatePredicateToExpression(predicate, t);
-    }
-
-    final dynamic column = switch (predicate.field) {
-      TaskDateField.startDate => t.startDate,
-      TaskDateField.deadlineDate => t.deadlineDate,
-      TaskDateField.createdAt => t.createdAt,
-      TaskDateField.updatedAt => t.updatedAt,
-      TaskDateField.completedAt => t.updatedAt,
-    };
-
-    if (predicate.operator == DateOperator.relative) {
-      final comp = predicate.relativeComparison;
-      final days = predicate.relativeDays;
-      if (comp == null || days == null) return const Constant(false);
-
-      final pivot = _relativeToAbsolute(days);
-      return (switch (comp) {
-            RelativeComparison.on => column.equals(pivot),
-            RelativeComparison.before => column.isSmallerThanValue(pivot),
-            RelativeComparison.after => column.isBiggerThanValue(pivot),
-            RelativeComparison.onOrAfter => column.isBiggerOrEqualValue(pivot),
-            RelativeComparison.onOrBefore => column.isSmallerOrEqualValue(
-              pivot,
-            ),
-          })
-          as Expression<bool>;
-    }
-
-    final date = predicate.date;
-    final start = predicate.startDate;
-    final end = predicate.endDate;
-
-    return (switch (predicate.operator) {
-          DateOperator.onOrAfter => column.isBiggerOrEqualValue(date!),
-          DateOperator.onOrBefore => column.isSmallerOrEqualValue(date!),
-          DateOperator.before => column.isSmallerThanValue(date!),
-          DateOperator.after => column.isBiggerThanValue(date!),
-          DateOperator.on => column.equals(date!),
-          DateOperator.between => column.isBetweenValues(start!, end!),
-          DateOperator.isNull => column.isNull(),
-          DateOperator.isNotNull => column.isNotNull(),
-          DateOperator.relative => const Constant(false),
-        })
-        as Expression<bool>;
-  }
-
-  Expression<bool> _completedAtDatePredicateToExpression(
-    TaskDatePredicate predicate,
-    $TaskTableTable t,
-  ) {
-    final history = driftDb.taskCompletionHistoryTable;
-
-    if (predicate.operator == DateOperator.relative) {
-      final comp = predicate.relativeComparison;
-      final days = predicate.relativeDays;
-      if (comp == null || days == null) return const Constant(false);
-
-      final absoluteDate = _relativeToAbsolute(days);
-      return switch (comp) {
-        RelativeComparison.on => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.taskId])
-            ..where(history.taskId.equalsExp(t.id))
-            ..where(history.completedAt.equals(absoluteDate)),
-        ),
-        RelativeComparison.before => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.taskId])
-            ..where(history.taskId.equalsExp(t.id))
-            ..where(history.completedAt.isSmallerThanValue(absoluteDate)),
-        ),
-        RelativeComparison.after => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.taskId])
-            ..where(history.taskId.equalsExp(t.id))
-            ..where(history.completedAt.isBiggerThanValue(absoluteDate)),
-        ),
-        RelativeComparison.onOrAfter => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.taskId])
-            ..where(history.taskId.equalsExp(t.id))
-            ..where(history.completedAt.isBiggerOrEqualValue(absoluteDate)),
-        ),
-        RelativeComparison.onOrBefore => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.taskId])
-            ..where(history.taskId.equalsExp(t.id))
-            ..where(history.completedAt.isSmallerOrEqualValue(absoluteDate)),
-        ),
-      };
-    }
-
-    final absoluteDate = predicate.date;
-    final absoluteStart = predicate.startDate;
-    final absoluteEnd = predicate.endDate;
-
-    return switch (predicate.operator) {
-      DateOperator.onOrAfter => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(history.completedAt.isBiggerOrEqualValue(absoluteDate!)),
-      ),
-      DateOperator.onOrBefore => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(history.completedAt.isSmallerOrEqualValue(absoluteDate!)),
-      ),
-      DateOperator.before => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(history.completedAt.isSmallerThanValue(absoluteDate!)),
-      ),
-      DateOperator.after => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(history.completedAt.isBiggerThanValue(absoluteDate!)),
-      ),
-      DateOperator.on => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(history.completedAt.equals(absoluteDate!)),
-      ),
-      DateOperator.between => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id))
-          ..where(
-            history.completedAt.isBetweenValues(absoluteStart!, absoluteEnd!),
-          ),
-      ),
-      DateOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id)),
-      ),
-      DateOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.taskId])
-          ..where(history.taskId.equalsExp(t.id)),
-      ),
-      DateOperator.relative => const Constant(false),
-    };
-  }
-
-  /// Converts relative days to an absolute DateTime.
-  DateTime _relativeToAbsolute(int days) {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day).add(Duration(days: days));
+    return _predicateMapper.whereExpressionFromFilter(
+      filter: filter,
+      predicateToExpression: (p) =>
+          _predicateMapper.predicateToExpression(p, t),
+    );
   }
 
   /// Checks if a query matches the inbox tier.

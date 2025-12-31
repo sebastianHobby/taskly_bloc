@@ -1,4 +1,4 @@
-﻿/// Enum representing different pages in the app that have persisted settings.
+/// Enum representing different pages in the app that have persisted settings.
 ///
 /// Each page can have its own sort preferences and display settings.
 enum PageKey {

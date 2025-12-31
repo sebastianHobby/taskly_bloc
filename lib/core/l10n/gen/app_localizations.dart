@@ -942,6 +942,354 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mark incomplete'**
   String get markIncompleteAction;
+
+  /// Settings label
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// Retry action label
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// Empty state message when no tasks are allocated
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks to focus on'**
+  String get noTasksToFocusOn;
+
+  /// Section title for pinned tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned Tasks'**
+  String get pinnedTasksSection;
+
+  /// Action to remove pin from a task
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin task'**
+  String get unpinTask;
+
+  /// Action to pin a task to top
+  ///
+  /// In en, this message translates to:
+  /// **'Pin task'**
+  String get pinTask;
+
+  /// Warning message for excluded urgent tasks
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 urgent task excluded} other{{count} urgent tasks excluded}}'**
+  String excludedUrgentTasksWarning(int count);
+
+  /// Action to review excluded urgent tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get reviewExcludedTasks;
+
+  /// Action to dismiss a warning
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismissWarning;
+
+  /// Title for recurrence picker dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get recurrenceRepeatTitle;
+
+  /// Recurrence option: no repeat
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get recurrenceNever;
+
+  /// Recurrence option: daily
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get recurrenceDaily;
+
+  /// Recurrence option: weekly
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get recurrenceWeekly;
+
+  /// Recurrence option: monthly
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get recurrenceMonthly;
+
+  /// Recurrence option: yearly
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get recurrenceYearly;
+
+  /// Prefix for interval: Every X days
+  ///
+  /// In en, this message translates to:
+  /// **'Every'**
+  String get recurrenceEvery;
+
+  /// Label for weekday selection in weekly recurrence
+  ///
+  /// In en, this message translates to:
+  /// **'On days'**
+  String get recurrenceOnDays;
+
+  /// Label for end condition section
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get recurrenceEnds;
+
+  /// End condition: after X times
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get recurrenceAfter;
+
+  /// Suffix for occurrence count
+  ///
+  /// In en, this message translates to:
+  /// **'times'**
+  String get recurrenceTimesLabel;
+
+  /// End condition: on specific date
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get recurrenceOn;
+
+  /// Placeholder for date selection
+  ///
+  /// In en, this message translates to:
+  /// **'Select date'**
+  String get recurrenceSelectDate;
+
+  /// Text shown when no recurrence is set
+  ///
+  /// In en, this message translates to:
+  /// **'Does not repeat'**
+  String get recurrenceDoesNotRepeat;
+
+  /// Validation error: field is required
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get validationRequired;
+
+  /// Validation error: value is invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid'**
+  String get validationInvalid;
+
+  /// Validation error: value must be greater than zero
+  ///
+  /// In en, this message translates to:
+  /// **'Must be > 0'**
+  String get validationMustBeGreaterThanZero;
+
+  /// Validation error: value exceeds maximum
+  ///
+  /// In en, this message translates to:
+  /// **'Max {max}'**
+  String validationMaxValue(int max);
+
+  /// Done action button
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneButton;
+
+  /// Title for settings screen
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// Settings section: appearance
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearanceSection;
+
+  /// Settings section: language and region
+  ///
+  /// In en, this message translates to:
+  /// **'Language & Region'**
+  String get settingsLanguageRegionSection;
+
+  /// Settings section: advanced options
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
+  String get settingsAdvancedSection;
+
+  /// Theme mode setting label
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Mode'**
+  String get settingsThemeMode;
+
+  /// Theme mode setting subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Choose between light, dark, or system theme'**
+  String get settingsThemeModeSubtitle;
+
+  /// Text size setting label
+  ///
+  /// In en, this message translates to:
+  /// **'Text Size'**
+  String get settingsTextSize;
+
+  /// Language setting label
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get settingsLanguage;
+
+  /// Language setting subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Select your preferred language'**
+  String get settingsLanguageSubtitle;
+
+  /// Language option: system default
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get settingsLanguageSystem;
+
+  /// Date format setting label
+  ///
+  /// In en, this message translates to:
+  /// **'Date Format'**
+  String get settingsDateFormat;
+
+  /// Date format option: short
+  ///
+  /// In en, this message translates to:
+  /// **'Short'**
+  String get settingsDateFormatShort;
+
+  /// Date format option: medium
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get settingsDateFormatMedium;
+
+  /// Date format option: long
+  ///
+  /// In en, this message translates to:
+  /// **'Long'**
+  String get settingsDateFormatLong;
+
+  /// Date format option: full
+  ///
+  /// In en, this message translates to:
+  /// **'Full'**
+  String get settingsDateFormatFull;
+
+  /// Date format option: custom
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsDateFormatCustom;
+
+  /// Date format example display
+  ///
+  /// In en, this message translates to:
+  /// **'Example: {example}'**
+  String settingsDateFormatExample(String example);
+
+  /// Button to reset settings
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to Defaults'**
+  String get settingsResetToDefaults;
+
+  /// Dialog title for reset confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Settings'**
+  String get settingsResetTitle;
+
+  /// Reset confirmation message
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to reset all settings to their default values?'**
+  String get settingsResetConfirmation;
+
+  /// Success message after resetting settings
+  ///
+  /// In en, this message translates to:
+  /// **'Settings reset to defaults'**
+  String get settingsResetSuccess;
+
+  /// Reset action button
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get resetButton;
+
+  /// Sort field: created date
+  ///
+  /// In en, this message translates to:
+  /// **'Created date'**
+  String get sortFieldCreatedDate;
+
+  /// Sort field: updated date
+  ///
+  /// In en, this message translates to:
+  /// **'Updated date'**
+  String get sortFieldUpdatedDate;
+
+  /// Sort field: next action priority
+  ///
+  /// In en, this message translates to:
+  /// **'Next action priority'**
+  String get sortFieldNextActionPriority;
+
+  /// Help text for sort configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how to order items'**
+  String get sortOrderHelp;
+
+  /// Save action button
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveButton;
+
+  /// Discard action button
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get discardButton;
+
+  /// Dialog title for unsaved changes
+  ///
+  /// In en, this message translates to:
+  /// **'Unsaved Changes'**
+  String get unsavedChangesTitle;
+
+  /// Confirm action button
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get confirmButton;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

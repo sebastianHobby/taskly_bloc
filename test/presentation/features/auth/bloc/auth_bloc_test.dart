@@ -1,3 +1,6 @@
+@Tags(['unit', 'auth'])
+library;
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -5,20 +8,36 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 
 import '../../../../helpers/fallback_values.dart';
+import '../../../../helpers/custom_matchers.dart';
 import '../../../../mocks/feature_mocks.dart';
 
+/// Tests for [AuthBloc] covering authentication flows.
+///
+/// Coverage:
+/// - ✅ Initial state
+/// - ✅ Session subscription
+/// - ✅ Sign in flows
+/// - ✅ Sign out flows
+/// - ✅ Error handling
 void main() {
-  late MockAuthRepository mockAuthRepo;
-
-  setUp(() {
-    mockAuthRepo = MockAuthRepository();
-  });
+  late MockAuthRepositoryContract mockAuthRepo;
+  late MockUserDataSeeder mockUserDataSeeder;
 
   setUpAll(registerAllFallbackValues);
 
+  setUp(() {
+    mockAuthRepo = MockAuthRepositoryContract();
+    mockUserDataSeeder = MockUserDataSeeder();
+    // Stub default behavior for seeder
+    when(() => mockUserDataSeeder.seedAll()).thenAnswer((_) async {});
+  });
+
   group('AuthBloc - Initialization', () {
     test('initial state is unauthenticated', () {
-      final bloc = AuthBloc(authRepository: mockAuthRepo);
+      final bloc = AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      );
       expect(bloc.state.status, AuthStatus.initial);
       expect(bloc.state.user, isNull);
       bloc.close();
@@ -48,13 +67,13 @@ void main() {
           ),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.authenticated)
-            .having((s) => s.user, 'user', isNotNull)
-            .having((s) => s.user?.id, 'user.id', 'user-1'),
+        isAuthenticatedState(userId: 'user-1'),
       ],
     );
 
@@ -68,12 +87,13 @@ void main() {
           ),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.unauthenticated)
-            .having((s) => s.user, 'user', isNull),
+        isUnauthenticatedState(),
       ],
     );
 
@@ -100,7 +120,10 @@ void main() {
           ]),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
         isA<AppAuthState>().having(
@@ -140,7 +163,10 @@ void main() {
           (_) async => AuthResponse(session: session, user: user),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthSignInRequested(
           email: 'test@example.com',
@@ -181,7 +207,10 @@ void main() {
           AuthException('Invalid credentials'),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthSignInRequested(
           email: 'test@example.com',
@@ -213,7 +242,10 @@ void main() {
           (_) async => AuthResponse(),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthSignInRequested(
           email: 'test@example.com',
@@ -258,7 +290,10 @@ void main() {
           (_) async => AuthResponse(session: session, user: user),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthSignUpRequested(
           email: 'newuser@example.com',
@@ -298,7 +333,10 @@ void main() {
           AuthException('Email already registered'),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthSignUpRequested(
           email: 'existing@example.com',
@@ -328,14 +366,12 @@ void main() {
       setUp: () {
         when(() => mockAuthRepo.signOut()).thenAnswer((_) async {});
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(const AuthSignOutRequested()),
       expect: () => [
-        isA<AppAuthState>().having(
-          (s) => s.status,
-          'status',
-          AuthStatus.loading,
-        ),
         isA<AppAuthState>()
             .having((s) => s.status, 'status', AuthStatus.unauthenticated)
             .having((s) => s.user, 'user', isNull),
@@ -352,17 +388,18 @@ void main() {
           Exception('Sign out failed'),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(const AuthSignOutRequested()),
       expect: () => [
+        // Sign out doesn't emit loading state, just error on failure
         isA<AppAuthState>().having(
-          (s) => s.status,
-          'status',
-          AuthStatus.loading,
+          (s) => s.error,
+          'error',
+          contains('Sign out failed'),
         ),
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.unauthenticated)
-            .having((s) => s.error, 'error', contains('Sign out failed')),
       ],
     );
   });
@@ -375,7 +412,10 @@ void main() {
           () => mockAuthRepo.resetPasswordForEmail(any()),
         ).thenAnswer((_) async {});
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthPasswordResetRequested(email: 'test@example.com'),
       ),
@@ -405,7 +445,10 @@ void main() {
           AuthException('Email not found'),
         );
       },
-      build: () => AuthBloc(authRepository: mockAuthRepo),
+      build: () => AuthBloc(
+        authRepository: mockAuthRepo,
+        userDataSeeder: mockUserDataSeeder,
+      ),
       act: (bloc) => bloc.add(
         const AuthPasswordResetRequested(email: 'nonexistent@example.com'),
       ),

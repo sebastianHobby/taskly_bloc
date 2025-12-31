@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/page_key.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/domain/repositories/problem_acknowledgments_repository.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
-import 'package:taskly_bloc/domain/repositories/workflow_sessions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_definition_bloc.dart';
@@ -21,7 +21,7 @@ import 'package:taskly_bloc/presentation/features/screens/view/workflow_run_page
 import 'package:taskly_bloc/presentation/features/projects/view/project_overview_view.dart';
 import 'package:taskly_bloc/presentation/features/labels/view/label_overview_view.dart';
 import 'package:taskly_bloc/presentation/features/labels/view/value_overview_view.dart';
-import 'package:taskly_bloc/presentation/features/next_action/view/next_actions_view.dart';
+import 'package:taskly_bloc/presentation/features/next_action/view/next_actions_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/inbox_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/upcoming_view.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -49,20 +49,24 @@ class ScreenHostPage extends StatelessWidget {
   });
 
   final String screenId;
-  final ScreenDefinitionsRepository screensRepository;
+  final ScreenDefinitionsRepositoryContract screensRepository;
   final ScreenQueryBuilder queryBuilder;
   final SupportBlockComputer supportBlockComputer;
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
   final LabelRepositoryContract labelRepository;
   final SettingsRepositoryContract settingsRepository;
-  final ProblemAcknowledgmentsRepository problemAcknowledgmentsRepository;
-  final WorkflowSessionsRepository workflowSessionsRepository;
-  final WorkflowItemReviewsRepository workflowItemReviewsRepository;
+  final ProblemAcknowledgmentsRepositoryContract
+  problemAcknowledgmentsRepository;
+  final WorkflowSessionsRepositoryContract workflowSessionsRepository;
+  final WorkflowItemReviewsRepositoryContract workflowItemReviewsRepository;
 
   @override
   Widget build(BuildContext context) {
+    // Use a ValueKey based on screenId to force BlocProvider recreation
+    // when navigating between different screens within the same ShellRoute
     return BlocProvider(
+      key: ValueKey('screen_bloc_$screenId'),
       create: (_) => ScreenDefinitionBloc(repository: screensRepository)
         ..add(ScreenDefinitionEvent.subscriptionRequested(screenId: screenId)),
       child: BlocBuilder<ScreenDefinitionBloc, ScreenDefinitionState>(
@@ -164,11 +168,8 @@ class ScreenHostPage extends StatelessWidget {
               pageKey: PageKey.labelValueOverview,
             );
           case 'next_actions':
-            return TaskNextActionsPage(
-              projectRepository: projectRepository,
-              taskRepository: taskRepository,
-              labelRepository: labelRepository,
-            );
+            // Use new allocation-based NextActionsPage
+            return const NextActionsPage();
           default:
             if (collection.selector.entityType != EntityType.task) {
               return Scaffold(

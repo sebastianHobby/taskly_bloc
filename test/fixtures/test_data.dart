@@ -1,21 +1,47 @@
-﻿import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 
-/// Test data builders (Object Mother pattern) for creating domain objects
-/// in tests with sensible defaults and optional overrides.
+/// Test data builders using the Object Mother pattern.
+///
+/// Provides factory methods for creating domain objects with sensible defaults
+/// and optional overrides. This centralizes test data creation and makes tests
+/// more maintainable when domain models change.
 ///
 /// Usage:
 /// ```dart
-/// final task = TestData.task(name: 'My Task', completed: true);
-/// final correlation = TestData.correlation(coefficient: 0.85);
+/// // Simple usage with defaults
+/// final task = TestData.task();
+///
+/// // Override specific properties
+/// final completedTask = TestData.task(
+///   name: 'My Task',
+///   completed: true,
+///   deadlineDate: DateTime(2025, 12, 31),
+/// );
+///
+/// // Complex objects
+/// final project = TestData.project(
+///   name: 'My Project',
+///   labels: [TestData.label(name: 'Urgent')],
+/// );
 /// ```
+///
+/// Benefits:
+/// - Reduces test boilerplate
+/// - Provides consistent test data
+/// - Single place to update when models change
+/// - Makes test intent clear through named parameters
 class TestData {
   static int _counter = 0;
 
@@ -33,8 +59,10 @@ class TestData {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    Project? project,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<Label>? labels,
   }) {
     final now = DateTime.now();
@@ -48,8 +76,10 @@ class TestData {
       startDate: startDate,
       deadlineDate: deadlineDate,
       projectId: projectId,
+      project: project,
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
       labels: labels ?? [],
     );
   }
@@ -64,7 +94,10 @@ class TestData {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? repeatIcalRrule,
+    bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<Label>? labels,
+    OccurrenceData? occurrence,
   }) {
     final now = DateTime.now();
     return Project(
@@ -77,7 +110,10 @@ class TestData {
       startDate: startDate,
       deadlineDate: deadlineDate,
       repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
       labels: labels ?? [],
+      occurrence: occurrence,
     );
   }
 
@@ -171,7 +207,7 @@ class TestData {
     String description = 'Test insight description',
     DateTime? generatedAt,
     DateTime? periodStart,
-     DateTime? periodEnd,
+    DateTime? periodEnd,
     Map<String, dynamic> metadata = const {},
     double? score,
     double? confidence,
@@ -225,7 +261,7 @@ class TestData {
       updatedAt: updatedAt ?? now,
       moodRating: moodRating,
       journalText: journalText,
-      trackerResponses: trackerResponses ?? [],
+      perEntryTrackerResponses: trackerResponses ?? [],
     );
   }
 
@@ -273,9 +309,59 @@ class TestData {
     );
   }
 
+  static DailyTrackerResponse dailyTrackerResponse({
+    String? id,
+    DateTime? responseDate,
+    String? trackerId,
+    TrackerResponseValue? value,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    final now = DateTime.now();
+    return DailyTrackerResponse(
+      id: id ?? _nextId('daily-response'),
+      responseDate: responseDate ?? DateTime(now.year, now.month, now.day),
+      trackerId: trackerId ?? 'tracker-1',
+      value: value ?? const TrackerResponseValue.yesNo(value: true),
+      createdAt: createdAt ?? now,
+      updatedAt: updatedAt ?? now,
+    );
+  }
+
   /// Reset the counter (useful between test groups)
   static void resetCounter() {
     _counter = 0;
+  }
+
+  // === Enums and Simple Types ===
+
+  /// Returns a default LabelType for fallback registration
+  static LabelType labelType() => LabelType.label;
+
+  // === Screens ===
+
+  /// Creates a screen definition for testing
+  static ScreenDefinition screenDefinition({
+    String? id,
+    String? userId,
+    String? screenId,
+    String name = 'Test Screen',
+    EntitySelector? selector,
+    DisplayConfig? display,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    final now = DateTime.now();
+    return ScreenDefinition.collection(
+      id: id ?? _nextId('screen'),
+      userId: userId ?? 'user-1',
+      screenId: screenId ?? 'screen-id-1',
+      name: name,
+      selector: selector ?? const EntitySelector(entityType: EntityType.task),
+      display: display ?? const DisplayConfig(),
+      createdAt: createdAt ?? now,
+      updatedAt: updatedAt ?? now,
+    );
   }
 
   // === Pre-built Sample Entities ===
@@ -302,6 +388,173 @@ class TestData {
     createdAt: TestConstants.referenceDate,
     updatedAt: TestConstants.referenceDate,
   );
+
+  // === Enhanced Factory Methods ===
+
+  /// Creates multiple tasks with sequential IDs
+  static List<Task> tasks(int count) {
+    return List.generate(
+      count,
+      (i) => task(id: 'task-$i', name: 'Task $i'),
+    );
+  }
+
+  /// Creates multiple projects with sequential IDs
+  static List<Project> projects(int count) {
+    return List.generate(
+      count,
+      (i) => project(id: 'project-$i', name: 'Project $i'),
+    );
+  }
+
+  /// Creates multiple labels with sequential IDs
+  static List<Label> labels(int count) {
+    return List.generate(
+      count,
+      (i) => label(id: 'label-$i', name: 'Label $i'),
+    );
+  }
+
+  /// Creates a completed task
+  static Task completedTask({
+    String? id,
+    String name = 'Completed Task',
+    DateTime? completedAt,
+  }) {
+    return task(
+      id: id,
+      name: name,
+      completed: true,
+      updatedAt: completedAt ?? DateTime.now(),
+    );
+  }
+
+  /// Creates an overdue task (deadline in the past)
+  static Task overdueTask({
+    String? id,
+    String name = 'Overdue Task',
+    int daysOverdue = 1,
+  }) {
+    return task(
+      id: id,
+      name: name,
+      deadlineDate: DateTime.now().subtract(Duration(days: daysOverdue)),
+    );
+  }
+
+  /// Creates a recurring daily task
+  static Task recurringDailyTask({
+    String? id,
+    String name = 'Daily Task',
+  }) {
+    return task(
+      id: id,
+      name: name,
+      repeatIcalRrule: 'FREQ=DAILY',
+      startDate: DateTime.now(),
+    );
+  }
+
+  /// Creates a recurring weekly task
+  static Task recurringWeeklyTask({
+    String? id,
+    String name = 'Weekly Task',
+  }) {
+    return task(
+      id: id,
+      name: name,
+      repeatIcalRrule: 'FREQ=WEEKLY',
+      startDate: DateTime.now(),
+    );
+  }
+
+  /// Creates a task with project and labels
+  static Task taskWithRelations({
+    String? id,
+    String name = 'Task with Relations',
+    String? projectId,
+    List<Label>? labels,
+  }) {
+    return task(
+      id: id,
+      name: name,
+      projectId: projectId ?? 'project-1',
+      labels: labels ?? [label(name: 'Label 1'), label(name: 'Label 2')],
+    );
+  }
+
+  /// Creates a project with labels
+  static Project projectWithLabels({
+    String? id,
+    String name = 'Project with Labels',
+    List<Label>? labels,
+  }) {
+    return project(
+      id: id,
+      name: name,
+      labels: labels ?? [label(name: 'Label 1'), label(name: 'Label 2')],
+    );
+  }
+
+  /// Creates a task due today
+  static Task taskDueToday({
+    String? id,
+    String name = 'Due Today',
+  }) {
+    return task(
+      id: id,
+      name: name,
+      deadlineDate: DateTime.now(),
+    );
+  }
+
+  /// Creates a task due tomorrow
+  static Task taskDueTomorrow({
+    String? id,
+    String name = 'Due Tomorrow',
+  }) {
+    return task(
+      id: id,
+      name: name,
+      deadlineDate: DateTime.now().add(const Duration(days: 1)),
+    );
+  }
+
+  /// Creates an urgent label
+  static Label urgentLabel() {
+    return label(
+      id: 'urgent',
+      name: 'Urgent',
+      color: '#FF0000',
+    );
+  }
+
+  /// Creates a high priority label
+  static Label highPriorityLabel() {
+    return label(
+      id: 'high-priority',
+      name: 'High Priority',
+      color: '#FF9900',
+    );
+  }
+
+  /// Creates a work label
+  static Label workLabel() {
+    return label(
+      id: 'work',
+      name: 'Work',
+      color: '#0066CC',
+    );
+  }
+
+  /// Creates a personal label
+  static Label personalLabel() {
+    return label(
+      id: 'personal',
+      name: 'Personal',
+      color: '#00CC66',
+    );
+  }
 }
 
 /// Centralized test constants to avoid magic values across tests.

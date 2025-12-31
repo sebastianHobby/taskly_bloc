@@ -1,4 +1,14 @@
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
+import 'package:taskly_bloc/domain/models/page_key.dart';
+import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_request.dart';
 
@@ -8,6 +18,8 @@ import '../fixtures/test_data.dart';
 class FakeTaskQuery extends Fake implements TaskQuery {}
 
 /// Registers fallback values for mocktail's `any()` matcher.
+///
+/// Also initializes the global talker for test environments.
 ///
 /// Call this once in your test file's `setUpAll()` to enable using `any()`
 /// with domain objects without creating individual `_Fake` classes.
@@ -23,18 +35,23 @@ class FakeTaskQuery extends Fake implements TaskQuery {}
 /// }
 /// ```
 void registerAllFallbackValues() {
+  // Initialize talker for tests (safe to call multiple times)
+  initializeTalkerForTest();
   // Register fake query type
   registerFallbackValue(FakeTaskQuery());
   // Core domain
   registerFallbackValue(TestData.task());
   registerFallbackValue(TestData.project());
   registerFallbackValue(TestData.label());
+  registerFallbackValue(TestData.labelType());
   registerFallbackValue(TaskQuery.all());
+  registerFallbackValue(PageKey.taskOverview);
 
   // Analytics
   registerFallbackValue(TestData.correlation());
   registerFallbackValue(TestData.insight());
   registerFallbackValue(TestData.dateRange());
+  registerFallbackValue(TrendGranularity.daily);
   registerFallbackValue(
     CorrelationRequest.moodVsTracker(
       trackerId: 'tracker-1',
@@ -45,4 +62,14 @@ void registerAllFallbackValues() {
   // Wellbeing
   registerFallbackValue(TestData.journalEntry());
   registerFallbackValue(TestData.tracker());
+  registerFallbackValue(TestData.dailyTrackerResponse());
+
+  // Screens
+  registerFallbackValue(TestData.screenDefinition());
+
+  // Sort preferences
+  registerFallbackValue(const SortPreferences());
+
+  // Display settings
+  registerFallbackValue(const PageDisplaySettings());
 }

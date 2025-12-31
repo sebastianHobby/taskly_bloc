@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
 
 /// A chip widget for displaying and editing recurrence rules.

@@ -6,10 +6,10 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_list_bloc.dart';
@@ -18,6 +18,7 @@ import 'package:taskly_bloc/presentation/widgets/page_settings_modal.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/tasks_list.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 class InboxPage extends StatelessWidget {
   const InboxPage({
@@ -119,24 +120,26 @@ class _InboxViewState extends State<InboxView> {
                   description: context.l10n.emptyInboxDescription,
                 );
               }
-              return TasksListView(
-                tasks: tasks,
-                displaySettings:
-                    _displaySettings ?? const PageDisplaySettings(),
-                onDisplaySettingsChanged: (settings) {
-                  setState(() {
-                    _displaySettings = settings;
-                  });
-                  // Save to adapter
-                  context.read<TaskOverviewBloc>().add(
-                    TaskOverviewEvent.displaySettingsChanged(
-                      settings: settings,
-                    ),
-                  );
-                },
-                onTap: (task) => _showTaskDetailSheet(
-                  context,
-                  taskId: task.id,
+              return ResponsiveBody(
+                child: TasksListView(
+                  tasks: tasks,
+                  displaySettings:
+                      _displaySettings ?? const PageDisplaySettings(),
+                  onDisplaySettingsChanged: (settings) {
+                    setState(() {
+                      _displaySettings = settings;
+                    });
+                    // Save to adapter
+                    context.read<TaskOverviewBloc>().add(
+                      TaskOverviewEvent.displaySettingsChanged(
+                        settings: settings,
+                      ),
+                    );
+                  },
+                  onTap: (task) => _showTaskDetailSheet(
+                    context,
+                    taskId: task.id,
+                  ),
                 ),
               );
             },

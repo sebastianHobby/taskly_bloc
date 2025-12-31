@@ -1,15 +1,16 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
-class WellbeingRepositoryImpl implements WellbeingRepository {
+class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
   WellbeingRepositoryImpl(this._database);
   final AppDatabase _database;
 
@@ -65,6 +66,24 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
   }
 
   @override
+  Future<List<JournalEntry>> getJournalEntriesByDate({
+    required DateTime date,
+  }) async {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final query = _database.select(_database.journalEntries)
+      ..where((e) => e.entryDate.equals(dateOnly))
+      ..orderBy([(e) => OrderingTerm.desc(e.entryTime)]);
+
+    final results = await query.get();
+    final entries = <JournalEntry>[];
+    for (final row in results) {
+      final responses = await _getTrackerResponsesForEntry(row.id);
+      entries.add(_mapToJournalEntry(row, responses));
+    }
+    return entries;
+  }
+
+  @override
   Future<void> saveJournalEntry(JournalEntry entry) async {
     final entryId = entry.id.isEmpty ? _generateId() : entry.id;
 
@@ -84,7 +103,7 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
 
     await _syncTrackerResponses(
       journalEntryId: entryId,
-      responses: entry.trackerResponses,
+      responses: entry.perEntryTrackerResponses,
     );
   }
 
@@ -97,6 +116,60 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
     await (_database.delete(
       _database.journalEntries,
     )..where((e) => e.id.equals(id))).go();
+  }
+
+  @override
+  Stream<List<DailyTrackerResponse>> watchDailyTrackerResponses({
+    required DateTime date,
+  }) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final query = _database.select(_database.dailyTrackerResponses)
+      ..where((r) => r.responseDate.equals(dateOnly));
+
+    return query.watch().map(
+      (rows) => rows.map(_mapToDailyTrackerResponse).toList(),
+    );
+  }
+
+  @override
+  Future<List<DailyTrackerResponse>> getDailyTrackerResponses({
+    required DateTime date,
+  }) async {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    final query = _database.select(_database.dailyTrackerResponses)
+      ..where((r) => r.responseDate.equals(dateOnly));
+
+    final results = await query.get();
+    return results.map(_mapToDailyTrackerResponse).toList();
+  }
+
+  @override
+  Future<void> saveDailyTrackerResponse(DailyTrackerResponse response) async {
+    final dateOnly = DateTime(
+      response.responseDate.year,
+      response.responseDate.month,
+      response.responseDate.day,
+    );
+
+    await _database
+        .into(_database.dailyTrackerResponses)
+        .insertOnConflictUpdate(
+          DailyTrackerResponsesCompanion(
+            id: Value(response.id),
+            responseDate: Value(dateOnly),
+            trackerId: Value(response.trackerId),
+            responseValue: Value(jsonEncode(response.value.toJson())),
+            createdAt: Value(response.createdAt),
+            updatedAt: Value(response.updatedAt),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deleteDailyTrackerResponse(String id) async {
+    await (_database.delete(
+      _database.dailyTrackerResponses,
+    )..where((r) => r.id.equals(id))).go();
   }
 
   @override
@@ -196,39 +269,99 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
     required String trackerId,
     required DateRange range,
   }) async {
-    final query = _database.select(_database.trackerResponses)
-      ..where(
-        (r) =>
-            r.trackerId.equals(trackerId) &
-            r.createdAt.isBiggerOrEqualValue(range.start) &
-            r.createdAt.isSmallerOrEqualValue(range.end),
-      )
-      ..orderBy([(r) => OrderingTerm.asc(r.createdAt)]);
+    // First, check the tracker scope
+    final tracker = await getTrackerById(trackerId);
+    if (tracker == null) return {};
 
-    final results = await query.get();
-    final Map<DateTime, double> values = {};
+    if (tracker.entryScope == TrackerEntryScope.allDay) {
+      // For allDay trackers, query DailyTrackerResponses table
+      final query = _database.select(_database.dailyTrackerResponses)
+        ..where(
+          (r) =>
+              r.trackerId.equals(trackerId) &
+              r.responseDate.isBiggerOrEqualValue(range.start) &
+              r.responseDate.isSmallerOrEqualValue(range.end),
+        )
+        ..orderBy([(r) => OrderingTerm.asc(r.responseDate)]);
 
-    for (final row in results) {
-      final responseData =
-          jsonDecode(row.responseValue) as Map<String, dynamic>;
-      final date = DateTime(
-        row.createdAt.year,
-        row.createdAt.month,
-        row.createdAt.day,
+      final results = await query.get();
+      return Map.fromEntries(
+        results.map((row) {
+          final responseData =
+              jsonDecode(row.responseValue) as Map<String, dynamic>;
+          final date = DateTime(
+            row.responseDate.year,
+            row.responseDate.month,
+            row.responseDate.day,
+          );
+          return MapEntry(date, _extractNumericValue(responseData));
+        }),
       );
+    } else {
+      // For perEntry trackers, query TrackerResponses and aggregate by date
+      final query =
+          _database.select(_database.trackerResponses).join([
+              innerJoin(
+                _database.journalEntries,
+                _database.journalEntries.id.equalsExp(
+                  _database.trackerResponses.journalEntryId,
+                ),
+              ),
+            ])
+            ..where(
+              _database.trackerResponses.trackerId.equals(trackerId) &
+                  _database.journalEntries.entryDate.isBiggerOrEqualValue(
+                    range.start,
+                  ) &
+                  _database.journalEntries.entryDate.isSmallerOrEqualValue(
+                    range.end,
+                  ),
+            )
+            ..orderBy([OrderingTerm.asc(_database.journalEntries.entryDate)]);
 
-      // Extract numeric value based on response type
-      if (responseData.containsKey('value')) {
-        final value = responseData['value'];
-        if (value is int) {
-          values[date] = value.toDouble();
-        } else if (value is bool) {
-          values[date] = value ? 1.0 : 0.0;
-        }
+      final results = await query.get();
+
+      // Group by date and calculate average
+      final Map<DateTime, List<double>> valuesByDate = {};
+
+      for (final row in results) {
+        final response = row.readTable(_database.trackerResponses);
+        final entry = row.readTable(_database.journalEntries);
+        final date = DateTime(
+          entry.entryDate.year,
+          entry.entryDate.month,
+          entry.entryDate.day,
+        );
+
+        final responseData =
+            jsonDecode(response.responseValue) as Map<String, dynamic>;
+        final value = _extractNumericValue(responseData);
+
+        valuesByDate.putIfAbsent(date, () => []).add(value);
+      }
+
+      // Calculate average for each date
+      return valuesByDate.map(
+        (date, values) => MapEntry(
+          date,
+          values.reduce((a, b) => a + b) / values.length,
+        ),
+      );
+    }
+  }
+
+  double _extractNumericValue(Map<String, dynamic> responseData) {
+    if (responseData.containsKey('value')) {
+      final value = responseData['value'];
+      if (value is int) {
+        return value.toDouble();
+      } else if (value is bool) {
+        return value ? 1.0 : 0.0;
+      } else if (value is double) {
+        return value;
       }
     }
-
-    return values;
+    return 0;
   }
 
   JournalEntry _mapToJournalEntry(
@@ -246,7 +379,7 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
             )
           : null,
       journalText: entity.journalText,
-      trackerResponses: trackerResponses,
+      perEntryTrackerResponses: trackerResponses,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );
@@ -266,6 +399,20 @@ class WellbeingRepositoryImpl implements WellbeingRepository {
     return TrackerResponse(
       id: entity.id,
       journalEntryId: entity.journalEntryId,
+      trackerId: entity.trackerId,
+      value: TrackerResponseValue.fromJson(valueJson),
+      createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
+    );
+  }
+
+  DailyTrackerResponse _mapToDailyTrackerResponse(
+    DailyTrackerResponseEntity entity,
+  ) {
+    final valueJson = jsonDecode(entity.responseValue) as Map<String, dynamic>;
+    return DailyTrackerResponse(
+      id: entity.id,
+      responseDate: entity.responseDate,
       trackerId: entity.trackerId,
       value: TrackerResponseValue.fromJson(valueJson),
       createdAt: entity.createdAt,

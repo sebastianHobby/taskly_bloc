@@ -1,3 +1,4 @@
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart'
     as screen_models;
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
@@ -5,18 +6,23 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// Seeds the required built-in system screens if they are missing.
 class ScreenSystemSeeder {
-  ScreenSystemSeeder({required ScreenDefinitionsRepository screensRepository})
+  ScreenSystemSeeder({required ScreenDefinitionsRepositoryContract screensRepository})
     : _screensRepository = screensRepository;
 
-  final ScreenDefinitionsRepository _screensRepository;
+  final ScreenDefinitionsRepositoryContract _screensRepository;
   final Uuid _uuid = const Uuid();
 
+  /// Seeds all default system screens for the current user.
+  ///
+  /// Must be called after authentication. PowerSync/Supabase automatically
+  /// set user_id on created records based on the current session.
   Future<void> seedDefaults() async {
+    talker.serviceLog('ScreenSystemSeeder', 'seedDefaults START');
     await _ensureScreen(
       screen: _taskScreen(
         screenId: 'inbox',
@@ -123,6 +129,10 @@ class ScreenSystemSeeder {
         sortOrder: 6,
       ),
     );
+    talker.serviceLog(
+      'ScreenSystemSeeder',
+      'seedDefaults END - all screens seeded',
+    );
   }
 
   ScreenDefinition _taskScreen({
@@ -219,29 +229,58 @@ class ScreenSystemSeeder {
   }
 
   Future<void> _ensureScreen({required ScreenDefinition screen}) async {
-    final existing = await _screensRepository
-        .watchScreenByScreenId(screen.screenId)
-        .first;
+    talker.serviceLog(
+      'ScreenSystemSeeder',
+      '_ensureScreen: checking screenId="${screen.screenId}"',
+    );
+    try {
+      final existing = await _screensRepository
+          .watchScreenByScreenId(screen.screenId)
+          .first;
+      talker.serviceLog(
+        'ScreenSystemSeeder',
+        '_ensureScreen: existing=${existing == null ? "null" : "found(id=${existing.id})"}',
+      );
 
-    if (existing != null) {
-      final shouldUpdate =
-          (existing.iconName ?? '').isEmpty ||
-          existing.sortOrder != screen.sortOrder ||
-          !existing.isSystem;
-
-      if (shouldUpdate) {
-        await _screensRepository.updateScreen(
-          existing.copyWith(
-            iconName: screen.iconName,
-            sortOrder: screen.sortOrder,
-            isSystem: true,
-            isActive: true,
-          ),
+      if (existing != null) {
+        final shouldUpdate =
+            (existing.iconName ?? '').isEmpty ||
+            existing.sortOrder != screen.sortOrder ||
+            !existing.isSystem;
+        talker.serviceLog(
+          'ScreenSystemSeeder',
+          '_ensureScreen: shouldUpdate=$shouldUpdate',
         );
-      }
-      return;
-    }
 
-    await _screensRepository.createScreen(screen);
+        if (shouldUpdate) {
+          await _screensRepository.updateScreen(
+            existing.copyWith(
+              iconName: screen.iconName,
+              sortOrder: screen.sortOrder,
+              isSystem: true,
+              isActive: true,
+            ),
+          );
+          talker.serviceLog(
+            'ScreenSystemSeeder',
+            '_ensureScreen: updated ${screen.screenId}',
+          );
+        }
+        return;
+      }
+
+      await _screensRepository.createScreen(screen);
+      talker.serviceLog(
+        'ScreenSystemSeeder',
+        '_ensureScreen: created ${screen.screenId}',
+      );
+    } catch (e, st) {
+      talker.handle(
+        e,
+        st,
+        '[ScreenSystemSeeder] _ensureScreen ERROR for screenId="${screen.screenId}"',
+      );
+      rethrow;
+    }
   }
 }

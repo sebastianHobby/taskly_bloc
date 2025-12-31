@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$JournalEntry {
 
- String get id; DateTime get entryDate; DateTime get entryTime; DateTime get createdAt; DateTime get updatedAt; MoodRating? get moodRating; String? get journalText; List<TrackerResponse> get trackerResponses;
+ String get id; DateTime get entryDate; DateTime get entryTime; DateTime get createdAt; DateTime get updatedAt; MoodRating? get moodRating; String? get journalText; List<TrackerResponse> get perEntryTrackerResponses;
 /// Create a copy of JournalEntry
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $JournalEntryCopyWith<JournalEntry> get copyWith => _$JournalEntryCopyWithImpl<J
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JournalEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.entryDate, entryDate) || other.entryDate == entryDate)&&(identical(other.entryTime, entryTime) || other.entryTime == entryTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.moodRating, moodRating) || other.moodRating == moodRating)&&(identical(other.journalText, journalText) || other.journalText == journalText)&&const DeepCollectionEquality().equals(other.trackerResponses, trackerResponses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JournalEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.entryDate, entryDate) || other.entryDate == entryDate)&&(identical(other.entryTime, entryTime) || other.entryTime == entryTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.moodRating, moodRating) || other.moodRating == moodRating)&&(identical(other.journalText, journalText) || other.journalText == journalText)&&const DeepCollectionEquality().equals(other.perEntryTrackerResponses, perEntryTrackerResponses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,entryDate,entryTime,createdAt,updatedAt,moodRating,journalText,const DeepCollectionEquality().hash(trackerResponses));
+int get hashCode => Object.hash(runtimeType,id,entryDate,entryTime,createdAt,updatedAt,moodRating,journalText,const DeepCollectionEquality().hash(perEntryTrackerResponses));
 
 @override
 String toString() {
-  return 'JournalEntry(id: $id, entryDate: $entryDate, entryTime: $entryTime, createdAt: $createdAt, updatedAt: $updatedAt, moodRating: $moodRating, journalText: $journalText, trackerResponses: $trackerResponses)';
+  return 'JournalEntry(id: $id, entryDate: $entryDate, entryTime: $entryTime, createdAt: $createdAt, updatedAt: $updatedAt, moodRating: $moodRating, journalText: $journalText, perEntryTrackerResponses: $perEntryTrackerResponses)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $JournalEntryCopyWith<$Res>  {
   factory $JournalEntryCopyWith(JournalEntry value, $Res Function(JournalEntry) _then) = _$JournalEntryCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime entryDate, DateTime entryTime, DateTime createdAt, DateTime updatedAt, MoodRating? moodRating, String? journalText, List<TrackerResponse> trackerResponses
+ String id, DateTime entryDate, DateTime entryTime, DateTime createdAt, DateTime updatedAt, MoodRating? moodRating, String? journalText, List<TrackerResponse> perEntryTrackerResponses
 });
 
 
@@ -65,7 +65,7 @@ class _$JournalEntryCopyWithImpl<$Res>
 
 /// Create a copy of JournalEntry
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? entryDate = null,Object? entryTime = null,Object? createdAt = null,Object? updatedAt = null,Object? moodRating = freezed,Object? journalText = freezed,Object? trackerResponses = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? entryDate = null,Object? entryTime = null,Object? createdAt = null,Object? updatedAt = null,Object? moodRating = freezed,Object? journalText = freezed,Object? perEntryTrackerResponses = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,entryDate: null == entryDate ? _self.entryDate : entryDate // ignore: cast_nullable_to_non_nullable
@@ -74,7 +74,7 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,moodRating: freezed == moodRating ? _self.moodRating : moodRating // ignore: cast_nullable_to_non_nullable
 as MoodRating?,journalText: freezed == journalText ? _self.journalText : journalText // ignore: cast_nullable_to_non_nullable
-as String?,trackerResponses: null == trackerResponses ? _self.trackerResponses : trackerResponses // ignore: cast_nullable_to_non_nullable
+as String?,perEntryTrackerResponses: null == perEntryTrackerResponses ? _self.perEntryTrackerResponses : perEntryTrackerResponses // ignore: cast_nullable_to_non_nullable
 as List<TrackerResponse>,
   ));
 }
@@ -160,10 +160,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> trackerResponses)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> perEntryTrackerResponses)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _JournalEntry() when $default != null:
-return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.trackerResponses);case _:
+return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.perEntryTrackerResponses);case _:
   return orElse();
 
 }
@@ -181,10 +181,10 @@ return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.u
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> trackerResponses)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> perEntryTrackerResponses)  $default,) {final _that = this;
 switch (_that) {
 case _JournalEntry():
-return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.trackerResponses);case _:
+return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.perEntryTrackerResponses);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +201,10 @@ return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.u
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> trackerResponses)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime entryDate,  DateTime entryTime,  DateTime createdAt,  DateTime updatedAt,  MoodRating? moodRating,  String? journalText,  List<TrackerResponse> perEntryTrackerResponses)?  $default,) {final _that = this;
 switch (_that) {
 case _JournalEntry() when $default != null:
-return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.trackerResponses);case _:
+return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.updatedAt,_that.moodRating,_that.journalText,_that.perEntryTrackerResponses);case _:
   return null;
 
 }
@@ -216,7 +216,7 @@ return $default(_that.id,_that.entryDate,_that.entryTime,_that.createdAt,_that.u
 
 @JsonSerializable(explicitToJson: true)
 class _JournalEntry implements JournalEntry {
-  const _JournalEntry({required this.id, required this.entryDate, required this.entryTime, required this.createdAt, required this.updatedAt, this.moodRating, this.journalText, final  List<TrackerResponse> trackerResponses = const []}): _trackerResponses = trackerResponses;
+  const _JournalEntry({required this.id, required this.entryDate, required this.entryTime, required this.createdAt, required this.updatedAt, this.moodRating, this.journalText, final  List<TrackerResponse> perEntryTrackerResponses = const []}): _perEntryTrackerResponses = perEntryTrackerResponses;
   factory _JournalEntry.fromJson(Map<String, dynamic> json) => _$JournalEntryFromJson(json);
 
 @override final  String id;
@@ -226,11 +226,11 @@ class _JournalEntry implements JournalEntry {
 @override final  DateTime updatedAt;
 @override final  MoodRating? moodRating;
 @override final  String? journalText;
- final  List<TrackerResponse> _trackerResponses;
-@override@JsonKey() List<TrackerResponse> get trackerResponses {
-  if (_trackerResponses is EqualUnmodifiableListView) return _trackerResponses;
+ final  List<TrackerResponse> _perEntryTrackerResponses;
+@override@JsonKey() List<TrackerResponse> get perEntryTrackerResponses {
+  if (_perEntryTrackerResponses is EqualUnmodifiableListView) return _perEntryTrackerResponses;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_trackerResponses);
+  return EqualUnmodifiableListView(_perEntryTrackerResponses);
 }
 
 
@@ -247,16 +247,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JournalEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.entryDate, entryDate) || other.entryDate == entryDate)&&(identical(other.entryTime, entryTime) || other.entryTime == entryTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.moodRating, moodRating) || other.moodRating == moodRating)&&(identical(other.journalText, journalText) || other.journalText == journalText)&&const DeepCollectionEquality().equals(other._trackerResponses, _trackerResponses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JournalEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.entryDate, entryDate) || other.entryDate == entryDate)&&(identical(other.entryTime, entryTime) || other.entryTime == entryTime)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.moodRating, moodRating) || other.moodRating == moodRating)&&(identical(other.journalText, journalText) || other.journalText == journalText)&&const DeepCollectionEquality().equals(other._perEntryTrackerResponses, _perEntryTrackerResponses));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,entryDate,entryTime,createdAt,updatedAt,moodRating,journalText,const DeepCollectionEquality().hash(_trackerResponses));
+int get hashCode => Object.hash(runtimeType,id,entryDate,entryTime,createdAt,updatedAt,moodRating,journalText,const DeepCollectionEquality().hash(_perEntryTrackerResponses));
 
 @override
 String toString() {
-  return 'JournalEntry(id: $id, entryDate: $entryDate, entryTime: $entryTime, createdAt: $createdAt, updatedAt: $updatedAt, moodRating: $moodRating, journalText: $journalText, trackerResponses: $trackerResponses)';
+  return 'JournalEntry(id: $id, entryDate: $entryDate, entryTime: $entryTime, createdAt: $createdAt, updatedAt: $updatedAt, moodRating: $moodRating, journalText: $journalText, perEntryTrackerResponses: $perEntryTrackerResponses)';
 }
 
 
@@ -267,7 +267,7 @@ abstract mixin class _$JournalEntryCopyWith<$Res> implements $JournalEntryCopyWi
   factory _$JournalEntryCopyWith(_JournalEntry value, $Res Function(_JournalEntry) _then) = __$JournalEntryCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime entryDate, DateTime entryTime, DateTime createdAt, DateTime updatedAt, MoodRating? moodRating, String? journalText, List<TrackerResponse> trackerResponses
+ String id, DateTime entryDate, DateTime entryTime, DateTime createdAt, DateTime updatedAt, MoodRating? moodRating, String? journalText, List<TrackerResponse> perEntryTrackerResponses
 });
 
 
@@ -284,7 +284,7 @@ class __$JournalEntryCopyWithImpl<$Res>
 
 /// Create a copy of JournalEntry
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? entryDate = null,Object? entryTime = null,Object? createdAt = null,Object? updatedAt = null,Object? moodRating = freezed,Object? journalText = freezed,Object? trackerResponses = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? entryDate = null,Object? entryTime = null,Object? createdAt = null,Object? updatedAt = null,Object? moodRating = freezed,Object? journalText = freezed,Object? perEntryTrackerResponses = null,}) {
   return _then(_JournalEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,entryDate: null == entryDate ? _self.entryDate : entryDate // ignore: cast_nullable_to_non_nullable
@@ -293,7 +293,7 @@ as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,moodRating: freezed == moodRating ? _self.moodRating : moodRating // ignore: cast_nullable_to_non_nullable
 as MoodRating?,journalText: freezed == journalText ? _self.journalText : journalText // ignore: cast_nullable_to_non_nullable
-as String?,trackerResponses: null == trackerResponses ? _self._trackerResponses : trackerResponses // ignore: cast_nullable_to_non_nullable
+as String?,perEntryTrackerResponses: null == perEntryTrackerResponses ? _self._perEntryTrackerResponses : perEntryTrackerResponses // ignore: cast_nullable_to_non_nullable
 as List<TrackerResponse>,
   ));
 }

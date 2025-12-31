@@ -1,4 +1,4 @@
-﻿import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 
 /// Supported sort fields for task-, project-, and label-style entities.
 enum SortField {
@@ -7,7 +7,6 @@ enum SortField {
   deadlineDate,
   createdDate,
   updatedDate,
-  nextActionPriority,
 }
 
 /// Sort direction per criterion.

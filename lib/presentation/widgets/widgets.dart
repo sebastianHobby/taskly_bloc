@@ -1,4 +1,4 @@
-﻿export 'date_chip.dart';
+export 'date_chip.dart';
 export 'delete_confirmation.dart';
 export 'empty_state_widget.dart';
 export 'error_state_widget.dart';
@@ -6,6 +6,7 @@ export 'form_date_chip.dart';
 export 'form_shell.dart';
 export 'labels_section.dart';
 export 'loading_state_widget.dart';
+export 'next_action_indicator.dart';
 export 'section_header.dart';
 export 'sort_bottom_sheet.dart';
 export 'swipe_to_delete.dart';

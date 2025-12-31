@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A modern card-based list tile representing a label.
@@ -71,8 +72,8 @@ class LabelListTile extends StatelessWidget {
                       ? Text(
                           label.iconName?.isNotEmpty ?? false
                               ? label.iconName!
-                              : 'â¤ï¸',
-                          style: const TextStyle(fontSize: 20),
+                              : '❤️',
+                          style: EmojiUtils.emojiTextStyle(),
                         )
                       : Icon(
                           Icons.label_outline,

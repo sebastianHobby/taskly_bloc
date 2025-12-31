@@ -255,7 +255,7 @@ class FormBuilderTrackerChoiceField
                            }
                          }
                        : null,
-                   selectedColor: selectedColor.withOpacity(0.2),
+                   selectedColor: selectedColor.withValues(alpha: 0.2),
                    checkmarkColor: selectedColor,
                    labelStyle: TextStyle(
                      color: isSelected ? selectedColor : null,
@@ -309,7 +309,7 @@ class _OptionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
           color: isSelected
-              ? selectedColor.withOpacity(0.2)
+              ? selectedColor.withValues(alpha: 0.2)
               : Colors.transparent,
           border: Border.all(
             color: isSelected ? selectedColor : theme.dividerColor,

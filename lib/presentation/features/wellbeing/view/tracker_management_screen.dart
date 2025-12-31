@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 class TrackerManagementScreen extends StatelessWidget {
   const TrackerManagementScreen({super.key});
@@ -101,50 +102,52 @@ class TrackerManagementScreen extends StatelessWidget {
       );
     }
 
-    return ReorderableListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: trackers.length,
-      onReorder: (oldIndex, newIndex) {
-        if (newIndex > oldIndex) newIndex--;
-        final reorderedIds = List<String>.from(trackers.map((t) => t.id));
-        final movedId = reorderedIds.removeAt(oldIndex);
-        reorderedIds.insert(newIndex, movedId);
-        context.read<TrackerManagementBloc>().add(
-          TrackerManagementEvent.reorderTrackers(reorderedIds),
-        );
-      },
-      itemBuilder: (context, index) {
-        final tracker = trackers[index];
-        return Card(
-          key: ValueKey(tracker.id),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ListTile(
-            leading: Icon(_getTrackerIcon(tracker.responseType)),
-            title: Text(tracker.name),
-            subtitle: tracker.description != null
-                ? Text(
-                    tracker.description!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  )
-                : Text(_getTrackerTypeLabel(tracker.responseType)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () => _showTrackerDialog(context, tracker),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _confirmDelete(context, tracker),
-                ),
-                const Icon(Icons.drag_handle),
-              ],
+    return ResponsiveBody(
+      child: ReorderableListView.builder(
+        padding: const EdgeInsets.only(bottom: 80),
+        itemCount: trackers.length,
+        onReorder: (oldIndex, newIndex) {
+          if (newIndex > oldIndex) newIndex--;
+          final reorderedIds = List<String>.from(trackers.map((t) => t.id));
+          final movedId = reorderedIds.removeAt(oldIndex);
+          reorderedIds.insert(newIndex, movedId);
+          context.read<TrackerManagementBloc>().add(
+            TrackerManagementEvent.reorderTrackers(reorderedIds),
+          );
+        },
+        itemBuilder: (context, index) {
+          final tracker = trackers[index];
+          return Card(
+            key: ValueKey(tracker.id),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ListTile(
+              leading: Icon(_getTrackerIcon(tracker.responseType)),
+              title: Text(tracker.name),
+              subtitle: tracker.description != null
+                  ? Text(
+                      tracker.description!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : Text(_getTrackerTypeLabel(tracker.responseType)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _showTrackerDialog(context, tracker),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete),
+                    onPressed: () => _confirmDelete(context, tracker),
+                  ),
+                  const Icon(Icons.drag_handle),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

@@ -1,4 +1,4 @@
-﻿/// Date-only helpers.
+/// Date-only helpers.
 ///
 /// The app stores and displays task/project scheduling as dates (no time).
 /// These helpers normalize any incoming DateTime values to midnight.

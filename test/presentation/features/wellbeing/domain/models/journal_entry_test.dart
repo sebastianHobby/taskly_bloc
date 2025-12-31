@@ -32,7 +32,7 @@ void main() {
         expect(entry.updatedAt, equals(now));
         expect(entry.moodRating, isNull);
         expect(entry.journalText, isNull);
-        expect(entry.trackerResponses, isEmpty);
+        expect(entry.perEntryTrackerResponses, isEmpty);
       });
 
       test('creates instance with all fields', () {
@@ -44,14 +44,14 @@ void main() {
           updatedAt: now,
           moodRating: MoodRating.excellent,
           journalText: 'Had a great day!',
-          trackerResponses: [trackerResponse],
+          perEntryTrackerResponses: [trackerResponse],
         );
 
         expect(entry.id, equals('je-1'));
         expect(entry.moodRating, equals(MoodRating.excellent));
         expect(entry.journalText, equals('Had a great day!'));
-        expect(entry.trackerResponses.length, equals(1));
-        expect(entry.trackerResponses.first, equals(trackerResponse));
+        expect(entry.perEntryTrackerResponses.length, equals(1));
+        expect(entry.perEntryTrackerResponses.first, equals(trackerResponse));
       });
 
       test('trackerResponses defaults to empty list', () {
@@ -63,8 +63,8 @@ void main() {
           updatedAt: now,
         );
 
-        expect(entry.trackerResponses, isEmpty);
-        expect(entry.trackerResponses, isA<List<TrackerResponse>>());
+        expect(entry.perEntryTrackerResponses, isEmpty);
+        expect(entry.perEntryTrackerResponses, isA<List<TrackerResponse>>());
       });
     });
 
@@ -117,11 +117,11 @@ void main() {
         );
 
         final copy = original.copyWith(
-          trackerResponses: [trackerResponse],
+          perEntryTrackerResponses: [trackerResponse],
         );
 
-        expect(copy.trackerResponses.length, equals(1));
-        expect(original.trackerResponses, isEmpty);
+        expect(copy.perEntryTrackerResponses.length, equals(1));
+        expect(original.perEntryTrackerResponses, isEmpty);
       });
     });
 
@@ -229,7 +229,7 @@ void main() {
 
         expect(entry.id, equals('je-1'));
         expect(entry.journalText, equals('Test entry'));
-        expect(entry.trackerResponses, isEmpty);
+        expect(entry.perEntryTrackerResponses, isEmpty);
       });
 
       test('roundtrip serialization preserves data', () {

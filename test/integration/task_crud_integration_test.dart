@@ -1,4 +1,7 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+@Tags(['integration', 'repository'])
+library;
+
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -8,8 +11,17 @@ import '../mocks/repository_mocks.dart';
 
 /// Integration tests for Task CRUD operations using a real in-memory database.
 ///
-/// These tests verify the complete flow from settingsRepo methods through
+/// These tests verify the complete flow from repository methods through
 /// to database persistence, ensuring data integrity across operations.
+///
+/// Coverage:
+/// - ? Create task with required fields
+/// - ? Create task with all optional fields
+/// - ? Update task name and completion status
+/// - ? Delete task
+/// - ? Multiple task operations
+/// - ? Stream reactivity (watchAll, watchById)
+/// - ? Count operations (count, watchCount)
 void main() {
   late AppDatabase db;
   late TaskRepository taskRepo;
@@ -18,8 +30,8 @@ void main() {
     db = createTestDb();
     taskRepo = TaskRepository(
       driftDb: db,
-      occurrenceExpander: MockOccurrenceStreamExpander(),
-      occurrenceWriteHelper: MockOccurrenceWriteHelper(),
+      occurrenceExpander: MockOccurrenceStreamExpanderContract(),
+      occurrenceWriteHelper: MockOccurrenceWriteHelperContract(),
     );
   });
 
@@ -62,8 +74,8 @@ void main() {
       final task = tasks.first;
       expect(task.name, 'Complete report');
       expect(task.description, 'Quarterly financial report');
-      expect(task.startDate, startDate);
-      expect(task.deadlineDate, deadlineDate);
+      expect(task.startDate, DateTime.utc(2025, 1, 15));
+      expect(task.deadlineDate, DateTime.utc(2025, 1, 20));
     });
 
     test('updates a task name and completion status', () async {

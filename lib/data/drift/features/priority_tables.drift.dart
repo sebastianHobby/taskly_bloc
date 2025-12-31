@@ -64,6 +64,15 @@ class AllocationPreferences extends Table {
       integer().withDefault(const Constant(1))(); // For minimum_viable strategy
   IntColumn get topNCategories =>
       integer().withDefault(const Constant(3))(); // For top_categories strategy
+  IntColumn get dailyTaskLimit => integer().withDefault(
+    const Constant(10),
+  )(); // Maximum focus tasks per day
+  IntColumn get showExcludedUrgentWarning => integer().withDefault(
+    const Constant(1),
+  )(); // Show urgent task warnings (bool as int)
+  IntColumn get urgencyThresholdDays => integer().withDefault(
+    const Constant(3),
+  )(); // Days before deadline = urgent
   DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
   DateTimeColumn get updatedAt => dateTime().clientDefault(DateTime.now)();
 

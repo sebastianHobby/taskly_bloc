@@ -1,24 +1,29 @@
+@Tags(['unit', 'tasks'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 
+import '../../../../helpers/fallback_values.dart';
 import '../../../../mocks/repository_mocks.dart';
 
-class _FakeTaskQuery extends Fake implements TaskQuery {}
-
+/// Tests for [TodayBadgeService].
+///
+/// Coverage:
+/// - ✅ Watch incomplete count
+/// - ✅ Query construction
 void main() {
-  late MockTaskRepository mockRepository;
+  late MockTaskRepositoryContract mockRepository;
   late TodayBadgeService service;
   late DateTime fixedNow;
 
-  setUpAll(() {
-    registerFallbackValue(_FakeTaskQuery());
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
-    mockRepository = MockTaskRepository();
+    mockRepository = MockTaskRepositoryContract();
     fixedNow = DateTime(2025, 12, 25, 10, 30);
     service = TodayBadgeService(
       taskRepository: mockRepository,
@@ -48,38 +53,44 @@ void main() {
       expect(count, 5);
     });
 
-    test('watchIncompleteCount passes TaskQuery.today to settingsRepo', () async {
-      when(
-        () => mockRepository.watchCount(any()),
-      ).thenAnswer((_) => Stream.value(0));
+    test(
+      'watchIncompleteCount passes TaskQuery.today to settingsRepo',
+      () async {
+        when(
+          () => mockRepository.watchCount(any()),
+        ).thenAnswer((_) => Stream.value(0));
 
-      await service.watchIncompleteCount().first;
+        await service.watchIncompleteCount().first;
 
-      final captured =
-          verify(() => mockRepository.watchCount(captureAny())).captured.single
-              as TaskQuery;
+        final captured =
+            verify(
+                  () => mockRepository.watchCount(captureAny()),
+                ).captured.single
+                as TaskQuery;
 
-      // Verify it's a today query by checking filter predicates.
-      expect(captured.filter.shared, hasLength(2));
+        // Verify it's a today query by checking filter predicates.
+        expect(captured.filter.shared, hasLength(2));
 
-      expect(
-        captured.filter.shared,
-        contains(
-          const TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
+        expect(
+          captured.filter.shared,
+          contains(
+            const TaskBoolPredicate(
+              field: TaskBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
           ),
-        ),
-      );
+        );
 
-      final datePredicate = captured.filter.shared.whereType<TaskDatePredicate>()
-          .firstWhere(
-        (p) =>
-            p.field == TaskDateField.deadlineDate &&
-            p.operator == DateOperator.onOrBefore,
-      );
-      expect(datePredicate.date, isNotNull);
-    });
+        final datePredicate = captured.filter.shared
+            .whereType<TaskDatePredicate>()
+            .firstWhere(
+              (p) =>
+                  p.field == TaskDateField.deadlineDate &&
+                  p.operator == DateOperator.onOrBefore,
+            );
+        expect(datePredicate.date, isNotNull);
+      },
+    );
 
     test('uses provided nowFactory for date calculation', () async {
       final customNow = DateTime(2024, 6, 15);
@@ -99,10 +110,11 @@ void main() {
               as TaskQuery;
 
       // Find the date predicate and verify it uses our custom date
-      final datePredicate =
-          captured.filter.shared.whereType<TaskDatePredicate>().firstWhere(
-        (p) => p.field == TaskDateField.deadlineDate,
-      );
+      final datePredicate = captured.filter.shared
+          .whereType<TaskDatePredicate>()
+          .firstWhere(
+            (p) => p.field == TaskDateField.deadlineDate,
+          );
 
       expect(datePredicate.date?.year, 2024);
       expect(datePredicate.date?.month, 6);

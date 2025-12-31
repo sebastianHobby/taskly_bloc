@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/page_key.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 
 /// Repository for managing feature-specific application settings.
 ///
@@ -39,40 +37,56 @@ class SettingsRepository implements SettingsRepositoryContract {
     return query.getSingleOrNull();
   }
 
-  /// Convert a profile row to AppSettings, with fallback on parse errors.
+  /// Convert a profile row to AppSettings.
+  /// The TypeConverter already handles JSON deserialization.
   AppSettings _fromRow(UserProfileTableData row) {
+    talker.repositoryLog(
+      'Settings',
+      '_fromRow: settings type=${row.settings.runtimeType}',
+    );
     try {
-      final decoded = jsonDecode(row.settings) as Map<String, dynamic>;
-      return AppSettings.fromJson(decoded);
-    } catch (e, stackTrace) {
-      AppLogger.forRepository('Settings').warning(
-        'Failed to parse settings JSON, using defaults',
-        e,
-        stackTrace,
-      );
-      return _defaultSettings;
+      // TypeConverter.json2 already deserializes to AppSettings
+      final result = row.settings;
+      talker.repositoryLog('Settings', '_fromRow: success');
+      return result;
+    } catch (e, st) {
+      talker.databaseError('Settings._fromRow', e, st);
+      rethrow;
     }
   }
 
   /// Watch database for settings changes.
   /// Pattern aligned with other repositories - direct stream mapping.
   Stream<AppSettings> _watchDatabase() {
+    talker.repositoryLog('Settings', '_watchDatabase called');
     return _profileStream.map((rows) {
+      talker.repositoryLog(
+        'Settings',
+        '_watchDatabase stream emission: ${rows.length} rows',
+      );
       if (rows.isEmpty) {
+        talker.repositoryLog(
+          'Settings',
+          '_watchDatabase: no rows, returning defaults',
+        );
         return _defaultSettings;
       }
       // Find the latest row by updatedAt
       final latest = rows.reduce(
         (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
       );
+      talker.repositoryLog(
+        'Settings',
+        '_watchDatabase: found latest row id=${latest.id}',
+      );
       return _fromRow(latest);
     });
   }
 
-  /// Save settings to database
+  /// Save settings to database.
+  /// TypeConverter.json2 handles JSON serialization automatically.
   Future<void> _saveToDatabase(AppSettings settings) async {
     final now = DateTime.now();
-    final settingsJson = jsonEncode(settings.toJson());
     final existing = await _selectProfile();
 
     if (existing == null) {
@@ -80,7 +94,7 @@ class SettingsRepository implements SettingsRepositoryContract {
           .into(driftDb.userProfileTable)
           .insert(
             UserProfileTableCompanion.insert(
-              settings: settingsJson,
+              settings: settings,
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -92,7 +106,7 @@ class SettingsRepository implements SettingsRepositoryContract {
       driftDb.userProfileTable,
     )..where((row) => row.id.equals(existing.id))).write(
       UserProfileTableCompanion(
-        settings: Value(settingsJson),
+        settings: Value(settings),
         updatedAt: Value(now),
       ),
     );

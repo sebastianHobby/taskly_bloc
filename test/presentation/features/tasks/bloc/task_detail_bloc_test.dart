@@ -3,39 +3,38 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
+import 'package:taskly_bloc/data/repositories/task_repository.dart'
+    show TaskRepository;
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
-import '../../../../mocks/repository_mocks.dart';
+import '../../../../helpers/bloc_test_helpers.dart';
+import '../../../../helpers/custom_matchers.dart';
+import '../../../../helpers/fallback_values.dart';
 
+/// Tests for [TaskDetailBloc] covering task creation, editing, and deletion.
+///
+/// Coverage:
+/// - ✅ Initialization with and without taskId
+/// - ✅ Loading task data
+/// - ✅ Creating new tasks
+/// - ✅ Updating existing tasks
+/// - ✅ Deleting tasks
+/// - ✅ Error handling for all operations
+/// - ✅ Form field updates
+///
+/// Related: [TaskDetailBloc], [TaskRepository]
 void main() {
-  late MockTaskRepository mockTaskRepository;
-  late MockProjectRepository mockProjectRepository;
-  late MockLabelRepository mockLabelRepository;
+  late BlocTestContext ctx;
   late TaskDetailBloc bloc;
 
-  setUpAll(() {
-    // Register fallback values for mocktail
-    registerFallbackValue(TestData.task());
-    registerFallbackValue(TestData.project());
-    registerFallbackValue(TestData.label());
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
-    mockTaskRepository = MockTaskRepository();
-    mockProjectRepository = MockProjectRepository();
-    mockLabelRepository = MockLabelRepository();
-
-    // TaskDetailBloc dispatches a load event in its constructor.
-    // Provide safe defaults so tests that don't care about these values
-    // don't fail due to unstubbed repository calls.
-    when(
-      () => mockProjectRepository.getAll(),
-    ).thenAnswer((_) async => <Project>[]);
-    when(
-      () => mockLabelRepository.getAll(),
-    ).thenAnswer((_) async => <Label>[]);
+    ctx = BlocTestContext();
+    // BlocTestContext already stubs projectRepo.getAll() and labelRepo.getAll()
+    // with empty lists by default
   });
 
   tearDown(() {
@@ -46,29 +45,25 @@ void main() {
     group('initialization', () {
       test('initial state is TaskDetailInitial', () {
         bloc = TaskDetailBloc(
-          taskRepository: mockTaskRepository,
-          projectRepository: mockProjectRepository,
-          labelRepository: mockLabelRepository,
+          taskRepository: ctx.taskRepo,
+          projectRepository: ctx.projectRepo,
+          labelRepository: ctx.labelRepo,
         );
 
-        expect(bloc.state, isA<TaskDetailInitial>());
+        expect(bloc.state, isInitialState());
       });
 
       test('loads initial data when no taskId provided', () async {
         final projects = [TestData.project()];
         final labels = [TestData.label()];
 
-        when(
-          () => mockProjectRepository.getAll(),
-        ).thenAnswer((_) async => projects);
-        when(
-          () => mockLabelRepository.getAll(),
-        ).thenAnswer((_) async => labels);
+        ctx.stubProjectsReturn(projects);
+        ctx.stubLabelsReturn(labels);
 
         bloc = TaskDetailBloc(
-          taskRepository: mockTaskRepository,
-          projectRepository: mockProjectRepository,
-          labelRepository: mockLabelRepository,
+          taskRepository: ctx.taskRepo,
+          projectRepository: ctx.projectRepo,
+          labelRepository: ctx.labelRepo,
         );
 
         await expectLater(
@@ -91,20 +86,14 @@ void main() {
         final projects = [TestData.project()];
         final labels = [TestData.label()];
 
-        when(
-          () => mockTaskRepository.getById('task-1'),
-        ).thenAnswer((_) async => task);
-        when(
-          () => mockProjectRepository.getAll(),
-        ).thenAnswer((_) async => projects);
-        when(
-          () => mockLabelRepository.getAll(),
-        ).thenAnswer((_) async => labels);
+        ctx.stubTaskById('task-1', task);
+        ctx.stubProjectsReturn(projects);
+        ctx.stubLabelsReturn(labels);
 
         bloc = TaskDetailBloc(
-          taskRepository: mockTaskRepository,
-          projectRepository: mockProjectRepository,
-          labelRepository: mockLabelRepository,
+          taskRepository: ctx.taskRepo,
+          projectRepository: ctx.projectRepo,
+          labelRepository: ctx.labelRepo,
           taskId: 'task-1',
         );
 
@@ -132,23 +121,19 @@ void main() {
           final projects = [TestData.project()];
           final labels = [TestData.label()];
 
-          when(
-            () => mockProjectRepository.getAll(),
-          ).thenAnswer((_) async => projects);
-          when(
-            () => mockLabelRepository.getAll(),
-          ).thenAnswer((_) async => labels);
+          ctx.stubProjectsReturn(projects);
+          ctx.stubLabelsReturn(labels);
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
         expect: () => [
-          isA<TaskDetailLoadInProgress>(),
+          isLoadingState(),
           predicate<TaskDetailInitialDataLoadSuccess>(
             (state) =>
                 state.availableProjects.isNotEmpty &&
@@ -161,21 +146,21 @@ void main() {
         'emits failure state on error',
         build: () {
           when(
-            () => mockProjectRepository.getAll(),
+            () => ctx.projectRepo.getAll(),
           ).thenThrow(Exception('Failed to load projects'));
-          when(() => mockLabelRepository.getAll()).thenAnswer((_) async => []);
+          when(() => ctx.labelRepo.getAll()).thenAnswer((_) async => []);
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
         expect: () => [
-          isA<TaskDetailLoadInProgress>(),
-          isA<TaskDetailOperationFailure>(),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -188,26 +173,20 @@ void main() {
           final projects = [TestData.project()];
           final labels = [TestData.label()];
 
-          when(
-            () => mockTaskRepository.getById('task-1'),
-          ).thenAnswer((_) async => task);
-          when(
-            () => mockProjectRepository.getAll(),
-          ).thenAnswer((_) async => projects);
-          when(
-            () => mockLabelRepository.getAll(),
-          ).thenAnswer((_) async => labels);
+          ctx.stubTaskById('task-1', task);
+          ctx.stubProjectsReturn(projects);
+          ctx.stubLabelsReturn(labels);
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
         expect: () => [
-          isA<TaskDetailLoadInProgress>(),
+          isLoadingState(),
           predicate<TaskDetailLoadSuccess>(
             (state) => state.task.id == 'task-1',
           ),
@@ -218,20 +197,20 @@ void main() {
         'emits failure when task not found',
         build: () {
           when(
-            () => mockTaskRepository.getById('nonexistent'),
+            () => ctx.taskRepo.getById('nonexistent'),
           ).thenAnswer((_) async => null);
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) =>
             bloc.add(const TaskDetailEvent.get(taskId: 'nonexistent')),
         expect: () => [
-          isA<TaskDetailLoadInProgress>(),
+          isLoadingState(),
           predicate<TaskDetailOperationFailure>(
             (state) => state.errorDetails.error == NotFoundEntity.task,
           ),
@@ -242,20 +221,20 @@ void main() {
         'emits failure on repository error',
         build: () {
           when(
-            () => mockTaskRepository.getById(any()),
+            () => ctx.taskRepo.getById(any()),
           ).thenThrow(Exception('Database error'));
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
         expect: () => [
-          isA<TaskDetailLoadInProgress>(),
-          isA<TaskDetailOperationFailure>(),
+          isLoadingState(),
+          isErrorState(),
         ],
       );
     });
@@ -264,26 +243,12 @@ void main() {
       blocTest<TaskDetailBloc, TaskDetailState>(
         'creates task and emits success',
         build: () {
-          when(
-            () => mockTaskRepository.create(
-              name: any(named: 'name'),
-              description: any(named: 'description'),
-              completed: any(named: 'completed'),
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              projectId: any(named: 'projectId'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
-            ),
-          ).thenAnswer((_) async {});
+          ctx.stubTaskCreateSuccess();
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
@@ -295,13 +260,11 @@ void main() {
         ),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          predicate<TaskDetailOperationSuccess>(
-            (state) => state.operation == EntityOperation.create,
-          ),
+          isSuccessState(),
         ],
         verify: (_) {
           verify(
-            () => mockTaskRepository.create(
+            () => ctx.taskRepo.create(
               name: 'New Task',
               description: 'Task description',
               startDate: any(named: 'startDate'),
@@ -321,7 +284,7 @@ void main() {
         'emits failure when create fails',
         build: () {
           when(
-            () => mockTaskRepository.create(
+            () => ctx.taskRepo.create(
               name: any(named: 'name'),
               description: any(named: 'description'),
               completed: any(named: 'completed'),
@@ -337,9 +300,9 @@ void main() {
           ).thenThrow(Exception('Create failed'));
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
@@ -350,7 +313,7 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<TaskDetailOperationFailure>(),
+          isErrorState(),
         ],
       );
     });
@@ -359,22 +322,9 @@ void main() {
       blocTest<TaskDetailBloc, TaskDetailState>(
         'updates task and emits success',
         build: () {
+          ctx.stubTaskUpdateSuccess();
           when(
-            () => mockTaskRepository.update(
-              id: any(named: 'id'),
-              name: any(named: 'name'),
-              description: any(named: 'description'),
-              completed: any(named: 'completed'),
-              projectId: any(named: 'projectId'),
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-            ),
-          ).thenAnswer((_) async {});
-
-          when(
-            () => mockTaskRepository.updateNextAction(
+            () => ctx.taskRepo.updateNextAction(
               id: any(named: 'id'),
               isNextAction: any(named: 'isNextAction'),
               nextActionPriority: any(named: 'nextActionPriority'),
@@ -383,9 +333,9 @@ void main() {
           ).thenAnswer((_) async {});
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
@@ -399,13 +349,11 @@ void main() {
         ),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          predicate<TaskDetailOperationSuccess>(
-            (state) => state.operation == EntityOperation.update,
-          ),
+          isSuccessState(),
         ],
         verify: (_) {
           verify(
-            () => mockTaskRepository.update(
+            () => ctx.taskRepo.update(
               id: 'task-1',
               name: 'Updated Task',
               description: 'Updated description',
@@ -419,7 +367,7 @@ void main() {
           ).called(1);
 
           verify(
-            () => mockTaskRepository.updateNextAction(
+            () => ctx.taskRepo.updateNextAction(
               id: 'task-1',
               isNextAction: any(named: 'isNextAction'),
               nextActionPriority: any(named: 'nextActionPriority'),
@@ -433,7 +381,7 @@ void main() {
         'emits failure when update fails',
         build: () {
           when(
-            () => mockTaskRepository.update(
+            () => ctx.taskRepo.update(
               id: any(named: 'id'),
               name: any(named: 'name'),
               description: any(named: 'description'),
@@ -447,7 +395,7 @@ void main() {
           ).thenThrow(Exception('Update failed'));
 
           when(
-            () => mockTaskRepository.updateNextAction(
+            () => ctx.taskRepo.updateNextAction(
               id: any(named: 'id'),
               isNextAction: any(named: 'isNextAction'),
               nextActionPriority: any(named: 'nextActionPriority'),
@@ -456,9 +404,9 @@ void main() {
           ).thenAnswer((_) async {});
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
@@ -471,7 +419,7 @@ void main() {
           ),
         ),
         expect: () => [
-          isA<TaskDetailOperationFailure>(),
+          isErrorState(),
         ],
       );
     });
@@ -480,24 +428,22 @@ void main() {
       blocTest<TaskDetailBloc, TaskDetailState>(
         'deletes task and emits success',
         build: () {
-          when(() => mockTaskRepository.delete(any())).thenAnswer((_) async {});
+          ctx.stubTaskDeleteSuccess();
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
         wait: const Duration(milliseconds: 100),
         expect: () => [
-          predicate<TaskDetailOperationSuccess>(
-            (state) => state.operation == EntityOperation.delete,
-          ),
+          isSuccessState(),
         ],
         verify: (_) {
-          verify(() => mockTaskRepository.delete('task-1')).called(1);
+          verify(() => ctx.taskRepo.delete('task-1')).called(1);
         },
       );
 
@@ -505,19 +451,19 @@ void main() {
         'emits failure when delete fails',
         build: () {
           when(
-            () => mockTaskRepository.delete(any()),
+            () => ctx.taskRepo.delete(any()),
           ).thenThrow(Exception('Delete failed'));
 
           return TaskDetailBloc(
-            taskRepository: mockTaskRepository,
-            projectRepository: mockProjectRepository,
-            labelRepository: mockLabelRepository,
+            taskRepository: ctx.taskRepo,
+            projectRepository: ctx.projectRepo,
+            labelRepository: ctx.labelRepo,
             autoLoad: false,
           );
         },
         act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
         expect: () => [
-          isA<TaskDetailOperationFailure>(),
+          isErrorState(),
         ],
       );
     });

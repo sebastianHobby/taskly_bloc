@@ -4,39 +4,23 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector.dart';
 
+import '../../../fixtures/test_data.dart';
+
 void main() {
   group('ProblemDetector.detectForWorkflowRun', () {
     const detector = ProblemDetector();
-
-    Task task({
-      required String id,
-      required String name,
-      required DateTime createdAt,
-      required DateTime updatedAt,
-      bool completed = false,
-      DateTime? deadlineDate,
-    }) {
-      return Task(
-        id: id,
-        name: name,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-        completed: completed,
-        deadlineDate: deadlineDate,
-      );
-    }
 
     test('detects stale tasks within workflow', () {
       final now = DateTime(2025, 1, 31, 12);
       const settings = SoftGatesSettings();
 
-      final stale = task(
+      final stale = TestData.task(
         id: 't1',
         name: 'Stale',
         createdAt: now.subtract(const Duration(days: 60)),
         updatedAt: now.subtract(const Duration(days: 31)),
       );
-      final fresh = task(
+      final fresh = TestData.task(
         id: 't2',
         name: 'Fresh',
         createdAt: now.subtract(const Duration(days: 10)),
@@ -66,7 +50,7 @@ void main() {
       final now = DateTime(2025, 1, 31, 12);
       const settings = SoftGatesSettings();
 
-      final completedStale = task(
+      final completedStale = TestData.task(
         id: 't1',
         name: 'Completed stale',
         createdAt: now.subtract(const Duration(days: 60)),
@@ -88,14 +72,14 @@ void main() {
       final now = DateTime(2025, 1, 31, 12);
       const settings = SoftGatesSettings();
 
-      final inWorkflow = task(
+      final inWorkflow = TestData.task(
         id: 'w1',
         name: 'In workflow',
         createdAt: now,
         updatedAt: now,
         deadlineDate: now.add(const Duration(days: 3)),
       );
-      final urgentOutside = task(
+      final urgentOutside = TestData.task(
         id: 'u1',
         name: 'Urgent outside',
         createdAt: now,
@@ -129,7 +113,7 @@ void main() {
       final now = DateTime(2025, 1, 31, 12);
       const settings = SoftGatesSettings();
 
-      final overdueOutside = task(
+      final overdueOutside = TestData.task(
         id: 'u1',
         name: 'Overdue',
         createdAt: now,

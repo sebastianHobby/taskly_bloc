@@ -1,7 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
-//Todo work out what styling you need here and customise. Combine with app_theme.dart.
-// Connect to app.
+/// Color palette for the application.
+///
+/// These colors are used alongside Material 3's ColorScheme.
+/// Use these for custom accents and branded elements.
 class AppColors {
   AppColors._();
 

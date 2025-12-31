@@ -1,5 +1,7 @@
-﻿import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
@@ -40,6 +42,7 @@ class WellbeingDashboardBloc
       ),
     );
   }
+
   final AnalyticsService _analyticsService;
 
   Future<void> _onLoad(_Load event, Emitter emit) async {
@@ -62,11 +65,12 @@ class WellbeingDashboardBloc
           topCorrelations: topCorrelations,
         ),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      talker.handle(e, stack, 'Failed to load wellbeing dashboard');
       emit(
         state.copyWith(
           isLoading: false,
-          error: e.toString(),
+          error: friendlyErrorMessage(e),
         ),
       );
     }

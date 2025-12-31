@@ -1,3 +1,6 @@
+@Tags(['integration', 'wellbeing'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
@@ -5,14 +8,22 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 import '../fixtures/test_data.dart';
 import '../helpers/test_db.dart';
 
+/// Integration tests for Wellbeing CRUD operations using a real in-memory database.
+///
+/// Coverage:
+/// - ✅ Journal entry create, update, delete
+/// - ✅ Mood tracking over time
+/// - ✅ Filter by date range
+/// - ✅ Tracker CRUD operations
+/// - ✅ Tracker responses
 void main() {
   late AppDatabase db;
-  late WellbeingRepository repository;
+  late WellbeingRepositoryContract repository;
 
   setUp(() {
     db = createTestDb();

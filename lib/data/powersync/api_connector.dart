@@ -1,21 +1,19 @@
-﻿// This file performs setup of the PowerSync database
+// This file performs setup of the PowerSync database
 import 'package:flutter/foundation.dart';
-import 'package:logging/logging.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/powersync/schema.dart';
-
-final log = Logger('powersync-supabase');
 
 /// Postgres Response codes that we cannot recover from by retrying.
 final List<RegExp> fatalResponseCodes = [
-  // Class 22 â€” Data Exception
+  // Class 22 — Data Exception
   // Examples include data type mismatch.
   RegExp(r'^22...$'),
-  // Class 23 â€” Integrity Constraint Violation.
+  // Class 23 — Integrity Constraint Violation.
   // Examples include NOT NULL, FOREIGN KEY and UNIQUE violations.
   RegExp(r'^23...$'),
   // INSUFFICIENT PRIVILEGE - typically a row-level security violation
@@ -118,7 +116,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         /// Note that these errors typically indicate a bug in the application.
         /// If protecting against data loss is important, save the failing records
         /// elsewhere instead of discarding, and/or notify the user.
-        log.severe('Data upload error - discarding $lastOp', e);
+        talker.error('[powersync] Data upload error - discarding $lastOp', e);
         await transaction.complete();
       } else {
         // Error may be retryable - e.g. network error or temporary server error.

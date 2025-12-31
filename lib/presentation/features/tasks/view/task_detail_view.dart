@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,7 +8,7 @@ import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dar
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
 
@@ -115,23 +115,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'labelIds',
                   );
-                  final isNextAction = extractBoolValue(
-                    formValues,
-                    'isNextAction',
-                  );
-                  final nextActionPriorityRaw = extractNullableStringValue(
-                    formValues,
-                    'nextActionPriority',
-                  );
-                  final nextActionPriority =
-                      (nextActionPriorityRaw == null ||
-                          nextActionPriorityRaw.trim().isEmpty)
-                      ? null
-                      : int.tryParse(nextActionPriorityRaw.trim());
-                  final nextActionNotes = extractNullableStringValue(
-                    formValues,
-                    'nextActionNotes',
-                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -145,13 +128,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
-                      isNextAction: isNextAction,
-                      nextActionPriority: nextActionPriority,
-                      nextActionNotes:
-                          (nextActionNotes == null ||
-                              nextActionNotes.trim().isEmpty)
-                          ? null
-                          : nextActionNotes.trim(),
                       labels: selectedLabels,
                     ),
                   );
@@ -207,23 +183,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'labelIds',
                   );
-                  final isNextAction = extractBoolValue(
-                    formValues,
-                    'isNextAction',
-                  );
-                  final nextActionPriorityRaw = extractNullableStringValue(
-                    formValues,
-                    'nextActionPriority',
-                  );
-                  final nextActionPriority =
-                      (nextActionPriorityRaw == null ||
-                          nextActionPriorityRaw.trim().isEmpty)
-                      ? null
-                      : int.tryParse(nextActionPriorityRaw.trim());
-                  final nextActionNotes = extractNullableStringValue(
-                    formValues,
-                    'nextActionNotes',
-                  );
                   final selectedLabels = availableLabels
                       .where((l) => labelIds.contains(l.id))
                       .toList();
@@ -238,13 +197,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       deadlineDate: deadlineDate,
                       projectId: projectId,
                       repeatIcalRrule: repeatIcalRrule,
-                      isNextAction: isNextAction,
-                      nextActionPriority: nextActionPriority,
-                      nextActionNotes:
-                          (nextActionNotes == null ||
-                              nextActionNotes.trim().isEmpty)
-                          ? null
-                          : nextActionNotes.trim(),
                       labels: selectedLabels,
                     ),
                   );

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
+import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 
 /// Screen types for generic screen system
 enum ScreenType { collection, workflow }
@@ -29,16 +30,18 @@ class ScreenDefinitions extends Table {
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
-  // EntitySelector configuration (JSONB stored as TEXT)
+  // EntitySelector configuration (stored as JSON text)
   TextColumn get entityType => textEnum<EntityType>()();
-  TextColumn get selectorConfig => text()(); // JSON string
+  TextColumn get selectorConfig => text().map(entitySelectorConverter)();
 
-  // DisplayConfig (JSON string)
-  TextColumn get displayConfig => text()();
+  // DisplayConfig (stored as JSON text)
+  TextColumn get displayConfig => text().map(displayConfigConverter)();
 
   // Workflow-specific (NULL for collection screens)
-  TextColumn get triggerConfig => text().nullable()(); // JSON string
-  TextColumn get completionCriteria => text().nullable()(); // JSON string
+  TextColumn get triggerConfig =>
+      text().map(triggerConfigConverter).nullable()();
+  TextColumn get completionCriteria =>
+      text().map(completionCriteriaConverter).nullable()();
 
   // Denormalized trigger fields for server-driven scheduling
   TextColumn get triggerType => text().nullable()();

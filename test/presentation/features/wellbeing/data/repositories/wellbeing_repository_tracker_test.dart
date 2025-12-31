@@ -1,16 +1,28 @@
+@Tags(['unit', 'repository', 'wellbeing'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 import '../../../../../fixtures/test_data.dart';
 import '../../../../../helpers/test_db.dart';
 
+/// Tests for [WellbeingRepositoryImpl] tracker operations.
+///
+/// Coverage:
+/// - ✅ Save/update trackers
+/// - ✅ Delete trackers
+/// - ✅ Tracker response types (choice, scale, yes/no, text)
+/// - ✅ Tracker ordering
+/// - ✅ Stream watching
 void main() {
   late AppDatabase db;
-  late WellbeingRepository repository;
+  late WellbeingRepositoryContract repository;
 
   setUp(() async {
     db = createTestDb();
@@ -21,7 +33,7 @@ void main() {
     await db.close();
   });
 
-  group('WellbeingRepository - Trackers', () {
+  group('WellbeingRepositoryContract - Trackers', () {
     test('saves new tracker with choice config', () async {
       final tracker = TestData.tracker(
         id: 'tracker-1',
@@ -413,6 +425,193 @@ void main() {
       // Should not throw error and tracker should exist
       final tracker = await repository.getTrackerById('tracker-1');
       expect(tracker, isNotNull);
+    });
+  });
+
+  group('WellbeingRepositoryContract - Daily Tracker Responses', () {
+    test('saves and retrieves daily tracker response', () async {
+      final tracker = TestData.tracker(
+        id: 'tracker-1',
+        name: 'Exercise',
+        responseType: TrackerResponseType.yesNo,
+      );
+      await repository.saveTracker(tracker);
+
+      final response = TestData.dailyTrackerResponse(
+        id: 'response-1',
+        trackerId: 'tracker-1',
+        responseDate: DateTime(2025, 1, 20),
+        value: const YesNoValue(value: true),
+      );
+
+      await repository.saveDailyTrackerResponse(response);
+
+      final responses = await repository.getDailyTrackerResponses(
+        date: DateTime(2025, 1, 20),
+      );
+
+      expect(responses.length, 1);
+      expect(responses[0].trackerId, 'tracker-1');
+      expect(responses[0].value, isA<YesNoValue>());
+      expect((responses[0].value as YesNoValue).value, true);
+    });
+
+    test('updates existing daily tracker response', () async {
+      final tracker = TestData.tracker(
+        id: 'tracker-1',
+      );
+      await repository.saveTracker(tracker);
+
+      final response = TestData.dailyTrackerResponse(
+        id: 'response-1',
+        trackerId: 'tracker-1',
+        responseDate: DateTime(2025, 1, 20),
+        value: const ScaleValue(value: 3),
+      );
+
+      await repository.saveDailyTrackerResponse(response);
+
+      // Update the response
+      final updated = response.copyWith(value: const ScaleValue(value: 5));
+      await repository.saveDailyTrackerResponse(updated);
+
+      final responses = await repository.getDailyTrackerResponses(
+        date: DateTime(2025, 1, 20),
+      );
+
+      expect(responses.length, 1);
+      expect((responses[0].value as ScaleValue).value, 5);
+    });
+
+    test('returns empty list when no responses for date', () async {
+      final responses = await repository.getDailyTrackerResponses(
+        date: DateTime(2025, 1, 20),
+      );
+
+      expect(responses, isEmpty);
+    });
+
+    test('only returns responses for specified date', () async {
+      final tracker = TestData.tracker(
+        id: 'tracker-1',
+        responseType: TrackerResponseType.yesNo,
+      );
+      await repository.saveTracker(tracker);
+
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-jan-20',
+          trackerId: 'tracker-1',
+          responseDate: DateTime(2025, 1, 20),
+          value: const YesNoValue(value: true),
+        ),
+      );
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-jan-21',
+          trackerId: 'tracker-1',
+          responseDate: DateTime(2025, 1, 21),
+          value: const YesNoValue(value: false),
+        ),
+      );
+
+      final responses = await repository.getDailyTrackerResponses(
+        date: DateTime(2025, 1, 20),
+      );
+
+      expect(responses.length, 1);
+      expect(responses[0].id, 'response-jan-20');
+    });
+
+    test('watchDailyTrackerResponses emits updates', () async {
+      final tracker = TestData.tracker(
+        id: 'tracker-1',
+        responseType: TrackerResponseType.yesNo,
+      );
+      await repository.saveTracker(tracker);
+
+      final date = DateTime(2025, 1, 20);
+      final stream = repository.watchDailyTrackerResponses(date: date);
+
+      // Initial empty state
+      var responses = await stream.first;
+      expect(responses, isEmpty);
+
+      // Save a response
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-1',
+          trackerId: 'tracker-1',
+          responseDate: date,
+          value: const YesNoValue(value: true),
+        ),
+      );
+
+      // Should now have the response
+      responses = await stream.first;
+      expect(responses.length, 1);
+    });
+
+    test('deletes daily tracker response', () async {
+      final tracker = TestData.tracker(
+        id: 'tracker-1',
+        responseType: TrackerResponseType.yesNo,
+      );
+      await repository.saveTracker(tracker);
+
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-1',
+          trackerId: 'tracker-1',
+          responseDate: DateTime(2025, 1, 20),
+          value: const YesNoValue(value: true),
+        ),
+      );
+
+      await repository.deleteDailyTrackerResponse('response-1');
+
+      final responses = await repository.getDailyTrackerResponses(
+        date: DateTime(2025, 1, 20),
+      );
+      expect(responses, isEmpty);
+    });
+
+    test('supports multiple trackers for same date', () async {
+      await repository.saveTracker(
+        TestData.tracker(
+          id: 'exercise',
+          responseType: TrackerResponseType.yesNo,
+        ),
+      );
+      await repository.saveTracker(
+        TestData.tracker(
+          id: 'sleep',
+        ),
+      );
+
+      final date = DateTime(2025, 1, 20);
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-exercise',
+          trackerId: 'exercise',
+          responseDate: date,
+          value: const YesNoValue(value: true),
+        ),
+      );
+      await repository.saveDailyTrackerResponse(
+        TestData.dailyTrackerResponse(
+          id: 'response-sleep',
+          trackerId: 'sleep',
+          responseDate: date,
+          value: const ScaleValue(value: 8),
+        ),
+      );
+
+      final responses = await repository.getDailyTrackerResponses(date: date);
+
+      expect(responses.length, 2);
+      final trackerIds = responses.map((r) => r.trackerId).toSet();
+      expect(trackerIds, containsAll(['exercise', 'sleep']));
     });
   });
 }

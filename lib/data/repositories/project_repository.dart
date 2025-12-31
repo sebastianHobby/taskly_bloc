@@ -1,32 +1,34 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:taskly_bloc/data/repositories/mappers/project_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_stream_expander_contract.dart';
-import 'package:taskly_bloc/domain/contracts/occurrence_write_helper_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/queries/project_filter_evaluator.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator, RelativeComparison;
 
 class ProjectRepository implements ProjectRepositoryContract {
   ProjectRepository({
     required this.driftDb,
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
-  });
+  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
+
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
+  final ProjectPredicateMapper _predicateMapper;
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
@@ -255,242 +257,11 @@ class ProjectRepository implements ProjectRepositoryContract {
     QueryFilter<ProjectPredicate> filter,
     $ProjectTableTable p,
   ) {
-    final terms = filter.toDnfTerms();
-    if (terms.isEmpty) return null;
-
-    Expression<bool> andTerm(List<ProjectPredicate> predicates) {
-      if (predicates.isEmpty) return const Constant(true);
-      return predicates
-          .map((pred) => _predicateToExpression(pred, p))
-          .reduce((a, b) => a & b);
-    }
-
-    final exprs = terms.map(andTerm).toList(growable: false);
-    return exprs.reduce((a, b) => a | b);
-  }
-
-  Expression<bool> _predicateToExpression(
-    ProjectPredicate predicate,
-    $ProjectTableTable p,
-  ) {
-    return switch (predicate) {
-      ProjectBoolPredicate() => _boolPredicateToExpression(predicate, p),
-      ProjectDatePredicate() => _datePredicateToExpression(predicate, p),
-      ProjectLabelPredicate() => _labelPredicateToExpression(predicate, p),
-    };
-  }
-
-  Expression<bool> _boolPredicateToExpression(
-    ProjectBoolPredicate predicate,
-    $ProjectTableTable p,
-  ) {
-    final column = switch (predicate.field) {
-      ProjectBoolField.completed => p.completed,
-    };
-
-    return switch (predicate.operator) {
-      BoolOperator.isTrue => column.equals(true),
-      BoolOperator.isFalse => column.equals(false),
-    };
-  }
-
-  Expression<bool> _datePredicateToExpression(
-    ProjectDatePredicate predicate,
-    $ProjectTableTable p,
-  ) {
-    if (predicate.field == ProjectDateField.completedAt) {
-      return _completedAtDatePredicateToExpression(predicate, p);
-    }
-
-    final dynamic column = switch (predicate.field) {
-      ProjectDateField.startDate => p.startDate,
-      ProjectDateField.deadlineDate => p.deadlineDate,
-      ProjectDateField.createdAt => p.createdAt,
-      ProjectDateField.updatedAt => p.updatedAt,
-      ProjectDateField.completedAt => p.updatedAt,
-    };
-
-    if (predicate.operator == DateOperator.relative) {
-      final comp = predicate.relativeComparison;
-      final days = predicate.relativeDays;
-      if (comp == null || days == null) return const Constant(false);
-
-      final pivot = _relativeToAbsolute(days);
-      return (switch (comp) {
-            RelativeComparison.on => column.equals(pivot),
-            RelativeComparison.before => column.isSmallerThanValue(pivot),
-            RelativeComparison.after => column.isBiggerThanValue(pivot),
-            RelativeComparison.onOrAfter => column.isBiggerOrEqualValue(pivot),
-            RelativeComparison.onOrBefore => column.isSmallerOrEqualValue(
-              pivot,
-            ),
-          })
-          as Expression<bool>;
-    }
-
-    final date = predicate.date;
-    final start = predicate.startDate;
-    final end = predicate.endDate;
-
-    return (switch (predicate.operator) {
-          DateOperator.onOrAfter => column.isBiggerOrEqualValue(date!),
-          DateOperator.onOrBefore => column.isSmallerOrEqualValue(date!),
-          DateOperator.before => column.isSmallerThanValue(date!),
-          DateOperator.after => column.isBiggerThanValue(date!),
-          DateOperator.on => column.equals(date!),
-          DateOperator.between => column.isBetweenValues(start!, end!),
-          DateOperator.isNull => column.isNull(),
-          DateOperator.isNotNull => column.isNotNull(),
-          DateOperator.relative => const Constant(false),
-        })
-        as Expression<bool>;
-  }
-
-  Expression<bool> _completedAtDatePredicateToExpression(
-    ProjectDatePredicate predicate,
-    $ProjectTableTable p,
-  ) {
-    final history = driftDb.projectCompletionHistoryTable;
-
-    if (predicate.operator == DateOperator.relative) {
-      final comp = predicate.relativeComparison;
-      final days = predicate.relativeDays;
-      if (comp == null || days == null) return const Constant(false);
-
-      final absoluteDate = _relativeToAbsolute(days);
-      return switch (comp) {
-        RelativeComparison.on => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.projectId])
-            ..where(history.projectId.equalsExp(p.id))
-            ..where(history.completedAt.equals(absoluteDate)),
-        ),
-        RelativeComparison.before => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.projectId])
-            ..where(history.projectId.equalsExp(p.id))
-            ..where(history.completedAt.isSmallerThanValue(absoluteDate)),
-        ),
-        RelativeComparison.after => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.projectId])
-            ..where(history.projectId.equalsExp(p.id))
-            ..where(history.completedAt.isBiggerThanValue(absoluteDate)),
-        ),
-        RelativeComparison.onOrAfter => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.projectId])
-            ..where(history.projectId.equalsExp(p.id))
-            ..where(
-              history.completedAt.isBiggerOrEqualValue(absoluteDate),
-            ),
-        ),
-        RelativeComparison.onOrBefore => existsQuery(
-          driftDb.selectOnly(history)
-            ..addColumns([history.projectId])
-            ..where(history.projectId.equalsExp(p.id))
-            ..where(
-              history.completedAt.isSmallerOrEqualValue(absoluteDate),
-            ),
-        ),
-      };
-    }
-
-    final absoluteDate = predicate.date;
-    final absoluteStart = predicate.startDate;
-    final absoluteEnd = predicate.endDate;
-
-    return switch (predicate.operator) {
-      DateOperator.onOrAfter => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(history.completedAt.isBiggerOrEqualValue(absoluteDate!)),
-      ),
-      DateOperator.onOrBefore => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(history.completedAt.isSmallerOrEqualValue(absoluteDate!)),
-      ),
-      DateOperator.before => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(history.completedAt.isSmallerThanValue(absoluteDate!)),
-      ),
-      DateOperator.after => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(history.completedAt.isBiggerThanValue(absoluteDate!)),
-      ),
-      DateOperator.on => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(history.completedAt.equals(absoluteDate!)),
-      ),
-      DateOperator.between => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id))
-          ..where(
-            history.completedAt.isBetweenValues(absoluteStart!, absoluteEnd!),
-          ),
-      ),
-      DateOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id)),
-      ),
-      DateOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(history)
-          ..addColumns([history.projectId])
-          ..where(history.projectId.equalsExp(p.id)),
-      ),
-      DateOperator.relative => const Constant(false),
-    };
-  }
-
-  Expression<bool> _labelPredicateToExpression(
-    ProjectLabelPredicate predicate,
-    $ProjectTableTable p,
-  ) {
-    return switch (predicate.operator) {
-      LabelOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
-          ..where(
-            driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds),
-          ),
-      ),
-      LabelOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
-          ..where(
-            driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds),
-          )
-          ..groupBy([driftDb.projectLabelsTable.projectId]),
-      ),
-      LabelOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
-      ),
-      LabelOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
-      ),
-    };
-  }
-
-  DateTime _relativeToAbsolute(int days) {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day).add(Duration(days: days));
+    return _predicateMapper.whereExpressionFromFilter(
+      filter: filter,
+      predicateToExpression: (pred) =>
+          _predicateMapper.predicateToExpression(pred, p),
+    );
   }
 
   /// Creates the standard join query for projects with labels.
@@ -620,6 +391,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     bool repeatFromCompletion = false,
     List<String>? labelIds,
   }) async {
+    talker.debug('[ProjectRepository] create: name="$name"');
     final now = DateTime.now();
     final id = uuid.v4();
 
@@ -672,8 +444,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     bool? repeatFromCompletion,
     List<String>? labelIds,
   }) async {
+    talker.debug('[ProjectRepository] update: id=$id, name="$name"');
     final existing = await _getProjectById(id);
     if (existing == null) {
+      talker.warning(
+        '[ProjectRepository] update failed: project not found id=$id',
+      );
       throw RepositoryNotFoundException('No project found to update');
     }
 
@@ -738,6 +514,7 @@ class ProjectRepository implements ProjectRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
+    talker.debug('[ProjectRepository] delete: id=$id');
     await _deleteProject(ProjectTableCompanion(id: Value(id)));
   }
 

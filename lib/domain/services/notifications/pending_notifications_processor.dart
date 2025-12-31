@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
-import 'package:taskly_bloc/domain/repositories/pending_notifications_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 
 /// Watches for new pending notifications and processes them.
@@ -12,14 +12,13 @@ import 'package:taskly_bloc/domain/services/notifications/notification_presenter
 /// integration when ready.
 class PendingNotificationsProcessor {
   PendingNotificationsProcessor({
-    required PendingNotificationsRepository repository,
+    required PendingNotificationsRepositoryContract repository,
     required NotificationPresenter presenter,
   }) : _repository = repository,
        _presenter = presenter;
 
-  final PendingNotificationsRepository _repository;
+  final PendingNotificationsRepositoryContract _repository;
   final NotificationPresenter _presenter;
-  final _logger = AppLogger.forService('pending_notifications');
 
   StreamSubscription<List<PendingNotification>>? _subscription;
   final Set<String> _inFlight = <String>{};
@@ -27,13 +26,13 @@ class PendingNotificationsProcessor {
   void start() {
     if (_subscription != null) return;
 
-    _logger.info('Starting pending notifications processor');
+    talker.info('[notifications] Starting pending notifications processor');
     _subscription = _repository.watchPending().listen(
       (items) {
         unawaited(_process(items));
       },
       onError: (Object error, StackTrace stackTrace) {
-        _logger.error('Pending notifications stream error', error, stackTrace);
+        talker.handle(error, stackTrace, 'Pending notifications stream error');
       },
     );
   }
@@ -42,7 +41,7 @@ class PendingNotificationsProcessor {
     await _subscription?.cancel();
     _subscription = null;
     _inFlight.clear();
-    _logger.info('Stopped pending notifications processor');
+    talker.info('[notifications] Stopped pending notifications processor');
   }
 
   Future<void> _process(List<PendingNotification> items) async {
@@ -57,10 +56,10 @@ class PendingNotificationsProcessor {
         await _presenter(item);
         await _repository.markDelivered(id: item.id);
       } catch (error, stackTrace) {
-        _logger.error(
-          'Failed to process pending notification ${item.id}',
+        talker.handle(
           error,
           stackTrace,
+          'Failed to process pending notification ${item.id}',
         );
       } finally {
         _inFlight.remove(item.id);

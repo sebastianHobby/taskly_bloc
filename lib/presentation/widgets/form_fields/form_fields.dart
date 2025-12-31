@@ -1,4 +1,4 @@
-﻿/// Custom FormBuilder fields for the Taskly app.
+/// Custom FormBuilder fields for the Taskly app.
 ///
 /// These fields extend flutter_form_builder with domain-specific
 /// functionality for tasks, projects, and labels.

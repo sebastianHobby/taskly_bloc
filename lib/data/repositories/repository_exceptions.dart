@@ -1,4 +1,4 @@
-﻿class RepositoryException implements Exception {
+class RepositoryException implements Exception {
   RepositoryException(this.message, [this.cause, this.stackTrace]);
   final String message;
   final Object? cause;

@@ -316,9 +316,8 @@ $AllocationReasoningCopyWith<$Res> get reasoning {
 /// @nodoc
 mixin _$AllocatedTask {
 
- Task get task; String get categoryId;// Value/Project/Context ID
- String get categoryName; double get allocationScore; int get position;// Position within category
- String? get allocationReason;
+ Task get task; String get qualifyingValueId;// Value that qualified this task
+ double get allocationScore;
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -329,16 +328,16 @@ $AllocatedTaskCopyWith<AllocatedTask> get copyWith => _$AllocatedTaskCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.categoryName, categoryName) || other.categoryName == categoryName)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore)&&(identical(other.position, position) || other.position == position)&&(identical(other.allocationReason, allocationReason) || other.allocationReason == allocationReason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task,categoryId,categoryName,allocationScore,position,allocationReason);
+int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore);
 
 @override
 String toString() {
-  return 'AllocatedTask(task: $task, categoryId: $categoryId, categoryName: $categoryName, allocationScore: $allocationScore, position: $position, allocationReason: $allocationReason)';
+  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore)';
 }
 
 
@@ -349,7 +348,7 @@ abstract mixin class $AllocatedTaskCopyWith<$Res>  {
   factory $AllocatedTaskCopyWith(AllocatedTask value, $Res Function(AllocatedTask) _then) = _$AllocatedTaskCopyWithImpl;
 @useResult
 $Res call({
- Task task, String categoryId, String categoryName, double allocationScore, int position, String? allocationReason
+ Task task, String qualifyingValueId, double allocationScore
 });
 
 
@@ -366,15 +365,12 @@ class _$AllocatedTaskCopyWithImpl<$Res>
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? task = null,Object? categoryId = null,Object? categoryName = null,Object? allocationScore = null,Object? position = null,Object? allocationReason = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,}) {
   return _then(_self.copyWith(
 task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
-as Task,categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
-as String,categoryName: null == categoryName ? _self.categoryName : categoryName // ignore: cast_nullable_to_non_nullable
+as Task,qualifyingValueId: null == qualifyingValueId ? _self.qualifyingValueId : qualifyingValueId // ignore: cast_nullable_to_non_nullable
 as String,allocationScore: null == allocationScore ? _self.allocationScore : allocationScore // ignore: cast_nullable_to_non_nullable
-as double,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as int,allocationReason: freezed == allocationReason ? _self.allocationReason : allocationReason // ignore: cast_nullable_to_non_nullable
-as String?,
+as double,
   ));
 }
 
@@ -459,10 +455,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Task task,  String categoryId,  String categoryName,  double allocationScore,  int position,  String? allocationReason)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AllocatedTask() when $default != null:
-return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationScore,_that.position,_that.allocationReason);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
   return orElse();
 
 }
@@ -480,10 +476,10 @@ return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationS
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Task task,  String categoryId,  String categoryName,  double allocationScore,  int position,  String? allocationReason)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore)  $default,) {final _that = this;
 switch (_that) {
 case _AllocatedTask():
-return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationScore,_that.position,_that.allocationReason);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -500,10 +496,10 @@ return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationS
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Task task,  String categoryId,  String categoryName,  double allocationScore,  int position,  String? allocationReason)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Task task,  String qualifyingValueId,  double allocationScore)?  $default,) {final _that = this;
 switch (_that) {
 case _AllocatedTask() when $default != null:
-return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationScore,_that.position,_that.allocationReason);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
   return null;
 
 }
@@ -515,17 +511,13 @@ return $default(_that.task,_that.categoryId,_that.categoryName,_that.allocationS
 
 
 class _AllocatedTask implements AllocatedTask {
-  const _AllocatedTask({required this.task, required this.categoryId, required this.categoryName, required this.allocationScore, required this.position, this.allocationReason});
+  const _AllocatedTask({required this.task, required this.qualifyingValueId, required this.allocationScore});
   
 
 @override final  Task task;
-@override final  String categoryId;
-// Value/Project/Context ID
-@override final  String categoryName;
+@override final  String qualifyingValueId;
+// Value that qualified this task
 @override final  double allocationScore;
-@override final  int position;
-// Position within category
-@override final  String? allocationReason;
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
@@ -537,16 +529,16 @@ _$AllocatedTaskCopyWith<_AllocatedTask> get copyWith => __$AllocatedTaskCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.categoryName, categoryName) || other.categoryName == categoryName)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore)&&(identical(other.position, position) || other.position == position)&&(identical(other.allocationReason, allocationReason) || other.allocationReason == allocationReason));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task,categoryId,categoryName,allocationScore,position,allocationReason);
+int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore);
 
 @override
 String toString() {
-  return 'AllocatedTask(task: $task, categoryId: $categoryId, categoryName: $categoryName, allocationScore: $allocationScore, position: $position, allocationReason: $allocationReason)';
+  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore)';
 }
 
 
@@ -557,7 +549,7 @@ abstract mixin class _$AllocatedTaskCopyWith<$Res> implements $AllocatedTaskCopy
   factory _$AllocatedTaskCopyWith(_AllocatedTask value, $Res Function(_AllocatedTask) _then) = __$AllocatedTaskCopyWithImpl;
 @override @useResult
 $Res call({
- Task task, String categoryId, String categoryName, double allocationScore, int position, String? allocationReason
+ Task task, String qualifyingValueId, double allocationScore
 });
 
 
@@ -574,15 +566,12 @@ class __$AllocatedTaskCopyWithImpl<$Res>
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? task = null,Object? categoryId = null,Object? categoryName = null,Object? allocationScore = null,Object? position = null,Object? allocationReason = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,}) {
   return _then(_AllocatedTask(
 task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
-as Task,categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
-as String,categoryName: null == categoryName ? _self.categoryName : categoryName // ignore: cast_nullable_to_non_nullable
+as Task,qualifyingValueId: null == qualifyingValueId ? _self.qualifyingValueId : qualifyingValueId // ignore: cast_nullable_to_non_nullable
 as String,allocationScore: null == allocationScore ? _self.allocationScore : allocationScore // ignore: cast_nullable_to_non_nullable
-as double,position: null == position ? _self.position : position // ignore: cast_nullable_to_non_nullable
-as int,allocationReason: freezed == allocationReason ? _self.allocationReason : allocationReason // ignore: cast_nullable_to_non_nullable
-as String?,
+as double,
   ));
 }
 

@@ -1,4 +1,4 @@
-﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 
 part 'tracker.freezed.dart';

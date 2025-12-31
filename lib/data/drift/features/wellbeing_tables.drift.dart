@@ -1,4 +1,4 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 
 @DataClassName('JournalEntryEntity')
@@ -56,5 +56,25 @@ class TrackerResponses extends Table {
   @override
   List<Set<Column>>? get uniqueKeys => [
     {journalEntryId, trackerId},
+  ];
+}
+
+@DataClassName('DailyTrackerResponseEntity')
+class DailyTrackerResponses extends Table {
+  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get userId => text().nullable()();
+  DateTimeColumn get responseDate =>
+      dateTime()(); // Date only (time component ignored)
+  TextColumn get trackerId => text()();
+  TextColumn get responseValue => text()(); // JSON
+  DateTimeColumn get createdAt => dateTime().clientDefault(DateTime.now)();
+  DateTimeColumn get updatedAt => dateTime().clientDefault(DateTime.now)();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>>? get uniqueKeys => [
+    {responseDate, trackerId}, // One response per tracker per day
   ];
 }

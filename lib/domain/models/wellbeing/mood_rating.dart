@@ -1,4 +1,4 @@
-﻿enum MoodRating {
+enum MoodRating {
   veryLow(1, 'Very Low', '\u{1F622}'),
   low(2, 'Low', '\u{1F615}'),
   neutral(3, 'Neutral', '\u{1F610}'),

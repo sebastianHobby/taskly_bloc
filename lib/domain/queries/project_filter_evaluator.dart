@@ -1,10 +1,10 @@
-import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/queries/operators/operators.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator, RelativeComparison;
+    show DateOperator;
 
 /// Evaluates project filters (shared AND + one-level OR groups).
 class ProjectFilterEvaluator {
@@ -48,11 +48,7 @@ class ProjectFilterEvaluator {
     final value = switch (p.field) {
       ProjectBoolField.completed => project.completed,
     };
-
-    return switch (p.operator) {
-      BoolOperator.isTrue => value,
-      BoolOperator.isFalse => !value,
-    };
+    return BoolComparison.evaluate(fieldValue: value, operator: p.operator);
   }
 
   bool _evalLabel(Project project, ProjectLabelPredicate p) {
@@ -60,13 +56,11 @@ class ProjectFilterEvaluator {
         .where((l) => l.type == p.labelType)
         .map((l) => l.id)
         .toSet();
-
-    return switch (p.operator) {
-      LabelOperator.hasAny => p.labelIds.any(ids.contains),
-      LabelOperator.hasAll => p.labelIds.every(ids.contains),
-      LabelOperator.isNull => ids.isEmpty,
-      LabelOperator.isNotNull => ids.isNotEmpty,
-    };
+    return LabelComparison.evaluate(
+      entityLabelIds: ids,
+      predicateLabelIds: p.labelIds,
+      operator: p.operator,
+    );
   }
 
   bool _evalDate(
@@ -87,41 +81,19 @@ class ProjectFilterEvaluator {
       final days = p.relativeDays;
       if (comp == null || days == null) return false;
 
-      final pivot = dateOnly(ctx.today.add(Duration(days: days)));
-      final target = fieldValue == null ? null : dateOnly(fieldValue);
-      if (target == null) return false;
-
-      return switch (comp) {
-        RelativeComparison.on => target.isAtSameMomentAs(pivot),
-        RelativeComparison.before => target.isBefore(pivot),
-        RelativeComparison.after => target.isAfter(pivot),
-        RelativeComparison.onOrAfter => !target.isBefore(pivot),
-        RelativeComparison.onOrBefore => !target.isAfter(pivot),
-      };
+      return DateComparison.evaluateRelative(
+        fieldValue: fieldValue,
+        comparison: comp,
+        pivot: ctx.today.add(Duration(days: days)),
+      );
     }
 
-    final absoluteDate = p.date;
-    final absoluteStart = p.startDate;
-    final absoluteEnd = p.endDate;
-
-    return switch (p.operator) {
-      DateOperator.onOrAfter =>
-        fieldValue != null && !fieldValue.isBefore(absoluteDate!),
-      DateOperator.onOrBefore =>
-        fieldValue != null && !fieldValue.isAfter(absoluteDate!),
-      DateOperator.before =>
-        fieldValue != null && fieldValue.isBefore(absoluteDate!),
-      DateOperator.after =>
-        fieldValue != null && fieldValue.isAfter(absoluteDate!),
-      DateOperator.on =>
-        fieldValue != null && dateOnly(fieldValue) == dateOnly(absoluteDate!),
-      DateOperator.between =>
-        fieldValue != null &&
-            !fieldValue.isBefore(absoluteStart!) &&
-            !fieldValue.isAfter(absoluteEnd!),
-      DateOperator.isNull => fieldValue == null,
-      DateOperator.isNotNull => fieldValue != null,
-      DateOperator.relative => false,
-    };
+    return DateComparison.evaluate(
+      fieldValue: fieldValue,
+      operator: p.operator,
+      date: p.date,
+      startDate: p.startDate,
+      endDate: p.endDate,
+    );
   }
 }

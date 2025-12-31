@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/screen_order_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
@@ -10,7 +10,7 @@ const _iconResolver = NavigationIconResolver();
 class NavigationSettingsPage extends StatelessWidget {
   const NavigationSettingsPage({required this.screensRepository, super.key});
 
-  final ScreenDefinitionsRepository screensRepository;
+  final ScreenDefinitionsRepositoryContract screensRepository;
 
   @override
   Widget build(BuildContext context) {

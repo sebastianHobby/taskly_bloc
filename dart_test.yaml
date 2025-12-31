@@ -16,6 +16,10 @@ tags:
   # Tests that are known to be slow
   slow:
     timeout: 3x
+
+  # Repository tests - database-backed tests
+  repository:
+    timeout: 2x
   
   # Tests for specific features
   analytics:
@@ -28,15 +32,29 @@ tags:
 presets:
   # Run only fast unit tests (for CI quick checks)
   fast:
-    exclude-tags: [integration, slow]
+    exclude-tags: [integration, slow, repository]
     
   # Run integration tests only
   integration:
     include-tags: [integration]
+
+  # Run repository tests only
+  repository:
+    include-tags: [repository]
     
   # Run all tests except slow ones
   quick:
     exclude-tags: [slow]
+
+  # Run all database-related tests
+  database:
+    include-tags: [integration, repository]
+
+# Automatically apply tags based on file paths
+on_os:
+  windows:
+  linux:
+  mac-os:
 
 # Test execution settings
 concurrency: 4
@@ -45,7 +63,7 @@ reporter: expanded
 # Test retry configuration (for flaky tests)
 # retry: 2
 
-# Paths
+# Paths configuration - uncomment to customize
 # paths:
 #   - test/
 

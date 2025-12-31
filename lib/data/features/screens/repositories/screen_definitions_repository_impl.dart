@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as db;
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart'
     as db_screens;
@@ -10,11 +9,11 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as domain_screens;
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
-import 'package:taskly_bloc/domain/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
-/// Drift implementation of [ScreenDefinitionsRepository].
-class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
+/// Drift implementation of [ScreenDefinitionsRepositoryContract].
+class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepositoryContract {
   ScreenDefinitionsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -65,10 +64,34 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
 
   @override
   Stream<ScreenDefinition?> watchScreenByScreenId(String screenId) {
-    return (_db.select(_db.screenDefinitions)
-          ..where((t) => t.screenId.equals(screenId)))
-        .watchSingleOrNull()
-        .map((e) => e == null ? null : _mapEntity(e));
+    talker.repositoryLog(
+      'Screens',
+      'watchScreenByScreenId called: screenId="$screenId"',
+    );
+    return (_db.select(
+      _db.screenDefinitions,
+    )..where((t) => t.screenId.equals(screenId))).watchSingleOrNull().map((e) {
+      talker.repositoryLog(
+        'Screens',
+        'watchScreenByScreenId stream emission: screenId="$screenId", entity=${e == null ? "null" : "exists(id=${e.id})"}',
+      );
+      if (e == null) return null;
+      try {
+        final mapped = _mapEntity(e);
+        talker.repositoryLog(
+          'Screens',
+          'watchScreenByScreenId mapped successfully: ${mapped.screenId}',
+        );
+        return mapped;
+      } catch (err, st) {
+        talker.databaseError(
+          'Screens.watchScreenByScreenId._mapEntity - Raw entity data: id=${e.id}, screenId=${e.screenId}, selectorConfig type=${e.selectorConfig.runtimeType}',
+          err,
+          st,
+        );
+        rethrow;
+      }
+    });
   }
 
   @override
@@ -87,7 +110,6 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
         .insert(
           db.ScreenDefinitionsCompanion.insert(
             id: Value(id),
-            userId: const Value(''),
             screenType: screenType,
             screenId: _extractScreenId(screen),
             name: _extractName(screen),
@@ -96,16 +118,10 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
             isActive: Value(_extractIsActive(screen)),
             sortOrder: Value(_extractSortOrder(screen)),
             entityType: _toDbEntityType(selector.entityType),
-            selectorConfig: jsonEncode(selector.toJson()),
-            displayConfig: jsonEncode(display.toJson()),
-            triggerConfig: Value(
-              trigger == null ? null : jsonEncode(trigger.toJson()),
-            ),
-            completionCriteria: Value(
-              completionCriteria == null
-                  ? null
-                  : jsonEncode(completionCriteria.toJson()),
-            ),
+            selectorConfig: selector,
+            displayConfig: display,
+            triggerConfig: Value(trigger),
+            completionCriteria: Value(completionCriteria),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -136,16 +152,10 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
         isActive: Value(_extractIsActive(screen)),
         sortOrder: Value(_extractSortOrder(screen)),
         entityType: Value(_toDbEntityType(selector.entityType)),
-        selectorConfig: Value(jsonEncode(selector.toJson())),
-        displayConfig: Value(jsonEncode(display.toJson())),
-        triggerConfig: Value(
-          trigger == null ? null : jsonEncode(trigger.toJson()),
-        ),
-        completionCriteria: Value(
-          completionCriteria == null
-              ? null
-              : jsonEncode(completionCriteria.toJson()),
-        ),
+        selectorConfig: Value(selector),
+        displayConfig: Value(display),
+        triggerConfig: Value(trigger),
+        completionCriteria: Value(completionCriteria),
         updatedAt: Value(now),
       ),
     );
@@ -203,24 +213,11 @@ class ScreenDefinitionsRepositoryImpl implements ScreenDefinitionsRepository {
   }
 
   ScreenDefinition _mapEntity(db.ScreenDefinitionEntity e) {
-    final selector = domain_screens.EntitySelector.fromJson(
-      jsonDecode(e.selectorConfig) as Map<String, dynamic>,
-    );
-    final display = DisplayConfig.fromJson(
-      jsonDecode(e.displayConfig) as Map<String, dynamic>,
-    );
-
-    final trigger = e.triggerConfig == null
-        ? null
-        : TriggerConfig.fromJson(
-            jsonDecode(e.triggerConfig!) as Map<String, dynamic>,
-          );
-
-    final completionCriteria = e.completionCriteria == null
-        ? null
-        : CompletionCriteria.fromJson(
-            jsonDecode(e.completionCriteria!) as Map<String, dynamic>,
-          );
+    // TypeConverters handle all JSON deserialization automatically
+    final selector = e.selectorConfig;
+    final display = e.displayConfig;
+    final trigger = e.triggerConfig;
+    final completionCriteria = e.completionCriteria;
 
     final base = (
       id: e.id,

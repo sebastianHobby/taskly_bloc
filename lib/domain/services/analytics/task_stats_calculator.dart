@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';

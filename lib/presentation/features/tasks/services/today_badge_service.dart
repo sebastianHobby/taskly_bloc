@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Service that provides today's incomplete task count for navigation badges.

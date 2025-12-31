@@ -4,11 +4,11 @@ import 'package:taskly_bloc/data/drift/features/priority_tables.drift.dart'
     as db_priority;
 import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart'
     as model;
-import 'package:taskly_bloc/domain/repositories/priority_rankings_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// Drift implementation of priority rankings repository
-class PriorityRankingsRepositoryImpl implements PriorityRankingsRepository {
+class PriorityRankingsRepositoryImpl implements PriorityRankingsRepositoryContract {
   PriorityRankingsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -148,7 +148,6 @@ class PriorityRankingsRepositoryImpl implements PriorityRankingsRepository {
         .insert(
           db.PriorityRankingsCompanion.insert(
             id: Value(rankingId),
-            userId: const Value(''), // server-side trigger will set
             rankingType: _mapRankingTypeToDrift(rankingType),
             createdAt: Value(now),
             updatedAt: Value(now),
@@ -167,7 +166,6 @@ class PriorityRankingsRepositoryImpl implements PriorityRankingsRepository {
               entityType: _mapEntityTypeToDrift(items[i].entityType),
               weight: items[i].weight,
               sortOrder: i,
-              userId: const Value(''), // server-side trigger will set
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -210,7 +208,6 @@ class PriorityRankingsRepositoryImpl implements PriorityRankingsRepository {
               entityType: _mapEntityTypeToDrift(items[i].entityType),
               weight: items[i].weight,
               sortOrder: i,
-              userId: const Value(''), // Will be set by trigger
               createdAt: Value(now),
               updatedAt: Value(now),
             ),

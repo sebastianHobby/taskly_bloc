@@ -6,12 +6,12 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as domain_screens;
 import 'package:taskly_bloc/domain/models/workflow/workflow_session.dart'
     as domain_workflow;
-import 'package:taskly_bloc/domain/repositories/workflow_item_reviews_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
 import 'package:uuid/uuid.dart';
 
-/// Drift implementation of [WorkflowItemReviewsRepository].
+/// Drift implementation of [WorkflowItemReviewsRepositoryContract].
 class WorkflowItemReviewsRepositoryImpl
-    implements WorkflowItemReviewsRepository {
+    implements WorkflowItemReviewsRepositoryContract {
   WorkflowItemReviewsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -57,7 +57,6 @@ class WorkflowItemReviewsRepositoryImpl
               action: _mapActionToDrift(action),
               reviewNotes: Value(reviewNotes),
               reviewedAt: Value(effectiveReviewedAt),
-              userId: const Value(''),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),

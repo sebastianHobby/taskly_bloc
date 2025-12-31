@@ -1,22 +1,13 @@
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart';
+
 import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Interface for allocation strategies
 abstract class AllocationStrategy {
-  /// Allocates tasks across categories based on priority rankings
+  /// Allocates tasks across categories based on weights
   ///
-  /// Parameters:
-  /// - [tasks]: Available tasks to allocate
-  /// - [ranking]: User's priority ranking with weights
-  /// - [totalLimit]: Maximum total tasks to allocate
-  /// - [parameters]: Strategy-specific parameters
-  Future<AllocationResult> allocate({
-    required List<Task> tasks,
-    required PriorityRanking ranking,
-    required int totalLimit,
-    Map<String, dynamic>? parameters,
-  });
+  /// Parameters should include tasks, categories (id -> weight), max tasks, etc.
+  AllocationResult allocate(AllocationParameters parameters);
 
   /// Strategy name for transparency
   String get strategyName;
@@ -28,14 +19,30 @@ abstract class AllocationStrategy {
 /// Parameters for allocation
 class AllocationParameters {
   const AllocationParameters({
+    required this.tasks,
+    required this.categories,
+    required this.maxTasks,
     this.urgencyInfluence = 0.4,
+    this.urgencyThresholdDays = 3,
     this.minimumTasksPerCategory = 1,
     this.topNCategories = 3,
     this.allowOverflow = false,
   });
 
+  /// Tasks to allocate
+  final List<Task> tasks;
+
+  /// Categories (value IDs) with their weights
+  final Map<String, double> categories;
+
+  /// Maximum tasks to allocate
+  final int maxTasks;
+
   /// How much urgency affects allocation (0-1, for urgency-weighted strategy)
   final double urgencyInfluence;
+
+  /// Days before deadline = urgent
+  final int urgencyThresholdDays;
 
   /// Minimum tasks per category (for minimum-viable strategy)
   final int minimumTasksPerCategory;

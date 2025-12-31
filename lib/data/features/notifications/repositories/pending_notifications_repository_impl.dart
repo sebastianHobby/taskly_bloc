@@ -1,16 +1,15 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as db;
 import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
-import 'package:taskly_bloc/domain/repositories/pending_notifications_repository.dart';
+import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 
-/// Drift implementation of [PendingNotificationsRepository].
+/// Drift implementation of [PendingNotificationsRepositoryContract].
 class PendingNotificationsRepositoryImpl
-    implements PendingNotificationsRepository {
+    implements PendingNotificationsRepositoryContract {
   PendingNotificationsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
-  final _logger = AppLogger.forRepository('pending_notifications');
 
   @override
   Stream<List<PendingNotification>> watchPending() {
@@ -56,10 +55,11 @@ class PendingNotificationsRepositoryImpl
         ),
       );
     } catch (error, stackTrace) {
-      _logger.error(
-        'Failed to mark notification delivered: $id',
+      talker.handle(
         error,
         stackTrace,
+        '[PendingNotificationsRepo] Failed to mark notification '
+        'delivered: $id',
       );
       rethrow;
     }

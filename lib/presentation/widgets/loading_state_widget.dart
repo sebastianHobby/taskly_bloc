@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// A reusable loading state widget that displays a progress indicator
 /// with an optional message.

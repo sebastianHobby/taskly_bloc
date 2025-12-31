@@ -1,4 +1,4 @@
-﻿/// Shared utility functions used across the Taskly app.
+/// Shared utility functions used across the Taskly app.
 library;
 
 export 'color_utils.dart';

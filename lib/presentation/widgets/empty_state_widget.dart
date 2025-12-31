@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// A reusable empty state widget that displays an icon, title, and optional
 /// description with a call-to-action button.

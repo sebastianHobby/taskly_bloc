@@ -1,16 +1,30 @@
+@Tags(['unit', 'repository', 'wellbeing'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
-import 'package:taskly_bloc/domain/repositories/wellbeing_repository.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 import '../../../../../fixtures/test_data.dart';
 import '../../../../../helpers/test_db.dart';
 
+/// Tests for [WellbeingRepositoryImpl] journal entry operations.
+///
+/// Coverage:
+/// - ✅ Save new journal entry
+/// - ✅ Update existing entry
+/// - ✅ Delete entry
+/// - ✅ Query by date
+/// - ✅ Query by date range
+/// - ✅ Stream watching
 void main() {
   late AppDatabase db;
-  late WellbeingRepository repository;
+  late WellbeingRepositoryContract repository;
 
   setUp(() async {
     db = createTestDb();
@@ -21,7 +35,7 @@ void main() {
     await db.close();
   });
 
-  group('WellbeingRepository - Journal Entries', () {
+  group('WellbeingRepositoryContract - Journal Entries', () {
     test('saves new journal entry', () async {
       final entry = TestData.journalEntry(
         id: 'entry-1',
@@ -87,6 +101,137 @@ void main() {
       );
 
       expect(result, isNull);
+    });
+
+    group('getJournalEntriesByDate (multiple entries per day)', () {
+      test('returns all entries for a given date', () async {
+        final date = DateTime(2025, 1, 20);
+        final entry1 = TestData.journalEntry(
+          id: 'entry-1',
+          entryDate: date,
+          entryTime: DateTime(2025, 1, 20, 9),
+          moodRating: MoodRating.good,
+        );
+        final entry2 = TestData.journalEntry(
+          id: 'entry-2',
+          entryDate: date,
+          entryTime: DateTime(2025, 1, 20, 14, 30),
+          moodRating: MoodRating.excellent,
+        );
+        final entry3 = TestData.journalEntry(
+          id: 'entry-3',
+          entryDate: date,
+          entryTime: DateTime(2025, 1, 20, 20),
+          moodRating: MoodRating.neutral,
+        );
+
+        await repository.saveJournalEntry(entry1);
+        await repository.saveJournalEntry(entry2);
+        await repository.saveJournalEntry(entry3);
+
+        final entries = await repository.getJournalEntriesByDate(date: date);
+
+        expect(entries.length, 3);
+      });
+
+      test(
+        'returns entries ordered by entryTime descending (newest first)',
+        () async {
+          final date = DateTime(2025, 1, 20);
+          await repository.saveJournalEntry(
+            TestData.journalEntry(
+              id: 'morning',
+              entryDate: date,
+              entryTime: DateTime(2025, 1, 20, 8),
+            ),
+          );
+          await repository.saveJournalEntry(
+            TestData.journalEntry(
+              id: 'evening',
+              entryDate: date,
+              entryTime: DateTime(2025, 1, 20, 20),
+            ),
+          );
+          await repository.saveJournalEntry(
+            TestData.journalEntry(
+              id: 'afternoon',
+              entryDate: date,
+              entryTime: DateTime(2025, 1, 20, 14),
+            ),
+          );
+
+          final entries = await repository.getJournalEntriesByDate(date: date);
+
+          expect(entries[0].id, 'evening');
+          expect(entries[1].id, 'afternoon');
+          expect(entries[2].id, 'morning');
+        },
+      );
+
+      test('returns empty list when no entries for date', () async {
+        final entries = await repository.getJournalEntriesByDate(
+          date: DateTime(2025, 1, 20),
+        );
+
+        expect(entries, isEmpty);
+      });
+
+      test('only returns entries for specified date', () async {
+        await repository.saveJournalEntry(
+          TestData.journalEntry(
+            id: 'jan-20',
+            entryDate: DateTime(2025, 1, 20),
+          ),
+        );
+        await repository.saveJournalEntry(
+          TestData.journalEntry(
+            id: 'jan-21',
+            entryDate: DateTime(2025, 1, 21),
+          ),
+        );
+
+        final entries = await repository.getJournalEntriesByDate(
+          date: DateTime(2025, 1, 20),
+        );
+
+        expect(entries.length, 1);
+        expect(entries[0].id, 'jan-20');
+      });
+
+      test('includes tracker responses for each entry', () async {
+        // First save a tracker
+        final tracker = TestData.tracker(
+          id: 'tracker-1',
+          name: 'Exercise',
+          responseType: TrackerResponseType.yesNo,
+          entryScope: TrackerEntryScope.perEntry,
+        );
+        await repository.saveTracker(tracker);
+
+        final date = DateTime(2025, 1, 20);
+        final response = TrackerResponse(
+          id: 'response-1',
+          journalEntryId: 'entry-1',
+          trackerId: 'tracker-1',
+          value: const YesNoValue(value: true),
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+
+        await repository.saveJournalEntry(
+          TestData.journalEntry(
+            id: 'entry-1',
+            entryDate: date,
+            trackerResponses: [response],
+          ),
+        );
+
+        final entries = await repository.getJournalEntriesByDate(date: date);
+
+        expect(entries.length, 1);
+        expect(entries[0].perEntryTrackerResponses.length, 1);
+        expect(entries[0].perEntryTrackerResponses[0].trackerId, 'tracker-1');
+      });
     });
 
     test('deletes journal entry', () async {

@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/widgets/next_action_indicator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -8,12 +9,21 @@ class TaskListTile extends StatelessWidget {
     required this.task,
     required this.onCheckboxChanged,
     required this.onTap,
+    this.onNextActionRemoved,
+    this.showNextActionIndicator = true,
     super.key,
   });
 
   final Task task;
   final void Function(Task, bool?) onCheckboxChanged;
   final void Function(Task) onTap;
+
+  /// Callback when user removes the Next Action status from the task.
+  /// If null, the indicator won't show the unpin option.
+  final void Function(Task)? onNextActionRemoved;
+
+  /// Whether to show the Next Action indicator for pinned tasks.
+  final bool showNextActionIndicator;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || task.completed) return false;

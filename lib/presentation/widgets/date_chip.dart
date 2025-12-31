@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
 
 /// A compact chip showing a date or indicator.
 ///
@@ -68,19 +69,17 @@ class DateChip extends StatelessWidget {
     String? rrule,
     Key? key,
   }) {
-    String label = 'Repeats';
+    final l10n = context.l10n;
+    String label = l10n.repeatsLabel;
 
     // If rrule is provided, convert it to human-readable text
     if (rrule != null && rrule.isNotEmpty) {
       try {
         final recurrenceRule = RecurrenceRule.fromString(rrule);
-        // Use the RruleL10n to convert to text
-        // Note: This is synchronous access after loading l10n
-        // For now, fall back to simple label until we can make this async
-        label = _getSimpleRruleLabel(recurrenceRule);
+        label = _getRruleLabel(l10n, recurrenceRule);
       } catch (e) {
         // If parsing fails, keep default label
-        label = 'Repeats';
+        label = l10n.repeatsLabel;
       }
     }
 
@@ -92,29 +91,24 @@ class DateChip extends StatelessWidget {
     );
   }
 
-  /// Gets a simple label for the recurrence rule.
-  /// For full i18n support, use RruleL10n.
-  static String _getSimpleRruleLabel(RecurrenceRule rule) {
+  /// Gets a localized label for the recurrence rule.
+  static String _getRruleLabel(AppLocalizations l10n, RecurrenceRule rule) {
     final interval = rule.interval;
     final freq = rule.frequency;
 
     if (interval == 1) {
       return switch (freq) {
-        Frequency.daily => 'Daily',
-        Frequency.weekly => 'Weekly',
-        Frequency.monthly => 'Monthly',
-        Frequency.yearly => 'Yearly',
-        _ => 'Repeats',
+        Frequency.daily => l10n.rruleDaily,
+        Frequency.weekly => l10n.rruleWeekly,
+        Frequency.monthly => l10n.rruleMonthly,
+        Frequency.yearly => l10n.rruleYearly,
+        _ => l10n.repeatsLabel,
       };
     } else {
-      final unit = switch (freq) {
-        Frequency.daily => 'day',
-        Frequency.weekly => 'week',
-        Frequency.monthly => 'month',
-        Frequency.yearly => 'year',
-        _ => 'time',
-      };
-      return 'Every $interval ${unit}s';
+      // For custom intervals, fall back to generic repeats label
+      // Note: Custom interval strings (e.g., "Every 2 weeks") would require
+      // l10n entries with placeholders. Using generic label for now.
+      return l10n.repeatsLabel;
     }
   }
 
@@ -299,9 +293,14 @@ class _RruleDateChipState extends State<RruleDateChip> {
     }
 
     try {
-      final l10n = await RruleL10nEn.create();
+      // Detect the current locale and load appropriate l10n
+      final locale = Localizations.localeOf(context);
+      final rruleL10n = locale.languageCode == 'es'
+          ? await RruleL10nEs.create()
+          : await RruleL10nEn.create();
+
       final recurrenceRule = RecurrenceRule.fromString(widget.rrule!);
-      final text = recurrenceRule.toText(l10n: l10n);
+      final text = recurrenceRule.toText(l10n: rruleL10n);
 
       if (mounted) {
         setState(() {

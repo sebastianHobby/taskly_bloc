@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 /// A compact date chip for forms that shows a date or "Add [label]" prompt.
 ///

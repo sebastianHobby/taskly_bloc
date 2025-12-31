@@ -1,4 +1,4 @@
-﻿/// Entity types for analytics
+/// Entity types for analytics
 enum EntityType {
   task,
   project,

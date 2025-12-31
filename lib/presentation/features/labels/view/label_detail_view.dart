@@ -1,15 +1,16 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/label_form.dart';
 
@@ -86,7 +87,11 @@ class _LabelDetailSheetViewState extends State<LabelDetailSheetView>
     if (formValues == null) return;
 
     final name = extractStringValue(formValues, 'name');
-    final color = extractStringValue(formValues, 'colour');
+    // Color is stored as a Color object, convert to hex string
+    final colorValue = formValues['colour'] as Color?;
+    final color = colorValue != null
+        ? ColorUtils.toHexWithHash(colorValue)
+        : '#000000';
     final type = widget.lockType
         ? (widget.initialType ?? existingType ?? LabelType.label)
         : (formValues['type'] as LabelType);

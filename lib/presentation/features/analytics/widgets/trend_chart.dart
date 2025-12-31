@@ -1,4 +1,4 @@
-﻿import 'package:fl_chart/fl_chart.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
 
@@ -110,7 +110,7 @@ class TrendChart extends StatelessWidget {
                       barWidth: 3,
                       belowBarData: BarAreaData(
                         show: true,
-                        color: chartColor.withOpacity(0.1),
+                        color: chartColor.withValues(alpha: 0.1),
                       ),
                     ),
                     if (showAverage && data.average != null)

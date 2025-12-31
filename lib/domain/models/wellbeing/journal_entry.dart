@@ -1,4 +1,4 @@
-﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 
@@ -16,7 +16,7 @@ abstract class JournalEntry with _$JournalEntry {
     required DateTime updatedAt,
     MoodRating? moodRating,
     String? journalText,
-    @Default([]) List<TrackerResponse> trackerResponses,
+    @Default([]) List<TrackerResponse> perEntryTrackerResponses,
   }) = _JournalEntry;
 
   factory JournalEntry.fromJson(Map<String, dynamic> json) =>

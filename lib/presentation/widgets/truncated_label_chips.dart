@@ -1,5 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
 /// A widget that displays label chips with colored icons.
@@ -90,10 +91,10 @@ class _LabelChip extends StatelessWidget {
     if (isValue) {
       final emoji = label.iconName?.isNotEmpty ?? false
           ? label.iconName!
-          : 'â¤ï¸';
+          : '❤️';
       icon = Text(
         emoji,
-        style: const TextStyle(fontSize: 12),
+        style: EmojiUtils.emojiTextStyle(fontSize: 12),
       );
     } else {
       icon = Icon(

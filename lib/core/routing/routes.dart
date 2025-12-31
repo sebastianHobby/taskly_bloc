@@ -1,9 +1,10 @@
-﻿abstract class AppRouteName {
+abstract class AppRouteName {
   static const screen = 'screen';
   static const projects = 'projects';
   static const projectDetail = 'projectDetail';
   static const taskNextActions = 'taskNextActions';
   static const taskNextActionsSettings = 'taskNextActionsSettings';
+  static const taskDetail = 'taskDetail';
 
   static const navigationSettings = 'navigationSettings';
   static const appSettings = 'appSettings';
@@ -32,6 +33,7 @@ abstract class AppRoutePath {
   static const taskNextActions = '/tasks/next-actions';
   static const taskNextActionsSettings = '/tasks/next-actions/settings';
   static const projectDetail = '/projects/:projectId';
+  static const taskDetail = '/tasks/:taskId';
   static const inbox = '$screenBase/inbox';
   static const today = '$screenBase/today';
   static const upcoming = '$screenBase/upcoming';

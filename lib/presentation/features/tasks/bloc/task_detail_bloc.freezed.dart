@@ -128,12 +128,12 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)?  create,TResult Function( String taskId)?  get,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult Function( String taskId)?  get,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailGet() when get != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailGet() when get != null:
 return get(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return orElse();
@@ -153,12 +153,12 @@ return loadInitialData();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)  create,required TResult Function( String taskId)  get,required TResult Function()  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)  create,required TResult Function( String taskId)  get,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailDelete():
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete():
 return delete(_that.id);case _TaskDetailCreate():
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailGet():
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailGet():
 return get(_that.taskId);case _TaskDetailLoadInitialData():
 return loadInitialData();}
 }
@@ -174,12 +174,12 @@ return loadInitialData();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  bool isNextAction,  int? nextActionPriority,  String? nextActionNotes,  List<Label>? labels)?  create,TResult? Function( String taskId)?  get,TResult? Function()?  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult? Function( String taskId)?  get,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.isNextAction,_that.nextActionPriority,_that.nextActionNotes,_that.labels);case _TaskDetailGet() when get != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.repeatIcalRrule,_that.labels);case _TaskDetailGet() when get != null:
 return get(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return null;
@@ -193,7 +193,7 @@ return loadInitialData();case _:
 
 
 class _TaskDetailUpdate implements TaskDetailEvent {
-  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed, this.startDate, this.deadlineDate, this.projectId, this.repeatIcalRrule, this.isNextAction = false, this.nextActionPriority, this.nextActionNotes, final  List<Label>? labels}): _labels = labels;
+  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed, this.startDate, this.deadlineDate, this.projectId, this.repeatIcalRrule, final  List<Label>? labels}): _labels = labels;
   
 
  final  String id;
@@ -204,9 +204,6 @@ class _TaskDetailUpdate implements TaskDetailEvent {
  final  DateTime? deadlineDate;
  final  String? projectId;
  final  String? repeatIcalRrule;
-@JsonKey() final  bool isNextAction;
- final  int? nextActionPriority;
- final  String? nextActionNotes;
  final  List<Label>? _labels;
  List<Label>? get labels {
   final value = _labels;
@@ -227,16 +224,16 @@ _$TaskDetailUpdateCopyWith<_TaskDetailUpdate> get copyWith => __$TaskDetailUpdat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&(identical(other.isNextAction, isNextAction) || other.isNextAction == isNextAction)&&(identical(other.nextActionPriority, nextActionPriority) || other.nextActionPriority == nextActionPriority)&&(identical(other.nextActionNotes, nextActionNotes) || other.nextActionNotes == nextActionNotes)&&const DeepCollectionEquality().equals(other._labels, _labels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._labels, _labels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,completed,startDate,deadlineDate,projectId,repeatIcalRrule,isNextAction,nextActionPriority,nextActionNotes,const DeepCollectionEquality().hash(_labels));
+int get hashCode => Object.hash(runtimeType,id,name,description,completed,startDate,deadlineDate,projectId,repeatIcalRrule,const DeepCollectionEquality().hash(_labels));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, repeatIcalRrule: $repeatIcalRrule, isNextAction: $isNextAction, nextActionPriority: $nextActionPriority, nextActionNotes: $nextActionNotes, labels: $labels)';
+  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, repeatIcalRrule: $repeatIcalRrule, labels: $labels)';
 }
 
 
@@ -247,7 +244,7 @@ abstract mixin class _$TaskDetailUpdateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailUpdateCopyWith(_TaskDetailUpdate value, $Res Function(_TaskDetailUpdate) _then) = __$TaskDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, String? repeatIcalRrule, bool isNextAction, int? nextActionPriority, String? nextActionNotes, List<Label>? labels
+ String id, String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, String? repeatIcalRrule, List<Label>? labels
 });
 
 
@@ -264,7 +261,7 @@ class __$TaskDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? repeatIcalRrule = freezed,Object? isNextAction = null,Object? nextActionPriority = freezed,Object? nextActionNotes = freezed,Object? labels = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? repeatIcalRrule = freezed,Object? labels = freezed,}) {
   return _then(_TaskDetailUpdate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -274,9 +271,6 @@ as bool,startDate: freezed == startDate ? _self.startDate : startDate // ignore:
 as DateTime?,deadlineDate: freezed == deadlineDate ? _self.deadlineDate : deadlineDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String?,repeatIcalRrule: freezed == repeatIcalRrule ? _self.repeatIcalRrule : repeatIcalRrule // ignore: cast_nullable_to_non_nullable
-as String?,isNextAction: null == isNextAction ? _self.isNextAction : isNextAction // ignore: cast_nullable_to_non_nullable
-as bool,nextActionPriority: freezed == nextActionPriority ? _self.nextActionPriority : nextActionPriority // ignore: cast_nullable_to_non_nullable
-as int?,nextActionNotes: freezed == nextActionNotes ? _self.nextActionNotes : nextActionNotes // ignore: cast_nullable_to_non_nullable
 as String?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
 as List<Label>?,
   ));
@@ -355,7 +349,7 @@ as String,
 
 
 class _TaskDetailCreate implements TaskDetailEvent {
-  const _TaskDetailCreate({required this.name, required this.description, this.completed = false, this.startDate, this.deadlineDate, this.projectId, this.repeatIcalRrule, this.isNextAction = false, this.nextActionPriority, this.nextActionNotes, final  List<Label>? labels}): _labels = labels;
+  const _TaskDetailCreate({required this.name, required this.description, this.completed = false, this.startDate, this.deadlineDate, this.projectId, this.repeatIcalRrule, final  List<Label>? labels}): _labels = labels;
   
 
  final  String name;
@@ -365,9 +359,6 @@ class _TaskDetailCreate implements TaskDetailEvent {
  final  DateTime? deadlineDate;
  final  String? projectId;
  final  String? repeatIcalRrule;
-@JsonKey() final  bool isNextAction;
- final  int? nextActionPriority;
- final  String? nextActionNotes;
  final  List<Label>? _labels;
  List<Label>? get labels {
   final value = _labels;
@@ -388,16 +379,16 @@ _$TaskDetailCreateCopyWith<_TaskDetailCreate> get copyWith => __$TaskDetailCreat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&(identical(other.isNextAction, isNextAction) || other.isNextAction == isNextAction)&&(identical(other.nextActionPriority, nextActionPriority) || other.nextActionPriority == nextActionPriority)&&(identical(other.nextActionNotes, nextActionNotes) || other.nextActionNotes == nextActionNotes)&&const DeepCollectionEquality().equals(other._labels, _labels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._labels, _labels));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,description,completed,startDate,deadlineDate,projectId,repeatIcalRrule,isNextAction,nextActionPriority,nextActionNotes,const DeepCollectionEquality().hash(_labels));
+int get hashCode => Object.hash(runtimeType,name,description,completed,startDate,deadlineDate,projectId,repeatIcalRrule,const DeepCollectionEquality().hash(_labels));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.create(name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, repeatIcalRrule: $repeatIcalRrule, isNextAction: $isNextAction, nextActionPriority: $nextActionPriority, nextActionNotes: $nextActionNotes, labels: $labels)';
+  return 'TaskDetailEvent.create(name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, repeatIcalRrule: $repeatIcalRrule, labels: $labels)';
 }
 
 
@@ -408,7 +399,7 @@ abstract mixin class _$TaskDetailCreateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailCreateCopyWith(_TaskDetailCreate value, $Res Function(_TaskDetailCreate) _then) = __$TaskDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, String? repeatIcalRrule, bool isNextAction, int? nextActionPriority, String? nextActionNotes, List<Label>? labels
+ String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, String? repeatIcalRrule, List<Label>? labels
 });
 
 
@@ -425,7 +416,7 @@ class __$TaskDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? repeatIcalRrule = freezed,Object? isNextAction = null,Object? nextActionPriority = freezed,Object? nextActionNotes = freezed,Object? labels = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? repeatIcalRrule = freezed,Object? labels = freezed,}) {
   return _then(_TaskDetailCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -434,9 +425,6 @@ as bool,startDate: freezed == startDate ? _self.startDate : startDate // ignore:
 as DateTime?,deadlineDate: freezed == deadlineDate ? _self.deadlineDate : deadlineDate // ignore: cast_nullable_to_non_nullable
 as DateTime?,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String?,repeatIcalRrule: freezed == repeatIcalRrule ? _self.repeatIcalRrule : repeatIcalRrule // ignore: cast_nullable_to_non_nullable
-as String?,isNextAction: null == isNextAction ? _self.isNextAction : isNextAction // ignore: cast_nullable_to_non_nullable
-as bool,nextActionPriority: freezed == nextActionPriority ? _self.nextActionPriority : nextActionPriority // ignore: cast_nullable_to_non_nullable
-as int?,nextActionNotes: freezed == nextActionNotes ? _self.nextActionNotes : nextActionNotes // ignore: cast_nullable_to_non_nullable
 as String?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
 as List<Label>?,
   ));

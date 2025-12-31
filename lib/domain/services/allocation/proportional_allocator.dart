@@ -1,6 +1,5 @@
 import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 
@@ -24,32 +23,31 @@ class ProportionalAllocator implements AllocationStrategy {
       'Higher weighted categories receive more tasks.';
 
   @override
-  Future<AllocationResult> allocate({
-    required List<Task> tasks,
-    required PriorityRanking ranking,
-    required int totalLimit,
-    Map<String, dynamic>? parameters,
-  }) async {
+  AllocationResult allocate(AllocationParameters parameters) {
+    final tasks = parameters.tasks;
+    final categories = parameters.categories;
+    final totalLimit = parameters.maxTasks;
+
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
     final warnings = <AllocationWarning>[];
 
     // Calculate total weight
-    final totalWeight = ranking.items.fold<int>(
+    final totalWeight = categories.values.fold<double>(
       0,
-      (sum, item) => sum + item.weight,
+      (sum, weight) => sum + weight,
     );
 
     if (totalWeight == 0) {
       return AllocationResult(
         allocatedTasks: [],
+        excludedTasks: [],
         reasoning: const AllocationReasoning(
           strategyUsed: 'Proportional',
           categoryAllocations: {},
           categoryWeights: {},
           explanation: 'No categories with weights defined',
         ),
-        excludedTasks: [],
         warnings: [
           const AllocationWarning(
             type: WarningType.noTasksInCategory,
@@ -62,15 +60,14 @@ class ProportionalAllocator implements AllocationStrategy {
 
     // Calculate allocation per category
     final categoryAllocations = <String, int>{};
-    final categoryWeights = <String, double>{};
+    final categoryWeights = categories;
     var remainingSlots = totalLimit;
 
     // First pass: calculate raw allocations
     final rawAllocations = <String, double>{};
-    for (final item in ranking.items) {
-      final proportion = item.weight / totalWeight;
-      rawAllocations[item.entityId] = totalLimit * proportion;
-      categoryWeights[item.entityId] = item.weight.toDouble();
+    for (final entry in categories.entries) {
+      final proportion = entry.value / totalWeight;
+      rawAllocations[entry.key] = totalLimit * proportion;
     }
 
     // Second pass: round down and track remainders
@@ -113,17 +110,19 @@ class ProportionalAllocator implements AllocationStrategy {
       final effectiveValues = task.getEffectiveValues();
       final categoryIds = effectiveValues.map((v) => v.id).toSet();
 
-      // Check if task matches any ranked category
-      final matchedCategories = ranking.items
-          .where((item) => categoryIds.contains(item.entityId))
+      // Check if task matches any category from parameters
+      final matchedCategories = categories.keys
+          .where(categoryIds.contains)
           .toList();
 
       if (matchedCategories.isEmpty) {
         tasksWithoutCategory.add(task);
       } else {
         // Add to highest-weighted matching category
-        matchedCategories.sort((a, b) => b.weight.compareTo(a.weight));
-        final categoryId = matchedCategories.first.entityId;
+        matchedCategories.sort(
+          (a, b) => categories[b]!.compareTo(categories[a]!),
+        );
+        final categoryId = matchedCategories.first;
         tasksByCategory.putIfAbsent(categoryId, () => []).add(task);
       }
     }
@@ -152,12 +151,8 @@ class ProportionalAllocator implements AllocationStrategy {
         allocatedTasks.add(
           AllocatedTask(
             task: tasksToAllocate[i],
-            categoryId: categoryId,
-            categoryName: _getCategoryName(ranking, categoryId),
-            allocationScore: categoryWeights[categoryId]!,
-            position: i,
-            allocationReason:
-                'Allocated proportionally (weight: ${categoryWeights[categoryId]?.toInt()})',
+            qualifyingValueId: categoryId,
+            allocationScore: categoryWeights[categoryId] ?? 0.0,
           ),
         );
       }
@@ -226,12 +221,6 @@ class ProportionalAllocator implements AllocationStrategy {
       excludedTasks: excludedTasks,
       warnings: warnings,
     );
-  }
-
-  String _getCategoryName(PriorityRanking ranking, String categoryId) {
-    return ranking.items
-        .firstWhere((item) => item.entityId == categoryId)
-        .entityId; // In real implementation, look up label/project name
   }
 
   bool _isUrgent(Task task) {

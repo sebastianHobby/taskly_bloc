@@ -1,14 +1,15 @@
-﻿import 'package:bloc/bloc.dart';
+import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
-import 'package:taskly_bloc/core/utils/app_logger.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -24,9 +25,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    @Default(false) bool isNextAction,
-    int? nextActionPriority,
-    String? nextActionNotes,
     List<Label>? labels,
   }) = _TaskDetailUpdate;
   const factory TaskDetailEvent.delete({
@@ -41,9 +39,6 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? deadlineDate,
     String? projectId,
     String? repeatIcalRrule,
-    @Default(false) bool isNextAction,
-    int? nextActionPriority,
-    String? nextActionNotes,
     List<Label>? labels,
   }) = _TaskDetailCreate;
 
@@ -108,7 +103,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final LabelRepositoryContract _labelRepository;
 
   @override
-  final logger = AppLogger.forBloc('TaskDetail');
+  Talker get logger => talker;
 
   @override
   Future<void> close() {
@@ -210,9 +205,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         projectId: event.projectId,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
-        isNextAction: event.isNextAction,
-        nextActionPriority: event.nextActionPriority,
-        nextActionNotes: event.nextActionNotes,
       ),
     );
   }
@@ -234,13 +226,6 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
           deadlineDate: event.deadlineDate,
           repeatIcalRrule: event.repeatIcalRrule,
           labelIds: event.labels?.map((e) => e.id).toList(growable: false),
-        );
-
-        await _taskRepository.updateNextAction(
-          id: event.id,
-          isNextAction: event.isNextAction,
-          nextActionPriority: event.nextActionPriority,
-          nextActionNotes: event.nextActionNotes,
         );
       },
     );

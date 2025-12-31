@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 
 class CorrelationCard extends StatelessWidget {
@@ -32,7 +32,7 @@ class CorrelationCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${correlation.sourceLabel} â†’ ${correlation.targetLabel}',
+                          '${correlation.sourceLabel} → ${correlation.targetLabel}',
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -109,7 +109,7 @@ class CorrelationCard extends StatelessWidget {
       width: 60,
       height: 60,
       decoration: BoxDecoration(
-        color: _getStrengthColor(context).withOpacity(0.1),
+        color: _getStrengthColor(context).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -187,7 +187,7 @@ class CorrelationCard extends StatelessWidget {
     return Text(
       'Calculated in ${perf.calculationTimeMs}ms using ${perf.algorithm}',
       style: theme.textTheme.bodySmall?.copyWith(
-        color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
         fontSize: 10,
       ),
     );

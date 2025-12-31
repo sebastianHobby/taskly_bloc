@@ -1,4 +1,4 @@
-﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'tracker_response_config.freezed.dart';
 part 'tracker_response_config.g.dart';

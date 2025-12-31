@@ -34,8 +34,6 @@ enum SortField {
   startDate,
   @JsonValue('priority')
   priority,
-  @JsonValue('next_action_priority')
-  nextActionPriority,
 }
 
 /// Sort direction

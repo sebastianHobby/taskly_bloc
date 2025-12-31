@@ -1,16 +1,18 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/views/schedule_view.dart';
 import 'package:taskly_bloc/presentation/widgets/views/schedule_view_config.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/contracts/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/contracts/task_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/next_action/next_action.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/presentation/features/next_action/bloc/allocation_bloc.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
 
 /// The Today page displaying tasks and projects due today or earlier.
@@ -59,29 +61,61 @@ class _NextActionsBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use app-level NextActionsBloc instead of creating new instance
-    return BlocBuilder<NextActionsBloc, NextActionsState>(
-      builder: (context, state) {
-        final hasData =
-            state.status == NextActionsStatus.success && state.totalCount > 0;
-        if (!hasData) return const SizedBox.shrink();
+    // Create a local AllocationBloc for the banner
+    return BlocProvider(
+      create: (_) => AllocationBloc(
+        orchestrator: getIt<AllocationOrchestrator>(),
+      )..add(const AllocationSubscriptionRequested()),
+      child: BlocBuilder<AllocationBloc, AllocationState>(
+        builder: (context, state) {
+          final hasData = state.status == AllocationStatus.success;
+          final totalCount =
+              state.pinnedTasks.length +
+              state.tasksByValue.values.fold(
+                0,
+                (sum, group) => sum + group.tasks.length,
+              );
 
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: Card(
-            child: ListTile(
-              leading: const Icon(Icons.play_circle_outline),
-              title: Text(
-                '${state.totalCount} next actions available',
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => context.goNamed(
-                AppRouteName.taskNextActions,
+          if (!hasData || totalCount == 0) return const SizedBox.shrink();
+
+          // Show warning if there are excluded urgent tasks
+          final hasExcludedUrgent = state.excludedUrgent.isNotEmpty;
+
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Card(
+              color: hasExcludedUrgent
+                  ? Theme.of(context).colorScheme.errorContainer
+                  : null,
+              child: ListTile(
+                leading: Icon(
+                  hasExcludedUrgent
+                      ? Icons.warning_amber_rounded
+                      : Icons.play_circle_outline,
+                  color: hasExcludedUrgent
+                      ? Theme.of(context).colorScheme.error
+                      : null,
+                ),
+                title: Text(
+                  '$totalCount next actions available',
+                ),
+                subtitle: hasExcludedUrgent
+                    ? Text(
+                        '${state.excludedUrgent.length} urgent tasks need attention',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      )
+                    : null,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => context.goNamed(
+                  AppRouteName.taskNextActions,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
