@@ -191,19 +191,15 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? newDeadline,
   }) async {}
 
-  @override
   Future<void> removeException({
     required String taskId,
     required DateTime originalDate,
   }) async {}
 
-  @override
   Future<void> stopSeries(String taskId) async {}
 
-  @override
   Future<void> completeSeries(String taskId) async {}
 
-  @override
   Future<void> convertToOneTime(String taskId) async {}
 
   @override

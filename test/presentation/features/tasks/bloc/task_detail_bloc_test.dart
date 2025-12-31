@@ -270,9 +270,6 @@ void main() {
               projectId: any(named: 'projectId'),
               repeatIcalRrule: any(named: 'repeatIcalRrule'),
               labelIds: any(named: 'labelIds'),
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
             ),
           ).called(1);
         },
@@ -291,9 +288,6 @@ void main() {
               projectId: any(named: 'projectId'),
               repeatIcalRrule: any(named: 'repeatIcalRrule'),
               labelIds: any(named: 'labelIds'),
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
             ),
           ).thenThrow(Exception('Create failed'));
 
@@ -321,16 +315,6 @@ void main() {
         'updates task and emits success',
         build: () {
           ctx.stubTaskUpdateSuccess();
-          when(
-            () => ctx.taskRepo.updateNextAction(
-              id: any(named: 'id'),
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
-            ),
-          ).thenAnswer((_) async {
-            return null;
-          });
 
           return TaskDetailBloc(
             taskRepository: ctx.taskRepo,
@@ -365,15 +349,6 @@ void main() {
               labelIds: any(named: 'labelIds'),
             ),
           ).called(1);
-
-          verify(
-            () => ctx.taskRepo.updateNextAction(
-              id: 'task-1',
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
-            ),
-          ).called(1);
         },
       );
 
@@ -393,17 +368,6 @@ void main() {
               labelIds: any(named: 'labelIds'),
             ),
           ).thenThrow(Exception('Update failed'));
-
-          when(
-            () => ctx.taskRepo.updateNextAction(
-              id: any(named: 'id'),
-              isNextAction: any(named: 'isNextAction'),
-              nextActionPriority: any(named: 'nextActionPriority'),
-              nextActionNotes: any(named: 'nextActionNotes'),
-            ),
-          ).thenAnswer((_) async {
-            return null;
-          });
 
           return TaskDetailBloc(
             taskRepository: ctx.taskRepo,
