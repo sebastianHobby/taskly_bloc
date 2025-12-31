@@ -55,6 +55,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
+          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
+          echo "DEV_USERNAME=${{ secrets.DEV_USERNAME }}" >> .env
+          echo "DEV_PASSWORD=${{ secrets.DEV_PASSWORD }}" >> .env
+      
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
       
@@ -94,6 +102,14 @@ jobs:
       
       - name: Get dependencies
         run: flutter pub get
+      
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
+          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
+          echo "DEV_USERNAME=ci_user" >> .env
+          echo "DEV_PASSWORD=ci_pass" >> .env
       
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
@@ -137,6 +153,14 @@ jobs:
       
       - name: Get dependencies
         run: flutter pub get
+      
+      - name: Create .env file
+        run: |
+          echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+          echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
+          echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
+          echo "DEV_USERNAME=ci_user" >> .env
+          echo "DEV_PASSWORD=ci_pass" >> .env
       
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs

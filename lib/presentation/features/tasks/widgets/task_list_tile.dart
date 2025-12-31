@@ -112,9 +112,19 @@ class TaskListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title row with project indicator
+                    // Title row with project indicator and next action badge
                     Row(
                       children: [
+                        // Next Action indicator (if pinned)
+                        if (showNextActionIndicator &&
+                            task.labels.hasNextActionLabel) ...[
+                          NextActionIndicator(
+                            onUnpin: onNextActionRemoved != null
+                                ? () => onNextActionRemoved!(task)
+                                : null,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: Text(
                             task.name,

@@ -260,11 +260,70 @@ Once GitHub Pages is enabled and the first deployment succeeds:
 - Configure environment-specific secrets
 - Set up deployment protection rules
 
-### 2. Configure Repository Secrets (if needed)
+### 2. Configure Required Repository Secrets
+
+**CRITICAL:** The workflows require environment variables for the app to build successfully. These must be configured as GitHub Secrets.
+
+#### Step-by-Step Secret Configuration
+
+1. **Navigate to Secrets Settings**
+   - Go to your repository: `https://github.com/sebastianHobby/taskly_bloc`
+   - Click **Settings** → **Secrets and variables** → **Actions**
+   - You'll see options for **Repository secrets** and **Environment secrets**
+
+2. **Add Required Secrets**
+   Click **New repository secret** for each of the following:
+
+   **`SUPABASE_URL`**
+   - Your Supabase project URL
+   - Format: `https://xxxxx.supabase.co`
+   - Find in Supabase dashboard → Project Settings → API
+
+   **`SUPABASE_PUBLISHABLE_KEY`**
+   - Your Supabase anonymous/public key
+   - Format: Long alphanumeric string starting with `eyJ...`
+   - Find in Supabase dashboard → Project Settings → API → anon/public key
+
+   **`POWERSYNC_URL`**
+   - Your PowerSync instance URL
+   - Format: `https://xxxxx.powersync.com`
+   - Find in PowerSync dashboard
+
+   **`DEV_USERNAME`**
+   - Development/test user username
+   - Used for automated testing
+
+   **`DEV_PASSWORD`**
+   - Development/test user password
+   - Used for automated testing
+
+3. **Verify Secrets Configuration**
+   - After adding all secrets, you should see 5 secrets listed
+   - Secret values are hidden and cannot be viewed after creation
+   - You can update secrets by clicking on them and entering new values
+
+#### Optional Secrets
 
 For Codecov integration:
-1. Go to repository **Settings** → **Secrets and variables** → **Actions**
-2. Add `CODECOV_TOKEN` (get from https://codecov.io)
+- **`CODECOV_TOKEN`** - Get from https://codecov.io after signing up
+- Not required but recommended for detailed coverage reports
+
+#### Security Best Practices
+
+⚠️ **Never commit secrets to Git**
+- Secrets are encrypted in GitHub Actions
+- They're never exposed in logs
+- Use separate secrets for production vs development
+
+⚠️ **Rotate secrets regularly**
+- Change passwords every 90 days
+- Update API keys when team members leave
+- Use different credentials for CI/CD vs local development
+
+⚠️ **Least privilege principle**
+- Use read-only credentials where possible
+- Dev credentials should have limited permissions
+- Production secrets should be environment-specific
 
 ### 3. Branch Protection Rules (Recommended)
 
@@ -363,6 +422,50 @@ The web app is built with `--base-href "/taskly_bloc/"` to work correctly as a s
 ```bash
 flutter pub run build_runner build --delete-conflicting-outputs
 ```
+
+### Dependency Conflict with envied_generator
+
+**Issue:** `envied_generator ^1.3.2` requires `analyzer >=8.0.0` which conflicts with Flutter SDK's test packages.
+
+**Solution Implemented:** The CI/CD workflows now generate the `.env` file from GitHub Secrets before running code generation. This allows `envied_generator` to work properly without depending on `very_good_cli`'s package resolution.
+
+**Required GitHub Secrets:** The following secrets must be configured in your repository settings:
+- `SUPABASE_URL`
+- `SUPABASE_PUBLISHABLE_KEY`
+- `POWERSYNC_URL`
+
+**Note:** `DEV_USERNAME` and `DEV_PASSWORD` are hardcoded as placeholder values in CI/CD since they're only needed for local development.
+
+**pubspec.yaml Configuration:**
+```yaml
+dependency_overrides:
+  envied_generator: 1.3.2
+```
+
+**Workflow Steps:**
+All workflows include these steps before code generation:
+```yaml
+- name: Get dependencies
+  run: flutter pub get
+
+- name: Create .env file
+  run: |
+    echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
+    echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
+    echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
+    echo "DEV_USERNAME=ci_user" >> .env
+    echo "DEV_PASSWORD=ci_pass" >> .env
+
+- name: Generate code
+  run: flutter pub run build_runner build --delete-conflicting-outputs
+```
+
+**Local Development:**
+If you encounter dependency conflicts locally:
+1. Ensure you have a `.env` file with all required variables
+2. Delete `pubspec.lock`
+3. Run `flutter pub get`
+4. Run code generation: `flutter pub run build_runner build --delete-conflicting-outputs`
 
 ### GitHub Pages Shows 404
 **Solutions:**
