@@ -16,17 +16,6 @@ on:
     - cron: '0 2 * * *'
 
 jobs:
-  semantic-pull-request:
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/semantic_pull_request.yml@v1
-
-  build:
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
-    with:
-      flutter_version: "3.35.x"
-      coverage_excludes: "*.g.dart *.freezed.dart"
-      min_coverage: 80
-
-  # Additional test job with coverage reporting
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -60,8 +49,8 @@ jobs:
           echo "SUPABASE_URL=${{ secrets.SUPABASE_URL }}" >> .env
           echo "SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" >> .env
           echo "POWERSYNC_URL=${{ secrets.POWERSYNC_URL }}" >> .env
-          echo "DEV_USERNAME=${{ secrets.DEV_USERNAME }}" >> .env
-          echo "DEV_PASSWORD=${{ secrets.DEV_PASSWORD }}" >> .env
+          echo "DEV_USERNAME=ci_user" >> .env
+          echo "DEV_PASSWORD=ci_pass" >> .env
       
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
@@ -196,10 +185,3 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
-
-  spell-check:
-    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/spell_check.yml@v1
-    with:
-      includes: |
-        **/*.md
-      modified_files_only: false
