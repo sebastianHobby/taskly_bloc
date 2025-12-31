@@ -12,7 +12,10 @@
 .env
 env.g.dart
 migrate_working_dir/
-*.g*.dart
+
+# Generated files (build_runner, freezed, json_serializable, drift)
+*.g.dart
+*.freezed.dart
 
 # IntelliJ related
 *.iml
