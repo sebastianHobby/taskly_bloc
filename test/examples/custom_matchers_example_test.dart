@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 
 import '../helpers/fallback_values.dart';
-import '../helpers/custom_matchers.dart';
 import '../mocks/feature_mocks.dart';
 
 /// EXAMPLE: Using Custom Matchers in Bloc Tests

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/widgets/next_action_indicator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 

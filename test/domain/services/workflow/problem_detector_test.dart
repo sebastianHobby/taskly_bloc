@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector.dart';
 

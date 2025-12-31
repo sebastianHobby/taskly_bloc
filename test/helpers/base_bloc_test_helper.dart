@@ -3,7 +3,6 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:flutter_test/flutter_test.dart';
 
 /// Base class for BLoC tests that handles common setup and teardown.
 ///
