@@ -34,7 +34,6 @@ class AllocationPreferencesRepositoryImpl
           topNCategories: pref.topNCategories,
           dailyTaskLimit: pref.dailyTaskLimit,
           showExcludedUrgentWarning: pref.showExcludedUrgentWarning == 1,
-          urgencyThresholdDays: pref.urgencyThresholdDays,
         );
       },
     );
@@ -63,7 +62,6 @@ class AllocationPreferencesRepositoryImpl
       topNCategories: pref.topNCategories,
       dailyTaskLimit: pref.dailyTaskLimit,
       showExcludedUrgentWarning: pref.showExcludedUrgentWarning == 1,
-      urgencyThresholdDays: pref.urgencyThresholdDays,
     );
   }
 
@@ -111,8 +109,6 @@ class AllocationPreferencesRepositoryImpl
     final resolvedShowExcludedUrgentWarning =
         showExcludedUrgentWarning ??
         ((existing?.showExcludedUrgentWarning ?? 1) == 1);
-    final resolvedUrgencyThresholdDays =
-        urgencyThresholdDays ?? existing?.urgencyThresholdDays ?? 3;
 
     if (existing == null) {
       // Create new
@@ -129,7 +125,6 @@ class AllocationPreferencesRepositoryImpl
               showExcludedUrgentWarning: Value(
                 resolvedShowExcludedUrgentWarning ? 1 : 0,
               ),
-              urgencyThresholdDays: Value(resolvedUrgencyThresholdDays),
               createdAt: Value(now),
               updatedAt: Value(now),
             ),
@@ -148,7 +143,6 @@ class AllocationPreferencesRepositoryImpl
           showExcludedUrgentWarning: Value(
             resolvedShowExcludedUrgentWarning ? 1 : 0,
           ),
-          urgencyThresholdDays: Value(resolvedUrgencyThresholdDays),
           updatedAt: Value(now),
         ),
       );
@@ -178,7 +172,6 @@ class AllocationPreferencesRepositoryImpl
         topNCategories: const Value(3),
         dailyTaskLimit: const Value(10),
         showExcludedUrgentWarning: const Value(1),
-        urgencyThresholdDays: const Value(3),
         updatedAt: Value(DateTime.now()),
       ),
     );
