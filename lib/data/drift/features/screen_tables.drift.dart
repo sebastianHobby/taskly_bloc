@@ -32,16 +32,18 @@ class ScreenDefinitions extends Table {
   )(); // System screens can't be deleted
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
-  TextColumn get category => textEnum<ScreenCategory>().withDefault(
-    const Constant('workspace'),
-  )();
+  TextColumn get category => textEnum<ScreenCategory>()
+      .withDefault(const Constant('workspace'))
+      .nullable()();
 
   // EntitySelector configuration (stored as JSON text)
-  TextColumn get entityType => textEnum<EntityType>()();
-  TextColumn get selectorConfig => text().map(entitySelectorConverter)();
+  TextColumn get entityType => textEnum<EntityType>().nullable()();
+  TextColumn get selectorConfig =>
+      text().map(entitySelectorConverter).nullable()();
 
   // DisplayConfig (stored as JSON text)
-  TextColumn get displayConfig => text().map(displayConfigConverter)();
+  TextColumn get displayConfig =>
+      text().map(displayConfigConverter).nullable()();
 
   // Workflow-specific (NULL for collection screens)
   TextColumn get triggerConfig =>

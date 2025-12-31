@@ -26,6 +26,12 @@ class NavigationScreensChanged extends NavigationEvent {
   final List<ScreenDefinition> screens;
 }
 
+class NavigationFailed extends NavigationEvent {
+  const NavigationFailed(this.error);
+
+  final Object error;
+}
+
 enum NavigationStatus { loading, ready, failure }
 
 class NavigationState {
@@ -69,6 +75,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
        super(const NavigationState.loading()) {
     on<NavigationStarted>(_onStarted);
     on<NavigationScreensChanged>(_onScreensChanged);
+    on<NavigationFailed>(_onFailed);
   }
 
   final ScreenDefinitionsRepositoryContract _screensRepository;
@@ -87,9 +94,16 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       (screens) => add(NavigationScreensChanged(screens)),
       onError: (Object error, StackTrace stack) {
         talker.handle(error, stack, 'Failed to watch screens');
-        emit(NavigationState.failure(friendlyErrorMessage(error)));
+        if (!isClosed) add(NavigationFailed(error));
       },
     );
+  }
+
+  void _onFailed(
+    NavigationFailed event,
+    Emitter<NavigationState> emit,
+  ) {
+    emit(NavigationState.failure(friendlyErrorMessage(event.error)));
   }
 
   void _onScreensChanged(

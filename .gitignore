@@ -12,6 +12,7 @@
 .env
 env.g.dart
 migrate_working_dir/
+dart_defines.json
 
 # Generated files (build_runner, freezed, json_serializable, drift)
 *.g.dart

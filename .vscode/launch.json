@@ -5,10 +5,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch development",
+      "name": "taskly_bloc (dev)",
       "request": "launch",
       "type": "dart",
       "program": "lib/main.dart",
+      "args": [
+        // Mirrors production: values provided via --dart-define.
+        // In debug on non-web platforms, .env (if present) still takes precedence.
+        "--dart-define-from-file=dart_defines.json"
+      ]
     },
+    {
+      "name": "taskly_bloc (dev - chrome)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "chrome",
+      "args": [
+        "--dart-define-from-file=dart_defines.json"
+      ]
+    }
   ]
 }
