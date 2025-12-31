@@ -39,7 +39,7 @@ ScreenDefinition _$ScreenDefinitionFromJson(
 mixin _$ScreenDefinition {
 
  String get id; String get userId; String get screenId;// Unique like 'today', 'inbox'
- String get name; EntitySelector get selector; DisplayConfig get display; DateTime get createdAt; DateTime get updatedAt; String? get iconName; bool get isSystem; bool get isActive; int get sortOrder;
+ String get name; EntitySelector get selector; DisplayConfig get display; DateTime get createdAt; DateTime get updatedAt; String? get iconName; bool get isSystem; bool get isActive; int get sortOrder; ScreenCategory get category;
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -52,16 +52,16 @@ $ScreenDefinitionCopyWith<ScreenDefinition> get copyWith => _$ScreenDefinitionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.category, category) || other.category == category));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder);
+int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder,category);
 
 @override
 String toString() {
-  return 'ScreenDefinition(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder)';
+  return 'ScreenDefinition(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder, category: $category)';
 }
 
 
@@ -72,7 +72,7 @@ abstract mixin class $ScreenDefinitionCopyWith<$Res>  {
   factory $ScreenDefinitionCopyWith(ScreenDefinition value, $Res Function(ScreenDefinition) _then) = _$ScreenDefinitionCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder
+ String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder, ScreenCategory category
 });
 
 
@@ -89,7 +89,7 @@ class _$ScreenDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,Object? category = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -103,7 +103,8 @@ as DateTime,iconName: freezed == iconName ? _self.iconName : iconName // ignore:
 as String?,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
 as bool,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,
+as int,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as ScreenCategory,
   ));
 }
 /// Create a copy of ScreenDefinition
@@ -209,11 +210,11 @@ return workflow(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder)?  collection,TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)?  workflow,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category)?  collection,TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)?  workflow,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CollectionScreen() when collection != null:
-return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder);case WorkflowScreen() when workflow != null:
-return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.trigger,_that.completionCriteria);case _:
+return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category);case WorkflowScreen() when workflow != null:
+return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category,_that.trigger,_that.completionCriteria);case _:
   return orElse();
 
 }
@@ -231,11 +232,11 @@ return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder)  collection,required TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)  workflow,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category)  collection,required TResult Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)  workflow,}) {final _that = this;
 switch (_that) {
 case CollectionScreen():
-return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder);case WorkflowScreen():
-return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.trigger,_that.completionCriteria);case _:
+return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category);case WorkflowScreen():
+return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category,_that.trigger,_that.completionCriteria);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -252,11 +253,11 @@ return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder)?  collection,TResult? Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)?  workflow,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category)?  collection,TResult? Function( String id,  String userId,  String screenId,  String name,  EntitySelector selector,  DisplayConfig display,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  bool isSystem,  bool isActive,  int sortOrder,  ScreenCategory category,  TriggerConfig? trigger,  CompletionCriteria? completionCriteria)?  workflow,}) {final _that = this;
 switch (_that) {
 case CollectionScreen() when collection != null:
-return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder);case WorkflowScreen() when workflow != null:
-return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.trigger,_that.completionCriteria);case _:
+return collection(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category);case WorkflowScreen() when workflow != null:
+return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_that.display,_that.createdAt,_that.updatedAt,_that.iconName,_that.isSystem,_that.isActive,_that.sortOrder,_that.category,_that.trigger,_that.completionCriteria);case _:
   return null;
 
 }
@@ -268,7 +269,7 @@ return workflow(_that.id,_that.userId,_that.screenId,_that.name,_that.selector,_
 @JsonSerializable()
 
 class CollectionScreen implements ScreenDefinition {
-  const CollectionScreen({required this.id, required this.userId, required this.screenId, required this.name, required this.selector, required this.display, required this.createdAt, required this.updatedAt, this.iconName, this.isSystem = false, this.isActive = true, this.sortOrder = 0, final  String? $type}): $type = $type ?? 'collection';
+  const CollectionScreen({required this.id, required this.userId, required this.screenId, required this.name, required this.selector, required this.display, required this.createdAt, required this.updatedAt, this.iconName, this.isSystem = false, this.isActive = true, this.sortOrder = 0, this.category = ScreenCategory.workspace, final  String? $type}): $type = $type ?? 'collection';
   factory CollectionScreen.fromJson(Map<String, dynamic> json) => _$CollectionScreenFromJson(json);
 
 @override final  String id;
@@ -284,6 +285,7 @@ class CollectionScreen implements ScreenDefinition {
 @override@JsonKey() final  bool isSystem;
 @override@JsonKey() final  bool isActive;
 @override@JsonKey() final  int sortOrder;
+@override@JsonKey() final  ScreenCategory category;
 
 @JsonKey(name: 'runtimeType')
 final String $type;
@@ -302,16 +304,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionScreen&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CollectionScreen&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.category, category) || other.category == category));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder);
+int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder,category);
 
 @override
 String toString() {
-  return 'ScreenDefinition.collection(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder)';
+  return 'ScreenDefinition.collection(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder, category: $category)';
 }
 
 
@@ -322,7 +324,7 @@ abstract mixin class $CollectionScreenCopyWith<$Res> implements $ScreenDefinitio
   factory $CollectionScreenCopyWith(CollectionScreen value, $Res Function(CollectionScreen) _then) = _$CollectionScreenCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder
+ String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder, ScreenCategory category
 });
 
 
@@ -339,7 +341,7 @@ class _$CollectionScreenCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,Object? category = null,}) {
   return _then(CollectionScreen(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -353,7 +355,8 @@ as DateTime,iconName: freezed == iconName ? _self.iconName : iconName // ignore:
 as String?,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
 as bool,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,
+as int,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as ScreenCategory,
   ));
 }
 
@@ -382,7 +385,7 @@ $DisplayConfigCopyWith<$Res> get display {
 @JsonSerializable()
 
 class WorkflowScreen implements ScreenDefinition {
-  const WorkflowScreen({required this.id, required this.userId, required this.screenId, required this.name, required this.selector, required this.display, required this.createdAt, required this.updatedAt, this.iconName, this.isSystem = false, this.isActive = true, this.sortOrder = 0, this.trigger, this.completionCriteria, final  String? $type}): $type = $type ?? 'workflow';
+  const WorkflowScreen({required this.id, required this.userId, required this.screenId, required this.name, required this.selector, required this.display, required this.createdAt, required this.updatedAt, this.iconName, this.isSystem = false, this.isActive = true, this.sortOrder = 0, this.category = ScreenCategory.workspace, this.trigger, this.completionCriteria, final  String? $type}): $type = $type ?? 'workflow';
   factory WorkflowScreen.fromJson(Map<String, dynamic> json) => _$WorkflowScreenFromJson(json);
 
 @override final  String id;
@@ -397,6 +400,7 @@ class WorkflowScreen implements ScreenDefinition {
 @override@JsonKey() final  bool isSystem;
 @override@JsonKey() final  bool isActive;
 @override@JsonKey() final  int sortOrder;
+@override@JsonKey() final  ScreenCategory category;
  final  TriggerConfig? trigger;
  final  CompletionCriteria? completionCriteria;
 
@@ -417,16 +421,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkflowScreen&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.trigger, trigger) || other.trigger == trigger)&&(identical(other.completionCriteria, completionCriteria) || other.completionCriteria == completionCriteria));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkflowScreen&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.name, name) || other.name == name)&&(identical(other.selector, selector) || other.selector == selector)&&(identical(other.display, display) || other.display == display)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.isSystem, isSystem) || other.isSystem == isSystem)&&(identical(other.isActive, isActive) || other.isActive == isActive)&&(identical(other.sortOrder, sortOrder) || other.sortOrder == sortOrder)&&(identical(other.category, category) || other.category == category)&&(identical(other.trigger, trigger) || other.trigger == trigger)&&(identical(other.completionCriteria, completionCriteria) || other.completionCriteria == completionCriteria));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder,trigger,completionCriteria);
+int get hashCode => Object.hash(runtimeType,id,userId,screenId,name,selector,display,createdAt,updatedAt,iconName,isSystem,isActive,sortOrder,category,trigger,completionCriteria);
 
 @override
 String toString() {
-  return 'ScreenDefinition.workflow(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder, trigger: $trigger, completionCriteria: $completionCriteria)';
+  return 'ScreenDefinition.workflow(id: $id, userId: $userId, screenId: $screenId, name: $name, selector: $selector, display: $display, createdAt: $createdAt, updatedAt: $updatedAt, iconName: $iconName, isSystem: $isSystem, isActive: $isActive, sortOrder: $sortOrder, category: $category, trigger: $trigger, completionCriteria: $completionCriteria)';
 }
 
 
@@ -437,7 +441,7 @@ abstract mixin class $WorkflowScreenCopyWith<$Res> implements $ScreenDefinitionC
   factory $WorkflowScreenCopyWith(WorkflowScreen value, $Res Function(WorkflowScreen) _then) = _$WorkflowScreenCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder, TriggerConfig? trigger, CompletionCriteria? completionCriteria
+ String id, String userId, String screenId, String name, EntitySelector selector, DisplayConfig display, DateTime createdAt, DateTime updatedAt, String? iconName, bool isSystem, bool isActive, int sortOrder, ScreenCategory category, TriggerConfig? trigger, CompletionCriteria? completionCriteria
 });
 
 
@@ -454,7 +458,7 @@ class _$WorkflowScreenCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,Object? trigger = freezed,Object? completionCriteria = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? name = null,Object? selector = null,Object? display = null,Object? createdAt = null,Object? updatedAt = null,Object? iconName = freezed,Object? isSystem = null,Object? isActive = null,Object? sortOrder = null,Object? category = null,Object? trigger = freezed,Object? completionCriteria = freezed,}) {
   return _then(WorkflowScreen(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
@@ -468,7 +472,8 @@ as DateTime,iconName: freezed == iconName ? _self.iconName : iconName // ignore:
 as String?,isSystem: null == isSystem ? _self.isSystem : isSystem // ignore: cast_nullable_to_non_nullable
 as bool,isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,sortOrder: null == sortOrder ? _self.sortOrder : sortOrder // ignore: cast_nullable_to_non_nullable
-as int,trigger: freezed == trigger ? _self.trigger : trigger // ignore: cast_nullable_to_non_nullable
+as int,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
+as ScreenCategory,trigger: freezed == trigger ? _self.trigger : trigger // ignore: cast_nullable_to_non_nullable
 as TriggerConfig?,completionCriteria: freezed == completionCriteria ? _self.completionCriteria : completionCriteria // ignore: cast_nullable_to_non_nullable
 as CompletionCriteria?,
   ));

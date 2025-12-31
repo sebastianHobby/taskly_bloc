@@ -42,6 +42,33 @@ class NavigationIconResolver {
           icon: Icons.psychology_outlined,
           selectedIcon: Icons.psychology,
         );
+      case 'journal':
+        return (
+          icon: Icons.book_outlined,
+          selectedIcon: Icons.book,
+        );
+      case 'trackers':
+        return (
+          icon: Icons.timeline_outlined,
+          selectedIcon: Icons.timeline,
+        );
+      case 'allocation_settings':
+      case 'allocation-settings':
+        return (
+          icon: Icons.tune_outlined,
+          selectedIcon: Icons.tune,
+        );
+      case 'navigation_settings':
+      case 'navigation-settings':
+        return (
+          icon: Icons.reorder_outlined,
+          selectedIcon: Icons.reorder,
+        );
+      case 'settings':
+        return (
+          icon: Icons.settings_outlined,
+          selectedIcon: Icons.settings,
+        );
       case 'tasks':
         return (icon: Icons.checklist_outlined, selectedIcon: Icons.checklist);
       default:

@@ -5,6 +5,7 @@ import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
@@ -117,11 +118,37 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       label: screen.name,
       icon: iconSet.icon,
       selectedIcon: iconSet.selectedIcon,
-      route: _routeBuilder(screen.screenId),
+      route: _buildRoute(screen),
       isSystem: screen.isSystem,
       badgeStream: _badgeService.badgeStreamFor(screen),
       sortOrder: screen.sortOrder,
+      category: screen.category,
     );
+  }
+
+  String _buildRoute(ScreenDefinition screen) {
+    // For workspace screens, use the dynamic screen route
+    if (screen.category == ScreenCategory.workspace) {
+      return _routeBuilder(screen.screenId);
+    }
+
+    // For wellbeing and settings screens, use direct routes
+    switch (screen.screenId) {
+      case 'wellbeing':
+        return '/wellbeing';
+      case 'journal':
+        return '/wellbeing/journal';
+      case 'trackers':
+        return '/wellbeing/trackers';
+      case 'allocation_settings':
+        return '/tasks/next-actions/settings';
+      case 'navigation_settings':
+        return '/settings/navigation';
+      case 'settings':
+        return '/settings/app';
+      default:
+        return _routeBuilder(screen.screenId);
+    }
   }
 
   @override

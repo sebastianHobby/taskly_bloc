@@ -107,6 +107,7 @@ const schema = Schema([
     Column.integer('is_system'),
     Column.integer('is_active'),
     Column.integer('sort_order'),
+    Column.text('category'),
     Column.text('entity_type'),
     Column.text('selector_config'),
     Column.text('display_config'),

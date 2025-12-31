@@ -42,10 +42,10 @@ import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart
 final router = GoRouter(
   initialLocation: '${AppRoutePath.screenBase}/inbox',
   observers: [TalkerRouteObserver(talker)],
-  redirect: (context, state) async {
+  redirect: (context, state) {
+    // Use synchronous session check to avoid hanging on async stream
     final authRepository = getIt<AuthRepositoryContract>();
-    final authState = await authRepository.watchAuthState().first;
-    final isAuthenticated = authState.session != null;
+    final isAuthenticated = authRepository.currentSession != null;
 
     final isAuthRoute =
         state.matchedLocation == '/sign-in' ||
@@ -120,6 +120,27 @@ final router = GoRouter(
     ),
     ShellRoute(
       builder: (context, state, child) {
+        // Determine activeScreenId from path parameters or route path
+        String? activeScreenId = state.pathParameters['screenId'];
+
+        // For fixed routes without screenId parameter, derive from path
+        if (activeScreenId == null) {
+          final path = state.matchedLocation;
+          if (path == AppRoutePath.wellbeing) {
+            activeScreenId = 'wellbeing';
+          } else if (path == AppRoutePath.journal) {
+            activeScreenId = 'journal';
+          } else if (path == AppRoutePath.trackerManagement) {
+            activeScreenId = 'trackers';
+          } else if (path == AppRoutePath.taskNextActionsSettings) {
+            activeScreenId = 'allocation_settings';
+          } else if (path == AppRoutePath.navigationSettings) {
+            activeScreenId = 'navigation_settings';
+          } else if (path == AppRoutePath.appSettings) {
+            activeScreenId = 'settings';
+          }
+        }
+
         return BlocProvider(
           create: (_) => NavigationBloc(
             screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
@@ -132,7 +153,7 @@ final router = GoRouter(
             routeBuilder: (screenId) => '${AppRoutePath.screenBase}/$screenId',
           )..add(const NavigationStarted()),
           child: ScaffoldWithNestedNavigation(
-            activeScreenId: state.pathParameters['screenId'],
+            activeScreenId: activeScreenId,
             child: child,
           ),
         );

@@ -8,6 +8,9 @@ enum ScreenType { collection, workflow }
 /// Entity types for screens
 enum EntityType { task, project, label, goal }
 
+/// Screen categories for organizing navigation
+enum ScreenCategory { workspace, wellbeing, settings }
+
 /// Workflow session status
 enum WorkflowStatus { inProgress, completed, abandoned }
 
@@ -29,6 +32,9 @@ class ScreenDefinitions extends Table {
   )(); // System screens can't be deleted
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  TextColumn get category => textEnum<ScreenCategory>().withDefault(
+    const Constant('workspace'),
+  )();
 
   // EntitySelector configuration (stored as JSON text)
   TextColumn get entityType => textEnum<EntityType>()();

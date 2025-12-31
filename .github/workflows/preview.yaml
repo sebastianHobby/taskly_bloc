@@ -1,0 +1,85 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.x'
+          channel: 'stable'
+          cache: true
+      
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+      
+      - name: Get dependencies
+        run: flutter pub get
+      
+      - name: Generate code
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+      
+      - name: Build web preview
+        run: flutter build web --release --base-href "/taskly_bloc/pr-${{ github.event.pull_request.number }}/"
+      
+      - name: Add .nojekyll file
+        run: touch build/web/.nojekyll
+      
+      - name: Copy index.html to 404.html
+        run: cp build/web/index.html build/web/404.html
+      
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-preview-pr-${{ github.event.pull_request.number }}
+          path: build/web
+          retention-days: 3
+      
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const comment = `## 🚀 Preview Build Ready
+            
+            A preview build has been created for this PR.
+            
+            📦 **Artifact:** \`web-preview-pr-${prNumber}\`
+            ⏰ **Retention:** 3 days
+            
+            To deploy this preview:
+            1. Download the artifact from the Actions tab
+            2. Extract and serve the files locally or on a preview server
+            3. Ensure base-href is set to \`/taskly_bloc/pr-${prNumber}/\`
+            
+            ---
+            *This preview build was automatically generated on commit ${context.sha.substring(0, 7)}*`;
+            
+            github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

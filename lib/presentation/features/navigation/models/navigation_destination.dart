@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 
 /// View model for a navigation destination built from a ScreenDefinition.
 class NavigationDestinationVm {
@@ -12,6 +13,7 @@ class NavigationDestinationVm {
     required this.isSystem,
     this.badgeStream,
     this.sortOrder = 0,
+    this.category = ScreenCategory.workspace,
   });
 
   final String id;
@@ -23,4 +25,5 @@ class NavigationDestinationVm {
   final bool isSystem;
   final Stream<int>? badgeStream;
   final int sortOrder;
+  final ScreenCategory category;
 }

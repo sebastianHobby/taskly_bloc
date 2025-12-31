@@ -3,6 +3,7 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 
 part 'screen_definition.freezed.dart';
 part 'screen_definition.g.dart';
@@ -24,6 +25,7 @@ abstract class ScreenDefinition with _$ScreenDefinition {
     @Default(false) bool isSystem,
     @Default(true) bool isActive,
     @Default(0) int sortOrder,
+    @Default(ScreenCategory.workspace) ScreenCategory category,
   }) = CollectionScreen;
 
   /// Per-item workflow with progress tracking
@@ -40,6 +42,7 @@ abstract class ScreenDefinition with _$ScreenDefinition {
     @Default(false) bool isSystem,
     @Default(true) bool isActive,
     @Default(0) int sortOrder,
+    @Default(ScreenCategory.workspace) ScreenCategory category,
     TriggerConfig? trigger,
     CompletionCriteria? completionCriteria,
   }) = WorkflowScreen;
