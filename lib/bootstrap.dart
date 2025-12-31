@@ -51,6 +51,11 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
         ),
       );
 
+      // Load environment configuration
+      talker.debug('Loading environment configuration...');
+      await Env.load();
+      talker.debug('Environment configuration loaded');
+
       talker.info('Initializing dependencies...');
       await setupDependencies();
       talker.info('Dependencies initialized successfully');
