@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
+import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 
 /// Settings screen for global app configuration.
 class SettingsScreen extends StatefulWidget {
@@ -55,6 +59,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
                 _buildSection(
+                  title: 'Customization',
+                  children: [
+                    _buildTaskAllocationItem(),
+                    _buildNavigationOrderItem(),
+                  ],
+                ),
+                _buildSection(
                   title: 'Advanced',
                   children: [
                     _buildScreenManagementItem(),
@@ -68,6 +79,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildViewLogsItem(),
                   ],
                 ),
+                _buildSection(
+                  title: 'Account',
+                  children: [
+                    _buildAccountInfo(),
+                    _buildSignOutItem(),
+                  ],
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           );
@@ -218,6 +237,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Widget _buildTaskAllocationItem() {
+    return ListTile(
+      leading: const Icon(Icons.tune),
+      title: const Text('Task Allocation'),
+      subtitle: const Text('Strategy, limits, and value ranking'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        context.pushNamed(AppRouteName.taskNextActionsSettings);
+      },
+    );
+  }
+
+  Widget _buildNavigationOrderItem() {
+    return ListTile(
+      leading: const Icon(Icons.menu),
+      title: const Text('Navigation Order'),
+      subtitle: const Text('Reorder sidebar items'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        context.pushNamed(AppRouteName.navigationSettings);
+      },
+    );
+  }
+
   Widget _buildScreenManagementItem() {
     return ListTile(
       leading: const Icon(Icons.dashboard_customize),
@@ -322,5 +365,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final now = DateTime(2025, 12, 30);
     final formatter = DateFormatPatterns.getFormat(pattern);
     return 'Example: ${formatter.format(now)}';
+  }
+
+  Widget _buildAccountInfo() {
+    return BlocBuilder<AuthBloc, AppAuthState>(
+      builder: (context, state) {
+        final user = state.user;
+        if (user == null) {
+          return const SizedBox.shrink();
+        }
+
+        final email = user.email;
+        final displayName =
+            user.userMetadata?['display_name'] as String? ??
+            user.userMetadata?['full_name'] as String? ??
+            user.userMetadata?['name'] as String?;
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Text(
+              _getInitials(displayName, email),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          title: Text(
+            displayName ?? 'User',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          subtitle: email != null ? Text(email) : null,
+        );
+      },
+    );
+  }
+
+  String _getInitials(String? displayName, String? email) {
+    if (displayName != null && displayName.isNotEmpty) {
+      final parts = displayName.trim().split(' ');
+      if (parts.length >= 2) {
+        return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+      }
+      return displayName[0].toUpperCase();
+    }
+    if (email != null && email.isNotEmpty) {
+      return email[0].toUpperCase();
+    }
+    return 'U';
+  }
+
+  Widget _buildSignOutItem() {
+    return BlocListener<AuthBloc, AppAuthState>(
+      listenWhen: (prev, curr) =>
+          prev.error != curr.error && curr.error != null,
+      listener: (context, state) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Sign out failed. Please try again.'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _performSignOut,
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: OutlinedButton.icon(
+          onPressed: _performSignOut,
+          icon: const Icon(Icons.logout_rounded),
+          label: const Text('Sign Out'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.error,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performSignOut() async {
+    final confirmed = await showSignOutConfirmationDialog(context: context);
+    if (!confirmed || !mounted) return;
+
+    await HapticFeedback.lightImpact();
+    if (mounted) {
+      context.read<AuthBloc>().add(const AuthSignOutRequested());
+    }
   }
 }

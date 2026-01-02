@@ -83,9 +83,9 @@ void main() {
         expect(screenKeys, contains(SystemScreenFactory.wellbeing));
         expect(screenKeys, contains(SystemScreenFactory.journal));
         expect(screenKeys, contains(SystemScreenFactory.trackers));
-        expect(screenKeys, contains(SystemScreenFactory.allocationSettings));
-        expect(screenKeys, contains(SystemScreenFactory.navigationSettings));
         expect(screenKeys, contains(SystemScreenFactory.settings));
+        // allocation_settings and navigation_settings are accessed via
+        // Settings screen and are not seeded as navigation destinations
       });
 
       test('marks all screens as system screens', () async {
@@ -169,6 +169,8 @@ void main() {
       });
 
       test('returns settings for settings screens', () {
+        // Note: allocation_settings and navigation_settings are still valid
+        // screen keys but are not shown in navigation menu
         expect(
           SystemScreenFactory.getCategoryForKey(
             SystemScreenFactory.allocationSettings,
@@ -190,7 +192,7 @@ void main() {
 
     group('allKeys', () {
       test('contains expected number of screens', () {
-        expect(SystemScreenFactory.allKeys.length, 13);
+        expect(SystemScreenFactory.allKeys.length, 11);
       });
 
       test('contains no duplicates', () {
@@ -238,17 +240,11 @@ void main() {
       });
 
       test('settings screens have high sort orders', () {
-        final settingsOrders = [
-          SystemScreenFactory.defaultSortOrders[SystemScreenFactory
-              .allocationSettings]!,
-          SystemScreenFactory.defaultSortOrders[SystemScreenFactory
-              .navigationSettings]!,
-          SystemScreenFactory.defaultSortOrders[SystemScreenFactory.settings]!,
-        ];
-
-        for (final order in settingsOrders) {
-          expect(order, greaterThanOrEqualTo(200));
-        }
+        // Only 'settings' is in allKeys; allocation_settings and
+        // navigation_settings are accessed via Settings screen
+        final settingsOrder = SystemScreenFactory
+            .defaultSortOrders[SystemScreenFactory.settings]!;
+        expect(settingsOrder, greaterThanOrEqualTo(200));
       });
     });
 

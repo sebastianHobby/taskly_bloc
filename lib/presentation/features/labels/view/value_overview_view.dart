@@ -12,6 +12,7 @@ import 'package:taskly_bloc/presentation/features/labels/bloc/label_list_bloc.da
 import 'package:taskly_bloc/presentation/features/labels/view/label_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/add_label_fab.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile.dart';
+import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/sort_bottom_sheet.dart';
 
 class ValueOverviewPage extends StatelessWidget {
@@ -120,7 +121,9 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
               ],
             ),
             body: labels.isEmpty
-                ? Center(child: Text(context.l10n.noValuesFound))
+                ? EmptyStateWidget.noValues(
+                    title: context.l10n.noValuesFound,
+                  )
                 : ListView(
                     children: [
                       for (final label in labels)

@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/add_label_fab.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/labels_list.dart';
+import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/sort_bottom_sheet.dart';
 
 class LabelOverviewPage extends StatelessWidget {
@@ -93,7 +94,9 @@ class _LabelOverviewViewState extends State<LabelOverviewView> {
               ],
             ),
             body: labels.isEmpty
-                ? Center(child: Text(context.l10n.noLabelsFound))
+                ? EmptyStateWidget.noLabels(
+                    title: context.l10n.noLabelsFound,
+                  )
                 : LabelsListView(
                     labels: labels,
                     isSheetOpen: _isSheetOpen,

@@ -22,6 +22,9 @@ class SystemScreenFactory {
   // =========================================================================
 
   /// All system screen keys in display order.
+  ///
+  /// Note: allocation_settings and navigation_settings are accessed via the
+  /// Settings screen and are not shown in the navigation menu.
   static const List<String> allKeys = [
     inbox,
     today,
@@ -33,8 +36,6 @@ class SystemScreenFactory {
     wellbeing,
     journal,
     trackers,
-    allocationSettings,
-    navigationSettings,
     settings,
   ];
 
@@ -65,9 +66,7 @@ class SystemScreenFactory {
     wellbeing: 100,
     journal: 101,
     trackers: 102,
-    allocationSettings: 200,
-    navigationSettings: 201,
-    settings: 202,
+    settings: 200,
   };
 
   // =========================================================================
@@ -112,8 +111,6 @@ class SystemScreenFactory {
       _createWellbeing(userId, now),
       _createJournal(userId, now),
       _createTrackers(userId, now),
-      _createAllocationSettings(userId, now),
-      _createNavigationSettings(userId, now),
       _createSettings(userId, now),
     ];
   }
