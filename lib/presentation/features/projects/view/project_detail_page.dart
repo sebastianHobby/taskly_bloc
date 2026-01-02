@@ -45,7 +45,7 @@ class ProjectDetailPage extends StatelessWidget {
           create: (_) => ProjectDetailBloc(
             projectRepository: projectRepository,
             labelRepository: labelRepository,
-          )..add(ProjectDetailEvent.get(projectId: projectId)),
+          )..add(ProjectDetailEvent.loadById(projectId: projectId)),
         ),
         BlocProvider<TaskOverviewBloc>(
           create: (_) => TaskOverviewBloc(
@@ -91,7 +91,7 @@ class ProjectDetailPageView extends StatelessWidget {
           onSaved: (savedProjectId) {
             // Refresh the project details after edit
             context.read<ProjectDetailBloc>().add(
-              ProjectDetailEvent.get(projectId: savedProjectId),
+              ProjectDetailEvent.loadById(projectId: savedProjectId),
             );
           },
         ),
@@ -145,7 +145,7 @@ class ProjectDetailPageView extends StatelessWidget {
                 context.l10n,
               ),
               onRetry: () => context.read<ProjectDetailBloc>().add(
-                ProjectDetailEvent.get(projectId: projectId),
+                ProjectDetailEvent.loadById(projectId: projectId),
               ),
             ),
           ),

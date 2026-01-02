@@ -87,7 +87,7 @@ class _LabelDetailView extends StatelessWidget {
             onSaved: (savedLabelId) {
               // Refresh the label details after edit
               context.read<LabelDetailBloc>().add(
-                LabelDetailEvent.get(labelId: savedLabelId),
+                LabelDetailEvent.loadById(labelId: savedLabelId),
               );
             },
           ),

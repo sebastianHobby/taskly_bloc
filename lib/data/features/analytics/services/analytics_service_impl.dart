@@ -318,18 +318,18 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   Future<String> _getProjectLabel(String projectId) async {
-    final project = await _projectRepo.get(projectId);
+    final project = await _projectRepo.getById(projectId);
     return project?.name ?? 'Unknown Project';
   }
 
   Future<String> _getLabelLabel(String labelId) async {
-    final label = await _labelRepo.get(labelId);
+    final label = await _labelRepo.getById(labelId);
     return label?.name ?? 'Unknown Label';
   }
 
   Future<String> _getValueLabel(String valueId) async {
     // Values are typically labels with type=value
-    final label = await _labelRepo.get(valueId);
+    final label = await _labelRepo.getById(valueId);
     return label?.name ?? 'Unknown Value';
   }
 }

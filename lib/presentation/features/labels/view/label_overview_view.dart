@@ -106,7 +106,7 @@ class _LabelOverviewViewState extends State<LabelOverviewView> {
               heroTag: 'create_label_fab',
             ),
           ),
-          error: (error) => Center(
+          error: (error, stackTrace) => Center(
             child: Text(
               friendlyErrorMessageForUi(error, context.l10n),
             ),

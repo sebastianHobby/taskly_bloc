@@ -89,8 +89,11 @@ class TaskOverviewBloc extends Bloc<TaskOverviewEvent, TaskOverviewState>
   TaskOverviewState createLoadingState() => const TaskOverviewLoading();
 
   @override
-  TaskOverviewState createErrorState(Object error) =>
-      TaskOverviewState.error(error: error, stacktrace: StackTrace.current);
+  TaskOverviewState createErrorState(Object error, [StackTrace? stackTrace]) =>
+      TaskOverviewState.error(
+        error: error,
+        stacktrace: stackTrace ?? StackTrace.current,
+      );
 
   @override
   TaskOverviewState createLoadedState(List<Task> items) =>

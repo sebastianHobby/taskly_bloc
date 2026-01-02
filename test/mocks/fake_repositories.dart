@@ -458,7 +458,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   Future<List<Project>> getAll({bool withRelated = false}) async => _last;
 
   @override
-  Stream<Project?> watch(String id, {bool withRelated = false}) =>
+  Stream<Project?> watchById(String id, {bool withRelated = false}) =>
       _controller.stream.map((projects) {
         try {
           return projects.firstWhere((p) => p.id == id);
@@ -468,7 +468,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       });
 
   @override
-  Future<Project?> get(String id, {bool withRelated = false}) async {
+  Future<Project?> getById(String id, {bool withRelated = false}) async {
     try {
       return _last.firstWhere((p) => p.id == id);
     } catch (_) {
@@ -658,36 +658,32 @@ class FakeLabelRepository implements LabelRepositoryContract {
   }
 
   @override
-  Stream<List<Label>> watchAll({bool withRelated = false}) =>
-      _controller.stream;
+  Stream<List<Label>> watchAll() => _controller.stream;
 
   @override
-  Future<List<Label>> getAll({bool withRelated = false}) async => _last;
+  Future<List<Label>> getAll() async => _last;
 
   @override
-  Stream<List<Label>> watchByType(LabelType type, {bool withRelated = false}) =>
-      _controller.stream.map(
-        (labels) => labels.where((l) => l.type == type).toList(),
-      );
+  Stream<List<Label>> watchByType(LabelType type) => _controller.stream.map(
+    (labels) => labels.where((l) => l.type == type).toList(),
+  );
 
   @override
   Future<List<Label>> getAllByType(
-    LabelType type, {
-    bool withRelated = false,
-  }) async => _last.where((l) => l.type == type).toList();
+    LabelType type,
+  ) async => _last.where((l) => l.type == type).toList();
 
   @override
-  Stream<Label?> watch(String id, {bool withRelated = false}) =>
-      _controller.stream.map((labels) {
-        try {
-          return labels.firstWhere((l) => l.id == id);
-        } catch (_) {
-          return null;
-        }
-      });
+  Stream<Label?> watchById(String id) => _controller.stream.map((labels) {
+    try {
+      return labels.firstWhere((l) => l.id == id);
+    } catch (_) {
+      return null;
+    }
+  });
 
   @override
-  Future<Label?> get(String id, {bool withRelated = false}) async {
+  Future<Label?> getById(String id) async {
     try {
       return _last.firstWhere((l) => l.id == id);
     } catch (_) {

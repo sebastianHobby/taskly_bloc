@@ -220,7 +220,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                     loading: () => const Center(
                       child: CircularProgressIndicator(),
                     ),
-                    error: (error) => Center(
+                    error: (error, stackTrace) => Center(
                       child: Text(
                         friendlyErrorMessageForUi(error, context.l10n),
                       ),

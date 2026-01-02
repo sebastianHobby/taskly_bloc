@@ -26,8 +26,10 @@ sealed class LabelOverviewState with _$LabelOverviewState {
   const factory LabelOverviewState.loading() = LabelOverviewLoading;
   const factory LabelOverviewState.loaded({required List<Label> labels}) =
       LabelOverviewLoaded;
-  const factory LabelOverviewState.error({required Object error}) =
-      LabelOverviewError;
+  const factory LabelOverviewState.error({
+    required Object error,
+    StackTrace? stackTrace,
+  }) = LabelOverviewError;
 }
 
 class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState>
@@ -64,8 +66,8 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState>
   LabelOverviewState createLoadingState() => const LabelOverviewLoading();
 
   @override
-  LabelOverviewState createErrorState(Object error) =>
-      LabelOverviewError(error: error);
+  LabelOverviewState createErrorState(Object error, [StackTrace? stackTrace]) =>
+      LabelOverviewError(error: error, stackTrace: stackTrace);
 
   @override
   LabelOverviewState createLoadedState(List<Label> items) =>

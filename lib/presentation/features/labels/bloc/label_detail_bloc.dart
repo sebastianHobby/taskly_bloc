@@ -31,8 +31,8 @@ sealed class LabelDetailEvent with _$LabelDetailEvent {
     String? iconName,
   }) = _LabelDetailCreate;
 
-  const factory LabelDetailEvent.get({required String labelId}) =
-      _LabelDetailGet;
+  const factory LabelDetailEvent.loadById({required String labelId}) =
+      _LabelDetailLoadById;
 }
 
 @freezed
@@ -58,13 +58,13 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState>
     String? labelId,
   }) : _labelRepository = labelRepository,
        super(const LabelDetailState.initial()) {
-    on<_LabelDetailGet>(_onGet);
+    on<_LabelDetailLoadById>(_onGet);
     on<_LabelDetailCreate>(_onCreate);
     on<_LabelDetailUpdate>(_onUpdate);
     on<_LabelDetailDelete>(_onDelete);
 
     if (labelId != null) {
-      add(LabelDetailEvent.get(labelId: labelId));
+      add(LabelDetailEvent.loadById(labelId: labelId));
     }
   }
 
@@ -93,12 +93,12 @@ class LabelDetailBloc extends Bloc<LabelDetailEvent, LabelDetailState>
       LabelDetailState.operationFailure(errorDetails: error);
 
   Future<void> _onGet(
-    _LabelDetailGet event,
+    _LabelDetailLoadById event,
     Emitter<LabelDetailState> emit,
   ) async {
     await executeLoadOperation(
       emit,
-      load: () => _labelRepository.get(event.labelId),
+      load: () => _labelRepository.getById(event.labelId),
       onSuccess: (label) => LabelDetailState.loadSuccess(label: label),
       onNotFound: () =>
           const DetailBlocError<Label>(error: NotFoundEntity.label),
