@@ -12,16 +12,6 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 
 **Jobs:**
 
-#### `semantic-pull-request`
-- Validates PR titles follow conventional commit format
-- Uses Very Good Workflows for standardization
-
-#### `build`
-- Runs comprehensive package validation
-- Includes code generation and testing
-- Enforces 80% minimum coverage threshold
-- Excludes generated files from coverage (*.g.dart, *.freezed.dart)
-
 #### `test`
 - Runs all tests with detailed coverage reporting
 - Uploads coverage to Codecov for tracking
@@ -32,6 +22,8 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 #### `analyze`
 - Runs `flutter analyze` with fatal warnings
 - Checks code formatting consistency
+- **Checks for unsafe testWidgets usage** (files using `pumpAndSettle` must use `testWidgetsSafe`)
+- **Validates IdGenerator table registration** (all PowerSync tables must be registered)
 - Ensures code quality standards
 - **Timeout:** 15 minutes
 
@@ -49,10 +41,6 @@ This project uses GitHub Actions for continuous integration and deployment. The 
 - Scans dependencies and code for security issues
 - Uploads results to GitHub Security tab
 - Non-blocking (continues on failure)
-
-#### `spell-check`
-- Validates spelling in all markdown files
-- Ensures documentation quality
 
 ### 2. GitHub Pages Deployment (`deploy-web.yaml`)
 

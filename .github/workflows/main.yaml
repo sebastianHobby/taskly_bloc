@@ -102,6 +102,45 @@ jobs:
       
       - name: Check formatting
         run: dart format --set-exit-if-changed .
+      
+      - name: Check for unsafe testWidgets usage
+        run: |
+          # Find test files using pumpAndSettle with testWidgets instead of testWidgetsSafe
+          UNSAFE_FILES=$(grep -rl "pumpAndSettle" test/ --include="*_test.dart" | xargs grep -l "testWidgets(" | xargs grep -L "testWidgetsSafe(" || true)
+          if [ -n "$UNSAFE_FILES" ]; then
+            echo "❌ Found testWidgets() in files using pumpAndSettle():"
+            echo "$UNSAFE_FILES"
+            echo ""
+            echo "This combination can hang indefinitely with BLoC streams."
+            echo "Replace testWidgets() with testWidgetsSafe() from test_helpers.dart"
+            exit 1
+          fi
+          echo "✓ No unsafe test patterns found."
+      
+      - name: Validate IdGenerator table registration
+        run: |
+          # Extract tables from PowerSync schema
+          SCHEMA_TABLES=$(grep -oP "Table\(\s*'\K\w+" lib/data/powersync/schema.dart | sort)
+          
+          # Extract tables from IdGenerator (v5Tables and v4Tables)
+          ID_GEN_CONTENT=$(cat lib/data/id/id_generator.dart)
+          V5_TABLES=$(echo "$ID_GEN_CONTENT" | grep -ozP "v5Tables\s*=\s*\{[^}]+\}" | grep -oP "'\K\w+(?=')" | sort)
+          V4_TABLES=$(echo "$ID_GEN_CONTENT" | grep -ozP "v4Tables\s*=\s*\{[^}]+\}" | grep -oP "'\K\w+(?=')" | sort)
+          
+          # Combine registered tables
+          REGISTERED=$(echo -e "$V5_TABLES\n$V4_TABLES" | sort -u)
+          
+          # Find unregistered tables
+          UNREGISTERED=$(comm -23 <(echo "$SCHEMA_TABLES") <(echo "$REGISTERED"))
+          
+          if [ -n "$UNREGISTERED" ]; then
+            echo "❌ Tables in schema but NOT registered in IdGenerator:"
+            echo "$UNREGISTERED"
+            echo ""
+            echo "Add these to v5Tables or v4Tables in lib/data/id/id_generator.dart"
+            exit 1
+          fi
+          echo "✓ All tables are registered in IdGenerator."
 
   # Build for multiple platforms
   build-platforms:

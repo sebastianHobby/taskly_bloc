@@ -4,32 +4,10 @@ import 'package:git_hooks/git_hooks.dart';
 
 void main(List<String> arguments) {
   final params = <Git, UserBackFun>{
-    Git.commitMsg: commitMsg,
     Git.preCommit: preCommit,
     Git.prePush: prePush,
   };
   GitHooks.call(arguments, params);
-}
-
-Future<bool> commitMsg() async {
-  final commitMsg = Utils.getCommitEditMsg();
-
-  // Require conventional commit format (optional)
-  final conventionalPattern = RegExp(
-    r'^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+',
-  );
-
-  if (!conventionalPattern.hasMatch(commitMsg.trim().split('\n').first)) {
-    print('⚠️  Commit message should follow conventional commits format:');
-    print(
-      '   feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert: message',
-    );
-    print('   Example: "fix: resolve null pointer in task list"');
-    // Return true to allow non-conventional commits (change to false to enforce)
-    return true;
-  }
-
-  return true;
 }
 
 Future<bool> preCommit() async {
