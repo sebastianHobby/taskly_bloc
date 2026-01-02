@@ -76,16 +76,17 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<AuthRepositoryContract>(
       () => AuthRepository(client: getIt<SupabaseClient>()),
     )
-    // IdGenerator - uses current userId from session
-    // Registered as factory since userId may change on re-login
-    ..registerFactory<IdGenerator>(
-      () {
+    // IdGenerator - uses lazy userId getter from session
+    // The userId is only evaluated when actually generating IDs,
+    // allowing repositories to be constructed before authentication
+    ..registerLazySingleton<IdGenerator>(
+      () => IdGenerator(() {
         final userId = getUserId();
         if (userId == null) {
           throw StateError('IdGenerator requires authenticated user');
         }
-        return IdGenerator(userId);
-      },
+        return userId;
+      }),
     )
     // Register occurrence stream expander for reading occurrences
     ..registerLazySingleton<OccurrenceStreamExpanderContract>(
