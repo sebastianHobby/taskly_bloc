@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 /// Sign in view with custom form using AuthBloc.
 class SignInView extends StatefulWidget {
@@ -41,20 +38,16 @@ class _SignInViewState extends State<SignInView> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocListener<AuthBloc, AppAuthState>(
+        listenWhen: (prev, curr) =>
+            prev.error != curr.error && curr.error != null,
         listener: (context, state) {
-          if (state.isAuthenticated) {
-            talker.debug(
-              '[SignInView] User authenticated, navigating to ${AppRoutePath.inbox}',
-            );
-            context.go(AppRoutePath.inbox);
-          } else if (state.error != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-            );
-          }
+          // Only show errors - navigation is handled by auth gating in app.dart
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.error!),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
         },
         child: Center(
           child: SingleChildScrollView(
@@ -167,13 +160,19 @@ class _SignInViewState extends State<SignInView> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => context.go('/sign-up'),
+                          onPressed: () => Navigator.pushReplacementNamed(
+                            context,
+                            '/sign-up',
+                          ),
                           child: const Text('Sign Up'),
                         ),
                       ],
                     ),
                     TextButton(
-                      onPressed: () => context.go('/forgot-password'),
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        '/forgot-password',
+                      ),
                       child: const Text('Forgot Password?'),
                     ),
                   ],

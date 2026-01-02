@@ -14,7 +14,6 @@ import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_cont
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
-import 'package:taskly_bloc/presentation/features/auth/auth.dart';
 import 'package:taskly_bloc/presentation/features/labels/view/label_detail_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
@@ -38,49 +37,15 @@ import 'package:taskly_bloc/presentation/features/screens/view/screen_management
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 
+/// Router for authenticated app shell.
+///
+/// Note: Auth routes are handled by the unauthenticated Navigator in app.dart.
+/// This router only contains protected routes since it's only mounted when
+/// the user is authenticated.
 final router = GoRouter(
   initialLocation: '${AppRoutePath.screenBase}/inbox',
   observers: [TalkerRouteObserver(talker)],
-  redirect: (context, state) {
-    // Use synchronous session check to avoid hanging on async stream
-    final authRepository = getIt<AuthRepositoryContract>();
-    final isAuthenticated = authRepository.currentSession != null;
-
-    final isAuthRoute =
-        state.matchedLocation == '/sign-in' ||
-        state.matchedLocation == '/sign-up' ||
-        state.matchedLocation == '/forgot-password';
-
-    // If not authenticated and trying to access protected route, redirect to sign in
-    if (!isAuthenticated && !isAuthRoute) {
-      return '/sign-in';
-    }
-
-    // If authenticated and trying to access auth route, redirect to home
-    if (isAuthenticated && isAuthRoute) {
-      return AppRoutePath.inbox;
-    }
-
-    // No redirect needed
-    return null;
-  },
   routes: [
-    // Authentication routes (not protected)
-    GoRoute(
-      name: 'sign-in',
-      path: '/sign-in',
-      builder: (context, state) => const SignInView(),
-    ),
-    GoRoute(
-      name: 'sign-up',
-      path: '/sign-up',
-      builder: (context, state) => const SignUpView(),
-    ),
-    GoRoute(
-      name: 'forgot-password',
-      path: '/forgot-password',
-      builder: (context, state) => const ForgotPasswordView(),
-    ),
     // Legacy aliases redirect to dynamic screen routes
     GoRoute(
       name: AppRouteName.inbox,

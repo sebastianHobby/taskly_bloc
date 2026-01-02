@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 
@@ -100,9 +101,17 @@ class _PinnedTaskTile extends StatelessWidget {
     final task = allocatedTask.task;
 
     return ListTile(
-      leading: Checkbox(
-        value: task.completed,
-        onChanged: (_) => onToggleComplete(),
+      leading: Semantics(
+        label: task.completed
+            ? 'Mark "${task.name}" as incomplete'
+            : 'Mark "${task.name}" as complete',
+        child: Checkbox(
+          value: task.completed,
+          onChanged: (_) {
+            HapticFeedback.lightImpact();
+            onToggleComplete();
+          },
+        ),
       ),
       title: Text(
         task.name,

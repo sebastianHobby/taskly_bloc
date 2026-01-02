@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 /// Sign up view with custom form using AuthBloc.
 class SignUpView extends StatefulWidget {
@@ -46,17 +43,16 @@ class _SignUpViewState extends State<SignUpView> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/sign-in'),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: BlocListener<AuthBloc, AppAuthState>(
+        listenWhen: (prev, curr) =>
+            (prev.error != curr.error && curr.error != null) ||
+            (prev.message != curr.message && curr.message != null),
         listener: (context, state) {
-          if (state.isAuthenticated) {
-            talker.debug(
-              '[SignUpView] User authenticated, navigating to ${AppRoutePath.inbox}',
-            );
-            context.go(AppRoutePath.inbox);
-          } else if (state.error != null) {
+          // Only show errors/messages - navigation is handled by auth gating
+          if (state.error != null) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.error!),
@@ -218,7 +214,7 @@ class _SignUpViewState extends State<SignUpView> {
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
                         TextButton(
-                          onPressed: () => context.go('/sign-in'),
+                          onPressed: () => Navigator.pop(context),
                           child: const Text('Sign In'),
                         ),
                       ],
