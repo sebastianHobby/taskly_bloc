@@ -75,7 +75,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
     final projectId = widget.projectId;
 
     if (projectId != null && projectId.isNotEmpty) {
-      bloc.add(ProjectDetailEvent.get(projectId: projectId));
+      bloc.add(ProjectDetailEvent.loadById(projectId: projectId));
     } else {
       bloc.add(const ProjectDetailEvent.loadInitialData());
     }

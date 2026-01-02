@@ -39,8 +39,8 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     List<Label>? labels,
   }) = _ProjectDetailCreate;
 
-  const factory ProjectDetailEvent.get({required String projectId}) =
-      _ProjectDetailGet;
+  const factory ProjectDetailEvent.loadById({required String projectId}) =
+      _ProjectDetailLoadById;
 
   const factory ProjectDetailEvent.loadInitialData() =
       _ProjectDetailLoadInitialData;
@@ -78,7 +78,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   }) : _projectRepository = projectRepository,
        _labelRepository = labelRepository,
        super(const ProjectDetailState.initial()) {
-    on<_ProjectDetailGet>((event, emit) => _onGet(event.projectId, emit));
+    on<_ProjectDetailLoadById>((event, emit) => _onGet(event.projectId, emit));
     on<_ProjectDetailCreate>(_onCreate);
     on<_ProjectDetailUpdate>(_onUpdate);
     on<_ProjectDetailDelete>(_onDelete);
@@ -120,7 +120,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     emit(const ProjectDetailState.loadInProgress());
     try {
       final labels = await _labelRepository.getAll();
-      final project = await _projectRepository.get(
+      final project = await _projectRepository.getById(
         projectId,
         withRelated: true,
       );

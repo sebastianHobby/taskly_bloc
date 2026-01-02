@@ -230,13 +230,15 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     AuthPasswordResetRequested event,
     Emitter<AppAuthState> emit,
   ) async {
+    // Capture original status before changing to loading
+    final wasAuthenticated = state.status == AuthStatus.authenticated;
     emit(state.copyWith(status: AuthStatus.loading));
 
     try {
       await _authRepository.resetPasswordForEmail(event.email);
       emit(
         state.copyWith(
-          status: state.status == AuthStatus.authenticated
+          status: wasAuthenticated
               ? AuthStatus.authenticated
               : AuthStatus.unauthenticated,
           message: 'Password reset email sent',
@@ -246,7 +248,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       talker.handle(error, stackTrace, '[AuthBloc] Password reset failed');
       emit(
         state.copyWith(
-          status: state.status == AuthStatus.authenticated
+          status: wasAuthenticated
               ? AuthStatus.authenticated
               : AuthStatus.unauthenticated,
           error: error.toString(),

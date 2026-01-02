@@ -206,11 +206,17 @@ Future<bool> _checkUnsafeTests() async {
       if (!fileObj.existsSync()) continue;
 
       final content = fileObj.readAsStringSync();
+
+      // Only check files that use pumpAndSettle - these are at risk of hanging
+      final usesPumpAndSettle = content.contains('pumpAndSettle');
+      if (!usesPumpAndSettle) continue;
+
       final lines = content.split('\n');
 
       for (var i = 0; i < lines.length; i++) {
         final line = lines[i];
         // Check for testWidgets( that is NOT testWidgetsSafe(
+        // Only in files using pumpAndSettle (which can hang with streams)
         if (line.contains('testWidgets(') &&
             !line.contains('testWidgetsSafe(') &&
             !line.contains('// safe:')) {
@@ -223,14 +229,18 @@ Future<bool> _checkUnsafeTests() async {
     }
 
     if (hasUnsafe) {
-      print('   ❌ Found unsafe test functions that may hang indefinitely.');
+      print('   ❌ Found testWidgets() in files using pumpAndSettle().');
+      print('   This combination can hang indefinitely with BLoC streams.');
       print(
         '   Replace testWidgets() with testWidgetsSafe() from test_helpers.dart',
+      );
+      print(
+        '   Or add "// safe:" comment if pumpAndSettle is not used in that test.',
       );
       return false;
     }
 
-    print('   ✓ No unsafe test functions found.');
+    print('   ✓ No unsafe test patterns found.');
     return true;
   } catch (e) {
     print('   ⚠️  Could not check test files: $e');
@@ -248,10 +258,28 @@ Future<bool> _runAnalyze() async {
       runInShell: true,
     );
 
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
     if (result.exitCode != 0) {
-      print(result.stdout);
-      print(result.stderr);
-      print('   ❌ Analysis found issues.');
+      print('   ❌ Analysis found issues:\n');
+      if (stdout.isNotEmpty) {
+        // Filter out info-level messages, keep only warnings and errors
+        // Format: "  info - path:line:col - message - rule"
+        final infoPattern = RegExp(r'^\s*info\s*-');
+        final lines = stdout.split('\n').where((line) {
+          return !infoPattern.hasMatch(line);
+        }).toList();
+        if (lines.isNotEmpty) {
+          final indented = lines.map((l) => '   $l').join('\n');
+          print(indented);
+        }
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
       return false;
     }
 

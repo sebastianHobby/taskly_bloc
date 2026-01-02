@@ -677,13 +677,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult Function( Object error,  StackTrace? stackTrace)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
 return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError() when error != null:
-return error(_that.error);case _:
+return error(_that.error,_that.stackTrace);case _:
   return orElse();
 
 }
@@ -701,13 +701,13 @@ return error(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)  loaded,required TResult Function( Object error,  StackTrace? stackTrace)  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial():
 return initial();case ProjectOverviewLoading():
 return loading();case ProjectOverviewLoaded():
 return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError():
-return error(_that.error);}
+return error(_that.error,_that.stackTrace);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -721,13 +721,13 @@ return error(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Project> projects,  Map<String, ProjectTaskCounts> taskCounts)?  loaded,TResult? Function( Object error,  StackTrace? stackTrace)?  error,}) {final _that = this;
 switch (_that) {
 case ProjectOverviewInitial() when initial != null:
 return initial();case ProjectOverviewLoading() when loading != null:
 return loading();case ProjectOverviewLoaded() when loaded != null:
 return loaded(_that.projects,_that.taskCounts);case ProjectOverviewError() when error != null:
-return error(_that.error);case _:
+return error(_that.error,_that.stackTrace);case _:
   return null;
 
 }
@@ -883,10 +883,11 @@ as Map<String, ProjectTaskCounts>,
 
 
 class ProjectOverviewError implements ProjectOverviewState {
-  const ProjectOverviewError({required this.error});
+  const ProjectOverviewError({required this.error, this.stackTrace});
   
 
  final  Object error;
+ final  StackTrace? stackTrace;
 
 /// Create a copy of ProjectOverviewState
 /// with the given fields replaced by the non-null parameter values.
@@ -898,16 +899,16 @@ $ProjectOverviewErrorCopyWith<ProjectOverviewError> get copyWith => _$ProjectOve
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewError&&const DeepCollectionEquality().equals(other.error, error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectOverviewError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
 
 @override
 String toString() {
-  return 'ProjectOverviewState.error(error: $error)';
+  return 'ProjectOverviewState.error(error: $error, stackTrace: $stackTrace)';
 }
 
 
@@ -918,7 +919,7 @@ abstract mixin class $ProjectOverviewErrorCopyWith<$Res> implements $ProjectOver
   factory $ProjectOverviewErrorCopyWith(ProjectOverviewError value, $Res Function(ProjectOverviewError) _then) = _$ProjectOverviewErrorCopyWithImpl;
 @useResult
 $Res call({
- Object error
+ Object error, StackTrace? stackTrace
 });
 
 
@@ -935,9 +936,10 @@ class _$ProjectOverviewErrorCopyWithImpl<$Res>
 
 /// Create a copy of ProjectOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = freezed,}) {
   return _then(ProjectOverviewError(
-error: null == error ? _self.error : error ,
+error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace?,
   ));
 }
 

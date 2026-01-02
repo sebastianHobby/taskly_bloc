@@ -113,10 +113,10 @@ class ViewService {
   }) {
     switch (parentType) {
       case DetailParentType.project:
-        return _projectRepository.watch(entityId);
+        return _projectRepository.watchById(entityId);
 
       case DetailParentType.label:
-        return _labelRepository.watch(entityId);
+        return _labelRepository.watchById(entityId);
     }
   }
 

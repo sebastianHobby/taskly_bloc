@@ -35,7 +35,7 @@ String? encodeDateOnlyOrNull(DateTime? value) =>
 ///
 /// Throws a [FormatException] if [value] is not a valid date.
 DateTime parseDateOnly(String value) {
-  final match = RegExp(r'^(\\d{4})-(\\d{2})-(\\d{2})$').firstMatch(value);
+  final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
   if (match == null) {
     throw FormatException('Invalid date-only string: $value');
   }
@@ -55,7 +55,7 @@ DateTime parseDateOnly(String value) {
 DateTime? tryParseDateOnly(String? value) {
   if (value == null || value.isEmpty) return null;
 
-  if (RegExp(r'^\\d{4}-\\d{2}-\\d{2}$').hasMatch(value)) {
+  if (RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
     return parseDateOnly(value);
   }
 

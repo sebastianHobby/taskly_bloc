@@ -55,14 +55,14 @@ extension LabelDetailEventPatterns on LabelDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _LabelDetailUpdate value)?  update,TResult Function( _LabelDetailDelete value)?  delete,TResult Function( _LabelDetailCreate value)?  create,TResult Function( _LabelDetailGet value)?  get,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _LabelDetailUpdate value)?  update,TResult Function( _LabelDetailDelete value)?  delete,TResult Function( _LabelDetailCreate value)?  create,TResult Function( _LabelDetailLoadById value)?  loadById,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
 return update(_that);case _LabelDetailDelete() when delete != null:
 return delete(_that);case _LabelDetailCreate() when create != null:
-return create(_that);case _LabelDetailGet() when get != null:
-return get(_that);case _:
+return create(_that);case _LabelDetailLoadById() when loadById != null:
+return loadById(_that);case _:
   return orElse();
 
 }
@@ -80,14 +80,14 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _LabelDetailUpdate value)  update,required TResult Function( _LabelDetailDelete value)  delete,required TResult Function( _LabelDetailCreate value)  create,required TResult Function( _LabelDetailGet value)  get,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _LabelDetailUpdate value)  update,required TResult Function( _LabelDetailDelete value)  delete,required TResult Function( _LabelDetailCreate value)  create,required TResult Function( _LabelDetailLoadById value)  loadById,}){
 final _that = this;
 switch (_that) {
 case _LabelDetailUpdate():
 return update(_that);case _LabelDetailDelete():
 return delete(_that);case _LabelDetailCreate():
-return create(_that);case _LabelDetailGet():
-return get(_that);}
+return create(_that);case _LabelDetailLoadById():
+return loadById(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -101,14 +101,14 @@ return get(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _LabelDetailUpdate value)?  update,TResult? Function( _LabelDetailDelete value)?  delete,TResult? Function( _LabelDetailCreate value)?  create,TResult? Function( _LabelDetailGet value)?  get,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _LabelDetailUpdate value)?  update,TResult? Function( _LabelDetailDelete value)?  delete,TResult? Function( _LabelDetailCreate value)?  create,TResult? Function( _LabelDetailLoadById value)?  loadById,}){
 final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
 return update(_that);case _LabelDetailDelete() when delete != null:
 return delete(_that);case _LabelDetailCreate() when create != null:
-return create(_that);case _LabelDetailGet() when get != null:
-return get(_that);case _:
+return create(_that);case _LabelDetailLoadById() when loadById != null:
+return loadById(_that);case _:
   return null;
 
 }
@@ -125,13 +125,13 @@ return get(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult Function( String labelId)?  get,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult Function( String labelId)?  loadById,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
 return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet() when get != null:
-return get(_that.labelId);case _:
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailLoadById() when loadById != null:
+return loadById(_that.labelId);case _:
   return orElse();
 
 }
@@ -149,13 +149,13 @@ return get(_that.labelId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String color,  LabelType type,  String? iconName)  create,required TResult Function( String labelId)  get,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String color,  LabelType type,  String? iconName)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String color,  LabelType type,  String? iconName)  create,required TResult Function( String labelId)  loadById,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate():
 return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete():
 return delete(_that.id);case _LabelDetailCreate():
-return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet():
-return get(_that.labelId);}
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailLoadById():
+return loadById(_that.labelId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -169,13 +169,13 @@ return get(_that.labelId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult? Function( String labelId)?  get,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String color,  LabelType type,  String? iconName)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String color,  LabelType type,  String? iconName)?  create,TResult? Function( String labelId)?  loadById,}) {final _that = this;
 switch (_that) {
 case _LabelDetailUpdate() when update != null:
 return update(_that.id,_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailDelete() when delete != null:
 return delete(_that.id);case _LabelDetailCreate() when create != null:
-return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailGet() when get != null:
-return get(_that.labelId);case _:
+return create(_that.name,_that.color,_that.type,_that.iconName);case _LabelDetailLoadById() when loadById != null:
+return loadById(_that.labelId);case _:
   return null;
 
 }
@@ -398,8 +398,8 @@ as String?,
 /// @nodoc
 
 
-class _LabelDetailGet implements LabelDetailEvent {
-  const _LabelDetailGet({required this.labelId});
+class _LabelDetailLoadById implements LabelDetailEvent {
+  const _LabelDetailLoadById({required this.labelId});
   
 
  final  String labelId;
@@ -408,13 +408,13 @@ class _LabelDetailGet implements LabelDetailEvent {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$LabelDetailGetCopyWith<_LabelDetailGet> get copyWith => __$LabelDetailGetCopyWithImpl<_LabelDetailGet>(this, _$identity);
+_$LabelDetailLoadByIdCopyWith<_LabelDetailLoadById> get copyWith => __$LabelDetailLoadByIdCopyWithImpl<_LabelDetailLoadById>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailGet&&(identical(other.labelId, labelId) || other.labelId == labelId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LabelDetailLoadById&&(identical(other.labelId, labelId) || other.labelId == labelId));
 }
 
 
@@ -423,15 +423,15 @@ int get hashCode => Object.hash(runtimeType,labelId);
 
 @override
 String toString() {
-  return 'LabelDetailEvent.get(labelId: $labelId)';
+  return 'LabelDetailEvent.loadById(labelId: $labelId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$LabelDetailGetCopyWith<$Res> implements $LabelDetailEventCopyWith<$Res> {
-  factory _$LabelDetailGetCopyWith(_LabelDetailGet value, $Res Function(_LabelDetailGet) _then) = __$LabelDetailGetCopyWithImpl;
+abstract mixin class _$LabelDetailLoadByIdCopyWith<$Res> implements $LabelDetailEventCopyWith<$Res> {
+  factory _$LabelDetailLoadByIdCopyWith(_LabelDetailLoadById value, $Res Function(_LabelDetailLoadById) _then) = __$LabelDetailLoadByIdCopyWithImpl;
 @useResult
 $Res call({
  String labelId
@@ -442,17 +442,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$LabelDetailGetCopyWithImpl<$Res>
-    implements _$LabelDetailGetCopyWith<$Res> {
-  __$LabelDetailGetCopyWithImpl(this._self, this._then);
+class __$LabelDetailLoadByIdCopyWithImpl<$Res>
+    implements _$LabelDetailLoadByIdCopyWith<$Res> {
+  __$LabelDetailLoadByIdCopyWithImpl(this._self, this._then);
 
-  final _LabelDetailGet _self;
-  final $Res Function(_LabelDetailGet) _then;
+  final _LabelDetailLoadById _self;
+  final $Res Function(_LabelDetailLoadById) _then;
 
 /// Create a copy of LabelDetailEvent
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? labelId = null,}) {
-  return _then(_LabelDetailGet(
+  return _then(_LabelDetailLoadById(
 labelId: null == labelId ? _self.labelId : labelId // ignore: cast_nullable_to_non_nullable
 as String,
   ));

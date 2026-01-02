@@ -39,8 +39,10 @@ sealed class ProjectOverviewState with _$ProjectOverviewState {
     required List<Project> projects,
     @Default({}) Map<String, ProjectTaskCounts> taskCounts,
   }) = ProjectOverviewLoaded;
-  const factory ProjectOverviewState.error({required Object error}) =
-      ProjectOverviewError;
+  const factory ProjectOverviewState.error({
+    required Object error,
+    StackTrace? stackTrace,
+  }) = ProjectOverviewError;
 }
 
 class ProjectOverviewBloc
@@ -90,8 +92,10 @@ class ProjectOverviewBloc
   ProjectOverviewState createLoadingState() => const ProjectOverviewLoading();
 
   @override
-  ProjectOverviewState createErrorState(Object error) =>
-      ProjectOverviewError(error: error);
+  ProjectOverviewState createErrorState(
+    Object error, [
+    StackTrace? stackTrace,
+  ]) => ProjectOverviewError(error: error, stackTrace: stackTrace);
 
   @override
   ProjectOverviewState createLoadedState(List<Project> items) {

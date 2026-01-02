@@ -455,13 +455,13 @@ return error(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Label> labels)?  loaded,TResult Function( Object error)?  error,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function()?  loading,TResult Function( List<Label> labels)?  loaded,TResult Function( Object error,  StackTrace? stackTrace)?  error,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case LabelOverviewInitial() when initial != null:
 return initial();case LabelOverviewLoading() when loading != null:
 return loading();case LabelOverviewLoaded() when loaded != null:
 return loaded(_that.labels);case LabelOverviewError() when error != null:
-return error(_that.error);case _:
+return error(_that.error,_that.stackTrace);case _:
   return orElse();
 
 }
@@ -479,13 +479,13 @@ return error(_that.error);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Label> labels)  loaded,required TResult Function( Object error)  error,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function()  loading,required TResult Function( List<Label> labels)  loaded,required TResult Function( Object error,  StackTrace? stackTrace)  error,}) {final _that = this;
 switch (_that) {
 case LabelOverviewInitial():
 return initial();case LabelOverviewLoading():
 return loading();case LabelOverviewLoaded():
 return loaded(_that.labels);case LabelOverviewError():
-return error(_that.error);}
+return error(_that.error,_that.stackTrace);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -499,13 +499,13 @@ return error(_that.error);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Label> labels)?  loaded,TResult? Function( Object error)?  error,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function()?  loading,TResult? Function( List<Label> labels)?  loaded,TResult? Function( Object error,  StackTrace? stackTrace)?  error,}) {final _that = this;
 switch (_that) {
 case LabelOverviewInitial() when initial != null:
 return initial();case LabelOverviewLoading() when loading != null:
 return loading();case LabelOverviewLoaded() when loaded != null:
 return loaded(_that.labels);case LabelOverviewError() when error != null:
-return error(_that.error);case _:
+return error(_that.error,_that.stackTrace);case _:
   return null;
 
 }
@@ -653,10 +653,11 @@ as List<Label>,
 
 
 class LabelOverviewError implements LabelOverviewState {
-  const LabelOverviewError({required this.error});
+  const LabelOverviewError({required this.error, this.stackTrace});
   
 
  final  Object error;
+ final  StackTrace? stackTrace;
 
 /// Create a copy of LabelOverviewState
 /// with the given fields replaced by the non-null parameter values.
@@ -668,16 +669,16 @@ $LabelOverviewErrorCopyWith<LabelOverviewError> get copyWith => _$LabelOverviewE
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewError&&const DeepCollectionEquality().equals(other.error, error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LabelOverviewError&&const DeepCollectionEquality().equals(other.error, error)&&(identical(other.stackTrace, stackTrace) || other.stackTrace == stackTrace));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(error),stackTrace);
 
 @override
 String toString() {
-  return 'LabelOverviewState.error(error: $error)';
+  return 'LabelOverviewState.error(error: $error, stackTrace: $stackTrace)';
 }
 
 
@@ -688,7 +689,7 @@ abstract mixin class $LabelOverviewErrorCopyWith<$Res> implements $LabelOverview
   factory $LabelOverviewErrorCopyWith(LabelOverviewError value, $Res Function(LabelOverviewError) _then) = _$LabelOverviewErrorCopyWithImpl;
 @useResult
 $Res call({
- Object error
+ Object error, StackTrace? stackTrace
 });
 
 
@@ -705,9 +706,10 @@ class _$LabelOverviewErrorCopyWithImpl<$Res>
 
 /// Create a copy of LabelOverviewState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? error = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? error = null,Object? stackTrace = freezed,}) {
   return _then(LabelOverviewError(
-error: null == error ? _self.error : error ,
+error: null == error ? _self.error : error ,stackTrace: freezed == stackTrace ? _self.stackTrace : stackTrace // ignore: cast_nullable_to_non_nullable
+as StackTrace?,
   ));
 }
 

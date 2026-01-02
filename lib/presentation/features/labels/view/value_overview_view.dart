@@ -143,7 +143,7 @@ class _ValueOverviewViewState extends State<ValueOverviewView> {
               heroTag: 'create_value_fab',
             ),
           ),
-          error: (error) => Center(
+          error: (error, stackTrace) => Center(
             child: Text(
               friendlyErrorMessageForUi(error, context.l10n),
             ),

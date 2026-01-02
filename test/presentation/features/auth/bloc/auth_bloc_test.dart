@@ -321,10 +321,8 @@ void main() {
     );
 
     blocTest<AuthBloc, AppAuthState>(
-      'passwordResetRequested from authenticated state emits loading then unauthenticated with message',
+      'passwordResetRequested from authenticated state emits loading then authenticated with message',
       build: () {
-        // Note: Implementation bug - state.status is loading when checked,
-        // so it always returns unauthenticated. Testing actual behavior.
         when(() => authRepo.currentSession).thenReturn(mockSession);
         when(
           () => authRepo.watchAuthState(),
@@ -347,7 +345,7 @@ void main() {
           AuthStatus.loading,
         ),
         isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.unauthenticated)
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
             .having((s) => s.message, 'message', 'Password reset email sent'),
       ],
     );

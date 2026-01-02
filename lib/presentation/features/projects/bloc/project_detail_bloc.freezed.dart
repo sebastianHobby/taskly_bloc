@@ -55,14 +55,14 @@ extension ProjectDetailEventPatterns on ProjectDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  update,TResult Function( _ProjectDetailDelete value)?  delete,TResult Function( _ProjectDetailCreate value)?  create,TResult Function( _ProjectDetailGet value)?  get,TResult Function( _ProjectDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  update,TResult Function( _ProjectDetailDelete value)?  delete,TResult Function( _ProjectDetailCreate value)?  create,TResult Function( _ProjectDetailLoadById value)?  loadById,TResult Function( _ProjectDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
 return update(_that);case _ProjectDetailDelete() when delete != null:
 return delete(_that);case _ProjectDetailCreate() when create != null:
-return create(_that);case _ProjectDetailGet() when get != null:
-return get(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
+return create(_that);case _ProjectDetailLoadById() when loadById != null:
+return loadById(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData(_that);case _:
   return orElse();
 
@@ -81,14 +81,14 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  update,required TResult Function( _ProjectDetailDelete value)  delete,required TResult Function( _ProjectDetailCreate value)  create,required TResult Function( _ProjectDetailGet value)  get,required TResult Function( _ProjectDetailLoadInitialData value)  loadInitialData,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  update,required TResult Function( _ProjectDetailDelete value)  delete,required TResult Function( _ProjectDetailCreate value)  create,required TResult Function( _ProjectDetailLoadById value)  loadById,required TResult Function( _ProjectDetailLoadInitialData value)  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
 return update(_that);case _ProjectDetailDelete():
 return delete(_that);case _ProjectDetailCreate():
-return create(_that);case _ProjectDetailGet():
-return get(_that);case _ProjectDetailLoadInitialData():
+return create(_that);case _ProjectDetailLoadById():
+return loadById(_that);case _ProjectDetailLoadInitialData():
 return loadInitialData(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
@@ -103,14 +103,14 @@ return loadInitialData(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  update,TResult? Function( _ProjectDetailDelete value)?  delete,TResult? Function( _ProjectDetailCreate value)?  create,TResult? Function( _ProjectDetailGet value)?  get,TResult? Function( _ProjectDetailLoadInitialData value)?  loadInitialData,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  update,TResult? Function( _ProjectDetailDelete value)?  delete,TResult? Function( _ProjectDetailCreate value)?  create,TResult? Function( _ProjectDetailLoadById value)?  loadById,TResult? Function( _ProjectDetailLoadInitialData value)?  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
 return update(_that);case _ProjectDetailDelete() when delete != null:
 return delete(_that);case _ProjectDetailCreate() when create != null:
-return create(_that);case _ProjectDetailGet() when get != null:
-return get(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
+return create(_that);case _ProjectDetailLoadById() when loadById != null:
+return loadById(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData(_that);case _:
   return null;
 
@@ -128,13 +128,13 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult Function( String projectId)?  get,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult Function( String projectId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
 return update(_that.id,_that.name,_that.completed,_that.description,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailDelete() when delete != null:
 return delete(_that.id);case _ProjectDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailGet() when get != null:
-return get(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailLoadById() when loadById != null:
+return loadById(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return orElse();
 
@@ -153,13 +153,13 @@ return loadInitialData();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)  create,required TResult Function( String projectId)  get,required TResult Function()  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)  create,required TResult Function( String projectId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
 return update(_that.id,_that.name,_that.completed,_that.description,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailDelete():
 return delete(_that.id);case _ProjectDetailCreate():
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailGet():
-return get(_that.projectId);case _ProjectDetailLoadInitialData():
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailLoadById():
+return loadById(_that.projectId);case _ProjectDetailLoadInitialData():
 return loadInitialData();}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -174,13 +174,13 @@ return loadInitialData();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult? Function( String projectId)?  get,TResult? Function()?  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  bool completed,  String? description,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult? Function( String projectId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
 return update(_that.id,_that.name,_that.completed,_that.description,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailDelete() when delete != null:
 return delete(_that.id);case _ProjectDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailGet() when get != null:
-return get(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.repeatIcalRrule,_that.labels);case _ProjectDetailLoadById() when loadById != null:
+return loadById(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return null;
 
@@ -432,8 +432,8 @@ as List<Label>?,
 /// @nodoc
 
 
-class _ProjectDetailGet implements ProjectDetailEvent {
-  const _ProjectDetailGet({required this.projectId});
+class _ProjectDetailLoadById implements ProjectDetailEvent {
+  const _ProjectDetailLoadById({required this.projectId});
   
 
  final  String projectId;
@@ -442,13 +442,13 @@ class _ProjectDetailGet implements ProjectDetailEvent {
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
 @pragma('vm:prefer-inline')
-_$ProjectDetailGetCopyWith<_ProjectDetailGet> get copyWith => __$ProjectDetailGetCopyWithImpl<_ProjectDetailGet>(this, _$identity);
+_$ProjectDetailLoadByIdCopyWith<_ProjectDetailLoadById> get copyWith => __$ProjectDetailLoadByIdCopyWithImpl<_ProjectDetailLoadById>(this, _$identity);
 
 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailGet&&(identical(other.projectId, projectId) || other.projectId == projectId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailLoadById&&(identical(other.projectId, projectId) || other.projectId == projectId));
 }
 
 
@@ -457,15 +457,15 @@ int get hashCode => Object.hash(runtimeType,projectId);
 
 @override
 String toString() {
-  return 'ProjectDetailEvent.get(projectId: $projectId)';
+  return 'ProjectDetailEvent.loadById(projectId: $projectId)';
 }
 
 
 }
 
 /// @nodoc
-abstract mixin class _$ProjectDetailGetCopyWith<$Res> implements $ProjectDetailEventCopyWith<$Res> {
-  factory _$ProjectDetailGetCopyWith(_ProjectDetailGet value, $Res Function(_ProjectDetailGet) _then) = __$ProjectDetailGetCopyWithImpl;
+abstract mixin class _$ProjectDetailLoadByIdCopyWith<$Res> implements $ProjectDetailEventCopyWith<$Res> {
+  factory _$ProjectDetailLoadByIdCopyWith(_ProjectDetailLoadById value, $Res Function(_ProjectDetailLoadById) _then) = __$ProjectDetailLoadByIdCopyWithImpl;
 @useResult
 $Res call({
  String projectId
@@ -476,17 +476,17 @@ $Res call({
 
 }
 /// @nodoc
-class __$ProjectDetailGetCopyWithImpl<$Res>
-    implements _$ProjectDetailGetCopyWith<$Res> {
-  __$ProjectDetailGetCopyWithImpl(this._self, this._then);
+class __$ProjectDetailLoadByIdCopyWithImpl<$Res>
+    implements _$ProjectDetailLoadByIdCopyWith<$Res> {
+  __$ProjectDetailLoadByIdCopyWithImpl(this._self, this._then);
 
-  final _ProjectDetailGet _self;
-  final $Res Function(_ProjectDetailGet) _then;
+  final _ProjectDetailLoadById _self;
+  final $Res Function(_ProjectDetailLoadById) _then;
 
 /// Create a copy of ProjectDetailEvent
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') $Res call({Object? projectId = null,}) {
-  return _then(_ProjectDetailGet(
+  return _then(_ProjectDetailLoadById(
 projectId: null == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String,
   ));

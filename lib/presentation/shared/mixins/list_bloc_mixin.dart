@@ -30,8 +30,8 @@ mixin ListBlocMixin<E, S, T> on Bloc<E, S> {
   /// Creates the loading state for this bloc.
   S createLoadingState();
 
-  /// Creates the error state with the given error.
-  S createErrorState(Object error);
+  /// Creates the error state with the given error and optional stack trace.
+  S createErrorState(Object error, [StackTrace? stackTrace]);
 
   /// Creates the loaded state with the given items.
   S createLoadedState(List<T> items);
@@ -61,7 +61,7 @@ mixin ListBlocMixin<E, S, T> on Bloc<E, S> {
         final processedItems = onData?.call(items) ?? items;
         return createLoadedState(processedItems);
       },
-      onError: (error, _) => createErrorState(error),
+      onError: createErrorState,
     );
   }
 
@@ -76,8 +76,8 @@ mixin ListBlocMixin<E, S, T> on Bloc<E, S> {
   }) async {
     try {
       await delete();
-    } catch (error) {
-      emit(createErrorState(error));
+    } catch (error, stackTrace) {
+      emit(createErrorState(error, stackTrace));
     }
   }
 
@@ -88,8 +88,8 @@ mixin ListBlocMixin<E, S, T> on Bloc<E, S> {
   }) async {
     try {
       await toggle();
-    } catch (error) {
-      emit(createErrorState(error));
+    } catch (error, stackTrace) {
+      emit(createErrorState(error, stackTrace));
     }
   }
 }

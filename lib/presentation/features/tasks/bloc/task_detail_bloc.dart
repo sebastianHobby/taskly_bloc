@@ -42,7 +42,8 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     List<Label>? labels,
   }) = _TaskDetailCreate;
 
-  const factory TaskDetailEvent.get({required String taskId}) = _TaskDetailGet;
+  const factory TaskDetailEvent.loadById({required String taskId}) =
+      _TaskDetailLoadById;
   const factory TaskDetailEvent.loadInitialData() = _TaskDetailLoadInitialData;
 }
 
@@ -84,14 +85,14 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
        _labelRepository = labelRepository,
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(_onLoadInitialData);
-    on<_TaskDetailGet>(_onGet);
+    on<_TaskDetailLoadById>(_onGet);
     on<_TaskDetailCreate>(_onCreate);
     on<_TaskDetailUpdate>(_onUpdate);
     on<_TaskDetailDelete>(_onDelete);
 
     if (autoLoad) {
       if (taskId != null && taskId.isNotEmpty) {
-        add(TaskDetailEvent.get(taskId: taskId));
+        add(TaskDetailEvent.loadById(taskId: taskId));
       } else {
         add(const TaskDetailEvent.loadInitialData());
       }
@@ -153,7 +154,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   }
 
   Future<void> _onGet(
-    _TaskDetailGet event,
+    _TaskDetailLoadById event,
     Emitter<TaskDetailState> emit,
   ) async {
     emit(const TaskDetailState.loadInProgress());
