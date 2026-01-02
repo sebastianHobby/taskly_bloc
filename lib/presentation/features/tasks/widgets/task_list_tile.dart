@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -103,6 +104,7 @@ class TaskListTile extends StatelessWidget {
                 completed: task.completed,
                 isOverdue: isOverdue,
                 onChanged: (value) => onCheckboxChanged(task, value),
+                taskName: task.name,
               ),
               const SizedBox(width: 12),
 
@@ -192,43 +194,53 @@ class TaskListTile extends StatelessWidget {
   }
 }
 
-/// Custom checkbox with animated states.
+/// Custom checkbox with animated states and accessibility support.
 class _TaskCheckbox extends StatelessWidget {
   const _TaskCheckbox({
     required this.completed,
     required this.isOverdue,
     required this.onChanged,
+    required this.taskName,
   });
 
   final bool completed;
   final bool isOverdue;
   final ValueChanged<bool?> onChanged;
+  final String taskName;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: Checkbox(
-        value: completed,
-        onChanged: onChanged,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(6),
+    return Semantics(
+      label: completed
+          ? 'Mark "$taskName" as incomplete'
+          : 'Mark "$taskName" as complete',
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: Checkbox(
+          value: completed,
+          onChanged: (value) {
+            HapticFeedback.lightImpact();
+            onChanged(value);
+          },
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          side: BorderSide(
+            color: isOverdue
+                ? colorScheme.error
+                : completed
+                ? colorScheme.primary
+                : colorScheme.outline,
+            width: 2,
+          ),
+          activeColor: colorScheme.primary,
+          checkColor: colorScheme.onPrimary,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
         ),
-        side: BorderSide(
-          color: isOverdue
-              ? colorScheme.error
-              : completed
-              ? colorScheme.primary
-              : colorScheme.outline,
-          width: 2,
-        ),
-        activeColor: colorScheme.primary,
-        checkColor: colorScheme.onPrimary,
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        visualDensity: VisualDensity.compact,
       ),
     );
   }

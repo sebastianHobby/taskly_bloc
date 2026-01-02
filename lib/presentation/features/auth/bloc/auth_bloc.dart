@@ -50,40 +50,42 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   ) async {
     await _authSubscription?.cancel();
 
-    // Emit initial state based on current session
+    // Check for existing session
     final session = _authRepository.currentSession;
     talker.blocLog(
       'Auth',
       '_onSubscriptionRequested: session=${session != null ? "exists" : "null"}',
     );
+
     if (session != null) {
-      talker.blocLog(
-        'Auth',
-        'Initial session found, emitting authenticated state',
-      );
+      // Show loading while seeding data
+      talker.blocLog('Auth', 'Initial session found, preparing user data...');
+      emit(state.copyWith(status: AuthStatus.loading));
+
+      // Seed user data and wait for completion
+      // This ensures system labels and screens exist before showing UI
+      try {
+        await _userDataSeeder.seedAll(session.user.id);
+        talker.blocLog('Auth', 'User data seeded, emitting authenticated');
+      } catch (e, st) {
+        talker.handle(e, st, '[AuthBloc] Seeding failed, continuing anyway');
+      }
+
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
           user: session.user,
         ),
       );
-      // Seed user data for existing session (user was already logged in)
-      // This ensures system labels and screens exist
-      talker.blocLog('Auth', 'Seeding user data for existing session');
-      _userDataSeeder.seedAll(session.user.id).ignore();
     } else {
       talker.blocLog(
         'Auth',
         'No initial session, emitting unauthenticated state',
       );
-      emit(
-        state.copyWith(
-          status: AuthStatus.unauthenticated,
-        ),
-      );
+      emit(state.copyWith(status: AuthStatus.unauthenticated));
     }
 
-    // Listen to auth state changes
+    // Listen to auth state changes (sign in, sign out, token refresh)
     _authSubscription = _authRepository.watchAuthState().listen(
       (authState) {
         add(_AuthStateChanged(authState));
@@ -91,30 +93,42 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     );
   }
 
-  void _onAuthStateChanged(
+  Future<void> _onAuthStateChanged(
     _AuthStateChanged event,
     Emitter<AppAuthState> emit,
-  ) {
+  ) async {
     talker.blocLog(
       'Auth',
       'Auth state changed: event=${event.authState.event}',
     );
     final session = event.authState.session;
+
     if (session != null) {
-      talker.blocLog(
-        'Auth',
-        'Session found in auth state change, emitting authenticated',
-      );
+      // Skip if already authenticated with same user (e.g., token refresh)
+      if (state.status == AuthStatus.authenticated &&
+          state.user?.id == session.user.id) {
+        talker.blocLog('Auth', 'Already authenticated, skipping re-auth');
+        return;
+      }
+
+      // Show loading while seeding data
+      talker.blocLog('Auth', 'Session found, preparing user data...');
+      emit(state.copyWith(status: AuthStatus.loading));
+
+      // Seed user data and wait for completion
+      try {
+        await _userDataSeeder.seedAll(session.user.id);
+        talker.blocLog('Auth', 'User data seeded after auth state change');
+      } catch (e, st) {
+        talker.handle(e, st, '[AuthBloc] Seeding failed, continuing anyway');
+      }
+
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
           user: session.user,
         ),
       );
-      // Seed user data after successful authentication
-      // This ensures system labels and screens exist for the user
-      talker.blocLog('Auth', 'Seeding user data after auth state change');
-      _userDataSeeder.seedAll(session.user.id).ignore();
     } else {
       talker.blocLog(
         'Auth',

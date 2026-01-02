@@ -23,6 +23,10 @@ final List<RegExp> fatalResponseCodes = [
   RegExp(r'^42501$'),
 ];
 
+/// PostgREST error codes that indicate schema mismatch (table doesn't exist).
+/// PGRST205: Could not find the table in the schema cache
+const _schemaNotFoundCode = 'PGRST205';
+
 /// Use Supabase for authentication and data upload.
 class SupabaseConnector extends PowerSyncBackendConnector {
   SupabaseConnector(this.db);
@@ -115,6 +119,17 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         // Unique constraint violation - handle based on table ID strategy
         await _handle23505(rest, lastOp!, e);
         // Mark as complete - either expected duplicate or logged conflict
+        await transaction.complete();
+      } else if (e.code == _schemaNotFoundCode) {
+        // Table doesn't exist in Supabase schema (e.g., removed/migrated table).
+        // This can happen after schema migrations when stale CRUD operations
+        // reference tables that no longer exist (like allocation_preferences).
+        // Discard these operations as they're no longer relevant.
+        talker.warning(
+          '[powersync] Table not found in Supabase schema - discarding '
+          'operation for ${lastOp?.table}/${lastOp?.id}.\n'
+          'This is expected after schema migrations.',
+        );
         await transaction.complete();
       } else if (e.code != null &&
           fatalResponseCodes.any((re) => re.hasMatch(e.code!))) {

@@ -83,6 +83,9 @@ void main() {
       },
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
+        // First emits loading while seeding
+        const AppAuthState(status: AuthStatus.loading),
+        // Then emits authenticated after seeding completes
         isA<AppAuthState>().having(
           (s) => s.status,
           'status',
