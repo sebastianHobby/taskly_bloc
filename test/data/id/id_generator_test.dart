@@ -7,7 +7,59 @@ void main() {
     late IdGenerator idGenerator;
 
     setUp(() {
-      idGenerator = IdGenerator('test-user-123');
+      idGenerator = IdGenerator.withUserId('test-user-123');
+    });
+
+    group('lazy userId evaluation', () {
+      test('can construct with getter that throws', () {
+        // Should NOT throw at construction time
+        final lazyGen = IdGenerator(() {
+          throw StateError('Not authenticated');
+        });
+
+        // V4 methods should work without userId
+        expect(lazyGen.taskId().length, 36);
+        expect(lazyGen.projectId().length, 36);
+      });
+
+      test('throws when v5 method called without authenticated user', () {
+        final lazyGen = IdGenerator(() {
+          throw StateError('IdGenerator requires authenticated user');
+        });
+
+        // V5 methods require userId, should throw
+        expect(
+          () => lazyGen.labelId(name: 'Test', type: LabelType.label),
+          throwsStateError,
+        );
+        expect(
+          () => lazyGen.screenDefinitionId(screenKey: 'inbox'),
+          throwsStateError,
+        );
+      });
+
+      test('v5 methods work when user becomes authenticated', () {
+        String? currentUserId;
+        final lazyGen = IdGenerator(() {
+          if (currentUserId == null) {
+            throw StateError('IdGenerator requires authenticated user');
+          }
+          return currentUserId;
+        });
+
+        // Should throw before authentication
+        expect(
+          () => lazyGen.labelId(name: 'Test', type: LabelType.label),
+          throwsStateError,
+        );
+
+        // Simulate authentication
+        currentUserId = 'user-123';
+
+        // Should work after authentication
+        final id = lazyGen.labelId(name: 'Test', type: LabelType.label);
+        expect(id.length, 36);
+      });
     });
 
     group('userId', () {
@@ -16,8 +68,8 @@ void main() {
       });
 
       test('different users get different generators', () {
-        final user1 = IdGenerator('user-1');
-        final user2 = IdGenerator('user-2');
+        final user1 = IdGenerator.withUserId('user-1');
+        final user2 = IdGenerator.withUserId('user-2');
         expect(user1.userId, 'user-1');
         expect(user2.userId, 'user-2');
       });
@@ -209,8 +261,8 @@ void main() {
         });
 
         test('different users produce different IDs', () {
-          final gen1 = IdGenerator('user-1');
-          final gen2 = IdGenerator('user-2');
+          final gen1 = IdGenerator.withUserId('user-1');
+          final gen2 = IdGenerator.withUserId('user-2');
 
           final id1 = gen1.labelId(name: 'Priority', type: LabelType.label);
           final id2 = gen2.labelId(name: 'Priority', type: LabelType.label);
@@ -265,8 +317,8 @@ void main() {
         });
 
         test('same across different users (no user in path)', () {
-          final gen1 = IdGenerator('user-1');
-          final gen2 = IdGenerator('user-2');
+          final gen1 = IdGenerator.withUserId('user-1');
+          final gen2 = IdGenerator.withUserId('user-2');
 
           final id1 = gen1.taskLabelId(taskId: 'task-1', labelId: 'label-1');
           final id2 = gen2.taskLabelId(taskId: 'task-1', labelId: 'label-1');
@@ -425,8 +477,8 @@ void main() {
         });
 
         test('includes user in path (different users = different IDs)', () {
-          final gen1 = IdGenerator('user-1');
-          final gen2 = IdGenerator('user-2');
+          final gen1 = IdGenerator.withUserId('user-1');
+          final gen2 = IdGenerator.withUserId('user-2');
           final date = DateTime(2025, 6, 15);
 
           final id1 = gen1.dailyTrackerResponseId(
