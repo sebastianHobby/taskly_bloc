@@ -21,7 +21,7 @@ class JournalEntries extends Table {
 
 @DataClassName('TrackerEntity')
 class Trackers extends Table {
-  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
   TextColumn get description => text().nullable()();
@@ -44,7 +44,7 @@ class Trackers extends Table {
 
 @DataClassName('TrackerResponseEntity')
 class TrackerResponses extends Table {
-  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
   TextColumn get journalEntryId => text()();
   TextColumn get trackerId => text()();
@@ -63,7 +63,7 @@ class TrackerResponses extends Table {
 
 @DataClassName('DailyTrackerResponseEntity')
 class DailyTrackerResponses extends Table {
-  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
   DateTimeColumn get responseDate =>
       dateTime()(); // Date only (time component ignored)

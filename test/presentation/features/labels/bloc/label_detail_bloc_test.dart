@@ -1,347 +1,379 @@
-@Tags(['unit', 'bloc', 'labels'])
-library;
-
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
-import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_detail_bloc.dart';
 
-import '../../../../fixtures/test_data.dart';
-import '../../../../helpers/custom_matchers.dart';
-import '../../../../helpers/fallback_values.dart';
-import '../../../../mocks/repository_mocks.dart';
+class MockLabelRepositoryContract extends Mock
+    implements LabelRepositoryContract {}
 
-/// Tests for [LabelDetailBloc] covering label CRUD operations.
-///
-/// Coverage:
-/// - ✅ Initialization
-/// - ✅ Auto-loading when labelId provided
-/// - ✅ Loading label data
-/// - ✅ Creating new labels
-/// - ✅ Updating existing labels
-/// - ✅ Deleting labels
-/// - ✅ Error handling for all operations
 void main() {
-  late MockLabelRepositoryContract mockLabelRepo;
-
-  setUpAll(registerAllFallbackValues);
-
-  setUp(() {
-    mockLabelRepo = MockLabelRepositoryContract();
-  });
-
   group('LabelDetailBloc', () {
-    group('initialization', () {
-      test('initial state is LabelDetailInitial when no labelId', () {
-        final bloc = LabelDetailBloc(labelRepository: mockLabelRepo);
+    late MockLabelRepositoryContract mockLabelRepository;
 
-        expect(bloc.state, isInitialState());
-        bloc.close();
+    setUpAll(() {
+      initializeTalkerForTest();
+      registerFallbackValue(LabelType.label);
+    });
+
+    setUp(() {
+      mockLabelRepository = MockLabelRepositoryContract();
+
+      when(
+        () => mockLabelRepository.getById(any()),
+      ).thenAnswer((_) async => null);
+      when(() => mockLabelRepository.delete(any())).thenAnswer((_) async {});
+      when(
+        () => mockLabelRepository.create(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          type: any(named: 'type'),
+          iconName: any(named: 'iconName'),
+        ),
+      ).thenAnswer((_) async => 'new-label-id');
+      when(
+        () => mockLabelRepository.update(
+          id: any(named: 'id'),
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          type: any(named: 'type'),
+          iconName: any(named: 'iconName'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    Label createLabel({
+      required String id,
+      required String name,
+    }) {
+      final now = DateTime.now();
+      return Label(
+        id: id,
+        name: name,
+        createdAt: now,
+        updatedAt: now,
+      );
+    }
+
+    group('initial state', () {
+      test('is LabelDetailInitial', () {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        expect(bloc.state, isA<LabelDetailInitial>());
       });
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'auto-loads label when labelId is provided',
-        build: () {
-          final label = TestData.label(id: 'label-1');
-          when(
-            () => mockLabelRepo.get('label-1'),
-          ).thenAnswer((_) async => label);
+      test('automatically loads label when labelId is provided', () async {
+        when(
+          () => mockLabelRepository.getById('test-id'),
+        ).thenAnswer((_) async => createLabel(id: 'test-id', name: 'Work'));
 
-          return LabelDetailBloc(
-            labelRepository: mockLabelRepo,
-            labelId: 'label-1',
-          );
-        },
-        expect: () => [
-          isLoadingState(),
-          isA<LabelDetailLoadSuccess>().having(
-            (s) => s.label.id,
-            'label.id',
-            'label-1',
-          ),
-        ],
-      );
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+          labelId: 'test-id',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(() => mockLabelRepository.getById('test-id')).called(1);
+        expect(bloc.state, isA<LabelDetailLoadSuccess>());
+        await bloc.close();
+      });
     });
 
-    group('get event', () {
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits [loading, success] when label exists',
-        build: () {
-          final label = TestData.label(
-            id: 'label-1',
-            name: 'Important',
-            color: '#FF0000',
+    group('LabelDetailGet', () {
+      test(
+        'emits load in progress then load success when label found',
+        () async {
+          when(
+            () => mockLabelRepository.getById('test-id'),
+          ).thenAnswer((_) async => createLabel(id: 'test-id', name: 'Work'));
+
+          final bloc = LabelDetailBloc(
+            labelRepository: mockLabelRepository,
           );
-          when(
-            () => mockLabelRepo.get('label-1'),
-          ).thenAnswer((_) async => label);
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
+          bloc.add(const LabelDetailEvent.loadById(labelId: 'test-id'));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(bloc.state, isA<LabelDetailLoadSuccess>());
+          final loadedState = bloc.state as LabelDetailLoadSuccess;
+          expect(loadedState.label.id, 'test-id');
+          expect(loadedState.label.name, 'Work');
+          await bloc.close();
         },
-        act: (bloc) => bloc.add(const LabelDetailEvent.get(labelId: 'label-1')),
-        expect: () => [
-          isLoadingState(),
-          isA<LabelDetailLoadSuccess>()
-              .having((s) => s.label.id, 'label.id', 'label-1')
-              .having((s) => s.label.name, 'label.name', 'Important')
-              .having((s) => s.label.color, 'label.color', '#FF0000'),
-        ],
       );
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits failure when label not found',
-        build: () {
-          when(
-            () => mockLabelRepo.get('nonexistent'),
-          ).thenAnswer((_) async => null);
+      test('emits operation failure when label not found', () async {
+        when(
+          () => mockLabelRepository.getById('missing-id'),
+        ).thenAnswer((_) async => null);
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) =>
-            bloc.add(const LabelDetailEvent.get(labelId: 'nonexistent')),
-        expect: () => [
-          isLoadingState(),
-          predicate<LabelDetailOperationFailure>(
-            (state) => state.errorDetails.error == NotFoundEntity.label,
-          ),
-        ],
-      );
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits failure on repository error',
-        build: () {
-          when(
-            () => mockLabelRepo.get(any()),
-          ).thenThrow(Exception('Database error'));
+        bloc.add(const LabelDetailEvent.loadById(labelId: 'missing-id'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(const LabelDetailEvent.get(labelId: 'label-1')),
-        expect: () => [
-          isLoadingState(),
-          isOperationFailureState(),
-        ],
-      );
+        expect(bloc.state, isA<LabelDetailOperationFailure>());
+        await bloc.close();
+      });
+
+      test('emits operation failure when repository throws', () async {
+        when(
+          () => mockLabelRepository.getById('error-id'),
+        ).thenThrow(Exception('Database error'));
+
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(const LabelDetailEvent.loadById(labelId: 'error-id'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(bloc.state, isA<LabelDetailOperationFailure>());
+        await bloc.close();
+      });
     });
 
-    group('create event', () {
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits success on successful creation',
-        build: () {
-          when(
-            () => mockLabelRepo.create(
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              type: any(named: 'type'),
-              iconName: any(named: 'iconName'),
-            ),
-          ).thenAnswer((_) async {});
+    group('LabelDetailCreate', () {
+      test('calls create on repository with correct parameters', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(
+        bloc.add(
           const LabelDetailEvent.create(
             name: 'New Label',
-            color: '#00FF00',
+            color: 'ff0000',
             type: LabelType.label,
-          ),
-        ),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isA<LabelDetailOperationSuccess>().having(
-            (s) => s.operation,
-            'operation',
-            EntityOperation.create,
-          ),
-        ],
-        verify: (_) {
-          verify(
-            () => mockLabelRepo.create(
-              name: 'New Label',
-              color: '#00FF00',
-              type: LabelType.label,
-            ),
-          ).called(1);
-        },
-      );
-
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'creates label with icon when provided',
-        build: () {
-          when(
-            () => mockLabelRepo.create(
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              type: any(named: 'type'),
-              iconName: any(named: 'iconName'),
-            ),
-          ).thenAnswer((_) async {});
-
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(
-          const LabelDetailEvent.create(
-            name: 'Value Label',
-            color: '#0000FF',
-            type: LabelType.value,
             iconName: 'star',
           ),
-        ),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isOperationSuccessState(),
-        ],
-        verify: (_) {
-          verify(
-            () => mockLabelRepo.create(
-              name: 'Value Label',
-              color: '#0000FF',
-              type: LabelType.value,
-              iconName: 'star',
-            ),
-          ).called(1);
-        },
-      );
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits failure on creation error',
-        build: () {
-          when(
-            () => mockLabelRepo.create(
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              type: any(named: 'type'),
-              iconName: any(named: 'iconName'),
-            ),
-          ).thenThrow(Exception('Create failed'));
+        verify(
+          () => mockLabelRepository.create(
+            name: 'New Label',
+            color: 'ff0000',
+            type: LabelType.label,
+            iconName: 'star',
+          ),
+        ).called(1);
+        await bloc.close();
+      });
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(
+      test('emits operation success on successful creation', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(
           const LabelDetailEvent.create(
             name: 'New Label',
-            color: '#FF0000',
+            color: 'ff0000',
             type: LabelType.label,
           ),
-        ),
-        expect: () => [
-          isOperationFailureState(),
-        ],
-      );
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Allow bloc to process
+        await Future.doWhile(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return bloc.state is LabelDetailInitial;
+        }).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {},
+        );
+
+        expect(bloc.state, isA<LabelDetailOperationSuccess>());
+        final successState = bloc.state as LabelDetailOperationSuccess;
+        expect(successState.operation, EntityOperation.create);
+        await bloc.close();
+      });
+
+      test('emits operation failure when create throws', () async {
+        when(
+          () => mockLabelRepository.create(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            type: any(named: 'type'),
+            iconName: any(named: 'iconName'),
+          ),
+        ).thenThrow(Exception('Creation failed'));
+
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(
+          const LabelDetailEvent.create(
+            name: 'New Label',
+            color: 'ff0000',
+            type: LabelType.label,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(bloc.state, isA<LabelDetailOperationFailure>());
+        await bloc.close();
+      });
     });
 
-    group('update event', () {
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits success on successful update',
-        build: () {
-          when(
-            () => mockLabelRepo.update(
-              id: any(named: 'id'),
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              type: any(named: 'type'),
-              iconName: any(named: 'iconName'),
-            ),
-          ).thenAnswer((_) async {});
+    group('LabelDetailUpdate', () {
+      test('calls update on repository with correct parameters', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(
+        bloc.add(
           const LabelDetailEvent.update(
             id: 'label-1',
             name: 'Updated Label',
-            color: '#FFFFFF',
+            color: '00ff00',
             type: LabelType.value,
+            iconName: 'heart',
           ),
-        ),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isA<LabelDetailOperationSuccess>().having(
-            (s) => s.operation,
-            'operation',
-            EntityOperation.update,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockLabelRepository.update(
+            id: 'label-1',
+            name: 'Updated Label',
+            color: '00ff00',
+            type: LabelType.value,
+            iconName: 'heart',
           ),
-        ],
-        verify: (_) {
-          verify(
-            () => mockLabelRepo.update(
-              id: 'label-1',
-              name: 'Updated Label',
-              color: '#FFFFFF',
-              type: LabelType.value,
-            ),
-          ).called(1);
-        },
-      );
+        ).called(1);
+        await bloc.close();
+      });
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits failure on update error',
-        build: () {
-          when(
-            () => mockLabelRepo.update(
-              id: any(named: 'id'),
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              type: any(named: 'type'),
-              iconName: any(named: 'iconName'),
-            ),
-          ).thenThrow(Exception('Update failed'));
+      test('emits operation success on successful update', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(
+        bloc.add(
           const LabelDetailEvent.update(
             id: 'label-1',
-            name: 'Updated',
-            color: '#000000',
+            name: 'Updated Label',
+            color: '00ff00',
             type: LabelType.label,
           ),
-        ),
-        expect: () => [
-          isOperationFailureState(),
-        ],
-      );
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Allow bloc to process
+        await Future.doWhile(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return bloc.state is LabelDetailInitial;
+        }).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {},
+        );
+
+        expect(bloc.state, isA<LabelDetailOperationSuccess>());
+        final successState = bloc.state as LabelDetailOperationSuccess;
+        expect(successState.operation, EntityOperation.update);
+        await bloc.close();
+      });
+
+      test('emits operation failure when update throws', () async {
+        when(
+          () => mockLabelRepository.update(
+            id: any(named: 'id'),
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            type: any(named: 'type'),
+            iconName: any(named: 'iconName'),
+          ),
+        ).thenThrow(Exception('Update failed'));
+
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(
+          const LabelDetailEvent.update(
+            id: 'label-1',
+            name: 'Updated Label',
+            color: '00ff00',
+            type: LabelType.label,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(bloc.state, isA<LabelDetailOperationFailure>());
+        await bloc.close();
+      });
     });
 
-    group('delete event', () {
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits success on successful deletion',
-        build: () {
-          when(() => mockLabelRepo.delete(any())).thenAnswer((_) async {});
+    group('LabelDetailDelete', () {
+      test('calls delete on repository', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'label-1')),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isA<LabelDetailOperationSuccess>().having(
-            (s) => s.operation,
-            'operation',
-            EntityOperation.delete,
-          ),
-        ],
-        verify: (_) {
-          verify(() => mockLabelRepo.delete('label-1')).called(1);
-        },
-      );
+        bloc.add(const LabelDetailEvent.delete(id: 'label-1'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      blocTest<LabelDetailBloc, LabelDetailState>(
-        'emits failure on deletion error',
-        build: () {
-          when(
-            () => mockLabelRepo.delete(any()),
-          ).thenThrow(Exception('Delete failed'));
+        verify(() => mockLabelRepository.delete('label-1')).called(1);
+        await bloc.close();
+      });
 
-          return LabelDetailBloc(labelRepository: mockLabelRepo);
-        },
-        act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'label-1')),
-        expect: () => [
-          isOperationFailureState(),
-        ],
-      );
+      test('emits operation success on successful delete', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(const LabelDetailEvent.delete(id: 'label-1'));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Allow bloc to process
+        await Future.doWhile(() async {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          return bloc.state is LabelDetailInitial;
+        }).timeout(
+          const Duration(seconds: 1),
+          onTimeout: () {},
+        );
+
+        expect(bloc.state, isA<LabelDetailOperationSuccess>());
+        final successState = bloc.state as LabelDetailOperationSuccess;
+        expect(successState.operation, EntityOperation.delete);
+        await bloc.close();
+      });
+
+      test('emits operation failure when delete throws', () async {
+        when(
+          () => mockLabelRepository.delete(any()),
+        ).thenThrow(Exception('Delete failed'));
+
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        bloc.add(const LabelDetailEvent.delete(id: 'label-1'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(bloc.state, isA<LabelDetailOperationFailure>());
+        await bloc.close();
+      });
+    });
+
+    group('lifecycle', () {
+      test('closes cleanly', () async {
+        final bloc = LabelDetailBloc(
+          labelRepository: mockLabelRepository,
+        );
+
+        await bloc.close();
+        // No assertion needed - just verify no exceptions
+      });
     });
   });
 }

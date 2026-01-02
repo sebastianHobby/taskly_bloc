@@ -1,6 +1,9 @@
 # Dart test configuration
 # https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md
 
+# Global safety net - tests should complete well before this
+timeout: 60s
+
 # Test tags for selective execution
 tags:
   # Unit tests - fast, isolated tests with mocks

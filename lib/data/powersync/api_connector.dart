@@ -6,16 +6,19 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/powersync/schema.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
+/// Note: 23505 (unique violation) is handled separately in _handle23505.
 final List<RegExp> fatalResponseCodes = [
   // Class 22 — Data Exception
   // Examples include data type mismatch.
   RegExp(r'^22...$'),
-  // Class 23 — Integrity Constraint Violation.
-  // Examples include NOT NULL, FOREIGN KEY and UNIQUE violations.
-  RegExp(r'^23...$'),
+  // Class 23 — Integrity Constraint Violation (except 23505 handled separately)
+  // 23502 = NOT NULL, 23503 = FOREIGN KEY, 23514 = CHECK
+  RegExp(r'^2350[234]$'),
+  RegExp(r'^23514$'),
   // INSUFFICIENT PRIVILEGE - typically a row-level security violation
   RegExp(r'^42501$'),
 ];
@@ -108,7 +111,12 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       // All operations successful.
       await transaction.complete();
     } on PostgrestException catch (e) {
-      if (e.code != null &&
+      if (e.code == '23505') {
+        // Unique constraint violation - handle based on table ID strategy
+        await _handle23505(rest, lastOp!, e);
+        // Mark as complete - either expected duplicate or logged conflict
+        await transaction.complete();
+      } else if (e.code != null &&
           fatalResponseCodes.any((re) => re.hasMatch(e.code!))) {
         /// Instead of blocking the queue with these errors,
         /// discard the (rest of the) transaction.
@@ -124,6 +132,108 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         rethrow;
       }
     }
+  }
+
+  /// Handle unique constraint violations (23505) based on ID strategy.
+  ///
+  /// For v5 (deterministic) tables:
+  /// - If ID exists: Expected duplicate, another device synced first → OK
+  /// - If ID doesn't exist: Natural key conflict with different ID → Bug
+  ///
+  /// For v4 (random) tables:
+  /// - Should never happen (UUID collision is astronomically unlikely)
+  /// - Log prominently but continue
+  Future<void> _handle23505(
+    PostgrestClient rest,
+    CrudEntry op,
+    PostgrestException e,
+  ) async {
+    final table = op.table;
+    final id = op.id;
+
+    if (IdGenerator.isDeterministic(table)) {
+      // v5 table - check if this exact ID already exists
+      try {
+        final existing = await rest
+            .from(table)
+            .select('id')
+            .eq('id', id)
+            .maybeSingle();
+
+        if (existing != null) {
+          // Expected: Same ID exists, another device already synced this row
+          talker.info(
+            '[powersync] Expected duplicate on $table/$id - already synced',
+          );
+        } else {
+          // Bug: Different ID has same natural key
+          // This means v5 inputs are inconsistent across devices
+          _logNaturalKeyConflict(table, op);
+        }
+      } catch (queryError) {
+        // If we can't query, log the original error
+        talker.warning(
+          '[powersync] Could not verify 23505 on $table/$id',
+          queryError,
+        );
+      }
+    } else {
+      // v4 table - this should essentially never happen
+      talker.warning(
+        '[powersync] UNEXPECTED 23505 on v4 table $table/$id!\n'
+        'UUID collision or constraint misconfiguration.\n'
+        'Error: ${e.message}',
+      );
+    }
+  }
+
+  /// Log detailed info for natural key conflicts (v5 bug detection).
+  void _logNaturalKeyConflict(String table, CrudEntry op) {
+    final naturalKeyInfo = _extractNaturalKeyInfo(table, op.opData);
+
+    talker.error(
+      '[powersync] V5 CONFLICT DETECTED!\n'
+      '  Table: $table\n'
+      '  Attempted ID: ${op.id}\n'
+      '  Natural key: $naturalKeyInfo\n'
+      '  Action: Row NOT inserted - existing row has same natural key '
+      'with different ID.\n'
+      '  This indicates inconsistent v5 inputs across devices.\n'
+      '  Check: case sensitivity, whitespace, userId source.',
+    );
+  }
+
+  /// Extract natural key fields for debugging based on table.
+  String _extractNaturalKeyInfo(String table, Map<String, dynamic>? data) {
+    if (data == null) return 'unknown';
+
+    return switch (table) {
+      'labels' => 'name="${data['name']}", type="${data['type']}"',
+      'trackers' => 'name="${data['name']}"',
+      'task_labels' =>
+        'taskId="${data['task_id']}", labelId="${data['label_id']}"',
+      'project_labels' =>
+        'projectId="${data['project_id']}", labelId="${data['label_id']}"',
+      'task_completion_history' =>
+        'taskId="${data['task_id']}", date="${data['occurrence_date']}"',
+      'project_completion_history' =>
+        'projectId="${data['project_id']}", date="${data['occurrence_date']}"',
+      'task_recurrence_exceptions' =>
+        'taskId="${data['task_id']}", date="${data['original_date']}"',
+      'project_recurrence_exceptions' =>
+        'projectId="${data['project_id']}", date="${data['original_date']}"',
+      'tracker_responses' =>
+        'entryId="${data['journal_entry_id']}", '
+            'trackerId="${data['tracker_id']}"',
+      'daily_tracker_responses' =>
+        'trackerId="${data['tracker_id']}", date="${data['response_date']}"',
+      'screen_definitions' => 'screenKey="${data['screen_key']}"',
+      'workflow_definitions' => 'workflowKey="${data['workflow_key']}"',
+      'analytics_snapshots' =>
+        'entityType="${data['entity_type']}", entityId="${data['entity_id']}",'
+            ' date="${data['snapshot_date']}"',
+      _ => data.toString(),
+    };
   }
 }
 

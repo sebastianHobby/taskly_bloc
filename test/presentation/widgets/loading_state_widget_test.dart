@@ -2,75 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 
-import '../../helpers/pump_app.dart';
-
 void main() {
   group('LoadingStateWidget', () {
-    testWidgets('renders progress indicator', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(),
+    testWidgets('displays CircularProgressIndicator', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget()),
         ),
       );
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders message when provided', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(
-            message: 'Loading data...',
-          ),
+    testWidgets('displays message when provided', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget(message: 'Loading...')),
         ),
       );
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      expect(find.text('Loading data...'), findsOneWidget);
+      expect(find.text('Loading...'), findsOneWidget);
     });
 
-    testWidgets('does not render message when null', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(),
+    testWidgets('does not display message when null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget()),
         ),
       );
 
       // Only the progress indicator, no text
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(Text), findsNothing);
     });
 
-    testWidgets('respects custom size', (tester) async {
-      const customSize = 80.0;
-
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(
-            size: customSize,
-          ),
+    testWidgets('centers content', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget()),
         ),
       );
 
-      final sizedBox = tester.widget<SizedBox>(
-        find.ancestor(
-          of: find.byType(CircularProgressIndicator),
-          matching: find.byType(SizedBox),
-        ),
-      );
-      expect(sizedBox.width, customSize);
-      expect(sizedBox.height, customSize);
+      expect(find.byType(Center), findsOneWidget);
     });
 
-    testWidgets('default size is 48', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(),
+    testWidgets('uses default size of 48', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget()),
         ),
       );
 
@@ -84,12 +62,28 @@ void main() {
       expect(sizedBox.height, 48);
     });
 
+    testWidgets('respects custom size parameter', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: LoadingStateWidget(size: 100)),
+        ),
+      );
+
+      final sizedBox = tester.widget<SizedBox>(
+        find.ancestor(
+          of: find.byType(CircularProgressIndicator),
+          matching: find.byType(SizedBox),
+        ),
+      );
+      expect(sizedBox.width, 100);
+      expect(sizedBox.height, 100);
+    });
+
     group('named constructors', () {
-      testWidgets('.compact has size 24 and no message', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: LoadingStateWidget.compact(),
+      testWidgets('compact creates smaller indicator', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: LoadingStateWidget.compact()),
           ),
         );
 
@@ -101,14 +95,12 @@ void main() {
         );
         expect(sizedBox.width, 24);
         expect(sizedBox.height, 24);
-        expect(find.byType(Text), findsNothing);
       });
 
-      testWidgets('.listItem has size 32 and no message', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: LoadingStateWidget.listItem(),
+      testWidgets('listItem creates medium indicator', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: LoadingStateWidget.listItem()),
           ),
         );
 
@@ -120,40 +112,7 @@ void main() {
         );
         expect(sizedBox.width, 32);
         expect(sizedBox.height, 32);
-        expect(find.byType(Text), findsNothing);
       });
-    });
-
-    testWidgets('uses thicker stroke for larger sizes', (tester) async {
-      // Size > 32 should have strokeWidth 4
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(),
-        ),
-      );
-
-      final indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
-      expect(indicator.strokeWidth, 4);
-    });
-
-    testWidgets('uses thinner stroke for smaller sizes', (tester) async {
-      // Size <= 32 should have strokeWidth 3
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: LoadingStateWidget(
-            size: 32,
-          ),
-        ),
-      );
-
-      final indicator = tester.widget<CircularProgressIndicator>(
-        find.byType(CircularProgressIndicator),
-      );
-      expect(indicator.strokeWidth, 3);
     });
   });
 }

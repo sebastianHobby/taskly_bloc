@@ -43,9 +43,8 @@ class ScreenOrderState {
       screens = const [],
       error = null;
 
-  const ScreenOrderState.ready({required List<ScreenDefinition> screens})
+  const ScreenOrderState.ready({required this.screens})
     : status = ScreenOrderStatus.ready,
-      screens = screens,
       error = null;
 
   const ScreenOrderState.failure(String message)
@@ -59,9 +58,10 @@ class ScreenOrderState {
 }
 
 class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
-  ScreenOrderBloc({required ScreenDefinitionsRepositoryContract screensRepository})
-    : _screensRepository = screensRepository,
-      super(const ScreenOrderState.loading()) {
+  ScreenOrderBloc({
+    required ScreenDefinitionsRepositoryContract screensRepository,
+  }) : _screensRepository = screensRepository,
+       super(const ScreenOrderState.loading()) {
     on<ScreenOrderStarted>(_onStarted);
     on<ScreenOrderScreensChanged>(_onScreensChanged);
     on<ScreenOrderReordered>(_onReordered);

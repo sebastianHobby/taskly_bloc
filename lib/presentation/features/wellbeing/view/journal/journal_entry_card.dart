@@ -9,7 +9,6 @@ import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/tracker_field_card.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/widgets/daily_tracker_section.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_mood_field.dart';
-import 'package:uuid/uuid.dart';
 
 /// Card widget displaying a journal entry with expandable edit mode.
 class JournalEntryCard extends StatefulWidget {
@@ -124,7 +123,7 @@ class _JournalEntryCardState extends State<JournalEntryCard> {
       final existing = _dailyResponsesMap[tracker.id];
       dailyResponses.add(
         DailyTrackerResponse(
-          id: existing?.id ?? const Uuid().v4(),
+          id: existing?.id ?? '', // Let repository generate v5 ID
           responseDate: widget.selectedDate,
           trackerId: tracker.id,
           value: value,

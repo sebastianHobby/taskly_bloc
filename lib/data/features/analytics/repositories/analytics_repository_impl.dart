@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
@@ -9,8 +10,9 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 
 class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
-  AnalyticsRepositoryImpl(this._database);
+  AnalyticsRepositoryImpl(this._database, this._idGenerator);
   final AppDatabase _database;
+  final IdGenerator _idGenerator;
 
   static const _unknownType = 'unknown';
 
@@ -51,11 +53,20 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
 
   @override
   Future<void> saveSnapshot(AnalyticsSnapshot snapshot) async {
+    // Use v5 deterministic ID for snapshots (entityType + entityId + date)
+    final snapshotId = snapshot.id.isEmpty
+        ? _idGenerator.analyticsSnapshotId(
+            entityType: snapshot.entityType,
+            entityId: snapshot.entityId ?? '',
+            snapshotDate: snapshot.snapshotDate,
+          )
+        : snapshot.id;
+
     await _database
         .into(_database.analyticsSnapshots)
         .insertOnConflictUpdate(
           AnalyticsSnapshotsCompanion(
-            id: Value(snapshot.id),
+            id: Value(snapshotId),
             entityType: Value(snapshot.entityType),
             entityId: Value(snapshot.entityId),
             snapshotDate: Value(snapshot.snapshotDate),
@@ -70,13 +81,24 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
       batch.insertAllOnConflictUpdate(
         _database.analyticsSnapshots,
         snapshots.map(
-          (snapshot) => AnalyticsSnapshotsCompanion(
-            id: Value(snapshot.id),
-            entityType: Value(snapshot.entityType),
-            entityId: Value(snapshot.entityId),
-            snapshotDate: Value(snapshot.snapshotDate),
-            metrics: Value(snapshot.metrics),
-          ),
+          (snapshot) {
+            // Use v5 deterministic ID for snapshots
+            final snapshotId = snapshot.id.isEmpty
+                ? _idGenerator.analyticsSnapshotId(
+                    entityType: snapshot.entityType,
+                    entityId: snapshot.entityId ?? '',
+                    snapshotDate: snapshot.snapshotDate,
+                  )
+                : snapshot.id;
+
+            return AnalyticsSnapshotsCompanion(
+              id: Value(snapshotId),
+              entityType: Value(snapshot.entityType),
+              entityId: Value(snapshot.entityId),
+              snapshotDate: Value(snapshot.snapshotDate),
+              metrics: Value(snapshot.metrics),
+            );
+          },
         ),
       );
     });
@@ -188,7 +210,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
         .into(_database.analyticsCorrelations)
         .insertOnConflictUpdate(
           AnalyticsCorrelationsCompanion(
-            id: Value(_generateId()),
+            id: Value(_idGenerator.analyticsCorrelationId()),
             correlationType: Value(inferredCorrelationType),
             sourceType: Value(sourceType),
             sourceId: Value(sourceId),
@@ -234,7 +256,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
         batch.insert(
           _database.analyticsCorrelations,
           AnalyticsCorrelationsCompanion(
-            id: Value(_generateId()),
+            id: Value(_idGenerator.analyticsCorrelationId()),
             correlationType: Value(inferredCorrelationType),
             sourceType: Value(sourceType),
             sourceId: Value(sourceId),
@@ -348,10 +370,6 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     return CorrelationStrength.negligible;
   }
 
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
-  }
-
   // === Insights ===
 
   @override
@@ -388,11 +406,16 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
 
   @override
   Future<void> saveInsight(AnalyticsInsight insight) async {
+    // Use v4 random ID for insights (unique findings)
+    final insightId = insight.id.isEmpty
+        ? _idGenerator.analyticsInsightId()
+        : insight.id;
+
     await _database
         .into(_database.analyticsInsights)
         .insertOnConflictUpdate(
           AnalyticsInsightsCompanion(
-            id: Value(insight.id),
+            id: Value(insightId),
             insightType: Value(insight.insightType.name),
             title: Value(insight.title),
             description: Value(insight.description),

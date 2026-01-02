@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 
 import '../mocks/feature_mocks.dart';
 import '../mocks/repository_mocks.dart';
+import 'test_helpers.dart' show kDefaultStreamTimeout;
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Async Test Helpers
@@ -15,10 +16,13 @@ import '../mocks/repository_mocks.dart';
 ///
 /// More reliable than `Future.delayed` for testing stream emissions.
 /// Returns the collected values.
+///
+/// Throws [TimeoutException] if stream doesn't emit [count] items
+/// within [timeout] duration.
 Future<List<T>> waitForStreamEmissions<T>(
   Stream<T> stream, {
   int count = 1,
-  Duration timeout = const Duration(seconds: 5),
+  Duration timeout = kDefaultStreamTimeout,
 }) async {
   final values = <T>[];
   final completer = Completer<List<T>>();
@@ -45,7 +49,12 @@ Future<List<T>> waitForStreamEmissions<T>(
   try {
     return await completer.future.timeout(
       timeout,
-      onTimeout: () => values,
+      onTimeout: () {
+        throw TimeoutException(
+          'Stream only emitted ${values.length} of $count expected items',
+          timeout,
+        );
+      },
     );
   } finally {
     await subscription.cancel();
@@ -58,12 +67,13 @@ Future<List<T>> waitForStreamEmissions<T>(
 Future<T?> waitForStreamMatch<T>(
   Stream<T> stream,
   bool Function(T) predicate, {
-  Duration timeout = const Duration(seconds: 5),
+  Duration timeout = kDefaultStreamTimeout,
 }) async {
   try {
     return await stream.firstWhere(predicate).timeout(timeout);
   } on TimeoutException {
     return null;
+    // ignore: avoid_catching_errors, Intentional - checking if stream closed
   } on StateError {
     return null;
   }
@@ -84,7 +94,7 @@ Future<T?> waitForStreamMatch<T>(
 Future<T> expectStreamEmits<T>(
   Stream<T> stream,
   Matcher matcher, {
-  Duration timeout = const Duration(seconds: 5),
+  Duration timeout = kDefaultStreamTimeout,
 }) async {
   final value = await stream.first.timeout(timeout);
   expect(value, matcher);
@@ -103,7 +113,7 @@ Future<T> expectStreamEmits<T>(
 Future<void> expectStreamEmitsInOrder<T>(
   Stream<T> stream,
   List<Matcher> matchers, {
-  Duration timeout = const Duration(seconds: 5),
+  Duration timeout = kDefaultStreamTimeout,
 }) async {
   final values = await waitForStreamEmissions(
     stream,
@@ -135,6 +145,7 @@ Future<void> expectStreamEmpty<T>(
     fail('Expected empty stream, but it emitted a value');
   } on TimeoutException {
     // Success - stream didn't emit
+    // ignore: avoid_catching_errors, Intentional - checking stream completion
   } on StateError {
     // Success - stream completed without emitting
   }

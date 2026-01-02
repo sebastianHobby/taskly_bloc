@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:rrule/rrule.dart';
 
 /// Evaluates when workflow screens should trigger based on their configuration
@@ -67,6 +68,7 @@ class TriggerEvaluator {
       return false;
     } catch (e) {
       // Invalid RRULE, don't trigger
+      talker.debug('TriggerEvaluator: Invalid RRULE "${trigger.rrule}"');
       return false;
     }
   }
@@ -91,6 +93,9 @@ class TriggerEvaluator {
 
       return instances.isNotEmpty ? instances.first : null;
     } catch (e) {
+      talker.debug(
+        'TriggerEvaluator: Invalid RRULE for next trigger "${trigger.rrule}"',
+      );
       return null;
     }
   }

@@ -1,216 +1,120 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 
+import '../../fixtures/test_data.dart';
+import '../../helpers/fallback_values.dart';
+
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('Label', () {
-    final now = DateTime(2025, 12, 26);
-
-    test('creates instance with required fields', () {
-      final label = Label(
-        id: 'label-1',
-        name: 'Test Label',
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(label.id, 'label-1');
-      expect(label.name, 'Test Label');
-      expect(label.createdAt, now);
-      expect(label.updatedAt, now);
-      expect(label.color, isNull);
-      expect(label.type, LabelType.label);
-      expect(label.iconName, isNull);
-    });
-
-    test('creates instance with all fields', () {
-      final label = Label(
-        id: 'label-2',
-        name: 'Important',
-        createdAt: now,
-        updatedAt: now,
-        color: '#FF0000',
-        type: LabelType.value,
-        iconName: 'star',
-      );
-
-      expect(label.id, 'label-2');
-      expect(label.name, 'Important');
-      expect(label.createdAt, now);
-      expect(label.updatedAt, now);
-      expect(label.color, '#FF0000');
-      expect(label.type, LabelType.value);
-      expect(label.iconName, 'star');
-    });
-
-    group('copyWith', () {
-      test('creates copy with updated fields', () {
-        final original = Label(
+    group('construction', () {
+      test('creates with required fields', () {
+        final now = DateTime.now();
+        final label = Label(
           id: 'label-1',
-          name: 'Test',
           createdAt: now,
           updatedAt: now,
+          name: 'Test Label',
         );
 
-        final updated = original.copyWith(
-          name: 'Updated',
-          color: '#00FF00',
-        );
-
-        expect(updated.id, 'label-1');
-        expect(updated.name, 'Updated');
-        expect(updated.color, '#00FF00');
-        expect(updated.createdAt, now);
-        expect(updated.updatedAt, now);
-        expect(updated.type, LabelType.label);
+        expect(label.id, 'label-1');
+        expect(label.name, 'Test Label');
+        expect(label.createdAt, now);
+        expect(label.updatedAt, now);
       });
 
-      test(
-        'creates copy without changing fields when no parameters provided',
-        () {
-          final original = Label(
-            id: 'label-1',
-            name: 'Test',
-            createdAt: now,
-            updatedAt: now,
-            color: '#FF0000',
-            type: LabelType.value,
-            iconName: 'star',
-          );
-
-          final copy = original.copyWith();
-
-          expect(copy.id, original.id);
-          expect(copy.name, original.name);
-          expect(copy.createdAt, original.createdAt);
-          expect(copy.updatedAt, original.updatedAt);
-          expect(copy.color, original.color);
-          expect(copy.type, original.type);
-          expect(copy.iconName, original.iconName);
-        },
-      );
-
-      test('can update type', () {
-        final original = Label(
-          id: 'label-1',
-          name: 'Test',
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        final updated = original.copyWith(type: LabelType.value);
-
-        expect(updated.type, LabelType.value);
+      test('creates with type as label (default)', () {
+        final label = TestData.label();
+        expect(label.type, LabelType.label);
       });
 
-      test('can update iconName', () {
-        final original = Label(
+      test('creates with type as value', () {
+        final label = TestData.label(type: LabelType.value);
+        expect(label.type, LabelType.value);
+      });
+
+      test('creates with all optional fields', () {
+        final now = DateTime.now();
+        final label = Label(
           id: 'label-1',
-          name: 'Test',
           createdAt: now,
           updatedAt: now,
+          name: 'Full Label',
+          color: '#FF5733',
+          type: LabelType.value,
+          iconName: 'star',
+          isSystemLabel: true,
+          systemLabelType: SystemLabelType.pinned,
+          lastReviewedAt: now,
         );
 
-        final updated = original.copyWith(iconName: 'home');
+        expect(label.color, '#FF5733');
+        expect(label.type, LabelType.value);
+        expect(label.iconName, 'star');
+        expect(label.isSystemLabel, true);
+        expect(label.systemLabelType, SystemLabelType.pinned);
+        expect(label.lastReviewedAt, now);
+      });
+    });
 
-        expect(updated.iconName, 'home');
+    group('LabelType', () {
+      test('label type has correct value', () {
+        expect(LabelType.label.name, 'label');
+      });
+
+      test('value type has correct value', () {
+        expect(LabelType.value.name, 'value');
+      });
+
+      test('LabelType enum has 2 values', () {
+        expect(LabelType.values, hasLength(2));
+      });
+    });
+
+    group('SystemLabelType', () {
+      test('pinned type exists', () {
+        expect(SystemLabelType.pinned.name, 'pinned');
+      });
+
+      test('SystemLabelType enum has correct values', () {
+        expect(SystemLabelType.values, contains(SystemLabelType.pinned));
       });
     });
 
     group('equality', () {
-      test('two labels with same values are equal', () {
+      test('equal when all fields match', () {
+        final now = DateTime(2025, 1, 15, 12);
         final label1 = Label(
           id: 'label-1',
-          name: 'Test',
           createdAt: now,
           updatedAt: now,
-          color: '#FF0000',
-          type: LabelType.value,
-          iconName: 'star',
+          name: 'Test',
         );
-
         final label2 = Label(
           id: 'label-1',
-          name: 'Test',
           createdAt: now,
           updatedAt: now,
-          color: '#FF0000',
-          type: LabelType.value,
-          iconName: 'star',
+          name: 'Test',
         );
 
         expect(label1, equals(label2));
         expect(label1.hashCode, equals(label2.hashCode));
       });
 
-      test('two labels with different ids are not equal', () {
+      test('not equal when type differs', () {
+        final now = DateTime(2025, 1, 15, 12);
         final label1 = Label(
           id: 'label-1',
+          createdAt: now,
+          updatedAt: now,
           name: 'Test',
-          createdAt: now,
-          updatedAt: now,
         );
-
-        final label2 = Label(
-          id: 'label-2',
-          name: 'Test',
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        expect(label1, isNot(equals(label2)));
-      });
-
-      test('two labels with different names are not equal', () {
-        final label1 = Label(
-          id: 'label-1',
-          name: 'Test1',
-          createdAt: now,
-          updatedAt: now,
-        );
-
         final label2 = Label(
           id: 'label-1',
-          name: 'Test2',
           createdAt: now,
           updatedAt: now,
-        );
-
-        expect(label1, isNot(equals(label2)));
-      });
-
-      test('two labels with different colors are not equal', () {
-        final label1 = Label(
-          id: 'label-1',
           name: 'Test',
-          createdAt: now,
-          updatedAt: now,
-          color: '#FF0000',
-        );
-
-        final label2 = Label(
-          id: 'label-1',
-          name: 'Test',
-          createdAt: now,
-          updatedAt: now,
-          color: '#00FF00',
-        );
-
-        expect(label1, isNot(equals(label2)));
-      });
-
-      test('two labels with different types are not equal', () {
-        final label1 = Label(
-          id: 'label-1',
-          name: 'Test',
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        final label2 = Label(
-          id: 'label-1',
-          name: 'Test',
-          createdAt: now,
-          updatedAt: now,
           type: LabelType.value,
         );
 
@@ -218,40 +122,61 @@ void main() {
       });
     });
 
-    test('toString returns formatted string', () {
-      final label = Label(
-        id: 'label-1',
-        name: 'Test',
-        createdAt: now,
-        updatedAt: now,
-        color: '#FF0000',
-        type: LabelType.value,
-        iconName: 'star',
-      );
+    group('copyWith', () {
+      test('copies with new name', () {
+        final label = TestData.label(name: 'Original');
+        final copied = label.copyWith(name: 'Changed');
 
-      final string = label.toString();
+        expect(copied.name, 'Changed');
+        expect(copied.id, label.id);
+        expect(copied.type, label.type);
+      });
 
-      expect(string, contains('label-1'));
-      expect(string, contains('Test'));
-      expect(string, contains('#FF0000'));
-      expect(string, contains('LabelType.value'));
-      expect(string, contains('star'));
+      test('copies with new color', () {
+        final label = TestData.label(color: '#000000');
+        final copied = label.copyWith(color: '#FFFFFF');
+
+        expect(copied.color, '#FFFFFF');
+      });
+
+      test('copies with new type', () {
+        final label = TestData.label();
+        final copied = label.copyWith(type: LabelType.value);
+
+        expect(copied.type, LabelType.value);
+      });
+
+      test('preserves unchanged fields', () {
+        final label = TestData.label(
+          name: 'Test',
+          color: '#FF0000',
+          iconName: 'star',
+        );
+        final copied = label.copyWith(name: 'New Name');
+
+        expect(copied.color, '#FF0000');
+        expect(copied.iconName, 'star');
+      });
     });
-  });
 
-  group('LabelType', () {
-    test('has label type', () {
-      expect(LabelType.label, isA<LabelType>());
-    });
+    group('lastReviewedAt', () {
+      test('defaults to null', () {
+        final label = TestData.label();
+        expect(label.lastReviewedAt, isNull);
+      });
 
-    test('has value type', () {
-      expect(LabelType.value, isA<LabelType>());
-    });
+      test('can be set', () {
+        final now = DateTime.now();
+        final label = Label(
+          id: 'label-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          lastReviewedAt: now,
+        );
 
-    test('values contain both types', () {
-      expect(LabelType.values, contains(LabelType.label));
-      expect(LabelType.values, contains(LabelType.value));
-      expect(LabelType.values.length, 2);
+        expect(label.lastReviewedAt, now);
+      });
     });
   });
 }

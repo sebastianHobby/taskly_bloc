@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 /// A compact chip showing a date or indicator.
 ///
@@ -79,6 +80,7 @@ class DateChip extends StatelessWidget {
         label = _getRruleLabel(l10n, recurrenceRule);
       } catch (e) {
         // If parsing fails, keep default label
+        talker.debug('DateChip: Failed to parse RRULE "$rrule"');
         label = l10n.repeatsLabel;
       }
     }

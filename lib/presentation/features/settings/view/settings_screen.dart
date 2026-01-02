@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -55,6 +57,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _buildSection(
                   title: 'Advanced',
                   children: [
+                    _buildScreenManagementItem(),
+                    _buildWorkflowManagementItem(),
                     _buildResetButton(),
                   ],
                 ),
@@ -211,6 +215,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           }
         },
       ),
+    );
+  }
+
+  Widget _buildScreenManagementItem() {
+    return ListTile(
+      leading: const Icon(Icons.dashboard_customize),
+      title: const Text('Custom Screens'),
+      subtitle: const Text('Create and manage custom screens'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        context.pushNamed(AppRouteName.screenManagement);
+      },
+    );
+  }
+
+  Widget _buildWorkflowManagementItem() {
+    return ListTile(
+      leading: const Icon(Icons.loop),
+      title: const Text('Review Workflows'),
+      subtitle: const Text('Create and manage review workflows'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        context.pushNamed(AppRouteName.workflows);
+      },
     );
   }
 

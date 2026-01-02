@@ -1,17 +1,21 @@
 import 'package:drift/drift.dart';
-import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 
 /// Implementation of [OccurrenceWriteHelperContract].
 ///
 /// Handles all write operations for occurrence-specific mutations.
-/// Generates UUIDs internally for new records.
+/// Uses IdGenerator for deterministic v5 IDs.
 class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
-  OccurrenceWriteHelper({required this.driftDb});
+  OccurrenceWriteHelper({
+    required this.driftDb,
+    required this.idGenerator,
+  });
 
   final AppDatabase driftDb;
+  final IdGenerator idGenerator;
 
   // ===========================================================================
   // TASK OCCURRENCE WRITES
@@ -32,11 +36,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         ? _normalizeDate(normalizedOriginalDate)
         : null;
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.taskCompletionId(
+      taskId: taskId,
+      occurrenceDate: normalizedOccurrenceDate,
+    );
+
     await driftDb
         .into(driftDb.taskCompletionHistoryTable)
         .insert(
           TaskCompletionHistoryTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             taskId: taskId,
             occurrenceDate: Value(normalizedOccurrenceDate),
             originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
@@ -72,11 +83,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     required DateTime originalDate,
   }) async {
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.taskRecurrenceExceptionId(
+      taskId: taskId,
+      originalDate: _normalizeDate(originalDate),
+    );
+
     await driftDb
         .into(driftDb.taskRecurrenceExceptionsTable)
         .insert(
           TaskRecurrenceExceptionsTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             taskId: taskId,
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.skip,
@@ -94,11 +112,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? newDeadline,
   }) async {
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.taskRecurrenceExceptionId(
+      taskId: taskId,
+      originalDate: _normalizeDate(originalDate),
+    );
+
     await driftDb
         .into(driftDb.taskRecurrenceExceptionsTable)
         .insert(
           TaskRecurrenceExceptionsTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             taskId: taskId,
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.reschedule,
@@ -184,11 +209,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
         ? _normalizeDate(normalizedOriginalDate)
         : null;
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.projectCompletionId(
+      projectId: projectId,
+      occurrenceDate: normalizedOccurrenceDate,
+    );
+
     await driftDb
         .into(driftDb.projectCompletionHistoryTable)
         .insert(
           ProjectCompletionHistoryTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             projectId: projectId,
             occurrenceDate: Value(normalizedOccurrenceDate),
             originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
@@ -224,11 +256,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     required DateTime originalDate,
   }) async {
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.projectRecurrenceExceptionId(
+      projectId: projectId,
+      originalDate: _normalizeDate(originalDate),
+    );
+
     await driftDb
         .into(driftDb.projectRecurrenceExceptionsTable)
         .insert(
           ProjectRecurrenceExceptionsTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             projectId: projectId,
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.skip,
@@ -246,11 +285,18 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? newDeadline,
   }) async {
     final now = DateTime.now();
+
+    // Generate deterministic v5 ID
+    final id = idGenerator.projectRecurrenceExceptionId(
+      projectId: projectId,
+      originalDate: _normalizeDate(originalDate),
+    );
+
     await driftDb
         .into(driftDb.projectRecurrenceExceptionsTable)
         .insert(
           ProjectRecurrenceExceptionsTableCompanion.insert(
-            id: Value(uuid.v4()),
+            id: id,
             projectId: projectId,
             originalDate: _normalizeDate(originalDate),
             exceptionType: ExceptionType.reschedule,

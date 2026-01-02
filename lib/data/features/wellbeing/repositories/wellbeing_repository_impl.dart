@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
@@ -11,8 +12,9 @@ import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
-  WellbeingRepositoryImpl(this._database);
+  WellbeingRepositoryImpl(this._database, this._idGenerator);
   final AppDatabase _database;
+  final IdGenerator _idGenerator;
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({
@@ -85,7 +87,8 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
 
   @override
   Future<void> saveJournalEntry(JournalEntry entry) async {
-    final entryId = entry.id.isEmpty ? _generateId() : entry.id;
+    // Use v4 random ID for journal entries (user content)
+    final entryId = entry.id.isEmpty ? _idGenerator.journalEntryId() : entry.id;
 
     await _database
         .into(_database.journalEntries)
@@ -151,11 +154,19 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
       response.responseDate.day,
     );
 
+    // Use v5 deterministic ID for daily tracker responses
+    final responseId = response.id.isEmpty
+        ? _idGenerator.dailyTrackerResponseId(
+            trackerId: response.trackerId,
+            responseDate: dateOnly,
+          )
+        : response.id;
+
     await _database
         .into(_database.dailyTrackerResponses)
         .insertOnConflictUpdate(
           DailyTrackerResponsesCompanion(
-            id: Value(response.id),
+            id: Value(responseId),
             responseDate: Value(dateOnly),
             trackerId: Value(response.trackerId),
             responseValue: Value(jsonEncode(response.value.toJson())),
@@ -200,11 +211,16 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
 
   @override
   Future<void> saveTracker(Tracker tracker) async {
+    // Use v5 deterministic ID for trackers (userId + name is natural key)
+    final trackerId = tracker.id.isEmpty
+        ? _idGenerator.trackerId(name: tracker.name)
+        : tracker.id;
+
     await _database
         .into(_database.trackers)
         .insertOnConflictUpdate(
           TrackersCompanion(
-            id: Value(tracker.id.isEmpty ? _generateId() : tracker.id),
+            id: Value(trackerId),
             name: Value(tracker.name),
             description: Value(tracker.description),
             entryScope: Value(tracker.entryScope.name),
@@ -445,11 +461,19 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
     }
 
     for (final response in responses) {
+      // Use v5 deterministic ID for tracker responses
+      final responseId = response.id.isEmpty
+          ? _idGenerator.trackerResponseId(
+              journalEntryId: journalEntryId,
+              trackerId: response.trackerId,
+            )
+          : response.id;
+
       await _database
           .into(_database.trackerResponses)
           .insertOnConflictUpdate(
             TrackerResponsesCompanion(
-              id: Value(response.id),
+              id: Value(responseId),
               journalEntryId: Value(journalEntryId),
               trackerId: Value(response.trackerId),
               responseValue: Value(jsonEncode(response.value.toJson())),
@@ -518,9 +542,5 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
       },
       yesNo: (_) => <String, dynamic>{},
     );
-  }
-
-  String _generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
   }
 }

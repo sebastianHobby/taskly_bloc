@@ -4,8 +4,8 @@ import 'package:taskly_bloc/domain/queries/project_query.dart';
 abstract class ProjectRepositoryContract {
   Stream<List<Project>> watchAll({bool withRelated = false});
   Future<List<Project>> getAll({bool withRelated = false});
-  Stream<Project?> watch(String id, {bool withRelated = false});
-  Future<Project?> get(String id, {bool withRelated = false});
+  Stream<Project?> watchById(String id, {bool withRelated = false});
+  Future<Project?> getById(String id, {bool withRelated = false});
 
   /// Watch projects matching a [query].
   ///
@@ -43,6 +43,7 @@ abstract class ProjectRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
+    int? priority,
   });
 
   Future<void> update({
@@ -55,9 +56,17 @@ abstract class ProjectRepositoryContract {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     List<String>? labelIds,
+    int? priority,
   });
 
   Future<void> delete(String id);
+
+  /// Update the lastReviewedAt timestamp for a project.
+  /// Used by workflow completion to track when entities were last reviewed.
+  Future<void> updateLastReviewedAt({
+    required String id,
+    required DateTime reviewedAt,
+  });
 
   // =========================================================================
   // OCCURRENCE METHODS

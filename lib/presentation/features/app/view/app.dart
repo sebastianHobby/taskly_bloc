@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/theme/app_theme.dart';
-import 'package:taskly_bloc/data/services/user_data_seeder.dart';
+import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -48,7 +48,7 @@ class App extends StatelessWidget {
               try {
                 final bloc = AuthBloc(
                   authRepository: getIt<AuthRepositoryContract>(),
-                  userDataSeeder: getIt<UserDataSeeder>(),
+                  userDataSeeder: getIt<UserDataSeederContract>(),
                 )..add(const AuthSubscriptionRequested());
                 talker.debug('[app] AuthBloc created successfully');
                 return bloc;

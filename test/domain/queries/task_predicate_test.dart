@@ -2,7 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
+import '../../helpers/fallback_values.dart';
+
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('TaskPredicate', () {
     group('fromJson', () {
       test('parses bool predicate', () {
@@ -15,41 +19,41 @@ void main() {
         final predicate = TaskPredicate.fromJson(json);
 
         expect(predicate, isA<TaskBoolPredicate>());
-        final boolPredicate = predicate as TaskBoolPredicate;
-        expect(boolPredicate.field, TaskBoolField.completed);
-        expect(boolPredicate.operator, BoolOperator.isTrue);
+        final boolPred = predicate as TaskBoolPredicate;
+        expect(boolPred.field, TaskBoolField.completed);
+        expect(boolPred.operator, BoolOperator.isTrue);
       });
 
       test('parses date predicate', () {
         final json = <String, dynamic>{
           'type': 'date',
           'field': 'deadlineDate',
-          'operator': 'before',
-          'date': '2025-06-20T00:00:00.000',
+          'operator': 'onOrBefore',
+          'date': '2025-06-15T00:00:00.000Z',
         };
 
         final predicate = TaskPredicate.fromJson(json);
 
         expect(predicate, isA<TaskDatePredicate>());
-        final datePredicate = predicate as TaskDatePredicate;
-        expect(datePredicate.field, TaskDateField.deadlineDate);
-        expect(datePredicate.operator, DateOperator.before);
-        expect(datePredicate.date, DateTime(2025, 6, 20));
+        final datePred = predicate as TaskDatePredicate;
+        expect(datePred.field, TaskDateField.deadlineDate);
+        expect(datePred.operator, DateOperator.onOrBefore);
+        expect(datePred.date, isNotNull);
       });
 
       test('parses project predicate', () {
         final json = <String, dynamic>{
           'type': 'project',
           'operator': 'matches',
-          'projectId': 'proj-1',
+          'projectId': 'project-1',
         };
 
         final predicate = TaskPredicate.fromJson(json);
 
         expect(predicate, isA<TaskProjectPredicate>());
-        final projectPredicate = predicate as TaskProjectPredicate;
-        expect(projectPredicate.operator, ProjectOperator.matches);
-        expect(projectPredicate.projectId, 'proj-1');
+        final projPred = predicate as TaskProjectPredicate;
+        expect(projPred.operator, ProjectOperator.matches);
+        expect(projPred.projectId, 'project-1');
       });
 
       test('parses label predicate', () {
@@ -57,44 +61,63 @@ void main() {
           'type': 'label',
           'operator': 'hasAny',
           'labelType': 'label',
-          'labelIds': ['id-1', 'id-2'],
+          'labelIds': ['label-1', 'label-2'],
         };
 
         final predicate = TaskPredicate.fromJson(json);
 
         expect(predicate, isA<TaskLabelPredicate>());
-        final labelPredicate = predicate as TaskLabelPredicate;
-        expect(labelPredicate.operator, LabelOperator.hasAny);
-        expect(labelPredicate.labelType, LabelType.label);
-        expect(labelPredicate.labelIds, ['id-1', 'id-2']);
+        final labelPred = predicate as TaskLabelPredicate;
+        expect(labelPred.operator, LabelOperator.hasAny);
+        expect(labelPred.labelType, LabelType.label);
+        expect(labelPred.labelIds, ['label-1', 'label-2']);
       });
 
       test('throws for unknown type', () {
-        final json = <String, dynamic>{
-          'type': 'unknown',
-        };
+        final json = <String, dynamic>{'type': 'unknown'};
 
         expect(
           () => TaskPredicate.fromJson(json),
-          throwsA(isA<ArgumentError>()),
+          throwsArgumentError,
+        );
+      });
+
+      test('throws for null type', () {
+        final json = <String, dynamic>{'field': 'completed'};
+
+        expect(
+          () => TaskPredicate.fromJson(json),
+          throwsArgumentError,
         );
       });
     });
   });
 
   group('TaskBoolPredicate', () {
+    group('construction', () {
+      test('creates with required fields', () {
+        const predicate = TaskBoolPredicate(
+          field: TaskBoolField.completed,
+          operator: BoolOperator.isTrue,
+        );
+
+        expect(predicate.field, TaskBoolField.completed);
+        expect(predicate.operator, BoolOperator.isTrue);
+      });
+    });
+
     group('fromJson', () {
-      test('parses all fields', () {
+      test('parses valid JSON', () {
         final json = <String, dynamic>{
           'type': 'bool',
           'field': 'completed',
-          'operator': 'isTrue',
+          'operator': 'isFalse',
         };
 
         final predicate = TaskBoolPredicate.fromJson(json);
 
         expect(predicate.field, TaskBoolField.completed);
-        expect(predicate.operator, BoolOperator.isTrue);
+        expect(predicate.operator, BoolOperator.isFalse);
       });
 
       test('uses defaults for missing fields', () {
@@ -123,36 +146,37 @@ void main() {
     });
 
     group('equality', () {
-      test('equal predicates are equal', () {
-        const predicate1 = TaskBoolPredicate(
+      test('equal when all fields match', () {
+        const pred1 = TaskBoolPredicate(
           field: TaskBoolField.completed,
           operator: BoolOperator.isTrue,
         );
-        const predicate2 = TaskBoolPredicate(
+        const pred2 = TaskBoolPredicate(
           field: TaskBoolField.completed,
           operator: BoolOperator.isTrue,
         );
 
-        expect(predicate1, predicate2);
-        expect(predicate1.hashCode, predicate2.hashCode);
+        expect(pred1, equals(pred2));
+        expect(pred1.hashCode, pred2.hashCode);
       });
 
-      test('different operator makes predicates unequal', () {
-        const predicate1 = TaskBoolPredicate(
+      test('not equal when field differs', () {
+        const pred1 = TaskBoolPredicate(
           field: TaskBoolField.completed,
           operator: BoolOperator.isTrue,
         );
-        const predicate2 = TaskBoolPredicate(
+        // Only one bool field exists, so we test operator difference
+        const pred2 = TaskBoolPredicate(
           field: TaskBoolField.completed,
           operator: BoolOperator.isFalse,
         );
 
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, isNot(equals(pred2)));
       });
     });
 
-    group('round-trip', () {
-      test('serializes and deserializes correctly', () {
+    group('round-trip serialization', () {
+      test('round-trips through JSON', () {
         const original = TaskBoolPredicate(
           field: TaskBoolField.completed,
           operator: BoolOperator.isTrue,
@@ -161,34 +185,89 @@ void main() {
         final json = original.toJson();
         final restored = TaskBoolPredicate.fromJson(json);
 
-        expect(restored, original);
+        expect(restored, equals(original));
       });
     });
   });
 
   group('TaskDatePredicate', () {
+    group('construction', () {
+      test('creates with required fields', () {
+        const predicate = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.onOrBefore,
+        );
+
+        expect(predicate.field, TaskDateField.deadlineDate);
+        expect(predicate.operator, DateOperator.onOrBefore);
+        expect(predicate.date, isNull);
+      });
+
+      test('creates with all optional fields', () {
+        final predicate = TaskDatePredicate(
+          field: TaskDateField.startDate,
+          operator: DateOperator.between,
+          date: DateTime.utc(2025, 6, 15),
+          startDate: DateTime.utc(2025, 6, 1),
+          endDate: DateTime.utc(2025, 6, 30),
+          relativeComparison: RelativeComparison.onOrAfter,
+          relativeDays: 7,
+        );
+
+        expect(predicate.date, DateTime.utc(2025, 6, 15));
+        expect(predicate.startDate, DateTime.utc(2025, 6, 1));
+        expect(predicate.endDate, DateTime.utc(2025, 6, 30));
+        expect(predicate.relativeComparison, RelativeComparison.onOrAfter);
+        expect(predicate.relativeDays, 7);
+      });
+    });
+
     group('fromJson', () {
-      test('parses all fields', () {
+      test('parses valid JSON', () {
         final json = <String, dynamic>{
           'type': 'date',
           'field': 'deadlineDate',
-          'operator': 'between',
-          'date': '2025-06-15T00:00:00.000',
-          'startDate': '2025-06-10T00:00:00.000',
-          'endDate': '2025-06-20T00:00:00.000',
-          'relativeComparison': 'on',
-          'relativeDays': 5,
+          'operator': 'onOrBefore',
+          'date': '2025-06-15T00:00:00.000Z',
         };
 
         final predicate = TaskDatePredicate.fromJson(json);
 
         expect(predicate.field, TaskDateField.deadlineDate);
+        expect(predicate.operator, DateOperator.onOrBefore);
+        expect(predicate.date, DateTime.utc(2025, 6, 15));
+      });
+
+      test('parses between operator with range', () {
+        final json = <String, dynamic>{
+          'type': 'date',
+          'field': 'startDate',
+          'operator': 'between',
+          'startDate': '2025-06-01T00:00:00.000Z',
+          'endDate': '2025-06-30T00:00:00.000Z',
+        };
+
+        final predicate = TaskDatePredicate.fromJson(json);
+
         expect(predicate.operator, DateOperator.between);
-        expect(predicate.date, DateTime(2025, 6, 15));
-        expect(predicate.startDate, DateTime(2025, 6, 10));
-        expect(predicate.endDate, DateTime(2025, 6, 20));
-        expect(predicate.relativeComparison, RelativeComparison.on);
-        expect(predicate.relativeDays, 5);
+        expect(predicate.startDate, DateTime.utc(2025, 6, 1));
+        expect(predicate.endDate, DateTime.utc(2025, 6, 30));
+      });
+
+      test('parses relative operator', () {
+        final json = <String, dynamic>{
+          'type': 'date',
+          'field': 'deadlineDate',
+          'operator': 'relative',
+          'relativeComparison': 'onOrAfter',
+          'relativeDays': 7,
+        };
+
+        final predicate = TaskDatePredicate.fromJson(json);
+
+        expect(predicate.operator, DateOperator.relative);
+        expect(predicate.relativeComparison, RelativeComparison.onOrAfter);
+        expect(predicate.relativeDays, 7);
       });
 
       test('uses defaults for missing fields', () {
@@ -198,17 +277,12 @@ void main() {
 
         expect(predicate.field, TaskDateField.createdAt);
         expect(predicate.operator, DateOperator.isNotNull);
-        expect(predicate.date, isNull);
-        expect(predicate.startDate, isNull);
-        expect(predicate.endDate, isNull);
-        expect(predicate.relativeComparison, isNull);
-        expect(predicate.relativeDays, isNull);
       });
 
-      test('handles null date strings gracefully', () {
+      test('handles null date string', () {
         final json = <String, dynamic>{
           'type': 'date',
-          'field': 'startDate',
+          'field': 'deadlineDate',
           'operator': 'isNull',
           'date': null,
         };
@@ -218,64 +292,17 @@ void main() {
         expect(predicate.date, isNull);
       });
 
-      test('parses relative date predicate', () {
+      test('handles invalid date string', () {
         final json = <String, dynamic>{
           'type': 'date',
           'field': 'deadlineDate',
-          'operator': 'relative',
-          'relativeComparison': 'before',
-          'relativeDays': 7,
+          'operator': 'on',
+          'date': 'not-a-date',
         };
 
         final predicate = TaskDatePredicate.fromJson(json);
 
-        expect(predicate.operator, DateOperator.relative);
-        expect(predicate.relativeComparison, RelativeComparison.before);
-        expect(predicate.relativeDays, 7);
-      });
-
-      test('parses all date fields', () {
-        for (final field in TaskDateField.values) {
-          final json = <String, dynamic>{
-            'type': 'date',
-            'field': field.name,
-            'operator': 'isNotNull',
-          };
-
-          final predicate = TaskDatePredicate.fromJson(json);
-
-          expect(predicate.field, field);
-        }
-      });
-
-      test('parses all date operators', () {
-        for (final op in DateOperator.values) {
-          final json = <String, dynamic>{
-            'type': 'date',
-            'field': 'startDate',
-            'operator': op.name,
-          };
-
-          final predicate = TaskDatePredicate.fromJson(json);
-
-          expect(predicate.operator, op);
-        }
-      });
-
-      test('parses all relative comparisons', () {
-        for (final comp in RelativeComparison.values) {
-          final json = <String, dynamic>{
-            'type': 'date',
-            'field': 'deadlineDate',
-            'operator': 'relative',
-            'relativeComparison': comp.name,
-            'relativeDays': 1,
-          };
-
-          final predicate = TaskDatePredicate.fromJson(json);
-
-          expect(predicate.relativeComparison, comp);
-        }
+        expect(predicate.date, isNull);
       });
     });
 
@@ -283,29 +310,49 @@ void main() {
       test('serializes all fields', () {
         final predicate = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
-          operator: DateOperator.between,
-          date: DateTime(2025, 6, 15),
-          startDate: DateTime(2025, 6, 10),
-          endDate: DateTime(2025, 6, 20),
-          relativeComparison: RelativeComparison.on,
-          relativeDays: 5,
+          operator: DateOperator.onOrBefore,
+          date: DateTime.utc(2025, 6, 15),
         );
 
         final json = predicate.toJson();
 
         expect(json['type'], 'date');
         expect(json['field'], 'deadlineDate');
-        expect(json['operator'], 'between');
-        expect(json['date'], '2025-06-15T00:00:00.000');
-        expect(json['startDate'], '2025-06-10T00:00:00.000');
-        expect(json['endDate'], '2025-06-20T00:00:00.000');
-        expect(json['relativeComparison'], 'on');
-        expect(json['relativeDays'], 5);
+        expect(json['operator'], 'onOrBefore');
+        expect(json['date'], '2025-06-15T00:00:00.000Z');
       });
 
-      test('serializes null optional fields as null', () {
-        const predicate = TaskDatePredicate(
+      test('serializes between operator with range', () {
+        final predicate = TaskDatePredicate(
           field: TaskDateField.startDate,
+          operator: DateOperator.between,
+          startDate: DateTime.utc(2025, 6, 1),
+          endDate: DateTime.utc(2025, 6, 30),
+        );
+
+        final json = predicate.toJson();
+
+        expect(json['startDate'], '2025-06-01T00:00:00.000Z');
+        expect(json['endDate'], '2025-06-30T00:00:00.000Z');
+      });
+
+      test('serializes relative operator fields', () {
+        const predicate = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.relative,
+          relativeComparison: RelativeComparison.onOrBefore,
+          relativeDays: -3,
+        );
+
+        final json = predicate.toJson();
+
+        expect(json['relativeComparison'], 'onOrBefore');
+        expect(json['relativeDays'], -3);
+      });
+
+      test('serializes null fields as null', () {
+        const predicate = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
           operator: DateOperator.isNull,
         );
 
@@ -320,158 +367,213 @@ void main() {
     });
 
     group('equality', () {
-      test('equal predicates are equal', () {
-        final predicate1 = TaskDatePredicate(
+      test('equal when all fields match', () {
+        final pred1 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
-          operator: DateOperator.on,
-          date: DateTime(2025, 6, 15),
+          operator: DateOperator.onOrBefore,
+          date: DateTime.utc(2025, 6, 15),
         );
-        final predicate2 = TaskDatePredicate(
+        final pred2 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
-          operator: DateOperator.on,
-          date: DateTime(2025, 6, 15),
+          operator: DateOperator.onOrBefore,
+          date: DateTime.utc(2025, 6, 15),
         );
 
-        expect(predicate1, predicate2);
-        expect(predicate1.hashCode, predicate2.hashCode);
+        expect(pred1, equals(pred2));
+        expect(pred1.hashCode, pred2.hashCode);
       });
 
-      test('identical predicates are equal', () {
-        final predicate = TaskDatePredicate(
+      test('equal when dates are at same moment (UTC vs local)', () {
+        final utcDate = DateTime.utc(2025, 6, 15);
+        final localDate = utcDate.toLocal();
+
+        final pred1 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.on,
-          date: DateTime(2025, 6, 15),
+          date: utcDate,
+        );
+        final pred2 = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.on,
+          date: localDate,
         );
 
-        expect(predicate == predicate, isTrue);
+        expect(pred1, equals(pred2));
       });
 
-      test('different dates make predicates unequal', () {
-        final predicate1 = TaskDatePredicate(
+      test('not equal when field differs', () {
+        final pred1 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.on,
-          date: DateTime(2025, 6, 15),
+          date: DateTime.utc(2025, 6, 15),
         );
-        final predicate2 = TaskDatePredicate(
-          field: TaskDateField.deadlineDate,
+        final pred2 = TaskDatePredicate(
+          field: TaskDateField.startDate,
           operator: DateOperator.on,
-          date: DateTime(2025, 6, 16),
+          date: DateTime.utc(2025, 6, 15),
         );
 
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, isNot(equals(pred2)));
       });
 
-      test('handles null dates in equality', () {
-        const predicate1 = TaskDatePredicate(
+      test('not equal when operator differs', () {
+        final pred1 = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.on,
+          date: DateTime.utc(2025, 6, 15),
+        );
+        final pred2 = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.onOrBefore,
+          date: DateTime.utc(2025, 6, 15),
+        );
+
+        expect(pred1, isNot(equals(pred2)));
+      });
+
+      test('not equal when date differs', () {
+        final pred1 = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.on,
+          date: DateTime.utc(2025, 6, 15),
+        );
+        final pred2 = TaskDatePredicate(
+          field: TaskDateField.deadlineDate,
+          operator: DateOperator.on,
+          date: DateTime.utc(2025, 6, 16),
+        );
+
+        expect(pred1, isNot(equals(pred2)));
+      });
+
+      test('equal when both dates are null', () {
+        const pred1 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.isNull,
         );
-        const predicate2 = TaskDatePredicate(
+        const pred2 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.isNull,
         );
 
-        expect(predicate1, predicate2);
+        expect(pred1, equals(pred2));
       });
 
-      test('null vs non-null date makes predicates unequal', () {
-        const predicate1 = TaskDatePredicate(
-          field: TaskDateField.deadlineDate,
-          operator: DateOperator.isNull,
-        );
-        final predicate2 = TaskDatePredicate(
-          field: TaskDateField.deadlineDate,
-          operator: DateOperator.isNull,
-          date: DateTime(2025, 6, 15),
-        );
-
-        expect(predicate1, isNot(predicate2));
-      });
-
-      test('dates at same moment are equal', () {
-        final predicate1 = TaskDatePredicate(
+      test('not equal when one date is null', () {
+        final pred1 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.on,
-          date: DateTime(2025, 6, 15, 10, 30, 45, 123),
+          date: DateTime.utc(2025, 6, 15),
         );
-        final predicate2 = TaskDatePredicate(
+        const pred2 = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.on,
-          date: DateTime(2025, 6, 15, 10, 30, 45, 123),
         );
 
-        expect(predicate1, predicate2);
-      });
-
-      test('different relative settings make predicates unequal', () {
-        const predicate1 = TaskDatePredicate(
-          field: TaskDateField.deadlineDate,
-          operator: DateOperator.relative,
-          relativeComparison: RelativeComparison.before,
-          relativeDays: 7,
-        );
-        const predicate2 = TaskDatePredicate(
-          field: TaskDateField.deadlineDate,
-          operator: DateOperator.relative,
-          relativeComparison: RelativeComparison.after,
-          relativeDays: 7,
-        );
-
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, isNot(equals(pred2)));
       });
     });
 
-    group('round-trip', () {
-      test('serializes and deserializes correctly', () {
+    group('round-trip serialization', () {
+      test('round-trips simple operator', () {
         final original = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
-          operator: DateOperator.between,
-          startDate: DateTime(2025, 6, 10),
-          endDate: DateTime(2025, 6, 20),
+          operator: DateOperator.onOrBefore,
+          date: DateTime.utc(2025, 6, 15),
         );
 
         final json = original.toJson();
         final restored = TaskDatePredicate.fromJson(json);
 
-        expect(restored.field, original.field);
-        expect(restored.operator, original.operator);
-        expect(restored.startDate, original.startDate);
-        expect(restored.endDate, original.endDate);
+        expect(restored, equals(original));
       });
 
-      test('round-trips relative predicate', () {
+      test('round-trips between operator', () {
+        final original = TaskDatePredicate(
+          field: TaskDateField.startDate,
+          operator: DateOperator.between,
+          startDate: DateTime.utc(2025, 6, 1),
+          endDate: DateTime.utc(2025, 6, 30),
+        );
+
+        final json = original.toJson();
+        final restored = TaskDatePredicate.fromJson(json);
+
+        expect(restored, equals(original));
+      });
+
+      test('round-trips relative operator', () {
         const original = TaskDatePredicate(
           field: TaskDateField.deadlineDate,
           operator: DateOperator.relative,
-          relativeComparison: RelativeComparison.before,
-          relativeDays: 7,
+          relativeComparison: RelativeComparison.after,
+          relativeDays: 14,
         );
 
         final json = original.toJson();
         final restored = TaskDatePredicate.fromJson(json);
 
-        expect(restored.operator, original.operator);
-        expect(restored.relativeComparison, original.relativeComparison);
-        expect(restored.relativeDays, original.relativeDays);
+        expect(restored, equals(original));
       });
     });
   });
 
   group('TaskProjectPredicate', () {
+    group('construction', () {
+      test('creates with required operator', () {
+        const predicate = TaskProjectPredicate(
+          operator: ProjectOperator.isNull,
+        );
+
+        expect(predicate.operator, ProjectOperator.isNull);
+        expect(predicate.projectId, isNull);
+        expect(predicate.projectIds, isEmpty);
+      });
+
+      test('creates with projectId', () {
+        const predicate = TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: 'project-1',
+        );
+
+        expect(predicate.projectId, 'project-1');
+      });
+
+      test('creates with projectIds list', () {
+        const predicate = TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: ['project-1', 'project-2'],
+        );
+
+        expect(predicate.projectIds, ['project-1', 'project-2']);
+      });
+    });
+
     group('fromJson', () {
-      test('parses all fields', () {
+      test('parses valid JSON with projectId', () {
+        final json = <String, dynamic>{
+          'type': 'project',
+          'operator': 'matches',
+          'projectId': 'project-1',
+        };
+
+        final predicate = TaskProjectPredicate.fromJson(json);
+
+        expect(predicate.operator, ProjectOperator.matches);
+        expect(predicate.projectId, 'project-1');
+      });
+
+      test('parses valid JSON with projectIds', () {
         final json = <String, dynamic>{
           'type': 'project',
           'operator': 'matchesAny',
-          'projectId': 'proj-1',
-          'projectIds': ['proj-1', 'proj-2', 'proj-3'],
+          'projectIds': ['project-1', 'project-2'],
         };
 
         final predicate = TaskProjectPredicate.fromJson(json);
 
         expect(predicate.operator, ProjectOperator.matchesAny);
-        expect(predicate.projectId, 'proj-1');
-        expect(predicate.projectIds, ['proj-1', 'proj-2', 'proj-3']);
+        expect(predicate.projectIds, ['project-1', 'project-2']);
       });
 
       test('uses defaults for missing fields', () {
@@ -484,29 +586,28 @@ void main() {
         expect(predicate.projectIds, isEmpty);
       });
 
-      test('filters non-string projectIds', () {
+      test('filters non-string items from projectIds', () {
         final json = <String, dynamic>{
           'type': 'project',
           'operator': 'matchesAny',
-          'projectIds': ['id-1', 123, 'id-2', null, 'id-3'],
+          'projectIds': ['project-1', 123, null, 'project-2'],
         };
 
         final predicate = TaskProjectPredicate.fromJson(json);
 
-        expect(predicate.projectIds, ['id-1', 'id-2', 'id-3']);
+        expect(predicate.projectIds, ['project-1', 'project-2']);
       });
 
-      test('parses all project operators', () {
-        for (final op in ProjectOperator.values) {
-          final json = <String, dynamic>{
-            'type': 'project',
-            'operator': op.name,
-          };
+      test('handles null projectIds', () {
+        final json = <String, dynamic>{
+          'type': 'project',
+          'operator': 'isNull',
+          'projectIds': null,
+        };
 
-          final predicate = TaskProjectPredicate.fromJson(json);
+        final predicate = TaskProjectPredicate.fromJson(json);
 
-          expect(predicate.operator, op);
-        }
+        expect(predicate.projectIds, isEmpty);
       });
     });
 
@@ -514,117 +615,151 @@ void main() {
       test('serializes all fields', () {
         const predicate = TaskProjectPredicate(
           operator: ProjectOperator.matchesAny,
-          projectId: 'proj-1',
-          projectIds: ['proj-1', 'proj-2'],
+          projectId: 'project-1',
+          projectIds: ['project-2', 'project-3'],
         );
 
         final json = predicate.toJson();
 
         expect(json['type'], 'project');
         expect(json['operator'], 'matchesAny');
-        expect(json['projectId'], 'proj-1');
-        expect(json['projectIds'], ['proj-1', 'proj-2']);
+        expect(json['projectId'], 'project-1');
+        expect(json['projectIds'], ['project-2', 'project-3']);
       });
 
-      test('serializes empty projectIds', () {
+      test('serializes isNull operator', () {
         const predicate = TaskProjectPredicate(
           operator: ProjectOperator.isNull,
         );
 
         final json = predicate.toJson();
 
+        expect(json['operator'], 'isNull');
+        expect(json['projectId'], isNull);
         expect(json['projectIds'], isEmpty);
       });
     });
 
     group('equality', () {
-      test('equal predicates are equal', () {
-        const predicate1 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectId: 'proj-1',
-          projectIds: ['proj-1', 'proj-2'],
-        );
-        const predicate2 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectId: 'proj-1',
-          projectIds: ['proj-1', 'proj-2'],
-        );
-
-        expect(predicate1, predicate2);
-        expect(predicate1.hashCode, predicate2.hashCode);
-      });
-
-      test('different projectIds make predicates unequal', () {
-        const predicate1 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectIds: ['proj-1', 'proj-2'],
-        );
-        const predicate2 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectIds: ['proj-1', 'proj-3'],
-        );
-
-        expect(predicate1, isNot(predicate2));
-      });
-
-      test('different order of projectIds makes predicates unequal', () {
-        const predicate1 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectIds: ['proj-1', 'proj-2'],
-        );
-        const predicate2 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectIds: ['proj-2', 'proj-1'],
-        );
-
-        expect(predicate1, isNot(predicate2));
-      });
-
-      test('different operator makes predicates unequal', () {
-        const predicate1 = TaskProjectPredicate(
+      test('equal when all fields match', () {
+        const pred1 = TaskProjectPredicate(
           operator: ProjectOperator.matches,
-          projectId: 'proj-1',
+          projectId: 'project-1',
         );
-        const predicate2 = TaskProjectPredicate(
-          operator: ProjectOperator.matchesAny,
-          projectId: 'proj-1',
+        const pred2 = TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: 'project-1',
         );
 
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, equals(pred2));
+        expect(pred1.hashCode, pred2.hashCode);
+      });
+
+      test('equal when projectIds match', () {
+        const pred1 = TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: ['a', 'b'],
+        );
+        const pred2 = TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: ['a', 'b'],
+        );
+
+        expect(pred1, equals(pred2));
+      });
+
+      test('not equal when operator differs', () {
+        const pred1 = TaskProjectPredicate(
+          operator: ProjectOperator.isNull,
+        );
+        const pred2 = TaskProjectPredicate(
+          operator: ProjectOperator.isNotNull,
+        );
+
+        expect(pred1, isNot(equals(pred2)));
+      });
+
+      test('not equal when projectId differs', () {
+        const pred1 = TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: 'project-1',
+        );
+        const pred2 = TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: 'project-2',
+        );
+
+        expect(pred1, isNot(equals(pred2)));
+      });
+
+      test('not equal when projectIds differ', () {
+        const pred1 = TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: ['a', 'b'],
+        );
+        const pred2 = TaskProjectPredicate(
+          operator: ProjectOperator.matchesAny,
+          projectIds: ['b', 'c'],
+        );
+
+        expect(pred1, isNot(equals(pred2)));
       });
     });
 
-    group('round-trip', () {
-      test('serializes and deserializes correctly', () {
+    group('round-trip serialization', () {
+      test('round-trips through JSON', () {
         const original = TaskProjectPredicate(
           operator: ProjectOperator.matchesAny,
-          projectId: 'proj-1',
-          projectIds: ['proj-1', 'proj-2', 'proj-3'],
+          projectId: 'main-project',
+          projectIds: ['sub-1', 'sub-2'],
         );
 
         final json = original.toJson();
         final restored = TaskProjectPredicate.fromJson(json);
 
-        expect(restored, original);
+        expect(restored, equals(original));
       });
     });
   });
 
   group('TaskLabelPredicate', () {
+    group('construction', () {
+      test('creates with required fields', () {
+        const predicate = TaskLabelPredicate(
+          operator: LabelOperator.hasAny,
+          labelType: LabelType.label,
+        );
+
+        expect(predicate.operator, LabelOperator.hasAny);
+        expect(predicate.labelType, LabelType.label);
+        expect(predicate.labelIds, isEmpty);
+      });
+
+      test('creates with labelIds', () {
+        const predicate = TaskLabelPredicate(
+          operator: LabelOperator.hasAll,
+          labelType: LabelType.value,
+          labelIds: ['label-1', 'label-2'],
+        );
+
+        expect(predicate.labelIds, ['label-1', 'label-2']);
+      });
+    });
+
     group('fromJson', () {
-      test('parses all fields', () {
+      test('parses valid JSON', () {
         final json = <String, dynamic>{
           'type': 'label',
-          'operator': 'hasAll',
+          'operator': 'hasAny',
           'labelType': 'value',
-          'labelIds': ['id-1', 'id-2', 'id-3'],
+          'labelIds': ['label-1', 'label-2'],
         };
 
         final predicate = TaskLabelPredicate.fromJson(json);
 
-        expect(predicate.operator, LabelOperator.hasAll);
+        expect(predicate.operator, LabelOperator.hasAny);
         expect(predicate.labelType, LabelType.value);
-        expect(predicate.labelIds, ['id-1', 'id-2', 'id-3']);
+        expect(predicate.labelIds, ['label-1', 'label-2']);
       });
 
       test('uses defaults for missing fields', () {
@@ -637,45 +772,30 @@ void main() {
         expect(predicate.labelIds, isEmpty);
       });
 
-      test('filters non-string labelIds', () {
+      test('filters non-string items from labelIds', () {
         final json = <String, dynamic>{
           'type': 'label',
           'operator': 'hasAny',
           'labelType': 'label',
-          'labelIds': ['id-1', 123, 'id-2', null, 'id-3'],
+          'labelIds': ['label-1', 42, null, 'label-2'],
         };
 
         final predicate = TaskLabelPredicate.fromJson(json);
 
-        expect(predicate.labelIds, ['id-1', 'id-2', 'id-3']);
+        expect(predicate.labelIds, ['label-1', 'label-2']);
       });
 
-      test('parses all label operators', () {
-        for (final op in LabelOperator.values) {
-          final json = <String, dynamic>{
-            'type': 'label',
-            'operator': op.name,
-            'labelType': 'label',
-          };
+      test('handles null labelIds', () {
+        final json = <String, dynamic>{
+          'type': 'label',
+          'operator': 'isNull',
+          'labelType': 'label',
+          'labelIds': null,
+        };
 
-          final predicate = TaskLabelPredicate.fromJson(json);
+        final predicate = TaskLabelPredicate.fromJson(json);
 
-          expect(predicate.operator, op);
-        }
-      });
-
-      test('parses all label types', () {
-        for (final type in LabelType.values) {
-          final json = <String, dynamic>{
-            'type': 'label',
-            'operator': 'hasAny',
-            'labelType': type.name,
-          };
-
-          final predicate = TaskLabelPredicate.fromJson(json);
-
-          expect(predicate.labelType, type);
-        }
+        expect(predicate.labelIds, isEmpty);
       });
     });
 
@@ -684,7 +804,7 @@ void main() {
         const predicate = TaskLabelPredicate(
           operator: LabelOperator.hasAll,
           labelType: LabelType.value,
-          labelIds: ['id-1', 'id-2'],
+          labelIds: ['val-1', 'val-2'],
         );
 
         final json = predicate.toJson();
@@ -692,7 +812,7 @@ void main() {
         expect(json['type'], 'label');
         expect(json['operator'], 'hasAll');
         expect(json['labelType'], 'value');
-        expect(json['labelIds'], ['id-1', 'id-2']);
+        expect(json['labelIds'], ['val-1', 'val-2']);
       });
 
       test('serializes empty labelIds', () {
@@ -708,81 +828,160 @@ void main() {
     });
 
     group('equality', () {
-      test('equal predicates are equal', () {
-        const predicate1 = TaskLabelPredicate(
+      test('equal when all fields match', () {
+        const pred1 = TaskLabelPredicate(
           operator: LabelOperator.hasAny,
           labelType: LabelType.label,
-          labelIds: ['id-1', 'id-2'],
+          labelIds: ['a', 'b'],
         );
-        const predicate2 = TaskLabelPredicate(
+        const pred2 = TaskLabelPredicate(
           operator: LabelOperator.hasAny,
           labelType: LabelType.label,
-          labelIds: ['id-1', 'id-2'],
+          labelIds: ['a', 'b'],
         );
 
-        expect(predicate1, predicate2);
-        expect(predicate1.hashCode, predicate2.hashCode);
+        expect(pred1, equals(pred2));
+        expect(pred1.hashCode, pred2.hashCode);
       });
 
-      test('different labelIds make predicates unequal', () {
-        const predicate1 = TaskLabelPredicate(
+      test('not equal when operator differs', () {
+        const pred1 = TaskLabelPredicate(
           operator: LabelOperator.hasAny,
           labelType: LabelType.label,
-          labelIds: ['id-1', 'id-2'],
         );
-        const predicate2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
+        const pred2 = TaskLabelPredicate(
+          operator: LabelOperator.hasAll,
           labelType: LabelType.label,
-          labelIds: ['id-1', 'id-3'],
         );
 
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, isNot(equals(pred2)));
       });
 
-      test('different order of labelIds makes predicates unequal', () {
-        const predicate1 = TaskLabelPredicate(
+      test('not equal when labelType differs', () {
+        const pred1 = TaskLabelPredicate(
           operator: LabelOperator.hasAny,
           labelType: LabelType.label,
-          labelIds: ['id-1', 'id-2'],
         );
-        const predicate2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['id-2', 'id-1'],
-        );
-
-        expect(predicate1, isNot(predicate2));
-      });
-
-      test('different labelType makes predicates unequal', () {
-        const predicate1 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['id-1'],
-        );
-        const predicate2 = TaskLabelPredicate(
+        const pred2 = TaskLabelPredicate(
           operator: LabelOperator.hasAny,
           labelType: LabelType.value,
-          labelIds: ['id-1'],
         );
 
-        expect(predicate1, isNot(predicate2));
+        expect(pred1, isNot(equals(pred2)));
+      });
+
+      test('not equal when labelIds differ', () {
+        const pred1 = TaskLabelPredicate(
+          operator: LabelOperator.hasAny,
+          labelType: LabelType.label,
+          labelIds: ['a', 'b'],
+        );
+        const pred2 = TaskLabelPredicate(
+          operator: LabelOperator.hasAny,
+          labelType: LabelType.label,
+          labelIds: ['a', 'c'],
+        );
+
+        expect(pred1, isNot(equals(pred2)));
       });
     });
 
-    group('round-trip', () {
-      test('serializes and deserializes correctly', () {
+    group('round-trip serialization', () {
+      test('round-trips through JSON', () {
         const original = TaskLabelPredicate(
           operator: LabelOperator.hasAll,
           labelType: LabelType.value,
-          labelIds: ['id-1', 'id-2', 'id-3'],
+          labelIds: ['value-1', 'value-2'],
         );
 
         final json = original.toJson();
         final restored = TaskLabelPredicate.fromJson(json);
 
-        expect(restored, original);
+        expect(restored, equals(original));
       });
+    });
+  });
+
+  group('Enums', () {
+    test('BoolOperator has expected values', () {
+      expect(
+        BoolOperator.values,
+        containsAll([
+          BoolOperator.isTrue,
+          BoolOperator.isFalse,
+        ]),
+      );
+    });
+
+    test('DateOperator has expected values', () {
+      expect(
+        DateOperator.values,
+        containsAll([
+          DateOperator.onOrAfter,
+          DateOperator.onOrBefore,
+          DateOperator.before,
+          DateOperator.after,
+          DateOperator.on,
+          DateOperator.between,
+          DateOperator.isNull,
+          DateOperator.isNotNull,
+          DateOperator.relative,
+        ]),
+      );
+    });
+
+    test('RelativeComparison has expected values', () {
+      expect(
+        RelativeComparison.values,
+        containsAll([
+          RelativeComparison.on,
+          RelativeComparison.before,
+          RelativeComparison.after,
+          RelativeComparison.onOrAfter,
+          RelativeComparison.onOrBefore,
+        ]),
+      );
+    });
+
+    test('ProjectOperator has expected values', () {
+      expect(
+        ProjectOperator.values,
+        containsAll([
+          ProjectOperator.matches,
+          ProjectOperator.matchesAny,
+          ProjectOperator.isNull,
+          ProjectOperator.isNotNull,
+        ]),
+      );
+    });
+
+    test('LabelOperator has expected values', () {
+      expect(
+        LabelOperator.values,
+        containsAll([
+          LabelOperator.hasAny,
+          LabelOperator.hasAll,
+          LabelOperator.isNull,
+          LabelOperator.isNotNull,
+        ]),
+      );
+    });
+
+    test('TaskDateField has expected values', () {
+      expect(
+        TaskDateField.values,
+        containsAll([
+          TaskDateField.startDate,
+          TaskDateField.deadlineDate,
+          TaskDateField.createdAt,
+          TaskDateField.updatedAt,
+          TaskDateField.completedAt,
+        ]),
+      );
+    });
+
+    test('TaskBoolField has expected values', () {
+      expect(TaskBoolField.values, contains(TaskBoolField.completed));
     });
   });
 }

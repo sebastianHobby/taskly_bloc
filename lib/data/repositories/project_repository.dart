@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:powersync/powersync.dart' show uuid;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/mappers/project_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
@@ -23,11 +23,13 @@ class ProjectRepository implements ProjectRepositoryContract {
     required this.driftDb,
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
+    required this.idGenerator,
   }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
 
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
+  final IdGenerator idGenerator;
   final ProjectPredicateMapper _predicateMapper;
 
   // Shared streams using RxDart for efficient multi-subscriber support
@@ -304,7 +306,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Stream<Project?> watch(String id, {bool withRelated = false}) {
+  Stream<Project?> watchById(String id, {bool withRelated = false}) {
     if (!withRelated) {
       return (driftDb.select(driftDb.projectTable)
             ..where((p) => p.id.equals(id)))
@@ -337,7 +339,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<Project?> get(String id, {bool withRelated = false}) async {
+  Future<Project?> getById(String id, {bool withRelated = false}) async {
     if (!withRelated) {
       final data = await _getProjectById(id);
       return data == null ? null : projectFromTable(data);
@@ -390,10 +392,11 @@ class ProjectRepository implements ProjectRepositoryContract {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     List<String>? labelIds,
+    int? priority,
   }) async {
     talker.debug('[ProjectRepository] create: name="$name"');
     final now = DateTime.now();
-    final id = uuid.v4();
+    final id = idGenerator.projectId();
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
@@ -411,6 +414,7 @@ class ProjectRepository implements ProjectRepositoryContract {
           deadlineDate: Value(normalizedDeadlineDate),
           repeatIcalRrule: Value(repeatIcalRrule ?? ''),
           repeatFromCompletion: Value(repeatFromCompletion),
+          priority: Value(priority),
           createdAt: Value(now),
           updatedAt: Value(now),
         ),
@@ -418,10 +422,16 @@ class ProjectRepository implements ProjectRepositoryContract {
 
       if (uniqueLabelIds != null) {
         for (final labelId in uniqueLabelIds) {
+          // Generate deterministic v5 ID for junction
+          final junctionId = idGenerator.projectLabelId(
+            projectId: id,
+            labelId: labelId,
+          );
           await driftDb
               .into(driftDb.projectLabelsTable)
               .insert(
                 ProjectLabelsTableCompanion(
+                  id: Value(junctionId),
                   projectId: Value(id),
                   labelId: Value(labelId),
                 ),
@@ -443,6 +453,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     List<String>? labelIds,
+    int? priority,
   }) async {
     talker.debug('[ProjectRepository] update: id=$id, name="$name"');
     final existing = await _getProjectById(id);
@@ -475,6 +486,7 @@ class ProjectRepository implements ProjectRepositoryContract {
           repeatFromCompletion: repeatFromCompletion == null
               ? Value.absent()
               : Value(repeatFromCompletion),
+          priority: Value(priority),
           // Preserve seriesEnded - only modified via dedicated methods
           seriesEnded: Value.absent(),
           updatedAt: Value(now),
@@ -516,6 +528,30 @@ class ProjectRepository implements ProjectRepositoryContract {
   Future<void> delete(String id) async {
     talker.debug('[ProjectRepository] delete: id=$id');
     await _deleteProject(ProjectTableCompanion(id: Value(id)));
+  }
+
+  @override
+  Future<void> updateLastReviewedAt({
+    required String id,
+    required DateTime reviewedAt,
+  }) async {
+    talker.debug('[ProjectRepository] updateLastReviewedAt: id=$id');
+    final existing = await _getProjectById(id);
+    if (existing == null) {
+      talker.warning(
+        '[ProjectRepository] updateLastReviewedAt failed: project not found id=$id',
+      );
+      throw RepositoryNotFoundException('No project found to update');
+    }
+
+    await (driftDb.update(
+      driftDb.projectTable,
+    )..where((p) => p.id.equals(id))).write(
+      ProjectTableCompanion(
+        lastReviewedAt: Value(reviewedAt),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   // ===========================================================================

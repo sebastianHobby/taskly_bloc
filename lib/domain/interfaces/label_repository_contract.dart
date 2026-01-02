@@ -1,12 +1,12 @@
 import 'package:taskly_bloc/domain/domain.dart';
 
 abstract class LabelRepositoryContract {
-  Stream<List<Label>> watchAll({bool withRelated = false});
-  Future<List<Label>> getAll({bool withRelated = false});
-  Stream<List<Label>> watchByType(LabelType type, {bool withRelated = false});
-  Future<List<Label>> getAllByType(LabelType type, {bool withRelated = false});
-  Stream<Label?> watch(String id, {bool withRelated = false});
-  Future<Label?> get(String id, {bool withRelated = false});
+  Stream<List<Label>> watchAll();
+  Future<List<Label>> getAll();
+  Stream<List<Label>> watchByType(LabelType type);
+  Future<List<Label>> getAllByType(LabelType type);
+  Stream<Label?> watchById(String id);
+  Future<Label?> getById(String id);
 
   /// Get system label by type
   Future<Label?> getSystemLabel(SystemLabelType type);
@@ -28,6 +28,13 @@ abstract class LabelRepositoryContract {
     String? iconName,
   });
   Future<void> delete(String id);
+
+  /// Update the lastReviewedAt timestamp for a label/value.
+  /// Used by workflow completion to track when entities were last reviewed.
+  Future<void> updateLastReviewedAt({
+    required String id,
+    required DateTime reviewedAt,
+  });
 
   /// Add a label to a task
   Future<void> addLabelToTask({

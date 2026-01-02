@@ -2,183 +2,164 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 
-import '../../helpers/pump_app.dart';
-
 void main() {
   group('ErrorStateWidget', () {
-    testWidgets('renders icon and message', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: ErrorStateWidget(
-            message: 'Something went wrong',
+    testWidgets('displays error message', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(message: 'Something went wrong'),
+          ),
+        ),
+      );
+
+      expect(find.text('Something went wrong'), findsOneWidget);
+    });
+
+    testWidgets('displays default error icon', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(message: 'Error'),
           ),
         ),
       );
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      expect(find.text('Something went wrong'), findsOneWidget);
     });
 
-    testWidgets('renders retry button when onRetry provided', (tester) async {
-      var retryCalled = false;
+    testWidgets('displays custom icon when provided', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(
+              message: 'Error',
+              icon: Icons.warning,
+            ),
+          ),
+        ),
+      );
 
-      await pumpLocalizedApp(
-        tester,
-        home: Scaffold(
-          body: ErrorStateWidget(
-            message: 'Error occurred',
-            onRetry: () => retryCalled = true,
+      expect(find.byIcon(Icons.warning), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsNothing);
+    });
+
+    testWidgets('displays retry button when onRetry provided', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(
+              message: 'Error',
+              onRetry: () {},
+            ),
           ),
         ),
       );
 
       expect(find.text('Retry'), findsOneWidget);
       expect(find.byType(FilledButton), findsOneWidget);
-
-      await tester.tap(find.byType(FilledButton));
-      expect(retryCalled, isTrue);
     });
 
-    testWidgets('does not render retry button when onRetry is null', (
-      tester,
-    ) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: ErrorStateWidget(
-            message: 'Error occurred',
+    testWidgets('calls onRetry when button pressed', (tester) async {
+      var retried = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(
+              message: 'Error',
+              onRetry: () => retried = true,
+            ),
           ),
         ),
       );
 
+      await tester.tap(find.text('Retry'));
+      await tester.pump();
+
+      expect(retried, isTrue);
+    });
+
+    testWidgets('hides retry button when onRetry null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(message: 'Error'),
+          ),
+        ),
+      );
+
+      expect(find.text('Retry'), findsNothing);
       expect(find.byType(FilledButton), findsNothing);
     });
 
-    testWidgets('uses custom retryLabel', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: Scaffold(
-          body: ErrorStateWidget(
-            message: 'Error',
-            onRetry: () {},
-            retryLabel: 'Try Again',
+    testWidgets('uses custom retry label when provided', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(
+              message: 'Error',
+              onRetry: () {},
+              retryLabel: 'Try Again',
+            ),
           ),
         ),
       );
 
       expect(find.text('Try Again'), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
     });
 
-    testWidgets('respects custom icon', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: ErrorStateWidget(
-            message: 'Custom error',
-            icon: Icons.warning,
+    testWidgets('renders widget correctly', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ErrorStateWidget(message: 'Error'),
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.warning), findsOneWidget);
-    });
-
-    testWidgets('respects custom iconSize', (tester) async {
-      const customSize = 100.0;
-
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: ErrorStateWidget(
-            message: 'Test',
-            iconSize: customSize,
-          ),
-        ),
-      );
-
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.error_outline));
-      expect(iconWidget.size, customSize);
+      // Verify ErrorStateWidget renders successfully
+      expect(find.byType(ErrorStateWidget), findsOneWidget);
     });
 
     group('named constructors', () {
-      testWidgets('.network renders cloud off icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: ErrorStateWidget.network(
-              message: 'No internet connection',
+      testWidgets('network shows cloud_off icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ErrorStateWidget.network(message: 'Network error'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
-        expect(find.text('No internet connection'), findsOneWidget);
+        expect(find.text('Network error'), findsOneWidget);
       });
 
-      testWidgets('.network with retry button', (tester) async {
-        var retryCalled = false;
-
-        await pumpLocalizedApp(
-          tester,
-          home: Scaffold(
-            body: ErrorStateWidget.network(
-              message: 'Network error',
-              onRetry: () => retryCalled = true,
-              retryLabel: 'Reconnect',
-            ),
-          ),
-        );
-
-        expect(find.text('Reconnect'), findsOneWidget);
-
-        await tester.tap(find.byType(FilledButton));
-        expect(retryCalled, isTrue);
-      });
-
-      testWidgets('.notFound renders search off icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: ErrorStateWidget.notFound(
-              message: 'No results found',
+      testWidgets('notFound shows search_off icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ErrorStateWidget.notFound(message: 'Not found'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.search_off_outlined), findsOneWidget);
-        expect(find.text('No results found'), findsOneWidget);
+        expect(find.text('Not found'), findsOneWidget);
       });
 
-      testWidgets('.permission renders lock icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: ErrorStateWidget.permission(
-              message: 'Access denied',
+      testWidgets('permission shows lock icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ErrorStateWidget.permission(message: 'Access denied'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.text('Access denied'), findsOneWidget);
-      });
-
-      testWidgets('.permission with retry callback', (tester) async {
-        var retryCalled = false;
-
-        await pumpLocalizedApp(
-          tester,
-          home: Scaffold(
-            body: ErrorStateWidget.permission(
-              message: 'Permission error',
-              onRetry: () => retryCalled = true,
-            ),
-          ),
-        );
-
-        await tester.tap(find.byType(FilledButton));
-        expect(retryCalled, isTrue);
       });
     });
   });

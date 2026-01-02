@@ -102,7 +102,7 @@ class RruleL10nEs extends RruleL10n {
     DaysOfWeekFrequency? frequency = DaysOfWeekFrequency.monthly,
     InOnVariant variant = InOnVariant.simple,
   }) {
-    assert(variant != InOnVariant.also);
+    assert(variant != InOnVariant.also, 'InOnVariant.also not supported');
 
     final frequencyString = frequency == DaysOfWeekFrequency.monthly
         ? 'mes'
@@ -168,7 +168,7 @@ class RruleL10nEs extends RruleL10n {
 
   @override
   String ordinal(int number) {
-    assert(number != 0);
+    assert(number != 0, 'Ordinal cannot be zero');
     if (number == -1) return 'último';
 
     final n = number.abs();

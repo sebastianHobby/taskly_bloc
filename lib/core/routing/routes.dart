@@ -21,6 +21,13 @@ abstract class AppRouteName {
   static const wellbeing = 'wellbeing';
   static const journal = 'journal';
   static const trackerManagement = 'trackerManagement';
+
+  // Workflow management
+  static const workflows = 'workflows';
+  static const workflowRun = 'workflowRun';
+
+  // Screen management
+  static const screenManagement = 'screenManagement';
 }
 
 abstract class AppRoutePath {
@@ -45,4 +52,11 @@ abstract class AppRoutePath {
   static const wellbeing = '/wellbeing';
   static const journal = '/wellbeing/journal';
   static const trackerManagement = '/wellbeing/trackers';
+
+  // Workflow management
+  static const workflows = '/workflows';
+  static const workflowRun = '/workflows/run';
+
+  // Screen management
+  static const screenManagement = '/screens/manage';
 }

@@ -23,7 +23,7 @@ class AnalyticsJsonTypeConverter
 
 @DataClassName('AnalyticsSnapshotEntity')
 class AnalyticsSnapshots extends Table {
-  TextColumn get id => text().clientDefault(uuid.v4)();
+  TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
   TextColumn get entityType => text().withLength(min: 1, max: 50)();
   TextColumn get entityId => text().nullable()();

@@ -42,9 +42,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       // Evict oldest entries if cache is full (simple LRU approximation)
       if (_rruleCache.length >= _rruleCacheMaxSize) {
         final keysToRemove = _rruleCache.keys.take(10).toList();
-        for (final key in keysToRemove) {
-          _rruleCache.remove(key);
-        }
+        keysToRemove.forEach(_rruleCache.remove);
       }
 
       _rruleCache[rruleText] = rrule;
