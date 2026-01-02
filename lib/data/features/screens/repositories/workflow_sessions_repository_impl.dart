@@ -8,7 +8,8 @@ import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contr
 import 'package:uuid/uuid.dart';
 
 /// Drift implementation of [WorkflowSessionsRepositoryContract].
-class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContract {
+class WorkflowSessionsRepositoryImpl
+    implements WorkflowSessionsRepositoryContract {
   WorkflowSessionsRepositoryImpl(this._db);
 
   final db.AppDatabase _db;
@@ -22,9 +23,11 @@ class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContra
   }
 
   @override
-  Stream<List<domain.WorkflowSession>> watchSessionsForScreen(String screenId) {
+  Stream<List<domain.WorkflowSession>> watchSessionsForScreen(
+    String screenKey,
+  ) {
     return (_db.select(_db.workflowSessions)
-          ..where((t) => t.screenId.equals(screenId))
+          ..where((t) => t.screenKey.equals(screenKey))
           ..orderBy([
             (t) =>
                 OrderingTerm(expression: t.startedAt, mode: OrderingMode.desc),
@@ -35,7 +38,7 @@ class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContra
 
   @override
   Future<String> startSession({
-    required String screenId,
+    required String screenKey,
     required int totalItems,
     String? sessionNotes,
   }) async {
@@ -47,7 +50,7 @@ class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContra
         .insert(
           db.WorkflowSessionsCompanion.insert(
             id: Value(id),
-            screenId: screenId,
+            screenKey: screenKey,
             status: Value(db_screens.WorkflowStatus.inProgress),
             startedAt: Value(now),
             totalItems: Value(totalItems),
@@ -102,7 +105,7 @@ class WorkflowSessionsRepositoryImpl implements WorkflowSessionsRepositoryContra
     return domain.WorkflowSession(
       id: entity.id,
       userId: entity.userId ?? '',
-      screenId: entity.screenId,
+      screenKey: entity.screenKey,
       status: _mapStatus(entity.status),
       startedAt: entity.startedAt,
       completedAt: entity.completedAt,

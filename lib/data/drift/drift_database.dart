@@ -2,8 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/features/analytics_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/wellbeing_tables.drift.dart';
-import 'package:taskly_bloc/data/drift/features/priority_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/workflow_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 // Domain models needed by TypeConverters in generated code
@@ -12,7 +12,8 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     hide EntityType;
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
-import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
 part 'drift_database.g.dart';
 
 enum LabelType { label, value }
@@ -53,11 +54,8 @@ class ProjectTable extends Table {
   DateTimeColumn get lastReviewedAt =>
       dateTime().nullable().named('last_reviewed_at')();
 
-  /// User-defined priority rank for project
-  IntColumn get priorityRank => integer().nullable().named('priority_rank')();
-
-  /// Computed priority weight (0-10) for allocation
-  RealColumn get priorityWeight => real().nullable().named('priority_weight')();
+  /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
+  IntColumn get priority => integer().nullable().named('priority')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -105,6 +103,9 @@ class TaskTable extends Table {
   /// Optional notes from last review
   TextColumn get reviewNotes => text().nullable().named('review_notes')();
 
+  /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
+  IntColumn get priority => integer().nullable().named('priority')();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -113,7 +114,7 @@ class LabelTable extends Table {
   @override
   String get tableName => 'labels';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get color => text().named('color')();
   TextColumn get type => textEnum<LabelType>()
@@ -136,11 +137,9 @@ class LabelTable extends Table {
   TextColumn get systemLabelType =>
       text().nullable().named('system_label_type')();
 
-  /// User-defined priority rank for value/context
-  IntColumn get priorityRank => integer().nullable().named('priority_rank')();
-
-  /// Computed priority weight (0-10) for allocation
-  RealColumn get priorityWeight => real().nullable().named('priority_weight')();
+  /// Timestamp of last per-item review (standardized field)
+  DateTimeColumn get lastReviewedAt =>
+      dateTime().nullable().named('last_reviewed_at')();
 
   @override
   List<String> get customConstraints => [
@@ -155,7 +154,7 @@ class ProjectLabelsTable extends Table {
   @override
   String get tableName => 'project_labels';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get projectId => text()
       .named('project_id')
       .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
@@ -181,7 +180,7 @@ class TaskLabelsTable extends Table {
   @override
   String get tableName => 'task_labels';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get taskId => text()
       .named('task_id')
       .references(TaskTable, #id, onDelete: KeyAction.cascade)();
@@ -233,7 +232,7 @@ class TaskCompletionHistoryTable extends Table {
   @override
   String get tableName => 'task_completion_history';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get taskId => text()
       .named('task_id')
       .references(TaskTable, #id, onDelete: KeyAction.cascade)();
@@ -270,7 +269,7 @@ class ProjectCompletionHistoryTable extends Table {
   @override
   String get tableName => 'project_completion_history';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get projectId => text()
       .named('project_id')
       .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
@@ -306,7 +305,7 @@ class TaskRecurrenceExceptionsTable extends Table {
   @override
   String get tableName => 'task_recurrence_exceptions';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get taskId => text()
       .named('task_id')
       .references(TaskTable, #id, onDelete: KeyAction.cascade)();
@@ -345,7 +344,7 @@ class ProjectRecurrenceExceptionsTable extends Table {
   @override
   String get tableName => 'project_recurrence_exceptions';
 
-  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+  TextColumn get id => text().named('id')();
   TextColumn get projectId => text()
       .named('project_id')
       .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
@@ -400,23 +399,19 @@ class ProjectRecurrenceExceptionsTable extends Table {
     Trackers,
     TrackerResponses,
     DailyTrackerResponses,
-    // Priority rankings system
-    PriorityRankings,
-    RankedItems,
-    AllocationPreferences,
     // Generic screen/workflow system
     ScreenDefinitions,
     PendingNotifications,
-    WorkflowSessions,
-    WorkflowItemReviews,
-    ProblemAcknowledgments,
+    // New workflow system
+    WorkflowDefinitions,
+    Workflows,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

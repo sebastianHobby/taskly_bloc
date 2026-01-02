@@ -27,29 +27,27 @@ import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repos
 import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
-import 'package:taskly_bloc/data/features/screens/repositories/problem_acknowledgments_repository_impl.dart';
-import 'package:taskly_bloc/data/features/screens/repositories/workflow_item_reviews_repository_impl.dart';
-import 'package:taskly_bloc/data/features/screens/repositories/workflow_sessions_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/data/features/workflow/repositories/workflow_repository_impl.dart';
 import 'package:taskly_bloc/data/services/user_data_seeder.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
-import 'package:taskly_bloc/data/features/priority/repositories/priority_rankings_repository_impl.dart';
-import 'package:taskly_bloc/data/features/priority/repositories/allocation_preferences_repository_impl.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_grouper.dart';
 import 'package:taskly_bloc/domain/services/screens/trigger_evaluator.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
+import 'package:taskly_bloc/domain/services/screens/view_service.dart';
+import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
+import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
@@ -78,19 +76,34 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<AuthRepositoryContract>(
       () => AuthRepository(client: getIt<SupabaseClient>()),
     )
+    // IdGenerator - uses current userId from session
+    // Registered as factory since userId may change on re-login
+    ..registerFactory<IdGenerator>(
+      () {
+        final userId = getUserId();
+        if (userId == null) {
+          throw StateError('IdGenerator requires authenticated user');
+        }
+        return IdGenerator(userId);
+      },
+    )
     // Register occurrence stream expander for reading occurrences
     ..registerLazySingleton<OccurrenceStreamExpanderContract>(
       OccurrenceStreamExpander.new,
     )
     // Register occurrence write helper for writing occurrences
     ..registerLazySingleton<OccurrenceWriteHelperContract>(
-      () => OccurrenceWriteHelper(driftDb: getIt<AppDatabase>()),
+      () => OccurrenceWriteHelper(
+        driftDb: getIt<AppDatabase>(),
+        idGenerator: getIt<IdGenerator>(),
+      ),
     )
     ..registerLazySingleton<ProjectRepositoryContract>(
       () => ProjectRepository(
         driftDb: getIt<AppDatabase>(),
         occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
         occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
+        idGenerator: getIt<IdGenerator>(),
       ),
     )
     ..registerLazySingleton<TaskRepositoryContract>(
@@ -98,45 +111,47 @@ Future<void> setupDependencies() async {
         driftDb: getIt<AppDatabase>(),
         occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
         occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
+        idGenerator: getIt<IdGenerator>(),
       ),
     )
     ..registerLazySingleton<LabelRepositoryContract>(
-      () => LabelRepository(driftDb: getIt<AppDatabase>()),
+      () => LabelRepository(
+        driftDb: getIt<AppDatabase>(),
+        idGenerator: getIt<IdGenerator>(),
+      ),
     )
     ..registerLazySingleton<SettingsRepositoryContract>(
       () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
-    // Priority / Allocation (registered before UserDataSeeder since it depends on these)
-    ..registerLazySingleton<PriorityRankingsRepositoryContract>(
-      () => PriorityRankingsRepositoryImpl(getIt<AppDatabase>()),
-    )
-    ..registerLazySingleton<AllocationPreferencesRepositoryContract>(
-      () => AllocationPreferencesRepositoryImpl(getIt<AppDatabase>()),
-    )
-    // Screens (registered before UserDataSeeder since it depends on this)
+    // Screens - thin wrapper over database implementation
     ..registerLazySingleton<ScreenDefinitionsRepositoryContract>(
-      () => ScreenDefinitionsRepositoryImpl(getIt<AppDatabase>()),
+      () => ScreenDefinitionsRepository(
+        databaseRepository: ScreenDefinitionsRepositoryImpl(
+          getIt<AppDatabase>(),
+          getIt<IdGenerator>(),
+        ),
+      ),
     )
-    // User data seeding service (seeds screens, labels, and allocation defaults)
-    ..registerLazySingleton<UserDataSeeder>(
+    // User data seeding service
+    ..registerLazySingleton<UserDataSeederContract>(
       () => UserDataSeeder(
         labelRepository: getIt<LabelRepositoryContract>(),
         screenRepository: getIt<ScreenDefinitionsRepositoryContract>(),
-        preferencesRepository: getIt<AllocationPreferencesRepositoryContract>(),
-        rankingsRepository: getIt<PriorityRankingsRepositoryContract>(),
       ),
     )
     ..registerLazySingleton<AllocationOrchestrator>(
       () => AllocationOrchestrator(
         taskRepository: getIt<TaskRepositoryContract>(),
         labelRepository: getIt<LabelRepositoryContract>(),
-        rankingsRepository: getIt<PriorityRankingsRepositoryContract>(),
-        preferencesRepository: getIt<AllocationPreferencesRepositoryContract>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
     // Analytics
     ..registerLazySingleton<AnalyticsRepositoryContract>(
-      () => AnalyticsRepositoryImpl(getIt<AppDatabase>()),
+      () => AnalyticsRepositoryImpl(
+        getIt<AppDatabase>(),
+        getIt<IdGenerator>(),
+      ),
     )
     ..registerLazySingleton<AnalyticsService>(
       () => AnalyticsServiceImpl(
@@ -149,17 +164,17 @@ Future<void> setupDependencies() async {
     )
     // Wellbeing
     ..registerLazySingleton<WellbeingRepositoryContract>(
-      () => WellbeingRepositoryImpl(getIt<AppDatabase>()),
+      () => WellbeingRepositoryImpl(
+        getIt<AppDatabase>(),
+        getIt<IdGenerator>(),
+      ),
     )
-    // Screens (additional screen-related repositories)
-    ..registerLazySingleton<WorkflowSessionsRepositoryContract>(
-      () => WorkflowSessionsRepositoryImpl(getIt<AppDatabase>()),
-    )
-    ..registerLazySingleton<WorkflowItemReviewsRepositoryContract>(
-      () => WorkflowItemReviewsRepositoryImpl(getIt<AppDatabase>()),
-    )
-    ..registerLazySingleton<ProblemAcknowledgmentsRepositoryContract>(
-      () => ProblemAcknowledgmentsRepositoryImpl(getIt<AppDatabase>()),
+    // New workflow system
+    ..registerLazySingleton<WorkflowRepositoryContract>(
+      () => WorkflowRepositoryImpl(
+        getIt<AppDatabase>(),
+        getIt<IdGenerator>(),
+      ),
     )
     ..registerLazySingleton<ScreenQueryBuilder>(ScreenQueryBuilder.new)
     ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
@@ -169,6 +184,26 @@ Future<void> setupDependencies() async {
       () => SupportBlockComputer(
         getIt<TaskStatsCalculator>(),
         getIt<AnalyticsService>(),
+      ),
+    )
+    // Screen architecture services
+    ..registerLazySingleton<ViewService>(
+      () => ViewService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        labelRepository: getIt<LabelRepositoryContract>(),
+        queryBuilder: getIt<ScreenQueryBuilder>(),
+      ),
+    )
+    ..registerLazySingleton<ProblemDetectorService>(
+      () => ProblemDetectorService(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<WorkflowService>(
+      () => WorkflowService(
+        workflowRepository: getIt<WorkflowRepositoryContract>(),
+        viewService: getIt<ViewService>(),
       ),
     )
     // Notifications (server-enqueued + PowerSync synced)

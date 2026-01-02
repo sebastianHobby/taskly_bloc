@@ -6,7 +6,7 @@ class PendingNotification {
   const PendingNotification({
     required this.id,
     required this.userId,
-    required this.screenDefinitionId,
+    required this.screenKey,
     required this.scheduledFor,
     required this.status,
     required this.payload,
@@ -17,7 +17,7 @@ class PendingNotification {
 
   final String id;
   final String? userId;
-  final String screenDefinitionId;
+  final String screenKey;
   final DateTime scheduledFor;
   final String status;
   final Map<String, dynamic>? payload;

@@ -305,7 +305,7 @@ as DateTime?,
 /// @nodoc
 mixin _$DetectedProblem {
 
- ProblemType get type; String get entityId; EntityType get entityType; String get title; String get description; String get suggestedAction; bool? get isAcknowledged; DateTime? get acknowledgedAt;
+ ProblemType get type; String get entityId; EntityType get entityType; String get title; String get description; String get suggestedAction;
 /// Create a copy of DetectedProblem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -318,16 +318,16 @@ $DetectedProblemCopyWith<DetectedProblem> get copyWith => _$DetectedProblemCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedProblem&&(identical(other.type, type) || other.type == type)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.entityType, entityType) || other.entityType == entityType)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.suggestedAction, suggestedAction) || other.suggestedAction == suggestedAction)&&(identical(other.isAcknowledged, isAcknowledged) || other.isAcknowledged == isAcknowledged)&&(identical(other.acknowledgedAt, acknowledgedAt) || other.acknowledgedAt == acknowledgedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DetectedProblem&&(identical(other.type, type) || other.type == type)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.entityType, entityType) || other.entityType == entityType)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.suggestedAction, suggestedAction) || other.suggestedAction == suggestedAction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,entityId,entityType,title,description,suggestedAction,isAcknowledged,acknowledgedAt);
+int get hashCode => Object.hash(runtimeType,type,entityId,entityType,title,description,suggestedAction);
 
 @override
 String toString() {
-  return 'DetectedProblem(type: $type, entityId: $entityId, entityType: $entityType, title: $title, description: $description, suggestedAction: $suggestedAction, isAcknowledged: $isAcknowledged, acknowledgedAt: $acknowledgedAt)';
+  return 'DetectedProblem(type: $type, entityId: $entityId, entityType: $entityType, title: $title, description: $description, suggestedAction: $suggestedAction)';
 }
 
 
@@ -338,7 +338,7 @@ abstract mixin class $DetectedProblemCopyWith<$Res>  {
   factory $DetectedProblemCopyWith(DetectedProblem value, $Res Function(DetectedProblem) _then) = _$DetectedProblemCopyWithImpl;
 @useResult
 $Res call({
- ProblemType type, String entityId, EntityType entityType, String title, String description, String suggestedAction, bool? isAcknowledged, DateTime? acknowledgedAt
+ ProblemType type, String entityId, EntityType entityType, String title, String description, String suggestedAction
 });
 
 
@@ -355,7 +355,7 @@ class _$DetectedProblemCopyWithImpl<$Res>
 
 /// Create a copy of DetectedProblem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? entityId = null,Object? entityType = null,Object? title = null,Object? description = null,Object? suggestedAction = null,Object? isAcknowledged = freezed,Object? acknowledgedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? type = null,Object? entityId = null,Object? entityType = null,Object? title = null,Object? description = null,Object? suggestedAction = null,}) {
   return _then(_self.copyWith(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProblemType,entityId: null == entityId ? _self.entityId : entityId // ignore: cast_nullable_to_non_nullable
@@ -363,9 +363,7 @@ as String,entityType: null == entityType ? _self.entityType : entityType // igno
 as EntityType,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,suggestedAction: null == suggestedAction ? _self.suggestedAction : suggestedAction // ignore: cast_nullable_to_non_nullable
-as String,isAcknowledged: freezed == isAcknowledged ? _self.isAcknowledged : isAcknowledged // ignore: cast_nullable_to_non_nullable
-as bool?,acknowledgedAt: freezed == acknowledgedAt ? _self.acknowledgedAt : acknowledgedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as String,
   ));
 }
 
@@ -450,10 +448,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction,  bool? isAcknowledged,  DateTime? acknowledgedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DetectedProblem() when $default != null:
-return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction,_that.isAcknowledged,_that.acknowledgedAt);case _:
+return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction);case _:
   return orElse();
 
 }
@@ -471,10 +469,10 @@ return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.des
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction,  bool? isAcknowledged,  DateTime? acknowledgedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction)  $default,) {final _that = this;
 switch (_that) {
 case _DetectedProblem():
-return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction,_that.isAcknowledged,_that.acknowledgedAt);case _:
+return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -491,10 +489,10 @@ return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.des
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction,  bool? isAcknowledged,  DateTime? acknowledgedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( ProblemType type,  String entityId,  EntityType entityType,  String title,  String description,  String suggestedAction)?  $default,) {final _that = this;
 switch (_that) {
 case _DetectedProblem() when $default != null:
-return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction,_that.isAcknowledged,_that.acknowledgedAt);case _:
+return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.description,_that.suggestedAction);case _:
   return null;
 
 }
@@ -506,7 +504,7 @@ return $default(_that.type,_that.entityId,_that.entityType,_that.title,_that.des
 @JsonSerializable()
 
 class _DetectedProblem implements DetectedProblem {
-  const _DetectedProblem({required this.type, required this.entityId, required this.entityType, required this.title, required this.description, required this.suggestedAction, this.isAcknowledged, this.acknowledgedAt});
+  const _DetectedProblem({required this.type, required this.entityId, required this.entityType, required this.title, required this.description, required this.suggestedAction});
   factory _DetectedProblem.fromJson(Map<String, dynamic> json) => _$DetectedProblemFromJson(json);
 
 @override final  ProblemType type;
@@ -515,8 +513,6 @@ class _DetectedProblem implements DetectedProblem {
 @override final  String title;
 @override final  String description;
 @override final  String suggestedAction;
-@override final  bool? isAcknowledged;
-@override final  DateTime? acknowledgedAt;
 
 /// Create a copy of DetectedProblem
 /// with the given fields replaced by the non-null parameter values.
@@ -531,16 +527,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedProblem&&(identical(other.type, type) || other.type == type)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.entityType, entityType) || other.entityType == entityType)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.suggestedAction, suggestedAction) || other.suggestedAction == suggestedAction)&&(identical(other.isAcknowledged, isAcknowledged) || other.isAcknowledged == isAcknowledged)&&(identical(other.acknowledgedAt, acknowledgedAt) || other.acknowledgedAt == acknowledgedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DetectedProblem&&(identical(other.type, type) || other.type == type)&&(identical(other.entityId, entityId) || other.entityId == entityId)&&(identical(other.entityType, entityType) || other.entityType == entityType)&&(identical(other.title, title) || other.title == title)&&(identical(other.description, description) || other.description == description)&&(identical(other.suggestedAction, suggestedAction) || other.suggestedAction == suggestedAction));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,type,entityId,entityType,title,description,suggestedAction,isAcknowledged,acknowledgedAt);
+int get hashCode => Object.hash(runtimeType,type,entityId,entityType,title,description,suggestedAction);
 
 @override
 String toString() {
-  return 'DetectedProblem(type: $type, entityId: $entityId, entityType: $entityType, title: $title, description: $description, suggestedAction: $suggestedAction, isAcknowledged: $isAcknowledged, acknowledgedAt: $acknowledgedAt)';
+  return 'DetectedProblem(type: $type, entityId: $entityId, entityType: $entityType, title: $title, description: $description, suggestedAction: $suggestedAction)';
 }
 
 
@@ -551,7 +547,7 @@ abstract mixin class _$DetectedProblemCopyWith<$Res> implements $DetectedProblem
   factory _$DetectedProblemCopyWith(_DetectedProblem value, $Res Function(_DetectedProblem) _then) = __$DetectedProblemCopyWithImpl;
 @override @useResult
 $Res call({
- ProblemType type, String entityId, EntityType entityType, String title, String description, String suggestedAction, bool? isAcknowledged, DateTime? acknowledgedAt
+ ProblemType type, String entityId, EntityType entityType, String title, String description, String suggestedAction
 });
 
 
@@ -568,7 +564,7 @@ class __$DetectedProblemCopyWithImpl<$Res>
 
 /// Create a copy of DetectedProblem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? entityId = null,Object? entityType = null,Object? title = null,Object? description = null,Object? suggestedAction = null,Object? isAcknowledged = freezed,Object? acknowledgedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? type = null,Object? entityId = null,Object? entityType = null,Object? title = null,Object? description = null,Object? suggestedAction = null,}) {
   return _then(_DetectedProblem(
 type: null == type ? _self.type : type // ignore: cast_nullable_to_non_nullable
 as ProblemType,entityId: null == entityId ? _self.entityId : entityId // ignore: cast_nullable_to_non_nullable
@@ -576,9 +572,7 @@ as String,entityType: null == entityType ? _self.entityType : entityType // igno
 as EntityType,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,description: null == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String,suggestedAction: null == suggestedAction ? _self.suggestedAction : suggestedAction // ignore: cast_nullable_to_non_nullable
-as String,isAcknowledged: freezed == isAcknowledged ? _self.isAcknowledged : isAcknowledged // ignore: cast_nullable_to_non_nullable
-as bool?,acknowledgedAt: freezed == acknowledgedAt ? _self.acknowledgedAt : acknowledgedAt // ignore: cast_nullable_to_non_nullable
-as DateTime?,
+as String,
   ));
 }
 

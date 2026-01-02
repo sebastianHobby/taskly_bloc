@@ -75,7 +75,7 @@ class _ReadyState extends StatelessWidget {
             itemBuilder: (context, index) {
               final screen = screens[index];
               final iconSet = _iconResolver.resolve(
-                screenId: screen.screenId,
+                screenId: screen.screenKey,
                 iconName: screen.iconName,
               );
               return ListTile(

@@ -755,12 +755,12 @@ _$RunningCopyWith<_Running> get copyWith => __$RunningCopyWithImpl<_Running>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Running&&const DeepCollectionEquality().equals(other.screen, screen)&&(identical(other.session, session) || other.session == session)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._actionByEntityId, _actionByEntityId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Running&&(identical(other.screen, screen) || other.screen == screen)&&(identical(other.session, session) || other.session == session)&&const DeepCollectionEquality().equals(other._items, _items)&&const DeepCollectionEquality().equals(other._actionByEntityId, _actionByEntityId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(screen),session,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_actionByEntityId));
+int get hashCode => Object.hash(runtimeType,screen,session,const DeepCollectionEquality().hash(_items),const DeepCollectionEquality().hash(_actionByEntityId));
 
 @override
 String toString() {
@@ -792,9 +792,9 @@ class __$RunningCopyWithImpl<$Res>
 
 /// Create a copy of WorkflowRunState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? screen = freezed,Object? session = null,Object? items = null,Object? actionByEntityId = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? screen = null,Object? session = null,Object? items = null,Object? actionByEntityId = null,}) {
   return _then(_Running(
-screen: freezed == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
+screen: null == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
 as WorkflowScreen,session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
 as WorkflowSession,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<WorkflowItemVm>,actionByEntityId: null == actionByEntityId ? _self._actionByEntityId : actionByEntityId // ignore: cast_nullable_to_non_nullable
@@ -834,12 +834,12 @@ _$CompletedCopyWith<_Completed> get copyWith => __$CompletedCopyWithImpl<_Comple
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Completed&&const DeepCollectionEquality().equals(other.screen, screen)&&(identical(other.session, session) || other.session == session));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Completed&&(identical(other.screen, screen) || other.screen == screen)&&(identical(other.session, session) || other.session == session));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(screen),session);
+int get hashCode => Object.hash(runtimeType,screen,session);
 
 @override
 String toString() {
@@ -871,9 +871,9 @@ class __$CompletedCopyWithImpl<$Res>
 
 /// Create a copy of WorkflowRunState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? screen = freezed,Object? session = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? screen = null,Object? session = null,}) {
   return _then(_Completed(
-screen: freezed == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
+screen: null == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
 as WorkflowScreen,session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
 as WorkflowSession,
   ));
@@ -911,12 +911,12 @@ _$AbandonedCopyWith<_Abandoned> get copyWith => __$AbandonedCopyWithImpl<_Abando
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Abandoned&&const DeepCollectionEquality().equals(other.screen, screen)&&(identical(other.session, session) || other.session == session));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Abandoned&&(identical(other.screen, screen) || other.screen == screen)&&(identical(other.session, session) || other.session == session));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(screen),session);
+int get hashCode => Object.hash(runtimeType,screen,session);
 
 @override
 String toString() {
@@ -948,9 +948,9 @@ class __$AbandonedCopyWithImpl<$Res>
 
 /// Create a copy of WorkflowRunState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? screen = freezed,Object? session = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? screen = null,Object? session = null,}) {
   return _then(_Abandoned(
-screen: freezed == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
+screen: null == screen ? _self.screen : screen // ignore: cast_nullable_to_non_nullable
 as WorkflowScreen,session: null == session ? _self.session : session // ignore: cast_nullable_to_non_nullable
 as WorkflowSession,
   ));

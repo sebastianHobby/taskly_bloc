@@ -140,7 +140,7 @@ jobs:
       - name: Build ${{ matrix.build-target }}
         shell: bash
         run: |
-          ${{ matrix.build-target == 'ios' && 'flutter build ios --release --no-codesign --flavor production' || format('flutter build {0} --release', matrix.build-target) }} \
+          ${{ matrix.build-target == 'ios' && 'flutter build ios --release --simulator --no-codesign --flavor production' || format('flutter build {0} --release', matrix.build-target) }} \
             --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \

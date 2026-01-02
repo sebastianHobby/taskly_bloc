@@ -25,7 +25,7 @@ class PendingNotificationsRepositoryImpl
                 (e) => PendingNotification(
                   id: e.id,
                   userId: e.userId,
-                  screenDefinitionId: e.screenDefinitionId,
+                  screenKey: e.screenKey,
                   scheduledFor: e.scheduledFor,
                   status: e.status,
                   payload: PendingNotification.tryDecodePayload(e.payload),

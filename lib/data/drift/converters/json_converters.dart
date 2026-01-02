@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/domain/models/screens/completion_criteria.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
@@ -67,12 +66,4 @@ triggerConfigConverter = TypeConverter.json2(
   fromJson: (json) =>
       TriggerConfig.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
   toJson: (TriggerConfig config) => config.toJson(),
-);
-
-/// Type converter for [CompletionCriteria] stored as JSON text.
-final JsonTypeConverter2<CompletionCriteria, String, Object?>
-completionCriteriaConverter = TypeConverter.json2(
-  fromJson: (json) =>
-      CompletionCriteria.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
-  toJson: (CompletionCriteria criteria) => criteria.toJson(),
 );

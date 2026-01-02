@@ -5,12 +5,12 @@ abstract class WorkflowSessionsRepositoryContract {
   /// Watch a workflow session by ID.
   Stream<WorkflowSession?> watchSession(String id);
 
-  /// Watch sessions for a given screen definition ID.
-  Stream<List<WorkflowSession>> watchSessionsForScreen(String screenId);
+  /// Watch sessions for a given screen key.
+  Stream<List<WorkflowSession>> watchSessionsForScreen(String screenKey);
 
   /// Start a new workflow session for a screen.
   Future<String> startSession({
-    required String screenId,
+    required String screenKey,
     required int totalItems,
     String? sessionNotes,
   });

@@ -10,12 +10,7 @@ import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/problem_acknowledgments_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
@@ -37,7 +32,11 @@ import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashb
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
+import 'package:taskly_bloc/presentation/features/workflow/view/workflow_list_page.dart';
+import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
+import 'package:taskly_bloc/presentation/features/screens/view/screen_management_page.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 
 final router = GoRouter(
   initialLocation: '${AppRoutePath.screenBase}/inbox',
@@ -167,12 +166,6 @@ final router = GoRouter(
             screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
             queryBuilder: getIt<ScreenQueryBuilder>(),
             supportBlockComputer: getIt<SupportBlockComputer>(),
-            workflowSessionsRepository:
-                getIt<WorkflowSessionsRepositoryContract>(),
-            workflowItemReviewsRepository:
-                getIt<WorkflowItemReviewsRepositoryContract>(),
-            problemAcknowledgmentsRepository:
-                getIt<ProblemAcknowledgmentsRepositoryContract>(),
             taskRepository: getIt<TaskRepositoryContract>(),
             projectRepository: getIt<ProjectRepositoryContract>(),
             labelRepository: getIt<LabelRepositoryContract>(),
@@ -220,9 +213,7 @@ final router = GoRouter(
           name: AppRouteName.taskNextActionsSettings,
           path: AppRoutePath.taskNextActionsSettings,
           builder: (context, state) => AllocationSettingsPage(
-            preferencesRepository:
-                getIt<AllocationPreferencesRepositoryContract>(),
-            rankingsRepository: getIt<PriorityRankingsRepositoryContract>(),
+            settingsRepository: getIt<SettingsRepositoryContract>(),
             labelRepository: getIt<LabelRepositoryContract>(),
           ),
         ),
@@ -265,6 +256,34 @@ final router = GoRouter(
             ),
             child: const TrackerManagementScreen(),
           ),
+        ),
+        GoRoute(
+          name: AppRouteName.workflows,
+          path: AppRoutePath.workflows,
+          builder: (context, state) {
+            final authRepo = getIt<AuthRepositoryContract>();
+            return WorkflowListPage(
+              userId: authRepo.currentSession?.user.id ?? '',
+            );
+          },
+        ),
+        GoRoute(
+          name: AppRouteName.workflowRun,
+          path: AppRoutePath.workflowRun,
+          builder: (context, state) {
+            final definition = state.extra! as WorkflowDefinition;
+            return WorkflowRunPage(definition: definition);
+          },
+        ),
+        GoRoute(
+          name: AppRouteName.screenManagement,
+          path: AppRoutePath.screenManagement,
+          builder: (context, state) {
+            final authRepo = getIt<AuthRepositoryContract>();
+            return ScreenManagementPage(
+              userId: authRepo.currentSession?.user.id ?? '',
+            );
+          },
         ),
       ],
     ),

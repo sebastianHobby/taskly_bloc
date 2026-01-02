@@ -36,6 +36,25 @@ abstract class SettingsRepositoryContract {
     PageDisplaySettings settings,
   );
 
+  // Screen Preferences (for system screen sortOrder/isActive)
+  Stream<ScreenPreferences> watchScreenPreferences(String screenKey);
+  Future<ScreenPreferences> loadScreenPreferences(String screenKey);
+  Future<void> saveScreenPreferences(
+    String screenKey,
+    ScreenPreferences preferences,
+  );
+  Stream<Map<String, ScreenPreferences>> watchAllScreenPreferences();
+
+  // Allocation Settings
+  Stream<AllocationSettings> watchAllocationSettings();
+  Future<AllocationSettings> loadAllocationSettings();
+  Future<void> saveAllocationSettings(AllocationSettings settings);
+
+  // Value Ranking
+  Stream<ValueRanking> watchValueRanking();
+  Future<ValueRanking> loadValueRanking();
+  Future<void> saveValueRanking(ValueRanking ranking);
+
   // Full settings access (for migration/debugging)
   Stream<AppSettings> watchAll();
   Future<AppSettings> loadAll();

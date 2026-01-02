@@ -19,6 +19,8 @@ class Project {
     this.description,
     this.startDate,
     this.deadlineDate,
+    this.priority,
+    this.lastReviewedAt,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
@@ -34,6 +36,13 @@ class Project {
   final String? description;
   final DateTime? startDate;
   final DateTime? deadlineDate;
+
+  /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
+  final int? priority;
+
+  /// Last time this project was reviewed in a workflow
+  final DateTime? lastReviewedAt;
+
   final String? repeatIcalRrule;
 
   /// When true, recurrence is anchored to last completion date instead of
@@ -66,6 +75,7 @@ class Project {
     String? description,
     DateTime? startDate,
     DateTime? deadlineDate,
+    int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
@@ -81,6 +91,7 @@ class Project {
       description: description ?? this.description,
       startDate: startDate ?? this.startDate,
       deadlineDate: deadlineDate ?? this.deadlineDate,
+      priority: priority ?? this.priority,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
@@ -101,6 +112,7 @@ class Project {
         other.description == description &&
         other.startDate == startDate &&
         other.deadlineDate == deadlineDate &&
+        other.priority == priority &&
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
@@ -118,6 +130,7 @@ class Project {
     description,
     startDate,
     deadlineDate,
+    priority,
     repeatIcalRrule,
     repeatFromCompletion,
     seriesEnded,

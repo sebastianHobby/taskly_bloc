@@ -142,8 +142,11 @@ class ProblemAcknowledgmentsRepositoryImpl
   domain_workflow.ResolutionAction _resolutionActionFromDb(String value) {
     return switch (value) {
       'dismissed' => domain_workflow.ResolutionAction.dismissed,
-      'fixed' => domain_workflow.ResolutionAction.fixed,
+      'resolved' => domain_workflow.ResolutionAction.resolved,
       'snoozed' => domain_workflow.ResolutionAction.snoozed,
+      'accepted' => domain_workflow.ResolutionAction.accepted,
+      // Legacy value mapping
+      'fixed' => domain_workflow.ResolutionAction.resolved,
       _ => domain_workflow.ResolutionAction.dismissed,
     };
   }
@@ -151,8 +154,9 @@ class ProblemAcknowledgmentsRepositoryImpl
   String _resolutionActionToDb(domain_workflow.ResolutionAction action) {
     return switch (action) {
       domain_workflow.ResolutionAction.dismissed => 'dismissed',
-      domain_workflow.ResolutionAction.fixed => 'fixed',
+      domain_workflow.ResolutionAction.resolved => 'resolved',
       domain_workflow.ResolutionAction.snoozed => 'snoozed',
+      domain_workflow.ResolutionAction.accepted => 'accepted',
     };
   }
 }

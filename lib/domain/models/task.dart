@@ -21,9 +21,11 @@ class Task {
     this.deadlineDate,
     this.description,
     this.projectId,
+    this.priority,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
+    this.lastReviewedAt,
     this.project,
     this.labels = const <Label>[],
     this.occurrence,
@@ -38,6 +40,10 @@ class Task {
   final DateTime? deadlineDate;
   final String? description;
   final String? projectId;
+
+  /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
+  final int? priority;
+
   final String? repeatIcalRrule;
 
   /// When true, recurrence is anchored to last completion date instead of
@@ -46,6 +52,9 @@ class Task {
 
   /// When true, stops generating future occurrences for this repeating task.
   final bool seriesEnded;
+
+  /// Timestamp of when this task was last reviewed in a workflow.
+  final DateTime? lastReviewedAt;
 
   final Project? project;
   final List<Label> labels;
@@ -72,9 +81,11 @@ class Task {
     DateTime? deadlineDate,
     String? description,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
+    DateTime? lastReviewedAt,
     Project? project,
     List<Label>? labels,
     OccurrenceData? occurrence,
@@ -89,9 +100,11 @@ class Task {
       deadlineDate: deadlineDate ?? this.deadlineDate,
       description: description ?? this.description,
       projectId: projectId ?? this.projectId,
+      priority: priority ?? this.priority,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
+      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
       project: project ?? this.project,
       labels: labels ?? this.labels,
       occurrence: occurrence ?? this.occurrence,
@@ -111,9 +124,11 @@ class Task {
         other.deadlineDate == deadlineDate &&
         other.description == description &&
         other.projectId == projectId &&
+        other.priority == priority &&
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
+        other.lastReviewedAt == lastReviewedAt &&
         other.project == project &&
         listEquals(other.labels, labels) &&
         other.occurrence == occurrence;
@@ -130,9 +145,11 @@ class Task {
     deadlineDate,
     description,
     projectId,
+    priority,
     repeatIcalRrule,
     repeatFromCompletion,
     seriesEnded,
+    lastReviewedAt,
     project,
     Object.hashAll(labels),
     occurrence,

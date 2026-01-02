@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ScreenDefinitionEvent {
 
- String get screenId;
+ String get screenKey;
 /// Create a copy of ScreenDefinitionEvent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $ScreenDefinitionEventCopyWith<ScreenDefinitionEvent> get copyWith => _$ScreenDe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinitionEvent&&(identical(other.screenId, screenId) || other.screenId == screenId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinitionEvent&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,screenId);
+int get hashCode => Object.hash(runtimeType,screenKey);
 
 @override
 String toString() {
-  return 'ScreenDefinitionEvent(screenId: $screenId)';
+  return 'ScreenDefinitionEvent(screenKey: $screenKey)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $ScreenDefinitionEventCopyWith<$Res>  {
   factory $ScreenDefinitionEventCopyWith(ScreenDefinitionEvent value, $Res Function(ScreenDefinitionEvent) _then) = _$ScreenDefinitionEventCopyWithImpl;
 @useResult
 $Res call({
- String screenId
+ String screenKey
 });
 
 
@@ -62,9 +62,9 @@ class _$ScreenDefinitionEventCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinitionEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? screenId = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? screenKey = null,}) {
   return _then(_self.copyWith(
-screenId: null == screenId ? _self.screenId : screenId // ignore: cast_nullable_to_non_nullable
+screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }
@@ -147,10 +147,10 @@ return subscriptionRequested(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String screenId)?  subscriptionRequested,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String screenKey)?  subscriptionRequested,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubscriptionRequested() when subscriptionRequested != null:
-return subscriptionRequested(_that.screenId);case _:
+return subscriptionRequested(_that.screenKey);case _:
   return orElse();
 
 }
@@ -168,10 +168,10 @@ return subscriptionRequested(_that.screenId);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String screenId)  subscriptionRequested,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String screenKey)  subscriptionRequested,}) {final _that = this;
 switch (_that) {
 case _SubscriptionRequested():
-return subscriptionRequested(_that.screenId);}
+return subscriptionRequested(_that.screenKey);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -185,10 +185,10 @@ return subscriptionRequested(_that.screenId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String screenId)?  subscriptionRequested,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String screenKey)?  subscriptionRequested,}) {final _that = this;
 switch (_that) {
 case _SubscriptionRequested() when subscriptionRequested != null:
-return subscriptionRequested(_that.screenId);case _:
+return subscriptionRequested(_that.screenKey);case _:
   return null;
 
 }
@@ -200,10 +200,10 @@ return subscriptionRequested(_that.screenId);case _:
 
 
 class _SubscriptionRequested implements ScreenDefinitionEvent {
-  const _SubscriptionRequested({required this.screenId});
+  const _SubscriptionRequested({required this.screenKey});
   
 
-@override final  String screenId;
+@override final  String screenKey;
 
 /// Create a copy of ScreenDefinitionEvent
 /// with the given fields replaced by the non-null parameter values.
@@ -215,16 +215,16 @@ _$SubscriptionRequestedCopyWith<_SubscriptionRequested> get copyWith => __$Subsc
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubscriptionRequested&&(identical(other.screenId, screenId) || other.screenId == screenId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubscriptionRequested&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,screenId);
+int get hashCode => Object.hash(runtimeType,screenKey);
 
 @override
 String toString() {
-  return 'ScreenDefinitionEvent.subscriptionRequested(screenId: $screenId)';
+  return 'ScreenDefinitionEvent.subscriptionRequested(screenKey: $screenKey)';
 }
 
 
@@ -235,7 +235,7 @@ abstract mixin class _$SubscriptionRequestedCopyWith<$Res> implements $ScreenDef
   factory _$SubscriptionRequestedCopyWith(_SubscriptionRequested value, $Res Function(_SubscriptionRequested) _then) = __$SubscriptionRequestedCopyWithImpl;
 @override @useResult
 $Res call({
- String screenId
+ String screenKey
 });
 
 
@@ -252,9 +252,9 @@ class __$SubscriptionRequestedCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinitionEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? screenId = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? screenKey = null,}) {
   return _then(_SubscriptionRequested(
-screenId: null == screenId ? _self.screenId : screenId // ignore: cast_nullable_to_non_nullable
+screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

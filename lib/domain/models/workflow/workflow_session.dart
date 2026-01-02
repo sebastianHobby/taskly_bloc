@@ -20,7 +20,7 @@ abstract class WorkflowSession with _$WorkflowSession {
   const factory WorkflowSession({
     required String id,
     required String userId,
-    required String screenId,
+    required String screenKey,
     required DateTime startedAt,
     required DateTime createdAt,
     required DateTime updatedAt,

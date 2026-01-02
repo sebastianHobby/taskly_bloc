@@ -11,7 +11,7 @@ part 'screen_definition_bloc.freezed.dart';
 @freezed
 sealed class ScreenDefinitionEvent with _$ScreenDefinitionEvent {
   const factory ScreenDefinitionEvent.subscriptionRequested({
-    required String screenId,
+    required String screenKey,
   }) = _SubscriptionRequested;
 }
 
@@ -33,9 +33,10 @@ sealed class ScreenDefinitionState with _$ScreenDefinitionState {
 
 class ScreenDefinitionBloc
     extends Bloc<ScreenDefinitionEvent, ScreenDefinitionState> {
-  ScreenDefinitionBloc({required ScreenDefinitionsRepositoryContract repository})
-    : _repository = repository,
-      super(const ScreenDefinitionState.loading()) {
+  ScreenDefinitionBloc({
+    required ScreenDefinitionsRepositoryContract repository,
+  }) : _repository = repository,
+       super(const ScreenDefinitionState.loading()) {
     on<_SubscriptionRequested>(_onSubscriptionRequested);
   }
 
@@ -51,7 +52,7 @@ class ScreenDefinitionBloc
   ) async {
     talker.blocLog(
       'ScreenDefinition',
-      '_onSubscriptionRequested START for screenId="${event.screenId}"',
+      '_onSubscriptionRequested START for screenKey="${event.screenKey}"',
     );
     emit(const ScreenDefinitionState.loading());
     talker.blocLog('ScreenDefinition', 'Emitted loading state');
@@ -63,7 +64,7 @@ class ScreenDefinitionBloc
 
     // Start a timer to force state update after grace period if still loading
     Timer? graceTimer;
-    // ignore: unused_local_variable
+    // ignore: unused_local_variable, Flag checked in timer callback
     var needsGraceCheck = false;
 
     graceTimer = Timer(_gracePeriod + const Duration(milliseconds: 100), () {
@@ -79,16 +80,16 @@ class ScreenDefinitionBloc
 
     talker.blocLog(
       'ScreenDefinition',
-      'Starting emit.forEach on watchScreenByScreenId stream...',
+      'Starting emit.forEach on watchScreenByScreenKey stream...',
     );
     try {
       await emit.forEach<ScreenDefinition?>(
-        _repository.watchScreenByScreenId(event.screenId),
+        _repository.watchScreenByScreenKey(event.screenKey),
         onData: (screen) {
           emissionCount++;
           talker.blocLog(
             'ScreenDefinition',
-            'onData #$emissionCount: screen=${screen == null ? "null" : "ScreenDefinition(screenId=${screen.screenId}, name=${screen.name})"}',
+            'onData #$emissionCount: screen=${screen == null ? "null" : "ScreenDefinition(screenKey=${screen.screenKey}, name=${screen.name})"}',
           );
 
           if (screen != null) {
@@ -157,7 +158,7 @@ class ScreenDefinitionBloc
       graceTimer.cancel();
       talker.blocLog(
         'ScreenDefinition',
-        '_onSubscriptionRequested END for screenId="${event.screenId}"',
+        '_onSubscriptionRequested END for screenKey="${event.screenKey}"',
       );
     }
   }

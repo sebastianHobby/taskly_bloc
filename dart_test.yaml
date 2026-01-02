@@ -8,25 +8,30 @@ tags:
   
   # Integration tests - slower tests using real databases or multiple components
   integration:
-    timeout: 2x
+    timeout: 60s
   
   # Widget tests - Flutter widget tests
   widget:
+    timeout: 30s
   
   # Tests that are known to be slow
   slow:
-    timeout: 3x
+    timeout: 120s
 
   # Repository tests - database-backed tests
   repository:
-    timeout: 2x
+    timeout: 60s
+
+  # Auth tests - may have complex async flows
+  auth:
+    timeout: 30s
   
   # Tests for specific features
   analytics:
-  auth:
   reviews:
   wellbeing:
   tasks:
+  parity:
 
 # Define test name patterns
 presets:

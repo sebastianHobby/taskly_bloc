@@ -507,6 +507,196 @@ testWidgets('updates task when form is submitted', (tester) async {
 
 ## Troubleshooting
 
+### Test Timeouts & Infinite Loops
+
+**Critical:** Tests can run indefinitely or hang for 10+ minutes if not properly
+protected. This section covers how to prevent and debug timeout issues.
+
+#### Understanding Timeout Types
+
+1. **Inactivity Timeout** (`@Timeout` annotation)
+   - Only triggers when test is **completely idle**
+   - Does NOT protect against infinite loops or continuous activity
+   - Example: `@Timeout(Duration(seconds: 60))` in `dart_test.yaml`
+
+2. **Total Duration Timeout** (Recommended)
+   - Enforces **hard limit** on total test execution time
+   - Protects against infinite loops, regardless of activity
+   - Use `testWidgetsWithTimeout()` wrapper
+
+#### Most Robust Timeout Strategy
+
+```dart
+import '../helpers/pump_helpers.dart';
+
+// ✅ BEST: Total duration timeout - protects against everything
+testWidgetsWithTimeout(
+  'my test',
+  timeout: const Duration(seconds: 30), // Hard limit
+  (tester) async {
+    // Test implementation
+  },
+);
+
+// ❌ AVOID: Inactivity-only timeout
+@Timeout(Duration(seconds: 60)) // Only protects against deadlocks
+testWidgets('my test', (tester) async {
+  // Can run for 10+ minutes if continuously pumping
+});
+```
+
+#### Common Timeout Scenarios
+
+**1. pumpAndSettle() with Active Streams**
+
+```dart
+// ❌ DANGEROUS: Can run for 10 minutes
+await tester.pumpWidget(MyBlocWidget());
+await tester.pumpAndSettle(); // Loops while frames scheduled
+
+// ✅ SAFE: Fixed duration
+await tester.pumpWidget(MyBlocWidget());
+await tester.pumpForStream(); // Fixed 10 frames
+
+// ✅ SAFE: With short timeout
+await tester.pumpAndSettleSafe(
+  timeout: const Duration(seconds: 2), // Throws after 2s
+);
+```
+
+**2. Unclosed Stream Subscriptions**
+
+```dart
+// ❌ RISKY: May not close on test failure
+final subscription = stream.listen(handler);
+await Future.delayed(Duration(milliseconds: 50));
+await subscription.cancel(); // May not be reached
+
+// ✅ SAFE: Always closes via tearDown
+final subscription = stream.listen(handler);
+addTearDown(() async => await subscription.cancel());
+await Future.delayed(Duration(milliseconds: 50));
+```
+
+**3. pump(Duration) Blocking**
+
+```dart
+// ❌ DANGEROUS: Can block indefinitely with scheduled timers
+await tester.pump(const Duration(seconds: 1));
+
+// ✅ SAFE: No duration parameter
+await tester.pump(); // Process one frame
+for (var i = 0; i < 10; i++) {
+  await tester.pump(); // Multiple frames without blocking
+}
+```
+
+#### Timeout Configuration Layers
+
+1. **Test-Level** (Most Important) ✅
+   ```dart
+   testWidgetsWithTimeout(
+     'test',
+     timeout: const Duration(seconds: 30),
+     (tester) async { ... },
+   );
+   ```
+
+2. **Operation-Level**
+   ```dart
+   await tester.pumpAndSettleSafe(timeout: Duration(seconds: 2));
+   await waitForStreamEmissions(stream, timeout: Duration(seconds: 5));
+   await myAsyncOp().timeout(Duration(seconds: 10));
+   ```
+
+3. **Configuration-Level** (dart_test.yaml)
+   ```yaml
+   tags:
+     widget:
+       timeout: 30s  # Inactivity timeout
+   timeout: 5m       # Process-level timeout
+   ```
+
+4. **CI/CD-Level**
+   ```yaml
+   # .github/workflows/test.yml
+   jobs:
+     test:
+       timeout-minutes: 10  # Kill job after 10 minutes
+   ```
+
+#### Debugging Hanging Tests
+
+**Step 1: Identify the pattern**
+```bash
+# Run with verbose output
+flutter test --verbose test/my_hanging_test.dart
+
+# Look for:
+# - "pumpAndSettle" in output → Use pumpForStream() instead
+# - Stream subscriptions → Add addTearDown() cleanup
+# - "pump(Duration)" → Use pump() without duration
+```
+
+**Step 2: Add timeout protection**
+```dart
+// Wrap test with explicit timeout
+testWidgetsWithTimeout(
+  'potentially hanging test',
+  timeout: const Duration(seconds: 5), // Short timeout to fail fast
+  (tester) async {
+    // Your test code
+  },
+);
+```
+
+**Step 3: Check for these patterns**
+- [ ] Using `pumpAndSettle()` with BLoC/stream widgets?
+- [ ] Stream subscriptions without `addTearDown()`?
+- [ ] Using `pump(Duration)` instead of `pump()`?
+- [ ] Missing `await` on async operations?
+- [ ] Infinite loops in test logic?
+
+See [TEST_TIMEOUT_ANALYSIS.md](TEST_TIMEOUT_ANALYSIS.md) for comprehensive analysis.
+
+### Test Hangs with BLoC/Streams
+
+**Problem:** `pumpAndSettle()` hangs indefinitely when testing widgets with BLoC
+or stream subscriptions.
+
+**Cause:** `pumpAndSettle()` waits for ALL scheduled frames to complete, but
+stream subscriptions (like `watchAuthState()`, `watchAll()`) create ongoing
+listeners that never "settle".
+
+**Solution:** Use centralized pump helpers from `test/helpers/pump_helpers.dart`:
+
+```dart
+import '../helpers/pump_helpers.dart';
+
+testWidgets('loads data from stream', (tester) async {
+  await tester.pumpWidget(MyBlocWidget());
+  
+  // ❌ BAD: Will hang forever with stream subscriptions
+  // await tester.pumpAndSettle();
+  
+  // ✅ GOOD: Pumps for a bounded duration
+  await tester.pumpForStream();
+  
+  expect(find.text('Loaded'), findsOneWidget);
+});
+```
+
+**Available Pump Helpers:**
+
+| Method | Use Case | Timeout Protection |
+|--------|----------|-------------------|
+| `pumpForStream()` | Tests with BLoC/stream subscriptions | Fixed 10 frames |
+| `pumpForAnimation(duration)` | Tests waiting for specific animations | Fixed duration |
+| `pumpAndSettleSafe()` | Widget tests needing settle | 2s timeout (throws) |
+| `pumpSettleOrTimeout()` | Best-effort settle | 2s timeout (no throw) |
+| `pumpFrames(count)` | Fine-grained control over frame count | Fixed count |
+| `pumpUntilFound(finder)` | Wait for async widget to appear | Returns false after 2s |
+
 ### Test Failures
 
 **"Could not find a match for <method>"**
@@ -522,7 +712,7 @@ testWidgets('updates task when form is submitted', (tester) async {
 - Don't share stream instances between tests
 
 **Flaky async tests**
-- Use `pumpAndSettle()` in widget tests
+- Use `pumpForStream()` for BLoC tests (NOT `pumpAndSettle()`)
 - Use proper stream testing utilities
 - Avoid `Future.delayed` - use explicit waits
 

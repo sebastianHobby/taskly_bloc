@@ -4,7 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/data/services/user_data_seeder.dart';
+import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 
 part 'auth_event.dart';
@@ -17,7 +17,7 @@ part 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   AuthBloc({
     required AuthRepositoryContract authRepository,
-    required UserDataSeeder userDataSeeder,
+    required UserDataSeederContract userDataSeeder,
   }) : _authRepository = authRepository,
        _userDataSeeder = userDataSeeder,
        super(const AppAuthState()) {
@@ -35,7 +35,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   }
 
   final AuthRepositoryContract _authRepository;
-  final UserDataSeeder _userDataSeeder;
+  final UserDataSeederContract _userDataSeeder;
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
@@ -70,7 +70,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       // Seed user data for existing session (user was already logged in)
       // This ensures system labels and screens exist
       talker.blocLog('Auth', 'Seeding user data for existing session');
-      _userDataSeeder.seedAll().ignore();
+      _userDataSeeder.seedAll(session.user.id).ignore();
     } else {
       talker.blocLog(
         'Auth',
@@ -114,7 +114,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
       // Seed user data after successful authentication
       // This ensures system labels and screens exist for the user
       talker.blocLog('Auth', 'Seeding user data after auth state change');
-      _userDataSeeder.seedAll().ignore();
+      _userDataSeeder.seedAll(session.user.id).ignore();
     } else {
       talker.blocLog(
         'Auth',

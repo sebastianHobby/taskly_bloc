@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dar
 
 import '../../../../helpers/fallback_values.dart';
 import '../../../../helpers/pump_app.dart';
+import '../../../../helpers/test_helpers.dart';
 import '../../../../mocks/repository_mocks.dart';
 
 void main() {
@@ -41,7 +42,8 @@ void main() {
     );
 
     await tester.pump();
-    await tester.pumpAndSettle();
+    // Use pumpForStream() to avoid potential hangs from stream subscriptions
+    await tester.pumpForStream();
 
     final context = tester.element(find.byType(TaskOverviewView));
     final l10n = context.l10n;
