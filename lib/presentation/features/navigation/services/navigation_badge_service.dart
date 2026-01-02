@@ -1,5 +1,6 @@
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
@@ -22,6 +23,12 @@ class NavigationBadgeService {
   final DateTime Function() _nowFactory;
 
   Stream<int>? badgeStreamFor(ScreenDefinition screen) {
+    // Only show badges for workspace screens (task lists, projects, etc.)
+    // Wellbeing and settings screens don't need task count badges
+    if (screen.category != ScreenCategory.workspace) {
+      return null;
+    }
+
     return screen.view.when(
       collection: (selector, display, supportBlocks) {
         switch (selector.entityType) {

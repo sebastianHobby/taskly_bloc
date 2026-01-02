@@ -7,6 +7,7 @@ targets:
       drift_dev:drift_dev:
         options:
           store_date_time_values_as_text: true
+          data_class_to_companions: false
           sql:
             options:
               modules:

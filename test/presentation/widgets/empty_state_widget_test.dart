@@ -213,6 +213,32 @@ void main() {
         expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
         expect(find.text('Nothing upcoming'), findsOneWidget);
       });
+
+      testWidgets('noLabels shows label icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.noLabels(title: 'No labels'),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.label_outlined), findsOneWidget);
+        expect(find.text('No labels'), findsOneWidget);
+      });
+
+      testWidgets('noValues shows heart icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.noValues(title: 'No values'),
+            ),
+          ),
+        );
+
+        expect(find.byIcon(Icons.favorite_border), findsOneWidget);
+        expect(find.text('No values'), findsOneWidget);
+      });
     });
   });
 }

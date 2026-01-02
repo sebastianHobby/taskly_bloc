@@ -82,6 +82,30 @@ class EmptyStateWidget extends StatelessWidget {
          key: key,
        );
 
+  /// Creates an empty state for when there are no labels.
+  const EmptyStateWidget.noLabels({
+    required String title,
+    String? description,
+    Key? key,
+  }) : this(
+         icon: Icons.label_outlined,
+         title: title,
+         description: description,
+         key: key,
+       );
+
+  /// Creates an empty state for when there are no values.
+  const EmptyStateWidget.noValues({
+    required String title,
+    String? description,
+    Key? key,
+  }) : this(
+         icon: Icons.favorite_border,
+         title: title,
+         description: description,
+         key: key,
+       );
+
   /// The icon to display.
   final IconData icon;
 
