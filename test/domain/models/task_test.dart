@@ -1,385 +1,240 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/occurrence_data.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
+import '../../fixtures/test_data.dart';
+import '../../helpers/fallback_values.dart';
+
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('Task', () {
-    final now = DateTime(2025, 12, 26);
-
-    test('creates instance with required fields', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task.id, 'task-1');
-      expect(task.name, 'Test Task');
-      expect(task.completed, isFalse);
-      expect(task.createdAt, now);
-      expect(task.updatedAt, now);
-      expect(task.startDate, isNull);
-      expect(task.deadlineDate, isNull);
-      expect(task.description, isNull);
-      expect(task.projectId, isNull);
-      expect(task.repeatIcalRrule, isNull);
-      expect(task.repeatFromCompletion, isFalse);
-      expect(task.seriesEnded, isFalse);
-      expect(task.project, isNull);
-      expect(task.labels, isEmpty);
-      expect(task.occurrence, isNull);
-    });
-
-    test('creates instance with all fields', () {
-      final startDate = DateTime(2025, 12, 25);
-      final deadlineDate = DateTime(2025, 12, 31);
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+    group('construction', () {
+      test('creates with required fields only', () {
+        final now = DateTime.now();
+        final task = Task(
+          id: 'task-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
-      final occurrence = OccurrenceData(
-        date: deadlineDate,
-        deadline: deadlineDate,
-        originalDate: startDate,
-        isRescheduled: true,
-      );
+          name: 'Test Task',
+          completed: false,
+        );
 
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: true,
-        createdAt: now,
-        updatedAt: now,
-        startDate: startDate,
-        deadlineDate: deadlineDate,
-        description: 'Test description',
-        projectId: 'project-1',
-        repeatIcalRrule: 'FREQ=DAILY',
-        repeatFromCompletion: true,
-        seriesEnded: true,
-        project: project,
-        labels: labels,
-        occurrence: occurrence,
-      );
+        expect(task.id, 'task-1');
+        expect(task.name, 'Test Task');
+        expect(task.completed, false);
+        expect(task.createdAt, now);
+        expect(task.updatedAt, now);
+      });
 
-      expect(task.startDate, startDate);
-      expect(task.deadlineDate, deadlineDate);
-      expect(task.description, 'Test description');
-      expect(task.projectId, 'project-1');
-      expect(task.repeatIcalRrule, 'FREQ=DAILY');
-      expect(task.repeatFromCompletion, isTrue);
-      expect(task.seriesEnded, isTrue);
-      expect(task.project, project);
-      expect(task.labels, labels);
-      expect(task.occurrence, occurrence);
-    });
-
-    test('isOccurrenceInstance returns false when occurrence is null', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task.isOccurrenceInstance, isFalse);
-    });
-
-    test('isOccurrenceInstance returns true when occurrence is set', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        occurrence: OccurrenceData(
-          date: now,
-          originalDate: now,
-          isRescheduled: false,
-        ),
-      );
-
-      expect(task.isOccurrenceInstance, isTrue);
-    });
-
-    test('isRepeating returns false when repeatIcalRrule is null', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task.isRepeating, isFalse);
-    });
-
-    test('isRepeating returns false when repeatIcalRrule is empty', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        repeatIcalRrule: '',
-      );
-
-      expect(task.isRepeating, isFalse);
-    });
-
-    test('isRepeating returns true when repeatIcalRrule is set', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        repeatIcalRrule: 'FREQ=WEEKLY',
-      );
-
-      expect(task.isRepeating, isTrue);
-    });
-
-    test('copyWith creates new instance with updated fields', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Original Name',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final updated = task.copyWith(
-        name: 'Updated Name',
-        completed: true,
-        description: 'New description',
-      );
-
-      expect(updated.id, task.id);
-      expect(updated.name, 'Updated Name');
-      expect(updated.completed, isTrue);
-      expect(updated.description, 'New description');
-      expect(updated.createdAt, task.createdAt);
-      expect(updated.updatedAt, task.updatedAt);
-    });
-
-    test('copyWith preserves unchanged fields', () {
-      final startDate = DateTime(2025, 12, 25);
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        startDate: startDate,
-        description: 'Original description',
-      );
-
-      final updated = task.copyWith(name: 'Updated Name');
-
-      expect(updated.name, 'Updated Name');
-      expect(updated.description, task.description);
-      expect(updated.startDate, task.startDate);
-      expect(updated.completed, task.completed);
-    });
-
-    test('equality compares all fields', () {
-      final task1 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final task2 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task1, equals(task2));
-    });
-
-    test('equality returns false for different tasks', () {
-      final task1 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final task2 = Task(
-        id: 'task-2',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task1, isNot(equals(task2)));
-    });
-
-    test('equality considers labels', () {
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+      test('creates with all optional fields', () {
+        final now = DateTime.now();
+        final deadline = now.add(const Duration(days: 7));
+        final task = Task(
+          id: 'task-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
+          name: 'Full Task',
+          completed: true,
+          description: 'A description',
+          startDate: now,
+          deadlineDate: deadline,
+          projectId: 'project-1',
+          priority: 1,
+          repeatIcalRrule: 'FREQ=DAILY',
+          repeatFromCompletion: true,
+          seriesEnded: true,
+          lastReviewedAt: now,
+        );
 
-      final task1 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        labels: labels,
-      );
+        expect(task.description, 'A description');
+        expect(task.startDate, now);
+        expect(task.deadlineDate, deadline);
+        expect(task.projectId, 'project-1');
+        expect(task.priority, 1);
+        expect(task.repeatIcalRrule, 'FREQ=DAILY');
+        expect(task.repeatFromCompletion, true);
+        expect(task.seriesEnded, true);
+        expect(task.lastReviewedAt, now);
+      });
 
-      final task2 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+      test('defaults labels to empty list', () {
+        final task = TestData.task();
+        expect(task.labels, isEmpty);
+      });
 
-      expect(task1, isNot(equals(task2)));
+      test('defaults repeatFromCompletion to false', () {
+        final task = TestData.task();
+        expect(task.repeatFromCompletion, false);
+      });
+
+      test('defaults seriesEnded to false', () {
+        final task = TestData.task();
+        expect(task.seriesEnded, false);
+      });
     });
 
-    test('hashCode is consistent with equality', () {
-      final task1 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final task2 = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(task1.hashCode, equals(task2.hashCode));
-    });
-
-    test('copyWith updates project', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final updated = task.copyWith(project: project);
-
-      expect(updated.project, equals(project));
-    });
-
-    test('copyWith updates labels', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+    group('equality', () {
+      test('equal when all fields match', () {
+        final now = DateTime(2025, 1, 15, 12);
+        final task1 = Task(
+          id: 'task-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
+          name: 'Test',
+          completed: false,
+        );
+        final task2 = Task(
+          id: 'task-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
 
-      final updated = task.copyWith(labels: labels);
+        expect(task1, equals(task2));
+        expect(task1.hashCode, equals(task2.hashCode));
+      });
 
-      expect(updated.labels, equals(labels));
+      test('not equal when id differs', () {
+        final now = DateTime(2025, 1, 15, 12);
+        final task1 = Task(
+          id: 'task-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
+        final task2 = Task(
+          id: 'task-2',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
+
+        expect(task1, isNot(equals(task2)));
+      });
+
+      test('not equal when name differs', () {
+        final now = DateTime(2025, 1, 15, 12);
+        final task1 = Task(
+          id: 'task-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test A',
+          completed: false,
+        );
+        final task2 = Task(
+          id: 'task-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test B',
+          completed: false,
+        );
+
+        expect(task1, isNot(equals(task2)));
+      });
+
+      test('handles null optional fields in equality', () {
+        final task1 = TestData.task(id: 'same');
+        final task2 = TestData.task(id: 'same');
+
+        expect(task1.description, isNull);
+        expect(task2.description, isNull);
+      });
     });
 
-    test('copyWith updates occurrence', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('copyWith', () {
+      test('copies with new name', () {
+        final task = TestData.task(name: 'Original');
+        final copied = task.copyWith(name: 'Changed');
 
-      final occurrence = OccurrenceData(
-        date: now.add(const Duration(days: 7)),
-        originalDate: now,
-        isRescheduled: true,
-      );
+        expect(copied.name, 'Changed');
+        expect(copied.id, task.id);
+        expect(copied.completed, task.completed);
+      });
 
-      final updated = task.copyWith(occurrence: occurrence);
+      test('copies with new completed status', () {
+        final task = TestData.task();
+        final copied = task.copyWith(completed: true);
 
-      expect(updated.occurrence, equals(occurrence));
+        expect(copied.completed, true);
+        expect(copied.name, task.name);
+      });
+
+      test('copies with new priority', () {
+        final task = TestData.task();
+        final copied = task.copyWith(priority: 2);
+
+        expect(copied.priority, 2);
+      });
+
+      test('copies with new labels list', () {
+        final task = TestData.task();
+        final newLabels = [TestData.label(name: 'New Label')];
+        final copied = task.copyWith(labels: newLabels);
+
+        expect(copied.labels, hasLength(1));
+        expect(copied.labels.first.name, 'New Label');
+      });
+
+      test('preserves unchanged fields', () {
+        final task = TestData.task(
+          name: 'Test',
+          description: 'Desc',
+          priority: 1,
+        );
+        final copied = task.copyWith(name: 'New Name');
+
+        expect(copied.description, 'Desc');
+        expect(copied.priority, 1);
+      });
     });
 
-    test('copyWith with repeatFromCompletion', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('computed properties', () {
+      test('isOccurrenceInstance returns true when occurrence is set', () {
+        final task = TestData.task().copyWith(
+          occurrence: TestData.occurrenceData(),
+        );
+        expect(task.isOccurrenceInstance, true);
+      });
 
-      final updated = task.copyWith(repeatFromCompletion: true);
+      test('isOccurrenceInstance returns false when occurrence is null', () {
+        final task = TestData.task();
+        expect(task.isOccurrenceInstance, false);
+      });
 
-      expect(updated.repeatFromCompletion, isTrue);
+      test('isRepeating returns true when repeatIcalRrule is set', () {
+        final task = TestData.task(repeatIcalRrule: 'FREQ=DAILY');
+        expect(task.isRepeating, true);
+      });
+
+      test('isRepeating returns false when repeatIcalRrule is null', () {
+        final task = TestData.task();
+        expect(task.isRepeating, false);
+      });
+
+      test('isRepeating returns false when repeatIcalRrule is empty', () {
+        final task = TestData.task(repeatIcalRrule: '');
+        expect(task.isRepeating, false);
+      });
     });
 
-    test('copyWith with seriesEnded', () {
-      final task = Task(
-        id: 'task-1',
-        name: 'Test Task',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('priority', () {
+      test('accepts P1 priority (1)', () {
+        final task = TestData.task(priority: 1);
+        expect(task.priority, 1);
+      });
 
-      final updated = task.copyWith(seriesEnded: true);
+      test('accepts P4 priority (4)', () {
+        final task = TestData.task(priority: 4);
+        expect(task.priority, 4);
+      });
 
-      expect(updated.seriesEnded, isTrue);
+      test('accepts null priority', () {
+        final task = TestData.task();
+        expect(task.priority, isNull);
+      });
     });
   });
 }

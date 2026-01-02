@@ -13,12 +13,12 @@ dependencies:
   drift_flutter: ^0.2.8
   drift_sqlite_async: ^0.2.6
   emoji_picker_flutter: ^4.4.0
+  fl_chart: ^1.1.1
   flex_color_picker: ^3.6.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
   flutter_dotenv: ^5.1.0
-  rxdart: ^0.28.0
   flutter_form_builder: ^10.2.0
   flutter_localizations:
     sdk: flutter
@@ -29,20 +29,21 @@ dependencies:
   json_annotation: ^4.9.0
   ml_linalg: ^13.12.6
   path: ^1.9.1
-  statistics: ^1.2.1
   path_provider: ^2.1.5
   powersync: ^1.16.2
+  rrule: ^0.2.17
+  rxdart: ^0.28.0
+  statistics: ^1.2.1
   supabase_auth_ui: ^0.5.5
   supabase_flutter: ^2.10.3
-  uuid: ^4.4.2
-  rrule: ^0.2.17
-  fl_chart: ^1.1.1
   talker: ^5.1.9
-  talker_flutter: ^5.1.9
   talker_bloc_logger: ^5.1.9
+  talker_flutter: ^5.1.9
+  uuid: ^4.4.2
 dev_dependencies:
   bloc_test: ^10.0.0
   build_runner: ^2.10.4
+  checks: ^0.3.1
   drift_dev: ^2.20.3
   flutter_test:
     sdk: flutter

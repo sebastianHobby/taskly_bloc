@@ -1,17 +1,19 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
-import 'package:uuid/uuid.dart';
-
-const uuid = Uuid();
 
 class LabelRepository implements LabelRepositoryContract {
-  LabelRepository({required this.driftDb});
+  LabelRepository({
+    required this.driftDb,
+    required this.idGenerator,
+  });
   final drift.AppDatabase driftDb;
+  final IdGenerator idGenerator;
 
   Stream<List<drift.LabelTableData>> get _labelStream =>
       (driftDb.select(
@@ -59,31 +61,30 @@ class LabelRepository implements LabelRepositoryContract {
 
   // Domain-aware read methods
   @override
-  Stream<List<Label>> watchAll({bool withRelated = false}) =>
+  Stream<List<Label>> watchAll() =>
       _labelStream.map((rows) => rows.map(labelFromTable).toList());
 
   @override
-  Future<List<Label>> getAll({bool withRelated = false}) async =>
+  Future<List<Label>> getAll() async =>
       (await _labelList).map(labelFromTable).toList();
 
   @override
-  Stream<List<Label>> watchByType(LabelType type, {bool withRelated = false}) =>
+  Stream<List<Label>> watchByType(LabelType type) =>
       _labelStreamByType(type).map((rows) => rows.map(labelFromTable).toList());
 
   @override
   Future<List<Label>> getAllByType(
-    LabelType type, {
-    bool withRelated = false,
-  }) async => (await _labelListByType(type)).map(labelFromTable).toList();
+    LabelType type,
+  ) async => (await _labelListByType(type)).map(labelFromTable).toList();
 
   @override
-  Stream<Label?> watch(String id, {bool withRelated = false}) =>
+  Stream<Label?> watchById(String id) =>
       (driftDb.select(driftDb.labelTable)..where((l) => l.id.equals(id)))
           .watch()
           .map((rows) => rows.isEmpty ? null : labelFromTable(rows.first));
 
   @override
-  Future<Label?> get(String id, {bool withRelated = false}) async {
+  Future<Label?> getById(String id) async {
     final data = await _getLabelById(id);
     return data == null ? null : labelFromTable(data);
   }
@@ -114,7 +115,11 @@ class LabelRepository implements LabelRepositoryContract {
       ),
     };
 
-    final id = uuid.v4();
+    // System labels use v5 ID with their system name
+    final id = idGenerator.labelId(
+      name: labelData.name,
+      type: LabelType.label,
+    );
     await driftDb
         .into(driftDb.labelTable)
         .insert(
@@ -161,8 +166,12 @@ class LabelRepository implements LabelRepositoryContract {
       LabelType.value => drift.LabelType.value,
     };
 
+    // Generate deterministic v5 ID
+    final id = idGenerator.labelId(name: name, type: type);
+
     await _createLabel(
       drift.LabelTableCompanion(
+        id: Value(id),
         name: Value(name),
         color: Value(color),
         type: Value(driftLabel),
@@ -208,6 +217,30 @@ class LabelRepository implements LabelRepositoryContract {
   }
 
   @override
+  Future<void> updateLastReviewedAt({
+    required String id,
+    required DateTime reviewedAt,
+  }) async {
+    talker.debug('[LabelRepository] updateLastReviewedAt: id=$id');
+    final existing = await _getLabelById(id);
+    if (existing == null) {
+      talker.warning(
+        '[LabelRepository] updateLastReviewedAt failed: label not found id=$id',
+      );
+      throw RepositoryNotFoundException('No label found to update');
+    }
+
+    await (driftDb.update(
+      driftDb.labelTable,
+    )..where((l) => l.id.equals(id))).write(
+      drift.LabelTableCompanion(
+        lastReviewedAt: Value(reviewedAt),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
+  }
+
+  @override
   Future<void> addLabelToTask({
     required String taskId,
     required String labelId,
@@ -221,14 +254,22 @@ class LabelRepository implements LabelRepositoryContract {
 
     if (existing != null) return; // Already exists
 
+    // Generate deterministic v5 ID for junction
+    final junctionId = idGenerator.taskLabelId(
+      taskId: taskId,
+      labelId: labelId,
+    );
+
     // Add new label association
     await driftDb
         .into(driftDb.taskLabelsTable)
         .insert(
-          drift.TaskLabelsTableCompanion.insert(
-            taskId: taskId,
-            labelId: labelId,
+          drift.TaskLabelsTableCompanion(
+            id: Value(junctionId),
+            taskId: Value(taskId),
+            labelId: Value(labelId),
           ),
+          mode: InsertMode.insertOrIgnore,
         );
   }
 

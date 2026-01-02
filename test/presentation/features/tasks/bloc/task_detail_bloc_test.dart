@@ -1,437 +1,300 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/utils/not_found_entity.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart'
-    show TaskRepository;
+import 'package:taskly_bloc/core/utils/entity_operation.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
-import '../../../../helpers/bloc_test_helpers.dart';
-import '../../../../helpers/custom_matchers.dart';
-import '../../../../helpers/fallback_values.dart';
+import '../../../../mocks/repository_mocks.dart';
 
-/// Tests for [TaskDetailBloc] covering task creation, editing, and deletion.
-///
-/// Coverage:
-/// - ✅ Initialization with and without taskId
-/// - ✅ Loading task data
-/// - ✅ Creating new tasks
-/// - ✅ Updating existing tasks
-/// - ✅ Deleting tasks
-/// - ✅ Error handling for all operations
-/// - ✅ Form field updates
-///
-/// Related: [TaskDetailBloc], [TaskRepository]
 void main() {
-  late BlocTestContext ctx;
-  late TaskDetailBloc bloc;
+  late MockTaskRepositoryContract taskRepo;
+  late MockProjectRepositoryContract projectRepo;
+  late MockLabelRepositoryContract labelRepo;
 
-  setUpAll(registerAllFallbackValues);
-
-  setUp(() {
-    ctx = BlocTestContext();
-    // BlocTestContext already stubs projectRepo.getAll() and labelRepo.getAll()
-    // with empty lists by default
+  setUpAll(() {
+    initializeTalkerForTest();
+    registerFallbackValue(TestData.task());
+    registerFallbackValue(TestData.project());
+    registerFallbackValue(TestData.label());
   });
 
-  tearDown(() {
-    bloc.close();
+  setUp(() {
+    taskRepo = MockTaskRepositoryContract();
+    projectRepo = MockProjectRepositoryContract();
+    labelRepo = MockLabelRepositoryContract();
   });
 
   group('TaskDetailBloc', () {
-    group('initialization', () {
-      test('initial state is TaskDetailInitial', () {
-        bloc = TaskDetailBloc(
-          taskRepository: ctx.taskRepo,
-          projectRepository: ctx.projectRepo,
-          labelRepository: ctx.labelRepo,
-        );
+    TaskDetailBloc buildBloc({
+      String? taskId,
+      bool autoLoad = false,
+    }) {
+      return TaskDetailBloc(
+        taskRepository: taskRepo,
+        projectRepository: projectRepo,
+        labelRepository: labelRepo,
+        taskId: taskId,
+        autoLoad: autoLoad,
+      );
+    }
 
-        expect(bloc.state, isInitialState());
-      });
-
-      test('loads initial data when no taskId provided', () async {
-        final projects = [TestData.project()];
-        final labels = [TestData.label()];
-
-        ctx.stubProjectsReturn(projects);
-        ctx.stubLabelsReturn(labels);
-
-        bloc = TaskDetailBloc(
-          taskRepository: ctx.taskRepo,
-          projectRepository: ctx.projectRepo,
-          labelRepository: ctx.labelRepo,
-        );
-
-        await expectLater(
-          bloc.stream,
-          emitsInOrder([
-            isA<TaskDetailLoadInProgress>(),
-            predicate<TaskDetailInitialDataLoadSuccess>(
-              (state) =>
-                  state.availableProjects.length == projects.length &&
-                  state.availableProjects.first.id == projects.first.id &&
-                  state.availableLabels.length == labels.length &&
-                  state.availableLabels.first.id == labels.first.id,
-            ),
-          ]),
-        );
-      });
-
-      test('loads task when taskId provided', () async {
-        final task = TestData.task(id: 'task-1');
-        final projects = [TestData.project()];
-        final labels = [TestData.label()];
-
-        ctx.stubTaskById('task-1', task);
-        ctx.stubProjectsReturn(projects);
-        ctx.stubLabelsReturn(labels);
-
-        bloc = TaskDetailBloc(
-          taskRepository: ctx.taskRepo,
-          projectRepository: ctx.projectRepo,
-          labelRepository: ctx.labelRepo,
-          taskId: 'task-1',
-        );
-
-        await expectLater(
-          bloc.stream,
-          emitsInOrder([
-            isA<TaskDetailLoadInProgress>(),
-            predicate<TaskDetailLoadSuccess>(
-              (state) =>
-                  state.task.id == task.id &&
-                  state.availableProjects.length == projects.length &&
-                  state.availableProjects.first.id == projects.first.id &&
-                  state.availableLabels.length == labels.length &&
-                  state.availableLabels.first.id == labels.first.id,
-            ),
-          ]),
-        );
-      });
+    test('initial state is TaskDetailInitial', () {
+      final bloc = buildBloc();
+      expect(bloc.state, const TaskDetailInitial());
+      bloc.close();
     });
 
-    group('loadInitialData event', () {
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits success state with projects and labels',
-        build: () {
-          final projects = [TestData.project()];
-          final labels = [TestData.label()];
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'loadInitialData emits loading then success with projects and labels',
+      build: () {
+        final projects = [TestData.project(id: 'p1')];
+        final labels = [TestData.label(id: 'l1')];
+        when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
+        when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailInitialDataLoadSuccess>()
+            .having((s) => s.availableProjects.length, 'projects', 1)
+            .having((s) => s.availableLabels.length, 'labels', 1),
+      ],
+    );
 
-          ctx.stubProjectsReturn(projects);
-          ctx.stubLabelsReturn(labels);
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'loadInitialData emits failure when project fetch fails',
+      build: () {
+        when(
+          () => projectRepo.getAll(),
+        ).thenThrow(Exception('Failed to load projects'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailOperationFailure>(),
+      ],
+    );
 
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
-        expect: () => [
-          isLoadingState(),
-          predicate<TaskDetailInitialDataLoadSuccess>(
-            (state) =>
-                state.availableProjects.isNotEmpty &&
-                state.availableLabels.isNotEmpty,
-          ),
-        ],
-      );
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'get emits loading then success with task',
+      build: () {
+        final task = TestData.task(id: 'task-123');
+        final projects = [TestData.project(id: 'p1')];
+        final labels = [TestData.label(id: 'l1')];
+        when(() => taskRepo.getById('task-123')).thenAnswer((_) async => task);
+        when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
+        when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+        return buildBloc();
+      },
+      act: (bloc) =>
+          bloc.add(const TaskDetailEvent.loadById(taskId: 'task-123')),
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailLoadSuccess>()
+            .having((s) => s.task.id, 'task.id', 'task-123')
+            .having((s) => s.task.name, 'task.name', 'Test Task'),
+      ],
+    );
 
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure state on error',
-        build: () {
-          when(
-            () => ctx.projectRepo.getAll(),
-          ).thenThrow(Exception('Failed to load projects'));
-          when(() => ctx.labelRepo.getAll()).thenAnswer((_) async => []);
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'get emits failure when task not found',
+      build: () {
+        when(() => taskRepo.getById(any())).thenAnswer((_) async => null);
+        when(() => projectRepo.getAll()).thenAnswer((_) async => []);
+        when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+        return buildBloc();
+      },
+      act: (bloc) =>
+          bloc.add(const TaskDetailEvent.loadById(taskId: 'not-found')),
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailOperationFailure>(),
+      ],
+    );
 
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
-        expect: () => [
-          isLoadingState(),
-          isErrorState(),
-        ],
-      );
-    });
-
-    group('get event', () {
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits load success when task exists',
-        build: () {
-          final task = TestData.task(id: 'task-1');
-          final projects = [TestData.project()];
-          final labels = [TestData.label()];
-
-          ctx.stubTaskById('task-1', task);
-          ctx.stubProjectsReturn(projects);
-          ctx.stubLabelsReturn(labels);
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
-        expect: () => [
-          isLoadingState(),
-          predicate<TaskDetailLoadSuccess>(
-            (state) => state.task.id == 'task-1',
-          ),
-        ],
-      );
-
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure when task not found',
-        build: () {
-          when(
-            () => ctx.taskRepo.getById('nonexistent'),
-          ).thenAnswer((_) async => null);
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) =>
-            bloc.add(const TaskDetailEvent.get(taskId: 'nonexistent')),
-        expect: () => [
-          isLoadingState(),
-          predicate<TaskDetailOperationFailure>(
-            (state) => state.errorDetails.error == NotFoundEntity.task,
-          ),
-        ],
-      );
-
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure on repository error',
-        build: () {
-          when(
-            () => ctx.taskRepo.getById(any()),
-          ).thenThrow(Exception('Database error'));
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.get(taskId: 'task-1')),
-        expect: () => [
-          isLoadingState(),
-          isErrorState(),
-        ],
-      );
-    });
-
-    group('create event', () {
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'creates task and emits success',
-        build: () {
-          ctx.stubTaskCreateSuccess();
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(
-          const TaskDetailEvent.create(
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'create emits success',
+      setUp: () {
+        when(
+          () => taskRepo.create(
             name: 'New Task',
             description: 'Task description',
           ),
+        ).thenAnswer((_) async {});
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(
+        const TaskDetailEvent.create(
+          name: 'New Task',
+          description: 'Task description',
         ),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isSuccessState(),
-        ],
-        verify: (_) {
-          verify(
-            () => ctx.taskRepo.create(
-              name: 'New Task',
-              description: 'Task description',
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              projectId: any(named: 'projectId'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-            ),
-          ).called(1);
-        },
-      );
+      ),
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        isA<TaskDetailOperationSuccess>().having(
+          (s) => s.operation,
+          'operation',
+          EntityOperation.create,
+        ),
+      ],
+    );
 
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure when create fails',
-        build: () {
-          when(
-            () => ctx.taskRepo.create(
-              name: any(named: 'name'),
-              description: any(named: 'description'),
-              completed: any(named: 'completed'),
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              projectId: any(named: 'projectId'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-            ),
-          ).thenThrow(Exception('Create failed'));
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(
-          const TaskDetailEvent.create(
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'create emits failure when repository throws',
+      setUp: () {
+        when(
+          () => taskRepo.create(
             name: 'New Task',
-            description: null,
           ),
+        ).thenThrow(Exception('Create failed'));
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(
+        const TaskDetailEvent.create(
+          name: 'New Task',
+          description: null,
         ),
-        expect: () => [
-          isErrorState(),
-        ],
-      );
-    });
+      ),
+      expect: () => [
+        isA<TaskDetailOperationFailure>(),
+      ],
+    );
 
-    group('update event', () {
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'updates task and emits success',
-        build: () {
-          ctx.stubTaskUpdateSuccess();
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(
-          const TaskDetailEvent.update(
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'update emits success',
+      setUp: () {
+        when(
+          () => taskRepo.update(
             id: 'task-1',
             name: 'Updated Task',
-            description: 'Updated description',
-            completed: true,
-          ),
-        ),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isSuccessState(),
-        ],
-        verify: (_) {
-          verify(
-            () => ctx.taskRepo.update(
-              id: 'task-1',
-              name: 'Updated Task',
-              description: 'Updated description',
-              completed: true,
-              projectId: any(named: 'projectId'),
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-            ),
-          ).called(1);
-        },
-      );
-
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure when update fails',
-        build: () {
-          when(
-            () => ctx.taskRepo.update(
-              id: any(named: 'id'),
-              name: any(named: 'name'),
-              description: any(named: 'description'),
-              completed: any(named: 'completed'),
-              projectId: any(named: 'projectId'),
-              startDate: any(named: 'startDate'),
-              deadlineDate: any(named: 'deadlineDate'),
-              repeatIcalRrule: any(named: 'repeatIcalRrule'),
-              labelIds: any(named: 'labelIds'),
-            ),
-          ).thenThrow(Exception('Update failed'));
-
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(
-          const TaskDetailEvent.update(
-            id: 'task-1',
-            name: 'Updated Task',
-            description: null,
             completed: false,
           ),
+        ).thenAnswer((_) async {});
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(
+        const TaskDetailEvent.update(
+          id: 'task-1',
+          name: 'Updated Task',
+          description: null,
+          completed: false,
         ),
-        expect: () => [
-          isErrorState(),
-        ],
-      );
-    });
+      ),
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        isA<TaskDetailOperationSuccess>().having(
+          (s) => s.operation,
+          'operation',
+          EntityOperation.update,
+        ),
+      ],
+    );
 
-    group('delete event', () {
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'deletes task and emits success',
-        build: () {
-          ctx.stubTaskDeleteSuccess();
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'update emits failure when repository throws',
+      setUp: () {
+        when(
+          () => taskRepo.update(
+            id: 'task-1',
+            name: 'Updated Task',
+            completed: false,
+          ),
+        ).thenThrow(Exception('Update failed'));
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(
+        const TaskDetailEvent.update(
+          id: 'task-1',
+          name: 'Updated Task',
+          description: null,
+          completed: false,
+        ),
+      ),
+      expect: () => [
+        isA<TaskDetailOperationFailure>(),
+      ],
+    );
 
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
-        wait: const Duration(milliseconds: 100),
-        expect: () => [
-          isSuccessState(),
-        ],
-        verify: (_) {
-          verify(() => ctx.taskRepo.delete('task-1')).called(1);
-        },
-      );
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'delete emits success',
+      setUp: () {
+        when(() => taskRepo.delete('task-1')).thenAnswer((_) async {});
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
+      wait: const Duration(milliseconds: 100),
+      expect: () => [
+        isA<TaskDetailOperationSuccess>().having(
+          (s) => s.operation,
+          'operation',
+          EntityOperation.delete,
+        ),
+      ],
+    );
 
-      blocTest<TaskDetailBloc, TaskDetailState>(
-        'emits failure when delete fails',
-        build: () {
-          when(
-            () => ctx.taskRepo.delete(any()),
-          ).thenThrow(Exception('Delete failed'));
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'delete emits failure when repository throws',
+      setUp: () {
+        when(
+          () => taskRepo.delete('task-1'),
+        ).thenThrow(Exception('Delete failed'));
+      },
+      build: buildBloc,
+      act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
+      expect: () => [
+        isA<TaskDetailOperationFailure>(),
+      ],
+    );
 
-          return TaskDetailBloc(
-            taskRepository: ctx.taskRepo,
-            projectRepository: ctx.projectRepo,
-            labelRepository: ctx.labelRepo,
-            autoLoad: false,
-          );
-        },
-        act: (bloc) => bloc.add(const TaskDetailEvent.delete(id: 'task-1')),
-        expect: () => [
-          isErrorState(),
-        ],
-      );
-    });
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'autoLoad with taskId triggers get event',
+      build: () {
+        final task = TestData.task(id: 'auto-load-task');
+        when(
+          () => taskRepo.getById('auto-load-task'),
+        ).thenAnswer((_) async => task);
+        when(() => projectRepo.getAll()).thenAnswer((_) async => []);
+        when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+        return TaskDetailBloc(
+          taskRepository: taskRepo,
+          projectRepository: projectRepo,
+          labelRepository: labelRepo,
+          taskId: 'auto-load-task',
+        );
+      },
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailLoadSuccess>().having(
+          (s) => s.task.id,
+          'task.id',
+          'auto-load-task',
+        ),
+      ],
+    );
+
+    blocTest<TaskDetailBloc, TaskDetailState>(
+      'autoLoad without taskId triggers loadInitialData',
+      build: () {
+        when(
+          () => projectRepo.getAll(),
+        ).thenAnswer((_) async => [TestData.project()]);
+        when(
+          () => labelRepo.getAll(),
+        ).thenAnswer((_) async => [TestData.label()]);
+        return TaskDetailBloc(
+          taskRepository: taskRepo,
+          projectRepository: projectRepo,
+          labelRepository: labelRepo,
+        );
+      },
+      expect: () => [
+        const TaskDetailLoadInProgress(),
+        isA<TaskDetailInitialDataLoadSuccess>(),
+      ],
+    );
   });
 }

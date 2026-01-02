@@ -5,6 +5,5 @@
 library;
 
 export 'task_rules/rule_types.dart';
-export 'task_rules/task_priority_bucket_rule.dart';
 export 'task_rules/task_rule.dart';
 export 'task_rules/task_rule_set.dart';

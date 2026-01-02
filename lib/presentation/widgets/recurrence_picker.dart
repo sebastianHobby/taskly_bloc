@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rrule/rrule.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 import 'dart:async';
 
@@ -89,6 +90,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       }
     } catch (e) {
       // If parsing fails, reset to none
+      talker.debug('RecurrencePicker: Failed to parse RRULE "$rruleString"');
       _frequency = RecurrenceFrequency.none;
     }
   }
@@ -134,6 +136,9 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         return recurrenceRule.toText(l10n: _l10n!);
       } catch (e) {
         // Fall through to manual text generation
+        talker.debug(
+          'RecurrencePicker: Failed to generate human-readable text',
+        );
       }
     }
 

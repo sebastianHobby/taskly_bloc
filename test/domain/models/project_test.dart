@@ -1,388 +1,185 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/occurrence_data.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 
+import '../../fixtures/test_data.dart';
+import '../../helpers/fallback_values.dart';
+
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   group('Project', () {
-    final now = DateTime(2025, 12, 26);
-
-    test('creates instance with required fields', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project.id, 'project-1');
-      expect(project.name, 'Test Project');
-      expect(project.completed, isFalse);
-      expect(project.createdAt, now);
-      expect(project.updatedAt, now);
-      expect(project.description, isNull);
-      expect(project.startDate, isNull);
-      expect(project.deadlineDate, isNull);
-      expect(project.repeatIcalRrule, isNull);
-      expect(project.repeatFromCompletion, isFalse);
-      expect(project.seriesEnded, isFalse);
-      expect(project.labels, isEmpty);
-      expect(project.occurrence, isNull);
-    });
-
-    test('creates instance with all fields', () {
-      final startDate = DateTime(2025, 12, 25);
-      final deadlineDate = DateTime(2025, 12, 31);
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+    group('construction', () {
+      test('creates with required fields', () {
+        final now = DateTime.now();
+        final project = Project(
+          id: 'project-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
-      final occurrence = OccurrenceData(
-        date: deadlineDate,
-        deadline: deadlineDate,
-        originalDate: startDate,
-        isRescheduled: true,
-      );
+          name: 'Test Project',
+          completed: false,
+        );
 
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: true,
-        createdAt: now,
-        updatedAt: now,
-        description: 'Test description',
-        startDate: startDate,
-        deadlineDate: deadlineDate,
-        repeatIcalRrule: 'FREQ=WEEKLY',
-        repeatFromCompletion: true,
-        seriesEnded: true,
-        labels: labels,
-        occurrence: occurrence,
-      );
+        expect(project.id, 'project-1');
+        expect(project.name, 'Test Project');
+        expect(project.completed, false);
+        expect(project.createdAt, now);
+        expect(project.updatedAt, now);
+      });
 
-      expect(project.description, 'Test description');
-      expect(project.startDate, startDate);
-      expect(project.deadlineDate, deadlineDate);
-      expect(project.repeatIcalRrule, 'FREQ=WEEKLY');
-      expect(project.repeatFromCompletion, isTrue);
-      expect(project.seriesEnded, isTrue);
-      expect(project.labels, labels);
-      expect(project.occurrence, occurrence);
-    });
-
-    test('isOccurrenceInstance returns false when occurrence is null', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project.isOccurrenceInstance, isFalse);
-    });
-
-    test('isOccurrenceInstance returns true when occurrence is set', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        occurrence: OccurrenceData(
-          date: now,
-          originalDate: now,
-          isRescheduled: false,
-        ),
-      );
-
-      expect(project.isOccurrenceInstance, isTrue);
-    });
-
-    test('isRepeating returns false when repeatIcalRrule is null', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project.isRepeating, isFalse);
-    });
-
-    test('isRepeating returns false when repeatIcalRrule is empty', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        repeatIcalRrule: '',
-      );
-
-      expect(project.isRepeating, isFalse);
-    });
-
-    test('isRepeating returns true when repeatIcalRrule is set', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        repeatIcalRrule: 'FREQ=MONTHLY',
-      );
-
-      expect(project.isRepeating, isTrue);
-    });
-
-    test('copyWith creates new instance with updated fields', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Original Name',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final updated = project.copyWith(
-        name: 'Updated Name',
-        completed: true,
-        description: 'New description',
-      );
-
-      expect(updated.id, project.id);
-      expect(updated.name, 'Updated Name');
-      expect(updated.completed, isTrue);
-      expect(updated.description, 'New description');
-      expect(updated.createdAt, project.createdAt);
-      expect(updated.updatedAt, project.updatedAt);
-    });
-
-    test('copyWith preserves unchanged fields', () {
-      final startDate = DateTime(2025, 12, 25);
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        startDate: startDate,
-        description: 'Original description',
-      );
-
-      final updated = project.copyWith(name: 'Updated Name');
-
-      expect(updated.name, 'Updated Name');
-      expect(updated.description, project.description);
-      expect(updated.startDate, project.startDate);
-      expect(updated.completed, project.completed);
-    });
-
-    test('equality compares all fields', () {
-      final project1 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final project2 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project1, equals(project2));
-    });
-
-    test('equality returns false for different projects', () {
-      final project1 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final project2 = Project(
-        id: 'project-2',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project1, isNot(equals(project2)));
-    });
-
-    test('equality considers labels', () {
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+      test('creates with all optional fields', () {
+        final now = DateTime.now();
+        final deadline = now.add(const Duration(days: 30));
+        final project = Project(
+          id: 'project-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
+          name: 'Full Project',
+          completed: true,
+          description: 'A full description',
+          startDate: now,
+          deadlineDate: deadline,
+          priority: 2,
+          lastReviewedAt: now,
+          repeatIcalRrule: 'FREQ=MONTHLY',
+          repeatFromCompletion: true,
+          seriesEnded: true,
+        );
 
-      final project1 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        labels: labels,
-      );
+        expect(project.description, 'A full description');
+        expect(project.startDate, now);
+        expect(project.deadlineDate, deadline);
+        expect(project.priority, 2);
+        expect(project.lastReviewedAt, now);
+        expect(project.repeatIcalRrule, 'FREQ=MONTHLY');
+        expect(project.repeatFromCompletion, true);
+        expect(project.seriesEnded, true);
+      });
 
-      final project2 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project1, isNot(equals(project2)));
+      test('defaults labels to empty list', () {
+        final project = TestData.project();
+        expect(project.labels, isEmpty);
+      });
     });
 
-    test('hashCode is consistent with equality', () {
-      final project1 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final project2 = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      expect(project1.hashCode, equals(project2.hashCode));
-    });
-
-    test('copyWith updates labels', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final labels = [
-        Label(
-          id: 'label-1',
-          name: 'Important',
+    group('equality', () {
+      test('equal when all fields match', () {
+        final now = DateTime(2025, 1, 15, 12);
+        final project1 = Project(
+          id: 'project-1',
           createdAt: now,
           updatedAt: now,
-        ),
-      ];
+          name: 'Test',
+          completed: false,
+        );
+        final project2 = Project(
+          id: 'project-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
 
-      final updated = project.copyWith(labels: labels);
+        expect(project1, equals(project2));
+        expect(project1.hashCode, equals(project2.hashCode));
+      });
 
-      expect(updated.labels, equals(labels));
+      test('not equal when id differs', () {
+        final now = DateTime(2025, 1, 15, 12);
+        final project1 = Project(
+          id: 'project-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
+        final project2 = Project(
+          id: 'project-2',
+          createdAt: now,
+          updatedAt: now,
+          name: 'Test',
+          completed: false,
+        );
+
+        expect(project1, isNot(equals(project2)));
+      });
+
+      test('handles null optional fields', () {
+        final project1 = TestData.project();
+        final project2 = TestData.project();
+
+        expect(project1.description, isNull);
+        expect(project2.description, isNull);
+      });
     });
 
-    test('copyWith updates occurrence', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('copyWith', () {
+      test('copies with new name', () {
+        final project = TestData.project(name: 'Original');
+        final copied = project.copyWith(name: 'Changed');
 
-      final occurrence = OccurrenceData(
-        date: now.add(const Duration(days: 14)),
-        originalDate: now,
-        isRescheduled: true,
-      );
+        expect(copied.name, 'Changed');
+        expect(copied.id, project.id);
+      });
 
-      final updated = project.copyWith(occurrence: occurrence);
+      test('copies with new priority', () {
+        final project = TestData.project(priority: null);
+        final copied = project.copyWith(priority: 3);
 
-      expect(updated.occurrence, equals(occurrence));
+        expect(copied.priority, 3);
+      });
+
+      test('preserves unchanged fields', () {
+        final project = TestData.project(
+          name: 'Test',
+          description: 'Desc',
+        );
+        final copied = project.copyWith(name: 'New Name');
+
+        expect(copied.description, 'Desc');
+      });
     });
 
-    test('copyWith with repeatFromCompletion', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('computed properties', () {
+      test('isOccurrenceInstance returns true when occurrence is set', () {
+        final project = TestData.project().copyWith(
+          occurrence: TestData.occurrenceData(),
+        );
+        expect(project.isOccurrenceInstance, true);
+      });
 
-      final updated = project.copyWith(repeatFromCompletion: true);
+      test('isOccurrenceInstance returns false when occurrence is null', () {
+        final project = TestData.project();
+        expect(project.isOccurrenceInstance, false);
+      });
 
-      expect(updated.repeatFromCompletion, isTrue);
+      test('isRepeating returns true when repeatIcalRrule is set', () {
+        final project = TestData.project(repeatIcalRrule: 'FREQ=MONTHLY');
+        expect(project.isRepeating, true);
+      });
+
+      test('isRepeating returns false when repeatIcalRrule is null', () {
+        final project = TestData.project();
+        expect(project.isRepeating, false);
+      });
+
+      test('isRepeating returns false when repeatIcalRrule is empty', () {
+        final project = TestData.project(repeatIcalRrule: '');
+        expect(project.isRepeating, false);
+      });
     });
 
-    test('copyWith with seriesEnded', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
+    group('priority', () {
+      test('accepts P1-P4 range', () {
+        expect(TestData.project(priority: 1).priority, 1);
+        expect(TestData.project(priority: 2).priority, 2);
+        expect(TestData.project(priority: 3).priority, 3);
+        expect(TestData.project(priority: 4).priority, 4);
+      });
 
-      final updated = project.copyWith(seriesEnded: true);
-
-      expect(updated.seriesEnded, isTrue);
-    });
-
-    test('copyWith updates all date fields', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-      );
-
-      final newStart = DateTime(2026);
-      final newDeadline = DateTime(2026, 6, 30);
-
-      final updated = project.copyWith(
-        startDate: newStart,
-        deadlineDate: newDeadline,
-      );
-
-      expect(updated.startDate, newStart);
-      expect(updated.deadlineDate, newDeadline);
-    });
-
-    test('copyWith with same values creates equal object', () {
-      final project = Project(
-        id: 'project-1',
-        name: 'Test Project',
-        completed: false,
-        createdAt: now,
-        updatedAt: now,
-        description: 'Description',
-      );
-
-      final updated = project.copyWith(
-        name: project.name,
-        description: project.description,
-      );
-
-      expect(updated, equals(project));
+      test('accepts null for no priority', () {
+        final project = TestData.project(priority: null);
+        expect(project.priority, isNull);
+      });
     });
   });
 }

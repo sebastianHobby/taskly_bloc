@@ -1,5 +1,6 @@
 #!/usr/bin/env dart
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, Tool script uses print for CLI output
+
 /// i18n Automation Script
 ///
 /// This script performs automated checks for internationalization issues:
@@ -12,6 +13,8 @@
 ///
 /// Options:
 ///   --fix    Attempt to add missing keys to ARB files (placeholders only)
+library;
+
 ///
 /// Exit codes:
 ///   0 - All checks passed

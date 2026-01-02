@@ -16,10 +16,21 @@ analyzer:
     avoid_equals_and_hash_code_on_mutable_classes: ignore
     cascade_invocations: ignore
     unnecessary_underscores: ignore
+    # Info-level rules (noisy, low value)
+    discarded_futures: ignore        # Fire-and-forget is common in UI callbacks
+    one_member_abstracts: ignore     # Single-method interfaces are valid for DI
+    deprecated_member_use: ignore    # Address during Flutter SDK upgrades
+    comment_references: ignore       # Minor doc comment issues
+    avoid_redundant_argument_values: ignore  # Explicit args can improve readability
+    avoid_slow_async_io: ignore      # Sync I/O is fine for startup/config code
+    use_late_for_private_fields_and_variables: ignore  # Nullable fields are intentional
+    unreachable_from_main: ignore    # Tool scripts have different entry points
+    document_ignores: ignore
+    unnecessary_import: ignore
   exclude:
     - lib/core/l10n/gen/*
-    - lib/*/*.g.dart
-    - '*.freezed.dart'
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
 linter:
   rules:
     public_member_api_docs: false

@@ -331,7 +331,7 @@ class CorrelationCalculator {
   double _erf(double x) {
     // Abramowitz and Stegun approximation
     final sign = x < 0 ? -1 : 1;
-    x = x.abs();
+    final absX = x.abs();
 
     const a1 = 0.254829592;
     const a2 = -0.284496736;
@@ -340,10 +340,12 @@ class CorrelationCalculator {
     const a5 = 1.061405429;
     const p = 0.3275911;
 
-    final t = 1.0 / (1.0 + p * x);
+    final t = 1.0 / (1.0 + p * absX);
     final y =
         1.0 -
-        (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-x * x);
+        (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
+            t *
+            math.exp(-absX * absX);
 
     return sign * y;
   }

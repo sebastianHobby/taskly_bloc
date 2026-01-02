@@ -203,6 +203,7 @@ class DebugFileLogObserver extends TalkerObserver {
   }
 
   @override
+  // ignore: avoid_renaming_method_parameters, Clearer name than 'err'
   void onException(TalkerException exception) {
     _ensureInitialized();
     _writeLog(

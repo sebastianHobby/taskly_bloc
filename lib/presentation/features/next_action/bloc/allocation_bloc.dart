@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
@@ -37,10 +39,13 @@ class AllocationBloc extends Bloc<AllocationEvent, AllocationState> {
     await emit.forEach<AllocationResult>(
       _orchestrator.watchAllocation(),
       onData: _mapResultToState,
-      onError: (error, stackTrace) => state.copyWith(
-        status: AllocationStatus.failure,
-        errorMessage: error.toString(),
-      ),
+      onError: (error, stackTrace) {
+        talker.handle(error, stackTrace, 'AllocationBloc subscription error');
+        return state.copyWith(
+          status: AllocationStatus.failure,
+          errorMessage: friendlyErrorMessage(error),
+        );
+      },
     );
   }
 
@@ -129,11 +134,12 @@ class AllocationBloc extends Bloc<AllocationEvent, AllocationState> {
   ) async {
     try {
       await _orchestrator.pinTask(event.taskId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'AllocationBloc failed to pin task');
       emit(
         state.copyWith(
           status: AllocationStatus.failure,
-          errorMessage: 'Failed to pin task: $e',
+          errorMessage: friendlyErrorMessage(e),
         ),
       );
     }
@@ -145,11 +151,12 @@ class AllocationBloc extends Bloc<AllocationEvent, AllocationState> {
   ) async {
     try {
       await _orchestrator.unpinTask(event.taskId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'AllocationBloc failed to unpin task');
       emit(
         state.copyWith(
           status: AllocationStatus.failure,
-          errorMessage: 'Failed to unpin task: $e',
+          errorMessage: friendlyErrorMessage(e),
         ),
       );
     }
@@ -178,11 +185,12 @@ class AllocationBloc extends Bloc<AllocationEvent, AllocationState> {
       for (final taskId in event.taskIds) {
         await _orchestrator.pinTask(taskId);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(e, stackTrace, 'AllocationBloc failed to pin tasks');
       emit(
         state.copyWith(
           status: AllocationStatus.failure,
-          errorMessage: 'Failed to pin tasks: $e',
+          errorMessage: friendlyErrorMessage(e),
         ),
       );
     }
@@ -194,11 +202,16 @@ class AllocationBloc extends Bloc<AllocationEvent, AllocationState> {
   ) async {
     try {
       await _orchestrator.toggleTaskCompletion(event.taskId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      talker.handle(
+        e,
+        stackTrace,
+        'AllocationBloc failed to toggle completion',
+      );
       emit(
         state.copyWith(
           status: AllocationStatus.failure,
-          errorMessage: 'Failed to toggle task completion: $e',
+          errorMessage: friendlyErrorMessage(e),
         ),
       );
     }

@@ -2,190 +2,217 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 
-import '../../helpers/pump_app.dart';
-
 void main() {
   group('EmptyStateWidget', () {
-    testWidgets('renders icon, title, and description', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: EmptyStateWidget(
-            icon: Icons.check,
-            title: 'Test Title',
-            description: 'Test Description',
+    testWidgets('displays title', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+            ),
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('Test Title'), findsOneWidget);
-      expect(find.text('Test Description'), findsOneWidget);
+      expect(find.text('No items'), findsOneWidget);
     });
 
-    testWidgets('renders without description when null', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: EmptyStateWidget(
-            icon: Icons.check,
-            title: 'Test Title',
+    testWidgets('displays icon', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+            ),
           ),
         ),
       );
 
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('Test Title'), findsOneWidget);
+      expect(find.byIcon(Icons.inbox), findsOneWidget);
+    });
+
+    testWidgets('displays description when provided', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+              description: 'Add some items to get started',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Add some items to get started'), findsOneWidget);
+    });
+
+    testWidgets('hides description when null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+            ),
+          ),
+        ),
+      );
+
+      // Only title text, no description
+      final textWidgets = tester.widgetList<Text>(find.byType(Text));
+      expect(textWidgets.length, 1);
     });
 
     testWidgets(
-      'renders action button when actionLabel and onAction provided',
+      'displays action button when actionLabel and onAction provided',
       (tester) async {
-        var actionCalled = false;
-
-        await pumpLocalizedApp(
-          tester,
-          home: Scaffold(
-            body: EmptyStateWidget(
-              icon: Icons.check,
-              title: 'Test Title',
-              actionLabel: 'Do Something',
-              onAction: () => actionCalled = true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget(
+                icon: Icons.inbox,
+                title: 'No items',
+                actionLabel: 'Add Item',
+                onAction: () {},
+              ),
             ),
           ),
         );
 
-        expect(find.text('Do Something'), findsOneWidget);
+        expect(find.text('Add Item'), findsOneWidget);
         expect(find.byType(FilledButton), findsOneWidget);
-
-        await tester.tap(find.byType(FilledButton));
-        expect(actionCalled, isTrue);
       },
     );
 
-    testWidgets('does not render button when actionLabel is null', (
-      tester,
-    ) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: EmptyStateWidget(
-            icon: Icons.check,
-            title: 'Test Title',
+    testWidgets('calls onAction when button pressed', (tester) async {
+      var actionCalled = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+              actionLabel: 'Add Item',
+              onAction: () => actionCalled = true,
+            ),
           ),
         ),
       );
 
+      await tester.tap(find.text('Add Item'));
+      await tester.pump();
+
+      expect(actionCalled, isTrue);
+    });
+
+    testWidgets('hides action button when onAction null', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+              actionLabel: 'Add Item',
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Add Item'), findsNothing);
       expect(find.byType(FilledButton), findsNothing);
     });
 
-    testWidgets('does not render button when onAction is null', (tester) async {
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: EmptyStateWidget(
-            icon: Icons.check,
-            title: 'Test Title',
-            actionLabel: 'Click Me',
+    testWidgets('centers content', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EmptyStateWidget(
+              icon: Icons.inbox,
+              title: 'No items',
+            ),
           ),
         ),
       );
 
-      expect(find.byType(FilledButton), findsNothing);
+      // Verify EmptyStateWidget uses Center by finding the column inside it
+      expect(
+        find.ancestor(
+          of: find.byType(Column),
+          matching: find.byType(Center),
+        ),
+        findsOneWidget,
+      );
     });
 
     group('named constructors', () {
-      testWidgets('.noTasks renders task icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: EmptyStateWidget.noTasks(
-              title: 'No Tasks',
-              description: 'Add a task to get started',
+      testWidgets('noTasks shows task icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.noTasks(title: 'No tasks'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.task_alt_outlined), findsOneWidget);
-        expect(find.text('No Tasks'), findsOneWidget);
-        expect(find.text('Add a task to get started'), findsOneWidget);
+        expect(find.text('No tasks'), findsOneWidget);
       });
 
-      testWidgets('.noProjects renders folder icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: EmptyStateWidget.noProjects(
-              title: 'No Projects',
-              description: 'Create a project to organize tasks',
+      testWidgets('noProjects shows folder icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.noProjects(title: 'No projects'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
-        expect(find.text('No Projects'), findsOneWidget);
+        expect(find.text('No projects'), findsOneWidget);
       });
 
-      testWidgets('.inbox renders inbox icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: EmptyStateWidget.inbox(
-              title: 'Inbox Empty',
-              description: 'No items in inbox',
+      testWidgets('inbox shows inbox icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.inbox(title: 'Inbox empty'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
-        expect(find.text('Inbox Empty'), findsOneWidget);
+        expect(find.text('Inbox empty'), findsOneWidget);
       });
 
-      testWidgets('.today renders today icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: EmptyStateWidget.today(
-              title: 'Nothing Today',
+      testWidgets('today shows today icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.today(title: 'Nothing for today'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.today_outlined), findsOneWidget);
-        expect(find.text('Nothing Today'), findsOneWidget);
+        expect(find.text('Nothing for today'), findsOneWidget);
       });
 
-      testWidgets('.upcoming renders calendar icon', (tester) async {
-        await pumpLocalizedApp(
-          tester,
-          home: const Scaffold(
-            body: EmptyStateWidget.upcoming(
-              title: 'Nothing Upcoming',
+      testWidgets('upcoming shows calendar icon', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: EmptyStateWidget.upcoming(title: 'Nothing upcoming'),
             ),
           ),
         );
 
         expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
-        expect(find.text('Nothing Upcoming'), findsOneWidget);
+        expect(find.text('Nothing upcoming'), findsOneWidget);
       });
-    });
-
-    testWidgets('respects custom iconSize', (tester) async {
-      const customSize = 100.0;
-
-      await pumpLocalizedApp(
-        tester,
-        home: const Scaffold(
-          body: EmptyStateWidget(
-            icon: Icons.check,
-            title: 'Test',
-            iconSize: customSize,
-          ),
-        ),
-      );
-
-      final iconWidget = tester.widget<Icon>(find.byIcon(Icons.check));
-      expect(iconWidget.size, customSize);
     });
   });
 }

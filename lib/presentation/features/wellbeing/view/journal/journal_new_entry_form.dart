@@ -8,7 +8,6 @@ import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/tracker_field_card.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/widgets/daily_tracker_section.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_mood_field.dart';
-import 'package:uuid/uuid.dart';
 
 /// Form widget for creating a new journal entry.
 class JournalNewEntryForm extends StatefulWidget {
@@ -78,9 +77,8 @@ class _JournalNewEntryFormState extends State<JournalNewEntryForm> {
     }
 
     final now = DateTime.now();
-    final entryId = const Uuid().v4();
 
-    // Build per-entry tracker responses
+    // Build per-entry tracker responses (will be assigned IDs in repository)
     final perEntryResponses = <TrackerResponse>[];
     for (final tracker in widget.perEntryTrackers) {
       final value = values['tracker_${tracker.id}'] as TrackerResponseValue?;
@@ -88,8 +86,9 @@ class _JournalNewEntryFormState extends State<JournalNewEntryForm> {
 
       perEntryResponses.add(
         TrackerResponse(
-          id: '${entryId}_${tracker.id}',
-          journalEntryId: entryId,
+          id: '', // Let repository generate v5 ID
+          journalEntryId:
+              '', // Will be set in repository after entry ID generated
           trackerId: tracker.id,
           value: value,
           createdAt: now,
@@ -108,7 +107,7 @@ class _JournalNewEntryFormState extends State<JournalNewEntryForm> {
       final existing = _existingDailyResponsesMap[tracker.id];
       dailyResponses.add(
         DailyTrackerResponse(
-          id: existing?.id ?? const Uuid().v4(),
+          id: existing?.id ?? '', // Let repository generate v5 ID
           responseDate: widget.selectedDate,
           trackerId: tracker.id,
           value: value,
@@ -120,7 +119,7 @@ class _JournalNewEntryFormState extends State<JournalNewEntryForm> {
 
     final text = _textController.text.trim();
     final entry = JournalEntry(
-      id: entryId,
+      id: '', // Let repository generate v4 ID
       entryDate: widget.selectedDate,
       entryTime: now,
       moodRating: mood,
