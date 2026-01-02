@@ -279,23 +279,35 @@ void main() {
     });
 
     group('error handling', () {
-      test('emits failure state on stream error', () async {
-        final bloc = NavigationBloc(
-          screensRepository: mockScreensRepository,
-          badgeService: mockBadgeService,
-          iconResolver: iconResolver,
-        );
+      test(
+        'emits failure state on stream error',
+        () async {
+          final bloc = NavigationBloc(
+            screensRepository: mockScreensRepository,
+            badgeService: mockBadgeService,
+            iconResolver: iconResolver,
+          );
 
-        bloc.add(const NavigationStarted());
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          // Set up expectation before triggering events
+          final future = expectLater(
+            bloc.stream,
+            emitsThrough(
+              isA<NavigationState>()
+                  .having((s) => s.status, 'status', NavigationStatus.failure)
+                  .having((s) => s.error, 'error', isNotNull),
+            ),
+          );
 
-        screensController.addError(Exception('Database error'));
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const NavigationStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(bloc.state.status, NavigationStatus.failure);
-        expect(bloc.state.error, isNotNull);
-        await bloc.close();
-      });
+          screensController.addError(Exception('Database error'));
+
+          await future;
+          await bloc.close();
+        },
+        timeout: const Timeout(Duration(seconds: 5)),
+      );
     });
 
     group('lifecycle', () {
