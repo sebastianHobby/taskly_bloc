@@ -228,6 +228,80 @@ class SettingsRepository implements SettingsRepositoryContract {
     await _saveToDatabase(updated);
   }
 
+  // Screen Preferences (for system screen sortOrder/isActive)
+  @override
+  Stream<ScreenPreferences> watchScreenPreferences(String screenKey) {
+    return _watchDatabase()
+        .map((appSettings) => appSettings.screenPreferencesFor(screenKey))
+        .distinct();
+  }
+
+  @override
+  Future<ScreenPreferences> loadScreenPreferences(String screenKey) async {
+    final settings = await loadAll();
+    return settings.screenPreferencesFor(screenKey);
+  }
+
+  @override
+  Future<void> saveScreenPreferences(
+    String screenKey,
+    ScreenPreferences preferences,
+  ) async {
+    final current = await loadAll();
+    final updated = current.upsertScreenPreferences(
+      screenKey: screenKey,
+      preferences: preferences,
+    );
+    await _saveToDatabase(updated);
+  }
+
+  @override
+  Stream<Map<String, ScreenPreferences>> watchAllScreenPreferences() {
+    return _watchDatabase().map((appSettings) => appSettings.screenPreferences);
+  }
+
+  // Allocation Settings
+  @override
+  Stream<AllocationSettings> watchAllocationSettings() {
+    return _watchDatabase()
+        .map((appSettings) => appSettings.allocation)
+        .distinct();
+  }
+
+  @override
+  Future<AllocationSettings> loadAllocationSettings() async {
+    final settings = await loadAll();
+    return settings.allocation;
+  }
+
+  @override
+  Future<void> saveAllocationSettings(AllocationSettings settings) async {
+    final current = await loadAll();
+    final updated = current.updateAllocation(settings);
+    await _saveToDatabase(updated);
+  }
+
+  // Value Ranking
+  @override
+  Stream<ValueRanking> watchValueRanking() {
+    return _watchDatabase()
+        .map((appSettings) => appSettings.valueRanking)
+        .distinct();
+  }
+
+  @override
+  Future<ValueRanking> loadValueRanking() async {
+    final settings = await loadAll();
+    return settings.valueRanking;
+  }
+
+  @override
+  Future<void> saveValueRanking(ValueRanking ranking) async {
+    final current = await loadAll();
+    final updated = current.updateValueRanking(ranking);
+    await _saveToDatabase(updated);
+  }
+
   // Full settings access (for migration/debugging)
   @override
   Stream<AppSettings> watchAll() => _watchDatabase();

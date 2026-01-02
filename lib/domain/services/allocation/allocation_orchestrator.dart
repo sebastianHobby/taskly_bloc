@@ -1,43 +1,42 @@
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/priority/allocation_preference.dart';
-import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocator.dart';
 
-/// Orchestrates task allocation using pinned labels and allocation strategies
+/// Orchestrates task allocation using pinned labels and allocation strategies.
+///
+/// Now uses settings-based allocation configuration instead of separate
+/// database tables. Allocation preferences and value rankings are stored
+/// in AppSettings.
 class AllocationOrchestrator {
   AllocationOrchestrator({
     required TaskRepositoryContract taskRepository,
     required LabelRepositoryContract labelRepository,
-    required PriorityRankingsRepositoryContract rankingsRepository,
-    required AllocationPreferencesRepositoryContract preferencesRepository,
+    required SettingsRepositoryContract settingsRepository,
   }) : _taskRepository = taskRepository,
        _labelRepository = labelRepository,
-       _rankingsRepository = rankingsRepository,
-       _preferencesRepository = preferencesRepository;
+       _settingsRepository = settingsRepository;
 
   final TaskRepositoryContract _taskRepository;
   final LabelRepositoryContract _labelRepository;
-  final PriorityRankingsRepositoryContract _rankingsRepository;
-  final AllocationPreferencesRepositoryContract _preferencesRepository;
+  final SettingsRepositoryContract _settingsRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
   Stream<AllocationResult> watchAllocation() async* {
     await for (final combined in _combineStreams()) {
       final tasks = combined.$1;
       final pinnedLabel = combined.$2;
-      final ranking = combined.$3;
-      final preferences = combined.$4;
+      final allocationSettings = combined.$3;
+      final valueRanking = combined.$4;
 
-      if (preferences == null) {
-        // No preferences set - return empty result
+      if (allocationSettings.dailyTaskLimit == 0) {
+        // No allocation configured - return empty result
         yield AllocationResult(
           allocatedTasks: const [],
           reasoning: AllocationReasoning(
@@ -86,8 +85,8 @@ class AllocationOrchestrator {
       // Allocate regular tasks
       final allocatedRegularTasks = await _allocateRegularTasks(
         regularTasks,
-        ranking,
-        preferences,
+        valueRanking,
+        allocationSettings,
       );
 
       // Combine results
@@ -102,13 +101,16 @@ class AllocationOrchestrator {
       // Check for excluded urgent tasks
       final excludedUrgent = allocatedRegularTasks.excludedTasks.where((et) {
         if (et.task.deadlineDate == null) return false;
+        // Use a default urgency threshold of 3 days
+        const urgencyThresholdDays = 3;
         final daysUntilDeadline = et.task.deadlineDate!
             .difference(DateTime.now())
             .inDays;
-        return daysUntilDeadline <= preferences.urgencyThresholdDays;
+        return daysUntilDeadline <= urgencyThresholdDays;
       }).toList();
 
-      if (excludedUrgent.isNotEmpty && preferences.showExcludedUrgentWarning) {
+      if (excludedUrgent.isNotEmpty &&
+          allocationSettings.showExcludedUrgentWarning) {
         warnings.add(
           AllocationWarning(
             type: WarningType.excludedUrgentTask,
@@ -133,10 +135,10 @@ class AllocationOrchestrator {
   /// Allocate regular (non-pinned) tasks using the selected strategy
   Future<AllocationResult> _allocateRegularTasks(
     List<Task> tasks,
-    PriorityRanking? ranking,
-    AllocationPreference preferences,
+    ValueRanking valueRanking,
+    AllocationSettings settings,
   ) async {
-    if (ranking == null || ranking.items.isEmpty) {
+    if (valueRanking.items.isEmpty) {
       // No ranking - all tasks excluded
       return AllocationResult(
         allocatedTasks: const [],
@@ -168,13 +170,13 @@ class AllocationOrchestrator {
         .toList();
 
     // Create allocation strategy
-    final strategy = _createStrategy(preferences.strategyType);
+    final strategy = _createStrategy(settings.strategyType);
 
     // Build category map from ranking
     final categories = <String, double>{};
-    for (final item in ranking.items) {
-      if (valueLabelMap.containsKey(item.entityId)) {
-        categories[item.entityId] = item.weight.toDouble();
+    for (final item in valueRanking.items) {
+      if (valueLabelMap.containsKey(item.labelId)) {
+        categories[item.labelId] = item.weight.toDouble();
       }
     }
 
@@ -182,9 +184,8 @@ class AllocationOrchestrator {
     final parameters = AllocationParameters(
       tasks: tasksWithValues,
       categories: categories,
-      maxTasks: preferences.dailyTaskLimit,
-      urgencyInfluence: preferences.urgencyInfluence,
-      urgencyThresholdDays: preferences.urgencyThresholdDays,
+      maxTasks: settings.dailyTaskLimit,
+      urgencyInfluence: settings.urgencyInfluence,
     );
 
     return strategy.allocate(parameters);
@@ -206,7 +207,7 @@ class AllocationOrchestrator {
   }
 
   /// Combine all necessary streams
-  Stream<(List<Task>, Label?, PriorityRanking?, AllocationPreference?)>
+  Stream<(List<Task>, Label?, AllocationSettings, ValueRanking)>
   _combineStreams() async* {
     // Watch incomplete tasks
     final tasksStream = _taskRepository.watchAll();
@@ -216,13 +217,11 @@ class AllocationOrchestrator {
       final pinnedLabel = await _labelRepository.getSystemLabel(
         SystemLabelType.pinned,
       );
-      // Get latest ranking value from stream
-      final ranking = await _rankingsRepository
-          .watchRankingByType(RankingType.value)
-          .first;
-      final preferences = await _preferencesRepository.getPreferences();
+      final allocationSettings = await _settingsRepository
+          .loadAllocationSettings();
+      final valueRanking = await _settingsRepository.loadValueRanking();
 
-      yield (tasks, pinnedLabel, ranking, preferences);
+      yield (tasks, pinnedLabel, allocationSettings, valueRanking);
     }
   }
 

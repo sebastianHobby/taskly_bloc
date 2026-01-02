@@ -11,6 +11,7 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_bloc/presentation/widgets/form_recurrence_chip.dart';
 
 import '../../../../fixtures/test_data.dart';
+import '../../../../helpers/test_helpers.dart';
 
 void main() {
   group('TaskForm', () {
@@ -54,7 +55,7 @@ void main() {
 
     testWidgets('displays handle bar at top', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Handle bar should be visible
       expect(find.byType(Container), findsWidgets);
@@ -70,14 +71,14 @@ void main() {
           },
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Find and tap close button
       final closeButton = find.widgetWithIcon(IconButton, Icons.close);
       expect(closeButton, findsOneWidget);
 
       await tester.tap(closeButton);
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       expect(closePressed, isTrue);
     });
@@ -86,7 +87,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Close button should not be visible
       final closeButton = find.widgetWithIcon(IconButton, Icons.close);
@@ -107,7 +108,7 @@ void main() {
           },
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Find and tap delete button
       final deleteButton = find.widgetWithIcon(
@@ -117,14 +118,14 @@ void main() {
       expect(deleteButton, findsOneWidget);
 
       await tester.tap(deleteButton);
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       expect(deletePressed, isTrue);
     });
 
     testWidgets('hides delete button when creating new task', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Delete button should not be visible for new tasks
       final deleteButton = find.widgetWithIcon(
@@ -136,7 +137,7 @@ void main() {
 
     testWidgets('displays name field', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       expect(
         find.byWidgetPredicate(
@@ -148,7 +149,7 @@ void main() {
 
     testWidgets('displays description field', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       expect(find.byType(FormBuilderTextFieldModern), findsOneWidget);
     });
@@ -159,7 +160,7 @@ void main() {
       await tester.pumpWidget(
         buildTaskForm(initialData: task),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Completed checkbox should be present
       expect(find.byType(Checkbox), findsOneWidget);
@@ -175,7 +176,7 @@ void main() {
       await tester.pumpWidget(
         buildTaskForm(initialData: task),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Verify name is pre-filled
       expect(find.text('Test Task'), findsOneWidget);
@@ -186,14 +187,14 @@ void main() {
 
     testWidgets('can enter task name', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Find name field and enter text
       final nameField = find.byWidgetPredicate(
         (w) => w is FormBuilderTextField && w.name == 'name',
       );
       await tester.enterText(nameField, 'New Task Name');
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Verify text was entered
       expect(find.text('New Task Name'), findsOneWidget);
@@ -201,7 +202,7 @@ void main() {
 
     testWidgets('can enter task description', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Find description field and enter text
       final descField = find.byType(FormBuilderTextFieldModern);
@@ -212,7 +213,7 @@ void main() {
         ),
         'New Description',
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Verify text was entered
       expect(find.text('New Description'), findsOneWidget);
@@ -220,11 +221,11 @@ void main() {
 
     testWidgets('validates required fields', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Try to validate with empty name
       formKey.currentState?.saveAndValidate();
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       expect(formKey.currentState?.fields['name']?.hasError, isTrue);
       expect(formKey.currentState?.fields['name']?.errorText, isNotEmpty);
@@ -241,7 +242,7 @@ void main() {
       await tester.pumpWidget(
         buildTaskForm(availableProjects: projects),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Project chip should be present
       expect(find.text('Add project'), findsOneWidget);
@@ -256,7 +257,7 @@ void main() {
       await tester.pumpWidget(
         buildTaskForm(availableLabels: labels),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Modern label picker should be present
       expect(find.byType(FormBuilderLabelPickerModern), findsOneWidget);
@@ -274,7 +275,7 @@ void main() {
           defaultProjectId: 'p2',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Verify default project is selected in form state
       expect(formKey.currentState?.fields['projectId']?.value, equals('p2'));
@@ -282,7 +283,7 @@ void main() {
 
     testWidgets('displays date chips for start and deadline', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Should show date-related widgets
       expect(find.byType(FormDateChip), findsNWidgets(2)); // Start and deadline
@@ -290,7 +291,7 @@ void main() {
 
     testWidgets('displays recurrence chip', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // Should show recurrence chip
       expect(find.byType(FormRecurrenceChip), findsOneWidget);
@@ -298,7 +299,7 @@ void main() {
 
     testWidgets('form is scrollable', (tester) async {
       await tester.pumpWidget(buildTaskForm());
-      await tester.pumpAndSettle();
+      await tester.pumpAndSettleSafe();
 
       // SingleChildScrollView should be present for scrolling
       expect(find.byType(SingleChildScrollView), findsOneWidget);

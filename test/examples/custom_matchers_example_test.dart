@@ -29,7 +29,7 @@ void main() {
   setUp(() {
     mockAuthRepo = MockAuthRepositoryContract();
     mockUserDataSeeder = MockUserDataSeeder();
-    when(() => mockUserDataSeeder.seedAll()).thenAnswer((_) async {
+    when(() => mockUserDataSeeder.seedAll(any())).thenAnswer((_) async {
       return;
     });
   });

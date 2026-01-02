@@ -24,6 +24,7 @@ class Label {
     this.iconName,
     this.isSystemLabel = false,
     this.systemLabelType,
+    this.lastReviewedAt,
   });
 
   final String id;
@@ -36,6 +37,9 @@ class Label {
   final bool isSystemLabel;
   final SystemLabelType? systemLabelType;
 
+  /// Last time this label/value was reviewed in a workflow
+  final DateTime? lastReviewedAt;
+
   /// Creates a copy of this Label with the given fields replaced.
   Label copyWith({
     String? id,
@@ -47,6 +51,7 @@ class Label {
     String? iconName,
     bool? isSystemLabel,
     SystemLabelType? systemLabelType,
+    DateTime? lastReviewedAt,
   }) {
     return Label(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class Label {
       iconName: iconName ?? this.iconName,
       isSystemLabel: isSystemLabel ?? this.isSystemLabel,
       systemLabelType: systemLabelType ?? this.systemLabelType,
+      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
     );
   }
 
@@ -73,7 +79,8 @@ class Label {
         other.type == type &&
         other.iconName == iconName &&
         other.isSystemLabel == isSystemLabel &&
-        other.systemLabelType == systemLabelType;
+        other.systemLabelType == systemLabelType &&
+        other.lastReviewedAt == lastReviewedAt;
   }
 
   @override
@@ -87,12 +94,14 @@ class Label {
     iconName,
     isSystemLabel,
     systemLabelType,
+    lastReviewedAt,
   );
 
   @override
   String toString() {
     return 'Label(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, '
         'name: $name, color: $color, type: $type, iconName: $iconName, '
-        'isSystemLabel: $isSystemLabel, systemLabelType: $systemLabelType)';
+        'isSystemLabel: $isSystemLabel, systemLabelType: $systemLabelType, '
+        'lastReviewedAt: $lastReviewedAt)';
   }
 }

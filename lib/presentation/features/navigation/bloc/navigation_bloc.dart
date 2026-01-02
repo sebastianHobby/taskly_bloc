@@ -47,9 +47,8 @@ class NavigationState {
       error = null;
 
   const NavigationState.ready({
-    required List<NavigationDestinationVm> destinations,
+    required this.destinations,
   }) : status = NavigationStatus.ready,
-       destinations = destinations,
        error = null;
 
   const NavigationState.failure(String message)
@@ -122,13 +121,13 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
 
   NavigationDestinationVm _mapScreen(ScreenDefinition screen) {
     final iconSet = _iconResolver.resolve(
-      screenId: screen.screenId,
+      screenId: screen.screenKey,
       iconName: screen.iconName,
     );
 
     return NavigationDestinationVm(
       id: screen.id,
-      screenId: screen.screenId,
+      screenId: screen.screenKey,
       label: screen.name,
       icon: iconSet.icon,
       selectedIcon: iconSet.selectedIcon,
@@ -143,11 +142,11 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   String _buildRoute(ScreenDefinition screen) {
     // For workspace screens, use the dynamic screen route
     if (screen.category == ScreenCategory.workspace) {
-      return _routeBuilder(screen.screenId);
+      return _routeBuilder(screen.screenKey);
     }
 
     // For wellbeing and settings screens, use direct routes
-    switch (screen.screenId) {
+    switch (screen.screenKey) {
       case 'wellbeing':
         return '/wellbeing';
       case 'journal':
@@ -161,7 +160,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       case 'settings':
         return '/settings/app';
       default:
-        return _routeBuilder(screen.screenId);
+        return _routeBuilder(screen.screenKey);
     }
   }
 

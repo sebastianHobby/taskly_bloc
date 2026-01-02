@@ -15,6 +15,7 @@ Label labelFromTable(drift.LabelTableData t) {
     systemLabelType: t.systemLabelType != null
         ? SystemLabelType.values.byName(t.systemLabelType!)
         : null,
+    lastReviewedAt: t.lastReviewedAt,
   );
 }
 
@@ -34,6 +35,8 @@ Project projectFromTable(
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
+    lastReviewedAt: t.lastReviewedAt,
+    priority: t.priority,
     labels: labels ?? const <Label>[],
   );
 }
@@ -53,9 +56,11 @@ Task taskFromTable(
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
     description: t.description,
     projectId: t.projectId,
+    priority: t.priority,
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
+    lastReviewedAt: t.lastReviewedAt,
     project: project,
     labels: labels ?? const <Label>[],
   );

@@ -1,136 +1,160 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/services/user_data_seeder.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 
-import '../../helpers/fallback_values.dart';
-import '../../mocks/repository_mocks.dart';
+class MockLabelRepositoryContract extends Mock
+    implements LabelRepositoryContract {}
+
+class MockScreenDefinitionsRepositoryContract extends Mock
+    implements ScreenDefinitionsRepositoryContract {}
 
 void main() {
-  late UserDataSeeder seeder;
-  late MockLabelRepositoryContract mockLabelRepo;
-  late MockScreenDefinitionsRepositoryContract mockScreenRepo;
-  late MockAllocationPreferencesRepositoryContract mockPrefsRepo;
-  late MockPriorityRankingsRepositoryContract mockRankingsRepo;
+  group('UserDataSeeder', () {
+    late MockLabelRepositoryContract mockLabelRepository;
+    late MockScreenDefinitionsRepositoryContract mockScreenRepository;
+    late UserDataSeeder seeder;
+    late Label pinnedLabel;
 
-  setUpAll(registerAllFallbackValues);
-
-  setUp(() {
-    mockLabelRepo = MockLabelRepositoryContract();
-    mockScreenRepo = MockScreenDefinitionsRepositoryContract();
-    mockPrefsRepo = MockAllocationPreferencesRepositoryContract();
-    mockRankingsRepo = MockPriorityRankingsRepositoryContract();
-
-    seeder = UserDataSeeder(
-      labelRepository: mockLabelRepo,
-      screenRepository: mockScreenRepo,
-      preferencesRepository: mockPrefsRepo,
-      rankingsRepository: mockRankingsRepo,
-    );
-  });
-
-  group('UserDataSeeder - Seeding Flow', () {
-    test('seedAll delegates to internal seeders', () async {
-      // Arrange - stub watchSystemScreens to return empty stream
-      when(
-        () => mockScreenRepo.watchSystemScreens(),
-      ).thenAnswer((_) => Stream.value(<ScreenDefinition>[]));
-      when(
-        () => mockScreenRepo.createScreen(any()),
-      ).thenAnswer((_) async => 'id');
-      when(
-        () => mockLabelRepo.watchAll(),
-      ).thenAnswer((_) => Stream.value(<Label>[]));
-      when(
-        () => mockLabelRepo.create(
-          name: any(named: 'name'),
-          color: any(named: 'color'),
-          type: any(named: 'type'),
-          iconName: any(named: 'iconName'),
-        ),
-      ).thenAnswer((_) async {});
-
-      // Act
-      await seeder.seedAll();
-
-      // Assert - just verify it completes without error
-      // Internal details are tested in ScreenSystemSeeder and SystemLabelSeeder tests
-      expect(true, isTrue);
+    setUpAll(() {
+      initializeTalkerForTest();
+      registerFallbackValue(<ScreenDefinition>[]);
+      registerFallbackValue(SystemLabelType.pinned);
     });
 
-    test('seedAll handles errors gracefully without throwing', () async {
-      // Arrange - simulate repository failure
-      when(
-        () => mockScreenRepo.watchSystemScreens(),
-      ).thenAnswer((_) => Stream.error(Exception('DB error')));
-      when(
-        () => mockLabelRepo.watchAll(),
-      ).thenAnswer((_) => Stream.error(Exception('DB error')));
+    setUp(() {
+      mockLabelRepository = MockLabelRepositoryContract();
+      mockScreenRepository = MockScreenDefinitionsRepositoryContract();
+      seeder = UserDataSeeder(
+        labelRepository: mockLabelRepository,
+        screenRepository: mockScreenRepository,
+      );
 
-      // Act & Assert - should not throw
-      await expectLater(seeder.seedAll(), completes);
-    });
-  });
-
-  group('UserDataSeeder - Integration with Auth', () {
-    test('seeding should run AFTER authentication', () {
-      // This is a documentation test to validate the design
-      //
-      // CRITICAL: UserDataSeeder.seedAll() MUST be called after user authentication
-      //
-      // Flow:
-      // 1. User signs in
-      // 2. AuthBloc receives AuthState(signedIn, session)
-      // 3. AuthBloc calls userDataSeeder.seedAll()
-      // 4. PowerSync/Supabase automatically set user_id based on session
-      // 5. System labels and screens are created with correct user_id
-      //
-      // Validated in: lib/presentation/features/auth/bloc/auth_bloc.dart
-      // Location: _onAuthStateChanged method
-
-      expect(true, isTrue, reason: 'Seeding flow validated by design');
+      final now = DateTime.now();
+      pinnedLabel = Label(
+        id: 'pinned-label-id',
+        name: 'Pinned',
+        color: '#FF5733',
+        isSystemLabel: true,
+        systemLabelType: SystemLabelType.pinned,
+        createdAt: now,
+        updatedAt: now,
+      );
     });
 
-    test('user_id is NOT passed as parameter - handled by backend', () {
-      // This test documents that user_id is NOT a parameter
-      // PowerSync/Supabase handle user_id automatically based on session
+    group('seedAll', () {
+      test('seeds system labels and screens', () async {
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenAnswer((_) async => pinnedLabel);
+        when(
+          () => mockScreenRepository.seedSystemScreens(any()),
+        ).thenAnswer((_) async {});
 
-      // Previous incorrect approach:
-      // ❌ SystemLabelSeeder.seedAll(userId: user.id)
+        await seeder.seedAll('test-user-123');
 
-      // Current correct approach:
-      // ✅ SystemLabelSeeder.seedAll()
-      //    Backend extracts user_id from session automatically
+        verify(
+          () => mockLabelRepository.getOrCreateSystemLabel(
+            SystemLabelType.pinned,
+          ),
+        ).called(2); // Called by both ensurePinnedLabelExists and migrate
+        verify(() => mockScreenRepository.seedSystemScreens(any())).called(1);
+      });
 
-      expect(true, isTrue, reason: 'user_id handled by backend automatically');
-    });
-  });
+      test('passes userId to screen seeder', () async {
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenAnswer((_) async => pinnedLabel);
+        when(
+          () => mockScreenRepository.seedSystemScreens(any()),
+        ).thenAnswer((_) async {});
 
-  group('UserDataSeeder - Validation Checklist', () {
-    test('✅ Seeding runs after authentication', () {
-      // Validated by AuthBloc integration
-      expect(true, isTrue);
-    });
+        await seeder.seedAll('user-xyz');
 
-    test('✅ Seeding is idempotent', () {
-      // Handled by internal seeders - they check for existing data
-      expect(true, isTrue);
-    });
+        final captured = verify(
+          () => mockScreenRepository.seedSystemScreens(captureAny()),
+        ).captured;
 
-    test('✅ Seeding does not block auth flow', () {
-      // Seeding runs with .ignore() in AuthBloc - non-blocking
-      expect(true, isTrue);
-    });
+        final screens = captured.first as List<ScreenDefinition>;
+        expect(screens, isNotEmpty);
+      });
 
-    test('✅ Seeding handles failures gracefully', () {
-      // Validated by error handling test above
-      expect(true, isTrue);
-    });
+      test('does not throw on label seeder failure', () async {
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenThrow(Exception('Database error'));
 
-    test('✅ user_id automatically set by backend', () {
-      // PowerSync/Supabase handle this - no explicit parameter needed
-      expect(true, isTrue);
+        // Should not throw - errors are handled internally
+        await expectLater(
+          seeder.seedAll('test-user'),
+          completes,
+        );
+      });
+
+      test('does not throw on screen seeder failure', () async {
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenAnswer((_) async => pinnedLabel);
+        when(
+          () => mockScreenRepository.seedSystemScreens(any()),
+        ).thenThrow(Exception('Database error'));
+
+        // Should not throw - errors are handled internally
+        await expectLater(
+          seeder.seedAll('test-user'),
+          completes,
+        );
+      });
+
+      test('seeds labels before screens', () async {
+        final callOrder = <String>[];
+
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenAnswer((_) async {
+          callOrder.add('labels');
+          return pinnedLabel;
+        });
+        when(
+          () => mockScreenRepository.seedSystemScreens(any()),
+        ).thenAnswer((_) async {
+          callOrder.add('screens');
+        });
+
+        await seeder.seedAll('test-user');
+
+        // Labels should be seeded before screens
+        expect(
+          callOrder.indexOf('labels'),
+          lessThan(callOrder.indexOf('screens')),
+        );
+      });
+
+      test('is idempotent - safe to call multiple times', () async {
+        when(
+          () => mockLabelRepository.getOrCreateSystemLabel(any()),
+        ).thenAnswer((_) async => pinnedLabel);
+        when(
+          () => mockScreenRepository.seedSystemScreens(any()),
+        ).thenAnswer((_) async {});
+
+        // Call seedAll multiple times
+        await seeder.seedAll('test-user');
+        await seeder.seedAll('test-user');
+        await seeder.seedAll('test-user');
+
+        // Should complete without errors
+        verify(
+          () => mockLabelRepository.getOrCreateSystemLabel(
+            SystemLabelType.pinned,
+          ),
+        ).called(6); // 2 calls per seedAll
+        verify(() => mockScreenRepository.seedSystemScreens(any())).called(3);
+      });
     });
   });
 }

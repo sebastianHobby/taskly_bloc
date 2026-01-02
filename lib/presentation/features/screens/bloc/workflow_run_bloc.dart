@@ -5,7 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/presentation/features/screens/models/workflow_screen.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_session.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_item_reviews_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_sessions_repository_contract.dart';
@@ -125,7 +125,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
       _items = items;
 
       final sessionId = await _sessionsRepository.startSession(
-        screenId: _screen.id,
+        screenKey: _screen.screenKey,
         totalItems: items.length,
       );
       _sessionId = sessionId;

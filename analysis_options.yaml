@@ -1,4 +1,5 @@
 include: package:very_good_analysis/analysis_options.yaml
+
 analyzer:
   errors:
     lines_longer_than_80_chars: ignore
@@ -14,6 +15,7 @@ analyzer:
     avoid_print: ignore
     avoid_equals_and_hash_code_on_mutable_classes: ignore
     cascade_invocations: ignore
+    unnecessary_underscores: ignore
   exclude:
     - lib/core/l10n/gen/*
     - lib/*/*.g.dart

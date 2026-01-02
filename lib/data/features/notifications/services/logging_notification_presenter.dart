@@ -10,7 +10,7 @@ class LoggingNotificationPresenter {
         ?.toString();
     talker.info(
       '[NotificationPresenter] PRESENT: id=${notification.id} '
-      'screen=${notification.screenDefinitionId} '
+      'screen=${notification.screenKey} '
       'title=${title ?? 'n/a'}',
     );
   }

@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$WorkflowSession {
 
- String get id; String get userId; String get screenId; DateTime get startedAt; DateTime get createdAt; DateTime get updatedAt; WorkflowStatus get status; DateTime? get completedAt; int get totalItems; int get itemsReviewed; int get itemsSkipped; String? get sessionNotes;
+ String get id; String get userId; String get screenKey; DateTime get startedAt; DateTime get createdAt; DateTime get updatedAt; WorkflowStatus get status; DateTime? get completedAt; int get totalItems; int get itemsReviewed; int get itemsSkipped; String? get sessionNotes;
 /// Create a copy of WorkflowSession
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $WorkflowSessionCopyWith<WorkflowSession> get copyWith => _$WorkflowSessionCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkflowSession&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&(identical(other.itemsReviewed, itemsReviewed) || other.itemsReviewed == itemsReviewed)&&(identical(other.itemsSkipped, itemsSkipped) || other.itemsSkipped == itemsSkipped)&&(identical(other.sessionNotes, sessionNotes) || other.sessionNotes == sessionNotes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WorkflowSession&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&(identical(other.itemsReviewed, itemsReviewed) || other.itemsReviewed == itemsReviewed)&&(identical(other.itemsSkipped, itemsSkipped) || other.itemsSkipped == itemsSkipped)&&(identical(other.sessionNotes, sessionNotes) || other.sessionNotes == sessionNotes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,screenId,startedAt,createdAt,updatedAt,status,completedAt,totalItems,itemsReviewed,itemsSkipped,sessionNotes);
+int get hashCode => Object.hash(runtimeType,id,userId,screenKey,startedAt,createdAt,updatedAt,status,completedAt,totalItems,itemsReviewed,itemsSkipped,sessionNotes);
 
 @override
 String toString() {
-  return 'WorkflowSession(id: $id, userId: $userId, screenId: $screenId, startedAt: $startedAt, createdAt: $createdAt, updatedAt: $updatedAt, status: $status, completedAt: $completedAt, totalItems: $totalItems, itemsReviewed: $itemsReviewed, itemsSkipped: $itemsSkipped, sessionNotes: $sessionNotes)';
+  return 'WorkflowSession(id: $id, userId: $userId, screenKey: $screenKey, startedAt: $startedAt, createdAt: $createdAt, updatedAt: $updatedAt, status: $status, completedAt: $completedAt, totalItems: $totalItems, itemsReviewed: $itemsReviewed, itemsSkipped: $itemsSkipped, sessionNotes: $sessionNotes)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $WorkflowSessionCopyWith<$Res>  {
   factory $WorkflowSessionCopyWith(WorkflowSession value, $Res Function(WorkflowSession) _then) = _$WorkflowSessionCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, String screenId, DateTime startedAt, DateTime createdAt, DateTime updatedAt, WorkflowStatus status, DateTime? completedAt, int totalItems, int itemsReviewed, int itemsSkipped, String? sessionNotes
+ String id, String userId, String screenKey, DateTime startedAt, DateTime createdAt, DateTime updatedAt, WorkflowStatus status, DateTime? completedAt, int totalItems, int itemsReviewed, int itemsSkipped, String? sessionNotes
 });
 
 
@@ -65,11 +65,11 @@ class _$WorkflowSessionCopyWithImpl<$Res>
 
 /// Create a copy of WorkflowSession
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? startedAt = null,Object? createdAt = null,Object? updatedAt = null,Object? status = null,Object? completedAt = freezed,Object? totalItems = null,Object? itemsReviewed = null,Object? itemsSkipped = null,Object? sessionNotes = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? screenKey = null,Object? startedAt = null,Object? createdAt = null,Object? updatedAt = null,Object? status = null,Object? completedAt = freezed,Object? totalItems = null,Object? itemsReviewed = null,Object? itemsSkipped = null,Object? sessionNotes = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,screenId: null == screenId ? _self.screenId : screenId // ignore: cast_nullable_to_non_nullable
+as String,screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
 as String,startedAt: null == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
@@ -164,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String screenId,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String screenKey,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _WorkflowSession() when $default != null:
-return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
+return $default(_that.id,_that.userId,_that.screenKey,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
   return orElse();
 
 }
@@ -185,10 +185,10 @@ return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.creat
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String screenId,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String screenKey,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)  $default,) {final _that = this;
 switch (_that) {
 case _WorkflowSession():
-return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
+return $default(_that.id,_that.userId,_that.screenKey,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +205,10 @@ return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.creat
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String screenId,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String screenKey,  DateTime startedAt,  DateTime createdAt,  DateTime updatedAt,  WorkflowStatus status,  DateTime? completedAt,  int totalItems,  int itemsReviewed,  int itemsSkipped,  String? sessionNotes)?  $default,) {final _that = this;
 switch (_that) {
 case _WorkflowSession() when $default != null:
-return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
+return $default(_that.id,_that.userId,_that.screenKey,_that.startedAt,_that.createdAt,_that.updatedAt,_that.status,_that.completedAt,_that.totalItems,_that.itemsReviewed,_that.itemsSkipped,_that.sessionNotes);case _:
   return null;
 
 }
@@ -220,12 +220,12 @@ return $default(_that.id,_that.userId,_that.screenId,_that.startedAt,_that.creat
 @JsonSerializable()
 
 class _WorkflowSession implements WorkflowSession {
-  const _WorkflowSession({required this.id, required this.userId, required this.screenId, required this.startedAt, required this.createdAt, required this.updatedAt, this.status = WorkflowStatus.inProgress, this.completedAt, this.totalItems = 0, this.itemsReviewed = 0, this.itemsSkipped = 0, this.sessionNotes});
+  const _WorkflowSession({required this.id, required this.userId, required this.screenKey, required this.startedAt, required this.createdAt, required this.updatedAt, this.status = WorkflowStatus.inProgress, this.completedAt, this.totalItems = 0, this.itemsReviewed = 0, this.itemsSkipped = 0, this.sessionNotes});
   factory _WorkflowSession.fromJson(Map<String, dynamic> json) => _$WorkflowSessionFromJson(json);
 
 @override final  String id;
 @override final  String userId;
-@override final  String screenId;
+@override final  String screenKey;
 @override final  DateTime startedAt;
 @override final  DateTime createdAt;
 @override final  DateTime updatedAt;
@@ -249,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkflowSession&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenId, screenId) || other.screenId == screenId)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&(identical(other.itemsReviewed, itemsReviewed) || other.itemsReviewed == itemsReviewed)&&(identical(other.itemsSkipped, itemsSkipped) || other.itemsSkipped == itemsSkipped)&&(identical(other.sessionNotes, sessionNotes) || other.sessionNotes == sessionNotes));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WorkflowSession&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.startedAt, startedAt) || other.startedAt == startedAt)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.status, status) || other.status == status)&&(identical(other.completedAt, completedAt) || other.completedAt == completedAt)&&(identical(other.totalItems, totalItems) || other.totalItems == totalItems)&&(identical(other.itemsReviewed, itemsReviewed) || other.itemsReviewed == itemsReviewed)&&(identical(other.itemsSkipped, itemsSkipped) || other.itemsSkipped == itemsSkipped)&&(identical(other.sessionNotes, sessionNotes) || other.sessionNotes == sessionNotes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,screenId,startedAt,createdAt,updatedAt,status,completedAt,totalItems,itemsReviewed,itemsSkipped,sessionNotes);
+int get hashCode => Object.hash(runtimeType,id,userId,screenKey,startedAt,createdAt,updatedAt,status,completedAt,totalItems,itemsReviewed,itemsSkipped,sessionNotes);
 
 @override
 String toString() {
-  return 'WorkflowSession(id: $id, userId: $userId, screenId: $screenId, startedAt: $startedAt, createdAt: $createdAt, updatedAt: $updatedAt, status: $status, completedAt: $completedAt, totalItems: $totalItems, itemsReviewed: $itemsReviewed, itemsSkipped: $itemsSkipped, sessionNotes: $sessionNotes)';
+  return 'WorkflowSession(id: $id, userId: $userId, screenKey: $screenKey, startedAt: $startedAt, createdAt: $createdAt, updatedAt: $updatedAt, status: $status, completedAt: $completedAt, totalItems: $totalItems, itemsReviewed: $itemsReviewed, itemsSkipped: $itemsSkipped, sessionNotes: $sessionNotes)';
 }
 
 
@@ -269,7 +269,7 @@ abstract mixin class _$WorkflowSessionCopyWith<$Res> implements $WorkflowSession
   factory _$WorkflowSessionCopyWith(_WorkflowSession value, $Res Function(_WorkflowSession) _then) = __$WorkflowSessionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, String screenId, DateTime startedAt, DateTime createdAt, DateTime updatedAt, WorkflowStatus status, DateTime? completedAt, int totalItems, int itemsReviewed, int itemsSkipped, String? sessionNotes
+ String id, String userId, String screenKey, DateTime startedAt, DateTime createdAt, DateTime updatedAt, WorkflowStatus status, DateTime? completedAt, int totalItems, int itemsReviewed, int itemsSkipped, String? sessionNotes
 });
 
 
@@ -286,11 +286,11 @@ class __$WorkflowSessionCopyWithImpl<$Res>
 
 /// Create a copy of WorkflowSession
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenId = null,Object? startedAt = null,Object? createdAt = null,Object? updatedAt = null,Object? status = null,Object? completedAt = freezed,Object? totalItems = null,Object? itemsReviewed = null,Object? itemsSkipped = null,Object? sessionNotes = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? screenKey = null,Object? startedAt = null,Object? createdAt = null,Object? updatedAt = null,Object? status = null,Object? completedAt = freezed,Object? totalItems = null,Object? itemsReviewed = null,Object? itemsSkipped = null,Object? sessionNotes = freezed,}) {
   return _then(_WorkflowSession(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,screenId: null == screenId ? _self.screenId : screenId // ignore: cast_nullable_to_non_nullable
+as String,screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
 as String,startedAt: null == startedAt ? _self.startedAt : startedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable

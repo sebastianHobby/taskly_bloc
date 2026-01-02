@@ -3,23 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/models/priority/allocation_preference.dart';
-import 'package:taskly_bloc/domain/models/priority/priority_ranking.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_preferences_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/priority_rankings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 
 /// Settings page for configuring task allocation strategy and value rankings.
 class AllocationSettingsPage extends StatefulWidget {
   const AllocationSettingsPage({
-    required this.preferencesRepository,
-    required this.rankingsRepository,
+    required this.settingsRepository,
     required this.labelRepository,
     super.key,
   });
 
-  final AllocationPreferencesRepositoryContract preferencesRepository;
-  final PriorityRankingsRepositoryContract rankingsRepository;
+  final SettingsRepositoryContract settingsRepository;
   final LabelRepositoryContract labelRepository;
 
   @override
@@ -27,15 +23,16 @@ class AllocationSettingsPage extends StatefulWidget {
 }
 
 class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
-  AllocationPreferencesRepositoryContract get _prefsRepo =>
-      widget.preferencesRepository;
-  PriorityRankingsRepositoryContract get _rankingsRepo =>
-      widget.rankingsRepository;
+  SettingsRepositoryContract get _settingsRepo => widget.settingsRepository;
   LabelRepositoryContract get _labelRepo => widget.labelRepository;
 
+  // Preserved for future value ranking feature - nullable is intentional
   // ignore: unused_field
-  AllocationPreference? _preferences;
-  PriorityRanking? _valueRanking;
+  AllocationSettings? _allocationSettings;
+  // Preserved for future value ranking feature - nullable is intentional
+  // ignore: unused_field
+  ValueRanking? _valueRanking;
+  // Preserved for future value ranking feature
   // ignore: unused_field
   List<Label> _valueLabels = [];
   bool _isLoading = true;
@@ -59,23 +56,20 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final prefs = await _prefsRepo.getPreferences();
-      final ranking = await _rankingsRepo
-          .watchRankingByType(RankingType.value)
-          .first;
+      final settings = await _settingsRepo.loadAllocationSettings();
+      final ranking = await _settingsRepo.loadValueRanking();
       final labels = await _labelRepo.getAllByType(LabelType.value);
 
-      _preferences = prefs;
+      _allocationSettings = settings;
       _valueRanking = ranking;
       _valueLabels = labels;
 
-      // Initialize form state
-      _strategyType =
-          prefs?.strategyType ?? AllocationStrategyType.proportional;
-      _urgencyInfluence = prefs?.urgencyInfluence ?? 0.4;
-      _dailyTaskLimit = prefs?.dailyTaskLimit ?? 10;
-      _urgencyThresholdDays = prefs?.urgencyThresholdDays ?? 3;
-      _showExcludedWarning = prefs?.showExcludedUrgentWarning ?? true;
+      // Initialize form state from settings
+      _strategyType = settings.strategyType;
+      _urgencyInfluence = settings.urgencyInfluence;
+      _dailyTaskLimit = settings.dailyTaskLimit;
+      _urgencyThresholdDays = 3; // Default - not stored in new settings
+      _showExcludedWarning = settings.showExcludedUrgentWarning;
 
       // Build ranked values list
       _rankedValues = _buildRankedValues(labels, ranking);
@@ -93,10 +87,10 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
   List<_RankableValue> _buildRankedValues(
     List<Label> labels,
-    PriorityRanking? ranking,
+    ValueRanking? ranking,
   ) {
     final rankedItems = ranking?.items ?? [];
-    final rankedMap = {for (final item in rankedItems) item.entityId: item};
+    final rankedMap = {for (final item in rankedItems) item.labelId: item};
 
     // Build list with ranked items first (in order), then unranked
     final ranked = <_RankableValue>[];
@@ -140,9 +134,10 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
   void _onValueReordered(int oldIndex, int newIndex) {
     setState(() {
-      if (oldIndex < newIndex) newIndex -= 1;
+      var adjustedNewIndex = newIndex;
+      if (oldIndex < newIndex) adjustedNewIndex -= 1;
       final item = _rankedValues.removeAt(oldIndex);
-      _rankedValues.insert(newIndex, item);
+      _rankedValues.insert(adjustedNewIndex, item);
 
       // Update weights based on position
       for (var i = 0; i < _rankedValues.length; i++) {
@@ -157,45 +152,31 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
   Future<void> _save() async {
     try {
-      // Save preferences
-      await _prefsRepo.savePreferences(
-        strategyType: _strategyType,
-        urgencyInfluence: _urgencyInfluence,
-        dailyTaskLimit: _dailyTaskLimit,
-        urgencyThresholdDays: _urgencyThresholdDays,
-        showExcludedUrgentWarning: _showExcludedWarning,
+      // Save allocation settings
+      await _settingsRepo.saveAllocationSettings(
+        AllocationSettings(
+          strategyType: _strategyType,
+          urgencyInfluence: _urgencyInfluence,
+          dailyTaskLimit: _dailyTaskLimit,
+          showExcludedUrgentWarning: _showExcludedWarning,
+        ),
       );
 
-      // Save rankings if they changed
-      final now = DateTime.now();
+      // Save value ranking
       final rankedItems = _rankedValues
           .where((v) => v.isRanked)
           .map(
-            (v) => RankedItem(
-              id: '${_valueRanking?.id ?? 'new'}_${v.label.id}',
-              rankingId: _valueRanking?.id ?? '',
-              entityId: v.label.id,
-              entityType: RankedEntityType.label,
+            (v) => ValueRankItem(
+              labelId: v.label.id,
               weight: v.weight,
               sortOrder: _rankedValues.indexOf(v),
-              userId: '', // Will be set by repository
-              createdAt: now,
-              updatedAt: now,
             ),
           )
           .toList();
 
-      if (_valueRanking != null) {
-        await _rankingsRepo.updateRanking(
-          id: _valueRanking!.id,
-          items: rankedItems,
-        );
-      } else if (rankedItems.isNotEmpty) {
-        await _rankingsRepo.createRanking(
-          rankingType: RankingType.value,
-          items: rankedItems,
-        );
-      }
+      await _settingsRepo.saveValueRanking(
+        ValueRanking(items: rankedItems),
+      );
 
       if (mounted) {
         Navigator.of(context).pop();

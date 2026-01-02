@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
+import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
 
 part 'display_config.freezed.dart';
 part 'display_config.g.dart';

@@ -1,16 +1,27 @@
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
+import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/display_config.dart'
+    as display;
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
 
 /// Test data builders using the Object Mother pattern.
 ///
@@ -60,10 +71,12 @@ class TestData {
     DateTime? deadlineDate,
     String? projectId,
     Project? project,
+    int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<Label>? labels,
+    OccurrenceData? occurrence,
   }) {
     final now = DateTime.now();
     return Task(
@@ -77,10 +90,12 @@ class TestData {
       deadlineDate: deadlineDate,
       projectId: projectId,
       project: project,
+      priority: priority,
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
       labels: labels ?? [],
+      occurrence: occurrence,
     );
   }
 
@@ -93,6 +108,7 @@ class TestData {
     DateTime? updatedAt,
     DateTime? startDate,
     DateTime? deadlineDate,
+    int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
@@ -109,6 +125,7 @@ class TestData {
       description: description,
       startDate: startDate,
       deadlineDate: deadlineDate,
+      priority: priority,
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
@@ -135,6 +152,28 @@ class TestData {
       type: type,
       color: color,
       iconName: iconName,
+    );
+  }
+
+  // === Occurrence Data ===
+
+  static OccurrenceData occurrenceData({
+    DateTime? date,
+    DateTime? deadline,
+    DateTime? originalDate,
+    bool isRescheduled = false,
+    String? completionId,
+    DateTime? completedAt,
+    String? completionNotes,
+  }) {
+    return OccurrenceData(
+      date: date ?? DateTime.now(),
+      deadline: deadline,
+      originalDate: originalDate,
+      isRescheduled: isRescheduled,
+      completionId: completionId,
+      completedAt: completedAt,
+      completionNotes: completionNotes,
     );
   }
 
@@ -338,29 +377,128 @@ class TestData {
   /// Returns a default LabelType for fallback registration
   static LabelType labelType() => LabelType.label;
 
+  // === Workflows ===
+
+  /// Creates a workflow definition for testing
+  static WorkflowDefinition workflowDefinition({
+    String? id,
+    String name = 'Test Workflow',
+    List<WorkflowStep>? steps,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lastCompletedAt,
+    String? description,
+    String? iconName,
+    bool isSystem = false,
+    bool isActive = true,
+  }) {
+    final now = DateTime.now();
+    return WorkflowDefinition(
+      id: id ?? _nextId('workflow-def'),
+      name: name,
+      steps: steps ?? [workflowStep()],
+      createdAt: createdAt ?? now,
+      updatedAt: updatedAt ?? now,
+      lastCompletedAt: lastCompletedAt,
+      description: description,
+      iconName: iconName,
+      isSystem: isSystem,
+      isActive: isActive,
+    );
+  }
+
+  /// Creates a workflow step for testing
+  static WorkflowStep workflowStep({
+    String stepName = 'Test Step',
+    ViewDefinition? view,
+  }) {
+    return WorkflowStep(
+      stepName: stepName,
+      view:
+          view ??
+          const ViewDefinition.collection(
+            selector: EntitySelector(entityType: EntityType.task),
+            display: display.DisplayConfig(),
+          ),
+    );
+  }
+
+  /// Creates a workflow (runtime instance) for testing
+  static Workflow workflow({
+    String? id,
+    String? workflowDefinitionId,
+    WorkflowStatus status = WorkflowStatus.inProgress,
+    List<WorkflowStepState>? stepStates,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? completedAt,
+    int currentStepIndex = 0,
+  }) {
+    final now = DateTime.now();
+    return Workflow(
+      id: id ?? _nextId('workflow'),
+      workflowDefinitionId: workflowDefinitionId ?? 'workflow-def-1',
+      status: status,
+      stepStates: stepStates ?? [workflowStepState()],
+      createdAt: createdAt ?? now,
+      updatedAt: updatedAt ?? now,
+      completedAt: completedAt,
+      currentStepIndex: currentStepIndex,
+    );
+  }
+
+  /// Creates a workflow step state for testing
+  static WorkflowStepState workflowStepState({
+    int stepIndex = 0,
+    List<String> reviewedEntityIds = const [],
+    List<String> skippedEntityIds = const [],
+    List<String> pendingEntityIds = const [],
+  }) {
+    return WorkflowStepState(
+      stepIndex: stepIndex,
+      reviewedEntityIds: reviewedEntityIds,
+      skippedEntityIds: skippedEntityIds,
+      pendingEntityIds: pendingEntityIds,
+    );
+  }
+
   // === Screens ===
 
   /// Creates a screen definition for testing
   static ScreenDefinition screenDefinition({
     String? id,
-    String? userId,
-    String? screenId,
+    String? screenKey,
     String name = 'Test Screen',
+    ViewDefinition? view,
     EntitySelector? selector,
-    DisplayConfig? display,
+    display.DisplayConfig? displayConfig,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? iconName,
+    bool isSystem = false,
+    bool isActive = true,
+    int sortOrder = 0,
+    ScreenCategory category = ScreenCategory.workspace,
   }) {
     final now = DateTime.now();
-    return ScreenDefinition.collection(
+    return ScreenDefinition(
       id: id ?? _nextId('screen'),
-      userId: userId ?? 'user-1',
-      screenId: screenId ?? 'screen-id-1',
+      screenKey: screenKey ?? 'screen-key-1',
       name: name,
-      selector: selector ?? const EntitySelector(entityType: EntityType.task),
-      display: display ?? const DisplayConfig(),
+      view:
+          view ??
+          ViewDefinition.collection(
+            selector:
+                selector ?? const EntitySelector(entityType: EntityType.task),
+            display: displayConfig ?? const display.DisplayConfig(),
+          ),
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
+      iconName: iconName,
+      isSystem: isSystem,
+      isActive: isActive,
+      sortOrder: sortOrder,
+      category: category,
     );
   }
 
@@ -553,6 +691,200 @@ class TestData {
       id: 'personal',
       name: 'Personal',
       color: '#00CC66',
+    );
+  }
+
+  // === Task Rules ===
+
+  /// Creates a DateRule for filtering tasks by date fields.
+  static DateRule dateRule({
+    DateRuleField field = DateRuleField.deadlineDate,
+    DateRuleOperator operator = DateRuleOperator.onOrBefore,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+    RelativeComparison? relativeComparison,
+    int? relativeDays,
+  }) {
+    return DateRule(
+      field: field,
+      operator: operator,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+      relativeComparison: relativeComparison,
+      relativeDays: relativeDays,
+    );
+  }
+
+  /// Creates a BooleanRule for filtering tasks by boolean fields.
+  static BooleanRule booleanRule({
+    BooleanRuleField field = BooleanRuleField.completed,
+    BooleanRuleOperator operator = BooleanRuleOperator.isFalse,
+  }) {
+    return BooleanRule(field: field, operator: operator);
+  }
+
+  /// Creates a LabelRule for filtering tasks by labels.
+  static LabelRule labelRule({
+    LabelRuleOperator operator = LabelRuleOperator.hasAny,
+    List<String> labelIds = const [],
+    LabelType labelType = LabelType.label,
+  }) {
+    return LabelRule(
+      operator: operator,
+      labelIds: labelIds,
+      labelType: labelType,
+    );
+  }
+
+  /// Creates a ValueRule for filtering tasks by value labels.
+  static ValueRule valueRule({
+    ValueRuleOperator operator = ValueRuleOperator.hasAny,
+    List<String> labelIds = const [],
+  }) {
+    return ValueRule(operator: operator, labelIds: labelIds);
+  }
+
+  /// Creates a ProjectRule for filtering tasks by project.
+  static ProjectRule projectRule({
+    ProjectRuleOperator operator = ProjectRuleOperator.matches,
+    String? projectId,
+    List<String> projectIds = const [],
+  }) {
+    return ProjectRule(
+      operator: operator,
+      projectId: projectId,
+      projectIds: projectIds,
+    );
+  }
+
+  /// Creates a TaskRuleSet containing multiple rules.
+  static TaskRuleSet taskRuleSet({
+    RuleSetOperator operator = RuleSetOperator.and,
+    List<TaskRule> rules = const [],
+  }) {
+    return TaskRuleSet(operator: operator, rules: rules);
+  }
+
+  /// Creates an EvaluationContext for rule evaluation.
+  static EvaluationContext evaluationContext({DateTime? today}) {
+    return EvaluationContext(today: today ?? DateTime(2025, 6, 15));
+  }
+
+  // === Settings ===
+
+  /// Creates AllocationSettings for allocation strategy configuration.
+  static AllocationSettings allocationSettings({
+    AllocationStrategyType strategyType = AllocationStrategyType.proportional,
+    double urgencyInfluence = 0.4,
+    int minimumTasksPerCategory = 1,
+    int topNCategories = 3,
+    int dailyTaskLimit = 10,
+    bool showExcludedUrgentWarning = true,
+  }) {
+    return AllocationSettings(
+      strategyType: strategyType,
+      urgencyInfluence: urgencyInfluence,
+      minimumTasksPerCategory: minimumTasksPerCategory,
+      topNCategories: topNCategories,
+      dailyTaskLimit: dailyTaskLimit,
+      showExcludedUrgentWarning: showExcludedUrgentWarning,
+    );
+  }
+
+  /// Creates NextActionsSettings for next actions configuration.
+  static NextActionsSettings nextActionsSettings({
+    int tasksPerProject = 2,
+    bool includeInboxTasks = true,
+    bool excludeFutureStartDates = true,
+    SortPreferences sortPreferences = const SortPreferences(),
+  }) {
+    return NextActionsSettings(
+      tasksPerProject: tasksPerProject,
+      includeInboxTasks: includeInboxTasks,
+      excludeFutureStartDates: excludeFutureStartDates,
+      sortPreferences: sortPreferences,
+    );
+  }
+
+  /// Creates AppSettings with optional overrides.
+  static AppSettings appSettings({
+    GlobalSettings global = const GlobalSettings(),
+    Map<String, SortPreferences> pageSortPreferences = const {},
+    Map<String, PageDisplaySettings> pageDisplaySettings = const {},
+    Map<String, ScreenPreferences> screenPreferences = const {},
+    AllocationSettings allocation = const AllocationSettings(),
+    ValueRanking valueRanking = const ValueRanking(),
+    SoftGatesSettings? softGates,
+    NextActionsSettings? nextActions,
+  }) {
+    return AppSettings(
+      global: global,
+      pageSortPreferences: pageSortPreferences,
+      pageDisplaySettings: pageDisplaySettings,
+      screenPreferences: screenPreferences,
+      allocation: allocation,
+      valueRanking: valueRanking,
+      softGates: softGates,
+      nextActions: nextActions,
+    );
+  }
+
+  // === Query Predicates ===
+
+  /// Creates a TaskBoolPredicate for boolean field filtering.
+  static predicates.TaskBoolPredicate taskBoolPredicate({
+    predicates.TaskBoolField field = predicates.TaskBoolField.completed,
+    predicates.BoolOperator operator = predicates.BoolOperator.isFalse,
+  }) {
+    return predicates.TaskBoolPredicate(field: field, operator: operator);
+  }
+
+  /// Creates a TaskDatePredicate for date field filtering.
+  static predicates.TaskDatePredicate taskDatePredicate({
+    predicates.TaskDateField field = predicates.TaskDateField.deadlineDate,
+    predicates.DateOperator operator = predicates.DateOperator.isNotNull,
+    DateTime? date,
+    DateTime? startDate,
+    DateTime? endDate,
+    predicates.RelativeComparison? relativeComparison,
+    int? relativeDays,
+  }) {
+    return predicates.TaskDatePredicate(
+      field: field,
+      operator: operator,
+      date: date,
+      startDate: startDate,
+      endDate: endDate,
+      relativeComparison: relativeComparison,
+      relativeDays: relativeDays,
+    );
+  }
+
+  /// Creates a TaskProjectPredicate for project filtering.
+  static predicates.TaskProjectPredicate taskProjectPredicate({
+    predicates.ProjectOperator operator = predicates.ProjectOperator.isNull,
+    String? projectId,
+    List<String> projectIds = const [],
+  }) {
+    return predicates.TaskProjectPredicate(
+      operator: operator,
+      projectId: projectId,
+      projectIds: projectIds,
+    );
+  }
+
+  /// Creates a TaskLabelPredicate for label filtering.
+  static predicates.TaskLabelPredicate taskLabelPredicate({
+    predicates.LabelOperator operator = predicates.LabelOperator.hasAny,
+    List<String> labelIds = const [],
+    LabelType labelType = LabelType.label,
+  }) {
+    return predicates.TaskLabelPredicate(
+      operator: operator,
+      labelIds: labelIds,
+      labelType: labelType,
     );
   }
 }

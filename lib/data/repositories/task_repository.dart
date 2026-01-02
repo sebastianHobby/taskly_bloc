@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
-import 'package:powersync/powersync.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/mappers/task_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
@@ -46,11 +46,13 @@ class TaskRepository implements TaskRepositoryContract {
     required this.driftDb,
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
+    required this.idGenerator,
   }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb);
 
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
+  final IdGenerator idGenerator;
   final TaskPredicateMapper _predicateMapper;
 
   // Tier-based shared streams for common query patterns
@@ -196,7 +198,7 @@ class TaskRepository implements TaskRepositoryContract {
   }) async {
     talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
     final now = DateTime.now();
-    final id = uuid.v4();
+    final id = idGenerator.taskId();
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
@@ -226,10 +228,16 @@ class TaskRepository implements TaskRepositoryContract {
 
       if (uniqueLabelIds != null) {
         for (final labelId in uniqueLabelIds) {
+          // Generate deterministic v5 ID for junction
+          final junctionId = idGenerator.taskLabelId(
+            taskId: id,
+            labelId: labelId,
+          );
           await driftDb
               .into(driftDb.taskLabelsTable)
               .insert(
                 TaskLabelsTableCompanion(
+                  id: Value(junctionId),
                   taskId: Value(id),
                   labelId: Value(labelId),
                 ),
@@ -249,6 +257,7 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     List<String>? labelIds,
@@ -281,6 +290,9 @@ class TaskRepository implements TaskRepositoryContract {
               startDate: Value(normalizedStartDate),
               deadlineDate: Value(normalizedDeadlineDate),
               projectId: Value(projectId),
+              priority: priority == null
+                  ? Value(existing.priority)
+                  : Value(priority),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const Value.absent()
                   : Value(repeatIcalRrule),
@@ -288,6 +300,7 @@ class TaskRepository implements TaskRepositoryContract {
                   ? Value(existing.repeatFromCompletion)
                   : Value(repeatFromCompletion),
               seriesEnded: Value(existing.seriesEnded),
+              lastReviewedAt: Value(existing.lastReviewedAt),
               createdAt: Value(existing.createdAt),
               updatedAt: Value(now),
             ),
@@ -330,6 +343,22 @@ class TaskRepository implements TaskRepositoryContract {
     await driftDb
         .delete(driftDb.taskTable)
         .delete(TaskTableCompanion(id: Value(id)));
+  }
+
+  @override
+  Future<void> updateLastReviewedAt({
+    required String id,
+    required DateTime reviewedAt,
+  }) async {
+    talker.debug('[TaskRepository] updateLastReviewedAt: id=$id');
+    await (driftDb.update(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(id))).write(
+      TaskTableCompanion(
+        lastReviewedAt: Value(reviewedAt),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   @override
