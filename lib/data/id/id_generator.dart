@@ -1,6 +1,10 @@
 import 'package:uuid/uuid.dart';
 import 'package:taskly_bloc/domain/models/label.dart' show LabelType;
 
+/// Factory function that returns the current user ID.
+/// Throws [StateError] if no user is authenticated.
+typedef UserIdGetter = String Function();
+
 /// Centralized ID generation for offline-first architecture.
 ///
 /// Uses UUID v5 for entities with natural keys (deterministic - same inputs
@@ -8,10 +12,22 @@ import 'package:taskly_bloc/domain/models/label.dart' show LabelType;
 ///
 /// This class is the single source of truth for ID strategy per table,
 /// used by repositories for generation and by uploadData for conflict handling.
+///
+/// The [IdGenerator] uses lazy evaluation for the user ID, meaning it only
+/// requires an authenticated user when generating IDs that need the user ID
+/// (v5 deterministic IDs), not at construction time.
 class IdGenerator {
-  IdGenerator(this._userId);
+  /// Creates an IdGenerator with a lazy user ID getter.
+  ///
+  /// The [userIdGetter] is called only when generating IDs that require
+  /// the user ID. This allows repositories to be constructed before
+  /// authentication is complete.
+  IdGenerator(this._userIdGetter);
 
-  final String _userId;
+  /// Creates an IdGenerator with a fixed user ID (for testing/backwards compat).
+  IdGenerator.withUserId(String userId) : _userIdGetter = (() => userId);
+
+  final UserIdGetter _userIdGetter;
   static const _uuid = Uuid();
 
   /// UUID v5 namespace for deterministic ID generation.
@@ -58,8 +74,10 @@ class IdGenerator {
   /// Check if a table uses random v4 IDs.
   static bool isRandom(String tableName) => v4Tables.contains(tableName);
 
-  /// Get the current user ID (for debugging/logging).
-  String get userId => _userId;
+  /// Get the current user ID.
+  ///
+  /// Throws [StateError] if no user is authenticated.
+  String get userId => _userIdGetter();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // V4 RANDOM IDs - User Content (no natural key)
@@ -212,8 +230,11 @@ class IdGenerator {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /// Generate v5 UUID with userId prefix (for user-scoped entities).
+  ///
+  /// Throws [StateError] if no user is authenticated.
   String _v5(String path) {
-    return _uuid.v5(Namespace.url.value, '$_v5Namespace/$_userId/$path');
+    final currentUserId = _userIdGetter();
+    return _uuid.v5(Namespace.url.value, '$_v5Namespace/$currentUserId/$path');
   }
 
   /// Generate v5 UUID without userId prefix (for entities scoped by parent ID).
