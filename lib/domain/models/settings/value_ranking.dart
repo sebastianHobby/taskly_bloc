@@ -41,6 +41,7 @@ abstract class ValueRanking with _$ValueRanking {
     /// Ranked value labels with weights.
     @Default([]) List<ValueRankItem> items,
   }) = _ValueRanking;
+  const ValueRanking._();
 
   factory ValueRanking.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List<dynamic>?;
@@ -51,6 +52,9 @@ abstract class ValueRanking with _$ValueRanking {
         [];
     return ValueRanking(items: items);
   }
+
+  @override
+  String toString() => 'ValueRanking(${items.length} items)';
 }
 
 /// Extension for JSON serialization.

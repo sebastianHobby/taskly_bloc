@@ -105,7 +105,7 @@ class SettingsRepository implements SettingsRepositoryContract {
       ),
       SettingsKey.allocation => UserProfileTableCompanion(
         allocationSettings: Value(
-          jsonEncode((value as AllocationSettings).toJson()),
+          jsonEncode((value as AllocationConfig).toJson()),
         ),
         updatedAt: now,
       ),
@@ -178,9 +178,9 @@ class SettingsRepository implements SettingsRepositoryContract {
     return GlobalSettings.fromJson(_parseJson(row.globalSettings));
   }
 
-  AllocationSettings _allocationFromRow(UserProfileTableData? row) {
-    if (row == null) return const AllocationSettings();
-    return AllocationSettings.fromJson(_parseJson(row.allocationSettings));
+  AllocationConfig _allocationFromRow(UserProfileTableData? row) {
+    if (row == null) return const AllocationConfig();
+    return AllocationConfig.fromJson(_parseJson(row.allocationSettings));
   }
 
   SoftGatesSettings _softGatesFromRow(UserProfileTableData? row) {
@@ -233,7 +233,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     if (row == null) return const AppSettings();
     return AppSettings(
       global: GlobalSettings.fromJson(_parseJson(row.globalSettings)),
-      allocation: AllocationSettings.fromJson(
+      allocation: AllocationConfig.fromJson(
         _parseJson(row.allocationSettings),
       ),
       softGates: SoftGatesSettings.fromJson(_parseJson(row.softGatesSettings)),

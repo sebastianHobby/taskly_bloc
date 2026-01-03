@@ -4,7 +4,7 @@
 /// Import this file to access all settings types.
 library;
 
-export 'settings/allocation_settings.dart';
+export 'settings/allocation_config.dart';
 export 'settings/app_theme_mode.dart';
 export 'settings/date_format_patterns.dart';
 export 'settings/global_settings.dart';
@@ -15,7 +15,7 @@ export 'settings/settings_page_key.dart';
 export 'settings/soft_gates_settings.dart';
 export 'settings/value_ranking.dart';
 
-import 'package:taskly_bloc/domain/models/settings/allocation_settings.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings/global_settings.dart';
 import 'package:taskly_bloc/domain/models/settings/next_actions_settings.dart';
 import 'package:taskly_bloc/domain/models/settings/page_display_settings.dart';
@@ -33,7 +33,7 @@ class AppSettings {
     this.pageSortPreferences = const <String, SortPreferences>{},
     this.pageDisplaySettings = const <String, PageDisplaySettings>{},
     this.screenPreferences = const <String, ScreenPreferences>{},
-    this.allocation = const AllocationSettings(),
+    this.allocation = const AllocationConfig(),
     this.valueRanking = const ValueRanking(),
     SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,
@@ -73,8 +73,8 @@ class AppSettings {
 
     final allocationJson = json['allocation'] as Map<String, dynamic>?;
     final allocation = allocationJson != null
-        ? AllocationSettings.fromJson(allocationJson)
-        : const AllocationSettings();
+        ? AllocationConfig.fromJson(allocationJson)
+        : const AllocationConfig();
 
     final valueRankingJson = json['valueRanking'] as Map<String, dynamic>?;
     final valueRanking = valueRankingJson != null
@@ -111,7 +111,7 @@ class AppSettings {
   final Map<String, ScreenPreferences> screenPreferences;
 
   /// Allocation strategy settings (replaces allocation_preferences table).
-  final AllocationSettings allocation;
+  final AllocationConfig allocation;
 
   /// Value label ranking (replaces priority_rankings/ranked_items tables).
   final ValueRanking valueRanking;
@@ -140,7 +140,7 @@ class AppSettings {
     Map<String, SortPreferences>? pageSortPreferences,
     Map<String, PageDisplaySettings>? pageDisplaySettings,
     Map<String, ScreenPreferences>? screenPreferences,
-    AllocationSettings? allocation,
+    AllocationConfig? allocation,
     ValueRanking? valueRanking,
     SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,
@@ -207,7 +207,7 @@ class AppSettings {
   }
 
   /// Update allocation settings.
-  AppSettings updateAllocation(AllocationSettings value) {
+  AppSettings updateAllocation(AllocationConfig value) {
     return copyWith(allocation: value);
   }
 

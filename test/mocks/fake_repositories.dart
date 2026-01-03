@@ -312,7 +312,7 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     return switch (key) {
       SettingsKey.global => _current.updateGlobal(value as GlobalSettings),
       SettingsKey.allocation => _current.updateAllocation(
-        value as AllocationSettings,
+        value as AllocationConfig,
       ),
       SettingsKey.softGates => _current.updateSoftGates(
         value as SoftGatesSettings,

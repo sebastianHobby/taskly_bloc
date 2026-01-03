@@ -33,10 +33,10 @@ class AllocationOrchestrator {
     await for (final combined in _combineStreams()) {
       final tasks = combined.$1;
       final pinnedLabel = combined.$2;
-      final allocationSettings = combined.$3;
+      final allocationConfig = combined.$3;
       final valueRanking = combined.$4;
 
-      if (allocationSettings.dailyTaskLimit == 0) {
+      if (allocationConfig.dailyLimit == 0) {
         // No allocation configured - return empty result
         yield AllocationResult(
           allocatedTasks: const [],
@@ -87,7 +87,7 @@ class AllocationOrchestrator {
       final allocatedRegularTasks = await _allocateRegularTasks(
         regularTasks,
         valueRanking,
-        allocationSettings,
+        allocationConfig,
       );
 
       // Combine results
@@ -96,32 +96,35 @@ class AllocationOrchestrator {
         ...allocatedRegularTasks.allocatedTasks,
       ];
 
-      // Generate warnings
+      // Generate warnings based on strategy settings
       final warnings = <AllocationWarning>[];
+      final urgentBehavior =
+          allocationConfig.strategySettings.urgentTaskBehavior;
 
-      // Check for excluded urgent tasks
-      final excludedUrgent = allocatedRegularTasks.excludedTasks.where((et) {
-        if (et.task.deadlineDate == null) return false;
-        // Use a default urgency threshold of 3 days
-        const urgencyThresholdDays = 3;
-        final daysUntilDeadline = et.task.deadlineDate!
-            .difference(DateTime.now())
-            .inDays;
-        return daysUntilDeadline <= urgencyThresholdDays;
-      }).toList();
+      // Check for excluded urgent tasks (only warn if behavior is warnOnly)
+      if (urgentBehavior == UrgentTaskBehavior.warnOnly) {
+        final excludedUrgent = allocatedRegularTasks.excludedTasks.where((et) {
+          if (et.task.deadlineDate == null) return false;
+          final urgencyThresholdDays =
+              allocationConfig.strategySettings.taskUrgencyThresholdDays;
+          final daysUntilDeadline = et.task.deadlineDate!
+              .difference(DateTime.now())
+              .inDays;
+          return daysUntilDeadline <= urgencyThresholdDays;
+        }).toList();
 
-      if (excludedUrgent.isNotEmpty &&
-          allocationSettings.showExcludedUrgentWarning) {
-        warnings.add(
-          AllocationWarning(
-            type: WarningType.excludedUrgentTask,
-            message:
-                '${excludedUrgent.length} urgent task(s) excluded from focus list',
-            suggestedAction:
-                'Review and consider pinning or adjusting priorities',
-            affectedTaskIds: excludedUrgent.map((et) => et.task.id).toList(),
-          ),
-        );
+        if (excludedUrgent.isNotEmpty) {
+          warnings.add(
+            AllocationWarning(
+              type: WarningType.excludedUrgentTask,
+              message:
+                  '${excludedUrgent.length} urgent task(s) excluded from focus list',
+              suggestedAction:
+                  'Review and consider pinning or adjusting priorities',
+              affectedTaskIds: excludedUrgent.map((et) => et.task.id).toList(),
+            ),
+          );
+        }
       }
 
       yield AllocationResult(
@@ -133,11 +136,14 @@ class AllocationOrchestrator {
     }
   }
 
-  /// Allocate regular (non-pinned) tasks using the selected strategy
+  /// Allocate regular (non-pinned) tasks using persona-based strategy.
+  ///
+  /// For Phase 1, this simplifies to proportional allocation.
+  /// Future phases will implement persona-specific logic.
   Future<AllocationResult> _allocateRegularTasks(
     List<Task> tasks,
     ValueRanking valueRanking,
-    AllocationSettings settings,
+    AllocationConfig config,
   ) async {
     if (valueRanking.items.isEmpty) {
       // No ranking - all tasks excluded
@@ -170,8 +176,10 @@ class AllocationOrchestrator {
         .where((t) => t.labels.any((l) => l.type == LabelType.value))
         .toList();
 
-    // Create allocation strategy
-    final strategy = _createStrategy(settings.strategyType);
+    // Create allocation strategy based on persona
+    // For Phase 1: use proportional as default, urgency weighted for
+    // firefighter/realist personas with boost > 1.0
+    final strategy = _createStrategyForPersona(config);
 
     // Build category map from ranking
     final categories = <String, double>{};
@@ -185,30 +193,31 @@ class AllocationOrchestrator {
     final parameters = AllocationParameters(
       tasks: tasksWithValues,
       categories: categories,
-      maxTasks: settings.dailyTaskLimit,
-      urgencyInfluence: settings.urgencyInfluence,
+      maxTasks: config.dailyLimit,
+      urgencyInfluence: config.strategySettings.urgencyBoostMultiplier - 1.0,
     );
 
     return strategy.allocate(parameters);
   }
 
-  /// Create allocation strategy based on type
-  AllocationStrategy _createStrategy(AllocationStrategyType type) {
-    return switch (type) {
-      AllocationStrategyType.proportional => ProportionalAllocator(),
-      AllocationStrategyType.urgencyWeighted => UrgencyWeightedAllocator(),
-      // Future strategies - currently defaulting to proportional in UI
-      AllocationStrategyType.roundRobin ||
-      AllocationStrategyType.minimumViable ||
-      AllocationStrategyType.dynamic ||
-      AllocationStrategyType.topCategories => throw UnimplementedError(
-        'Strategy $type not yet implemented',
-      ),
-    };
+  /// Create allocation strategy based on persona configuration.
+  ///
+  /// Phase 1: Simplified strategy selection. Future phases will add
+  /// more sophisticated persona-aware allocation logic.
+  AllocationStrategy _createStrategyForPersona(AllocationConfig config) {
+    final settings = config.strategySettings;
+
+    // If urgency boost > 1.0, use urgency-weighted allocator
+    if (settings.urgencyBoostMultiplier > 1.0) {
+      return UrgencyWeightedAllocator();
+    }
+
+    // Default to proportional allocation
+    return ProportionalAllocator();
   }
 
   /// Combine all necessary streams
-  Stream<(List<Task>, Label?, AllocationSettings, ValueRanking)>
+  Stream<(List<Task>, Label?, AllocationConfig, ValueRanking)>
   _combineStreams() async* {
     // Watch incomplete tasks
     final tasksStream = _taskRepository.watchAll();
@@ -218,14 +227,14 @@ class AllocationOrchestrator {
       final pinnedLabel = await _labelRepository.getSystemLabel(
         SystemLabelType.pinned,
       );
-      final allocationSettings = await _settingsRepository.load(
+      final allocationConfig = await _settingsRepository.load(
         SettingsKey.allocation,
       );
       final valueRanking = await _settingsRepository.load(
         SettingsKey.valueRanking,
       );
 
-      yield (tasks, pinnedLabel, allocationSettings, valueRanking);
+      yield (tasks, pinnedLabel, allocationConfig, valueRanking);
     }
   }
 

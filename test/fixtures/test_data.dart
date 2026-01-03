@@ -788,22 +788,18 @@ class TestData {
 
   // === Settings ===
 
-  /// Creates AllocationSettings for allocation strategy configuration.
-  static AllocationSettings allocationSettings({
-    AllocationStrategyType strategyType = AllocationStrategyType.proportional,
-    double urgencyInfluence = 0.4,
-    int minimumTasksPerCategory = 1,
-    int topNCategories = 3,
-    int dailyTaskLimit = 10,
-    bool showExcludedUrgentWarning = true,
+  /// Creates AllocationConfig for allocation strategy configuration.
+  static AllocationConfig allocationConfig({
+    int dailyLimit = 10,
+    AllocationPersona persona = AllocationPersona.realist,
+    StrategySettings strategySettings = const StrategySettings(),
+    DisplaySettings displaySettings = const DisplaySettings(),
   }) {
-    return AllocationSettings(
-      strategyType: strategyType,
-      urgencyInfluence: urgencyInfluence,
-      minimumTasksPerCategory: minimumTasksPerCategory,
-      topNCategories: topNCategories,
-      dailyTaskLimit: dailyTaskLimit,
-      showExcludedUrgentWarning: showExcludedUrgentWarning,
+    return AllocationConfig(
+      dailyLimit: dailyLimit,
+      persona: persona,
+      strategySettings: strategySettings,
+      displaySettings: displaySettings,
     );
   }
 
@@ -828,7 +824,7 @@ class TestData {
     Map<String, SortPreferences> pageSortPreferences = const {},
     Map<String, PageDisplaySettings> pageDisplaySettings = const {},
     Map<String, ScreenPreferences> screenPreferences = const {},
-    AllocationSettings allocation = const AllocationSettings(),
+    AllocationConfig allocation = const AllocationConfig(),
     ValueRanking valueRanking = const ValueRanking(),
     SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,

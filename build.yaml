@@ -4,6 +4,7 @@ targets:
       json_serializable:json_serializable:
         options:
           field_rename: snake
+          explicit_to_json: true
       drift_dev:drift_dev:
         options:
           store_date_time_values_as_text: true

@@ -21,6 +21,10 @@ abstract class AllocatedTask with _$AllocatedTask {
     required Task task,
     required String qualifyingValueId, // Value that qualified this task
     required double allocationScore,
+
+    /// True if this task was included due to urgency override (Firefighter mode)
+    /// rather than value-based allocation.
+    @Default(false) bool isUrgentOverride,
   }) = _AllocatedTask;
 }
 
@@ -68,6 +72,14 @@ enum WarningType {
   noTasksInCategory,
   @JsonValue('exceeded_total_limit')
   exceededTotalLimit,
+
+  /// A project's deadline is approaching within the configured threshold.
+  @JsonValue('project_deadline_approaching')
+  projectDeadlineApproaching,
+
+  /// An urgent task was excluded because it has no value assigned.
+  @JsonValue('urgent_task_excluded')
+  urgentTaskExcluded,
 }
 
 /// Reasoning behind allocation decisions
