@@ -144,17 +144,27 @@ When a user modifies ANY setting from a preset persona, the system automatically
 
 ### Custom Mode: Combining Features
 
-The Custom persona allows combining urgency and neglect features together:
+The Custom persona allows combining urgency and neglect features together.
+
+**Per-Task Combined Scoring**: All factors are multiplied together into a single score for EACH task. No sequential application.
 
 ```dart
 // Example: Urgency boost + Neglect weighting combo
 StrategySettings(
   urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-  urgencyBoostMultiplier: 1.5,  // Urgent tasks with values get boosted
-  enableNeglectWeighting: true,  // ALSO adjust weights by neglect
+  urgencyBoostMultiplier: 1.5,  // Urgent tasks get boosted
+  enableNeglectWeighting: true,  // Neglected values get boosted
   neglectInfluence: 0.5,
 )
-// Result: Neglected values get weight boost, then urgent tasks within those get score boost
+
+// Per-task scoring formula:
+// combinedScore = baseScore * neglectFactor * urgencyFactor
+//
+// Example task with neglected value + urgent deadline:
+//   baseScore = 0.3 (from value weight)
+//   neglectFactor = 1.5 (value is neglected)
+//   urgencyFactor = 1.5 (task is urgent)
+//   combinedScore = 0.3 * 1.5 * 1.5 = 0.675
 ```
 
 ### Orchestrator Strategy Selection
