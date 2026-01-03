@@ -870,5 +870,185 @@
     "confirmButton": "Confirmar",
     "@confirmButton": {
         "description": "Botón de acción confirmar"
+    },
+    "personaIdealist": "Idealista",
+    "@personaIdealist": {
+        "description": "Nombre de la persona de asignación Idealista"
+    },
+    "personaIdealistDescription": "Alineación pura con valores. Ignora la urgencia.",
+    "@personaIdealistDescription": {
+        "description": "Descripción corta de la persona Idealista"
+    },
+    "personaIdealistHowItWorks": "Las tareas se seleccionan únicamente según tus pesos de valores. Las fechas límite y la urgencia se ignoran por completo. Mejor para: Alineación de valores a largo plazo sin presión de tiempo.",
+    "@personaIdealistHowItWorks": {
+        "description": "Explicación detallada de cómo funciona la persona Idealista"
+    },
+    "personaReflector": "Reflector",
+    "@personaReflector": {
+        "description": "Nombre de la persona de asignación Reflector"
+    },
+    "personaReflectorDescription": "Prioriza valores que has estado descuidando.",
+    "@personaReflectorDescription": {
+        "description": "Descripción corta de la persona Reflector"
+    },
+    "personaReflectorHowItWorks": "Analiza tus completaciones recientes y prioriza valores que has estado ignorando. Ayuda a mantener el equilibrio cuando tiendes a enfocarte demasiado en ciertas áreas. Mejor para: Evitar el agotamiento en valores favoritos.",
+    "@personaReflectorHowItWorks": {
+        "description": "Explicación detallada de cómo funciona la persona Reflector"
+    },
+    "personaRealist": "Realista",
+    "@personaRealist": {
+        "description": "Nombre de la persona de asignación Realista"
+    },
+    "personaRealistDescription": "Enfoque equilibrado con conciencia de urgencia.",
+    "@personaRealistDescription": {
+        "description": "Descripción corta de la persona Realista"
+    },
+    "personaRealistHowItWorks": "Respeta tus pesos de valores mientras advierte sobre fechas límite próximas. Las tareas urgentes con valores obtienen un impulso de prioridad. Mejor para: La mayoría de usuarios que quieren equilibrio.",
+    "@personaRealistHowItWorks": {
+        "description": "Explicación detallada de cómo funciona la persona Realista"
+    },
+    "personaFirefighter": "Bombero",
+    "@personaFirefighter": {
+        "description": "Nombre de la persona de asignación Bombero"
+    },
+    "personaFirefighterDescription": "Urgencia primero. Todas las tareas urgentes incluidas.",
+    "@personaFirefighterDescription": {
+        "description": "Descripción corta de la persona Bombero"
+    },
+    "personaFirefighterHowItWorks": "Las fechas límite van primero. Todas las tareas urgentes se incluyen, incluso sin valores. Previene fechas límite perdidas a costa de la alineación de valores. Mejor para: Períodos de alta presión con muchas fechas límite.",
+    "@personaFirefighterHowItWorks": {
+        "description": "Explicación detallada de cómo funciona la persona Bombero"
+    },
+    "personaCustom": "Personalizado",
+    "@personaCustom": {
+        "description": "Nombre de la persona de asignación Personalizado"
+    },
+    "personaCustomDescription": "Configura todos los ajustes manualmente.",
+    "@personaCustomDescription": {
+        "description": "Descripción corta de la persona Personalizado"
+    },
+    "personaCustomHowItWorks": "Control total sobre todos los parámetros de asignación. Configura umbrales de urgencia, multiplicadores de impulso y opciones de visualización. Mejor para: Usuarios avanzados que quieren control detallado.",
+    "@personaCustomHowItWorks": {
+        "description": "Explicación detallada de cómo funciona la persona Personalizado"
+    },
+    "personaRecommended": "Recomendado",
+    "@personaRecommended": {
+        "description": "Texto de insignia para persona recomendada"
+    },
+    "personaHowItWorks": "Cómo funciona",
+    "@personaHowItWorks": {
+        "description": "Título de sección expandible para explicación de persona"
+    },
+    "personaSectionTitle": "¿Cómo debería Enfoque priorizar las tareas?",
+    "@personaSectionTitle": {
+        "description": "Título de sección para selección de persona"
+    },
+    "urgencyThresholdsSection": "Umbrales de Urgencia",
+    "@urgencyThresholdsSection": {
+        "description": "Título de sección para configuración de umbrales de urgencia"
+    },
+    "taskUrgencyDays": "Urgencia de tarea (días antes de la fecha límite)",
+    "@taskUrgencyDays": {
+        "description": "Etiqueta para configuración de umbral de urgencia de tarea"
+    },
+    "projectUrgencyDays": "Urgencia de proyecto (días antes de la fecha límite)",
+    "@projectUrgencyDays": {
+        "description": "Etiqueta para configuración de umbral de urgencia de proyecto"
+    },
+    "displayOptionsSection": "Opciones de Visualización",
+    "@displayOptionsSection": {
+        "description": "Título de sección para opciones de visualización"
+    },
+    "showUnassignedTaskCount": "Mostrar conteo de tareas sin asignar",
+    "@showUnassignedTaskCount": {
+        "description": "Etiqueta de interruptor para mostrar conteo de tareas huérfanas"
+    },
+    "showProjectNextTask": "Mostrar siguiente tarea del proyecto",
+    "@showProjectNextTask": {
+        "description": "Etiqueta de interruptor para mostrar siguiente tarea en tarjetas de proyecto"
+    },
+    "dailyTaskLimit": "Límite diario de tareas",
+    "@dailyTaskLimit": {
+        "description": "Etiqueta para configuración de límite de tareas de enfoque diario"
+    },
+    "advancedSettingsSection": "Configuración Avanzada",
+    "@advancedSettingsSection": {
+        "description": "Título de sección para configuración avanzada"
+    },
+    "urgentTaskHandling": "Manejo de tareas urgentes",
+    "@urgentTaskHandling": {
+        "description": "Etiqueta para configuración de comportamiento de tareas urgentes"
+    },
+    "urgentTaskIgnore": "Ignorar",
+    "@urgentTaskIgnore": {
+        "description": "Opción de comportamiento de tarea urgente: ignorar"
+    },
+    "urgentTaskIgnoreDescription": "La urgencia no tiene efecto, sin advertencias",
+    "@urgentTaskIgnoreDescription": {
+        "description": "Descripción para comportamiento de ignorar tareas urgentes"
+    },
+    "urgentTaskWarnOnly": "Solo advertir",
+    "@urgentTaskWarnOnly": {
+        "description": "Opción de comportamiento de tarea urgente: solo advertir"
+    },
+    "urgentTaskWarnOnlyDescription": "Tareas urgentes excluidas pero muestran advertencias",
+    "@urgentTaskWarnOnlyDescription": {
+        "description": "Descripción para comportamiento de solo advertir tareas urgentes"
+    },
+    "urgentTaskIncludeAll": "Incluir todas",
+    "@urgentTaskIncludeAll": {
+        "description": "Opción de comportamiento de tarea urgente: incluir todas"
+    },
+    "urgentTaskIncludeAllDescription": "Todas las tareas urgentes se incluyen",
+    "@urgentTaskIncludeAllDescription": {
+        "description": "Descripción para comportamiento de incluir todas las tareas urgentes"
+    },
+    "valueAlignedUrgencyBoost": "Impulso de urgencia alineada con valores",
+    "@valueAlignedUrgencyBoost": {
+        "description": "Etiqueta para configuración de multiplicador de impulso de urgencia"
+    },
+    "enableNeglectWeighting": "Habilitar ponderación por descuido",
+    "@enableNeglectWeighting": {
+        "description": "Etiqueta de interruptor para función de ponderación basada en descuido"
+    },
+    "reflectorLookbackDays": "Días de retrospectiva del Reflector",
+    "@reflectorLookbackDays": {
+        "description": "Etiqueta para configuración de días de retrospectiva de descuido"
+    },
+    "neglectInfluence": "Influencia de descuido (0-1)",
+    "@neglectInfluence": {
+        "description": "Etiqueta para configuración de influencia de descuido"
+    },
+    "switchedToCustomMode": "Cambiado a modo Personalizado",
+    "@switchedToCustomMode": {
+        "description": "Mensaje de snackbar al cambiar automáticamente a persona Personalizado"
+    },
+    "allocationSettingsTitle": "Configuración de Asignación",
+    "@allocationSettingsTitle": {
+        "description": "Título para página de configuración de asignación"
+    },
+    "saveLabel": "Guardar",
+    "@saveLabel": {
+        "description": "Etiqueta del botón guardar"
+    },
+    "valueRankingsTitle": "Clasificación de Valores",
+    "@valueRankingsTitle": {
+        "description": "Título para sección de clasificación de valores"
+    },
+    "valueRankingsDescription": "Arrastra para reordenar. Los valores más altos obtienen más tareas de enfoque.",
+    "@valueRankingsDescription": {
+        "description": "Descripción para sección de clasificación de valores"
+    },
+    "noValuesForRanking": "No se encontraron valores. Crea valores en la pantalla de Valores.",
+    "@noValuesForRanking": {
+        "description": "Estado vacío para clasificación de valores"
+    },
+    "weightLabel": "Peso",
+    "@weightLabel": {
+        "description": "Etiqueta para valor de peso"
+    },
+    "notRankedDragToRank": "Sin clasificar - arrastra para clasificar",
+    "@notRankedDragToRank": {
+        "description": "Subtítulo para valores sin clasificar"
     }
 }

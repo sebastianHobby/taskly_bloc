@@ -90,7 +90,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
             task: task,
             reason: 'Task has no matching priority category',
             exclusionType: ExclusionType.noCategory,
-            isUrgent: _isUrgent(task),
+            isUrgent: _isUrgent(task, parameters.taskUrgencyThresholdDays),
           ),
         );
         continue;
@@ -152,7 +152,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
           task: scored.task,
           reason: 'Lower combined priority/urgency score',
           exclusionType: ExclusionType.lowPriority,
-          isUrgent: _isUrgent(scored.task),
+          isUrgent: _isUrgent(scored.task, parameters.taskUrgencyThresholdDays),
         ),
       );
     }
@@ -214,11 +214,11 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
     return 0.05; // Due far in future
   }
 
-  bool _isUrgent(Task task) {
+  bool _isUrgent(Task task, int thresholdDays) {
     if (task.deadlineDate == null) return false;
     final now = DateTime.now();
     final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
-    return daysUntilDeadline <= 1;
+    return daysUntilDeadline <= thresholdDays;
   }
 }
 

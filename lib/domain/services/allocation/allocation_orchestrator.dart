@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
@@ -8,6 +9,7 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.dart';
+import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocator.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
@@ -20,13 +22,16 @@ class AllocationOrchestrator {
     required TaskRepositoryContract taskRepository,
     required LabelRepositoryContract labelRepository,
     required SettingsRepositoryContract settingsRepository,
+    ProjectRepositoryContract? projectRepository,
   }) : _taskRepository = taskRepository,
        _labelRepository = labelRepository,
-       _settingsRepository = settingsRepository;
+       _settingsRepository = settingsRepository,
+       _projectRepository = projectRepository;
 
   final TaskRepositoryContract _taskRepository;
   final LabelRepositoryContract _labelRepository;
   final SettingsRepositoryContract _settingsRepository;
+  final ProjectRepositoryContract? _projectRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
   Stream<AllocationResult> watchAllocation() async* {
@@ -96,32 +101,99 @@ class AllocationOrchestrator {
         ...allocatedRegularTasks.allocatedTasks,
       ];
 
-      // Generate warnings based on strategy settings
-      final warnings = <AllocationWarning>[];
+      // Create urgency detector from config
+      final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
       final urgentBehavior =
           allocationConfig.strategySettings.urgentTaskBehavior;
 
-      // Check for excluded urgent tasks (only warn if behavior is warnOnly)
-      if (urgentBehavior == UrgentTaskBehavior.warnOnly) {
-        final excludedUrgent = allocatedRegularTasks.excludedTasks.where((et) {
-          if (et.task.deadlineDate == null) return false;
-          final urgencyThresholdDays =
-              allocationConfig.strategySettings.taskUrgencyThresholdDays;
-          final daysUntilDeadline = et.task.deadlineDate!
-              .difference(DateTime.now())
-              .inDays;
-          return daysUntilDeadline <= urgencyThresholdDays;
-        }).toList();
+      // Find urgent value-less tasks from regular tasks (not pinned)
+      final urgentValuelessTasks = urgencyDetector.findUrgentValuelessTasks(
+        regularTasks,
+      );
 
-        if (excludedUrgent.isNotEmpty) {
+      // Generate warnings based on strategy settings
+      final warnings = <AllocationWarning>[];
+
+      // Handle urgent value-less tasks based on behavior
+      switch (urgentBehavior) {
+        case UrgentTaskBehavior.ignore:
+          // Do nothing - these tasks are excluded with no warnings
+          break;
+        case UrgentTaskBehavior.warnOnly:
+          // Generate warnings for urgent value-less tasks
+          if (urgentValuelessTasks.isNotEmpty) {
+            warnings.add(
+              AllocationWarning(
+                type: WarningType.urgentTaskExcluded,
+                message:
+                    '${urgentValuelessTasks.length} urgent task(s) without '
+                    'values excluded from focus list',
+                suggestedAction:
+                    'Assign values to these tasks or pin them to include',
+                affectedTaskIds: urgentValuelessTasks.map((t) => t.id).toList(),
+              ),
+            );
+          }
+
+          // Also check for excluded urgent tasks that DO have values
+          final excludedUrgentWithValues = allocatedRegularTasks.excludedTasks
+              .where((et) {
+                if (et.task.deadlineDate == null) return false;
+                final hasValue = et.task.labels.any(
+                  (l) => l.type == LabelType.value,
+                );
+                return hasValue && urgencyDetector.isTaskUrgent(et.task);
+              })
+              .toList();
+
+          if (excludedUrgentWithValues.isNotEmpty) {
+            warnings.add(
+              AllocationWarning(
+                type: WarningType.excludedUrgentTask,
+                message:
+                    '${excludedUrgentWithValues.length} urgent task(s) '
+                    'excluded from focus list',
+                suggestedAction:
+                    'Review and consider pinning or adjusting priorities',
+                affectedTaskIds: excludedUrgentWithValues
+                    .map((et) => et.task.id)
+                    .toList(),
+              ),
+            );
+          }
+        case UrgentTaskBehavior.includeAll:
+          // Add urgent value-less tasks to allocated list with override flag
+          for (final task in urgentValuelessTasks) {
+            // Don't add if already allocated (shouldn't happen, but safety)
+            if (allAllocatedTasks.any((at) => at.task.id == task.id)) continue;
+
+            allAllocatedTasks.add(
+              AllocatedTask(
+                task: task,
+                qualifyingValueId: 'urgent-override',
+                allocationScore: 10, // High score for urgent override
+                isUrgentOverride: true,
+              ),
+            );
+          }
+      }
+
+      // Generate project deadline warnings if we have project repository
+      if (_projectRepository != null) {
+        final projects = await _projectRepository.getAll();
+        final urgentProjects = urgencyDetector.findUrgentProjects(projects);
+
+        for (final project in urgentProjects) {
+          final daysUntil = project.deadlineDate != null
+              ? project.deadlineDate!.difference(DateTime.now()).inDays
+              : 0;
           warnings.add(
             AllocationWarning(
-              type: WarningType.excludedUrgentTask,
+              type: WarningType.projectDeadlineApproaching,
               message:
-                  '${excludedUrgent.length} urgent task(s) excluded from focus list',
-              suggestedAction:
-                  'Review and consider pinning or adjusting priorities',
-              affectedTaskIds: excludedUrgent.map((et) => et.task.id).toList(),
+                  'Project "${project.name}" deadline '
+                  '${daysUntil <= 0 ? 'passed' : 'in $daysUntil day(s)'}',
+              suggestedAction: 'Review project tasks and prioritize completion',
             ),
           );
         }
@@ -195,6 +267,10 @@ class AllocationOrchestrator {
       categories: categories,
       maxTasks: config.dailyLimit,
       urgencyInfluence: config.strategySettings.urgencyBoostMultiplier - 1.0,
+      urgentTaskBehavior: config.strategySettings.urgentTaskBehavior,
+      taskUrgencyThresholdDays:
+          config.strategySettings.taskUrgencyThresholdDays,
+      urgencyBoostMultiplier: config.strategySettings.urgencyBoostMultiplier,
     );
 
     return strategy.allocate(parameters);

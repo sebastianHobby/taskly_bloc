@@ -164,7 +164,10 @@ class ProportionalAllocator implements AllocationStrategy {
             task: availableTasks[i],
             reason: 'Category limit reached ($allocation tasks)',
             exclusionType: ExclusionType.categoryLimitReached,
-            isUrgent: _isUrgent(availableTasks[i]),
+            isUrgent: _isUrgent(
+              availableTasks[i],
+              parameters.taskUrgencyThresholdDays,
+            ),
           ),
         );
       }
@@ -177,7 +180,7 @@ class ProportionalAllocator implements AllocationStrategy {
           task: task,
           reason: 'Task has no matching priority category',
           exclusionType: ExclusionType.noCategory,
-          isUrgent: _isUrgent(task),
+          isUrgent: _isUrgent(task, parameters.taskUrgencyThresholdDays),
         ),
       );
     }
@@ -223,10 +226,10 @@ class ProportionalAllocator implements AllocationStrategy {
     );
   }
 
-  bool _isUrgent(Task task) {
+  bool _isUrgent(Task task, int thresholdDays) {
     if (task.deadlineDate == null) return false;
     final now = DateTime.now();
     final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
-    return daysUntilDeadline <= 1; // Due within 1 day
+    return daysUntilDeadline <= thresholdDays;
   }
 }

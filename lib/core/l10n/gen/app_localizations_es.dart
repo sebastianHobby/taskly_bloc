@@ -650,4 +650,139 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get confirmButton => 'Confirmar';
+
+  @override
+  String get personaIdealist => 'Idealista';
+
+  @override
+  String get personaIdealistDescription => 'Alineación pura con valores. Ignora la urgencia.';
+
+  @override
+  String get personaIdealistHowItWorks => 'Las tareas se seleccionan únicamente según tus pesos de valores. Las fechas límite y la urgencia se ignoran por completo. Mejor para: Alineación de valores a largo plazo sin presión de tiempo.';
+
+  @override
+  String get personaReflector => 'Reflector';
+
+  @override
+  String get personaReflectorDescription => 'Prioriza valores que has estado descuidando.';
+
+  @override
+  String get personaReflectorHowItWorks => 'Analiza tus completaciones recientes y prioriza valores que has estado ignorando. Ayuda a mantener el equilibrio cuando tiendes a enfocarte demasiado en ciertas áreas. Mejor para: Evitar el agotamiento en valores favoritos.';
+
+  @override
+  String get personaRealist => 'Realista';
+
+  @override
+  String get personaRealistDescription => 'Enfoque equilibrado con conciencia de urgencia.';
+
+  @override
+  String get personaRealistHowItWorks => 'Respeta tus pesos de valores mientras advierte sobre fechas límite próximas. Las tareas urgentes con valores obtienen un impulso de prioridad. Mejor para: La mayoría de usuarios que quieren equilibrio.';
+
+  @override
+  String get personaFirefighter => 'Bombero';
+
+  @override
+  String get personaFirefighterDescription => 'Urgencia primero. Todas las tareas urgentes incluidas.';
+
+  @override
+  String get personaFirefighterHowItWorks => 'Las fechas límite van primero. Todas las tareas urgentes se incluyen, incluso sin valores. Previene fechas límite perdidas a costa de la alineación de valores. Mejor para: Períodos de alta presión con muchas fechas límite.';
+
+  @override
+  String get personaCustom => 'Personalizado';
+
+  @override
+  String get personaCustomDescription => 'Configura todos los ajustes manualmente.';
+
+  @override
+  String get personaCustomHowItWorks => 'Control total sobre todos los parámetros de asignación. Configura umbrales de urgencia, multiplicadores de impulso y opciones de visualización. Mejor para: Usuarios avanzados que quieren control detallado.';
+
+  @override
+  String get personaRecommended => 'Recomendado';
+
+  @override
+  String get personaHowItWorks => 'Cómo funciona';
+
+  @override
+  String get personaSectionTitle => '¿Cómo debería Enfoque priorizar las tareas?';
+
+  @override
+  String get urgencyThresholdsSection => 'Umbrales de Urgencia';
+
+  @override
+  String get taskUrgencyDays => 'Urgencia de tarea (días antes de la fecha límite)';
+
+  @override
+  String get projectUrgencyDays => 'Urgencia de proyecto (días antes de la fecha límite)';
+
+  @override
+  String get displayOptionsSection => 'Opciones de Visualización';
+
+  @override
+  String get showUnassignedTaskCount => 'Mostrar conteo de tareas sin asignar';
+
+  @override
+  String get showProjectNextTask => 'Mostrar siguiente tarea del proyecto';
+
+  @override
+  String get dailyTaskLimit => 'Límite diario de tareas';
+
+  @override
+  String get advancedSettingsSection => 'Configuración Avanzada';
+
+  @override
+  String get urgentTaskHandling => 'Manejo de tareas urgentes';
+
+  @override
+  String get urgentTaskIgnore => 'Ignorar';
+
+  @override
+  String get urgentTaskIgnoreDescription => 'La urgencia no tiene efecto, sin advertencias';
+
+  @override
+  String get urgentTaskWarnOnly => 'Solo advertir';
+
+  @override
+  String get urgentTaskWarnOnlyDescription => 'Tareas urgentes excluidas pero muestran advertencias';
+
+  @override
+  String get urgentTaskIncludeAll => 'Incluir todas';
+
+  @override
+  String get urgentTaskIncludeAllDescription => 'Todas las tareas urgentes se incluyen';
+
+  @override
+  String get valueAlignedUrgencyBoost => 'Impulso de urgencia alineada con valores';
+
+  @override
+  String get enableNeglectWeighting => 'Habilitar ponderación por descuido';
+
+  @override
+  String get reflectorLookbackDays => 'Días de retrospectiva del Reflector';
+
+  @override
+  String get neglectInfluence => 'Influencia de descuido (0-1)';
+
+  @override
+  String get switchedToCustomMode => 'Cambiado a modo Personalizado';
+
+  @override
+  String get allocationSettingsTitle => 'Configuración de Asignación';
+
+  @override
+  String get saveLabel => 'Guardar';
+
+  @override
+  String get valueRankingsTitle => 'Clasificación de Valores';
+
+  @override
+  String get valueRankingsDescription => 'Arrastra para reordenar. Los valores más altos obtienen más tareas de enfoque.';
+
+  @override
+  String get noValuesForRanking => 'No se encontraron valores. Crea valores en la pantalla de Valores.';
+
+  @override
+  String get weightLabel => 'Peso';
+
+  @override
+  String get notRankedDragToRank => 'Sin clasificar - arrastra para clasificar';
 }

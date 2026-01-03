@@ -650,4 +650,139 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get confirmButton => 'Confirm';
+
+  @override
+  String get personaIdealist => 'Idealist';
+
+  @override
+  String get personaIdealistDescription => 'Pure value alignment. Ignores urgency entirely.';
+
+  @override
+  String get personaIdealistHowItWorks => 'Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.';
+
+  @override
+  String get personaReflector => 'Reflector';
+
+  @override
+  String get personaReflectorDescription => 'Prioritizes values you\'ve been neglecting.';
+
+  @override
+  String get personaReflectorHowItWorks => 'Analyzes your recent completions and prioritizes values you\'ve been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.';
+
+  @override
+  String get personaRealist => 'Realist';
+
+  @override
+  String get personaRealistDescription => 'Balanced approach with urgency awareness.';
+
+  @override
+  String get personaRealistHowItWorks => 'Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.';
+
+  @override
+  String get personaFirefighter => 'Firefighter';
+
+  @override
+  String get personaFirefighterDescription => 'Urgency-first. All urgent tasks included.';
+
+  @override
+  String get personaFirefighterHowItWorks => 'Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.';
+
+  @override
+  String get personaCustom => 'Custom';
+
+  @override
+  String get personaCustomDescription => 'Configure all settings manually.';
+
+  @override
+  String get personaCustomHowItWorks => 'Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.';
+
+  @override
+  String get personaRecommended => 'Recommended';
+
+  @override
+  String get personaHowItWorks => 'How it works';
+
+  @override
+  String get personaSectionTitle => 'How should Focus prioritize tasks?';
+
+  @override
+  String get urgencyThresholdsSection => 'Urgency Thresholds';
+
+  @override
+  String get taskUrgencyDays => 'Task urgency (days before deadline)';
+
+  @override
+  String get projectUrgencyDays => 'Project urgency (days before deadline)';
+
+  @override
+  String get displayOptionsSection => 'Display Options';
+
+  @override
+  String get showUnassignedTaskCount => 'Show unassigned task count';
+
+  @override
+  String get showProjectNextTask => 'Show project next task';
+
+  @override
+  String get dailyTaskLimit => 'Daily task limit';
+
+  @override
+  String get advancedSettingsSection => 'Advanced Settings';
+
+  @override
+  String get urgentTaskHandling => 'Urgent task handling';
+
+  @override
+  String get urgentTaskIgnore => 'Ignore';
+
+  @override
+  String get urgentTaskIgnoreDescription => 'Urgency has no effect, no warnings';
+
+  @override
+  String get urgentTaskWarnOnly => 'Warn only';
+
+  @override
+  String get urgentTaskWarnOnlyDescription => 'Urgent tasks excluded but show warnings';
+
+  @override
+  String get urgentTaskIncludeAll => 'Include all';
+
+  @override
+  String get urgentTaskIncludeAllDescription => 'All urgent tasks are included';
+
+  @override
+  String get valueAlignedUrgencyBoost => 'Value-aligned urgency boost';
+
+  @override
+  String get enableNeglectWeighting => 'Enable neglect weighting';
+
+  @override
+  String get reflectorLookbackDays => 'Reflector lookback (days)';
+
+  @override
+  String get neglectInfluence => 'Neglect influence (0-1)';
+
+  @override
+  String get switchedToCustomMode => 'Switched to Custom mode';
+
+  @override
+  String get allocationSettingsTitle => 'Allocation Settings';
+
+  @override
+  String get saveLabel => 'Save';
+
+  @override
+  String get valueRankingsTitle => 'Value Rankings';
+
+  @override
+  String get valueRankingsDescription => 'Drag to reorder. Higher values get more focus tasks.';
+
+  @override
+  String get noValuesForRanking => 'No values found. Create values in the Values screen.';
+
+  @override
+  String get weightLabel => 'Weight';
+
+  @override
+  String get notRankedDragToRank => 'Not ranked - drag to rank';
 }
