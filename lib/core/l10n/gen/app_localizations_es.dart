@@ -51,6 +51,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createLabelTooltip => 'Crear etiqueta';
 
   @override
+  String get createValueTooltip => 'Crear valor';
+
+  @override
   String get createLabelOption => 'Crear etiqueta';
 
   @override

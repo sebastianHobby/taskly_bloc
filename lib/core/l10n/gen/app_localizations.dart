@@ -175,6 +175,12 @@ abstract class AppLocalizations {
   /// **'Create label'**
   String get createLabelTooltip;
 
+  /// Tooltip for the create value floating action button
+  ///
+  /// In en, this message translates to:
+  /// **'Create value'**
+  String get createValueTooltip;
+
   /// Option text for creating a label
   ///
   /// In en, this message translates to:

@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/services/screens/support_block_result.dart';
 /// Interpreted data for an entire screen.
 ///
 /// Emitted by [ScreenDataInterpreter.watchScreen] as a stream.
+/// Only applicable to [DataDrivenScreenDefinition] screens.
 @immutable
 class ScreenData {
   const ScreenData({
@@ -18,7 +19,7 @@ class ScreenData {
   });
 
   /// Create a loading state
-  factory ScreenData.loading(ScreenDefinition definition) {
+  factory ScreenData.loading(DataDrivenScreenDefinition definition) {
     return ScreenData(
       definition: definition,
       sections: const [],
@@ -28,7 +29,10 @@ class ScreenData {
   }
 
   /// Create an error state
-  factory ScreenData.error(ScreenDefinition definition, String message) {
+  factory ScreenData.error(
+    DataDrivenScreenDefinition definition,
+    String message,
+  ) {
     return ScreenData(
       definition: definition,
       sections: const [],
@@ -38,7 +42,7 @@ class ScreenData {
   }
 
   /// The screen definition being rendered
-  final ScreenDefinition definition;
+  final DataDrivenScreenDefinition definition;
 
   /// Data for each section, indexed by section position
   final List<SectionDataWithMeta> sections;
@@ -53,7 +57,7 @@ class ScreenData {
   final String? error;
 
   ScreenData copyWith({
-    ScreenDefinition? definition,
+    DataDrivenScreenDefinition? definition,
     List<SectionDataWithMeta>? sections,
     List<SupportBlockWithMeta>? supportBlocks,
     bool? isLoading,

@@ -10,11 +10,14 @@ import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 
-/// Interprets a [ScreenDefinition] into a reactive stream of [ScreenData].
+/// Interprets a [DataDrivenScreenDefinition] into a reactive stream of [ScreenData].
 ///
 /// This is the core service for the unified screen model (DR-017).
 /// It coordinates [SectionDataService] and [SupportBlockComputer] to
 /// produce a single stream that widgets can consume.
+///
+/// Only works with [DataDrivenScreenDefinition] - navigation-only screens
+/// don't have sections to interpret.
 class ScreenDataInterpreter {
   ScreenDataInterpreter({
     required SectionDataService sectionDataService,
@@ -29,7 +32,7 @@ class ScreenDataInterpreter {
   ///
   /// Combines streams from all sections and recomputes support blocks
   /// whenever section data changes.
-  Stream<ScreenData> watchScreen(ScreenDefinition definition) {
+  Stream<ScreenData> watchScreen(DataDrivenScreenDefinition definition) {
     talker.serviceLog(
       'ScreenDataInterpreter',
       'watchScreen: ${definition.id} with ${definition.sections.length} sections',
@@ -78,7 +81,7 @@ class ScreenDataInterpreter {
   }
 
   /// Fetch screen data once (non-reactive).
-  Future<ScreenData> fetchScreen(ScreenDefinition definition) async {
+  Future<ScreenData> fetchScreen(DataDrivenScreenDefinition definition) async {
     talker.serviceLog(
       'ScreenDataInterpreter',
       'fetchScreen: ${definition.id}',
@@ -177,7 +180,7 @@ class ScreenDataInterpreter {
   }
 
   Future<List<SupportBlockWithMeta>> _computeSupportBlocks(
-    ScreenDefinition definition,
+    DataDrivenScreenDefinition definition,
     List<SectionDataWithMeta> sections,
   ) async {
     if (definition.supportBlocks.isEmpty) {
