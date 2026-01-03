@@ -57,10 +57,23 @@
 
 Transform the simple values list into a rich dashboard with statistics and trends:
 - Show actual % vs target % for each value
-- Display gap warnings when significantly off-target
+- Display gap warnings when significantly off-target (configurable threshold)
 - Add drag-to-reorder with auto-weight calculation
-- Show 4-week trend sparklines
+- Show trend sparklines (configurable weeks)
 - Include "Unassigned Work" section at bottom
+
+---
+
+## Configurable Settings
+
+These settings are defined in `DisplaySettings` (Phase 1) and used by this phase:
+
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| `gapWarningThresholdPercent` | 5-50% | 15% | Show warning icon when actual % differs from target % by this amount |
+| `sparklineWeeks` | 2-12 weeks | 4 weeks | Number of weeks to show in trend sparklines |
+
+**Usage**: Read from `AllocationConfig.displaySettings` when building the values screen.
 
 ---
 
@@ -70,7 +83,7 @@ The current values screen is a simple list. Users have requested:
 1. **Visibility** into how their time actually aligns with stated values
 2. **Trend data** to see if they're improving
 3. **Easy reordering** with automatic weight recalculation
-4. **Gap warnings** when behavior deviates from intent
+4. **Gap warnings** when behavior deviates from intent (now configurable)
 
 ---
 
@@ -82,17 +95,17 @@ The current values screen is a simple list. Users have requested:
 ├─────────────────────────────────────────┤
 │  ≡ 1. Health                            │
 │    Target: 40%  │  Actual: 32%  │ -8%   │
-│    ▁▂▃▂▁▃▄▃ (4 weeks)                   │
+│    ▁▂▃▂▁▃▄▃ (N weeks)                   │  ← N = sparklineWeeks setting
 │    12 tasks · 2 projects                │
 ├─────────────────────────────────────────┤
 │  ≡ 2. Work                              │
-│    Target: 40%  │  Actual: 48%  │ +8% ⚠ │
-│    ▃▄▅▆▅▆▅▄ (4 weeks)                   │
+│    Target: 40%  │  Actual: 48%  │ +8% ⚠ │  ← ⚠ shown when gap >= gapWarningThresholdPercent
+│    ▃▄▅▆▅▆▅▄ (N weeks)                   │
 │    24 tasks · 5 projects                │
 ├─────────────────────────────────────────┤
 │  ≡ 3. Social                            │
 │    Target: 20%  │  Actual: 20%  │  0%   │
-│    ▂▂▃▂▂▃▂▂ (4 weeks)                   │
+│    ▂▂▃▂▂▃▂▂ (N weeks)                   │
 │    6 tasks · 1 project                  │
 ├─────────────────────────────────────────┤
 │  Unassigned Work                        │
@@ -118,6 +131,7 @@ class ValueStats {
     required this.taskCount,
     required this.projectCount,
     required this.weeklyTrend,
+    this.gapWarningThreshold = 15,
   });
 
   final double targetPercent;
@@ -125,11 +139,16 @@ class ValueStats {
   final int taskCount;
   final int projectCount;
   
-  /// Weekly completion percentages for sparkline (last 4 weeks).
+  /// Weekly completion percentages for sparkline.
+  /// Length determined by DisplaySettings.sparklineWeeks.
   final List<double> weeklyTrend;
+  
+  /// Gap warning threshold from DisplaySettings.gapWarningThresholdPercent.
+  /// Range: 5-50%, Default: 15%
+  final int gapWarningThreshold;
 
   double get gap => actualPercent - targetPercent;
-  bool get isSignificantGap => gap.abs() >= 15;
+  bool get isSignificantGap => gap.abs() >= gapWarningThreshold;
 }
 
 /// Enhanced card showing value with statistics.

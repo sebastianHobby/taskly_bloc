@@ -198,6 +198,7 @@ AllocationStrategy _selectStrategy(StrategySettings settings) {
 | 5 | Project Enhancements | 3-4 days | Phase 2 |
 | 6 | Reflector Mode | 4-5 days | Phase 2 |
 | 7 | Enhanced Values Screen | 5-7 days | Phase 2, 6 |
+| 8 | Values Gateway | 1 day | Phase 1 |
 | 8 | Values Gateway | 1-2 days | Phase 1 |
 
 **Total Estimate**: 21-30 days
@@ -691,12 +692,6 @@ abstract class NextActionsState with _$NextActionsState {
     
     // Phase 4: Orphan task count
     @Default(0) int orphanCount,
-    
-    // Phase 8: Session-only skip flag (NOT persisted)
-    @Default(false) bool hasSkippedValuesSetupThisSession,
-    
-    // Phase 8: Deadline-sorted tasks for fallback view
-    @Default([]) List<Task> deadlineSortedTasks,
   }) = _NextActionsState;
 }
 ```
@@ -709,9 +704,6 @@ sealed class NextActionsEvent with _$NextActionsEvent {
   
   // Phase 4: Request orphan count refresh
   const factory NextActionsEvent.orphanCountRequested() = _OrphanCountRequested;
-  
-  // Phase 8: User skipped values setup for this session
-  const factory NextActionsEvent.valuesSetupSkippedThisSession() = _ValuesSetupSkippedThisSession;
 }
 ```
 
@@ -722,13 +714,9 @@ on<_OrphanCountRequested>((event, emit) async {
   final count = await _analyticsService.getOrphanTaskCount();
   emit(state.copyWith(orphanCount: count));
 });
-
-// Phase 8
-on<_ValuesSetupSkippedThisSession>((event, emit) {
-  // Session-only - NOT persisted to storage
-  emit(state.copyWith(hasSkippedValuesSetupThisSession: true));
-});
 ```
+
+**Note**: Phase 8 (Values Gateway) requires no BLoC state changes - values are simply required.
 
 ### Analytics Service Additions
 
@@ -752,28 +740,38 @@ abstract class AnalyticsService {
 
 ---
 
-## Follow-Up Questions for User Review
+## Confirmed Design Decisions
 
-The following decisions were made with sensible defaults. Review after implementation and adjust if needed:
+The following decisions have been confirmed and are reflected in the phase documents:
 
-### UX/Design Questions
-1. **Weight recalculation on reorder (Phase 7)**: Currently using rank-based decay (1st=35%, 2nd=25%, etc.). Alternative: equal distribution or preserve relative weights?
+### Weighting Strategy
+- **Combined weights approach**: All factors (neglect, urgency) contribute to a single score per task, then top N selected
+- Not sequential pipeline
 
-2. **Reflector "no history" messaging (Phase 6)**: Shows info banner "Building your history..." when <7 days of data. Is this sufficient or should there be a more prominent onboarding?
+### UX/Design Decisions
+| # | Decision | Confirmed Value |
+|---|----------|----------------|
+| 1 | Weight recalculation on reorder | Rank-based decay (1st=35%, 2nd=25%, etc.) |
+| 2 | Reflector "no history" messaging | Info banner: "Building your history..." |
+| 3 | Gap warning threshold | **Configurable** via `DisplaySettings.gapWarningThresholdPercent` (range: 5-50%, default: 15%) |
+| 4 | Sparkline time range | **Configurable** via `DisplaySettings.sparklineWeeks` (range: 2-12 weeks, default: 4) |
 
-3. **Gap warning threshold (Phase 7)**: Set to ±15% difference between target and actual. Should this be configurable?
+### Technical Decisions
+| # | Decision | Confirmed Value |
+|---|----------|----------------|
+| 5 | Pinned tasks vs dailyLimit | Count against limit, **but users CAN pin tasks over the limit** |
+| 6 | Reflector lookback caching | No cache (query fresh each time) |
+| 7 | Project urgency inheritance | Independent (project warnings separate from task urgency) |
 
-4. **Sparkline time range (Phase 7)**: Fixed at 4 weeks. Should users be able to change this?
-
-### Technical Questions
-5. **Pinned tasks vs dailyLimit (Phase 5)**: Currently pinned tasks count against dailyLimit. Should they be in addition to the limit?
-
-6. **Reflector lookback caching**: `getRecentCompletionsByValue()` queries could be expensive. Cache results for session?
-
-7. **Project urgency inheritance**: Should project urgency affect task urgency scores, or are they independent?
+### Behavioral Decisions
+| # | Decision | Confirmed Value |
+|---|----------|----------------|
+| 8 | Project deadline warnings | Controlled by `urgentTaskBehavior` (when `ignore`, no project warnings) |
+| 9 | Orphan "View" navigation | Navigate to filtered task list (tasks without values) |
+| 10 | "Start" button in project | Uses existing `pinTask()` method |
+| 11 | Values Gateway skip option | **Removed** - values are required, no skip option |
 
 ### Future Enhancements (Not in Scope)
 - Onboarding wizard for first-time users
 - Pre-built value templates ("Life Balance", "Career Focus")
-- Re-prompt after skip timeout (e.g., ask again after 7 days)
 - Trend notifications ("You've been neglecting Health for 2 weeks")
