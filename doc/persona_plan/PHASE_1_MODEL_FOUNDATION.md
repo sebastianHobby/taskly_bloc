@@ -222,6 +222,15 @@ abstract class DisplaySettings with _$DisplaySettings {
     
     /// Show recommended next task on project cards.
     @Default(true) bool showProjectNextTask,
+    
+    /// Gap warning threshold percentage (0-100).
+    /// Show warning when actual % differs from target % by this amount.
+    /// Range: 5-50, Default: 15
+    @Default(15) int gapWarningThresholdPercent,
+    
+    /// Number of weeks to show in value trend sparklines.
+    /// Range: 2-12, Default: 4
+    @Default(4) int sparklineWeeks,
   }) = _DisplaySettings;
 
   factory DisplaySettings.fromJson(Map<String, dynamic> json) =>
