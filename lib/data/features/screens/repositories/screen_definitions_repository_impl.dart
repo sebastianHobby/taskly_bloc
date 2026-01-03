@@ -457,16 +457,6 @@ class ScreenDefinitionsRepositoryImpl
     };
   }
 
-  /// Extracts screen type from definition, returns null for navigation-only screens.
-  db_screens.ScreenType? _screenTypeForDb(ScreenDefinition screen) {
-    return switch (screen) {
-      DataDrivenScreenDefinition(:final screenType) => _toDbScreenType(
-        screenType,
-      ),
-      NavigationOnlyScreenDefinition() => null,
-    };
-  }
-
   db_screens.ScreenCategory _toDbCategory(ScreenCategory category) {
     return switch (category) {
       ScreenCategory.workspace => db_screens.ScreenCategory.workspace,

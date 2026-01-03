@@ -118,6 +118,16 @@ sealed class SectionDataResult with _$SectionDataResult {
     _ => [],
   };
 
+  /// Count of primary entities for logging
+  int get primaryCount => switch (this) {
+    DataSectionResult(:final primaryEntities) => primaryEntities.length,
+    AllocationSectionResult(:final allocatedTasks) => allocatedTasks.length,
+    AgendaSectionResult(:final groupedTasks) => groupedTasks.values.fold(
+      0,
+      (sum, list) => sum + list.length,
+    ),
+  };
+
   /// Get related tasks (if any)
   List<Task> get relatedTasks => switch (this) {
     DataSectionResult(:final relatedEntities) =>
