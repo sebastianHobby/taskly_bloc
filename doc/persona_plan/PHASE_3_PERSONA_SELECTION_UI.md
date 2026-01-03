@@ -61,6 +61,7 @@ Replace the technical "allocation strategy" selection with a user-friendly perso
 - Implement expandable "How it works" sections
 - Add threshold configuration inputs
 - Show full settings panel when Custom is selected
+- **Auto-switch to Custom** when any setting is modified from its persona preset
 
 ---
 
@@ -326,39 +327,55 @@ class _HowItWorksExpansion extends StatelessWidget {
 1. Replace entire build method
 2. Use `ListView` with sections
 3. Map persona selection to `PersonaSelectionCard` widgets
-4. When persona changes, update related settings to preset values
+4. When persona changes, apply preset from `StrategySettings.forPersona()`
 5. Show Advanced section only when `persona == AllocationPersona.custom`
+6. **Auto-switch to Custom** when any setting is modified from preset values
 
-**Persona presets:**
+**Applying persona presets:**
 ```dart
-void _applyPersonaPreset(AllocationPersona persona) {
-  switch (persona) {
-    case AllocationPersona.idealist:
-      settings = settings.copyWith(
-        persona: persona,
-        urgentTaskBehavior: UrgentTaskBehavior.ignore,
-      );
-    case AllocationPersona.reflector:
-      settings = settings.copyWith(
-        persona: persona,
-        urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-        reflectorLookbackDays: 7,
-        neglectInfluence: 0.7,
-      );
-    case AllocationPersona.realist:
-      settings = settings.copyWith(
-        persona: persona,
-        urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-        valueAlignedUrgencyBoost: 1.5,
-      );
-    case AllocationPersona.firefighter:
-      settings = settings.copyWith(
-        persona: persona,
-        urgentTaskBehavior: UrgentTaskBehavior.includeAll,
-      );
-    case AllocationPersona.custom:
-      settings = settings.copyWith(persona: persona);
-      // Keep existing values for custom
+void _onPersonaSelected(AllocationPersona persona) {
+  // Apply the preset strategy settings for this persona
+  final presetStrategy = StrategySettings.forPersona(persona);
+  
+  config = config.copyWith(
+    persona: persona,
+    strategy: presetStrategy,
+  );
+  
+  // Persist and notify BLoC
+  _saveConfig(config);
+}
+```
+
+**Auto-switch to Custom on modification:**
+```dart
+/// Call this when ANY strategy setting is changed by the user.
+/// If the new value differs from the current persona's preset, switch to Custom.
+void _onStrategySettingChanged(StrategySettings newStrategy) {
+  final currentPersona = config.persona;
+  
+  // Don't check if already Custom
+  if (currentPersona == AllocationPersona.custom) {
+    config = config.copyWith(strategy: newStrategy);
+    _saveConfig(config);
+    return;
+  }
+  
+  // Compare with preset for current persona
+  final preset = StrategySettings.forPersona(currentPersona);
+  
+  if (newStrategy != preset) {
+    // User modified a setting - switch to Custom
+    config = config.copyWith(
+      persona: AllocationPersona.custom,
+      strategy: newStrategy,
+    );
+    _saveConfig(config);
+    
+    // Optionally show a snackbar: "Switched to Custom mode"
+  } else {
+    config = config.copyWith(strategy: newStrategy);
+    _saveConfig(config);
   }
 }
 ```
@@ -501,15 +518,19 @@ Fix all errors and warnings.
 - [ ] Card shows checkmark when selected
 - [ ] "How it works" expands/collapses
 - [ ] Settings page shows 5 persona cards
-- [ ] Selecting persona updates `AllocationSettings.persona`
+- [ ] Selecting persona updates `AllocationConfig.persona`
+- [ ] Selecting persona applies `StrategySettings.forPersona()` preset
 - [ ] Selecting Idealist sets `urgentTaskBehavior` to `ignore`
-- [ ] Selecting Reflector sets reflector-specific defaults
-- [ ] Selecting Realist sets `urgentTaskBehavior` to `warnOnly`
+- [ ] Selecting Reflector enables neglect weighting with preset values
+- [ ] Selecting Realist sets `urgentTaskBehavior` to `warnOnly` (no urgency boost)
+- [ ] Selecting Guardian sets `urgencyBoostMultiplier` to `1.5`
 - [ ] Selecting Firefighter sets `urgentTaskBehavior` to `includeAll`
-- [ ] Selecting Custom preserves existing values
-- [ ] Threshold inputs update settings
-- [ ] Display toggle switches work
-- [ ] Daily limit input works
+- [ ] Selecting Custom preserves existing strategy values
+- [ ] **Auto-switch**: Modifying ANY setting while on a persona switches to Custom
+- [ ] **Auto-switch**: Snackbar or feedback shown when auto-switching to Custom
+- [ ] Threshold inputs update `config.strategy` settings
+- [ ] Display toggle switches update `config.display` settings
+- [ ] Daily limit input updates `config.dailyLimit`
 - [ ] Advanced section only visible when Custom selected
 - [ ] All UI strings use `context.l10n`
 - [ ] Localization strings added (English + Spanish)

@@ -51,7 +51,7 @@
 
 Create shared urgency detection logic and implement `UrgentTaskBehavior` throughout the allocation system:
 - Create `UrgencyDetector` class with task and project urgency methods
-- Update `AllocationParameters` to include `urgentTaskBehavior`
+- Update `AllocationParameters` to include settings from `StrategySettings`
 - Modify allocators to use the new unified urgency handling
 - Generate project deadline warnings
 
@@ -63,6 +63,7 @@ Create shared urgency detection logic and implement `UrgentTaskBehavior` through
 
 ```dart
 import 'package:taskly/domain/models/project/project.dart';
+import 'package:taskly/domain/models/settings/allocation_config.dart';
 import 'package:taskly/domain/models/task/task.dart';
 
 /// Shared urgency detection logic for tasks and projects.
@@ -131,17 +132,17 @@ class UrgencyDetector {
     }).toList();
   }
 
-  /// Creates an UrgencyDetector from AllocationSettings.
-  factory UrgencyDetector.fromSettings(AllocationSettings settings) {
+  /// Creates an UrgencyDetector from AllocationConfig.
+  factory UrgencyDetector.fromConfig(AllocationConfig config) {
     return UrgencyDetector(
-      taskThresholdDays: settings.taskUrgencyThresholdDays,
-      projectThresholdDays: settings.projectUrgencyThresholdDays,
+      taskThresholdDays: config.strategy.taskUrgencyThresholdDays,
+      projectThresholdDays: config.strategy.projectUrgencyThresholdDays,
     );
   }
 }
 ```
 
-**Note**: Adjust imports based on actual project structure. The `AllocationSettings` import will be needed for the factory constructor.
+**Note**: Adjust imports based on actual project structure.
 
 ---
 
@@ -159,7 +160,8 @@ final UrgentTaskBehavior urgentTaskBehavior;
 final int taskUrgencyThresholdDays;
 
 /// Boost multiplier for urgent tasks that have values.
-final double valueAlignedUrgencyBoost;
+/// Set to 1.0 to disable urgency boosting.
+final double urgencyBoostMultiplier;
 ```
 
 **Update constructor** to include these fields with appropriate defaults.
@@ -170,8 +172,8 @@ final double valueAlignedUrgencyBoost;
 
 **Changes required:**
 
-1. **Remove hardcoded urgency threshold** - Replace any `urgencyThresholdDays = 3` with value from settings
-2. **Create UrgencyDetector instance** from settings
+1. **Remove hardcoded urgency threshold** - Replace any `urgencyThresholdDays = 3` with value from config
+2. **Create UrgencyDetector instance** from config
 3. **Handle UrgentTaskBehavior**:
    - `ignore`: Do not generate warnings for urgent value-less tasks
    - `warnOnly`: Generate `WarningType.urgentTaskExcluded` for urgent value-less tasks
@@ -180,14 +182,14 @@ final double valueAlignedUrgencyBoost;
 
 **Pseudo-code for urgency handling:**
 ```dart
-// Create detector from settings
-final detector = UrgencyDetector.fromSettings(settings);
+// Create detector from config
+final detector = UrgencyDetector.fromConfig(config);
 
 // Find urgent value-less tasks
 final urgentValueless = detector.findUrgentValuelessTasks(allTasks);
 
 // Handle based on behavior
-switch (settings.urgentTaskBehavior) {
+switch (config.strategy.urgentTaskBehavior) {
   case UrgentTaskBehavior.ignore:
     // Do nothing, these tasks are excluded
     break;
@@ -229,19 +231,17 @@ for (final project in urgentProjects) {
 ### 4. `lib/domain/services/allocation/proportional_allocator.dart`
 
 **Changes:**
-- Remove references to `alwaysIncludeUrgent` and `showExcludedUrgentWarning`
-- Use `urgentTaskBehavior` from parameters instead
-- Apply `valueAlignedUrgencyBoost` to urgent tasks that have values
+- Use `urgentTaskBehavior` from parameters
+- Apply `urgencyBoostMultiplier` to urgent tasks that have values (when > 1.0)
 
 ---
 
 ### 5. `lib/domain/services/allocation/urgency_weighted_allocator.dart`
 
 **Changes:**
-- Remove references to old urgency flags
 - Use `UrgencyDetector` for urgency checks
 - When `includeAll` is active, include urgent value-less tasks in allocation
-- Apply boost multiplier from settings
+- Apply boost multiplier from parameters
 
 ---
 
@@ -251,17 +251,17 @@ for (final project in urgentProjects) {
 Create `lib/domain/services/allocation/urgency_detector.dart` with the full implementation.
 
 ### Step 2: Update AllocationParameters
-Add `urgentTaskBehavior`, `taskUrgencyThresholdDays`, and `valueAlignedUrgencyBoost` fields.
+Add `urgentTaskBehavior`, `taskUrgencyThresholdDays`, and `urgencyBoostMultiplier` fields.
 
 ### Step 3: Update AllocationOrchestrator
 1. Import `UrgencyDetector` and `UrgentTaskBehavior`
-2. Create detector from settings
+2. Create detector from config
 3. Remove any hardcoded threshold values
 4. Implement the switch logic for `UrgentTaskBehavior`
 5. Add project deadline warning generation
 
 ### Step 4: Update ProportionalAllocator
-Remove old flags, use new behavior enum.
+Apply urgency boost when `urgencyBoostMultiplier > 1.0`.
 
 ### Step 5: Update UrgencyWeightedAllocator
 Implement `includeAll` logic to add urgent value-less tasks.
@@ -280,18 +280,16 @@ Fix all errors and warnings.
 - [ ] `UrgencyDetector.isTaskUrgent()` uses configurable threshold
 - [ ] `UrgencyDetector.isProjectUrgent()` uses configurable threshold
 - [ ] `UrgencyDetector.findUrgentValuelessTasks()` works correctly
-- [ ] `UrgencyDetector.fromSettings()` factory constructor works
+- [ ] `UrgencyDetector.fromConfig()` factory constructor works
 - [ ] `AllocationParameters` has `urgentTaskBehavior` field
 - [ ] `AllocationParameters` has `taskUrgencyThresholdDays` field
-- [ ] `AllocationParameters` has `valueAlignedUrgencyBoost` field
-- [ ] Orchestrator creates `UrgencyDetector` from settings
+- [ ] `AllocationParameters` has `urgencyBoostMultiplier` field
+- [ ] Orchestrator creates `UrgencyDetector` from config
 - [ ] Orchestrator handles `UrgentTaskBehavior.ignore` (no warnings)
 - [ ] Orchestrator handles `UrgentTaskBehavior.warnOnly` (generates warnings)
 - [ ] Orchestrator handles `UrgentTaskBehavior.includeAll` (adds tasks with `isUrgentOverride`)
 - [ ] Orchestrator generates `projectDeadlineApproaching` warnings
 - [ ] No hardcoded `urgencyThresholdDays = 3` remains in codebase
-- [ ] No references to `alwaysIncludeUrgent` remain
-- [ ] No references to `showExcludedUrgentWarning` remain
 - [ ] `flutter analyze` passes with 0 errors and 0 warnings
 
 ---
@@ -308,4 +306,4 @@ When behavior is implemented correctly:
 
 | Behavior | Task with Value + Urgent | Result |
 |----------|-------------------------|--------|
-| All modes | Task with deadline tomorrow, has value | In Focus with boosted priority |
+| All modes | Task with deadline tomorrow, has value | In Focus with boosted priority (if `urgencyBoostMultiplier > 1.0`) |

@@ -96,12 +96,12 @@ class ProjectNextTaskResolver {
   /// 
   /// [projectTasks] should be incomplete tasks belonging to [project].
   /// [focusTaskIds] are IDs of tasks currently in the Focus list.
-  /// [settings] provides urgency thresholds.
+  /// [config] provides urgency thresholds.
   Task? getNextTask({
     required Project project,
     required List<Task> projectTasks,
     required Set<String> focusTaskIds,
-    required AllocationSettings settings,
+    required AllocationConfig config,
   }) {
     if (projectTasks.isEmpty) return null;
 
@@ -110,14 +110,14 @@ class ProjectNextTaskResolver {
       (t) => focusTaskIds.contains(t.id),
     );
     if (inFocus.isNotEmpty) {
-      return _selectBest(inFocus.toList(), settings);
+      return _selectBest(inFocus.toList(), config);
     }
 
     // Priority 2: Urgent tasks (deadline within threshold)
     final urgent = projectTasks.where((t) {
       if (t.deadline == null) return false;
       final daysUntil = t.deadline!.difference(DateTime.now()).inDays;
-      return daysUntil <= settings.taskUrgencyThresholdDays;
+      return daysUntil <= config.strategy.taskUrgencyThresholdDays;
     });
     if (urgent.isNotEmpty) {
       return _selectMostUrgent(urgent.toList());
@@ -128,7 +128,7 @@ class ProjectNextTaskResolver {
       (t) => t.valueId != null && t.valueId!.isNotEmpty,
     );
     if (withValues.isNotEmpty) {
-      return _selectBest(withValues.toList(), settings);
+      return _selectBest(withValues.toList(), config);
     }
 
     // Priority 4: Oldest task (FIFO)
@@ -136,7 +136,7 @@ class ProjectNextTaskResolver {
   }
 
   /// Select the "best" task from a list (by deadline, then creation date).
-  Task _selectBest(List<Task> tasks, AllocationSettings settings) {
+  Task _selectBest(List<Task> tasks, AllocationConfig config) {
     tasks.sort((a, b) {
       // Tasks with deadlines come first
       if (a.deadline != null && b.deadline == null) return -1;

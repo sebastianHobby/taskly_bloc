@@ -1,5 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/queries/project_predicate.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
 import '../../../helpers/fallback_values.dart';
 
@@ -126,6 +129,179 @@ void main() {
 
         expect(copied.specificIds, ['a', 'b']);
       });
+    });
+
+    group('JSON serialization', () {
+      test('fromJson with all null optional fields', () {
+        final json = {'entity_type': 'task'};
+        final selector = EntitySelector.fromJson(json);
+
+        expect(selector.entityType, EntityType.task);
+        expect(selector.taskFilter, isNull);
+        expect(selector.projectFilter, isNull);
+        expect(selector.specificIds, isNull);
+      });
+
+      test('toJson/fromJson roundtrip with specificIds', () {
+        final selector = EntitySelector(
+          entityType: EntityType.project,
+          specificIds: ['id-1', 'id-2'],
+        );
+
+        final json = selector.toJson();
+        final restored = EntitySelector.fromJson(json);
+
+        expect(restored.entityType, selector.entityType);
+        expect(restored.specificIds, selector.specificIds);
+      });
+    });
+  });
+
+  group('TaskQueryFilterConverter', () {
+    const converter = TaskQueryFilterConverter();
+
+    test('fromJson returns null for null input', () {
+      final result = converter.fromJson(null);
+
+      expect(result, isNull);
+    });
+
+    test('toJson returns null for null input', () {
+      final result = converter.toJson(null);
+
+      expect(result, isNull);
+    });
+
+    test('fromJson parses valid task filter', () {
+      final json = {
+        'shared': [
+          {
+            'type': 'bool',
+            'field': 'completed',
+            'operator': 'isFalse',
+          },
+        ],
+        'orGroups': <List<Map<String, dynamic>>>[],
+      };
+
+      final result = converter.fromJson(json);
+
+      expect(result, isNotNull);
+      expect(result!.shared, hasLength(1));
+      expect(result.shared.first, isA<TaskBoolPredicate>());
+    });
+
+    test('toJson serializes task filter', () {
+      const filter = QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      );
+
+      final result = converter.toJson(filter);
+
+      expect(result, isNotNull);
+      expect(result!['shared'], hasLength(1));
+      expect(result['orGroups'], isEmpty);
+    });
+
+    test('fromJson/toJson roundtrip preserves data', () {
+      const filter = QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+        ],
+        orGroups: [
+          [
+            TaskProjectPredicate(operator: ProjectOperator.isNull),
+          ],
+        ],
+      );
+
+      final json = converter.toJson(filter);
+      final restored = converter.fromJson(json);
+
+      expect(restored!.shared, hasLength(filter.shared.length));
+      expect(restored.orGroups, hasLength(filter.orGroups.length));
+    });
+  });
+
+  group('ProjectQueryFilterConverter', () {
+    const converter = ProjectQueryFilterConverter();
+
+    test('fromJson returns null for null input', () {
+      final result = converter.fromJson(null);
+
+      expect(result, isNull);
+    });
+
+    test('toJson returns null for null input', () {
+      final result = converter.toJson(null);
+
+      expect(result, isNull);
+    });
+
+    test('fromJson parses valid project filter', () {
+      final json = {
+        'shared': [
+          {
+            'type': 'bool',
+            'field': 'completed',
+            'operator': 'isFalse',
+          },
+        ],
+        'orGroups': <List<Map<String, dynamic>>>[],
+      };
+
+      final result = converter.fromJson(json);
+
+      expect(result, isNotNull);
+      expect(result!.shared, hasLength(1));
+      expect(result.shared.first, isA<ProjectBoolPredicate>());
+    });
+
+    test('toJson serializes project filter', () {
+      const filter = QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      );
+
+      final result = converter.toJson(filter);
+
+      expect(result, isNotNull);
+      expect(result!['shared'], hasLength(1));
+      expect(result['orGroups'], isEmpty);
+    });
+
+    test('fromJson/toJson roundtrip preserves data', () {
+      const filter = QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+        ],
+        orGroups: [
+          [
+            ProjectIdPredicate(id: 'project-123'),
+          ],
+        ],
+      );
+
+      final json = converter.toJson(filter);
+      final restored = converter.fromJson(json);
+
+      expect(restored!.shared, hasLength(filter.shared.length));
+      expect(restored.orGroups, hasLength(filter.orGroups.length));
     });
   });
 }

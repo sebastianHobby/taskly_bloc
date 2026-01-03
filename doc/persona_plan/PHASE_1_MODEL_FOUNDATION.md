@@ -114,70 +114,133 @@ enum UrgentTaskBehavior {
 
 ---
 
-## Files to Modify
+### 2. Create `lib/domain/models/settings/allocation_config.dart`
 
-### 2. `lib/domain/models/settings/allocation_settings.dart`
+This is a **new file** that replaces the current `allocation_settings.dart`. The old file will be deleted.
 
-**Remove these enums entirely:**
-- `AllocationStrategyType` enum (only 2 of 6 implemented, personas replace this)
-- `UrgencyMode` enum (replaced by `UrgentTaskBehavior` + persona presets)
-
-**Remove these fields:**
-- `strategyType` (replaced by persona → strategy mapping in orchestrator)
-- `urgencyInfluence` (replaced by `valueAlignedUrgencyBoost`)
-- `alwaysIncludeUrgent` (replaced by `urgentTaskBehavior`)
-- `showExcludedUrgentWarning` (replaced by `urgentTaskBehavior`)
-- `minimumTasksPerCategory` (unused, unimplemented strategy)
-- `topNCategories` (unused, unimplemented strategy)
-
-**Remove these methods:**
-- `urgencyMode` getter
-- `withUrgencyMode()` method
-
-**Add these fields:**
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `persona` | `AllocationPersona` | `realist` | Active allocation persona |
-| `urgentTaskBehavior` | `UrgentTaskBehavior` | `warnOnly` | How to handle urgent value-less tasks |
-| `taskUrgencyThresholdDays` | `int` | `3` | Days before deadline = urgent (tasks) |
-| `projectUrgencyThresholdDays` | `int` | `7` | Days before deadline = urgent (projects) |
-| `valueAlignedUrgencyBoost` | `double` | `1.5` | Boost multiplier for urgent tasks with values |
-| `reflectorLookbackDays` | `int` | `7` | Days to look back for neglect calculation |
-| `neglectInfluence` | `double` | `0.7` | Weight of neglect score vs base weight (0-1) |
-| `showOrphanTaskCount` | `bool` | `true` | Show count of value-less tasks in Focus footer |
-| `showProjectNextTask` | `bool` | `true` | Show recommended next task on projects |
-
-**Expected result structure:**
 ```dart
-@freezed
-abstract class AllocationSettings with _$AllocationSettings {
-  const factory AllocationSettings({
-    // Existing fields...
-    @Default(10) int dailyLimit,
-    @Default(AllocationMethod.urgencyWeighted) AllocationMethod allocationMethod,
-    @Default(true) bool showWarnings,
-    
-    // NEW persona fields
-    @Default(AllocationPersona.realist) AllocationPersona persona,
-    @Default(UrgentTaskBehavior.warnOnly) UrgentTaskBehavior urgentTaskBehavior,
-    @Default(3) int taskUrgencyThresholdDays,
-    @Default(7) int projectUrgencyThresholdDays,
-    @Default(1.5) double valueAlignedUrgencyBoost,
-    @Default(7) int reflectorLookbackDays,
-    @Default(0.7) double neglectInfluence,
-    @Default(true) bool showOrphanTaskCount,
-    @Default(true) bool showProjectNextTask,
-  }) = _AllocationSettings;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  factory AllocationSettings.fromJson(Map<String, dynamic> json) =>
-      _$AllocationSettingsFromJson(json);
+part 'allocation_config.freezed.dart';
+part 'allocation_config.g.dart';
+
+/// Top-level allocation configuration model.
+/// 
+/// Contains nested settings for strategy behavior and display preferences.
+/// This replaces the old `AllocationSettings` class with a cleaner structure.
+@freezed
+abstract class AllocationConfig with _$AllocationConfig {
+  const factory AllocationConfig({
+    @Default(10) int dailyLimit,
+    @Default(true) bool showWarnings,
+    @Default(AllocationPersona.realist) AllocationPersona persona,
+    @Default(StrategySettings()) StrategySettings strategy,
+    @Default(DisplaySettings()) DisplaySettings display,
+  }) = _AllocationConfig;
+
+  factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
+      _$AllocationConfigFromJson(json);
+}
+
+/// Strategy-related settings controlling allocation behavior.
+/// 
+/// Uses orthogonal feature flags that can be combined (e.g., urgency + neglect).
+/// Provides factory constructors for persona presets.
+@freezed
+abstract class StrategySettings with _$StrategySettings {
+  const factory StrategySettings({
+    /// How to handle urgent tasks without value alignment.
+    @Default(UrgentTaskBehavior.warnOnly) UrgentTaskBehavior urgentTaskBehavior,
+    
+    /// Days before task deadline = urgent.
+    @Default(3) int taskUrgencyThresholdDays,
+    
+    /// Days before project deadline = urgent.
+    @Default(7) int projectUrgencyThresholdDays,
+    
+    /// Boost multiplier for urgent tasks with value alignment.
+    /// Set to 1.0 to disable urgency boosting.
+    @Default(1.0) double urgencyBoostMultiplier,
+    
+    /// Enable neglect-based weighting (Reflector mode feature).
+    @Default(false) bool enableNeglectWeighting,
+    
+    /// Days to look back for neglect calculation.
+    @Default(7) int neglectLookbackDays,
+    
+    /// Weight of neglect score vs base weight (0.0-1.0).
+    @Default(0.7) double neglectInfluence,
+  }) = _StrategySettings;
+
+  factory StrategySettings.fromJson(Map<String, dynamic> json) =>
+      _$StrategySettingsFromJson(json);
+
+  /// Factory: Returns preset settings for the given persona.
+  factory StrategySettings.forPersona(AllocationPersona persona) {
+    switch (persona) {
+      case AllocationPersona.realist:
+        return const StrategySettings(
+          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+          urgencyBoostMultiplier: 1.0,
+          enableNeglectWeighting: false,
+        );
+      case AllocationPersona.guardian:
+        return const StrategySettings(
+          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+          urgencyBoostMultiplier: 1.5,
+          enableNeglectWeighting: false,
+        );
+      case AllocationPersona.reflector:
+        return const StrategySettings(
+          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+          urgencyBoostMultiplier: 1.0,
+          enableNeglectWeighting: true,
+          neglectLookbackDays: 7,
+          neglectInfluence: 0.7,
+        );
+      case AllocationPersona.firefighter:
+        return const StrategySettings(
+          urgentTaskBehavior: UrgentTaskBehavior.includeAll,
+          urgencyBoostMultiplier: 2.0,
+          enableNeglectWeighting: false,
+        );
+      case AllocationPersona.custom:
+        // Custom returns defaults - user configures individually
+        return const StrategySettings();
+    }
+  }
+}
+
+/// Display-related settings controlling UI behavior.
+@freezed
+abstract class DisplaySettings with _$DisplaySettings {
+  const factory DisplaySettings({
+    /// Show count of value-less tasks in Focus list footer.
+    @Default(true) bool showOrphanTaskCount,
+    
+    /// Show recommended next task on project cards.
+    @Default(true) bool showProjectNextTask,
+  }) = _DisplaySettings;
+
+  factory DisplaySettings.fromJson(Map<String, dynamic> json) =>
+      _$DisplaySettingsFromJson(json);
 }
 ```
 
 ---
 
-### 3. `lib/domain/models/priority/allocation_result.dart`
+### 3. Delete `lib/domain/models/settings/allocation_settings.dart`
+
+This file is completely replaced by `allocation_config.dart`. Delete it entirely.
+
+**Remove these types:**
+- `AllocationStrategyType` enum (only 2 of 6 implemented, personas replace this)
+- `UrgencyMode` enum (replaced by `UrgentTaskBehavior`)
+- `AllocationSettings` class (replaced by `AllocationConfig`)
+
+---
+
+### 4. `lib/domain/models/priority/allocation_result.dart`
 
 **Add to `AllocatedTask`:**
 ```dart
@@ -195,10 +258,15 @@ projectDeadlineApproaching,
 
 ---
 
-### 4. `lib/domain/models/settings.dart`
+### 5. `lib/domain/models/settings.dart`
 
-**Add export:**
+**Update exports:**
 ```dart
+// Remove this line:
+// export 'settings/allocation_settings.dart';
+
+// Add these lines:
+export 'settings/allocation_config.dart';
 export 'settings/allocation_persona.dart';
 ```
 
@@ -207,28 +275,30 @@ export 'settings/allocation_persona.dart';
 ## Step-by-Step Implementation
 
 ### Step 1: Create the enums file
-Create `lib/domain/models/settings/allocation_persona.dart` with both enums.
+Create `lib/domain/models/settings/allocation_persona.dart` with both enums (`AllocationPersona`, `UrgentTaskBehavior`).
 
-### Step 2: Update settings barrel export
-Add export to `lib/domain/models/settings.dart`.
+### Step 2: Create the new config file
+Create `lib/domain/models/settings/allocation_config.dart` with all three classes (`AllocationConfig`, `StrategySettings`, `DisplaySettings`).
 
-### Step 3: Modify AllocationSettings
-1. Add import for `allocation_persona.dart`
-2. Remove `alwaysIncludeUrgent` field
-3. Remove `showExcludedUrgentWarning` field  
-4. Add all 9 new fields with defaults
-5. Wait for freezed generation (~45s)
+### Step 3: Update settings barrel export
+Update `lib/domain/models/settings.dart` to export the new files.
 
-### Step 4: Update AllocatedTask
+### Step 4: Delete old settings file
+Delete `lib/domain/models/settings/allocation_settings.dart`.
+
+### Step 5: Wait for freezed generation
+Wait ~45s for build_runner to regenerate `.freezed.dart` and `.g.dart` files.
+
+### Step 6: Update AllocatedTask
 Add `isUrgentOverride` field with `@Default(false)`.
 
-### Step 5: Update WarningType
+### Step 7: Update WarningType
 Add `projectDeadlineApproaching` value with `@JsonValue`.
 
-### Step 6: Fix compilation errors
-After freezed regenerates, check for any usages of removed fields and update them.
+### Step 8: Fix compilation errors
+After freezed regenerates, find all usages of `AllocationSettings` and update them to use `AllocationConfig`.
 
-### Step 7: Run flutter analyze
+### Step 9: Run flutter analyze
 ```bash
 flutter analyze
 ```
@@ -240,18 +310,19 @@ Fix all errors and warnings.
 
 - [ ] `allocation_persona.dart` created with `AllocationPersona` enum (5 values)
 - [ ] `allocation_persona.dart` contains `UrgentTaskBehavior` enum (3 values)
-- [ ] `settings.dart` exports `allocation_persona.dart`
-- [ ] `AllocationSettings` has `persona` field (default: `realist`)
-- [ ] `AllocationSettings` has `urgentTaskBehavior` field (default: `warnOnly`)
-- [ ] `AllocationSettings` has `taskUrgencyThresholdDays` field (default: `3`)
-- [ ] `AllocationSettings` has `projectUrgencyThresholdDays` field (default: `7`)
-- [ ] `AllocationSettings` has `valueAlignedUrgencyBoost` field (default: `1.5`)
-- [ ] `AllocationSettings` has `reflectorLookbackDays` field (default: `7`)
-- [ ] `AllocationSettings` has `neglectInfluence` field (default: `0.7`)
-- [ ] `AllocationSettings` has `showOrphanTaskCount` field (default: `true`)
-- [ ] `AllocationSettings` has `showProjectNextTask` field (default: `true`)
-- [ ] `AllocationSettings` does NOT have `alwaysIncludeUrgent` field
-- [ ] `AllocationSettings` does NOT have `showExcludedUrgentWarning` field
+- [ ] `allocation_config.dart` created with `AllocationConfig` class
+- [ ] `allocation_config.dart` contains `StrategySettings` class with feature flags
+- [ ] `allocation_config.dart` contains `DisplaySettings` class
+- [ ] `StrategySettings.forPersona()` factory returns correct presets
+- [ ] `allocation_settings.dart` has been deleted
+- [ ] `settings.dart` exports new files, not old file
+- [ ] `AllocationConfig` has `dailyLimit` field (default: `10`)
+- [ ] `AllocationConfig` has `showWarnings` field (default: `true`)
+- [ ] `AllocationConfig` has `persona` field (default: `realist`)
+- [ ] `AllocationConfig` has nested `strategy` field (type: `StrategySettings`)
+- [ ] `AllocationConfig` has nested `display` field (type: `DisplaySettings`)
+- [ ] `StrategySettings` has `urgencyBoostMultiplier` field (default: `1.0`)
+- [ ] `StrategySettings` has `enableNeglectWeighting` field (default: `false`)
 - [ ] `AllocatedTask` has `isUrgentOverride` field (default: `false`)
 - [ ] `WarningType` has `projectDeadlineApproaching` value
 - [ ] `.freezed.dart` and `.g.dart` files regenerated successfully
@@ -261,6 +332,8 @@ Fix all errors and warnings.
 
 ## Notes
 
+- **Greenfield approach**: This is a complete replacement, not a migration. Delete old file, create new file.
 - **Build runner**: Assume it's running in watch mode. After modifying freezed files, wait ~45s for regeneration.
-- **No backwards compatibility**: Remove old fields completely, don't deprecate.
+- **Feature flags are orthogonal**: `urgencyBoostMultiplier` and `enableNeglectWeighting` can both be enabled for Custom mode combos.
 - **JSON serialization**: All enums use `@JsonValue` annotations for persistence.
+- **Persona presets**: `StrategySettings.forPersona()` provides the starting point; users can modify from there.

@@ -59,6 +59,7 @@ Implement the "Reflector" allocation mode that prioritizes neglected values:
 - Add analytics method to get recent completions by value
 - Create `NeglectBasedAllocator` that calculates neglect scores
 - Integrate with orchestrator for Reflector persona
+- **Support combo mode**: Accept `urgencyBoostMultiplier` for Custom mode combinations
 - Values you've been ignoring rise to the top
 
 ---
@@ -107,15 +108,20 @@ effectiveWeight = baseWeight * (1 - neglectInfluence)
 ### 1. `lib/domain/services/allocation/neglect_based_allocator.dart`
 
 ```dart
-import 'package:taskly/domain/models/settings/allocation_settings.dart';
+import 'package:taskly/domain/models/settings/allocation_config.dart';
 import 'package:taskly/domain/models/task/task.dart';
 import 'package:taskly/domain/models/label/value_label.dart';
 import 'package:taskly/domain/services/allocation/allocation_strategy.dart';
+import 'package:taskly/domain/services/allocation/urgency_detector.dart';
 
 /// Allocator that prioritizes values the user has been neglecting.
 /// 
 /// Used by the Reflector persona to maintain balance across values.
 /// Calculates neglect scores based on recent completion history.
+/// 
+/// **Combo Mode Support**: When `urgencyBoostMultiplier > 1.0` is provided,
+/// this allocator also applies urgency boosting to tasks with deadlines.
+/// This enables Custom mode combinations like "neglect + urgency".
 class NeglectBasedAllocator implements AllocationStrategy {
   const NeglectBasedAllocator({
     required this.analyticsService,
@@ -138,7 +144,7 @@ class NeglectBasedAllocator implements AllocationStrategy {
 
     // Get recent completions by value
     final completionsByValue = await analyticsService.getRecentCompletionsByValue(
-      days: parameters.reflectorLookbackDays,
+      days: parameters.neglectLookbackDays,
     );
 
     // Calculate neglect scores
@@ -148,6 +154,70 @@ class NeglectBasedAllocator implements AllocationStrategy {
     );
 
     // Calculate effective weights (blend base weight with neglect)
+    final effectiveWeights = _calculateEffectiveWeights(
+      values: values,
+      neglectScores: neglectScores,
+      neglectInfluence: parameters.neglectInfluence,
+    );
+
+    // COMBO MODE: Apply urgency boost if enabled (urgencyBoostMultiplier > 1.0)
+    if (parameters.urgencyBoostMultiplier > 1.0) {
+      final detector = UrgencyDetector(
+        taskThresholdDays: parameters.taskUrgencyThresholdDays,
+        projectThresholdDays: parameters.projectUrgencyThresholdDays,
+      );
+      _applyUrgencyBoost(
+        tasks: tasks,
+        detector: detector,
+        boostMultiplier: parameters.urgencyBoostMultiplier,
+        effectiveWeights: effectiveWeights,
+      );
+    }
+
+    // Group tasks by value
+    final tasksByValue = _groupTasksByValue(tasks);
+
+    // Allocate proportionally using effective weights
+    final allocated = _allocateByWeights(
+      tasksByValue: tasksByValue,
+      effectiveWeights: effectiveWeights,
+      limit: parameters.dailyLimit,
+    );
+
+    return AllocationResult(
+      allocatedTasks: allocated.map((t) => AllocatedTask(
+        task: t,
+        reason: _buildReason(t, neglectScores, parameters.urgencyBoostMultiplier > 1.0),
+      )).toList(),
+      warnings: [],
+    );
+  }
+
+  /// Apply urgency boost to tasks with approaching deadlines.
+  void _applyUrgencyBoost({
+    required List<Task> tasks,
+    required UrgencyDetector detector,
+    required double boostMultiplier,
+    required Map<String, double> effectiveWeights,
+  }) {
+    // Boost weights for values that have urgent tasks
+    for (final task in tasks) {
+      if (task.valueId != null && detector.isTaskUrgent(task)) {
+        final valueId = task.valueId!;
+        if (effectiveWeights.containsKey(valueId)) {
+          effectiveWeights[valueId] = effectiveWeights[valueId]! * boostMultiplier;
+        }
+      }
+    }
+    
+    // Re-normalize weights to sum to 1
+    final total = effectiveWeights.values.fold(0.0, (a, b) => a + b);
+    if (total > 0) {
+      for (final key in effectiveWeights.keys) {
+        effectiveWeights[key] = effectiveWeights[key]! / total;
+      }
+    }
+  }
     final effectiveWeights = _calculateEffectiveWeights(
       values: values,
       neglectScores: neglectScores,
@@ -299,10 +369,16 @@ class NeglectBasedAllocator implements AllocationStrategy {
     return allocated;
   }
 
-  String _buildReason(Task task, Map<String, double> neglectScores) {
+  String _buildReason(Task task, Map<String, double> neglectScores, bool urgencyEnabled) {
     final score = neglectScores[task.valueId] ?? 0;
-    if (score > 0) {
+    final isUrgent = urgencyEnabled && task.deadline != null;
+    
+    if (score > 0 && isUrgent) {
+      return 'Urgent + balancing neglected value';
+    } else if (score > 0) {
       return 'Balancing neglected value';
+    } else if (isUrgent) {
+      return 'Urgent task';
     } else if (score < 0) {
       return 'Value alignment';
     }
@@ -364,30 +440,49 @@ Future<Map<String, int>> getRecentCompletionsByValue({
 
 ### 4. `lib/domain/services/allocation/allocation_orchestrator.dart`
 
-**Use NeglectBasedAllocator for Reflector persona:**
+**Use NeglectBasedAllocator when neglect weighting is enabled:**
+
+The orchestrator should check `config.strategy.enableNeglectWeighting` rather than just the persona,
+because Custom mode can enable neglect weighting combined with other features.
 
 ```dart
 // In the orchestration logic
-AllocationStrategy _getStrategyForPersona(AllocationPersona persona) {
-  return switch (persona) {
-    AllocationPersona.idealist => ProportionalAllocator(),
-    AllocationPersona.reflector => NeglectBasedAllocator(
+AllocationStrategy _getStrategy(AllocationConfig config) {
+  final strategy = config.strategy;
+  
+  // Check for neglect weighting first (enables combo mode in Custom)
+  if (strategy.enableNeglectWeighting) {
+    return NeglectBasedAllocator(
       analyticsService: _analyticsService,
-    ),
-    AllocationPersona.realist => UrgencyWeightedAllocator(),
-    AllocationPersona.firefighter => UrgencyWeightedAllocator(),
-    AllocationPersona.custom => _getCustomStrategy(settings),
-  };
+    );
+  }
+  
+  // Otherwise use urgency-based or proportional
+  if (strategy.urgencyBoostMultiplier > 1.0 || 
+      strategy.urgentTaskBehavior == UrgentTaskBehavior.includeAll) {
+    return UrgencyWeightedAllocator();
+  }
+  
+  return ProportionalAllocator();
 }
 ```
 
-**Ensure parameters include Reflector settings:**
+**Ensure parameters include all settings:**
 
 ```dart
 final parameters = AllocationParameters(
-  // ... existing params
-  reflectorLookbackDays: settings.reflectorLookbackDays,
-  neglectInfluence: settings.neglectInfluence,
+  // Base settings
+  dailyLimit: config.dailyLimit,
+  
+  // Urgency settings (for combo mode)
+  urgentTaskBehavior: config.strategy.urgentTaskBehavior,
+  taskUrgencyThresholdDays: config.strategy.taskUrgencyThresholdDays,
+  projectUrgencyThresholdDays: config.strategy.projectUrgencyThresholdDays,
+  urgencyBoostMultiplier: config.strategy.urgencyBoostMultiplier,
+  
+  // Neglect settings
+  neglectLookbackDays: config.strategy.neglectLookbackDays,
+  neglectInfluence: config.strategy.neglectInfluence,
 );
 ```
 
@@ -446,7 +541,7 @@ Fix all errors and warnings.
 - [ ] `getRecentCompletionsByValue` implemented in analytics service
 - [ ] Method correctly queries completed tasks in date range
 - [ ] Method groups by valueId and counts
-- [ ] `AllocationParameters` has `reflectorLookbackDays` field
+- [ ] `AllocationParameters` has `neglectLookbackDays` field
 - [ ] `AllocationParameters` has `neglectInfluence` field
 - [ ] `NeglectBasedAllocator` created
 - [ ] Allocator implements `AllocationStrategy` interface
@@ -456,10 +551,13 @@ Fix all errors and warnings.
 - [ ] `_calculateEffectiveWeights` blends base weight with neglect
 - [ ] `neglectInfluence = 0` uses pure base weights
 - [ ] `neglectInfluence = 1` uses pure neglect-based weights
-- [ ] Orchestrator uses NeglectBasedAllocator for Reflector persona
-- [ ] Orchestrator passes Reflector parameters
+- [ ] **COMBO MODE**: Allocator respects `urgencyBoostMultiplier` parameter
+- [ ] **COMBO MODE**: When `urgencyBoostMultiplier > 1.0`, urgent tasks get boosted
+- [ ] **COMBO MODE**: Reason text reflects both urgency and neglect when applicable
+- [ ] Orchestrator uses NeglectBasedAllocator when `enableNeglectWeighting = true`
+- [ ] Orchestrator passes all Reflector parameters including urgency settings
 - [ ] Allocation reasons reflect neglect status
-- [ ] **NEW**: "Building history" info banner shown when <7 days of data
+- [ ] "Building history" info banner shown when <7 days of data
 - [ ] Localization strings added (English + Spanish)
 - [ ] `flutter analyze` passes with 0 errors and 0 warnings
 
@@ -615,6 +713,32 @@ Actual:   A=5, B=3, C=2
 Neglect scores: all 0
 Effective weights = base weights
 ```
+
+### Example 4: Combo Mode (Neglect + Urgency)
+
+**Setup (Custom mode with both features enabled):**
+- Values: Health (40%), Work (40%), Social (20%)
+- Last 7 days: 6 Work, 4 Health, 0 Social (Social neglected)
+- `enableNeglectWeighting = true`
+- `urgencyBoostMultiplier = 1.5`
+- Work task has deadline in 2 days (urgent)
+
+**Calculation:**
+```
+Step 1: Calculate neglect-based weights
+  Social boosted due to neglect
+  Effective weights: Health 35%, Work 25%, Social 40%
+
+Step 2: Apply urgency boost
+  Work has urgent task → Work weight * 1.5
+  Pre-normalize: Health 35%, Work 37.5%, Social 40%
+  Re-normalize to sum to 1: Health 31%, Work 33%, Social 36%
+
+Result: Social still gets priority (neglected), but
+        Work's urgent task competes effectively
+```
+
+This combo allows users to say "help me catch up on neglected areas, but don't let me miss deadlines".
 
 ---
 

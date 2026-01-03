@@ -319,6 +319,73 @@ void main() {
     );
 
     blocTest<AuthBloc, AppAuthState>(
+      'signUpRequested with session lets auth stream handle success',
+      build: () {
+        final response = MockAuthResponse();
+        when(() => response.session).thenReturn(mockSession);
+        when(() => authRepo.currentSession).thenReturn(null);
+        when(
+          () => authRepo.watchAuthState(),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => authRepo.signUp(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenAnswer((_) async => response);
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(
+        const AuthSignUpRequested(
+          email: 'new@example.com',
+          password: 'password123',
+        ),
+      ),
+      expect: () => [
+        const AppAuthState(status: AuthStatus.loading),
+        // No authenticated state - auth stream handles it
+      ],
+      verify: (bloc) {
+        verify(
+          () => authRepo.signUp(
+            email: 'new@example.com',
+            password: 'password123',
+          ),
+        ).called(1);
+      },
+    );
+
+    blocTest<AuthBloc, AppAuthState>(
+      'passwordResetRequested from authenticated emits error on failure',
+      build: () {
+        when(() => authRepo.currentSession).thenReturn(mockSession);
+        when(
+          () => authRepo.watchAuthState(),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => authRepo.resetPasswordForEmail(any()),
+        ).thenThrow(Exception('Email not found'));
+        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
+        return buildBloc();
+      },
+      seed: () =>
+          AppAuthState(status: AuthStatus.authenticated, user: mockUser),
+      act: (bloc) => bloc.add(
+        const AuthPasswordResetRequested(email: 'unknown@example.com'),
+      ),
+      expect: () => [
+        isA<AppAuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.loading,
+        ),
+        isA<AppAuthState>()
+            .having((s) => s.status, 'status', AuthStatus.authenticated)
+            .having((s) => s.error, 'error', isNotNull),
+      ],
+    );
+
+    blocTest<AuthBloc, AppAuthState>(
       'passwordResetRequested emits loading then message on success',
       build: () {
         when(() => authRepo.currentSession).thenReturn(null);
