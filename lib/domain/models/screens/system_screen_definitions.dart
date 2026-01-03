@@ -1,3 +1,4 @@
+import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
@@ -173,6 +174,54 @@ abstract class SystemScreenDefinitions {
     sections: [
       const Section.allocation(),
     ],
+    supportBlocks: [
+      SupportBlock.problemSummary(
+        problemTypes: ['task_urgent_excluded', 'task_orphan'],
+        showCount: true,
+        showList: false,
+        title: 'Attention needed',
+      ),
+    ],
+  );
+
+  /// Orphan Tasks screen - incomplete tasks without any value assigned
+  static final orphanTasks = ScreenDefinition(
+    id: 'orphan_tasks',
+    screenKey: 'orphan_tasks',
+    name: 'Unassigned Tasks',
+    screenType: ScreenType.list,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    isSystem: true,
+    iconName: 'label_off',
+    category: ScreenCategory.workspace,
+    sections: [
+      Section.data(
+        config: DataConfig.task(
+          query: const TaskQuery(
+            filter: QueryFilter<TaskPredicate>(
+              shared: [
+                TaskBoolPredicate(
+                  field: TaskBoolField.completed,
+                  operator: BoolOperator.isFalse,
+                ),
+                TaskLabelPredicate(
+                  operator: LabelOperator.isNull,
+                  labelType: LabelType.value,
+                  includeInherited: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+        display: DisplayConfig(
+          groupByCompletion: false,
+          enableSwipeToDelete: false,
+          showCompleted: false,
+        ),
+        title: 'Tasks without values',
+      ),
+    ],
   );
 
   /// Get all system screens
@@ -198,6 +247,7 @@ abstract class SystemScreenDefinitions {
       'labels' => labels,
       'values' => values,
       'next_actions' => nextActions,
+      'orphan_tasks' => orphanTasks,
       _ => null,
     };
   }

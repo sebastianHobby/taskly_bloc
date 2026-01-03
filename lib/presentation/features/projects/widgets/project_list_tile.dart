@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -12,6 +14,8 @@ class ProjectListTile extends StatelessWidget {
     this.onTap,
     this.taskCount,
     this.completedTaskCount,
+    this.nextTask,
+    this.showNextTask = false,
     super.key,
   });
 
@@ -26,6 +30,12 @@ class ProjectListTile extends StatelessWidget {
 
   /// Optional completed task count for progress indicator.
   final int? completedTaskCount;
+
+  /// Optional recommended next task for this project.
+  final Task? nextTask;
+
+  /// Whether to display the next task subtitle.
+  final bool showNextTask;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
@@ -162,6 +172,20 @@ class ProjectListTile extends StatelessWidget {
                           color: colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+
+                    // Next task recommendation
+                    if (showNextTask && nextTask != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '${context.l10n.projectNextTaskPrefix} ${nextTask!.name}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],

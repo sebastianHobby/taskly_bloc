@@ -646,9 +646,9 @@
     "@pinTask": {
         "description": "Action to pin a task to top"
     },
-    "excludedUrgentTasksWarning": "{count, plural, =1{1 urgent task excluded} other{{count} urgent tasks excluded}}",
-    "@excludedUrgentTasksWarning": {
-        "description": "Warning message for excluded urgent tasks",
+    "taskUrgentExcludedWarning": "{count, plural, =1{1 urgent task excluded from Focus} other{{count} urgent tasks excluded from Focus}}",
+    "@taskUrgentExcludedWarning": {
+        "description": "Warning message for urgent tasks excluded from Focus screen",
         "placeholders": {
             "count": {
                 "type": "int"
@@ -1050,5 +1050,131 @@
     "notRankedDragToRank": "Not ranked - drag to rank",
     "@notRankedDragToRank": {
         "description": "Subtitle for unranked values"
+    },
+    "recommendedNextActionLabel": "Recommended Next Action",
+    "@recommendedNextActionLabel": {
+        "description": "Title for the recommended next task card in project detail"
+    },
+    "startLabel": "Start",
+    "@startLabel": {
+        "description": "Label for the start button that pins a task to Focus"
+    },
+    "projectNextTaskPrefix": "→ Next:",
+    "@projectNextTaskPrefix": {
+        "description": "Prefix shown before the next task name in project list"
+    },
+    "taskPinnedToFocus": "'{taskName}' pinned to Focus",
+    "@taskPinnedToFocus": {
+        "description": "Snackbar message shown when a task is pinned to Focus",
+        "placeholders": {
+            "taskName": {
+                "type": "String",
+                "example": "Review budget"
+            }
+        }
+    },
+    "deadlineFormatDays": "{days, plural, =0{Due today} =1{Due tomorrow} other{Due in {days} days}}",
+    "@deadlineFormatDays": {
+        "description": "Format string for deadline relative to today",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "deadlineOverdue": "Overdue",
+    "@deadlineOverdue": {
+        "description": "Label shown when a deadline has passed"
+    },
+    "reflectorBuildingHistory": "Building your history...",
+    "@reflectorBuildingHistory": {
+        "description": "Title for Reflector mode info banner when insufficient data"
+    },
+    "reflectorHistoryExplanation": "Reflector works best with more data. You have {count} completions in the last {days} days. Using value weights for now.",
+    "@reflectorHistoryExplanation": {
+        "description": "Explanation for Reflector mode with insufficient history",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "targetLabel": "Target",
+    "@targetLabel": {
+        "description": "Label for target percentage in value stats"
+    },
+    "actualLabel": "Actual",
+    "@actualLabel": {
+        "description": "Label for actual percentage in value stats"
+    },
+    "gapLabel": "Gap",
+    "@gapLabel": {
+        "description": "Label for gap percentage in value stats"
+    },
+    "valueActivityCounts": "{taskCount} tasks · {projectCount} projects",
+    "@valueActivityCounts": {
+        "description": "Activity counts for a value showing tasks and projects",
+        "placeholders": {
+            "taskCount": {
+                "type": "int"
+            },
+            "projectCount": {
+                "type": "int"
+            }
+        }
+    },
+    "weekTrendTitle": "{weeks}-Week Trend",
+    "@weekTrendTitle": {
+        "description": "Title for weekly trend chart",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "noTrendData": "No trend data yet",
+    "@noTrendData": {
+        "description": "Message shown when there is no trend data to display"
+    },
+    "activitySectionTitle": "Activity",
+    "@activitySectionTitle": {
+        "description": "Title for activity section in value detail modal"
+    },
+    "activeTasksCount": "{count} active tasks",
+    "@activeTasksCount": {
+        "description": "Count of active tasks for a value",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "projectsCount": "{count} projects",
+    "@projectsCount": {
+        "description": "Count of projects for a value",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "unassignedWorkTitle": "Unassigned Work",
+    "@unassignedWorkTitle": {
+        "description": "Title for unassigned work section in values screen"
+    },
+    "valuesGatewayTitle": "Prioritize What Matters",
+    "@valuesGatewayTitle": {
+        "description": "Title for values setup gateway"
+    },
+    "valuesGatewayDescription": "Focus uses your personal values to recommend which tasks deserve your attention today.\n\nDefine what's important to you—like Health, Family, Career—and Focus will help you spend time on what truly matters.",
+    "@valuesGatewayDescription": {
+        "description": "Description for values setup gateway"
+    },
+    "setUpMyValues": "Set Up My Values",
+    "@setUpMyValues": {
+        "description": "Button to set up values"
     }
 }

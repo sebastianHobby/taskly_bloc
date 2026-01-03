@@ -34,15 +34,15 @@ sealed class SettingsKey<T> {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Sort preferences for a specific page.
-  static _KeyedKey<SortPreferences?> pageSort(PageKey page) =>
+  static SettingsKey<SortPreferences?> pageSort(PageKey page) =>
       _KeyedKey<SortPreferences?>('pageSort', page.key);
 
   /// Display settings for a specific page.
-  static _KeyedKey<PageDisplaySettings> pageDisplay(PageKey page) =>
+  static SettingsKey<PageDisplaySettings> pageDisplay(PageKey page) =>
       _KeyedKey<PageDisplaySettings>('pageDisplay', page.key);
 
   /// Screen preferences (sortOrder, isActive) for a system screen.
-  static _KeyedKey<ScreenPreferences> screenPrefs(String screenKey) =>
+  static SettingsKey<ScreenPreferences> screenPrefs(String screenKey) =>
       _KeyedKey<ScreenPreferences>('screenPrefs', screenKey);
 
   // ─────────────────────────────────────────────────────────────────────────

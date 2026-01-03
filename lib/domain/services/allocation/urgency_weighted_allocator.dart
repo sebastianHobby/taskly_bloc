@@ -31,7 +31,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
-    final warnings = <AllocationWarning>[];
     final categoryWeights = categories;
 
     // Calculate total weight
@@ -42,7 +41,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
 
     if (totalWeight == 0) {
       return AllocationResult(
-        allocatedTasks: [],
+        allocatedTasks: const [],
         reasoning: AllocationReasoning(
           strategyUsed: strategyName,
           categoryAllocations: const {},
@@ -50,14 +49,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
           urgencyInfluence: urgencyInfluence,
           explanation: 'No categories with weights defined',
         ),
-        excludedTasks: [],
-        warnings: [
-          const AllocationWarning(
-            type: WarningType.noTasksInCategory,
-            message: 'No priority categories defined',
-            suggestedAction: 'Create priority rankings for values or projects',
-          ),
-        ],
+        excludedTasks: const [],
       );
     }
 
@@ -157,22 +149,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       );
     }
 
-    // Check for urgent excluded tasks
-    final urgentExcluded = excludedTasks
-        .where((e) => e.isUrgent ?? false)
-        .toList();
-    if (urgentExcluded.isNotEmpty) {
-      warnings.add(
-        AllocationWarning(
-          type: WarningType.excludedUrgentTask,
-          message: '${urgentExcluded.length} urgent task(s) were excluded',
-          suggestedAction:
-              'Increase urgency influence or review task priorities',
-          affectedTaskIds: urgentExcluded.map((e) => e.task.id).toList(),
-        ),
-      );
-    }
-
     return AllocationResult(
       allocatedTasks: allocatedTasks,
       reasoning: AllocationReasoning(
@@ -185,7 +161,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
             'and urgency (${(urgencyInfluence * 100).toInt()}%) scores',
       ),
       excludedTasks: excludedTasks,
-      warnings: warnings,
     );
   }
 

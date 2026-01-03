@@ -1,24 +1,40 @@
 import 'package:json_annotation/json_annotation.dart';
 
-/// Problem types for soft gates detection
+/// Problem types for soft gates detection.
+///
+/// Naming convention: `[entity][State]` where:
+/// - Entity: task, project, allocation, journal, tracker
+/// - State: the problem condition (overdue, stale, orphan, etc.)
 enum ProblemType {
-  /// Urgent task excluded from current allocation
-  @JsonValue('excluded_urgent_task')
-  excludedUrgentTask,
+  /// Task is urgent but excluded from Focus allocation
+  @JsonValue('task_urgent_excluded')
+  taskUrgentExcluded,
 
-  /// High priority task that is overdue
-  @JsonValue('overdue_high_priority')
-  overdueHighPriority,
+  /// Task is past its deadline
+  @JsonValue('task_overdue')
+  taskOverdue,
 
-  /// Project or value has no next actions
-  @JsonValue('no_next_actions')
-  noNextActions,
+  /// Task hasn't been updated recently
+  @JsonValue('task_stale')
+  taskStale,
 
-  /// Unbalanced allocation across values
-  @JsonValue('unbalanced_allocation')
-  unbalancedAllocation,
+  /// Task has no value assigned
+  @JsonValue('task_orphan')
+  taskOrphan,
 
-  /// Tasks not updated in a long time
-  @JsonValue('stale_tasks')
-  staleTasks,
+  /// Project has no actionable tasks
+  @JsonValue('project_idle')
+  projectIdle,
+
+  /// Allocation is weighted unevenly across values
+  @JsonValue('allocation_unbalanced')
+  allocationUnbalanced,
+
+  /// No journal entry for configurable number of days
+  @JsonValue('journal_overdue')
+  journalOverdue,
+
+  /// Daily tracker not filled for today
+  @JsonValue('tracker_missing')
+  trackerMissing,
 }

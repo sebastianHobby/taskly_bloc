@@ -188,6 +188,13 @@ class ScreenDataInterpreter {
     final allTasks = sections.expand((s) => s.result.allTasks).toList();
     final allProjects = sections.expand((s) => s.result.allProjects).toList();
 
+    // Extract excluded urgent tasks from allocation sections
+    final excludedUrgentTasks = sections
+        .map((s) => s.result)
+        .whereType<AllocationSectionResult>()
+        .expand((r) => r.excludedUrgentTasks)
+        .toList();
+
     // Extract displayConfig from sections if available, otherwise use default
     final displayConfig = _extractDisplayConfig(definition.sections);
 
@@ -201,6 +208,7 @@ class ScreenDataInterpreter {
           tasks: allTasks,
           projects: allProjects,
           displayConfig: displayConfig,
+          excludedUrgentTasks: excludedUrgentTasks,
         );
         results.add(SupportBlockWithMeta(index: i, result: result));
       } catch (e) {

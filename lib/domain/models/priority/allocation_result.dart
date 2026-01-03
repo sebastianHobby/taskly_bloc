@@ -10,7 +10,10 @@ abstract class AllocationResult with _$AllocationResult {
     required List<AllocatedTask> allocatedTasks,
     required AllocationReasoning reasoning,
     required List<ExcludedTask> excludedTasks,
-    @Default([]) List<AllocationWarning> warnings,
+
+    /// True if allocation cannot proceed because user has no values defined.
+    /// When true, the UI should show a gateway prompting value setup.
+    @Default(false) bool requiresValueSetup,
   }) = _AllocationResult;
 }
 
@@ -49,37 +52,6 @@ enum ExclusionType {
   categoryLimitReached,
   @JsonValue('completed')
   completed,
-}
-
-/// Warning about allocation issues
-@freezed
-abstract class AllocationWarning with _$AllocationWarning {
-  const factory AllocationWarning({
-    required WarningType type,
-    required String message,
-    required String suggestedAction,
-    List<String>? affectedTaskIds,
-  }) = _AllocationWarning;
-}
-
-/// Types of allocation warnings
-enum WarningType {
-  @JsonValue('excluded_urgent_task')
-  excludedUrgentTask,
-  @JsonValue('unbalanced_allocation')
-  unbalancedAllocation,
-  @JsonValue('no_tasks_in_category')
-  noTasksInCategory,
-  @JsonValue('exceeded_total_limit')
-  exceededTotalLimit,
-
-  /// A project's deadline is approaching within the configured threshold.
-  @JsonValue('project_deadline_approaching')
-  projectDeadlineApproaching,
-
-  /// An urgent task was excluded because it has no value assigned.
-  @JsonValue('urgent_task_excluded')
-  urgentTaskExcluded,
 }
 
 /// Reasoning behind allocation decisions

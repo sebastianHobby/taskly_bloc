@@ -484,12 +484,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get pinTask => 'Fijar tarea';
 
   @override
-  String excludedUrgentTasksWarning(int count) {
+  String taskUrgentExcludedWarning(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count tareas urgentes excluidas',
-      one: '1 tarea urgente excluida',
+      other: '$count tareas urgentes excluidas de Focus',
+      one: '1 tarea urgente excluida de Focus',
     );
     return '$_temp0';
   }
@@ -785,4 +785,88 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get notRankedDragToRank => 'Sin clasificar - arrastra para clasificar';
+
+  @override
+  String get recommendedNextActionLabel => 'Próxima Acción Recomendada';
+
+  @override
+  String get startLabel => 'Iniciar';
+
+  @override
+  String get projectNextTaskPrefix => '→ Siguiente:';
+
+  @override
+  String taskPinnedToFocus(String taskName) {
+    return '\'$taskName\' fijada en Focus';
+  }
+
+  @override
+  String deadlineFormatDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Vence en $days días',
+      one: 'Vence mañana',
+      zero: 'Vence hoy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deadlineOverdue => 'Vencida';
+
+  @override
+  String get reflectorBuildingHistory => 'Construyendo tu historial...';
+
+  @override
+  String reflectorHistoryExplanation(int count, int days) {
+    return 'Reflector funciona mejor con más datos. Tienes $count completadas en los últimos $days días. Usando pesos de valores por ahora.';
+  }
+
+  @override
+  String get targetLabel => 'Objetivo';
+
+  @override
+  String get actualLabel => 'Actual';
+
+  @override
+  String get gapLabel => 'Brecha';
+
+  @override
+  String valueActivityCounts(int taskCount, int projectCount) {
+    return '$taskCount tareas · $projectCount proyectos';
+  }
+
+  @override
+  String weekTrendTitle(int weeks) {
+    return 'Tendencia de $weeks Semanas';
+  }
+
+  @override
+  String get noTrendData => 'Sin datos de tendencia aún';
+
+  @override
+  String get activitySectionTitle => 'Actividad';
+
+  @override
+  String activeTasksCount(int count) {
+    return '$count tareas activas';
+  }
+
+  @override
+  String projectsCount(int count) {
+    return '$count proyectos';
+  }
+
+  @override
+  String get unassignedWorkTitle => 'Trabajo Sin Asignar';
+
+  @override
+  String get valuesGatewayTitle => 'Prioriza Lo Que Importa';
+
+  @override
+  String get valuesGatewayDescription => 'Focus utiliza tus valores personales para recomendar qué tareas merecen tu atención hoy.\n\nDefine lo que es importante para ti—como Salud, Familia, Carrera—y Focus te ayudará a dedicar tiempo a lo que realmente importa.';
+
+  @override
+  String get setUpMyValues => 'Configurar Mis Valores';
 }

@@ -7,14 +7,20 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/allocation/project_next_task_resolver.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
+import 'package:taskly_bloc/presentation/features/projects/widgets/project_next_task_card.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -261,23 +267,34 @@ class _ProjectScreenView extends StatelessWidget {
 
           // Task list via ScreenBloc
           Expanded(
-            child: BlocBuilder<ScreenBloc, ScreenState>(
-              builder: (context, state) {
-                return switch (state) {
-                  ScreenInitialState() ||
-                  ScreenLoadingState() => const LoadingStateWidget(),
-                  ScreenLoadedState(:final data) => _buildTaskList(
-                    context,
-                    data,
-                    entityActionService,
-                  ),
-                  ScreenErrorState(:final message) => ErrorStateWidget(
-                    message: message,
-                    onRetry: () => context.read<ScreenBloc>().add(
-                      const ScreenEvent.refresh(),
-                    ),
-                  ),
-                };
+            child: StreamBuilder<AllocationConfig>(
+              stream: getIt<SettingsRepositoryContract>().watch(
+                SettingsKey.allocation,
+              ),
+              builder: (context, configSnapshot) {
+                final allocationConfig =
+                    configSnapshot.data ?? const AllocationConfig();
+
+                return BlocBuilder<ScreenBloc, ScreenState>(
+                  builder: (context, state) {
+                    return switch (state) {
+                      ScreenInitialState() ||
+                      ScreenLoadingState() => const LoadingStateWidget(),
+                      ScreenLoadedState(:final data) => _buildTaskList(
+                        context,
+                        data,
+                        entityActionService,
+                        allocationConfig,
+                      ),
+                      ScreenErrorState(:final message) => ErrorStateWidget(
+                        message: message,
+                        onRetry: () => context.read<ScreenBloc>().add(
+                          const ScreenEvent.refresh(),
+                        ),
+                      ),
+                    };
+                  },
+                );
               },
             ),
           ),
@@ -296,11 +313,34 @@ class _ProjectScreenView extends StatelessWidget {
     BuildContext context,
     ScreenData data,
     EntityActionService entityActionService,
+    AllocationConfig allocationConfig,
   ) {
+    final l10n = context.l10n;
+
+    // Extract all incomplete tasks from sections for next task resolution
+    final allTasks = <Task>[];
+    for (final section in data.sections) {
+      allTasks.addAll(section.result.allTasks);
+    }
+    final incompleteTasks = allTasks.where((t) => !t.completed).toList();
+
+    // Resolve next task if enabled
+    Task? nextTask;
+    if (allocationConfig.displaySettings.showProjectNextTask &&
+        incompleteTasks.isNotEmpty) {
+      const resolver = ProjectNextTaskResolver();
+      nextTask = resolver.getNextTask(
+        project: project,
+        projectTasks: incompleteTasks,
+        focusTaskIds: const {}, // TODO: Could wire to actual focus tasks
+        config: allocationConfig,
+      );
+    }
+
     if (data.sections.isEmpty) {
       return EmptyStateWidget.noTasks(
-        title: context.l10n.emptyTasksTitle,
-        description: context.l10n.projectDetailEmptyTasksDescription,
+        title: l10n.emptyTasksTitle,
+        description: l10n.projectDetailEmptyTasksDescription,
       );
     }
 
@@ -309,40 +349,78 @@ class _ProjectScreenView extends StatelessWidget {
         context.read<ScreenBloc>().add(const ScreenEvent.refresh());
         await Future<void>.delayed(const Duration(milliseconds: 500));
       },
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80),
-        itemCount: data.sections.length,
-        itemBuilder: (context, index) {
-          final section = data.sections[index];
-          return SectionWidget(
-            section: section,
-            displayConfig: section.displayConfig,
-            onEntityTap: (entityId, entityType) {
-              EntityNavigator.toEntity(
-                context,
-                entityId: entityId,
-                entityType: entityType,
-              );
-            },
-            onTaskCheckboxChanged: (task, value) async {
-              if (value ?? false) {
-                await entityActionService.completeTask(task.id);
-              } else {
-                await entityActionService.uncompleteTask(task.id);
-              }
-              if (context.mounted) {
-                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-              }
-            },
-            onTaskDelete: (task) async {
-              await entityActionService.deleteTask(task.id);
-              if (context.mounted) {
-                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-              }
-            },
-          );
-        },
+      child: CustomScrollView(
+        slivers: [
+          // Next task recommendation card
+          if (nextTask != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: ProjectNextTaskCard(
+                  task: nextTask,
+                  onStartTap: () => _pinToFocus(context, nextTask!),
+                  onTaskTap: () =>
+                      EntityNavigator.toTask(context, nextTask!.id),
+                ),
+              ),
+            ),
+          // Task sections
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final section = data.sections[index];
+                return SectionWidget(
+                  section: section,
+                  displayConfig: section.displayConfig,
+                  onEntityTap: (entityId, entityType) {
+                    EntityNavigator.toEntity(
+                      context,
+                      entityId: entityId,
+                      entityType: entityType,
+                    );
+                  },
+                  onTaskCheckboxChanged: (task, value) async {
+                    if (value ?? false) {
+                      await entityActionService.completeTask(task.id);
+                    } else {
+                      await entityActionService.uncompleteTask(task.id);
+                    }
+                    if (context.mounted) {
+                      context.read<ScreenBloc>().add(
+                        const ScreenEvent.refresh(),
+                      );
+                    }
+                  },
+                  onTaskDelete: (task) async {
+                    await entityActionService.deleteTask(task.id);
+                    if (context.mounted) {
+                      context.read<ScreenBloc>().add(
+                        const ScreenEvent.refresh(),
+                      );
+                    }
+                  },
+                );
+              },
+              childCount: data.sections.length,
+            ),
+          ),
+          // Bottom padding for FAB
+          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+        ],
       ),
     );
+  }
+
+  Future<void> _pinToFocus(BuildContext context, Task task) async {
+    final entityActionService = getIt<EntityActionService>();
+    await entityActionService.pinTask(task.id);
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.taskPinnedToFocus(task.name))),
+      );
+      // Refresh to update the UI
+      context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+    }
   }
 }

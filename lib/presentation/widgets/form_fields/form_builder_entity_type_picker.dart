@@ -93,6 +93,10 @@ class _EntityTypeSelector extends StatelessWidget {
         return 'Labels';
       case EntityType.goal:
         return 'Goals';
+      case EntityType.journal:
+        return 'Journal Entries';
+      case EntityType.tracker:
+        return 'Trackers';
     }
   }
 
@@ -106,6 +110,10 @@ class _EntityTypeSelector extends StatelessWidget {
         return Icons.label_outline;
       case EntityType.goal:
         return Icons.flag_outlined;
+      case EntityType.journal:
+        return Icons.edit_note;
+      case EntityType.tracker:
+        return Icons.checklist;
     }
   }
 }

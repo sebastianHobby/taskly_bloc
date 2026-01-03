@@ -8,9 +8,11 @@ import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
+import 'package:taskly_bloc/domain/services/allocation/neglect_based_allocator.dart';
 import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocator.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
 ///
@@ -22,15 +24,19 @@ class AllocationOrchestrator {
     required TaskRepositoryContract taskRepository,
     required LabelRepositoryContract labelRepository,
     required SettingsRepositoryContract settingsRepository,
-    ProjectRepositoryContract? projectRepository,
+    required AnalyticsService analyticsService,
+    ProjectRepositoryContract? projectRepository, // Reserved for future use
   }) : _taskRepository = taskRepository,
        _labelRepository = labelRepository,
        _settingsRepository = settingsRepository,
+       _analyticsService = analyticsService,
        _projectRepository = projectRepository;
 
   final TaskRepositoryContract _taskRepository;
   final LabelRepositoryContract _labelRepository;
   final SettingsRepositoryContract _settingsRepository;
+  final AnalyticsService _analyticsService;
+  // ignore: unused_field
   final ProjectRepositoryContract? _projectRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
@@ -40,6 +46,24 @@ class AllocationOrchestrator {
       final pinnedLabel = combined.$2;
       final allocationConfig = combined.$3;
       final valueRanking = combined.$4;
+
+      // Check if user has any values defined
+      final valueLabels = await _labelRepository.getAllByType(LabelType.value);
+      if (valueLabels.isEmpty) {
+        // No values defined - require setup
+        yield AllocationResult(
+          allocatedTasks: const [],
+          reasoning: AllocationReasoning(
+            strategyUsed: 'none',
+            categoryAllocations: const {},
+            categoryWeights: const {},
+            explanation: 'No values defined',
+          ),
+          excludedTasks: const [],
+          requiresValueSetup: true,
+        );
+        continue;
+      }
 
       if (allocationConfig.dailyLimit == 0) {
         // No allocation configured - return empty result
@@ -111,56 +135,13 @@ class AllocationOrchestrator {
         regularTasks,
       );
 
-      // Generate warnings based on strategy settings
-      final warnings = <AllocationWarning>[];
-
       // Handle urgent value-less tasks based on behavior
       switch (urgentBehavior) {
         case UrgentTaskBehavior.ignore:
-          // Do nothing - these tasks are excluded with no warnings
-          break;
         case UrgentTaskBehavior.warnOnly:
-          // Generate warnings for urgent value-less tasks
-          if (urgentValuelessTasks.isNotEmpty) {
-            warnings.add(
-              AllocationWarning(
-                type: WarningType.urgentTaskExcluded,
-                message:
-                    '${urgentValuelessTasks.length} urgent task(s) without '
-                    'values excluded from focus list',
-                suggestedAction:
-                    'Assign values to these tasks or pin them to include',
-                affectedTaskIds: urgentValuelessTasks.map((t) => t.id).toList(),
-              ),
-            );
-          }
-
-          // Also check for excluded urgent tasks that DO have values
-          final excludedUrgentWithValues = allocatedRegularTasks.excludedTasks
-              .where((et) {
-                if (et.task.deadlineDate == null) return false;
-                final hasValue = et.task.labels.any(
-                  (l) => l.type == LabelType.value,
-                );
-                return hasValue && urgencyDetector.isTaskUrgent(et.task);
-              })
-              .toList();
-
-          if (excludedUrgentWithValues.isNotEmpty) {
-            warnings.add(
-              AllocationWarning(
-                type: WarningType.excludedUrgentTask,
-                message:
-                    '${excludedUrgentWithValues.length} urgent task(s) '
-                    'excluded from focus list',
-                suggestedAction:
-                    'Review and consider pinning or adjusting priorities',
-                affectedTaskIds: excludedUrgentWithValues
-                    .map((et) => et.task.id)
-                    .toList(),
-              ),
-            );
-          }
+          // Do nothing - urgent tasks without values are excluded
+          // Problem detection is handled by ProblemDetectorService
+          break;
         case UrgentTaskBehavior.includeAll:
           // Add urgent value-less tasks to allocated list with override flag
           for (final task in urgentValuelessTasks) {
@@ -178,32 +159,10 @@ class AllocationOrchestrator {
           }
       }
 
-      // Generate project deadline warnings if we have project repository
-      if (_projectRepository != null) {
-        final projects = await _projectRepository.getAll();
-        final urgentProjects = urgencyDetector.findUrgentProjects(projects);
-
-        for (final project in urgentProjects) {
-          final daysUntil = project.deadlineDate != null
-              ? project.deadlineDate!.difference(DateTime.now()).inDays
-              : 0;
-          warnings.add(
-            AllocationWarning(
-              type: WarningType.projectDeadlineApproaching,
-              message:
-                  'Project "${project.name}" deadline '
-                  '${daysUntil <= 0 ? 'passed' : 'in $daysUntil day(s)'}',
-              suggestedAction: 'Review project tasks and prioritize completion',
-            ),
-          );
-        }
-      }
-
       yield AllocationResult(
         allocatedTasks: allAllocatedTasks,
         reasoning: allocatedRegularTasks.reasoning,
         excludedTasks: allocatedRegularTasks.excludedTasks,
-        warnings: warnings,
       );
     }
   }
@@ -249,8 +208,6 @@ class AllocationOrchestrator {
         .toList();
 
     // Create allocation strategy based on persona
-    // For Phase 1: use proportional as default, urgency weighted for
-    // firefighter/realist personas with boost > 1.0
     final strategy = _createStrategyForPersona(config);
 
     // Build category map from ranking
@@ -261,16 +218,27 @@ class AllocationOrchestrator {
       }
     }
 
+    // Fetch recent completions by value if neglect weighting is enabled
+    final settings = config.strategySettings;
+    Map<String, int> completionsByValue = const {};
+    if (settings.enableNeglectWeighting) {
+      completionsByValue = await _analyticsService.getRecentCompletionsByValue(
+        days: settings.neglectLookbackDays,
+      );
+    }
+
     // Run allocation
     final parameters = AllocationParameters(
       tasks: tasksWithValues,
       categories: categories,
       maxTasks: config.dailyLimit,
-      urgencyInfluence: config.strategySettings.urgencyBoostMultiplier - 1.0,
-      urgentTaskBehavior: config.strategySettings.urgentTaskBehavior,
-      taskUrgencyThresholdDays:
-          config.strategySettings.taskUrgencyThresholdDays,
-      urgencyBoostMultiplier: config.strategySettings.urgencyBoostMultiplier,
+      urgencyInfluence: settings.urgencyBoostMultiplier - 1.0,
+      urgentTaskBehavior: settings.urgentTaskBehavior,
+      taskUrgencyThresholdDays: settings.taskUrgencyThresholdDays,
+      urgencyBoostMultiplier: settings.urgencyBoostMultiplier,
+      neglectLookbackDays: settings.neglectLookbackDays,
+      neglectInfluence: settings.neglectInfluence,
+      completionsByValue: completionsByValue,
     );
 
     return strategy.allocate(parameters);
@@ -278,10 +246,17 @@ class AllocationOrchestrator {
 
   /// Create allocation strategy based on persona configuration.
   ///
-  /// Phase 1: Simplified strategy selection. Future phases will add
-  /// more sophisticated persona-aware allocation logic.
+  /// Selects appropriate allocator based on enabled features:
+  /// - NeglectBasedAllocator when enableNeglectWeighting is true (Reflector)
+  /// - UrgencyWeightedAllocator when urgency boost > 1.0 (Firefighter/Realist)
+  /// - ProportionalAllocator as default (Idealist)
   AllocationStrategy _createStrategyForPersona(AllocationConfig config) {
     final settings = config.strategySettings;
+
+    // Check for neglect weighting first (enables combo mode in Custom)
+    if (settings.enableNeglectWeighting) {
+      return NeglectBasedAllocator();
+    }
 
     // If urgency boost > 1.0, use urgency-weighted allocator
     if (settings.urgencyBoostMultiplier > 1.0) {

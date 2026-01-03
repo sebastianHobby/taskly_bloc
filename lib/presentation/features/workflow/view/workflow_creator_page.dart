@@ -10,6 +10,7 @@ import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
@@ -419,6 +420,7 @@ class WorkflowStepFormData {
           ProjectDataConfig() => EntityType.project,
           LabelDataConfig() => EntityType.label,
           ValueDataConfig() => EntityType.label, // Values are a type of label
+          JournalDataConfig() => EntityType.journal,
         };
         break;
       }
@@ -452,6 +454,10 @@ class WorkflowStepFormData {
       EntityType.project => DataConfig.project(query: const ProjectQuery()),
       EntityType.label => const DataConfig.label(),
       EntityType.goal => DataConfig.task(query: const TaskQuery()), // Fallback
+      EntityType.journal => DataConfig.journal(query: JournalQuery.all()),
+      EntityType.tracker => DataConfig.task(
+        query: const TaskQuery(),
+      ), // Fallback until tracker support
     };
 
     return [

@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 part 'data_config.freezed.dart';
 part 'data_config.g.dart';
@@ -33,6 +34,12 @@ sealed class DataConfig with _$DataConfig {
   const factory DataConfig.value({
     @LabelQueryConverter() LabelQuery? query,
   }) = ValueDataConfig;
+
+  /// Journal entry data configuration
+  @FreezedUnionValue('journal')
+  const factory DataConfig.journal({
+    @JournalQueryConverter() JournalQuery? query,
+  }) = JournalDataConfig;
 
   factory DataConfig.fromJson(Map<String, dynamic> json) =>
       _$DataConfigFromJson(json);
@@ -100,4 +107,17 @@ class LabelQueryConverter
 
   @override
   Map<String, dynamic>? toJson(LabelQuery? object) => object?.toJson();
+}
+
+/// JSON converter for JournalQuery (nullable)
+class JournalQueryConverter
+    implements JsonConverter<JournalQuery?, Map<String, dynamic>?> {
+  const JournalQueryConverter();
+
+  @override
+  JournalQuery? fromJson(Map<String, dynamic>? json) =>
+      json == null ? null : JournalQuery.fromJson(json);
+
+  @override
+  Map<String, dynamic>? toJson(JournalQuery? object) => object?.toJson();
 }

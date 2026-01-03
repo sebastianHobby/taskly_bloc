@@ -30,7 +30,6 @@ class ProportionalAllocator implements AllocationStrategy {
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
-    final warnings = <AllocationWarning>[];
 
     // Calculate total weight
     final totalWeight = categories.values.fold<double>(
@@ -39,22 +38,15 @@ class ProportionalAllocator implements AllocationStrategy {
     );
 
     if (totalWeight == 0) {
-      return AllocationResult(
+      return const AllocationResult(
         allocatedTasks: [],
         excludedTasks: [],
-        reasoning: const AllocationReasoning(
+        reasoning: AllocationReasoning(
           strategyUsed: 'Proportional',
           categoryAllocations: {},
           categoryWeights: {},
           explanation: 'No categories with weights defined',
         ),
-        warnings: [
-          const AllocationWarning(
-            type: WarningType.noTasksInCategory,
-            message: 'No priority categories defined',
-            suggestedAction: 'Create priority rankings for values or projects',
-          ),
-        ],
       );
     }
 
@@ -134,13 +126,7 @@ class ProportionalAllocator implements AllocationStrategy {
       final availableTasks = tasksByCategory[categoryId] ?? [];
 
       if (availableTasks.isEmpty) {
-        warnings.add(
-          AllocationWarning(
-            type: WarningType.noTasksInCategory,
-            message: 'No tasks available for category $categoryId',
-            suggestedAction: 'Add tasks with this value or adjust priorities',
-          ),
-        );
+        // No tasks for this category - problem detection handles this
         continue;
       }
 
@@ -185,34 +171,6 @@ class ProportionalAllocator implements AllocationStrategy {
       );
     }
 
-    // Check for urgent excluded tasks
-    final urgentExcluded = excludedTasks
-        .where((e) => e.isUrgent ?? false)
-        .toList();
-    if (urgentExcluded.isNotEmpty) {
-      warnings.add(
-        AllocationWarning(
-          type: WarningType.excludedUrgentTask,
-          message: '${urgentExcluded.length} urgent task(s) were excluded',
-          suggestedAction:
-              'Review excluded urgent tasks and consider adjusting priorities',
-          affectedTaskIds: urgentExcluded.map((e) => e.task.id).toList(),
-        ),
-      );
-    }
-
-    // Check for unbalanced allocation
-    if (categoryAllocations.values.any((count) => count == 0)) {
-      warnings.add(
-        const AllocationWarning(
-          type: WarningType.unbalancedAllocation,
-          message: 'Some priority categories received no tasks',
-          suggestedAction:
-              'Consider adjusting category weights or adding more tasks',
-        ),
-      );
-    }
-
     return AllocationResult(
       allocatedTasks: allocatedTasks,
       reasoning: AllocationReasoning(
@@ -222,7 +180,6 @@ class ProportionalAllocator implements AllocationStrategy {
         explanation: 'Tasks allocated proportionally based on category weights',
       ),
       excludedTasks: excludedTasks,
-      warnings: warnings,
     );
   }
 

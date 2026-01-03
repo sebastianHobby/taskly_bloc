@@ -2,6 +2,7 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 /// Repository contract for wellbeing data
 abstract class WellbeingRepositoryContract {
@@ -10,6 +11,11 @@ abstract class WellbeingRepositoryContract {
   Stream<List<JournalEntry>> watchJournalEntries({
     DateRange? range,
   });
+
+  /// Watch journal entries with query-based filtering.
+  ///
+  /// Supports filtering by date, mood, text content via [JournalQuery].
+  Stream<List<JournalEntry>> watchJournalEntriesByQuery(JournalQuery query);
 
   Future<JournalEntry?> getJournalEntryById(String id);
 

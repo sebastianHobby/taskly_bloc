@@ -566,6 +566,7 @@ class _ScreenMetadata extends StatelessWidget {
           ProjectDataConfig() => 'Projects',
           LabelDataConfig() => 'Labels',
           ValueDataConfig() => 'Values',
+          JournalDataConfig() => 'Journal Entries',
         };
       } else if (section is AllocationSection) {
         return 'Tasks';

@@ -646,9 +646,9 @@
     "@pinTask": {
         "description": "Acción para fijar una tarea arriba"
     },
-    "excludedUrgentTasksWarning": "{count, plural, =1{1 tarea urgente excluida} other{{count} tareas urgentes excluidas}}",
-    "@excludedUrgentTasksWarning": {
-        "description": "Mensaje de advertencia para tareas urgentes excluidas",
+    "taskUrgentExcludedWarning": "{count, plural, =1{1 tarea urgente excluida de Focus} other{{count} tareas urgentes excluidas de Focus}}",
+    "@taskUrgentExcludedWarning": {
+        "description": "Mensaje de advertencia para tareas urgentes excluidas de la pantalla Focus",
         "placeholders": {
             "count": {
                 "type": "int"
@@ -1050,5 +1050,131 @@
     "notRankedDragToRank": "Sin clasificar - arrastra para clasificar",
     "@notRankedDragToRank": {
         "description": "Subtítulo para valores sin clasificar"
+    },
+    "recommendedNextActionLabel": "Próxima Acción Recomendada",
+    "@recommendedNextActionLabel": {
+        "description": "Título para la tarjeta de tarea recomendada en detalle de proyecto"
+    },
+    "startLabel": "Iniciar",
+    "@startLabel": {
+        "description": "Etiqueta para el botón de inicio que fija una tarea en Focus"
+    },
+    "projectNextTaskPrefix": "→ Siguiente:",
+    "@projectNextTaskPrefix": {
+        "description": "Prefijo mostrado antes del nombre de la siguiente tarea en la lista de proyectos"
+    },
+    "taskPinnedToFocus": "'{taskName}' fijada en Focus",
+    "@taskPinnedToFocus": {
+        "description": "Mensaje de snackbar mostrado cuando una tarea se fija en Focus",
+        "placeholders": {
+            "taskName": {
+                "type": "String",
+                "example": "Revisar presupuesto"
+            }
+        }
+    },
+    "deadlineFormatDays": "{days, plural, =0{Vence hoy} =1{Vence mañana} other{Vence en {days} días}}",
+    "@deadlineFormatDays": {
+        "description": "Cadena de formato para fecha límite relativa a hoy",
+        "placeholders": {
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "deadlineOverdue": "Vencida",
+    "@deadlineOverdue": {
+        "description": "Etiqueta mostrada cuando una fecha límite ha pasado"
+    },
+    "reflectorBuildingHistory": "Construyendo tu historial...",
+    "@reflectorBuildingHistory": {
+        "description": "Título para banner de información del modo Reflector cuando hay datos insuficientes"
+    },
+    "reflectorHistoryExplanation": "Reflector funciona mejor con más datos. Tienes {count} completadas en los últimos {days} días. Usando pesos de valores por ahora.",
+    "@reflectorHistoryExplanation": {
+        "description": "Explicación para modo Reflector con historial insuficiente",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            },
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "targetLabel": "Objetivo",
+    "@targetLabel": {
+        "description": "Etiqueta para porcentaje objetivo en estadísticas de valor"
+    },
+    "actualLabel": "Actual",
+    "@actualLabel": {
+        "description": "Etiqueta para porcentaje actual en estadísticas de valor"
+    },
+    "gapLabel": "Brecha",
+    "@gapLabel": {
+        "description": "Etiqueta para porcentaje de brecha en estadísticas de valor"
+    },
+    "valueActivityCounts": "{taskCount} tareas · {projectCount} proyectos",
+    "@valueActivityCounts": {
+        "description": "Conteos de actividad para un valor mostrando tareas y proyectos",
+        "placeholders": {
+            "taskCount": {
+                "type": "int"
+            },
+            "projectCount": {
+                "type": "int"
+            }
+        }
+    },
+    "weekTrendTitle": "Tendencia de {weeks} Semanas",
+    "@weekTrendTitle": {
+        "description": "Título para gráfico de tendencia semanal",
+        "placeholders": {
+            "weeks": {
+                "type": "int"
+            }
+        }
+    },
+    "noTrendData": "Sin datos de tendencia aún",
+    "@noTrendData": {
+        "description": "Mensaje mostrado cuando no hay datos de tendencia para mostrar"
+    },
+    "activitySectionTitle": "Actividad",
+    "@activitySectionTitle": {
+        "description": "Título para sección de actividad en modal de detalle de valor"
+    },
+    "activeTasksCount": "{count} tareas activas",
+    "@activeTasksCount": {
+        "description": "Conteo de tareas activas para un valor",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "projectsCount": "{count} proyectos",
+    "@projectsCount": {
+        "description": "Conteo de proyectos para un valor",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "unassignedWorkTitle": "Trabajo Sin Asignar",
+    "@unassignedWorkTitle": {
+        "description": "Título para sección de trabajo sin asignar en pantalla de valores"
+    },
+    "valuesGatewayTitle": "Prioriza Lo Que Importa",
+    "@valuesGatewayTitle": {
+        "description": "Título para pantalla de configuración de valores"
+    },
+    "valuesGatewayDescription": "Focus utiliza tus valores personales para recomendar qué tareas merecen tu atención hoy.\n\nDefine lo que es importante para ti—como Salud, Familia, Carrera—y Focus te ayudará a dedicar tiempo a lo que realmente importa.",
+    "@valuesGatewayDescription": {
+        "description": "Descripción para pantalla de configuración de valores"
+    },
+    "setUpMyValues": "Configurar Mis Valores",
+    "@setUpMyValues": {
+        "description": "Botón para configurar valores"
     }
 }

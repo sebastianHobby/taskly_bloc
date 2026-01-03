@@ -30,6 +30,9 @@ class AllocationParameters {
     this.urgentTaskBehavior = UrgentTaskBehavior.warnOnly,
     this.taskUrgencyThresholdDays = 3,
     this.urgencyBoostMultiplier = 1.0,
+    this.neglectLookbackDays = 7,
+    this.neglectInfluence = 0.7,
+    this.completionsByValue = const {},
   });
 
   /// Tasks to allocate
@@ -65,4 +68,15 @@ class AllocationParameters {
   /// Boost multiplier for urgent tasks that have values.
   /// Set to 1.0 to disable urgency boosting.
   final double urgencyBoostMultiplier;
+
+  /// Days to look back for completion history (Reflector mode).
+  final int neglectLookbackDays;
+
+  /// Weight of neglect score vs base weight (0-1). (Reflector mode).
+  /// 0 = pure base weight, 1 = pure neglect-based.
+  final double neglectInfluence;
+
+  /// Recent completions by value ID (pre-computed for Reflector mode).
+  /// Passed in from orchestrator to avoid async in allocate().
+  final Map<String, int> completionsByValue;
 }
