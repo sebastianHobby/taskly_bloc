@@ -135,8 +135,8 @@ class UrgencyDetector {
   /// Creates an UrgencyDetector from AllocationConfig.
   factory UrgencyDetector.fromConfig(AllocationConfig config) {
     return UrgencyDetector(
-      taskThresholdDays: config.strategy.taskUrgencyThresholdDays,
-      projectThresholdDays: config.strategy.projectUrgencyThresholdDays,
+      taskThresholdDays: config.strategySettings.taskUrgencyThresholdDays,
+      projectThresholdDays: config.strategySettings.projectUrgencyThresholdDays,
     );
   }
 }
@@ -189,7 +189,7 @@ final detector = UrgencyDetector.fromConfig(config);
 final urgentValueless = detector.findUrgentValuelessTasks(allTasks);
 
 // Handle based on behavior
-switch (config.strategy.urgentTaskBehavior) {
+switch (config.strategySettings.urgentTaskBehavior) {
   case UrgentTaskBehavior.ignore:
     // Do nothing, these tasks are excluded
     break;

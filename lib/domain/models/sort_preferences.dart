@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'sort_preferences.freezed.dart';
 
 /// Supported sort fields for task-, project-, and label-style entities.
 enum SortField {
@@ -12,12 +14,13 @@ enum SortField {
 /// Sort direction per criterion.
 enum SortDirection { ascending, descending }
 
-@immutable
-class SortCriterion {
-  const SortCriterion({
-    required this.field,
-    this.direction = SortDirection.ascending,
-  });
+/// A single sort criterion.
+@freezed
+abstract class SortCriterion with _$SortCriterion {
+  const factory SortCriterion({
+    required SortField field,
+    @Default(SortDirection.ascending) SortDirection direction,
+  }) = _SortCriterion;
 
   factory SortCriterion.fromJson(Map<String, dynamic> json) {
     final fieldName = json['field'] as String?;
@@ -36,43 +39,24 @@ class SortCriterion {
       ),
     );
   }
+}
 
-  final SortField field;
-  final SortDirection direction;
-
+/// Extension for JSON serialization.
+extension SortCriterionJson on SortCriterion {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'field': field.name,
     'direction': direction.name,
   };
-
-  SortCriterion copyWith({SortField? field, SortDirection? direction}) {
-    return SortCriterion(
-      field: field ?? this.field,
-      direction: direction ?? this.direction,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is SortCriterion &&
-        other.field == field &&
-        other.direction == direction;
-  }
-
-  @override
-  int get hashCode => Object.hash(field, direction);
 }
 
-@immutable
-class SortPreferences {
-  const SortPreferences({
-    this.criteria = const [
-      SortCriterion(field: SortField.deadlineDate),
-      SortCriterion(field: SortField.startDate),
-      SortCriterion(field: SortField.createdDate),
-      SortCriterion(field: SortField.name),
-    ],
-  });
+/// User's sort preferences with ordered criteria.
+@freezed
+abstract class SortPreferences with _$SortPreferences {
+  const factory SortPreferences({
+    @Default(SortPreferences.defaultCriteria) List<SortCriterion> criteria,
+  }) = _SortPreferences;
+
+  const SortPreferences._();
 
   factory SortPreferences.fromJson(Map<String, dynamic> json) {
     final rawCriteria = json['criteria'] as List<dynamic>?;
@@ -82,27 +66,20 @@ class SortPreferences {
             .toList(growable: false) ??
         const <SortCriterion>[];
     return SortPreferences(
-      criteria: parsed.isEmpty
-          ? const [
-              SortCriterion(field: SortField.deadlineDate),
-              SortCriterion(field: SortField.startDate),
-              SortCriterion(field: SortField.createdDate),
-              SortCriterion(field: SortField.name),
-            ]
-          : parsed,
+      criteria: parsed.isEmpty ? defaultCriteria : parsed,
     );
   }
 
-  final List<SortCriterion> criteria;
+  /// Default sort criteria.
+  static const List<SortCriterion> defaultCriteria = [
+    SortCriterion(field: SortField.deadlineDate),
+    SortCriterion(field: SortField.startDate),
+    SortCriterion(field: SortField.createdDate),
+    SortCriterion(field: SortField.name),
+  ];
 
-  Map<String, dynamic> toJson() => <String, dynamic>{
-    'criteria': criteria.map((c) => c.toJson()).toList(growable: false),
-  };
-
-  SortPreferences copyWith({List<SortCriterion>? criteria}) {
-    return SortPreferences(criteria: criteria ?? this.criteria);
-  }
-
+  /// Returns criteria filtered to only include available fields,
+  /// with duplicates removed. Guarantees at least one criterion.
   List<SortCriterion> sanitizedCriteria(List<SortField> availableFields) {
     final sanitized = <SortCriterion>[];
     for (final criterion in criteria) {
@@ -121,18 +98,11 @@ class SortPreferences {
     }
     return sanitized;
   }
+}
 
-  @override
-  bool operator ==(Object other) {
-    if (other is! SortPreferences) return false;
-    if (identical(other, this)) return true;
-    if (other.criteria.length != criteria.length) return false;
-    for (var i = 0; i < criteria.length; i++) {
-      if (criteria[i] != other.criteria[i]) return false;
-    }
-    return true;
-  }
-
-  @override
-  int get hashCode => Object.hashAll(criteria);
+/// Extension for JSON serialization.
+extension SortPreferencesJson on SortPreferences {
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'criteria': criteria.map((c) => c.toJson()).toList(growable: false),
+  };
 }

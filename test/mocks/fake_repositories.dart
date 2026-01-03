@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
@@ -265,188 +266,91 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
   final _controller = StreamController<AppSettings>.broadcast();
   AppSettings _current;
-  GlobalSettings _globalSettings = const GlobalSettings();
 
   @override
-  Stream<GlobalSettings> watchGlobalSettings() async* {
-    yield _globalSettings;
+  Stream<T> watch<T>(SettingsKey<T> key) async* {
+    yield _extractValue(key);
+    yield* _controller.stream.map((_) => _extractValue(key)).distinct();
   }
 
   @override
-  Future<GlobalSettings> loadGlobalSettings() async {
-    return _globalSettings;
-  }
+  Future<T> load<T>(SettingsKey<T> key) async => _extractValue(key);
 
   @override
-  Future<void> saveGlobalSettings(GlobalSettings settings) async {
-    _globalSettings = settings;
-  }
-
-  @override
-  Stream<SoftGatesSettings> watchSoftGatesSettings() async* {
-    yield _current.softGates;
-    yield* _controller.stream.map((settings) => settings.softGates).distinct();
-  }
-
-  @override
-  Future<SoftGatesSettings> loadSoftGatesSettings() async {
-    return _current.softGates;
-  }
-
-  @override
-  Future<void> saveSoftGatesSettings(SoftGatesSettings settings) async {
-    _current = _current.updateSoftGates(settings);
+  Future<void> save<T>(SettingsKey<T> key, T value) async {
+    _current = _applyValue(key, value);
     _controller.add(_current);
   }
 
-  @override
-  Stream<NextActionsSettings> watchNextActionsSettings() async* {
-    yield _current.nextActions;
-    yield* _controller.stream
-        .map((settings) => settings.nextActions)
-        .distinct();
+  T _extractValue<T>(SettingsKey<T> key) {
+    return switch (key) {
+      SettingsKey.global => _current.global as T,
+      SettingsKey.allocation => _current.allocation as T,
+      SettingsKey.softGates => _current.softGates as T,
+      SettingsKey.nextActions => _current.nextActions as T,
+      SettingsKey.valueRanking => _current.valueRanking as T,
+      SettingsKey.allScreenPrefs => _current.screenPreferences as T,
+      SettingsKey.all => _current as T,
+      _ => _extractKeyedValue(key),
+    };
   }
 
-  @override
-  Future<NextActionsSettings> loadNextActionsSettings() async {
-    return _current.nextActions;
+  T _extractKeyedValue<T>(SettingsKey<T> key) {
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
+
+    return switch (name) {
+      'pageSort' => _current.sortFor(subKey) as T,
+      'pageDisplay' => _current.displaySettingsFor(subKey) as T,
+      'screenPrefs' => _current.screenPreferencesFor(subKey) as T,
+      _ => throw ArgumentError('Unknown keyed key: $name'),
+    };
   }
 
-  @override
-  Future<void> saveNextActionsSettings(NextActionsSettings settings) async {
-    _current = _current.updateNextActions(settings);
-    _controller.add(_current);
+  AppSettings _applyValue<T>(SettingsKey<T> key, T value) {
+    return switch (key) {
+      SettingsKey.global => _current.updateGlobal(value as GlobalSettings),
+      SettingsKey.allocation => _current.updateAllocation(
+        value as AllocationSettings,
+      ),
+      SettingsKey.softGates => _current.updateSoftGates(
+        value as SoftGatesSettings,
+      ),
+      SettingsKey.nextActions => _current.updateNextActions(
+        value as NextActionsSettings,
+      ),
+      SettingsKey.valueRanking => _current.updateValueRanking(
+        value as ValueRanking,
+      ),
+      SettingsKey.allScreenPrefs => _current.copyWith(
+        screenPreferences: value as Map<String, ScreenPreferences>,
+      ),
+      SettingsKey.all => value as AppSettings,
+      _ => _applyKeyedValue(key, value),
+    };
   }
 
-  @override
-  Stream<SortPreferences?> watchPageSort(PageKey pageKey) async* {
-    yield _current.sortFor(pageKey.key);
-    yield* _controller.stream
-        .map((settings) => settings.sortFor(pageKey.key))
-        .distinct();
-  }
+  AppSettings _applyKeyedValue<T>(SettingsKey<T> key, T value) {
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
 
-  @override
-  Future<SortPreferences?> loadPageSort(PageKey pageKey) async {
-    return _current.sortFor(pageKey.key);
-  }
-
-  @override
-  Future<void> savePageSort(
-    PageKey pageKey,
-    SortPreferences preferences,
-  ) async {
-    _current = _current.upsertPageSort(
-      pageKey: pageKey.key,
-      preferences: preferences,
-    );
-    _controller.add(_current);
-  }
-
-  @override
-  Stream<PageDisplaySettings> watchPageDisplaySettings(PageKey pageKey) async* {
-    yield _current.displaySettingsFor(pageKey.key);
-    yield* _controller.stream
-        .map((settings) => settings.displaySettingsFor(pageKey.key))
-        .distinct();
-  }
-
-  @override
-  Future<PageDisplaySettings> loadPageDisplaySettings(PageKey pageKey) async {
-    return _current.displaySettingsFor(pageKey.key);
-  }
-
-  @override
-  Future<void> savePageDisplaySettings(
-    PageKey pageKey,
-    PageDisplaySettings settings,
-  ) async {
-    _current = _current.upsertPageDisplaySettings(
-      pageKey: pageKey.key,
-      settings: settings,
-    );
-    _controller.add(_current);
-  }
-
-  @override
-  Stream<AppSettings> watchAll() async* {
-    yield _current;
-    yield* _controller.stream;
-  }
-
-  @override
-  Future<AppSettings> loadAll() async => _current;
-
-  // Screen Preferences
-  @override
-  Stream<ScreenPreferences> watchScreenPreferences(String screenKey) async* {
-    yield _current.screenPreferencesFor(screenKey);
-    yield* _controller.stream
-        .map((settings) => settings.screenPreferencesFor(screenKey))
-        .distinct();
-  }
-
-  @override
-  Future<ScreenPreferences> loadScreenPreferences(String screenKey) async {
-    return _current.screenPreferencesFor(screenKey);
-  }
-
-  @override
-  Future<void> saveScreenPreferences(
-    String screenKey,
-    ScreenPreferences preferences,
-  ) async {
-    _current = _current.upsertScreenPreferences(
-      screenKey: screenKey,
-      preferences: preferences,
-    );
-    _controller.add(_current);
-  }
-
-  @override
-  Stream<Map<String, ScreenPreferences>> watchAllScreenPreferences() async* {
-    yield _current.screenPreferences;
-    yield* _controller.stream
-        .map((settings) => settings.screenPreferences)
-        .distinct();
-  }
-
-  // Allocation Settings
-  @override
-  Stream<AllocationSettings> watchAllocationSettings() async* {
-    yield _current.allocation;
-    yield* _controller.stream.map((settings) => settings.allocation).distinct();
-  }
-
-  @override
-  Future<AllocationSettings> loadAllocationSettings() async {
-    return _current.allocation;
-  }
-
-  @override
-  Future<void> saveAllocationSettings(AllocationSettings settings) async {
-    _current = _current.updateAllocation(settings);
-    _controller.add(_current);
-  }
-
-  // Value Ranking
-  @override
-  Stream<ValueRanking> watchValueRanking() async* {
-    yield _current.valueRanking;
-    yield* _controller.stream
-        .map((settings) => settings.valueRanking)
-        .distinct();
-  }
-
-  @override
-  Future<ValueRanking> loadValueRanking() async {
-    return _current.valueRanking;
-  }
-
-  @override
-  Future<void> saveValueRanking(ValueRanking ranking) async {
-    _current = _current.updateValueRanking(ranking);
-    _controller.add(_current);
+    return switch (name) {
+      'pageSort' => _current.upsertPageSort(
+        pageKey: subKey,
+        preferences: value as SortPreferences,
+      ),
+      'pageDisplay' => _current.upsertPageDisplaySettings(
+        pageKey: subKey,
+        settings: value as PageDisplaySettings,
+      ),
+      'screenPrefs' => _current.upsertScreenPreferences(
+        screenKey: subKey,
+        preferences: value as ScreenPreferences,
+      ),
+      _ => throw ArgumentError('Unknown keyed key: $name'),
+    };
   }
 
   void dispose() {

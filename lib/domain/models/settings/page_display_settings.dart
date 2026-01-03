@@ -1,10 +1,15 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'page_display_settings.freezed.dart';
+
 /// Display settings for a specific page.
-class PageDisplaySettings {
-  const PageDisplaySettings({
-    this.hideCompleted = true,
-    this.completedSectionCollapsed = false,
-    this.showNextActionsBanner = true,
-  });
+@freezed
+abstract class PageDisplaySettings with _$PageDisplaySettings {
+  const factory PageDisplaySettings({
+    @Default(true) bool hideCompleted,
+    @Default(false) bool completedSectionCollapsed,
+    @Default(true) bool showNextActionsBanner,
+  }) = _PageDisplaySettings;
 
   factory PageDisplaySettings.fromJson(Map<String, dynamic> json) {
     return PageDisplaySettings(
@@ -14,43 +19,13 @@ class PageDisplaySettings {
       showNextActionsBanner: json['showNextActionsBanner'] as bool? ?? true,
     );
   }
+}
 
-  final bool hideCompleted;
-  final bool completedSectionCollapsed;
-  final bool showNextActionsBanner;
-
+/// Extension for JSON serialization.
+extension PageDisplaySettingsJson on PageDisplaySettings {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'hideCompleted': hideCompleted,
     'completedSectionCollapsed': completedSectionCollapsed,
     'showNextActionsBanner': showNextActionsBanner,
   };
-
-  PageDisplaySettings copyWith({
-    bool? hideCompleted,
-    bool? completedSectionCollapsed,
-    bool? showNextActionsBanner,
-  }) {
-    return PageDisplaySettings(
-      hideCompleted: hideCompleted ?? this.hideCompleted,
-      completedSectionCollapsed:
-          completedSectionCollapsed ?? this.completedSectionCollapsed,
-      showNextActionsBanner:
-          showNextActionsBanner ?? this.showNextActionsBanner,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is PageDisplaySettings &&
-        other.hideCompleted == hideCompleted &&
-        other.completedSectionCollapsed == completedSectionCollapsed &&
-        other.showNextActionsBanner == showNextActionsBanner;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    hideCompleted,
-    completedSectionCollapsed,
-    showNextActionsBanner,
-  );
 }

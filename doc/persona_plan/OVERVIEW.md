@@ -97,12 +97,12 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(UrgentTaskBehavior.warnOnly) UrgentTaskBehavior urgentTaskBehavior,
     @Default(3) int taskUrgencyThresholdDays,
     @Default(7) int projectUrgencyThresholdDays,
-    @Default(1.5) double urgencyBoostMultiplier,  // 1.0 = disabled
+    @Default(1.0) double urgencyBoostMultiplier,  // 1.0 = no boost, >1.0 = boost urgent tasks
     
     // Neglect features (Reflector)
     @Default(false) bool enableNeglectWeighting,
     @Default(7) int neglectLookbackDays,
-    @Default(0.5) double neglectInfluence,
+    @Default(0.7) double neglectInfluence,  // 0.7 matches Reflector preset
   }) = _StrategySettings;
 }
 ```
@@ -116,9 +116,6 @@ When a user modifies ANY setting from a preset persona, the system automatically
 |------|--------|
 | `AllocationSettings` class | Replaced by `AllocationConfig` with nested settings |
 | `AllocationStrategyType` enum | Only 2 of 6 values implemented; feature flags replace this |
-| `UrgencyMode` enum | Replaced by `UrgentTaskBehavior` + persona presets |
-| `withUrgencyMode()` method | No longer needed |
-| `urgencyMode` getter | No longer needed |
 | `urgencyInfluence` field | Replaced by `urgencyBoostMultiplier` (different semantic) |
 | `alwaysIncludeUrgent` field | Replaced by `UrgentTaskBehavior.includeAll` |
 | `showExcludedUrgentWarning` field | Replaced by `UrgentTaskBehavior.warnOnly` (not in DisplaySettings - handled by enum) |
@@ -132,7 +129,7 @@ When a user modifies ANY setting from a preset persona, the system automatically
 | `AllocationStrategy` interface | Core abstraction for pluggable allocators |
 | `ProportionalAllocator` | Used by Idealist persona |
 | `UrgencyWeightedAllocator` | Used by Realist/Firefighter personas |
-| `ValueRanking` / `ValueRankItem` | Existing value weight storage |
+| `ValueRanking` / `ValueRankItem` | Value weight storage (freezed models) |
 | `pinTask()`/`unpinTask()` | Existing functionality, reused in Phase 5 |
 
 ### Persona → Features Mapping
@@ -268,7 +265,7 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(UrgentTaskBehavior.warnOnly) UrgentTaskBehavior urgentTaskBehavior,
     @Default(3) int taskUrgencyThresholdDays,
     @Default(7) int projectUrgencyThresholdDays,
-    @Default(1.5) double urgencyBoostMultiplier,
+    @Default(1.0) double urgencyBoostMultiplier,
     @Default(false) bool enableNeglectWeighting,
     @Default(7) int neglectLookbackDays,
     @Default(0.5) double neglectInfluence,
@@ -280,11 +277,13 @@ abstract class StrategySettings with _$StrategySettings {
 @freezed
 abstract class DisplaySettings with _$DisplaySettings {
   const factory DisplaySettings({
-    @Default(true) bool showWarnings,
     @Default(true) bool showOrphanTaskCount,
     @Default(true) bool showProjectNextTask,
   }) = _DisplaySettings;
 }
+
+// Note: Warning visibility is controlled by StrategySettings.urgentTaskBehavior,
+// not DisplaySettings. UI renders whatever warnings the allocator generates.
 ```
 
 ### Acceptance Criteria
@@ -590,14 +589,15 @@ Future<Map<String, ValueActivityStats>> getValueActivityStats();
 - Full-screen when user has 0 values defined
 - Explains purpose of values
 - "Set Up My Values" button → navigates to values screen
-- "Show all tasks by deadline only" skip option
-- Remember skip preference
+- "Skip and show by deadline" option (session-only, not persisted)
+- Skip allows deadline-only view but blocks value-based allocation features
 
 ### Acceptance Criteria
 - [ ] `ValuesRequiredGateway` widget created
 - [ ] Gateway shown when `valueLabels.isEmpty`
 - [ ] "Set Up" navigates to values screen
-- [ ] "Skip" option available with preference storage
+- [ ] "Skip" option shows deadline-only view for current session (not persisted)
+- [ ] Skip blocks access to value-based allocation features
 - [ ] `flutter analyze` passes with no errors/warnings
 
 ---
@@ -659,6 +659,96 @@ Phase 1 ─────┬──────► Phase 2 ────┬───
 ```
 
 **Parallelization**: Phases 3, 4, 5, 6, 8 can run in parallel after their dependencies complete.
+
+---
+
+## Cross-Cutting Concerns
+
+### Repository Contract Updates (Phase 1)
+
+Update `lib/domain/interfaces/settings_repository_contract.dart`:
+
+```dart
+// Use the generic SettingsKey<T> API:
+Stream<T> watch<T>(SettingsKey<T> key);
+Future<T> load<T>(SettingsKey<T> key);
+Future<void> save<T>(SettingsKey<T> key, T value);
+
+// Access allocation config via:
+SettingsKey.allocation  // Returns AllocationConfig
+```
+
+### BLoC State/Event Consolidation
+
+Multiple phases modify the `NextActionsBloc`. Here is the consolidated list:
+
+**State additions:**
+```dart
+@freezed
+abstract class NextActionsState with _$NextActionsState {
+  const factory NextActionsState({
+    // ... existing fields ...
+    
+    // Phase 4: Orphan task count
+    @Default(0) int orphanCount,
+    
+    // Phase 8: Session-only skip flag (NOT persisted)
+    @Default(false) bool hasSkippedValuesSetupThisSession,
+    
+    // Phase 8: Deadline-sorted tasks for fallback view
+    @Default([]) List<Task> deadlineSortedTasks,
+  }) = _NextActionsState;
+}
+```
+
+**Event additions:**
+```dart
+@freezed
+sealed class NextActionsEvent with _$NextActionsEvent {
+  // ... existing events ...
+  
+  // Phase 4: Request orphan count refresh
+  const factory NextActionsEvent.orphanCountRequested() = _OrphanCountRequested;
+  
+  // Phase 8: User skipped values setup for this session
+  const factory NextActionsEvent.valuesSetupSkippedThisSession() = _ValuesSetupSkippedThisSession;
+}
+```
+
+**Handler implementations:**
+```dart
+// Phase 4
+on<_OrphanCountRequested>((event, emit) async {
+  final count = await _analyticsService.getOrphanTaskCount();
+  emit(state.copyWith(orphanCount: count));
+});
+
+// Phase 8
+on<_ValuesSetupSkippedThisSession>((event, emit) {
+  // Session-only - NOT persisted to storage
+  emit(state.copyWith(hasSkippedValuesSetupThisSession: true));
+});
+```
+
+### Analytics Service Additions
+
+Methods added across phases to `lib/domain/services/analytics/analytics_service.dart`:
+
+```dart
+abstract class AnalyticsService {
+  // ... existing methods ...
+  
+  // Phase 4: Count tasks without values
+  Future<int> getOrphanTaskCount({bool excludeWithDeadline = false});
+  
+  // Phase 6: Recent completions for neglect calculation
+  Future<Map<String, int>> getRecentCompletionsByValue({required int days});
+  
+  // Phase 7: Value distribution analytics
+  Future<Map<String, double>> getValueCompletionDistribution({required DateRange range});
+  Future<Map<String, ValueActivityStats>> getValueActivityStats();
+}
+```
 
 ---
 

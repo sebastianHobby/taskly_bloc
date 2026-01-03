@@ -317,19 +317,39 @@ void main() {
       });
     });
 
-    group('toString', () {
-      test('returns formatted string', () {
-        const settings = AllocationSettings(
-          strategyType: AllocationStrategyType.topCategories,
-          dailyTaskLimit: 8,
-        );
+    group('alwaysIncludeUrgent', () {
+      test('defaults to false', () {
+        const settings = AllocationSettings();
+        expect(settings.alwaysIncludeUrgent, false);
+      });
 
-        final str = settings.toString();
+      test('can be set to true', () {
+        const settings = AllocationSettings(alwaysIncludeUrgent: true);
+        expect(settings.alwaysIncludeUrgent, true);
+      });
 
-        expect(
-          str,
-          'AllocationSettings(strategyType: AllocationStrategyType.topCategories, dailyTaskLimit: 8)',
-        );
+      test('fromJson parses alwaysIncludeUrgent', () {
+        final settings = AllocationSettings.fromJson(const {
+          'alwaysIncludeUrgent': true,
+        });
+        expect(settings.alwaysIncludeUrgent, true);
+      });
+
+      test('toJson includes alwaysIncludeUrgent', () {
+        const settings = AllocationSettings(alwaysIncludeUrgent: true);
+        expect(settings.toJson()['alwaysIncludeUrgent'], true);
+      });
+
+      test('copyWith updates alwaysIncludeUrgent', () {
+        const settings = AllocationSettings();
+        final updated = settings.copyWith(alwaysIncludeUrgent: true);
+        expect(updated.alwaysIncludeUrgent, true);
+      });
+
+      test('different alwaysIncludeUrgent values are not equal', () {
+        const settings1 = AllocationSettings(alwaysIncludeUrgent: true);
+        const settings2 = AllocationSettings(alwaysIncludeUrgent: false);
+        expect(settings1, isNot(settings2));
       });
     });
   });

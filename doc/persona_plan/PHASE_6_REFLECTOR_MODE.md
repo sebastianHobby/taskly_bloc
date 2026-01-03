@@ -218,30 +218,6 @@ class NeglectBasedAllocator implements AllocationStrategy {
       }
     }
   }
-    final effectiveWeights = _calculateEffectiveWeights(
-      values: values,
-      neglectScores: neglectScores,
-      neglectInfluence: parameters.neglectInfluence,
-    );
-
-    // Group tasks by value
-    final tasksByValue = _groupTasksByValue(tasks);
-
-    // Allocate proportionally using effective weights
-    final allocated = _allocateByWeights(
-      tasksByValue: tasksByValue,
-      effectiveWeights: effectiveWeights,
-      limit: parameters.dailyLimit,
-    );
-
-    return AllocationResult(
-      allocatedTasks: allocated.map((t) => AllocatedTask(
-        task: t,
-        reason: _buildReason(t, neglectScores),
-      )).toList(),
-      warnings: [],
-    );
-  }
 
   /// Calculate neglect score for each value.
   /// Positive = neglected, Negative = over-represented.
@@ -409,7 +385,7 @@ Future<Map<String, int>> getRecentCompletionsByValue({
 
 ### 3. `lib/data/features/analytics/services/analytics_service_impl.dart`
 
-**Implement the method:**
+**Implement the method using existing TaskQuery API:**
 
 ```dart
 @override
@@ -418,8 +394,23 @@ Future<Map<String, int>> getRecentCompletionsByValue({
 }) async {
   final cutoff = DateTime.now().subtract(Duration(days: days));
   
-  // Query completed tasks since cutoff
-  final completedTasks = await _taskRepository.getCompletedTasksSince(cutoff);
+  // Query completed tasks since cutoff using existing TaskQuery API
+  final query = TaskQuery(
+    filter: QueryFilter<TaskPredicate>(
+      shared: [
+        const TaskBoolPredicate(
+          field: TaskBoolField.completed,
+          operator: BoolOperator.isTrue,
+        ),
+        TaskDatePredicate(
+          field: TaskDateField.completedAt,
+          operator: DateOperator.onOrAfter,
+          date: cutoff,
+        ),
+      ],
+    ),
+  );
+  final completedTasks = await _taskRepository.queryTasks(query);
   
   // Count by value
   final counts = <String, int>{};
@@ -434,7 +425,7 @@ Future<Map<String, int>> getRecentCompletionsByValue({
 }
 ```
 
-**Note:** You may need to add `getCompletedTasksSince` to the task repository if it doesn't exist.
+**Note:** Uses existing `TaskQuery` with `TaskDateField.completedAt` predicate. No new repository methods needed.
 
 ---
 
@@ -442,24 +433,24 @@ Future<Map<String, int>> getRecentCompletionsByValue({
 
 **Use NeglectBasedAllocator when neglect weighting is enabled:**
 
-The orchestrator should check `config.strategy.enableNeglectWeighting` rather than just the persona,
+The orchestrator should check `config.strategySettings.enableNeglectWeighting` rather than just the persona,
 because Custom mode can enable neglect weighting combined with other features.
 
 ```dart
 // In the orchestration logic
 AllocationStrategy _getStrategy(AllocationConfig config) {
-  final strategy = config.strategy;
+  final settings = config.strategySettings;
   
   // Check for neglect weighting first (enables combo mode in Custom)
-  if (strategy.enableNeglectWeighting) {
+  if (settings.enableNeglectWeighting) {
     return NeglectBasedAllocator(
       analyticsService: _analyticsService,
     );
   }
   
   // Otherwise use urgency-based or proportional
-  if (strategy.urgencyBoostMultiplier > 1.0 || 
-      strategy.urgentTaskBehavior == UrgentTaskBehavior.includeAll) {
+  if (settings.urgencyBoostMultiplier > 1.0 || 
+      settings.urgentTaskBehavior == UrgentTaskBehavior.includeAll) {
     return UrgencyWeightedAllocator();
   }
   
@@ -475,14 +466,14 @@ final parameters = AllocationParameters(
   dailyLimit: config.dailyLimit,
   
   // Urgency settings (for combo mode)
-  urgentTaskBehavior: config.strategy.urgentTaskBehavior,
-  taskUrgencyThresholdDays: config.strategy.taskUrgencyThresholdDays,
-  projectUrgencyThresholdDays: config.strategy.projectUrgencyThresholdDays,
-  urgencyBoostMultiplier: config.strategy.urgencyBoostMultiplier,
+  urgentTaskBehavior: config.strategySettings.urgentTaskBehavior,
+  taskUrgencyThresholdDays: config.strategySettings.taskUrgencyThresholdDays,
+  projectUrgencyThresholdDays: config.strategySettings.projectUrgencyThresholdDays,
+  urgencyBoostMultiplier: config.strategySettings.urgencyBoostMultiplier,
   
   // Neglect settings
-  neglectLookbackDays: config.strategy.neglectLookbackDays,
-  neglectInfluence: config.strategy.neglectInfluence,
+  neglectLookbackDays: config.strategySettings.neglectLookbackDays,
+  neglectInfluence: config.strategySettings.neglectInfluence,
 );
 ```
 

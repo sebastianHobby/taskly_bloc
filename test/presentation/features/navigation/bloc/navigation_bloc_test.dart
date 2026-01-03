@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
@@ -108,7 +110,7 @@ void main() {
     });
 
     group('NavigationStarted', () {
-      test('subscribes to screens stream', () async {
+      testSafe('subscribes to screens stream', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -122,7 +124,7 @@ void main() {
         await bloc.close();
       });
 
-      test('processes screens when emitted', () async {
+      testSafe('processes screens when emitted', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -145,7 +147,7 @@ void main() {
     });
 
     group('screen mapping', () {
-      test('sorts destinations by sortOrder', () async {
+      testSafe('sorts destinations by sortOrder', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -177,7 +179,7 @@ void main() {
         await bloc.close();
       });
 
-      test('workspace screens use dynamic routes', () async {
+      testSafe('workspace screens use dynamic routes', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -201,7 +203,7 @@ void main() {
         await bloc.close();
       });
 
-      test('wellbeing screen uses direct route', () async {
+      testSafe('wellbeing screen uses direct route', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -225,7 +227,7 @@ void main() {
         await bloc.close();
       });
 
-      test('journal screen uses wellbeing/journal route', () async {
+      testSafe('journal screen uses wellbeing/journal route', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -249,7 +251,7 @@ void main() {
         await bloc.close();
       });
 
-      test('settings screens use correct routes', () async {
+      testSafe('settings screens use correct routes', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -315,7 +317,7 @@ void main() {
     });
 
     group('lifecycle', () {
-      test('closes stream subscription on close', () async {
+      testSafe('closes stream subscription on close', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,

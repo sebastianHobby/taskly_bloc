@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
 
 /// Handles potentially double-encoded JSON data.
 ///
@@ -34,17 +33,6 @@ Map<String, dynamic> _parseJsonWithDoubleEncodingFallback(Object? json) {
     'Expected Map<String, dynamic> or String, got ${json.runtimeType}',
   );
 }
-
-/// Type converter for [AppSettings] stored as JSON text.
-///
-/// Uses [TypeConverter.json2] which properly handles JSON serialization
-/// without double-encoding issues.
-final JsonTypeConverter2<AppSettings, String, Object?> appSettingsConverter =
-    TypeConverter.json2(
-      fromJson: (json) =>
-          AppSettings.fromJson(_parseJsonWithDoubleEncodingFallback(json)),
-      toJson: (AppSettings settings) => settings.toJson(),
-    );
 
 /// Type converter for [EntitySelector] stored as JSON text.
 final JsonTypeConverter2<EntitySelector, String, Object?>

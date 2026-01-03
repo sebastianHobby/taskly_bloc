@@ -80,7 +80,7 @@ Projects are containers for tasks but are NOT first-class citizens in allocation
 ```dart
 import 'package:taskly/domain/models/project/project.dart';
 import 'package:taskly/domain/models/task/task.dart';
-import 'package:taskly/domain/models/settings/allocation_settings.dart';
+import 'package:taskly/domain/models/settings/allocation_config.dart';
 
 /// Determines the recommended next task for a project.
 /// 
@@ -117,7 +117,7 @@ class ProjectNextTaskResolver {
     final urgent = projectTasks.where((t) {
       if (t.deadline == null) return false;
       final daysUntil = t.deadline!.difference(DateTime.now()).inDays;
-      return daysUntil <= config.strategy.taskUrgencyThresholdDays;
+      return daysUntil <= config.strategySettings.taskUrgencyThresholdDays;
     });
     if (urgent.isNotEmpty) {
       return _selectMostUrgent(urgent.toList());
@@ -312,13 +312,24 @@ class _DeadlineChip extends StatelessWidget {
   }
 
   String _formatDeadline(int daysUntil) {
-    // TODO: Use context.l10n with pluralization
-    if (daysUntil < 0) return 'Overdue';
-    if (daysUntil == 0) return 'Due today';
-    if (daysUntil == 1) return 'Due tomorrow';
-    return 'Due in $daysUntil days';
+    return context.l10n.deadlineFormat(daysUntil);
   }
 }
+```
+
+**Localization (ARB with ICU plural/select syntax):**
+
+```json
+// app_en.arb
+"deadlineFormat": "{days, plural, =-1{Overdue} =0{Due today} =1{Due tomorrow} other{Due in {days} days}}",
+"@deadlineFormat": {
+  "placeholders": {
+    "days": { "type": "int" }
+  }
+}
+
+// app_es.arb
+"deadlineFormat": "{days, plural, =-1{Vencido} =0{Vence hoy} =1{Vence mañana} other{Vence en {days} días}}"
 ```
 
 ---

@@ -1,24 +1,27 @@
-import 'package:intl/intl.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/settings/app_theme_mode.dart';
 import 'package:taskly_bloc/domain/models/settings/date_format_patterns.dart';
 
-/// Global application settings
-class GlobalSettings {
-  const GlobalSettings({
-    this.themeMode = AppThemeMode.system,
-    this.colorSchemeSeedArgb = _defaultSeedArgb,
-    this.localeCode,
-    this.dateFormatPattern = DateFormatPatterns.defaultPattern,
-    this.textScaleFactor = 1.0,
-    this.onboardingCompleted = false,
-  });
+part 'global_settings.freezed.dart';
+
+/// Global application settings.
+@freezed
+abstract class GlobalSettings with _$GlobalSettings {
+  const factory GlobalSettings({
+    @Default(AppThemeMode.system) AppThemeMode themeMode,
+    @Default(GlobalSettings.defaultSeedArgb) int colorSchemeSeedArgb,
+    String? localeCode,
+    @Default(DateFormatPatterns.defaultPattern) String dateFormatPattern,
+    @Default(1.0) double textScaleFactor,
+    @Default(false) bool onboardingCompleted,
+  }) = _GlobalSettings;
 
   factory GlobalSettings.fromJson(Map<String, dynamic> json) {
     return GlobalSettings(
       themeMode: AppThemeMode.fromName(json['themeMode'] as String?),
       colorSchemeSeedArgb: _rgbHexToArgb(
         json['colorSchemeSeed'] as String?,
-        fallbackArgb: _defaultSeedArgb,
+        fallbackArgb: defaultSeedArgb,
       ),
       localeCode: json['locale'] as String?,
       dateFormatPattern:
@@ -29,7 +32,8 @@ class GlobalSettings {
     );
   }
 
-  static const int _defaultSeedArgb = 0xFF6750A4;
+  /// Default seed color (Material Purple).
+  static const int defaultSeedArgb = 0xFF6750A4;
 
   /// Parses `#RRGGBB`, `RRGGBB`, `#RGB`, or `RGB` into an ARGB int.
   ///
@@ -58,73 +62,18 @@ class GlobalSettings {
     final rgb = argb & 0x00FFFFFF;
     return '#${rgb.toRadixString(16).padLeft(6, '0').toUpperCase()}';
   }
+}
 
-  final AppThemeMode themeMode;
-
-  /// Seed color stored as ARGB int (`0xAARRGGBB`).
-  final int colorSchemeSeedArgb;
-
-  /// Preferred locale language code (e.g. `en`), or null to follow system.
-  final String? localeCode;
-
-  /// ICU date format pattern (e.g., 'yMd', 'yMMMd', 'yMMMMd')
-  final String dateFormatPattern;
-  final double textScaleFactor;
-  final bool onboardingCompleted;
-
-  /// Get a DateFormat instance for this settings' pattern and locale
-  DateFormat getDateFormat() {
-    return DateFormatPatterns.getFormat(
-      dateFormatPattern,
-      localeCode,
-    );
-  }
-
+/// Extension for JSON serialization (manual, not using json_serializable).
+extension GlobalSettingsJson on GlobalSettings {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'themeMode': themeMode.name,
-    'colorSchemeSeed': _argbToRgbHexWithHash(colorSchemeSeedArgb),
+    'colorSchemeSeed': GlobalSettings._argbToRgbHexWithHash(
+      colorSchemeSeedArgb,
+    ),
     'locale': localeCode,
     'dateFormatPattern': dateFormatPattern,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };
-
-  GlobalSettings copyWith({
-    AppThemeMode? themeMode,
-    int? colorSchemeSeedArgb,
-    String? localeCode,
-    String? dateFormatPattern,
-    double? textScaleFactor,
-    bool? onboardingCompleted,
-  }) {
-    return GlobalSettings(
-      themeMode: themeMode ?? this.themeMode,
-      colorSchemeSeedArgb: colorSchemeSeedArgb ?? this.colorSchemeSeedArgb,
-      localeCode: localeCode ?? this.localeCode,
-      dateFormatPattern: dateFormatPattern ?? this.dateFormatPattern,
-      textScaleFactor: textScaleFactor ?? this.textScaleFactor,
-      onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is GlobalSettings &&
-        other.themeMode == themeMode &&
-        other.colorSchemeSeedArgb == colorSchemeSeedArgb &&
-        other.localeCode == localeCode &&
-        other.dateFormatPattern == dateFormatPattern &&
-        other.textScaleFactor == textScaleFactor &&
-        other.onboardingCompleted == onboardingCompleted;
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    themeMode,
-    colorSchemeSeedArgb,
-    localeCode,
-    dateFormatPattern,
-    textScaleFactor,
-    onboardingCompleted,
-  );
 }

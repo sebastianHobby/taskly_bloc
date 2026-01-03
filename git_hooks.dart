@@ -184,36 +184,63 @@ Future<bool> _checkUnsafeTests() async {
       if (!fileObj.existsSync()) continue;
 
       final content = fileObj.readAsStringSync();
-
-      // Only check files that use pumpAndSettle - these are at risk of hanging
-      final usesPumpAndSettle = content.contains('pumpAndSettle');
-      if (!usesPumpAndSettle) continue;
-
       final lines = content.split('\n');
 
-      for (var i = 0; i < lines.length; i++) {
-        final line = lines[i];
-        // Check for testWidgets( that is NOT testWidgetsSafe(
-        // Only in files using pumpAndSettle (which can hang with streams)
-        if (line.contains('testWidgets(') &&
-            !line.contains('testWidgetsSafe(') &&
-            !line.contains('// safe:')) {
-          print(
-            '   ⚠️  $file:${i + 1}: Use testWidgetsSafe() instead of testWidgets()',
-          );
-          hasUnsafe = true;
+      // Check 1: testWidgets + pumpAndSettle (widget tests at risk of hanging)
+      final usesPumpAndSettle = content.contains('pumpAndSettle');
+      if (usesPumpAndSettle) {
+        for (var i = 0; i < lines.length; i++) {
+          final line = lines[i];
+          // Check for testWidgets( that is NOT testWidgetsSafe(
+          if (line.contains('testWidgets(') &&
+              !line.contains('testWidgetsSafe(') &&
+              !line.contains('// safe:')) {
+            print(
+              '   ⚠️  $file:${i + 1}: Use testWidgetsSafe() instead of testWidgets()',
+            );
+            hasUnsafe = true;
+          }
+        }
+      }
+
+      // Check 2: async test() + StreamController (unit tests at risk of hanging)
+      final usesStreamController = content.contains('StreamController');
+      if (usesStreamController) {
+        // Regex to find async tests: test('...', () async {
+        final asyncTestPattern = RegExp(r"^\s*test\s*\(\s*'");
+        for (var i = 0; i < lines.length; i++) {
+          final line = lines[i];
+          // Check for test( that is NOT testSafe( in files with StreamController
+          if (asyncTestPattern.hasMatch(line) &&
+              !line.contains('testSafe(') &&
+              !line.contains('// safe:')) {
+            // Look ahead to see if this test is async
+            final nextLines = lines
+                .skip(i)
+                .take(3)
+                .join('\n'); // Check next 3 lines
+            if (nextLines.contains('async')) {
+              print(
+                '   ⚠️  $file:${i + 1}: Use testSafe() instead of test() for async tests with streams',
+              );
+              hasUnsafe = true;
+            }
+          }
         }
       }
     }
 
     if (hasUnsafe) {
-      print('   ❌ Found testWidgets() in files using pumpAndSettle().');
-      print('   This combination can hang indefinitely with BLoC streams.');
+      print('   ❌ Found unsafe test patterns.');
+      print('   These combinations can hang indefinitely with BLoC streams.');
       print(
         '   Replace testWidgets() with testWidgetsSafe() from test_helpers.dart',
       );
       print(
-        '   Or add "// safe:" comment if pumpAndSettle is not used in that test.',
+        '   Replace test() with testSafe() for async tests using streams',
+      );
+      print(
+        '   Or add "// safe:" comment if you\'re certain the test cannot hang.',
       );
       return false;
     }

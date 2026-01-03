@@ -520,16 +520,15 @@ Fix all errors and warnings.
 - [ ] Settings page shows 5 persona cards
 - [ ] Selecting persona updates `AllocationConfig.persona`
 - [ ] Selecting persona applies `StrategySettings.forPersona()` preset
-- [ ] Selecting Idealist sets `urgentTaskBehavior` to `ignore`
+- [ ] Selecting Idealist sets `urgentTaskBehavior` to `ignore` (no urgency impact)
 - [ ] Selecting Reflector enables neglect weighting with preset values
-- [ ] Selecting Realist sets `urgentTaskBehavior` to `warnOnly` (no urgency boost)
-- [ ] Selecting Guardian sets `urgencyBoostMultiplier` to `1.5`
-- [ ] Selecting Firefighter sets `urgentTaskBehavior` to `includeAll`
+- [ ] Selecting Realist sets `urgentTaskBehavior` to `warnOnly` with `urgencyBoostMultiplier` of `1.5`
+- [ ] Selecting Firefighter sets `urgentTaskBehavior` to `includeAll` with `urgencyBoostMultiplier` of `2.0`
 - [ ] Selecting Custom preserves existing strategy values
 - [ ] **Auto-switch**: Modifying ANY setting while on a persona switches to Custom
 - [ ] **Auto-switch**: Snackbar or feedback shown when auto-switching to Custom
-- [ ] Threshold inputs update `config.strategy` settings
-- [ ] Display toggle switches update `config.display` settings
+- [ ] Threshold inputs update `config.strategySettings` settings
+- [ ] Display toggle switches update `config.displaySettings` settings
 - [ ] Daily limit input updates `config.dailyLimit`
 - [ ] Advanced section only visible when Custom selected
 - [ ] All UI strings use `context.l10n`

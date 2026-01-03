@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_list_bloc.dart';
 
 class MockLabelRepositoryContract extends Mock
@@ -25,6 +28,7 @@ void main() {
       registerFallbackValue(const SortPreferences(criteria: []));
       registerFallbackValue(LabelType.label);
       registerFallbackValue(PageKey.labelOverview);
+      registerFallbackValue(SettingsKey.pageSort(PageKey.labelOverview));
     });
 
     setUp(() {
@@ -39,10 +43,10 @@ void main() {
         () => mockLabelRepository.watchByType(any()),
       ).thenAnswer((_) => labelsController.stream);
       when(
-        () => mockSettingsRepository.loadPageSort(any()),
+        () => mockSettingsRepository.load<SortPreferences?>(any()),
       ).thenAnswer((_) async => null);
       when(
-        () => mockSettingsRepository.savePageSort(any(), any()),
+        () => mockSettingsRepository.save<SortPreferences?>(any(), any()),
       ).thenAnswer((_) async {});
       when(() => mockLabelRepository.delete(any())).thenAnswer((_) async {});
     });
@@ -88,7 +92,7 @@ void main() {
     });
 
     group('LabelOverviewSubscriptionRequested', () {
-      test('calls watchAll when no type filter', () async {
+      testSafe('calls watchAll when no type filter', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -100,7 +104,7 @@ void main() {
         await bloc.close();
       });
 
-      test('calls watchByType when type filter is set', () async {
+      testSafe('calls watchByType when type filter is set', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
           typeFilter: LabelType.value,
@@ -115,7 +119,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits loaded state when labels are received', () async {
+      testSafe('emits loaded state when labels are received', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -135,7 +139,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits error state when stream errors', () async {
+      testSafe('emits error state when stream errors', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -150,7 +154,7 @@ void main() {
         await bloc.close();
       });
 
-      test('loads saved sort preferences from settings', () async {
+      testSafe('loads saved sort preferences from settings', () async {
         const savedSort = SortPreferences(
           criteria: [
             SortCriterion(
@@ -160,7 +164,9 @@ void main() {
           ],
         );
         when(
-          () => mockSettingsRepository.loadPageSort(PageKey.labelOverview),
+          () => mockSettingsRepository.load<SortPreferences?>(
+            SettingsKey.pageSort(PageKey.labelOverview),
+          ),
         ).thenAnswer((_) async => savedSort);
 
         final bloc = LabelOverviewBloc(
@@ -173,7 +179,9 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         verify(
-          () => mockSettingsRepository.loadPageSort(PageKey.labelOverview),
+          () => mockSettingsRepository.load<SortPreferences?>(
+            SettingsKey.pageSort(PageKey.labelOverview),
+          ),
         ).called(1);
         expect(
           bloc.currentSortPreferences.criteria.first.direction,
@@ -184,7 +192,7 @@ void main() {
     });
 
     group('sorting', () {
-      test('sorts labels by name ascending by default', () async {
+      testSafe('sorts labels by name ascending by default', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -205,38 +213,41 @@ void main() {
         await bloc.close();
       });
 
-      test('sorts labels by name descending when preference is set', () async {
-        final bloc = LabelOverviewBloc(
-          labelRepository: mockLabelRepository,
-          initialSortPreferences: const SortPreferences(
-            criteria: [
-              SortCriterion(
-                field: SortField.name,
-                direction: SortDirection.descending,
-              ),
-            ],
-          ),
-        );
+      testSafe(
+        'sorts labels by name descending when preference is set',
+        () async {
+          final bloc = LabelOverviewBloc(
+            labelRepository: mockLabelRepository,
+            initialSortPreferences: const SortPreferences(
+              criteria: [
+                SortCriterion(
+                  field: SortField.name,
+                  direction: SortDirection.descending,
+                ),
+              ],
+            ),
+          );
 
-        bloc.add(const LabelOverviewSubscriptionRequested());
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const LabelOverviewSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([
-          createLabel(id: '1', name: 'Apple'),
-          createLabel(id: '2', name: 'Zebra'),
-          createLabel(id: '3', name: 'Mango'),
-        ]);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+          labelsController.add([
+            createLabel(id: '1', name: 'Apple'),
+            createLabel(id: '2', name: 'Zebra'),
+            createLabel(id: '3', name: 'Mango'),
+          ]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        final loadedState = bloc.state as LabelOverviewLoaded;
-        final names = loadedState.labels.map((l) => l.name).toList();
-        expect(names, ['Zebra', 'Mango', 'Apple']);
-        await bloc.close();
-      });
+          final loadedState = bloc.state as LabelOverviewLoaded;
+          final names = loadedState.labels.map((l) => l.name).toList();
+          expect(names, ['Zebra', 'Mango', 'Apple']);
+          await bloc.close();
+        },
+      );
     });
 
     group('LabelsSortChanged', () {
-      test('re-sorts labels with new preferences', () async {
+      testSafe('re-sorts labels with new preferences', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -271,7 +282,7 @@ void main() {
         await bloc.close();
       });
 
-      test('persists sort preferences to settings', () async {
+      testSafe('persists sort preferences to settings', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
           settingsRepository: mockSettingsRepository,
@@ -296,15 +307,15 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         verify(
-          () => mockSettingsRepository.savePageSort(
-            PageKey.labelOverview,
+          () => mockSettingsRepository.save<SortPreferences?>(
+            SettingsKey.pageSort(PageKey.labelOverview),
             newSort,
           ),
         ).called(1);
         await bloc.close();
       });
 
-      test('does nothing when state is not loaded', () async {
+      testSafe('does nothing when state is not loaded', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -331,7 +342,7 @@ void main() {
     });
 
     group('LabelOverviewDeleteLabel', () {
-      test('calls delete on repository', () async {
+      testSafe('calls delete on repository', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );
@@ -350,7 +361,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits error on delete failure', () async {
+      testSafe('emits error on delete failure', () async {
         when(
           () => mockLabelRepository.delete(any()),
         ).thenThrow(Exception('Delete failed'));
@@ -375,7 +386,7 @@ void main() {
     });
 
     group('lifecycle', () {
-      test('closes cleanly', () async {
+      testSafe('closes cleanly', () async {
         final bloc = LabelOverviewBloc(
           labelRepository: mockLabelRepository,
         );

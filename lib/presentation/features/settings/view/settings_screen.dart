@@ -10,6 +10,7 @@ import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
@@ -35,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: const Text('Settings'),
       ),
       body: StreamBuilder<GlobalSettings>(
-        stream: _settingsRepo.watchGlobalSettings(),
+        stream: _settingsRepo.watch(SettingsKey.global),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
@@ -143,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         selected: {settings.themeMode},
         onSelectionChanged: (Set<AppThemeMode> newSelection) async {
           final updated = settings.copyWith(themeMode: newSelection.first);
-          await _settingsRepo.saveGlobalSettings(updated);
+          await _settingsRepo.save(SettingsKey.global, updated);
         },
       ),
     );
@@ -156,7 +157,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: Color(settings.colorSchemeSeedArgb),
         onColorChanged: (color) async {
           final updated = settings.copyWith(colorSchemeSeedArgb: color.value);
-          await _settingsRepo.saveGlobalSettings(updated);
+          await _settingsRepo.save(SettingsKey.global, updated);
         },
         label: 'Theme Color',
         showMaterialName: true,
@@ -175,7 +176,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         label: '${(settings.textScaleFactor * 100).round()}%',
         onChanged: (value) async {
           final updated = settings.copyWith(textScaleFactor: value);
-          await _settingsRepo.saveGlobalSettings(updated);
+          await _settingsRepo.save(SettingsKey.global, updated);
         },
       ),
       trailing: Text(
@@ -206,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
         onChanged: (localeCode) async {
           final updated = settings.copyWith(localeCode: localeCode);
-          await _settingsRepo.saveGlobalSettings(updated);
+          await _settingsRepo.save(SettingsKey.global, updated);
         },
       ),
     );
@@ -234,7 +235,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         onChanged: (pattern) async {
           if (pattern != null) {
             final updated = settings.copyWith(dateFormatPattern: pattern);
-            await _settingsRepo.saveGlobalSettings(updated);
+            await _settingsRepo.save(SettingsKey.global, updated);
           }
         },
       ),
@@ -424,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     if ((confirmed ?? false) && mounted) {
-      await _settingsRepo.saveGlobalSettings(const GlobalSettings());
+      await _settingsRepo.save(SettingsKey.global, const GlobalSettings());
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Settings reset to defaults')),

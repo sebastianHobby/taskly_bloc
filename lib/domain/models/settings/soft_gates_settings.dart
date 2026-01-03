@@ -1,9 +1,18 @@
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'soft_gates_settings.freezed.dart';
+
 /// Settings controlling workflow-run soft gates (warnings).
-class SoftGatesSettings {
-  const SoftGatesSettings({
-    this.urgentDeadlineWithinDays = 7,
-    this.staleAfterDaysWithoutUpdates = 30,
-  });
+@freezed
+abstract class SoftGatesSettings with _$SoftGatesSettings {
+  const factory SoftGatesSettings({
+    /// A task is urgent when its deadline is due within this many days
+    /// (or overdue).
+    @Default(7) int urgentDeadlineWithinDays,
+
+    /// A task is stale when it has not been updated within this many days.
+    @Default(30) int staleAfterDaysWithoutUpdates,
+  }) = _SoftGatesSettings;
 
   factory SoftGatesSettings.fromJson(Map<String, dynamic> json) {
     int clampPositiveInt(Object? value, int fallback) {
@@ -23,39 +32,12 @@ class SoftGatesSettings {
       ),
     );
   }
+}
 
-  /// A task is urgent when its deadline is due within this many days
-  /// (or overdue).
-  final int urgentDeadlineWithinDays;
-
-  /// A task is stale when it has not been updated within this many days.
-  final int staleAfterDaysWithoutUpdates;
-
+/// Extension for JSON serialization.
+extension SoftGatesSettingsJson on SoftGatesSettings {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'urgentDeadlineWithinDays': urgentDeadlineWithinDays,
     'staleAfterDaysWithoutUpdates': staleAfterDaysWithoutUpdates,
   };
-
-  SoftGatesSettings copyWith({
-    int? urgentDeadlineWithinDays,
-    int? staleAfterDaysWithoutUpdates,
-  }) {
-    return SoftGatesSettings(
-      urgentDeadlineWithinDays:
-          urgentDeadlineWithinDays ?? this.urgentDeadlineWithinDays,
-      staleAfterDaysWithoutUpdates:
-          staleAfterDaysWithoutUpdates ?? this.staleAfterDaysWithoutUpdates,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is SoftGatesSettings &&
-        other.urgentDeadlineWithinDays == urgentDeadlineWithinDays &&
-        other.staleAfterDaysWithoutUpdates == staleAfterDaysWithoutUpdates;
-  }
-
-  @override
-  int get hashCode =>
-      Object.hash(urgentDeadlineWithinDays, staleAfterDaysWithoutUpdates);
 }
