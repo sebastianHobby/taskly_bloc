@@ -7,10 +7,12 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
@@ -27,14 +29,14 @@ void main() {
     late MockScreenDefinitionsRepositoryContract mockScreensRepository;
     late MockNavigationBadgeService mockBadgeService;
     late NavigationIconResolver iconResolver;
-    late StreamController<List<ScreenDefinition>> screensController;
+    late StreamController<List<ScreenWithPreferences>> screensController;
 
     setUpAll(() {
       initializeTalkerForTest();
       // Register fallback for ScreenDefinition used with any()
       final now = DateTime.now();
       registerFallbackValue(
-        ScreenDefinition(
+        DataDrivenScreenDefinition(
           id: 'fallback-id',
           screenKey: 'fallback',
           name: 'Fallback',
@@ -54,7 +56,8 @@ void main() {
       mockScreensRepository = MockScreenDefinitionsRepositoryContract();
       mockBadgeService = MockNavigationBadgeService();
       iconResolver = const NavigationIconResolver();
-      screensController = StreamController<List<ScreenDefinition>>.broadcast();
+      screensController =
+          StreamController<List<ScreenWithPreferences>>.broadcast();
 
       when(
         () => mockScreensRepository.watchAllScreens(),
@@ -66,17 +69,18 @@ void main() {
       await screensController.close();
     });
 
-    ScreenDefinition createScreen({
+    ScreenWithPreferences createScreen({
       required String id,
       required String screenKey,
       required String name,
       int sortOrder = 0,
       ScreenCategory category = ScreenCategory.workspace,
       bool isSystem = true,
+      bool isActive = true,
       String? iconName,
     }) {
       final now = DateTime.now();
-      return ScreenDefinition(
+      final screen = DataDrivenScreenDefinition(
         id: id,
         screenKey: screenKey,
         name: name,
@@ -89,9 +93,15 @@ void main() {
         createdAt: now,
         updatedAt: now,
         isSystem: isSystem,
-        sortOrder: sortOrder,
         category: category,
         iconName: iconName,
+      );
+      return ScreenWithPreferences(
+        screen: screen,
+        preferences: ScreenPreferences(
+          sortOrder: sortOrder,
+          isActive: isActive,
+        ),
       );
     }
 

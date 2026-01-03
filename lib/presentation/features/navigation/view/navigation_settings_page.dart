@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/screen_order_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -59,7 +59,7 @@ class _NavigationSettingsView extends StatelessWidget {
 class _ReadyState extends StatelessWidget {
   const _ReadyState({required this.screens, required this.onReorder});
 
-  final List<ScreenDefinition> screens;
+  final List<ScreenWithPreferences> screens;
   final void Function(int oldIndex, int newIndex) onReorder;
 
   @override
@@ -73,7 +73,8 @@ class _ReadyState extends StatelessWidget {
             itemCount: screens.length,
             onReorder: onReorder,
             itemBuilder: (context, index) {
-              final screen = screens[index];
+              final screenWithPrefs = screens[index];
+              final screen = screenWithPrefs.screen;
               final iconSet = _iconResolver.resolve(
                 screenId: screen.screenKey,
                 iconName: screen.iconName,

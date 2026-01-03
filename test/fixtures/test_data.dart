@@ -474,8 +474,8 @@ class TestData {
 
   // === Screens ===
 
-  /// Creates a screen definition for testing
-  static ScreenDefinition screenDefinition({
+  /// Creates a data-driven screen definition for testing
+  static DataDrivenScreenDefinition screenDefinition({
     String? id,
     String? screenKey,
     String name = 'Test Screen',
@@ -487,12 +487,10 @@ class TestData {
     DateTime? updatedAt,
     String? iconName,
     bool isSystem = false,
-    bool isActive = true,
-    int sortOrder = 0,
     ScreenCategory category = ScreenCategory.workspace,
   }) {
     final now = DateTime.now();
-    return ScreenDefinition(
+    return DataDrivenScreenDefinition(
       id: id ?? _nextId('screen'),
       screenKey: screenKey ?? 'screen-key-1',
       name: name,
@@ -510,8 +508,30 @@ class TestData {
       updatedAt: updatedAt ?? now,
       iconName: iconName,
       isSystem: isSystem,
-      isActive: isActive,
-      sortOrder: sortOrder,
+      category: category,
+    );
+  }
+
+  /// Creates a navigation-only screen definition for testing
+  static NavigationOnlyScreenDefinition navigationOnlyScreen({
+    String? id,
+    String? screenKey,
+    String name = 'Test Navigation Screen',
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? iconName,
+    bool isSystem = false,
+    ScreenCategory category = ScreenCategory.settings,
+  }) {
+    final now = DateTime.now();
+    return NavigationOnlyScreenDefinition(
+      id: id ?? _nextId('nav-screen'),
+      screenKey: screenKey ?? 'nav-screen-key-1',
+      name: name,
+      createdAt: createdAt ?? now,
+      updatedAt: updatedAt ?? now,
+      iconName: iconName,
+      isSystem: isSystem,
       category: category,
     );
   }

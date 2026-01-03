@@ -22,8 +22,6 @@ class ScreenDefinitions extends Table {
   BoolColumn get isSystem => boolean().withDefault(
     const Constant(false),
   )(); // System screens can't be deleted
-  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
-  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   TextColumn get category => textEnum<ScreenCategory>()
       .withDefault(const Constant('workspace'))
       .nullable()();
@@ -52,7 +50,7 @@ class ScreenDefinitions extends Table {
 
   @override
   List<Set<Column>>? get uniqueKeys => [
-    {userId, screenKey},
+    {screenKey}, // Unique per-device; Supabase enforces userId+screenKey
   ];
 }
 

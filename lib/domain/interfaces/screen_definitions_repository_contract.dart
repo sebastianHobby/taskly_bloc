@@ -1,51 +1,73 @@
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 
-/// Repository contract for managing screen definitions
+/// Repository contract for managing screen definitions.
 ///
-/// System screens are seeded to the database on user login with deterministic
-/// UUIDs. User preferences for screens (sortOrder, isActive) are stored
-/// alongside the screen definition. Custom user screens are also stored in
-/// the database.
+/// ## Architecture
+///
+/// Screens come from two sources:
+/// 1. **System screens**: Generated from code via [SystemScreenProvider].
+///    These are always available and don't require database storage.
+/// 2. **Custom screens**: User-created screens stored in the database.
+///
+/// User preferences (sortOrder, isActive) for ALL screens are stored in
+/// `AppSettings.screenPreferences` keyed by screenKey.
+///
+/// ## Why System Screens Are Code-Based
+///
+/// System screens are generated from code rather than stored in the database
+/// to avoid PowerSync sync conflicts. This ensures:
+/// - No V5 CONFLICT errors during seeding
+/// - System screens available immediately on app start
+/// - Template updates applied automatically
 abstract class ScreenDefinitionsRepositoryContract {
-  /// Watch all active screen definitions (system + custom screens).
-  Stream<List<ScreenDefinition>> watchAllScreens();
-
-  /// Watch all system screens.
-  Stream<List<ScreenDefinition>> watchSystemScreens();
-
-  /// Watch all user-created screens.
-  Stream<List<ScreenDefinition>> watchUserScreens();
-
-  /// Watch a specific screen by ID.
-  Stream<ScreenDefinition?> watchScreen(String id);
-
-  /// Watch a specific screen by screenKey (e.g., 'today', 'inbox').
+  /// Watch all active screens (system + custom), sorted by effective sortOrder.
   ///
-  /// Works for both system screens and custom screens.
-  Stream<ScreenDefinition?> watchScreenByScreenKey(String screenKey);
+  /// Combines system screens from [SystemScreenProvider] with custom screens
+  /// from the database, then applies preferences to determine visibility
+  /// and sort order.
+  Stream<List<ScreenWithPreferences>> watchAllScreens();
 
-  /// Seed system screens for a user.
+  /// Watch all system screens with preferences applied.
+  Stream<List<ScreenWithPreferences>> watchSystemScreens();
+
+  /// Watch all user-created (custom) screens from the database.
+  Stream<List<ScreenDefinition>> watchCustomScreens();
+
+  /// Watch a specific screen by screenKey.
   ///
-  /// Uses INSERT OR IGNORE so duplicate screens are safely skipped.
-  /// This is called on every login to ensure system screens exist.
-  Future<void> seedSystemScreens(List<ScreenDefinition> screens);
+  /// Returns system screen from code or custom screen from database.
+  Stream<ScreenWithPreferences?> watchScreen(String screenKey);
 
-  /// Create a new custom screen definition.
+  /// Create a new custom screen.
   ///
-  /// Cannot create system screens - they are seeded via [seedSystemScreens].
-  Future<String> createScreen(ScreenDefinition screen);
+  /// Check if a screenKey already exists (system or custom).
+  ///
+  /// Use this to validate before creating a custom screen.
+  Future<bool> screenKeyExists(String screenKey);
 
-  /// Update an existing screen definition.
-  Future<void> updateScreen(ScreenDefinition screen);
+  /// Cannot create system screens - they come from [SystemScreenProvider].
+  Future<String> createCustomScreen(ScreenDefinition screen);
 
-  /// Delete a screen definition.
+  /// Update an existing custom screen.
+  ///
+  /// Cannot update system screens - their definitions come from code.
+  Future<void> updateCustomScreen(ScreenDefinition screen);
+
+  /// Delete a custom screen.
   ///
   /// Cannot delete system screens.
-  Future<void> deleteScreen(String id);
+  Future<void> deleteCustomScreen(String screenKey);
 
-  /// Activate/deactivate a screen.
-  Future<void> setScreenActive(String screenKey, bool isActive);
+  /// Update preferences for any screen (system or custom).
+  ///
+  /// Preferences are stored in AppSettings.screenPreferences.
+  Future<void> updateScreenPreferences(
+    String screenKey,
+    ScreenPreferences preferences,
+  );
 
-  /// Reorder screens by screen keys.
+  /// Reorder screens by updating their sortOrder preferences.
   Future<void> reorderScreens(List<String> orderedScreenKeys);
 }

@@ -1,6 +1,7 @@
 export 'action.dart';
 export 'data_config.dart';
 export 'display_config.dart';
+export 'fab_operation.dart';
 export 'related_data_config.dart';
 export 'screen_category.dart';
 export 'screen_definition.dart';

@@ -267,9 +267,7 @@ class _FormBuilderLabelPickerModernState
     // Get the icon - emoji for values, colored label icon for labels
     final Widget icon;
     if (isValue) {
-      final emoji = label.iconName?.isNotEmpty ?? false
-          ? label.iconName!
-          : '❤️';
+      final emoji = label.iconName?.isNotEmpty ?? false ? label.iconName! : '⭐';
       icon = Text(
         emoji,
         style: EmojiUtils.emojiTextStyle(fontSize: 14),

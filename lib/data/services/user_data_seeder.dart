@@ -1,23 +1,29 @@
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/services/data_repair_service.dart';
 import 'package:taskly_bloc/data/services/system_label_seeder.dart';
-import 'package:taskly_bloc/data/services/system_screen_seeder.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 
 /// Service that seeds required user data after authentication.
 ///
-/// This ensures system labels and screens are created with proper user context.
+/// This ensures system labels are created with proper user context.
 /// Runs idempotently - safe to call multiple times.
+///
+/// Also runs [DataRepairService] first to fix any corrupted rows that may have
+/// been synced via PowerSync with NULL values in required columns.
+///
+/// NOTE: System screens are no longer seeded here. They are generated
+/// from code by [SystemScreenProvider] to avoid PowerSync sync conflicts.
 class UserDataSeeder implements UserDataSeederContract {
   UserDataSeeder({
     required LabelRepositoryContract labelRepository,
-    required ScreenDefinitionsRepositoryContract screenRepository,
+    required AppDatabase database,
   }) : _labelRepository = labelRepository,
-       _screenRepository = screenRepository;
+       _database = database;
 
   final LabelRepositoryContract _labelRepository;
-  final ScreenDefinitionsRepositoryContract _screenRepository;
+  final AppDatabase _database;
 
   /// Seeds all required user data.
   ///
@@ -34,6 +40,14 @@ class UserDataSeeder implements UserDataSeederContract {
     talker.serviceLog('UserDataSeeder', 'seedAll() START for user $userId');
 
     try {
+      // FIRST: Repair any corrupted rows before attempting to read/seed
+      // This fixes NULL values in required columns that would crash Drift
+      talker.serviceLog(
+        'UserDataSeeder',
+        'Running DataRepairService before seeding...',
+      );
+      await DataRepairService(_database).repairAll();
+
       // Seed system labels
       // Note: user_id is set automatically by Supabase/PowerSync
       talker.serviceLog(
@@ -45,13 +59,8 @@ class UserDataSeeder implements UserDataSeederContract {
       ).seedAll();
       talker.serviceLog('UserDataSeeder', 'System labels seeded successfully');
 
-      // Seed system screens
-      talker.serviceLog(
-        'UserDataSeeder',
-        'Calling SystemScreenSeeder.seedAll()...',
-      );
-      await SystemScreenSeeder(_screenRepository).seedAll(userId);
-      talker.serviceLog('UserDataSeeder', 'System screens seeded successfully');
+      // NOTE: System screens are now generated from code by SystemScreenProvider.
+      // No seeding needed - this avoids PowerSync V5 CONFLICT errors.
 
       talker.serviceLog('UserDataSeeder', 'seedAll() completed successfully');
     } catch (error, stackTrace) {

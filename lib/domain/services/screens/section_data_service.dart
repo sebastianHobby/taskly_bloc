@@ -1,13 +1,19 @@
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/value_stats.dart';
+import 'package:taskly_bloc/domain/models/settings/value_ranking.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
@@ -15,6 +21,7 @@ import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 
 /// Service for fetching data for screen sections.
@@ -29,17 +36,23 @@ class SectionDataService {
     required LabelRepositoryContract labelRepository,
     required AllocationOrchestrator allocationOrchestrator,
     WellbeingRepositoryContract? wellbeingRepository,
+    AnalyticsService? analyticsService,
+    SettingsRepositoryContract? settingsRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _labelRepository = labelRepository,
        _wellbeingRepository = wellbeingRepository,
-       _allocationOrchestrator = allocationOrchestrator;
+       _allocationOrchestrator = allocationOrchestrator,
+       _analyticsService = analyticsService,
+       _settingsRepository = settingsRepository;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
   final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
+  final AnalyticsService? _analyticsService;
+  final SettingsRepositoryContract? _settingsRepository;
 
   /// Fetch data for a section (one-time)
   Future<SectionDataResult> fetchSectionData(Section section) async {
@@ -51,10 +64,8 @@ class SectionDataService {
 
     try {
       final result = await switch (section) {
-        DataSection(:final config, :final relatedData) => _fetchDataSection(
-          config,
-          relatedData,
-        ),
+        DataSection(:final config, :final relatedData, :final enrichment) =>
+          _fetchDataSection(config, relatedData, enrichment),
         AllocationSection(:final sourceFilter, :final maxTasks) =>
           _fetchAllocationSection(sourceFilter, maxTasks),
         AgendaSection(
@@ -71,7 +82,7 @@ class SectionDataService {
       );
       talker.serviceLog(
         'SectionDataService',
-        'Primary entities: ${result.allTasks.length} tasks, ${result.allProjects.length} projects',
+        'Primary entities: ${result.primaryCount} items',
       );
       return result;
     } catch (e, st) {
@@ -83,10 +94,8 @@ class SectionDataService {
   /// Watch data for a section (returns a stream)
   Stream<SectionDataResult> watchSectionData(Section section) {
     return switch (section) {
-      DataSection(:final config, :final relatedData) => _watchDataSection(
-        config,
-        relatedData,
-      ),
+      DataSection(:final config, :final relatedData, :final enrichment) =>
+        _watchDataSection(config, relatedData, enrichment),
       AllocationSection(:final sourceFilter, :final maxTasks) =>
         _watchAllocationSection(sourceFilter, maxTasks),
       AgendaSection(
@@ -105,20 +114,28 @@ class SectionDataService {
   Future<SectionDataResult> _fetchDataSection(
     DataConfig config,
     List<RelatedDataConfig> relatedData,
+    EnrichmentConfig? enrichmentConfig,
   ) async {
     final (entities, entityType) = await _fetchPrimaryEntities(config);
     final related = await _fetchRelatedData(entities, entityType, relatedData);
+    final enrichment = await _computeEnrichment(
+      enrichmentConfig,
+      entities,
+      entityType,
+    );
 
     return SectionDataResult.data(
       primaryEntities: entities,
       primaryEntityType: entityType,
       relatedEntities: related,
+      enrichment: enrichment,
     );
   }
 
   Stream<SectionDataResult> _watchDataSection(
     DataConfig config,
     List<RelatedDataConfig> relatedData,
+    EnrichmentConfig? enrichmentConfig,
   ) async* {
     await for (final entities in _watchPrimaryEntities(config)) {
       final entityType = _getEntityType(config);
@@ -127,11 +144,17 @@ class SectionDataService {
         entityType,
         relatedData,
       );
+      final enrichment = await _computeEnrichment(
+        enrichmentConfig,
+        entities,
+        entityType,
+      );
 
       yield SectionDataResult.data(
         primaryEntities: entities,
         primaryEntityType: entityType,
         relatedEntities: related,
+        enrichment: enrichment,
       );
     }
   }
@@ -590,5 +613,140 @@ class SectionDataService {
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  // ===========================================================================
+  // ENRICHMENT COMPUTATION
+  // ===========================================================================
+
+  /// Compute enrichment data based on the requested config.
+  ///
+  /// Returns null if no enrichment was requested or if the required
+  /// services are not available.
+  Future<EnrichmentResult?> _computeEnrichment(
+    EnrichmentConfig? config,
+    List<dynamic> entities,
+    String entityType,
+  ) async {
+    if (config == null) return null;
+
+    return switch (config) {
+      ValueStatsEnrichment(:final sparklineWeeks, :final gapWarningThreshold) =>
+        _computeValueStatsEnrichment(
+          entities,
+          entityType,
+          sparklineWeeks,
+          gapWarningThreshold,
+        ),
+    };
+  }
+
+  /// Compute value statistics enrichment.
+  ///
+  /// Requires analytics service and settings repository to be available.
+  Future<EnrichmentResult?> _computeValueStatsEnrichment(
+    List<dynamic> entities,
+    String entityType,
+    int sparklineWeeks,
+    int gapWarningThreshold,
+  ) async {
+    // Only compute for value entities
+    if (entityType != 'value') {
+      talker.warning(
+        '[SectionDataService] ValueStats enrichment requested for non-value '
+        'entity type: $entityType',
+      );
+      return null;
+    }
+
+    // Check required services are available
+    if (_analyticsService == null || _settingsRepository == null) {
+      talker.warning(
+        '[SectionDataService] Cannot compute ValueStats enrichment: '
+        'analyticsService=${_analyticsService != null}, '
+        'settingsRepository=${_settingsRepository != null}',
+      );
+      return null;
+    }
+
+    try {
+      // Fetch all required data in parallel
+      final results = await Future.wait([
+        _analyticsService.getValueWeeklyTrends(weeks: sparklineWeeks),
+        _analyticsService.getValueActivityStats(),
+        _analyticsService.getRecentCompletionsByValue(
+          days: sparklineWeeks * 7,
+        ),
+        _analyticsService.getTotalRecentCompletions(days: sparklineWeeks * 7),
+        _analyticsService.getOrphanTaskCount(),
+        _settingsRepository.load(SettingsKey.valueRanking),
+      ]);
+
+      final weeklyTrends = results[0] as Map<String, List<double>>;
+      final activityStats = results[1] as Map<String, ValueActivityStats>;
+      final recentCompletions = results[2] as Map<String, int>;
+      final totalRecentCompletions = results[3] as int;
+      final unassignedTaskCount = results[4] as int;
+      final valueRanking = results[5] as ValueRanking;
+
+      // Calculate total weight for percentage calculation
+      final totalWeight = valueRanking.items.fold<int>(
+        0,
+        (sum, item) => sum + item.weight,
+      );
+
+      // Build stats map for each value
+      final statsByValueId = <String, ValueStats>{};
+      final values = entities.cast<Label>();
+
+      for (final value in values) {
+        // Find ranking item for this value
+        final rankItem = valueRanking.items.firstWhere(
+          (item) => item.labelId == value.id,
+          orElse: () => ValueRankItem(labelId: value.id, weight: 5),
+        );
+
+        // Calculate target percent from ranking weight
+        final targetPercent = totalWeight > 0
+            ? (rankItem.weight / totalWeight) * 100
+            : 0.0;
+
+        // Calculate actual percent from recent completions
+        final actualPercent = totalRecentCompletions > 0
+            ? ((recentCompletions[value.id] ?? 0) / totalRecentCompletions) *
+                  100
+            : 0.0;
+
+        // Get weekly trend data
+        final weeklyTrend = weeklyTrends[value.id] ?? [];
+
+        // Get activity stats
+        final activity =
+            activityStats[value.id] ??
+            const ValueActivityStats(taskCount: 0, projectCount: 0);
+
+        statsByValueId[value.id] = ValueStats(
+          targetPercent: targetPercent,
+          actualPercent: actualPercent,
+          taskCount: activity.taskCount,
+          projectCount: activity.projectCount,
+          weeklyTrend: weeklyTrend,
+          gapWarningThreshold: gapWarningThreshold,
+        );
+      }
+
+      return EnrichmentResult.valueStats(
+        statsByValueId: statsByValueId,
+        totalRecentCompletions: totalRecentCompletions,
+        unassignedTaskCount: unassignedTaskCount,
+      );
+    } catch (e, st) {
+      talker.handle(
+        e,
+        st,
+        '[SectionDataService] Failed to compute value stats enrichment',
+      );
+      return null;
+    }
   }
 }

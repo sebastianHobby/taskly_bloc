@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/features/labels/widgets/add_label_fab.dart';
+import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
@@ -147,7 +156,48 @@ class _LoadedView extends StatelessWidget {
           entityActionService: entityActionService,
         ),
       ),
+      floatingActionButton: _buildFab(context),
     );
+  }
+
+  /// Builds FAB based on screen definition's fabOperations.
+  Widget? _buildFab(BuildContext context) {
+    final operations = data.definition.fabOperations;
+
+    // No FAB if no operations defined
+    if (operations.isEmpty) return null;
+
+    // Single operation = single FAB
+    // TODO: Support multiple operations with SpeedDial in future
+    return _buildSingleFab(context, operations.first);
+  }
+
+  Widget _buildSingleFab(BuildContext context, FabOperation operation) {
+    return switch (operation) {
+      FabOperation.createTask => AddTaskFab(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        labelRepository: getIt<LabelRepositoryContract>(),
+      ),
+      FabOperation.createProject => AddProjectFab(
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        labelRepository: getIt<LabelRepositoryContract>(),
+      ),
+      FabOperation.createLabel => AddLabelFab(
+        labelRepository: getIt<LabelRepositoryContract>(),
+        initialType: LabelType.label,
+        lockType: false,
+        tooltip: context.l10n.createLabelTooltip,
+        heroTag: 'create_label_fab',
+      ),
+      FabOperation.createValue => AddLabelFab(
+        labelRepository: getIt<LabelRepositoryContract>(),
+        initialType: LabelType.value,
+        lockType: true,
+        tooltip: context.l10n.createValueTooltip,
+        heroTag: 'create_value_fab',
+      ),
+    };
   }
 }
 

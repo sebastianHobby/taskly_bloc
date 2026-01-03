@@ -7,6 +7,7 @@ import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -23,7 +24,7 @@ class NavigationStarted extends NavigationEvent {
 class NavigationScreensChanged extends NavigationEvent {
   const NavigationScreensChanged(this.screens);
 
-  final List<ScreenDefinition> screens;
+  final List<ScreenWithPreferences> screens;
 }
 
 class NavigationFailed extends NavigationEvent {
@@ -82,7 +83,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   final NavigationIconResolver _iconResolver;
   final String Function(String screenId) _routeBuilder;
 
-  StreamSubscription<List<ScreenDefinition>>? _screensSub;
+  StreamSubscription<List<ScreenWithPreferences>>? _screensSub;
 
   Future<void> _onStarted(
     NavigationStarted event,
@@ -119,7 +120,8 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     }
   }
 
-  NavigationDestinationVm _mapScreen(ScreenDefinition screen) {
+  NavigationDestinationVm _mapScreen(ScreenWithPreferences screenWithPrefs) {
+    final screen = screenWithPrefs.screen;
     final iconSet = _iconResolver.resolve(
       screenId: screen.screenKey,
       iconName: screen.iconName,
@@ -134,7 +136,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       route: _buildRoute(screen),
       isSystem: screen.isSystem,
       badgeStream: _badgeService.badgeStreamFor(screen),
-      sortOrder: screen.sortOrder,
+      sortOrder: screenWithPrefs.effectiveSortOrder,
       category: screen.category,
     );
   }
@@ -159,6 +161,8 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       'allocation_settings' => '/tasks/next-actions/settings',
       'navigation_settings' => '/settings/navigation',
       'settings' => '/settings/app',
+      'workflows' => '/workflows',
+      'screen_management' => '/screens/manage',
       _ => _routeBuilder(screen.screenKey),
     };
     talker.debug('[NavigationBloc] -> direct route: $route');

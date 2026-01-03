@@ -4,8 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 
 @immutable
 abstract class ScreenOrderEvent {
@@ -19,7 +19,7 @@ class ScreenOrderStarted extends ScreenOrderEvent {
 class ScreenOrderScreensChanged extends ScreenOrderEvent {
   const ScreenOrderScreensChanged(this.screens);
 
-  final List<ScreenDefinition> screens;
+  final List<ScreenWithPreferences> screens;
 }
 
 class ScreenOrderReordered extends ScreenOrderEvent {
@@ -53,7 +53,7 @@ class ScreenOrderState {
       error = message;
 
   final ScreenOrderStatus status;
-  final List<ScreenDefinition> screens;
+  final List<ScreenWithPreferences> screens;
   final String? error;
 }
 
@@ -68,7 +68,7 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
   }
 
   final ScreenDefinitionsRepositoryContract _screensRepository;
-  StreamSubscription<List<ScreenDefinition>>? _sub;
+  StreamSubscription<List<ScreenWithPreferences>>? _sub;
 
   Future<void> _onStarted(
     ScreenOrderStarted event,
@@ -89,7 +89,7 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     Emitter<ScreenOrderState> emit,
   ) {
     final sorted = event.screens.toList()
-      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      ..sort((a, b) => a.effectiveSortOrder.compareTo(b.effectiveSortOrder));
     emit(ScreenOrderState.ready(screens: sorted));
   }
 
@@ -111,8 +111,10 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     emit(ScreenOrderState.ready(screens: current));
 
     try {
-      final orderedIds = current.map((s) => s.id).toList(growable: false);
-      await _screensRepository.reorderScreens(orderedIds);
+      final orderedKeys = current
+          .map((s) => s.screen.screenKey)
+          .toList(growable: false);
+      await _screensRepository.reorderScreens(orderedKeys);
     } catch (e, stack) {
       talker.handle(e, stack, 'Failed to reorder screens');
       emit(ScreenOrderState.failure(friendlyErrorMessage(e)));

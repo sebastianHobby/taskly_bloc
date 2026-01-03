@@ -38,7 +38,7 @@ class LabelForm extends StatefulWidget {
   final VoidCallback? onClose;
 
   static const _defaultColorHex = '#000000';
-  static const _defaultValueEmoji = '❤️';
+  static const _defaultValueEmoji = '⭐';
 
   @override
   State<LabelForm> createState() => _LabelFormState();

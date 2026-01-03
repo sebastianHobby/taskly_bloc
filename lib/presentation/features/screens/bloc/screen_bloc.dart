@@ -33,7 +33,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   final ScreenDataInterpreter _interpreter;
 
   StreamSubscription<void>? _dataSubscription;
-  ScreenDefinition? _currentDefinition;
+  DataDrivenScreenDefinition? _currentDefinition;
 
   Future<void> _onLoad(
     ScreenLoadEvent event,
@@ -41,10 +41,20 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   ) async {
     talker.blocLog('ScreenBloc', 'load: ${event.definition.id}');
 
-    _currentDefinition = event.definition;
-    emit(ScreenState.loading(definition: event.definition));
+    final definition = event.definition;
+    if (definition is! DataDrivenScreenDefinition) {
+      emit(
+        ScreenState.error(
+          message: 'Cannot render navigation-only screen: ${definition.name}',
+        ),
+      );
+      return;
+    }
 
-    await _subscribeToData(event.definition, emit);
+    _currentDefinition = definition;
+    emit(ScreenState.loading(definition: definition));
+
+    await _subscribeToData(definition, emit);
   }
 
   Future<void> _onLoadById(
@@ -56,11 +66,11 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     emit(const ScreenState.loading());
 
     try {
-      final definition = await _screenRepository
+      final screenWithPrefs = await _screenRepository
           .watchScreen(event.screenId)
           .first;
 
-      if (definition == null) {
+      if (screenWithPrefs == null) {
         emit(
           ScreenState.error(
             message: 'Screen not found: ${event.screenId}',
@@ -69,10 +79,20 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
         return;
       }
 
-      _currentDefinition = definition;
-      emit(ScreenState.loading(definition: definition));
+      final screen = screenWithPrefs.screen;
+      if (screen is! DataDrivenScreenDefinition) {
+        emit(
+          ScreenState.error(
+            message: 'Cannot render navigation-only screen: ${screen.name}',
+          ),
+        );
+        return;
+      }
 
-      await _subscribeToData(definition, emit);
+      _currentDefinition = screen;
+      emit(ScreenState.loading(definition: screen));
+
+      await _subscribeToData(screen, emit);
     } catch (e, st) {
       talker.handle(e, st, '[ScreenBloc] loadById failed');
       emit(
@@ -118,7 +138,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   }
 
   Future<void> _subscribeToData(
-    ScreenDefinition definition,
+    DataDrivenScreenDefinition definition,
     Emitter<ScreenState> emit,
   ) async {
     // Cancel existing subscription

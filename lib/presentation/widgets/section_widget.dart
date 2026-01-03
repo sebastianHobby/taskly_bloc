@@ -4,6 +4,9 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
+import 'package:taskly_bloc/domain/models/screens/value_stats.dart'
+    as domain_stats;
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
@@ -11,6 +14,10 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/presentation/features/projects/widgets/project_list_tile.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile.dart';
+import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 
@@ -115,16 +122,18 @@ class SectionWidget extends StatelessWidget {
         :final primaryEntities,
         :final primaryEntityType,
         :final relatedEntities,
+        :final enrichment,
       ) =>
         () {
           talker.debug(
-            '[SectionWidget] DataSectionResult: entityType=$primaryEntityType, count=${primaryEntities.length}, related=${relatedEntities.keys}',
+            '[SectionWidget] DataSectionResult: entityType=$primaryEntityType, count=${primaryEntities.length}, related=${relatedEntities.keys}, enrichment=${enrichment?.runtimeType}',
           );
           return _buildDataSection(
             context,
             primaryEntities,
             primaryEntityType,
             relatedEntities,
+            enrichment,
           );
         }(),
       final AllocationSectionResult result => () {
@@ -276,15 +285,12 @@ class SectionWidget extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final allocatedTask = pinnedTasks[index];
-              return _TaskListItem(
+              return TaskListTile(
                 task: allocatedTask.task,
                 onTap: onEntityTap != null
-                    ? () => onEntityTap!(allocatedTask.task.id, 'task')
-                    : () => EntityNavigator.toTask(
-                        context,
-                        allocatedTask.task.id,
-                      ),
-                onCheckboxChanged: onTaskCheckboxChanged,
+                    ? (_) => onEntityTap!(allocatedTask.task.id, 'task')
+                    : null,
+                onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
               );
             },
           ),
@@ -349,15 +355,12 @@ class SectionWidget extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final allocatedTask = group.tasks[index];
-              return _TaskListItem(
+              return TaskListTile(
                 task: allocatedTask.task,
                 onTap: onEntityTap != null
-                    ? () => onEntityTap!(allocatedTask.task.id, 'task')
-                    : () => EntityNavigator.toTask(
-                        context,
-                        allocatedTask.task.id,
-                      ),
-                onCheckboxChanged: onTaskCheckboxChanged,
+                    ? (_) => onEntityTap!(allocatedTask.task.id, 'task')
+                    : null,
+                onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
               );
             },
           ),
@@ -469,11 +472,16 @@ class SectionWidget extends StatelessWidget {
     List<dynamic> entities,
     String entityType,
     Map<String, List<dynamic>> relatedEntities,
+    EnrichmentResult? enrichment,
   ) {
     final primaryWidget = switch (entityType) {
       'task' => _buildTaskList(context, entities.cast<Task>()),
       'project' => _buildProjectList(context, entities.cast<Project>()),
-      'label' || 'value' => _buildLabelList(context, entities.cast<Label>()),
+      'label' || 'value' => _buildLabelList(
+        context,
+        entities.cast<Label>(),
+        enrichment,
+      ),
       _ => Padding(
         padding: const EdgeInsets.all(16),
         child: Text('Unknown entity type: $entityType'),
@@ -511,7 +519,7 @@ class SectionWidget extends StatelessWidget {
         _buildRelatedSection(
           context,
           title: 'Labels',
-          child: _buildLabelList(context, relatedLabels.cast<Label>()),
+          child: _buildLabelList(context, relatedLabels.cast<Label>(), null),
         ),
       );
     }
@@ -609,12 +617,10 @@ class SectionWidget extends StatelessWidget {
   }
 
   Widget _buildTaskItem(BuildContext context, Task task, bool enableSwipe) {
-    final item = _TaskListItem(
+    final item = TaskListTile(
       task: task,
-      onTap: onEntityTap != null
-          ? () => onEntityTap!(task.id, 'task')
-          : () => EntityNavigator.toTask(context, task.id),
-      onCheckboxChanged: onTaskCheckboxChanged,
+      onTap: onEntityTap != null ? (_) => onEntityTap!(task.id, 'task') : null,
+      onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
     );
 
     if (!enableSwipe || onTaskDelete == null) {
@@ -651,18 +657,22 @@ class SectionWidget extends StatelessWidget {
       itemCount: projects.length,
       itemBuilder: (context, index) {
         final project = projects[index];
-        return _ProjectListItem(
+        return ProjectListTile(
           project: project,
           onTap: onEntityTap != null
-              ? () => onEntityTap!(project.id, 'project')
-              : () => EntityNavigator.toProject(context, project.id),
-          onCheckboxChanged: onProjectCheckboxChanged,
+              ? (_) => onEntityTap!(project.id, 'project')
+              : null,
+          onCheckboxChanged: onProjectCheckboxChanged ?? (_, __) {},
         );
       },
     );
   }
 
-  Widget _buildLabelList(BuildContext context, List<Label> labels) {
+  Widget _buildLabelList(
+    BuildContext context,
+    List<Label> labels,
+    EnrichmentResult? enrichment,
+  ) {
     if (labels.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(16),
@@ -670,29 +680,92 @@ class SectionWidget extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: labels.map((label) {
-          return _LabelChip(
-            label: label,
-            onTap: onEntityTap != null
-                ? () => onEntityTap!(
-                    label.id,
-                    label.type == LabelType.value ? 'value' : 'label',
-                  )
-                : () {
-                    if (label.type == LabelType.value) {
-                      EntityNavigator.toValue(context, label.id);
-                    } else {
-                      EntityNavigator.toLabel(context, label.id);
-                    }
-                  },
-          );
-        }).toList(),
-      ),
+    // Separate labels and values
+    final regularLabels = labels
+        .where((l) => l.type == LabelType.label)
+        .toList();
+    final values = labels.where((l) => l.type == LabelType.value).toList();
+
+    // If mixed, show both sections
+    if (regularLabels.isNotEmpty && values.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLabelTileList(context, regularLabels),
+          const SizedBox(height: 16),
+          _buildValueCardList(context, values, enrichment),
+        ],
+      );
+    }
+
+    // Only labels
+    if (regularLabels.isNotEmpty) {
+      return _buildLabelTileList(context, regularLabels);
+    }
+
+    // Only values
+    return _buildValueCardList(context, values, enrichment);
+  }
+
+  /// Builds a list of label tiles for regular labels.
+  Widget _buildLabelTileList(BuildContext context, List<Label> labels) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: labels.length,
+      itemBuilder: (context, index) {
+        final label = labels[index];
+        return LabelListTile(
+          label: label,
+          onTap: onEntityTap != null
+              ? (_) => onEntityTap!(label.id, 'label')
+              : null,
+        );
+      },
+    );
+  }
+
+  /// Builds a list of enhanced value cards for values.
+  Widget _buildValueCardList(
+    BuildContext context,
+    List<Label> values,
+    EnrichmentResult? enrichment,
+  ) {
+    // Extract value stats from enrichment if available
+    final statsMap = switch (enrichment) {
+      ValueStatsEnrichmentResult(:final statsByValueId) => statsByValueId,
+      _ => <String, domain_stats.ValueStats>{},
+    };
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: values.length,
+      itemBuilder: (context, index) {
+        final value = values[index];
+        final domainStats = statsMap[value.id];
+
+        // Convert domain ValueStats to presentation ValueStats if available
+        final stats = domainStats != null
+            ? ValueStats(
+                targetPercent: domainStats.targetPercent,
+                actualPercent: domainStats.actualPercent,
+                taskCount: domainStats.taskCount,
+                projectCount: domainStats.projectCount,
+                weeklyTrend: domainStats.weeklyTrend,
+                gapWarningThreshold: domainStats.gapWarningThreshold,
+              )
+            : null;
+
+        return EnhancedValueCard.compact(
+          value: value,
+          rank: index + 1,
+          stats: stats,
+          onTap: onEntityTap != null
+              ? () => onEntityTap!(value.id, 'value')
+              : () => EntityNavigator.toValue(context, value.id),
+        );
+      },
     );
   }
 
@@ -719,114 +792,6 @@ class SectionWidget extends StatelessWidget {
           ],
         );
       }).toList(),
-    );
-  }
-}
-
-/// Simple task list item for section display
-class _TaskListItem extends StatelessWidget {
-  const _TaskListItem({
-    required this.task,
-    required this.onTap,
-    this.onCheckboxChanged,
-  });
-
-  final Task task;
-  final VoidCallback onTap;
-  final void Function(Task, bool?)? onCheckboxChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ListTile(
-      leading: Checkbox(
-        value: task.completed,
-        onChanged: onCheckboxChanged != null
-            ? (value) => onCheckboxChanged!(task, value)
-            : null,
-      ),
-      title: Text(
-        task.name,
-        style: task.completed
-            ? TextStyle(
-                decoration: TextDecoration.lineThrough,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              )
-            : null,
-      ),
-      subtitle: task.projectId != null ? const Text('Project task') : null,
-      onTap: onTap,
-    );
-  }
-}
-
-/// Simple project list item for section display
-class _ProjectListItem extends StatelessWidget {
-  const _ProjectListItem({
-    required this.project,
-    required this.onTap,
-    this.onCheckboxChanged,
-  });
-
-  final Project project;
-  final VoidCallback onTap;
-  final void Function(Project, bool?)? onCheckboxChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // Projects don't have a color field - use primary color
-    final projectColor = theme.colorScheme.primary;
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: projectColor,
-        radius: 16,
-        child: Text(
-          project.name.isNotEmpty ? project.name[0].toUpperCase() : '?',
-          style: const TextStyle(color: Colors.white, fontSize: 12),
-        ),
-      ),
-      title: Text(
-        project.name,
-        style: project.completed
-            ? TextStyle(
-                decoration: TextDecoration.lineThrough,
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-              )
-            : null,
-      ),
-      subtitle: project.description != null ? Text(project.description!) : null,
-      onTap: onTap,
-    );
-  }
-}
-
-/// Simple label chip for section display
-class _LabelChip extends StatelessWidget {
-  const _LabelChip({
-    required this.label,
-    required this.onTap,
-  });
-
-  final Label label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final labelColor = label.color != null
-        ? Color(int.parse(label.color!.replaceFirst('#', '0xFF')))
-        : theme.colorScheme.secondary;
-
-    return ActionChip(
-      avatar: CircleAvatar(
-        backgroundColor: labelColor,
-        radius: 8,
-      ),
-      label: Text(label.name),
-      onPressed: onTap,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// Modal showing detailed statistics for a value.
 class ValueDetailModal extends StatelessWidget {
@@ -63,18 +64,13 @@ class ValueDetailModal extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  if (value.color != null)
-                    Container(
-                      width: 16,
-                      height: 16,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: Color(
-                          int.parse(value.color!.replaceFirst('#', '0xFF')),
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                  Text(
+                    (value.iconName?.isNotEmpty ?? false)
+                        ? value.iconName!
+                        : '⭐',
+                    style: EmojiUtils.emojiTextStyle(fontSize: 28),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     value.name,
                     style: theme.textTheme.headlineSmall,

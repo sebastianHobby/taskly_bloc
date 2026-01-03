@@ -26,6 +26,7 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/data/features/screens/default_system_screen_provider.dart';
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/features/workflow/repositories/workflow_repository_impl.dart';
@@ -37,6 +38,7 @@ import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.d
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
@@ -127,20 +129,26 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<SettingsRepositoryContract>(
       () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
-    // Screens - thin wrapper over database implementation
+    // System screen provider - generates system screens from code
+    ..registerLazySingleton<SystemScreenProvider>(
+      () => DefaultSystemScreenProvider(getIt<IdGenerator>()),
+    )
+    // Screens - combines system screens from code + custom screens from DB
     ..registerLazySingleton<ScreenDefinitionsRepositoryContract>(
       () => ScreenDefinitionsRepository(
         databaseRepository: ScreenDefinitionsRepositoryImpl(
           getIt<AppDatabase>(),
           getIt<IdGenerator>(),
+          getIt<SystemScreenProvider>(),
+          getIt<SettingsRepositoryContract>(),
         ),
       ),
     )
-    // User data seeding service
+    // User data seeding service (also runs DataRepairService)
     ..registerLazySingleton<UserDataSeederContract>(
       () => UserDataSeeder(
         labelRepository: getIt<LabelRepositoryContract>(),
-        screenRepository: getIt<ScreenDefinitionsRepositoryContract>(),
+        database: getIt<AppDatabase>(),
       ),
     )
     ..registerLazySingleton<AllocationOrchestrator>(
@@ -151,12 +159,22 @@ Future<void> setupDependencies() async {
         analyticsService: getIt<AnalyticsService>(),
       ),
     )
+    // Entity action service for unified screen model
+    ..registerLazySingleton<EntityActionService>(
+      () => EntityActionService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+      ),
+    )
     ..registerLazySingleton<SectionDataService>(
       () => SectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         labelRepository: getIt<LabelRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        analyticsService: getIt<AnalyticsService>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
     // Analytics
@@ -205,14 +223,6 @@ Future<void> setupDependencies() async {
       () => ScreenDataInterpreter(
         sectionDataService: getIt<SectionDataService>(),
         supportBlockComputer: getIt<SupportBlockComputer>(),
-      ),
-    )
-    // EntityActionService - performs actions on entities from screens
-    ..registerLazySingleton<EntityActionService>(
-      () => EntityActionService(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
       ),
     )
     // Screen architecture services
