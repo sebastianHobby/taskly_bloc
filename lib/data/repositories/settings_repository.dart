@@ -1,15 +1,23 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/page_key.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 
-/// Repository for managing feature-specific application settings.
+/// Repository for managing application settings via [SettingsKey].
 ///
-/// Provides granular access to settings by feature, while managing
-/// persistence of the full settings document internally.
+/// Uses individual database columns for each settings type to enable
+/// PowerSync field-level sync (prevents cross-device conflicts).
+///
+/// ## Architecture
+/// Each settings type is stored in its own column:
+/// - globalSettings, allocationSettings, softGatesSettings, etc.
+/// - Each column syncs independently via PowerSync
+/// - Changing one setting type doesn't conflict with others
 ///
 /// ## Stream Pattern
 /// Uses the standard repository pattern aligned with TaskRepository,
@@ -22,14 +30,302 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   final AppDatabase driftDb;
 
-  static const AppSettings _defaultSettings = AppSettings();
+  // =========================================================================
+  // Public API (SettingsRepositoryContract)
+  // =========================================================================
 
-  /// Watch all profile rows ordered by updatedAt desc.
-  /// Returns a stream that automatically emits when the table changes.
+  @override
+  Stream<T> watch<T>(SettingsKey<T> key) {
+    return _profileStream.map((rows) {
+      final row = _latestRow(rows);
+      return _extractValue(key, row);
+    }).distinct();
+  }
+
+  @override
+  Future<T> load<T>(SettingsKey<T> key) async {
+    final row = await _selectProfile();
+    return _extractValue(key, row);
+  }
+
+  @override
+  Future<void> save<T>(SettingsKey<T> key, T value) async {
+    final profile = await _ensureProfile();
+    final companion = _buildCompanion(key, value, profile);
+    await (driftDb.update(
+      driftDb.userProfileTable,
+    )..where((row) => row.id.equals(profile.id))).write(companion);
+  }
+
+  // =========================================================================
+  // Key dispatch: extract value from row
+  // =========================================================================
+
+  T _extractValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
+    return switch (key) {
+      SettingsKey.global => _globalFromRow(row) as T,
+      SettingsKey.allocation => _allocationFromRow(row) as T,
+      SettingsKey.softGates => _softGatesFromRow(row) as T,
+      SettingsKey.nextActions => _nextActionsFromRow(row) as T,
+      SettingsKey.valueRanking => _valueRankingFromRow(row) as T,
+      SettingsKey.allScreenPrefs => _allScreenPrefsFromRow(row) as T,
+      SettingsKey.all => _rowToAppSettings(row) as T,
+      _ => _extractKeyedValue(key, row),
+    };
+  }
+
+  T _extractKeyedValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
+    // Handle keyed keys (pageSort, pageDisplay, screenPrefs)
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
+
+    return switch (name) {
+      'pageSort' => _pageSortFromRow(row, subKey) as T,
+      'pageDisplay' => _pageDisplayFromRow(row, subKey) as T,
+      'screenPrefs' => _screenPrefsFromRow(row, subKey) as T,
+      _ => throw ArgumentError('Unknown keyed key: $name'),
+    };
+  }
+
+  // =========================================================================
+  // Key dispatch: build companion for save
+  // =========================================================================
+
+  UserProfileTableCompanion _buildCompanion<T>(
+    SettingsKey<T> key,
+    T value,
+    UserProfileTableData profile,
+  ) {
+    final now = Value(DateTime.now());
+    return switch (key) {
+      SettingsKey.global => UserProfileTableCompanion(
+        globalSettings: Value(jsonEncode((value as GlobalSettings).toJson())),
+        updatedAt: now,
+      ),
+      SettingsKey.allocation => UserProfileTableCompanion(
+        allocationSettings: Value(
+          jsonEncode((value as AllocationSettings).toJson()),
+        ),
+        updatedAt: now,
+      ),
+      SettingsKey.softGates => UserProfileTableCompanion(
+        softGatesSettings: Value(
+          jsonEncode((value as SoftGatesSettings).toJson()),
+        ),
+        updatedAt: now,
+      ),
+      SettingsKey.nextActions => UserProfileTableCompanion(
+        nextActionsSettings: Value(
+          jsonEncode((value as NextActionsSettings).toJson()),
+        ),
+        updatedAt: now,
+      ),
+      SettingsKey.valueRanking => UserProfileTableCompanion(
+        valueRanking: Value(jsonEncode((value as ValueRanking).toJson())),
+        updatedAt: now,
+      ),
+      SettingsKey.allScreenPrefs => _buildAllScreenPrefsCompanion(
+        value as Map<String, ScreenPreferences>,
+        now,
+      ),
+      SettingsKey.all => throw UnsupportedError(
+        'Cannot save full AppSettings; save individual keys instead',
+      ),
+      _ => _buildKeyedCompanion(key, value, profile, now),
+    };
+  }
+
+  UserProfileTableCompanion _buildKeyedCompanion<T>(
+    SettingsKey<T> key,
+    T value,
+    UserProfileTableData profile,
+    Value<DateTime> now,
+  ) {
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
+
+    return switch (name) {
+      'pageSort' => _buildPageSortCompanion(
+        subKey,
+        value as SortPreferences?,
+        profile,
+        now,
+      ),
+      'pageDisplay' => _buildPageDisplayCompanion(
+        subKey,
+        value as PageDisplaySettings,
+        profile,
+        now,
+      ),
+      'screenPrefs' => _buildScreenPrefsCompanion(
+        subKey,
+        value as ScreenPreferences,
+        profile,
+        now,
+      ),
+      _ => throw ArgumentError('Unknown keyed key: $name'),
+    };
+  }
+
+  // =========================================================================
+  // Value extractors
+  // =========================================================================
+
+  GlobalSettings _globalFromRow(UserProfileTableData? row) {
+    if (row == null) return const GlobalSettings();
+    return GlobalSettings.fromJson(_parseJson(row.globalSettings));
+  }
+
+  AllocationSettings _allocationFromRow(UserProfileTableData? row) {
+    if (row == null) return const AllocationSettings();
+    return AllocationSettings.fromJson(_parseJson(row.allocationSettings));
+  }
+
+  SoftGatesSettings _softGatesFromRow(UserProfileTableData? row) {
+    if (row == null) return const SoftGatesSettings();
+    return SoftGatesSettings.fromJson(_parseJson(row.softGatesSettings));
+  }
+
+  NextActionsSettings _nextActionsFromRow(UserProfileTableData? row) {
+    if (row == null) return const NextActionsSettings();
+    return NextActionsSettings.fromJson(_parseJson(row.nextActionsSettings));
+  }
+
+  ValueRanking _valueRankingFromRow(UserProfileTableData? row) {
+    if (row == null) return const ValueRanking();
+    return ValueRanking.fromJson(_parseJson(row.valueRanking));
+  }
+
+  Map<String, ScreenPreferences> _allScreenPrefsFromRow(
+    UserProfileTableData? row,
+  ) {
+    if (row == null) return {};
+    return _parseScreenPreferences(row.screenPreferences);
+  }
+
+  SortPreferences? _pageSortFromRow(UserProfileTableData? row, String subKey) {
+    if (row == null) return null;
+    final prefs = _parsePageSortPreferences(row.pageSortPreferences);
+    return prefs[subKey];
+  }
+
+  PageDisplaySettings _pageDisplayFromRow(
+    UserProfileTableData? row,
+    String subKey,
+  ) {
+    if (row == null) return const PageDisplaySettings();
+    final settings = _parsePageDisplaySettings(row.pageDisplaySettings);
+    return settings[subKey] ?? const PageDisplaySettings();
+  }
+
+  ScreenPreferences _screenPrefsFromRow(
+    UserProfileTableData? row,
+    String subKey,
+  ) {
+    if (row == null) return const ScreenPreferences();
+    final prefs = _parseScreenPreferences(row.screenPreferences);
+    return prefs[subKey] ?? const ScreenPreferences();
+  }
+
+  AppSettings _rowToAppSettings(UserProfileTableData? row) {
+    if (row == null) return const AppSettings();
+    return AppSettings(
+      global: GlobalSettings.fromJson(_parseJson(row.globalSettings)),
+      allocation: AllocationSettings.fromJson(
+        _parseJson(row.allocationSettings),
+      ),
+      softGates: SoftGatesSettings.fromJson(_parseJson(row.softGatesSettings)),
+      nextActions: NextActionsSettings.fromJson(
+        _parseJson(row.nextActionsSettings),
+      ),
+      valueRanking: ValueRanking.fromJson(_parseJson(row.valueRanking)),
+      pageSortPreferences: _parsePageSortPreferences(row.pageSortPreferences),
+      pageDisplaySettings: _parsePageDisplaySettings(row.pageDisplaySettings),
+      screenPreferences: _parseScreenPreferences(row.screenPreferences),
+    );
+  }
+
+  // =========================================================================
+  // Companion builders for keyed settings
+  // =========================================================================
+
+  UserProfileTableCompanion _buildPageSortCompanion(
+    String subKey,
+    SortPreferences? value,
+    UserProfileTableData profile,
+    Value<DateTime> now,
+  ) {
+    final current = _parsePageSortPreferences(profile.pageSortPreferences);
+    if (value == null) {
+      current.remove(subKey);
+    } else {
+      current[subKey] = value;
+    }
+    final json = jsonEncode(
+      current.map((key, v) => MapEntry(key, v.toJson())),
+    );
+    return UserProfileTableCompanion(
+      pageSortPreferences: Value(json),
+      updatedAt: now,
+    );
+  }
+
+  UserProfileTableCompanion _buildPageDisplayCompanion(
+    String subKey,
+    PageDisplaySettings value,
+    UserProfileTableData profile,
+    Value<DateTime> now,
+  ) {
+    final current = _parsePageDisplaySettings(profile.pageDisplaySettings);
+    current[subKey] = value;
+    final json = jsonEncode(
+      current.map((key, v) => MapEntry(key, v.toJson())),
+    );
+    return UserProfileTableCompanion(
+      pageDisplaySettings: Value(json),
+      updatedAt: now,
+    );
+  }
+
+  UserProfileTableCompanion _buildScreenPrefsCompanion(
+    String subKey,
+    ScreenPreferences value,
+    UserProfileTableData profile,
+    Value<DateTime> now,
+  ) {
+    final current = _parseScreenPreferences(profile.screenPreferences);
+    current[subKey] = value;
+    final json = jsonEncode(
+      current.map((key, v) => MapEntry(key, v.toJson())),
+    );
+    return UserProfileTableCompanion(
+      screenPreferences: Value(json),
+      updatedAt: now,
+    );
+  }
+
+  UserProfileTableCompanion _buildAllScreenPrefsCompanion(
+    Map<String, ScreenPreferences> value,
+    Value<DateTime> now,
+  ) {
+    final json = jsonEncode(
+      value.map((key, v) => MapEntry(key, v.toJson())),
+    );
+    return UserProfileTableCompanion(
+      screenPreferences: Value(json),
+      updatedAt: now,
+    );
+  }
+
+  // =========================================================================
+  // Private helpers
+  // =========================================================================
+
   Stream<List<UserProfileTableData>> get _profileStream =>
       driftDb.select(driftDb.userProfileTable).watch();
 
-  /// Get the latest profile row by updatedAt, or null if none exists.
   Future<UserProfileTableData?> _selectProfile() {
     final query = driftDb.select(driftDb.userProfileTable)
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
@@ -37,278 +333,64 @@ class SettingsRepository implements SettingsRepositoryContract {
     return query.getSingleOrNull();
   }
 
-  /// Convert a profile row to AppSettings.
-  /// The TypeConverter already handles JSON deserialization.
-  AppSettings _fromRow(UserProfileTableData row) {
-    talker.repositoryLog(
-      'Settings',
-      '_fromRow: settings type=${row.settings.runtimeType}',
-    );
+  UserProfileTableData? _latestRow(List<UserProfileTableData> rows) {
+    if (rows.isEmpty) return null;
+    return rows.reduce((a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b);
+  }
+
+  Map<String, dynamic> _parseJson(String json) {
     try {
-      // TypeConverter.json2 already deserializes to AppSettings
-      final result = row.settings;
-      talker.repositoryLog('Settings', '_fromRow: success');
-      return result;
-    } catch (e, st) {
-      talker.databaseError('Settings._fromRow', e, st);
-      rethrow;
+      final parsed = jsonDecode(json);
+      return parsed is Map<String, dynamic> ? parsed : {};
+    } catch (e) {
+      talker.repositoryLog('Settings', '_parseJson error: $e');
+      return {};
     }
   }
 
-  /// Watch database for settings changes.
-  /// Pattern aligned with other repositories - direct stream mapping.
-  Stream<AppSettings> _watchDatabase() {
-    talker.repositoryLog('Settings', '_watchDatabase called');
-    return _profileStream.map((rows) {
-      talker.repositoryLog(
-        'Settings',
-        '_watchDatabase stream emission: ${rows.length} rows',
-      );
-      if (rows.isEmpty) {
-        talker.repositoryLog(
-          'Settings',
-          '_watchDatabase: no rows, returning defaults',
-        );
-        return _defaultSettings;
-      }
-      // Find the latest row by updatedAt
-      final latest = rows.reduce(
-        (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
-      );
-      talker.repositoryLog(
-        'Settings',
-        '_watchDatabase: found latest row id=${latest.id}',
-      );
-      return _fromRow(latest);
-    });
-  }
-
-  /// Save settings to database.
-  /// TypeConverter.json2 handles JSON serialization automatically.
-  Future<void> _saveToDatabase(AppSettings settings) async {
-    final now = DateTime.now();
+  Future<UserProfileTableData> _ensureProfile() async {
     final existing = await _selectProfile();
+    if (existing != null) return existing;
 
-    if (existing == null) {
-      await driftDb
-          .into(driftDb.userProfileTable)
-          .insert(
-            UserProfileTableCompanion.insert(
-              settings: settings,
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-      return;
-    }
+    final now = DateTime.now();
+    await driftDb
+        .into(driftDb.userProfileTable)
+        .insert(
+          UserProfileTableCompanion.insert(
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
+    return (await _selectProfile())!;
+  }
 
-    await (driftDb.update(
-      driftDb.userProfileTable,
-    )..where((row) => row.id.equals(existing.id))).write(
-      UserProfileTableCompanion(
-        settings: Value(settings),
-        updatedAt: Value(now),
+  Map<String, SortPreferences> _parsePageSortPreferences(String json) {
+    final map = _parseJson(json);
+    return map.map(
+      (key, value) => MapEntry(
+        key,
+        SortPreferences.fromJson(value as Map<String, dynamic>),
       ),
     );
   }
 
-  // Global Settings
-  @override
-  Stream<GlobalSettings> watchGlobalSettings() {
-    return _watchDatabase().map((appSettings) => appSettings.global).distinct();
-  }
-
-  @override
-  Future<GlobalSettings> loadGlobalSettings() async {
-    final settings = await loadAll();
-    return settings.global;
-  }
-
-  @override
-  Future<void> saveGlobalSettings(GlobalSettings settings) async {
-    final current = await loadAll();
-    final updated = current.updateGlobal(settings);
-    await _saveToDatabase(updated);
-  }
-
-  // Soft Gates Settings
-  @override
-  Stream<SoftGatesSettings> watchSoftGatesSettings() {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.softGates)
-        .distinct();
-  }
-
-  @override
-  Future<SoftGatesSettings> loadSoftGatesSettings() async {
-    final settings = await loadAll();
-    return settings.softGates;
-  }
-
-  @override
-  Future<void> saveSoftGatesSettings(SoftGatesSettings settings) async {
-    final current = await loadAll();
-    final updated = current.updateSoftGates(settings);
-    await _saveToDatabase(updated);
-  }
-
-  // Next Actions Settings
-  @override
-  Stream<NextActionsSettings> watchNextActionsSettings() {
-    // Note: Removed .distinct() - equality issues with complex nested objects
-    // (TaskPriorityBucketRule, TaskRuleSet, etc.) caused legitimate updates
-    // to be filtered out, preventing settings changes from propagating.
-    return _watchDatabase().map((appSettings) => appSettings.nextActions);
-  }
-
-  @override
-  Future<NextActionsSettings> loadNextActionsSettings() async {
-    final settings = await loadAll();
-    return settings.nextActions;
-  }
-
-  @override
-  Future<void> saveNextActionsSettings(NextActionsSettings settings) async {
-    final current = await loadAll();
-    final updated = current.updateNextActions(settings);
-    await _saveToDatabase(updated);
-  }
-
-  // Page Sort Preferences
-  @override
-  Stream<SortPreferences?> watchPageSort(PageKey pageKey) {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.sortFor(pageKey.key))
-        .distinct();
-  }
-
-  @override
-  Future<SortPreferences?> loadPageSort(PageKey pageKey) async {
-    final settings = await loadAll();
-    return settings.sortFor(pageKey.key);
-  }
-
-  @override
-  Future<void> savePageSort(
-    PageKey pageKey,
-    SortPreferences preferences,
-  ) async {
-    final current = await loadAll();
-    final updated = current.upsertPageSort(
-      pageKey: pageKey.key,
-      preferences: preferences,
+  Map<String, PageDisplaySettings> _parsePageDisplaySettings(String json) {
+    final map = _parseJson(json);
+    return map.map(
+      (key, value) => MapEntry(
+        key,
+        PageDisplaySettings.fromJson(value as Map<String, dynamic>),
+      ),
     );
-    await _saveToDatabase(updated);
   }
 
-  // Page Display Settings
-  @override
-  Stream<PageDisplaySettings> watchPageDisplaySettings(PageKey pageKey) {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.displaySettingsFor(pageKey.key))
-        .distinct();
-  }
-
-  @override
-  Future<PageDisplaySettings> loadPageDisplaySettings(PageKey pageKey) async {
-    final settings = await loadAll();
-    return settings.displaySettingsFor(pageKey.key);
-  }
-
-  @override
-  Future<void> savePageDisplaySettings(
-    PageKey pageKey,
-    PageDisplaySettings settings,
-  ) async {
-    final current = await loadAll();
-    final updated = current.upsertPageDisplaySettings(
-      pageKey: pageKey.key,
-      settings: settings,
+  Map<String, ScreenPreferences> _parseScreenPreferences(String json) {
+    final map = _parseJson(json);
+    return map.map(
+      (key, value) => MapEntry(
+        key,
+        ScreenPreferences.fromJson(value as Map<String, dynamic>),
+      ),
     );
-    await _saveToDatabase(updated);
-  }
-
-  // Screen Preferences (for system screen sortOrder/isActive)
-  @override
-  Stream<ScreenPreferences> watchScreenPreferences(String screenKey) {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.screenPreferencesFor(screenKey))
-        .distinct();
-  }
-
-  @override
-  Future<ScreenPreferences> loadScreenPreferences(String screenKey) async {
-    final settings = await loadAll();
-    return settings.screenPreferencesFor(screenKey);
-  }
-
-  @override
-  Future<void> saveScreenPreferences(
-    String screenKey,
-    ScreenPreferences preferences,
-  ) async {
-    final current = await loadAll();
-    final updated = current.upsertScreenPreferences(
-      screenKey: screenKey,
-      preferences: preferences,
-    );
-    await _saveToDatabase(updated);
-  }
-
-  @override
-  Stream<Map<String, ScreenPreferences>> watchAllScreenPreferences() {
-    return _watchDatabase().map((appSettings) => appSettings.screenPreferences);
-  }
-
-  // Allocation Settings
-  @override
-  Stream<AllocationSettings> watchAllocationSettings() {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.allocation)
-        .distinct();
-  }
-
-  @override
-  Future<AllocationSettings> loadAllocationSettings() async {
-    final settings = await loadAll();
-    return settings.allocation;
-  }
-
-  @override
-  Future<void> saveAllocationSettings(AllocationSettings settings) async {
-    final current = await loadAll();
-    final updated = current.updateAllocation(settings);
-    await _saveToDatabase(updated);
-  }
-
-  // Value Ranking
-  @override
-  Stream<ValueRanking> watchValueRanking() {
-    return _watchDatabase()
-        .map((appSettings) => appSettings.valueRanking)
-        .distinct();
-  }
-
-  @override
-  Future<ValueRanking> loadValueRanking() async {
-    final settings = await loadAll();
-    return settings.valueRanking;
-  }
-
-  @override
-  Future<void> saveValueRanking(ValueRanking ranking) async {
-    final current = await loadAll();
-    final updated = current.updateValueRanking(ranking);
-    await _saveToDatabase(updated);
-  }
-
-  // Full settings access (for migration/debugging)
-  @override
-  Stream<AppSettings> watchAll() => _watchDatabase();
-
-  @override
-  Future<AppSettings> loadAll() async {
-    final profile = await _selectProfile();
-    return profile != null ? _fromRow(profile) : _defaultSettings;
   }
 }

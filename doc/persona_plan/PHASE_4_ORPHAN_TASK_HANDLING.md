@@ -169,13 +169,25 @@ class OrphanTaskFooter extends StatelessWidget {
   }
 
   String _buildMessage(BuildContext context, int count) {
-    // TODO: Use context.l10n with pluralization
-    if (count == 1) {
-      return '1 task has no value assigned';
-    }
-    return '$count tasks have no value assigned';
+    return context.l10n.orphanTaskCount(count);
   }
 }
+```
+
+**Localization (ARB with ICU plural syntax):**
+
+```json
+// app_en.arb
+"orphanTaskCount": "{count, plural, =1{1 task has no value assigned} other{{count} tasks have no value assigned}}",
+"@orphanTaskCount": {
+  "placeholders": {
+    "count": { "type": "int" }
+  }
+}
+
+// app_es.arb  
+"orphanTaskCount": "{count, plural, =1{1 tarea no tiene valor asignado} other{{count} tareas no tienen valor asignado}}"
+```
 ```
 
 ---
@@ -234,7 +246,7 @@ Future<int> getOrphanTaskCount({bool excludeWithDeadline = false}) async {
 1. **Add state for orphan count** in BLoC or local state
 2. **Fetch orphan count** when page loads
 3. **Show footer** at bottom of page when:
-   - `settings.showOrphanTaskCount == true`
+   - `settings.displaySettings.showOrphanTaskCount == true`
    - `orphanCount > 0`
 4. **Handle "View" tap** - navigate to task list filtered by no value
 
@@ -244,7 +256,7 @@ Future<int> getOrphanTaskCount({bool excludeWithDeadline = false}) async {
 // In the build method, wrap content with Column or use bottomNavigationBar
 Scaffold(
   body: // ... existing Focus content
-  bottomSheet: state.settings.showOrphanTaskCount && state.orphanCount > 0
+  bottomSheet: state.config.displaySettings.showOrphanTaskCount && state.orphanCount > 0
     ? OrphanTaskFooter(
         orphanCount: state.orphanCount,
         onViewTap: () => _navigateToOrphanTasks(context),
@@ -254,16 +266,39 @@ Scaffold(
 
 void _navigateToOrphanTasks(BuildContext context) {
   // Navigate to task list with filter for tasks without values
-  // Implementation depends on existing navigation patterns
-  context.push('/tasks?filter=no-value');
-  // OR
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (_) => TaskListPage(
-        filter: TaskFilter.noValue,
-      ),
-    ),
+  // Use go_router with query parameter
+  context.push('/tasks', extra: {'filter': TaskFilter.noValue});
+}
+```
+
+### Navigation Target: `/tasks` with `noValue` filter
+
+The "View" button navigates to the existing task list page with a filter applied.
+
+**If task list supports filtering via route parameter:**
+```dart
+context.push('/tasks?filter=noValue');
+```
+
+**If task list uses BLoC-based filtering:**
+```dart
+void _navigateToOrphanTasks(BuildContext context) {
+  // Set filter in task list BLoC before navigation
+  context.read<TaskListBloc>().add(
+    const TaskListEvent.filterChanged(TaskFilter.noValue),
   );
+  context.push('/tasks');
+}
+```
+
+**Add `TaskFilter.noValue` if not exists:**
+```dart
+enum TaskFilter {
+  all,
+  today,
+  upcoming,
+  noValue,  // Tasks without a value assigned
+  // ...
 }
 ```
 

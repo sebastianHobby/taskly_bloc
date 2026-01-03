@@ -200,31 +200,6 @@ void main() {
       });
     });
 
-    group('getDateFormat', () {
-      test('returns DateFormat for pattern', () {
-        const settings = GlobalSettings(
-          dateFormatPattern: 'yMd',
-          localeCode: 'en',
-        );
-
-        final format = settings.getDateFormat();
-
-        expect(format, isNotNull);
-        expect(format.pattern, contains('y'));
-      });
-
-      test('works with null locale', () {
-        const settings = GlobalSettings(
-          dateFormatPattern: 'yMMMd',
-          localeCode: null,
-        );
-
-        final format = settings.getDateFormat();
-
-        expect(format, isNotNull);
-      });
-    });
-
     group('copyWith', () {
       test('copies with no changes', () {
         const settings = GlobalSettings(

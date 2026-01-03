@@ -679,7 +679,7 @@ class ValueActivityStats {
 
 ### 4. `lib/data/features/analytics/services/analytics_service_impl.dart`
 
-**Implement the methods:**
+**Implement the methods using existing TaskQuery API:**
 
 ```dart
 @override
@@ -693,10 +693,24 @@ Future<Map<String, List<double>>> getValueWeeklyTrends({
     final weekStart = now.subtract(Duration(days: (i + 1) * 7));
     final weekEnd = now.subtract(Duration(days: i * 7));
 
-    final completions = await _taskRepository.getCompletedTasksInRange(
-      start: weekStart,
-      end: weekEnd,
+    // Query completed tasks in range using existing TaskQuery API
+    final query = TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.completedAt,
+            operator: DateOperator.between,
+            startDate: weekStart,
+            endDate: weekEnd,
+          ),
+        ],
+      ),
     );
+    final completions = await _taskRepository.queryTasks(query);
 
     // Count total completions this week
     final totalThisWeek = completions.length;
@@ -725,8 +739,19 @@ Future<Map<String, List<double>>> getValueWeeklyTrends({
 Future<Map<String, ValueActivityStats>> getValueActivityStats() async {
   final stats = <String, ValueActivityStats>{};
 
-  // Get incomplete tasks
-  final tasks = await _taskRepository.getIncompleteTasks();
+  // Get incomplete tasks using TaskQuery
+  final taskQuery = TaskQuery(
+    filter: const QueryFilter<TaskPredicate>(
+      shared: [
+        TaskBoolPredicate(
+          field: TaskBoolField.completed,
+          operator: BoolOperator.isFalse,
+        ),
+      ],
+    ),
+  );
+  final tasks = await _taskRepository.queryTasks(taskQuery);
+  
   final taskCounts = <String, int>{};
   for (final task in tasks) {
     final valueId = task.valueId;
@@ -735,7 +760,7 @@ Future<Map<String, ValueActivityStats>> getValueActivityStats() async {
     }
   }
 
-  // Get active projects
+  // Get active projects (implementation depends on project repository API)
   final projects = await _projectRepository.getActiveProjects();
   final projectCounts = <String, int>{};
   for (final project in projects) {

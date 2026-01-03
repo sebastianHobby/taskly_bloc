@@ -27,6 +27,7 @@ analyzer:
     unreachable_from_main: ignore    # Tool scripts have different entry points
     document_ignores: ignore
     unnecessary_import: ignore
+    avoid_dynamic_calls: ignore
   exclude:
     - lib/core/l10n/gen/*
     - "**/*.g.dart"

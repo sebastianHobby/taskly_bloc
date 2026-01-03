@@ -5,6 +5,7 @@ import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 
 part 'label_list_bloc.freezed.dart';
 
@@ -94,7 +95,9 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState>
   ) async {
     // Load sort preferences from adapter if available
     if (_settingsRepository != null && _pageKey != null) {
-      final savedSort = await _settingsRepository.loadPageSort(_pageKey);
+      final savedSort = await _settingsRepository.load(
+        SettingsKey.pageSort(_pageKey),
+      );
       if (savedSort != null) {
         _sortPreferences = savedSort;
       }
@@ -120,7 +123,10 @@ class LabelOverviewBloc extends Bloc<LabelOverviewEvent, LabelOverviewState>
 
     // Persist to settings
     if (_settingsRepository != null && _pageKey != null) {
-      await _settingsRepository.savePageSort(_pageKey, event.preferences);
+      await _settingsRepository.save(
+        SettingsKey.pageSort(_pageKey),
+        event.preferences,
+      );
     }
   }
 

@@ -8,6 +8,33 @@ import '../../../helpers/fallback_values.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
+  group('TaskRule', () {
+    group('fromJson', () {
+      test('returns BooleanRule for unknown type', () {
+        final json = {
+          'type': 'unknownType',
+          'field': 'completed',
+          'operator': 'isFalse',
+        };
+
+        final rule = TaskRule.fromJson(json);
+
+        expect(rule, isA<BooleanRule>());
+      });
+
+      test('returns BooleanRule when type is null', () {
+        final json = <String, dynamic>{
+          'field': 'completed',
+          'operator': 'isFalse',
+        };
+
+        final rule = TaskRule.fromJson(json);
+
+        expect(rule, isA<BooleanRule>());
+      });
+    });
+  });
+
   group('BooleanRule', () {
     final today = DateTime(2025, 6, 15);
     final context = EvaluationContext(today: today);

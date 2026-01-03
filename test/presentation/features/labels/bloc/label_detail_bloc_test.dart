@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -66,7 +68,7 @@ void main() {
         expect(bloc.state, isA<LabelDetailInitial>());
       });
 
-      test('automatically loads label when labelId is provided', () async {
+      testSafe('automatically loads label when labelId is provided', () async {
         when(
           () => mockLabelRepository.getById('test-id'),
         ).thenAnswer((_) async => createLabel(id: 'test-id', name: 'Work'));
@@ -122,7 +124,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation failure when repository throws', () async {
+      testSafe('emits operation failure when repository throws', () async {
         when(
           () => mockLabelRepository.getById('error-id'),
         ).thenThrow(Exception('Database error'));
@@ -140,7 +142,7 @@ void main() {
     });
 
     group('LabelDetailCreate', () {
-      test('calls create on repository with correct parameters', () async {
+      testSafe('calls create on repository with correct parameters', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -166,7 +168,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation success on successful creation', () async {
+      testSafe('emits operation success on successful creation', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -195,7 +197,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation failure when create throws', () async {
+      testSafe('emits operation failure when create throws', () async {
         when(
           () => mockLabelRepository.create(
             name: any(named: 'name'),
@@ -224,7 +226,7 @@ void main() {
     });
 
     group('LabelDetailUpdate', () {
-      test('calls update on repository with correct parameters', () async {
+      testSafe('calls update on repository with correct parameters', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -252,7 +254,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation success on successful update', () async {
+      testSafe('emits operation success on successful update', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -282,7 +284,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation failure when update throws', () async {
+      testSafe('emits operation failure when update throws', () async {
         when(
           () => mockLabelRepository.update(
             id: any(named: 'id'),
@@ -313,7 +315,7 @@ void main() {
     });
 
     group('LabelDetailDelete', () {
-      test('calls delete on repository', () async {
+      testSafe('calls delete on repository', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -325,7 +327,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation success on successful delete', () async {
+      testSafe('emits operation success on successful delete', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );
@@ -348,7 +350,7 @@ void main() {
         await bloc.close();
       });
 
-      test('emits operation failure when delete throws', () async {
+      testSafe('emits operation failure when delete throws', () async {
         when(
           () => mockLabelRepository.delete(any()),
         ).thenThrow(Exception('Delete failed'));
@@ -366,7 +368,7 @@ void main() {
     });
 
     group('lifecycle', () {
-      test('closes cleanly', () async {
+      testSafe('closes cleanly', () async {
         final bloc = LabelDetailBloc(
           labelRepository: mockLabelRepository,
         );

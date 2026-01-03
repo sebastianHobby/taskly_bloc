@@ -1,16 +1,21 @@
-import 'package:flutter/foundation.dart';
+import 'package:freezed_annotation/freezed_annotation.dart';
+
+part 'screen_preferences.freezed.dart';
 
 /// User preferences for a specific screen.
 ///
 /// Stored in `AppSettings.screenPreferences` keyed by screenKey.
 /// This replaces the `sort_order` and `is_active` columns from the
 /// screen_definitions table for system screens.
-@immutable
-class ScreenPreferences {
-  const ScreenPreferences({
-    this.sortOrder,
-    this.isActive = true,
-  });
+@freezed
+abstract class ScreenPreferences with _$ScreenPreferences {
+  const factory ScreenPreferences({
+    /// Custom sort order. Null means use default from template.
+    int? sortOrder,
+
+    /// Whether the screen is visible in navigation.
+    @Default(true) bool isActive,
+  }) = _ScreenPreferences;
 
   factory ScreenPreferences.fromJson(Map<String, dynamic> json) {
     return ScreenPreferences(
@@ -18,40 +23,12 @@ class ScreenPreferences {
       isActive: json['isActive'] as bool? ?? true,
     );
   }
+}
 
-  /// Custom sort order. Null means use default from template.
-  final int? sortOrder;
-
-  /// Whether the screen is visible in navigation.
-  final bool isActive;
-
+/// Extension for JSON serialization.
+extension ScreenPreferencesJson on ScreenPreferences {
   Map<String, dynamic> toJson() => {
     if (sortOrder != null) 'sortOrder': sortOrder,
     'isActive': isActive,
   };
-
-  ScreenPreferences copyWith({
-    int? sortOrder,
-    bool? isActive,
-  }) {
-    return ScreenPreferences(
-      sortOrder: sortOrder ?? this.sortOrder,
-      isActive: isActive ?? this.isActive,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is ScreenPreferences &&
-        other.sortOrder == sortOrder &&
-        other.isActive == isActive;
-  }
-
-  @override
-  int get hashCode => Object.hash(sortOrder, isActive);
-
-  @override
-  String toString() =>
-      'ScreenPreferences(sortOrder: $sortOrder, isActive: $isActive)';
 }

@@ -7,7 +7,6 @@ import 'package:taskly_bloc/data/drift/features/workflow_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 // Domain models needed by TypeConverters in generated code
-import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
@@ -206,12 +205,27 @@ class UserProfileTable extends Table {
   String get tableName => 'user_profiles';
 
   TextColumn get id => text().clientDefault(uuid.v4).named('id')();
-  TextColumn get userId => text().nullable().named('user_id')();
 
-  /// Application settings stored as JSON text.
-  /// Uses [appSettingsConverter] for automatic serialization.
-  TextColumn get settings =>
-      text().map(appSettingsConverter).named('settings')();
+  // Note: user_id not included - managed by Supabase, not synced to client
+
+  /// Individual settings columns for PowerSync field-level sync.
+  /// Each column syncs independently to prevent cross-device conflicts.
+  TextColumn get globalSettings =>
+      text().withDefault(const Constant('{}')).named('global_settings')();
+  TextColumn get allocationSettings =>
+      text().withDefault(const Constant('{}')).named('allocation_settings')();
+  TextColumn get softGatesSettings =>
+      text().withDefault(const Constant('{}')).named('soft_gates_settings')();
+  TextColumn get nextActionsSettings =>
+      text().withDefault(const Constant('{}')).named('next_actions_settings')();
+  TextColumn get valueRanking =>
+      text().withDefault(const Constant('{}')).named('value_ranking')();
+  TextColumn get pageSortPreferences =>
+      text().withDefault(const Constant('{}')).named('page_sort_preferences')();
+  TextColumn get pageDisplaySettings =>
+      text().withDefault(const Constant('{}')).named('page_display_settings')();
+  TextColumn get screenPreferences =>
+      text().withDefault(const Constant('{}')).named('screen_preferences')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();

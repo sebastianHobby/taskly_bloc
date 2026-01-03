@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 
 /// Settings page for configuring task allocation strategy and value rankings.
 class AllocationSettingsPage extends StatefulWidget {
@@ -56,8 +57,8 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     setState(() => _isLoading = true);
 
     try {
-      final settings = await _settingsRepo.loadAllocationSettings();
-      final ranking = await _settingsRepo.loadValueRanking();
+      final settings = await _settingsRepo.load(SettingsKey.allocation);
+      final ranking = await _settingsRepo.load(SettingsKey.valueRanking);
       final labels = await _labelRepo.getAllByType(LabelType.value);
 
       _allocationSettings = settings;
@@ -153,7 +154,8 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
   Future<void> _save() async {
     try {
       // Save allocation settings
-      await _settingsRepo.saveAllocationSettings(
+      await _settingsRepo.save(
+        SettingsKey.allocation,
         AllocationSettings(
           strategyType: _strategyType,
           urgencyInfluence: _urgencyInfluence,
@@ -174,7 +176,8 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
           )
           .toList();
 
-      await _settingsRepo.saveValueRanking(
+      await _settingsRepo.save(
+        SettingsKey.valueRanking,
         ValueRanking(items: rankedItems),
       );
 

@@ -2,6 +2,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
@@ -29,7 +30,7 @@ class ProblemDetectorService {
       return []; // No opt-in detection configured
     }
 
-    final settings = await _settingsRepository.loadSoftGatesSettings();
+    final settings = await _settingsRepository.load(SettingsKey.softGates);
     final problems = <DetectedProblem>[];
 
     for (final task in tasks) {
@@ -57,7 +58,7 @@ class ProblemDetectorService {
       return []; // No opt-in detection configured
     }
 
-    final settings = await _settingsRepository.loadSoftGatesSettings();
+    final settings = await _settingsRepository.load(SettingsKey.softGates);
     final problems = <DetectedProblem>[];
 
     for (final project in projects) {

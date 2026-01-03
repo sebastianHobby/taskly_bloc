@@ -252,7 +252,7 @@ $Res call({
 });
 
 
-
+$SortPreferencesCopyWith<$Res> get preferences;
 
 }
 /// @nodoc
@@ -272,7 +272,16 @@ as SortPreferences,
   ));
 }
 
-
+/// Create a copy of LabelOverviewEvent
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$SortPreferencesCopyWith<$Res> get preferences {
+  
+  return $SortPreferencesCopyWith<$Res>(_self.preferences, (value) {
+    return _then(_self.copyWith(preferences: value));
+  });
+}
 }
 
 /// @nodoc

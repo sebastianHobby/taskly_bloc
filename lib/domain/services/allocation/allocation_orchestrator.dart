@@ -3,6 +3,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
@@ -217,9 +218,12 @@ class AllocationOrchestrator {
       final pinnedLabel = await _labelRepository.getSystemLabel(
         SystemLabelType.pinned,
       );
-      final allocationSettings = await _settingsRepository
-          .loadAllocationSettings();
-      final valueRanking = await _settingsRepository.loadValueRanking();
+      final allocationSettings = await _settingsRepository.load(
+        SettingsKey.allocation,
+      );
+      final valueRanking = await _settingsRepository.load(
+        SettingsKey.valueRanking,
+      );
 
       yield (tasks, pinnedLabel, allocationSettings, valueRanking);
     }

@@ -63,12 +63,19 @@ Create a new `AllocationConfig` model with clean separation of concerns, replaci
 
 ### 1. `lib/domain/models/settings/allocation_config.dart`
 
+> **NOTE**: This is a **single file** containing enums, config class, and nested settings classes.
+> It replaces the current `allocation_settings.dart`. The old file will be deleted.
+
 ```dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'allocation_config.freezed.dart';
 part 'allocation_config.g.dart';
+
+// ============================================================================
+// ENUMS
+// ============================================================================
 
 /// Defines the allocation behavior personality.
 /// 
@@ -110,19 +117,10 @@ enum UrgentTaskBehavior {
   @JsonValue('includeAll')
   includeAll,
 }
-```
 
----
-
-### 2. Create `lib/domain/models/settings/allocation_config.dart`
-
-This is a **new file** that replaces the current `allocation_settings.dart`. The old file will be deleted.
-
-```dart
-import 'package:freezed_annotation/freezed_annotation.dart';
-
-part 'allocation_config.freezed.dart';
-part 'allocation_config.g.dart';
+// ============================================================================
+// MODELS
+// ============================================================================
 
 /// Top-level allocation configuration model.
 /// 
@@ -132,10 +130,9 @@ part 'allocation_config.g.dart';
 abstract class AllocationConfig with _$AllocationConfig {
   const factory AllocationConfig({
     @Default(10) int dailyLimit,
-    @Default(true) bool showWarnings,
     @Default(AllocationPersona.realist) AllocationPersona persona,
-    @Default(StrategySettings()) StrategySettings strategy,
-    @Default(DisplaySettings()) DisplaySettings display,
+    @Default(StrategySettings()) StrategySettings strategySettings,
+    @Default(DisplaySettings()) DisplaySettings displaySettings,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
@@ -169,6 +166,7 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(7) int neglectLookbackDays,
     
     /// Weight of neglect score vs base weight (0.0-1.0).
+    /// Default 0.7 matches Reflector persona preset.
     @Default(0.7) double neglectInfluence,
   }) = _StrategySettings;
 
@@ -178,16 +176,10 @@ abstract class StrategySettings with _$StrategySettings {
   /// Factory: Returns preset settings for the given persona.
   factory StrategySettings.forPersona(AllocationPersona persona) {
     switch (persona) {
-      case AllocationPersona.realist:
+      case AllocationPersona.idealist:
         return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+          urgentTaskBehavior: UrgentTaskBehavior.ignore,
           urgencyBoostMultiplier: 1.0,
-          enableNeglectWeighting: false,
-        );
-      case AllocationPersona.guardian:
-        return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-          urgencyBoostMultiplier: 1.5,
           enableNeglectWeighting: false,
         );
       case AllocationPersona.reflector:
@@ -197,6 +189,12 @@ abstract class StrategySettings with _$StrategySettings {
           enableNeglectWeighting: true,
           neglectLookbackDays: 7,
           neglectInfluence: 0.7,
+        );
+      case AllocationPersona.realist:
+        return const StrategySettings(
+          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+          urgencyBoostMultiplier: 1.5,
+          enableNeglectWeighting: false,
         );
       case AllocationPersona.firefighter:
         return const StrategySettings(
@@ -212,6 +210,10 @@ abstract class StrategySettings with _$StrategySettings {
 }
 
 /// Display-related settings controlling UI behavior.
+/// 
+/// Note: Warning visibility is controlled by `StrategySettings.urgentTaskBehavior`,
+/// not by DisplaySettings. The UI simply renders whatever warnings the allocator
+/// generates. Set `urgentTaskBehavior = ignore` to suppress urgent task warnings.
 @freezed
 abstract class DisplaySettings with _$DisplaySettings {
   const factory DisplaySettings({
@@ -235,7 +237,6 @@ This file is completely replaced by `allocation_config.dart`. Delete it entirely
 
 **Remove these types:**
 - `AllocationStrategyType` enum (only 2 of 6 implemented, personas replace this)
-- `UrgencyMode` enum (replaced by `UrgentTaskBehavior`)
 - `AllocationSettings` class (replaced by `AllocationConfig`)
 
 ---
@@ -265,23 +266,24 @@ projectDeadlineApproaching,
 // Remove this line:
 // export 'settings/allocation_settings.dart';
 
-// Add these lines:
+// Add this line (single file contains enums + classes):
 export 'settings/allocation_config.dart';
-export 'settings/allocation_persona.dart';
 ```
 
 ---
 
 ## Step-by-Step Implementation
 
-### Step 1: Create the enums file
-Create `lib/domain/models/settings/allocation_persona.dart` with both enums (`AllocationPersona`, `UrgentTaskBehavior`).
+### Step 1: Create the config file (single file with enums + classes)
+Create `lib/domain/models/settings/allocation_config.dart` containing:
+- `AllocationPersona` enum (5 values)
+- `UrgentTaskBehavior` enum (3 values)
+- `AllocationConfig` class (top-level config)
+- `StrategySettings` class (algorithm settings)
+- `DisplaySettings` class (UI preferences)
 
-### Step 2: Create the new config file
-Create `lib/domain/models/settings/allocation_config.dart` with all three classes (`AllocationConfig`, `StrategySettings`, `DisplaySettings`).
-
-### Step 3: Update settings barrel export
-Update `lib/domain/models/settings.dart` to export the new files.
+### Step 2: Update settings barrel export
+Update `lib/domain/models/settings.dart` to export the new file.
 
 ### Step 4: Delete old settings file
 Delete `lib/domain/models/settings/allocation_settings.dart`.
@@ -308,16 +310,16 @@ Fix all errors and warnings.
 
 ## Verification Checklist
 
-- [ ] `allocation_persona.dart` created with `AllocationPersona` enum (5 values)
-- [ ] `allocation_persona.dart` contains `UrgentTaskBehavior` enum (3 values)
-- [ ] `allocation_config.dart` created with `AllocationConfig` class
-- [ ] `allocation_config.dart` contains `StrategySettings` class with feature flags
-- [ ] `allocation_config.dart` contains `DisplaySettings` class
+- [ ] `allocation_config.dart` created as single file containing:
+  - [ ] `AllocationPersona` enum (5 values: idealist, reflector, realist, firefighter, custom)
+  - [ ] `UrgentTaskBehavior` enum (3 values: ignore, warnOnly, includeAll)
+  - [ ] `AllocationConfig` class (top-level config)
+  - [ ] `StrategySettings` class (with feature flags)
+  - [ ] `DisplaySettings` class (UI preferences)
 - [ ] `StrategySettings.forPersona()` factory returns correct presets
 - [ ] `allocation_settings.dart` has been deleted
 - [ ] `settings.dart` exports new files, not old file
 - [ ] `AllocationConfig` has `dailyLimit` field (default: `10`)
-- [ ] `AllocationConfig` has `showWarnings` field (default: `true`)
 - [ ] `AllocationConfig` has `persona` field (default: `realist`)
 - [ ] `AllocationConfig` has nested `strategy` field (type: `StrategySettings`)
 - [ ] `AllocationConfig` has nested `display` field (type: `DisplaySettings`)

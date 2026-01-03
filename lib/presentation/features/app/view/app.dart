@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
@@ -76,7 +77,7 @@ class _ThemedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<GlobalSettings>(
-      stream: getIt<SettingsRepositoryContract>().watchGlobalSettings(),
+      stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
       builder: (context, snapshot) {
         final settings = snapshot.data ?? const GlobalSettings();
 
@@ -108,7 +109,7 @@ class _UnauthenticatedApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<GlobalSettings>(
-      stream: getIt<SettingsRepositoryContract>().watchGlobalSettings(),
+      stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
       builder: (context, snapshot) {
         final settings = snapshot.data ?? const GlobalSettings();
 
@@ -169,7 +170,7 @@ class _AuthenticatedApp extends StatelessWidget {
         ),
       ],
       child: StreamBuilder<GlobalSettings>(
-        stream: getIt<SettingsRepositoryContract>().watchGlobalSettings(),
+        stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
         builder: (context, snapshot) {
           final settings = snapshot.data ?? const GlobalSettings();
 
