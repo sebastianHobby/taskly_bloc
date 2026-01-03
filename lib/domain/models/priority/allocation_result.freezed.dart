@@ -317,7 +317,9 @@ $AllocationReasoningCopyWith<$Res> get reasoning {
 mixin _$AllocatedTask {
 
  Task get task; String get qualifyingValueId;// Value that qualified this task
- double get allocationScore;
+ double get allocationScore;/// True if this task was included due to urgency override (Firefighter mode)
+/// rather than value-based allocation.
+ bool get isUrgentOverride;
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -328,16 +330,16 @@ $AllocatedTaskCopyWith<AllocatedTask> get copyWith => _$AllocatedTaskCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore)&&(identical(other.isUrgentOverride, isUrgentOverride) || other.isUrgentOverride == isUrgentOverride));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore);
+int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore,isUrgentOverride);
 
 @override
 String toString() {
-  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore)';
+  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore, isUrgentOverride: $isUrgentOverride)';
 }
 
 
@@ -348,7 +350,7 @@ abstract mixin class $AllocatedTaskCopyWith<$Res>  {
   factory $AllocatedTaskCopyWith(AllocatedTask value, $Res Function(AllocatedTask) _then) = _$AllocatedTaskCopyWithImpl;
 @useResult
 $Res call({
- Task task, String qualifyingValueId, double allocationScore
+ Task task, String qualifyingValueId, double allocationScore, bool isUrgentOverride
 });
 
 
@@ -365,12 +367,13 @@ class _$AllocatedTaskCopyWithImpl<$Res>
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,Object? isUrgentOverride = null,}) {
   return _then(_self.copyWith(
 task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
 as Task,qualifyingValueId: null == qualifyingValueId ? _self.qualifyingValueId : qualifyingValueId // ignore: cast_nullable_to_non_nullable
 as String,allocationScore: null == allocationScore ? _self.allocationScore : allocationScore // ignore: cast_nullable_to_non_nullable
-as double,
+as double,isUrgentOverride: null == isUrgentOverride ? _self.isUrgentOverride : isUrgentOverride // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -455,10 +458,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore,  bool isUrgentOverride)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AllocatedTask() when $default != null:
-return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore,_that.isUrgentOverride);case _:
   return orElse();
 
 }
@@ -476,10 +479,10 @@ return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( Task task,  String qualifyingValueId,  double allocationScore,  bool isUrgentOverride)  $default,) {final _that = this;
 switch (_that) {
 case _AllocatedTask():
-return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore,_that.isUrgentOverride);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -496,10 +499,10 @@ return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Task task,  String qualifyingValueId,  double allocationScore)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( Task task,  String qualifyingValueId,  double allocationScore,  bool isUrgentOverride)?  $default,) {final _that = this;
 switch (_that) {
 case _AllocatedTask() when $default != null:
-return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _:
+return $default(_that.task,_that.qualifyingValueId,_that.allocationScore,_that.isUrgentOverride);case _:
   return null;
 
 }
@@ -511,13 +514,16 @@ return $default(_that.task,_that.qualifyingValueId,_that.allocationScore);case _
 
 
 class _AllocatedTask implements AllocatedTask {
-  const _AllocatedTask({required this.task, required this.qualifyingValueId, required this.allocationScore});
+  const _AllocatedTask({required this.task, required this.qualifyingValueId, required this.allocationScore, this.isUrgentOverride = false});
   
 
 @override final  Task task;
 @override final  String qualifyingValueId;
 // Value that qualified this task
 @override final  double allocationScore;
+/// True if this task was included due to urgency override (Firefighter mode)
+/// rather than value-based allocation.
+@override@JsonKey() final  bool isUrgentOverride;
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
@@ -529,16 +535,16 @@ _$AllocatedTaskCopyWith<_AllocatedTask> get copyWith => __$AllocatedTaskCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocatedTask&&(identical(other.task, task) || other.task == task)&&(identical(other.qualifyingValueId, qualifyingValueId) || other.qualifyingValueId == qualifyingValueId)&&(identical(other.allocationScore, allocationScore) || other.allocationScore == allocationScore)&&(identical(other.isUrgentOverride, isUrgentOverride) || other.isUrgentOverride == isUrgentOverride));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore);
+int get hashCode => Object.hash(runtimeType,task,qualifyingValueId,allocationScore,isUrgentOverride);
 
 @override
 String toString() {
-  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore)';
+  return 'AllocatedTask(task: $task, qualifyingValueId: $qualifyingValueId, allocationScore: $allocationScore, isUrgentOverride: $isUrgentOverride)';
 }
 
 
@@ -549,7 +555,7 @@ abstract mixin class _$AllocatedTaskCopyWith<$Res> implements $AllocatedTaskCopy
   factory _$AllocatedTaskCopyWith(_AllocatedTask value, $Res Function(_AllocatedTask) _then) = __$AllocatedTaskCopyWithImpl;
 @override @useResult
 $Res call({
- Task task, String qualifyingValueId, double allocationScore
+ Task task, String qualifyingValueId, double allocationScore, bool isUrgentOverride
 });
 
 
@@ -566,12 +572,13 @@ class __$AllocatedTaskCopyWithImpl<$Res>
 
 /// Create a copy of AllocatedTask
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? task = null,Object? qualifyingValueId = null,Object? allocationScore = null,Object? isUrgentOverride = null,}) {
   return _then(_AllocatedTask(
 task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
 as Task,qualifyingValueId: null == qualifyingValueId ? _self.qualifyingValueId : qualifyingValueId // ignore: cast_nullable_to_non_nullable
 as String,allocationScore: null == allocationScore ? _self.allocationScore : allocationScore // ignore: cast_nullable_to_non_nullable
-as double,
+as double,isUrgentOverride: null == isUrgentOverride ? _self.isUrgentOverride : isUrgentOverride // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

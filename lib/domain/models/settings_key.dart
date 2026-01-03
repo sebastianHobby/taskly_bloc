@@ -18,7 +18,7 @@ sealed class SettingsKey<T> {
   static const global = _SingletonKey<GlobalSettings>('global');
 
   /// Allocation algorithm settings.
-  static const allocation = _SingletonKey<AllocationSettings>('allocation');
+  static const allocation = _SingletonKey<AllocationConfig>('allocation');
 
   /// Soft gates threshold settings.
   static const softGates = _SingletonKey<SoftGatesSettings>('softGates');

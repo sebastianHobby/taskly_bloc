@@ -29,7 +29,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
   // Preserved for future value ranking feature - nullable is intentional
   // ignore: unused_field
-  AllocationSettings? _allocationSettings;
+  AllocationConfig? _allocationConfig;
   // Preserved for future value ranking feature - nullable is intentional
   // ignore: unused_field
   ValueRanking? _valueRanking;
@@ -40,11 +40,11 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
   bool _hasChanges = false;
 
   // Form state - initialized with defaults to prevent LateInitializationError
-  AllocationStrategyType _strategyType = AllocationStrategyType.proportional;
-  double _urgencyInfluence = 0.4;
+  AllocationPersona _persona = AllocationPersona.realist;
+  double _urgencyBoostMultiplier = 1.5;
   int _dailyTaskLimit = 10;
-  int _urgencyThresholdDays = 3;
-  bool _showExcludedWarning = true;
+  int _taskUrgencyThresholdDays = 3;
+  UrgentTaskBehavior _urgentTaskBehavior = UrgentTaskBehavior.warnOnly;
   List<_RankableValue> _rankedValues = [];
 
   @override
@@ -61,16 +61,18 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       final ranking = await _settingsRepo.load(SettingsKey.valueRanking);
       final labels = await _labelRepo.getAllByType(LabelType.value);
 
-      _allocationSettings = settings;
+      _allocationConfig = settings;
       _valueRanking = ranking;
       _valueLabels = labels;
 
       // Initialize form state from settings
-      _strategyType = settings.strategyType;
-      _urgencyInfluence = settings.urgencyInfluence;
-      _dailyTaskLimit = settings.dailyTaskLimit;
-      _urgencyThresholdDays = 3; // Default - not stored in new settings
-      _showExcludedWarning = settings.showExcludedUrgentWarning;
+      _persona = settings.persona;
+      _urgencyBoostMultiplier =
+          settings.strategySettings.urgencyBoostMultiplier;
+      _dailyTaskLimit = settings.dailyLimit;
+      _taskUrgencyThresholdDays =
+          settings.strategySettings.taskUrgencyThresholdDays;
+      _urgentTaskBehavior = settings.strategySettings.urgentTaskBehavior;
 
       // Build ranked values list
       _rankedValues = _buildRankedValues(labels, ranking);
@@ -124,10 +126,14 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     return [...ranked, ...unranked];
   }
 
-  void _onStrategyChanged(AllocationStrategyType? value) {
-    if (value != null && value != _strategyType) {
+  void _onPersonaChanged(AllocationPersona? value) {
+    if (value != null && value != _persona) {
       setState(() {
-        _strategyType = value;
+        _persona = value;
+        // Apply preset for the selected persona
+        final preset = StrategySettings.forPersona(value);
+        _urgentTaskBehavior = preset.urgentTaskBehavior;
+        _urgencyBoostMultiplier = preset.urgencyBoostMultiplier;
         _hasChanges = true;
       });
     }
@@ -156,11 +162,14 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       // Save allocation settings
       await _settingsRepo.save(
         SettingsKey.allocation,
-        AllocationSettings(
-          strategyType: _strategyType,
-          urgencyInfluence: _urgencyInfluence,
-          dailyTaskLimit: _dailyTaskLimit,
-          showExcludedUrgentWarning: _showExcludedWarning,
+        AllocationConfig(
+          persona: _persona,
+          dailyLimit: _dailyTaskLimit,
+          strategySettings: StrategySettings(
+            urgentTaskBehavior: _urgentTaskBehavior,
+            urgencyBoostMultiplier: _urgencyBoostMultiplier,
+            taskUrgencyThresholdDays: _taskUrgencyThresholdDays,
+          ),
         ),
       );
 
@@ -212,22 +221,23 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Strategy selection
-                _StrategyCard(
-                  strategyType: _strategyType,
-                  onChanged: _onStrategyChanged,
+                // Persona selection
+                _PersonaCard(
+                  persona: _persona,
+                  onChanged: _onPersonaChanged,
                 ),
                 const SizedBox(height: 16),
 
                 // Strategy-specific settings
                 _StrategySettingsCard(
-                  strategyType: _strategyType,
-                  urgencyInfluence: _urgencyInfluence,
+                  persona: _persona,
+                  urgencyBoostMultiplier: _urgencyBoostMultiplier,
                   dailyTaskLimit: _dailyTaskLimit,
-                  urgencyThresholdDays: _urgencyThresholdDays,
-                  showExcludedWarning: _showExcludedWarning,
-                  onUrgencyInfluenceChanged: (v) => setState(() {
-                    _urgencyInfluence = v;
+                  taskUrgencyThresholdDays: _taskUrgencyThresholdDays,
+                  urgentTaskBehavior: _urgentTaskBehavior,
+                  onUrgencyBoostChanged: (v) => setState(() {
+                    _urgencyBoostMultiplier = v;
+                    _persona = AllocationPersona.custom;
                     _hasChanges = true;
                   }),
                   onDailyLimitChanged: (v) => setState(() {
@@ -235,11 +245,13 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
                     _hasChanges = true;
                   }),
                   onUrgencyThresholdChanged: (v) => setState(() {
-                    _urgencyThresholdDays = v;
+                    _taskUrgencyThresholdDays = v;
+                    _persona = AllocationPersona.custom;
                     _hasChanges = true;
                   }),
-                  onShowWarningChanged: (v) => setState(() {
-                    _showExcludedWarning = v;
+                  onUrgentTaskBehaviorChanged: (v) => setState(() {
+                    _urgentTaskBehavior = v;
+                    _persona = AllocationPersona.custom;
                     _hasChanges = true;
                   }),
                 ),
@@ -335,14 +347,14 @@ class _RankableValue {
   }
 }
 
-class _StrategyCard extends StatelessWidget {
-  const _StrategyCard({
-    required this.strategyType,
+class _PersonaCard extends StatelessWidget {
+  const _PersonaCard({
+    required this.persona,
     required this.onChanged,
   });
 
-  final AllocationStrategyType strategyType;
-  final ValueChanged<AllocationStrategyType?> onChanged;
+  final AllocationPersona persona;
+  final ValueChanged<AllocationPersona?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -359,32 +371,36 @@ class _StrategyCard extends StatelessWidget {
                 Icon(Icons.tune, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  'Allocation Strategy',
+                  'Allocation Persona',
                   style: theme.textTheme.titleMedium,
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            ...AllocationStrategyType.values.map((type) {
-              final isImplemented =
-                  type == AllocationStrategyType.proportional ||
-                  type == AllocationStrategyType.urgencyWeighted;
+            ...AllocationPersona.values.map((type) {
+              final isRecommended = type == AllocationPersona.realist;
 
-              return RadioListTile<AllocationStrategyType>(
-                title: Text(_strategyName(type)),
+              return RadioListTile<AllocationPersona>(
+                title: Row(
+                  children: [
+                    Text(_personaName(type)),
+                    if (isRecommended) ...[
+                      const SizedBox(width: 8),
+                      Chip(
+                        label: const Text('Recommended'),
+                        labelStyle: theme.textTheme.labelSmall,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ],
+                ),
                 subtitle: Text(
-                  _strategyDescription(type),
+                  _personaDescription(type),
                   style: theme.textTheme.bodySmall,
                 ),
                 value: type,
-                groupValue: strategyType,
-                onChanged: isImplemented ? onChanged : null,
-                secondary: !isImplemented
-                    ? Chip(
-                        label: const Text('Coming Soon'),
-                        labelStyle: theme.textTheme.labelSmall,
-                      )
-                    : null,
+                groupValue: persona,
+                onChanged: onChanged,
               );
             }),
           ],
@@ -393,59 +409,60 @@ class _StrategyCard extends StatelessWidget {
     );
   }
 
-  String _strategyName(AllocationStrategyType type) {
+  String _personaName(AllocationPersona type) {
     return switch (type) {
-      AllocationStrategyType.proportional => 'Proportional',
-      AllocationStrategyType.urgencyWeighted => 'Urgency Weighted',
-      AllocationStrategyType.roundRobin => 'Round Robin',
-      AllocationStrategyType.minimumViable => 'Minimum Viable',
-      AllocationStrategyType.dynamic => 'Dynamic',
-      AllocationStrategyType.topCategories => 'Top Categories',
+      AllocationPersona.idealist => 'Idealist',
+      AllocationPersona.reflector => 'Reflector',
+      AllocationPersona.realist => 'Realist',
+      AllocationPersona.firefighter => 'Firefighter',
+      AllocationPersona.custom => 'Custom',
     };
   }
 
-  String _strategyDescription(AllocationStrategyType type) {
+  String _personaDescription(AllocationPersona type) {
     return switch (type) {
-      AllocationStrategyType.proportional =>
-        'Allocate tasks proportionally based on value rankings',
-      AllocationStrategyType.urgencyWeighted =>
-        'Balance value rankings with task urgency',
-      AllocationStrategyType.roundRobin => 'Cycle through values equally',
-      AllocationStrategyType.minimumViable =>
-        'Ensure minimum tasks per value before extras',
-      AllocationStrategyType.dynamic => 'Adapt strategy based on workload',
-      AllocationStrategyType.topCategories =>
-        'Focus on top N ranked values only',
+      AllocationPersona.idealist =>
+        'Pure value alignment. Ignores urgency entirely.',
+      AllocationPersona.reflector =>
+        "Prioritizes values you've been neglecting.",
+      AllocationPersona.realist => 'Balanced approach with urgency awareness.',
+      AllocationPersona.firefighter =>
+        'Urgency-first. All urgent tasks included.',
+      AllocationPersona.custom => 'Configure all settings manually.',
     };
   }
 }
 
 class _StrategySettingsCard extends StatelessWidget {
   const _StrategySettingsCard({
-    required this.strategyType,
-    required this.urgencyInfluence,
+    required this.persona,
+    required this.urgencyBoostMultiplier,
     required this.dailyTaskLimit,
-    required this.urgencyThresholdDays,
-    required this.showExcludedWarning,
-    required this.onUrgencyInfluenceChanged,
+    required this.taskUrgencyThresholdDays,
+    required this.urgentTaskBehavior,
+    required this.onUrgencyBoostChanged,
     required this.onDailyLimitChanged,
     required this.onUrgencyThresholdChanged,
-    required this.onShowWarningChanged,
+    required this.onUrgentTaskBehaviorChanged,
   });
 
-  final AllocationStrategyType strategyType;
-  final double urgencyInfluence;
+  final AllocationPersona persona;
+  final double urgencyBoostMultiplier;
   final int dailyTaskLimit;
-  final int urgencyThresholdDays;
-  final bool showExcludedWarning;
-  final ValueChanged<double> onUrgencyInfluenceChanged;
+  final int taskUrgencyThresholdDays;
+  final UrgentTaskBehavior urgentTaskBehavior;
+  final ValueChanged<double> onUrgencyBoostChanged;
   final ValueChanged<int> onDailyLimitChanged;
   final ValueChanged<int> onUrgencyThresholdChanged;
-  final ValueChanged<bool> onShowWarningChanged;
+  final ValueChanged<UrgentTaskBehavior> onUrgentTaskBehaviorChanged;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
+    // Persona-specific settings visibility
+    final showUrgencySettings = persona != AllocationPersona.idealist;
+    final isEditable = persona == AllocationPersona.custom;
 
     return Card(
       child: Padding(
@@ -465,13 +482,14 @@ class _StrategySettingsCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Daily task limit
+            // Daily task limit (always visible)
             ListTile(
               title: const Text('Daily Focus Limit'),
-              subtitle: Text('Maximum tasks in your daily focus list'),
+              subtitle: const Text('Maximum tasks in your daily focus list'),
               trailing: SizedBox(
                 width: 80,
                 child: TextFormField(
+                  key: ValueKey('limit_$dailyTaskLimit'),
                   initialValue: dailyTaskLimit.toString(),
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -486,63 +504,133 @@ class _StrategySettingsCard extends StatelessWidget {
               ),
             ),
 
-            // Urgency threshold
-            ListTile(
-              title: const Text('Urgency Threshold'),
-              subtitle: Text('Days before deadline to flag as urgent'),
-              trailing: SizedBox(
-                width: 80,
-                child: TextFormField(
-                  initialValue: urgencyThresholdDays.toString(),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  textAlign: TextAlign.center,
-                  onChanged: (v) {
-                    final parsed = int.tryParse(v);
-                    if (parsed != null && parsed >= 0) {
-                      onUrgencyThresholdChanged(parsed);
-                    }
-                  },
+            // Urgency settings (hidden for Idealist)
+            if (showUrgencySettings) ...[
+              const Divider(height: 24),
+              Text(
+                'Urgency Settings',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ),
+              const SizedBox(height: 8),
 
-            // Urgency influence (only for urgency weighted)
-            if (strategyType == AllocationStrategyType.urgencyWeighted) ...[
+              // Urgency threshold days
+              ListTile(
+                title: const Text('Urgency Threshold'),
+                subtitle: const Text('Days before deadline to flag as urgent'),
+                trailing: SizedBox(
+                  width: 80,
+                  child: TextFormField(
+                    key: ValueKey('threshold_$taskUrgencyThresholdDays'),
+                    initialValue: taskUrgencyThresholdDays.toString(),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    textAlign: TextAlign.center,
+                    enabled: isEditable,
+                    onChanged: (v) {
+                      final parsed = int.tryParse(v);
+                      if (parsed != null && parsed >= 0) {
+                        onUrgencyThresholdChanged(parsed);
+                      }
+                    },
+                  ),
+                ),
+              ),
+
+              // Urgency boost multiplier slider
               const SizedBox(height: 8),
               Text(
-                'Urgency Influence: ${(urgencyInfluence * 100).round()}%',
+                'Urgency Boost: ${urgencyBoostMultiplier.toStringAsFixed(1)}x',
                 style: theme.textTheme.bodyMedium,
               ),
               Slider(
-                value: urgencyInfluence,
-                divisions: 10,
-                label: '${(urgencyInfluence * 100).round()}%',
-                onChanged: onUrgencyInfluenceChanged,
+                value: urgencyBoostMultiplier,
+                min: 1,
+                max: 3,
+                divisions: 20,
+                label: '${urgencyBoostMultiplier.toStringAsFixed(1)}x',
+                onChanged: isEditable ? onUrgencyBoostChanged : null,
               ),
               Text(
-                'How much urgency affects task selection vs value ranking',
+                'How much urgent tasks are boosted in scoring',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+
+              const SizedBox(height: 16),
+
+              // Urgent task behavior dropdown
+              ListTile(
+                title: const Text('Urgent Task Behavior'),
+                subtitle: Text(_urgentBehaviorDescription(urgentTaskBehavior)),
+                trailing: DropdownButton<UrgentTaskBehavior>(
+                  value: urgentTaskBehavior,
+                  onChanged: isEditable
+                      ? (v) {
+                          if (v != null) onUrgentTaskBehaviorChanged(v);
+                        }
+                      : null,
+                  items: UrgentTaskBehavior.values.map((behavior) {
+                    return DropdownMenuItem(
+                      value: behavior,
+                      child: Text(_urgentBehaviorName(behavior)),
+                    );
+                  }).toList(),
+                ),
+              ),
             ],
 
-            const Divider(height: 32),
-
-            // Warning toggle
-            SwitchListTile(
-              title: const Text('Show Excluded Task Warnings'),
-              subtitle: const Text(
-                'Alert when urgent tasks are excluded from focus',
+            // Info about non-custom personas
+            if (!isEditable) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Select "Custom" persona to modify these settings.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              value: showExcludedWarning,
-              onChanged: onShowWarningChanged,
-            ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  String _urgentBehaviorName(UrgentTaskBehavior behavior) {
+    return switch (behavior) {
+      UrgentTaskBehavior.warnOnly => 'Warn Only',
+      UrgentTaskBehavior.includeAll => 'Always Include',
+      UrgentTaskBehavior.ignore => 'Ignore',
+    };
+  }
+
+  String _urgentBehaviorDescription(UrgentTaskBehavior behavior) {
+    return switch (behavior) {
+      UrgentTaskBehavior.warnOnly => 'Urgent tasks excluded but show warnings',
+      UrgentTaskBehavior.includeAll => 'All urgent tasks are included',
+      UrgentTaskBehavior.ignore => 'Urgency has no effect, no warnings',
+    };
   }
 }
 

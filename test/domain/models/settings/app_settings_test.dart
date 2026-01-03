@@ -12,7 +12,7 @@ void main() {
         expect(settings.pageSortPreferences, isEmpty);
         expect(settings.pageDisplaySettings, isEmpty);
         expect(settings.screenPreferences, isEmpty);
-        expect(settings.allocation, const AllocationSettings());
+        expect(settings.allocation, const AllocationConfig());
         expect(settings.valueRanking, const ValueRanking());
         expect(settings.softGates, const SoftGatesSettings());
         expect(settings.nextActions, const NextActionsSettings());
@@ -23,7 +23,7 @@ void main() {
         const sortPrefs = {'page1': SortPreferences()};
         const displaySettings = {'page1': PageDisplaySettings()};
         const screenPrefs = {'screen1': ScreenPreferences()};
-        const allocation = AllocationSettings(dailyTaskLimit: 20);
+        const allocation = AllocationConfig(dailyLimit: 20);
         const valueRanking = ValueRanking();
         const softGates = SoftGatesSettings(urgentDeadlineWithinDays: 5);
         const nextActions = NextActionsSettings(tasksPerProject: 3);
@@ -63,7 +63,7 @@ void main() {
           'screenPreferences': {
             'screen1': {'sortOrder': 5, 'isActive': true},
           },
-          'allocation': {'dailyTaskLimit': 15},
+          'allocation': {'daily_limit': 15},
           'valueRanking': {'items': <Map<String, dynamic>>[]},
           'softGates': {'urgentDeadlineWithinDays': 3},
           'nextActions': {'tasksPerProject': 4},
@@ -75,7 +75,7 @@ void main() {
         expect(settings.pageSortPreferences.containsKey('page1'), true);
         expect(settings.pageDisplaySettings['page1']?.hideCompleted, false);
         expect(settings.screenPreferences['screen1']?.sortOrder, 5);
-        expect(settings.allocation.dailyTaskLimit, 15);
+        expect(settings.allocation.dailyLimit, 15);
         expect(settings.softGates.urgentDeadlineWithinDays, 3);
         expect(settings.nextActions.tasksPerProject, 4);
       });
@@ -87,7 +87,7 @@ void main() {
         expect(settings.pageSortPreferences, isEmpty);
         expect(settings.pageDisplaySettings, isEmpty);
         expect(settings.screenPreferences, isEmpty);
-        expect(settings.allocation, const AllocationSettings());
+        expect(settings.allocation, const AllocationConfig());
         expect(settings.valueRanking, const ValueRanking());
         expect(settings.softGates, const SoftGatesSettings());
         expect(settings.nextActions, const NextActionsSettings());
@@ -140,7 +140,7 @@ void main() {
 
         final settings = AppSettings.fromJson(json);
 
-        expect(settings.allocation, const AllocationSettings());
+        expect(settings.allocation, const AllocationConfig());
       });
 
       test('handles null valueRanking json', () {
@@ -177,7 +177,7 @@ void main() {
             'p1': PageDisplaySettings(hideCompleted: false),
           },
           screenPreferences: {'s1': ScreenPreferences(sortOrder: 1)},
-          allocation: AllocationSettings(dailyTaskLimit: 5),
+          allocation: AllocationConfig(dailyLimit: 5),
           valueRanking: ValueRanking(),
           softGates: SoftGatesSettings(urgentDeadlineWithinDays: 10),
           nextActions: NextActionsSettings(tasksPerProject: 2),
@@ -198,7 +198,7 @@ void main() {
       test('round-trips through JSON', () {
         const settings = AppSettings(
           global: GlobalSettings(themeMode: AppThemeMode.dark),
-          allocation: AllocationSettings(dailyTaskLimit: 8),
+          allocation: AllocationConfig(dailyLimit: 8),
         );
 
         final json = settings.toJson();
@@ -206,8 +206,8 @@ void main() {
 
         expect(restored.global.themeMode, settings.global.themeMode);
         expect(
-          restored.allocation.dailyTaskLimit,
-          settings.allocation.dailyTaskLimit,
+          restored.allocation.dailyLimit,
+          settings.allocation.dailyLimit,
         );
       });
     });
@@ -259,7 +259,7 @@ void main() {
 
       test('copies with allocation change', () {
         const settings = AppSettings();
-        const newAllocation = AllocationSettings(dailyTaskLimit: 20);
+        const newAllocation = AllocationConfig(dailyLimit: 20);
 
         final copied = settings.copyWith(allocation: newAllocation);
 
@@ -326,7 +326,7 @@ void main() {
 
       test('updateAllocation updates allocation settings', () {
         const settings = AppSettings();
-        const newAllocation = AllocationSettings(dailyTaskLimit: 25);
+        const newAllocation = AllocationConfig(dailyLimit: 25);
 
         final updated = settings.updateAllocation(newAllocation);
 
@@ -593,7 +593,7 @@ void main() {
       test('different allocation are not equal', () {
         const settings1 = AppSettings();
         const settings2 = AppSettings(
-          allocation: AllocationSettings(dailyTaskLimit: 99),
+          allocation: AllocationConfig(dailyLimit: 99),
         );
 
         expect(settings1, isNot(settings2));
