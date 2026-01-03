@@ -84,22 +84,37 @@ The Reflector persona helps users maintain balance across their values. It works
 
 ## Algorithm
 
+**Single-Pass Per-Task Scoring**: All factors are combined into ONE score per task. No sequential application.
+
 ```
+// STEP 1: Calculate neglect scores per VALUE (lookup table)
 For each value:
   recentCompletions = countCompletions(value, last N days)
   totalRecentCompletions = sum of all values' completions
   expectedShare = valueWeight / totalWeight
   expectedCompletions = totalRecentCompletions * expectedShare
   neglectScore = expectedCompletions - recentCompletions
+  // Positive = neglected, Negative = over-represented, Zero = balanced
 
-// Positive neglectScore = neglected (prioritize)
-// Negative neglectScore = over-represented (de-prioritize)
-// Zero = perfectly balanced
+// STEP 2: Calculate combined score for EACH TASK
+For each task:
+  // Base score from value weight
+  baseScore = task.value.weight / totalWeight
+  
+  // Neglect factor (from task's value)
+  neglectFactor = 1.0 + (normalizedNeglectScore[task.valueId] * neglectInfluence)
+  
+  // Urgency factor (from task's deadline)
+  urgencyFactor = isTaskUrgent(task) ? urgencyBoostMultiplier : 1.0
+  
+  // COMBINED SCORE (all factors multiplied together)
+  task.allocationScore = baseScore * neglectFactor * urgencyFactor
 
-// Blend with base weight:
-effectiveWeight = baseWeight * (1 - neglectInfluence) 
-                + normalizedNeglectScore * neglectInfluence
+// STEP 3: Sort all tasks by combined score, take top N
+allocatedTasks = tasks.sortByScore().take(dailyLimit)
 ```
+
+**Key principle**: Every task gets a single combined score. No sequential filtering or value-level-then-task-level application.
 
 ---
 
@@ -119,8 +134,8 @@ import 'package:taskly/domain/services/allocation/urgency_detector.dart';
 /// Used by the Reflector persona to maintain balance across values.
 /// Calculates neglect scores based on recent completion history.
 /// 
-/// **Combo Mode Support**: When `urgencyBoostMultiplier > 1.0` is provided,
-/// this allocator also applies urgency boosting to tasks with deadlines.
+/// **Combined Scoring**: All factors (value weight, neglect, urgency) are
+/// combined into a single score per task. No sequential application.
 /// This enables Custom mode combinations like "neglect + urgency".
 class NeglectBasedAllocator implements AllocationStrategy {
   const NeglectBasedAllocator({
@@ -147,35 +162,62 @@ class NeglectBasedAllocator implements AllocationStrategy {
       days: parameters.neglectLookbackDays,
     );
 
-    // Calculate neglect scores
+    // Calculate neglect scores per value (lookup table)
     final neglectScores = _calculateNeglectScores(
       values: values,
       completionsByValue: completionsByValue,
     );
 
-    // Calculate effective weights (blend base weight with neglect)
-    final effectiveWeights = _calculateEffectiveWeights(
-      values: values,
+    // Normalize neglect scores to multiplier range
+    final neglectMultipliers = _normalizeNeglectScores(
       neglectScores: neglectScores,
       neglectInfluence: parameters.neglectInfluence,
     );
 
-    // COMBO MODE: Apply urgency boost if enabled (urgencyBoostMultiplier > 1.0)
-    if (parameters.urgencyBoostMultiplier > 1.0) {
-      final detector = UrgencyDetector(
-        taskThresholdDays: parameters.taskUrgencyThresholdDays,
-        projectThresholdDays: parameters.projectUrgencyThresholdDays,
+    // Create urgency detector
+    final detector = UrgencyDetector(
+      taskThresholdDays: parameters.taskUrgencyThresholdDays,
+      projectThresholdDays: parameters.projectUrgencyThresholdDays,
+    );
+
+    // Calculate total weight for normalization
+    final totalWeight = values.fold(0.0, (sum, v) => sum + v.weight);
+
+    // SINGLE-PASS: Calculate combined score for EACH task
+    final scoredTasks = <_ScoredTask>[];
+    for (final task in tasks) {
+      if (task.valueId == null || task.valueId!.isEmpty) continue;
+      
+      final value = values.firstWhere(
+        (v) => v.id == task.valueId,
+        orElse: () => values.first,
       );
-      _applyUrgencyBoost(
-        tasks: tasks,
-        detector: detector,
-        boostMultiplier: parameters.urgencyBoostMultiplier,
-        effectiveWeights: effectiveWeights,
-      );
+      
+      // Base score from value weight
+      final baseScore = value.weight / totalWeight;
+      
+      // Neglect factor (from task's value)
+      final neglectFactor = neglectMultipliers[task.valueId] ?? 1.0;
+      
+      // Urgency factor (from task's deadline)
+      final urgencyFactor = detector.isTaskUrgent(task) 
+          ? parameters.urgencyBoostMultiplier 
+          : 1.0;
+      
+      // COMBINED SCORE: all factors multiplied together
+      final combinedScore = baseScore * neglectFactor * urgencyFactor;
+      
+      scoredTasks.add(_ScoredTask(
+        task: task,
+        score: combinedScore,
+        isUrgent: detector.isTaskUrgent(task),
+        isNeglectedValue: (neglectScores[task.valueId] ?? 0) > 0,
+      ));
     }
 
-    // Group tasks by value
-    final tasksByValue = _groupTasksByValue(tasks);
+    // Sort by combined score (highest first) and take top N
+    scoredTasks.sort((a, b) => b.score.compareTo(a.score));
+    final topTasks = scoredTasks.take(parameters.dailyLimit).toList();
 
     // Allocate proportionally using effective weights
     final allocated = _allocateByWeights(
