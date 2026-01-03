@@ -121,7 +121,7 @@ When a user modifies ANY setting from a preset persona, the system automatically
 | `urgencyMode` getter | No longer needed |
 | `urgencyInfluence` field | Replaced by `urgencyBoostMultiplier` (different semantic) |
 | `alwaysIncludeUrgent` field | Replaced by `UrgentTaskBehavior.includeAll` |
-| `showExcludedUrgentWarning` field | Replaced by `UrgentTaskBehavior.warnOnly` |
+| `showExcludedUrgentWarning` field | Replaced by `UrgentTaskBehavior.warnOnly` (not in DisplaySettings - handled by enum) |
 | `minimumTasksPerCategory` field | Unused, unimplemented strategy |
 | `topNCategories` field | Unused, unimplemented strategy |
 
@@ -455,7 +455,7 @@ class ProjectNextTaskResolver {
   Task? getNextTask({
     required Project project,
     required List<Task> projectTasks,
-    required AllocationSettings settings,
+    required AllocationConfig config,
   });
 }
 ```
