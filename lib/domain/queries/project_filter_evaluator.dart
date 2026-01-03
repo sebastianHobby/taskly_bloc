@@ -41,6 +41,7 @@ class ProjectFilterEvaluator {
       ProjectBoolPredicate() => _evalBool(project, p),
       ProjectDatePredicate() => _evalDate(project, p, ctx),
       ProjectLabelPredicate() => _evalLabel(project, p),
+      ProjectIdPredicate() => _evalId(project, p),
     };
   }
 
@@ -61,6 +62,10 @@ class ProjectFilterEvaluator {
       predicateLabelIds: p.labelIds,
       operator: p.operator,
     );
+  }
+
+  bool _evalId(Project project, ProjectIdPredicate p) {
+    return project.id == p.id;
   }
 
   bool _evalDate(

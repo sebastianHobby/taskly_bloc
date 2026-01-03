@@ -1,0 +1,640 @@
+# Phase 6: Reflector Mode
+
+> **Status**: Not Started  
+> **Effort**: 4-5 days  
+> **Dependencies**: Phase 2 (Urgency Unification)
+
+---
+
+## AI Implementation Instructions
+
+### General Guidelines
+1. **Follow existing patterns** - Match code style, naming conventions, and architecture patterns already in the codebase
+2. **Do NOT run or update tests** - If tests break, leave them; they will be fixed separately
+3. **Run `flutter analyze` at end of phase** - Fix ALL errors and warnings before marking phase complete
+4. **Format code** - Use `dart format` or the dart_format tool for Dart files
+
+### Build Runner
+- **Assume `build_runner` is running in watch mode** in background
+- **Do NOT run `dart run build_runner build` manually**
+- After creating/modifying freezed files, wait for `.freezed.dart` / `.g.dart` files to regenerate
+- If generated files don't update after ~45 seconds, there's likely a **syntax error in the source .dart file** - review and fix
+
+### Freezed Syntax (Project Convention)
+- Use **`sealed class`** for union types (multiple factory constructors / variants):
+  ```dart
+  @freezed
+  sealed class MyEvent with _$MyEvent {
+    const factory MyEvent.started() = _Started;
+    const factory MyEvent.loaded(Data data) = _Loaded;
+  }
+  ```
+- Use **`abstract class`** for single-class models with copyWith:
+  ```dart
+  @freezed
+  abstract class MyModel with _$MyModel {
+    const factory MyModel({
+      required String id,
+      required String name,
+    }) = _MyModel;
+  }
+  ```
+
+### Compatibility - IMPORTANT
+- **No backwards compatibility** - Remove old fields/code completely
+- **No deprecation annotations** - Just delete obsolete code
+- **No migration logic** - Clean break, assume fresh state
+
+### Domain Layer Rules
+- Models must be immutable (`@immutable` annotation for non-freezed classes)
+- Services should depend on repository contracts, not implementations
+- Use constructor injection for dependencies
+- Keep business logic in services, not BLoCs
+
+---
+
+## Objective
+
+Implement the "Reflector" allocation mode that prioritizes neglected values:
+- Add analytics method to get recent completions by value
+- Create `NeglectBasedAllocator` that calculates neglect scores
+- Integrate with orchestrator for Reflector persona
+- Values you've been ignoring rise to the top
+
+---
+
+## Background
+
+The Reflector persona helps users maintain balance across their values. It works by:
+
+1. **Looking back** at recent completions (configurable days)
+2. **Calculating expected** completions per value based on weights
+3. **Comparing actual vs expected** to find neglect
+4. **Boosting neglected values** in allocation
+
+**Example:**
+- User has 3 values: Health (40%), Work (40%), Social (20%)
+- Over last 7 days, completed 10 tasks: 6 Work, 4 Health, 0 Social
+- Expected: 4 Work, 4 Health, 2 Social
+- Neglect scores: Work -2, Health 0, Social +2
+- Result: Social tasks get priority boost
+
+---
+
+## Algorithm
+
+```
+For each value:
+  recentCompletions = countCompletions(value, last N days)
+  totalRecentCompletions = sum of all values' completions
+  expectedShare = valueWeight / totalWeight
+  expectedCompletions = totalRecentCompletions * expectedShare
+  neglectScore = expectedCompletions - recentCompletions
+
+// Positive neglectScore = neglected (prioritize)
+// Negative neglectScore = over-represented (de-prioritize)
+// Zero = perfectly balanced
+
+// Blend with base weight:
+effectiveWeight = baseWeight * (1 - neglectInfluence) 
+                + normalizedNeglectScore * neglectInfluence
+```
+
+---
+
+## Files to Create
+
+### 1. `lib/domain/services/allocation/neglect_based_allocator.dart`
+
+```dart
+import 'package:taskly/domain/models/settings/allocation_settings.dart';
+import 'package:taskly/domain/models/task/task.dart';
+import 'package:taskly/domain/models/label/value_label.dart';
+import 'package:taskly/domain/services/allocation/allocation_strategy.dart';
+
+/// Allocator that prioritizes values the user has been neglecting.
+/// 
+/// Used by the Reflector persona to maintain balance across values.
+/// Calculates neglect scores based on recent completion history.
+class NeglectBasedAllocator implements AllocationStrategy {
+  const NeglectBasedAllocator({
+    required this.analyticsService,
+  });
+
+  final AnalyticsService analyticsService;
+
+  @override
+  Future<AllocationResult> allocate({
+    required List<Task> tasks,
+    required List<ValueLabel> values,
+    required AllocationParameters parameters,
+  }) async {
+    if (tasks.isEmpty || values.isEmpty) {
+      return AllocationResult(
+        allocatedTasks: [],
+        warnings: [],
+      );
+    }
+
+    // Get recent completions by value
+    final completionsByValue = await analyticsService.getRecentCompletionsByValue(
+      days: parameters.reflectorLookbackDays,
+    );
+
+    // Calculate neglect scores
+    final neglectScores = _calculateNeglectScores(
+      values: values,
+      completionsByValue: completionsByValue,
+    );
+
+    // Calculate effective weights (blend base weight with neglect)
+    final effectiveWeights = _calculateEffectiveWeights(
+      values: values,
+      neglectScores: neglectScores,
+      neglectInfluence: parameters.neglectInfluence,
+    );
+
+    // Group tasks by value
+    final tasksByValue = _groupTasksByValue(tasks);
+
+    // Allocate proportionally using effective weights
+    final allocated = _allocateByWeights(
+      tasksByValue: tasksByValue,
+      effectiveWeights: effectiveWeights,
+      limit: parameters.dailyLimit,
+    );
+
+    return AllocationResult(
+      allocatedTasks: allocated.map((t) => AllocatedTask(
+        task: t,
+        reason: _buildReason(t, neglectScores),
+      )).toList(),
+      warnings: [],
+    );
+  }
+
+  /// Calculate neglect score for each value.
+  /// Positive = neglected, Negative = over-represented.
+  Map<String, double> _calculateNeglectScores({
+    required List<ValueLabel> values,
+    required Map<String, int> completionsByValue,
+  }) {
+    final scores = <String, double>{};
+    
+    // Total completions across all values
+    final totalCompletions = completionsByValue.values.fold(0, (a, b) => a + b);
+    if (totalCompletions == 0) {
+      // No history, all scores are 0
+      for (final value in values) {
+        scores[value.id] = 0;
+      }
+      return scores;
+    }
+
+    // Total weight for normalization
+    final totalWeight = values.fold(0.0, (sum, v) => sum + v.weight);
+
+    for (final value in values) {
+      final actual = completionsByValue[value.id] ?? 0;
+      final expectedShare = value.weight / totalWeight;
+      final expected = totalCompletions * expectedShare;
+      
+      // Positive means neglected (expected more than actual)
+      scores[value.id] = expected - actual;
+    }
+
+    return scores;
+  }
+
+  /// Blend base weights with neglect scores.
+  Map<String, double> _calculateEffectiveWeights({
+    required List<ValueLabel> values,
+    required Map<String, double> neglectScores,
+    required double neglectInfluence,
+  }) {
+    final weights = <String, double>{};
+
+    // Normalize neglect scores to 0-1 range
+    final maxNeglect = neglectScores.values
+        .map((s) => s.abs())
+        .fold(0.0, (a, b) => a > b ? a : b);
+    
+    final normalizedScores = <String, double>{};
+    for (final entry in neglectScores.entries) {
+      normalizedScores[entry.key] = maxNeglect > 0 
+          ? (entry.value / maxNeglect + 1) / 2  // Scale to 0-1
+          : 0.5;
+    }
+
+    // Total weight for normalization
+    final totalWeight = values.fold(0.0, (sum, v) => sum + v.weight);
+
+    for (final value in values) {
+      final baseWeight = value.weight / totalWeight;
+      final neglectBoost = normalizedScores[value.id] ?? 0.5;
+      
+      // Blend: (1 - influence) * base + influence * neglect
+      weights[value.id] = (1 - neglectInfluence) * baseWeight 
+                        + neglectInfluence * neglectBoost;
+    }
+
+    // Normalize to sum to 1
+    final totalEffective = weights.values.fold(0.0, (a, b) => a + b);
+    if (totalEffective > 0) {
+      for (final key in weights.keys) {
+        weights[key] = weights[key]! / totalEffective;
+      }
+    }
+
+    return weights;
+  }
+
+  Map<String, List<Task>> _groupTasksByValue(List<Task> tasks) {
+    final grouped = <String, List<Task>>{};
+    for (final task in tasks) {
+      final valueId = task.valueId;
+      if (valueId != null && valueId.isNotEmpty) {
+        grouped.putIfAbsent(valueId, () => []).add(task);
+      }
+    }
+    return grouped;
+  }
+
+  List<Task> _allocateByWeights({
+    required Map<String, List<Task>> tasksByValue,
+    required Map<String, double> effectiveWeights,
+    required int limit,
+  }) {
+    final allocated = <Task>[];
+    final remaining = <String, List<Task>>{};
+    
+    // Copy tasks so we can remove as we allocate
+    for (final entry in tasksByValue.entries) {
+      remaining[entry.key] = List.from(entry.value);
+    }
+
+    // Allocate in rounds to maintain proportions
+    while (allocated.length < limit) {
+      var addedThisRound = false;
+      
+      for (final valueId in effectiveWeights.keys) {
+        if (allocated.length >= limit) break;
+        
+        final valueTasks = remaining[valueId];
+        if (valueTasks == null || valueTasks.isEmpty) continue;
+
+        // Check if this value deserves another slot
+        final currentCount = allocated.where((t) => t.valueId == valueId).length;
+        final targetCount = (limit * effectiveWeights[valueId]!).ceil();
+        
+        if (currentCount < targetCount && valueTasks.isNotEmpty) {
+          allocated.add(valueTasks.removeAt(0));
+          addedThisRound = true;
+        }
+      }
+
+      if (!addedThisRound) break; // No more tasks available
+    }
+
+    return allocated;
+  }
+
+  String _buildReason(Task task, Map<String, double> neglectScores) {
+    final score = neglectScores[task.valueId] ?? 0;
+    if (score > 0) {
+      return 'Balancing neglected value';
+    } else if (score < 0) {
+      return 'Value alignment';
+    }
+    return 'Balanced allocation';
+  }
+}
+```
+
+---
+
+## Files to Modify
+
+### 2. `lib/domain/services/analytics/analytics_service.dart`
+
+**Add method to contract:**
+
+```dart
+/// Returns count of completed tasks per value over the last [days] days.
+/// 
+/// Used by Reflector mode to calculate neglect scores.
+/// Returns map of valueId -> completion count.
+Future<Map<String, int>> getRecentCompletionsByValue({
+  required int days,
+});
+```
+
+---
+
+### 3. `lib/data/features/analytics/services/analytics_service_impl.dart`
+
+**Implement the method:**
+
+```dart
+@override
+Future<Map<String, int>> getRecentCompletionsByValue({
+  required int days,
+}) async {
+  final cutoff = DateTime.now().subtract(Duration(days: days));
+  
+  // Query completed tasks since cutoff
+  final completedTasks = await _taskRepository.getCompletedTasksSince(cutoff);
+  
+  // Count by value
+  final counts = <String, int>{};
+  for (final task in completedTasks) {
+    final valueId = task.valueId;
+    if (valueId != null && valueId.isNotEmpty) {
+      counts[valueId] = (counts[valueId] ?? 0) + 1;
+    }
+  }
+  
+  return counts;
+}
+```
+
+**Note:** You may need to add `getCompletedTasksSince` to the task repository if it doesn't exist.
+
+---
+
+### 4. `lib/domain/services/allocation/allocation_orchestrator.dart`
+
+**Use NeglectBasedAllocator for Reflector persona:**
+
+```dart
+// In the orchestration logic
+AllocationStrategy _getStrategyForPersona(AllocationPersona persona) {
+  return switch (persona) {
+    AllocationPersona.idealist => ProportionalAllocator(),
+    AllocationPersona.reflector => NeglectBasedAllocator(
+      analyticsService: _analyticsService,
+    ),
+    AllocationPersona.realist => UrgencyWeightedAllocator(),
+    AllocationPersona.firefighter => UrgencyWeightedAllocator(),
+    AllocationPersona.custom => _getCustomStrategy(settings),
+  };
+}
+```
+
+**Ensure parameters include Reflector settings:**
+
+```dart
+final parameters = AllocationParameters(
+  // ... existing params
+  reflectorLookbackDays: settings.reflectorLookbackDays,
+  neglectInfluence: settings.neglectInfluence,
+);
+```
+
+---
+
+### 5. `lib/domain/services/allocation/allocation_strategy.dart`
+
+**Add Reflector parameters to AllocationParameters:**
+
+```dart
+/// Days to look back for completion history (Reflector mode).
+final int reflectorLookbackDays;
+
+/// Weight of neglect score vs base weight (0-1). (Reflector mode).
+/// 0 = pure base weight, 1 = pure neglect-based.
+final double neglectInfluence;
+```
+
+---
+
+## Step-by-Step Implementation
+
+### Step 1: Add analytics method
+1. Add `getRecentCompletionsByValue` to analytics service contract
+2. Implement in analytics service impl
+3. Add repository method if needed (`getCompletedTasksSince`)
+
+### Step 2: Update AllocationParameters
+Add `reflectorLookbackDays` and `neglectInfluence` fields.
+
+### Step 3: Create NeglectBasedAllocator
+Create `lib/domain/services/allocation/neglect_based_allocator.dart` with full implementation.
+
+### Step 4: Update AllocationOrchestrator
+1. Import NeglectBasedAllocator
+2. Add strategy selection based on persona
+3. Pass Reflector parameters
+
+### Step 5: Test neglect calculation manually
+Verify the algorithm works correctly:
+- With no history (all scores = 0)
+- With balanced history
+- With skewed history (some values neglected)
+
+### Step 6: Run flutter analyze
+```bash
+flutter analyze
+```
+Fix all errors and warnings.
+
+---
+
+## Verification Checklist
+
+- [ ] `getRecentCompletionsByValue` method added to analytics contract
+- [ ] `getRecentCompletionsByValue` implemented in analytics service
+- [ ] Method correctly queries completed tasks in date range
+- [ ] Method groups by valueId and counts
+- [ ] `AllocationParameters` has `reflectorLookbackDays` field
+- [ ] `AllocationParameters` has `neglectInfluence` field
+- [ ] `NeglectBasedAllocator` created
+- [ ] Allocator implements `AllocationStrategy` interface
+- [ ] `_calculateNeglectScores` returns positive for neglected values
+- [ ] `_calculateNeglectScores` returns negative for over-represented values
+- [ ] `_calculateNeglectScores` handles zero completions
+- [ ] `_calculateEffectiveWeights` blends base weight with neglect
+- [ ] `neglectInfluence = 0` uses pure base weights
+- [ ] `neglectInfluence = 1` uses pure neglect-based weights
+- [ ] Orchestrator uses NeglectBasedAllocator for Reflector persona
+- [ ] Orchestrator passes Reflector parameters
+- [ ] Allocation reasons reflect neglect status
+- [ ] **NEW**: "Building history" info banner shown when <7 days of data
+- [ ] Localization strings added (English + Spanish)
+- [ ] `flutter analyze` passes with 0 errors and 0 warnings
+
+---
+
+## "No History" UI Handling
+
+When Reflector mode has insufficient history data, show an informational banner:
+
+### Create: `lib/presentation/features/next_action/widgets/reflector_info_banner.dart`
+
+```dart
+/// Banner shown when Reflector mode lacks sufficient history.
+class ReflectorInfoBanner extends StatelessWidget {
+  const ReflectorInfoBanner({
+    super.key,
+    required this.completionCount,
+    required this.lookbackDays,
+  });
+
+  final int completionCount;
+  final int lookbackDays;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.insights,
+            color: colorScheme.onTertiaryContainer,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.reflectorBuildingHistory,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onTertiaryContainer,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.reflectorHistoryExplanation(completionCount, lookbackDays),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onTertiaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+### Display Logic
+
+Show banner in Focus screen when:
+- `persona == AllocationPersona.reflector`
+- Total completions in lookback period < 5
+
+### Localization Strings
+
+**app_en.arb:**
+```json
+"reflectorBuildingHistory": "Building your history...",
+"@reflectorBuildingHistory": {
+  "description": "Title for Reflector mode info banner"
+},
+"reflectorHistoryExplanation": "Reflector works best with more data. You have {count} completions in the last {days} days. Using value weights for now.",
+"@reflectorHistoryExplanation": {
+  "description": "Explanation for Reflector mode with insufficient history",
+  "placeholders": {
+    "count": { "type": "int" },
+    "days": { "type": "int" }
+  }
+}
+```
+
+**app_es.arb:**
+```json
+"reflectorBuildingHistory": "Construyendo tu historial...",
+"reflectorHistoryExplanation": "Reflector funciona mejor con más datos. Tienes {count} completadas en los últimos {days} días. Usando pesos de valores por ahora."
+```
+
+---
+
+## Algorithm Examples
+
+### Example 1: Neglected Social
+
+**Setup:**
+- Values: Health (40%), Work (40%), Social (20%)
+- Last 7 days: 6 Work, 4 Health, 0 Social (10 total)
+
+**Calculation:**
+```
+Expected (based on weights):
+  Health: 10 * 0.4 = 4
+  Work:   10 * 0.4 = 4
+  Social: 10 * 0.2 = 2
+
+Neglect scores (expected - actual):
+  Health: 4 - 4 = 0  (balanced)
+  Work:   4 - 6 = -2 (over-represented)
+  Social: 2 - 0 = +2 (NEGLECTED)
+
+With neglectInfluence = 0.7:
+  Social gets significant boost
+  Work gets reduced
+  Health stays similar
+```
+
+### Example 2: Fresh Start (No History)
+
+**Setup:**
+- Values: A (50%), B (30%), C (20%)
+- Last 7 days: 0 completions
+
+**Calculation:**
+```
+All neglect scores = 0
+Effective weights = base weights
+Allocation is purely proportional
+```
+
+### Example 3: Perfectly Balanced
+
+**Setup:**
+- Values: A (50%), B (30%), C (20%)
+- Last 7 days: 5 A, 3 B, 2 C (10 total, matches weights)
+
+**Calculation:**
+```
+Expected: A=5, B=3, C=2
+Actual:   A=5, B=3, C=2
+Neglect scores: all 0
+Effective weights = base weights
+```
+
+---
+
+## Edge Cases
+
+| Scenario | Expected Behavior |
+|----------|-------------------|
+| No completion history | Use base weights only |
+| Only one value has tasks | That value gets all slots |
+| All values equally neglected | Use base weights |
+| `neglectInfluence = 0` | Pure proportional allocation |
+| `neglectInfluence = 1` | Pure neglect-based allocation |
+| New value (no history) | Treated as neglected |
+| Deleted value in history | Ignored (no matching tasks) |
+
+---
+
+## Performance Notes
+
+- `getRecentCompletionsByValue` may be expensive with large history
+- Consider caching results for the session
+- Lookback period should be reasonable (7-30 days)
+- Very long lookback diminishes "recent" behavior detection

@@ -3,12 +3,15 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_trigger_config.dart';
 import 'package:uuid/uuid.dart';
@@ -252,10 +255,14 @@ class _WorkflowCreatorPageState extends State<WorkflowCreatorPage> {
       final now = DateTime.now();
 
       final workflowSteps = _steps
+          .asMap()
+          .entries
           .map(
-            (s) => WorkflowStep(
-              stepName: s.name,
-              view: s.toViewDefinition(),
+            (entry) => WorkflowStep(
+              id: entry.value.id,
+              name: entry.value.name,
+              order: entry.key,
+              sections: entry.value.toSections(),
             ),
           )
           .toList();
@@ -402,15 +409,23 @@ class WorkflowStepFormData {
   }
 
   factory WorkflowStepFormData.fromStep(WorkflowStep step) {
-    final entityType = step.view.when(
-      collection: (selector, _, __) => selector.entityType,
-      agenda: (selector, _, __, ___) => selector.entityType,
-      detail: (_, __, ___) => EntityType.task,
-      allocated: (selector, _, __) => selector.entityType,
-    );
+    // Extract entity type from first data section, defaulting to task
+    EntityType entityType = EntityType.task;
+    for (final section in step.sections) {
+      if (section is DataSection) {
+        final config = section.config;
+        entityType = switch (config) {
+          TaskDataConfig() => EntityType.task,
+          ProjectDataConfig() => EntityType.project,
+          LabelDataConfig() => EntityType.label,
+          ValueDataConfig() => EntityType.label, // Values are a type of label
+        };
+        break;
+      }
+    }
     return WorkflowStepFormData(
-      id: const Uuid().v4(),
-      name: step.stepName,
+      id: step.id,
+      name: step.name,
       entityType: entityType,
     );
   }
@@ -430,20 +445,29 @@ class WorkflowStepFormData {
     );
   }
 
-  ViewDefinition toViewDefinition() {
-    // Create a basic collection view for the entity type
-    return ViewDefinition.collection(
-      selector: EntitySelector(entityType: entityType),
-      display: DisplayConfig(
-        showCompleted: false,
-        sorting: const [
-          SortCriterion(
-            field: SortField.updatedAt,
-            direction: SortDirection.desc,
-          ),
-        ],
+  List<Section> toSections() {
+    // Create a basic data section for the entity type
+    final dataConfig = switch (entityType) {
+      EntityType.task => DataConfig.task(query: const TaskQuery()),
+      EntityType.project => DataConfig.project(query: const ProjectQuery()),
+      EntityType.label => const DataConfig.label(),
+      EntityType.goal => DataConfig.task(query: const TaskQuery()), // Fallback
+    };
+
+    return [
+      Section.data(
+        config: dataConfig,
+        display: const DisplayConfig(
+          showCompleted: false,
+          sorting: [
+            SortCriterion(
+              field: SortField.updatedAt,
+              direction: SortDirection.desc,
+            ),
+          ],
+        ),
       ),
-    );
+    ];
   }
 }
 

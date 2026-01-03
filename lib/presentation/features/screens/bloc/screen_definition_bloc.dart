@@ -36,11 +36,24 @@ class ScreenDefinitionBloc
   ScreenDefinitionBloc({
     required ScreenDefinitionsRepositoryContract repository,
   }) : _repository = repository,
+       _createdAt = DateTime.now(),
        super(const ScreenDefinitionState.loading()) {
+    talker.blocLog('ScreenDefinitionBloc', 'CREATED at $_createdAt');
     on<_SubscriptionRequested>(_onSubscriptionRequested);
   }
 
   final ScreenDefinitionsRepositoryContract _repository;
+  final DateTime _createdAt;
+  String? _currentScreenKey;
+
+  @override
+  Future<void> close() {
+    talker.blocLog(
+      'ScreenDefinitionBloc',
+      'CLOSING - was created at $_createdAt, screenKey=$_currentScreenKey',
+    );
+    return super.close();
+  }
 
   /// Grace period to wait before showing "not found" state.
   /// This allows time for system screen seeding to complete after auth.
@@ -50,6 +63,7 @@ class ScreenDefinitionBloc
     _SubscriptionRequested event,
     Emitter<ScreenDefinitionState> emit,
   ) async {
+    _currentScreenKey = event.screenKey;
     talker.blocLog(
       'ScreenDefinition',
       '_onSubscriptionRequested START for screenKey="${event.screenKey}"',

@@ -185,6 +185,47 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<List<Task>> queryTasks(TaskQuery query) async {
+    return _buildAndExecuteQuery(query).first;
+  }
+
+  @override
+  Future<List<Task>> getTasksByProject(String projectId) async {
+    final query = TaskQuery.forProject(projectId: projectId);
+    return queryTasks(query);
+  }
+
+  @override
+  Future<List<Task>> getTasksByLabel(String labelId) async {
+    final query = TaskQuery.forLabel(labelId: labelId);
+    return queryTasks(query);
+  }
+
+  @override
+  Future<List<Task>> getTasksByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final joined =
+        (driftDb.select(driftDb.taskTable)..where((t) => t.id.isIn(ids))).join(
+          [
+            leftOuterJoin(
+              driftDb.projectTable,
+              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+            ),
+            leftOuterJoin(
+              driftDb.taskLabelsTable,
+              driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+            ),
+            leftOuterJoin(
+              driftDb.labelTable,
+              driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+            ),
+          ],
+        );
+    final rows = await joined.get();
+    return TaskAggregation.fromRows(rows: rows, driftDb: driftDb).toTasks();
+  }
+
+  @override
   Future<void> create({
     required String name,
     String? description,

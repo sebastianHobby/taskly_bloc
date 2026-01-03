@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/workflow_progress.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -25,7 +23,7 @@ class SupportBlocksSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (blocks.isEmpty) return const SizedBox.shrink();
 
-    final tasks = items.map((item) => item.entity).toList(growable: false);
+    final sortedBlocks = supportBlockComputer.sortByOrder(blocks);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,12 +40,11 @@ class SupportBlocksSection extends StatelessWidget {
           child: Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: blocks
+            children: sortedBlocks
                 .map(
                   (block) => SupportBlockCard(
                     block: block,
                     items: items,
-                    tasks: tasks,
                     supportBlockComputer: supportBlockComputer,
                   ),
                 )
@@ -64,142 +61,60 @@ class SupportBlockCard extends StatelessWidget {
   const SupportBlockCard({
     required this.block,
     required this.items,
-    required this.tasks,
     required this.supportBlockComputer,
     super.key,
   });
 
   final SupportBlock block;
   final List<WorkflowItem<Task>> items;
-  final List<Task> tasks;
   final SupportBlockComputer supportBlockComputer;
 
   @override
   Widget build(BuildContext context) {
     return switch (block) {
-      TaskStatsBlock(:final statType, :final range) => _TaskStatsCard(
-        statType: statType,
-        range: range,
-        supportBlockComputer: supportBlockComputer,
-        tasks: tasks,
-      ),
       WorkflowProgressBlock() => _WorkflowProgressCard(items: items),
-      BreakdownBlock(
-        :final dimension,
-        :final maxItems,
-        :final statType,
-        :final range,
+      QuickActionsBlock(:final actions) => _QuickActionsCard(actions: actions),
+      ContextSummaryBlock(
+        :final title,
+        :final showDescription,
+        :final showMetadata,
       ) =>
-        _BreakdownCard(
-          dimension: dimension,
-          statType: statType,
-          range: range,
-          maxItems: maxItems,
-          supportBlockComputer: supportBlockComputer,
-          tasks: tasks,
+        _ContextSummaryCard(
+          title: title,
+          showDescription: showDescription,
+          showMetadata: showMetadata,
         ),
-      FilteredListBlock(:final title, :final maxItems) => _FilteredListCard(
-        title: title,
-        maxItems: maxItems,
-        block: block as FilteredListBlock,
+      RelatedEntitiesBlock(:final entityTypes, :final maxItems) =>
+        _RelatedEntitiesCard(entityTypes: entityTypes, maxItems: maxItems),
+      StatsBlock(:final stats) => _StatsCard(
+        stats: stats,
         supportBlockComputer: supportBlockComputer,
-        tasks: tasks,
       ),
-      MoodCorrelationBlock(:final statType, :final range) =>
-        _MoodCorrelationCard(
-          statType: statType,
-          range: range,
+      ProblemSummaryBlock(
+        :final title,
+        :final showCount,
+        :final showList,
+        :final maxListItems,
+      ) =>
+        _ProblemSummaryCard(
+          title: title ?? 'Issues',
+          showCount: showCount,
+          showList: showList,
+          maxListItems: maxListItems,
           supportBlockComputer: supportBlockComputer,
-          tasks: tasks,
+          block: block as ProblemSummaryBlock,
         ),
+      EmptyStateBlock(:final message, :final icon, :final actionLabel) =>
+        _EmptyStateCard(
+          message: message,
+          icon: icon,
+          actionLabel: actionLabel,
+        ),
+      EntityHeaderBlock() =>
+        // EntityHeader is rendered separately in detail pages
+        // as it needs entity data, not just configuration
+        const SizedBox.shrink(),
     };
-  }
-}
-
-class _TaskStatsCard extends StatelessWidget {
-  const _TaskStatsCard({
-    required this.statType,
-    required this.range,
-    required this.supportBlockComputer,
-    required this.tasks,
-  });
-
-  final TaskStatType statType;
-  final DateRange? range;
-  final SupportBlockComputer supportBlockComputer;
-  final List<Task> tasks;
-
-  String _labelForStat(TaskStatType type) {
-    return switch (type) {
-      TaskStatType.totalCount => 'Total tasks',
-      TaskStatType.completedCount => 'Completed',
-      TaskStatType.completionRate => 'Completion rate',
-      TaskStatType.staleCount => 'Stale tasks',
-      TaskStatType.overdueCount => 'Overdue',
-      TaskStatType.avgDaysToComplete => 'Avg days to complete',
-      TaskStatType.completedThisWeek => 'Done this week',
-      TaskStatType.velocity => 'Velocity',
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: supportBlockComputer.computeTaskStats(
-        TaskStatsBlock(statType: statType, range: range),
-        tasks,
-      ),
-      builder: (context, snapshot) {
-        final label = _labelForStat(statType);
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _SupportCardContainer(
-            title: label,
-            child: const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return _SupportCardContainer(
-            title: label,
-            child: const Text('Failed to load'),
-          );
-        }
-
-        final result = snapshot.data;
-        if (result == null) {
-          return _SupportCardContainer(
-            title: label,
-            child: const Text('No data'),
-          );
-        }
-
-        return _SupportCardContainer(
-          title: label,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                result.formattedValue ?? result.value.toStringAsFixed(1),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              if (result.description != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    result.description!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
@@ -230,235 +145,229 @@ class _WorkflowProgressCard extends StatelessWidget {
   }
 }
 
-class _BreakdownCard extends StatelessWidget {
-  const _BreakdownCard({
-    required this.dimension,
-    required this.statType,
-    required this.range,
-    required this.maxItems,
-    required this.supportBlockComputer,
-    required this.tasks,
+class _QuickActionsCard extends StatelessWidget {
+  const _QuickActionsCard({
+    required this.actions,
+    // ignore: unused_element_parameter
+    this.onActionTap,
   });
 
-  final BreakdownDimension dimension;
-  final TaskStatType statType;
-  final DateRange? range;
-  final int maxItems;
-  final SupportBlockComputer supportBlockComputer;
-  final List<Task> tasks;
+  final List<QuickAction> actions;
+
+  /// Called when a quick action is tapped. Extension point for action handling.
+  final void Function(QuickAction action)? onActionTap;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: supportBlockComputer.computeBreakdown(
-        BreakdownBlock(
-          statType: statType,
-          dimension: dimension,
-          range: range,
-          maxItems: maxItems,
-        ),
-        tasks,
+    return _SupportCardContainer(
+      title: 'Quick Actions',
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: actions.map((action) {
+          return ActionChip(
+            label: Text(action.label),
+            onPressed: onActionTap != null ? () => onActionTap!(action) : null,
+          );
+        }).toList(),
       ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _SupportCardContainer(
-            title: 'Breakdown by ${dimension.name}',
-            child: const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return _SupportCardContainer(
-            title: 'Breakdown by ${dimension.name}',
-            child: const Text('Failed to load'),
-          );
-        }
-
-        final grouped = snapshot.data;
-        if (grouped == null || grouped.isEmpty) {
-          return _SupportCardContainer(
-            title: 'Breakdown by ${dimension.name}',
-            child: const Text('No data'),
-          );
-        }
-
-        return _SupportCardContainer(
-          title: 'Breakdown by ${dimension.name}',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: grouped.entries
-                .map(
-                  (entry) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(child: Text(entry.key)),
-                        Text(
-                          entry.value.formattedValue ??
-                              entry.value.value.toStringAsFixed(1),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      },
     );
   }
 }
 
-class _FilteredListCard extends StatelessWidget {
-  const _FilteredListCard({
+class _ContextSummaryCard extends StatelessWidget {
+  const _ContextSummaryCard({
     required this.title,
+    required this.showDescription,
+    required this.showMetadata,
+  });
+
+  final String? title;
+  final bool showDescription;
+  final bool showMetadata;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SupportCardContainer(
+      title: title ?? 'Context',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (showDescription)
+            Text(
+              'Context information will appear here',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          if (showMetadata)
+            Text(
+              'Metadata will appear here',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RelatedEntitiesCard extends StatelessWidget {
+  const _RelatedEntitiesCard({
+    required this.entityTypes,
     required this.maxItems,
-    required this.block,
+  });
+
+  final List<String> entityTypes;
+  final int maxItems;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SupportCardContainer(
+      title: 'Related Items',
+      child: Text(
+        'Related ${entityTypes.join(", ")} will appear here',
+        style: Theme.of(context).textTheme.bodyMedium,
+      ),
+    );
+  }
+}
+
+class _StatsCard extends StatelessWidget {
+  const _StatsCard({
+    required this.stats,
     required this.supportBlockComputer,
-    required this.tasks,
+  });
+
+  final List<StatConfig> stats;
+  final SupportBlockComputer supportBlockComputer;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SupportCardContainer(
+      title: 'Statistics',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: stats.map((stat) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(stat.label),
+                const Text('--'), // Placeholder for computed value
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _ProblemSummaryCard extends StatelessWidget {
+  const _ProblemSummaryCard({
+    required this.title,
+    required this.showCount,
+    required this.showList,
+    required this.maxListItems,
+    required this.supportBlockComputer,
+    required this.block,
   });
 
   final String title;
-  final int maxItems;
-  final FilteredListBlock block;
+  final bool showCount;
+  final bool showList;
+  final int maxListItems;
   final SupportBlockComputer supportBlockComputer;
-  final List<Task> tasks;
+  final ProblemSummaryBlock block;
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: supportBlockComputer.computeFilteredTasks(
-        block,
-        tasks,
-        now: DateTime.now(),
-      ),
+    return FutureBuilder<int>(
+      future: supportBlockComputer.computeProblemCount(block),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _SupportCardContainer(
-            title: title,
-            child: const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return _SupportCardContainer(
-            title: title,
-            child: const Text('Failed to load'),
-          );
-        }
-
-        final filtered = snapshot.data ?? const <Task>[];
-        final visible = filtered.take(maxItems).toList(growable: false);
+        final count = snapshot.data ?? 0;
 
         return _SupportCardContainer(
           title: title,
-          child: filtered.isEmpty
-              ? const Text('No matches')
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final task in visible)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.circle, size: 8),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(task.name)),
-                          ],
-                        ),
-                      ),
-                    if (filtered.length > maxItems)
-                      Text(
-                        '+${filtered.length - maxItems} more',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                  ],
-                ),
-        );
-      },
-    );
-  }
-}
-
-class _MoodCorrelationCard extends StatelessWidget {
-  const _MoodCorrelationCard({
-    required this.statType,
-    required this.range,
-    required this.supportBlockComputer,
-    required this.tasks,
-  });
-
-  final TaskStatType statType;
-  final DateRange? range;
-  final SupportBlockComputer supportBlockComputer;
-  final List<Task> tasks;
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: supportBlockComputer.computeMoodCorrelation(
-        MoodCorrelationBlock(statType: statType, range: range),
-        tasks,
-      ),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _SupportCardContainer(
-            title: 'Mood correlation',
-            child: const SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-          );
-        }
-
-        if (snapshot.hasError) {
-          return _SupportCardContainer(
-            title: 'Mood correlation',
-            child: const Text('Failed to load'),
-          );
-        }
-
-        final result = snapshot.data;
-        if (result == null) {
-          return _SupportCardContainer(
-            title: 'Mood correlation',
-            child: const Text('No data'),
-          );
-        }
-
-        return _SupportCardContainer(
-          title: 'Mood correlation',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Correlating mood with ${statType.name}'),
-              const SizedBox(height: 6),
-              Text(
-                'r=${result.coefficient.toStringAsFixed(2)} '
-                '(n=${result.sampleSize ?? 0})',
-              ),
-              if (result.insight != null) ...[
-                const SizedBox(height: 6),
-                Text(
-                  result.insight!,
-                  style: Theme.of(context).textTheme.bodySmall,
+              if (showCount)
+                Row(
+                  children: [
+                    Icon(
+                      count > 0 ? Icons.warning_amber : Icons.check_circle,
+                      color: count > 0
+                          ? Theme.of(context).colorScheme.error
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      count > 0
+                          ? '$count issue${count > 1 ? 's' : ''}'
+                          : 'No issues',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ],
                 ),
-              ],
+              if (showList && count > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'Problem details will appear here',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+class _EmptyStateCard extends StatelessWidget {
+  const _EmptyStateCard({
+    required this.message,
+    required this.icon,
+    required this.actionLabel,
+    // ignore: unused_element_parameter
+    this.onAction,
+  });
+
+  final String message;
+  final String? icon;
+  final String? actionLabel;
+
+  /// Called when the empty state action button is tapped. Extension point.
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SupportCardContainer(
+      title: '',
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.inbox_outlined,
+            size: 48,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          if (actionLabel != null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(
+              onPressed: onAction,
+              child: Text(actionLabel!),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -484,11 +393,13 @@ class _SupportCardContainer extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
+              if (title.isNotEmpty) ...[
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+              ],
               child,
             ],
           ),

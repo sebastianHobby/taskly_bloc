@@ -216,6 +216,164 @@ void main() {
           expect(query.filter.isMatchAll, isTrue);
         });
       });
+
+      group('forValue', () {
+        test('creates value query with value label filter', () {
+          final query = TaskQuery.forValue(valueId: 'value-123');
+
+          expect(query.filter.shared, hasLength(1));
+
+          final labelPred = query.filter.shared
+              .whereType<TaskLabelPredicate>()
+              .first;
+          expect(labelPred.operator, LabelOperator.hasAll);
+          expect(labelPred.labelIds, ['value-123']);
+          expect(labelPred.labelType, LabelType.value);
+        });
+      });
+
+      group('incomplete', () {
+        test('creates incomplete query with completed = false filter', () {
+          final query = TaskQuery.incomplete();
+
+          expect(query.filter.shared, hasLength(1));
+
+          final boolPred = query.filter.shared
+              .whereType<TaskBoolPredicate>()
+              .first;
+          expect(boolPred.field, TaskBoolField.completed);
+          expect(boolPred.operator, BoolOperator.isFalse);
+        });
+
+        test('incomplete uses default sort criteria', () {
+          final query = TaskQuery.incomplete();
+
+          expect(query.sortCriteria, isNotEmpty);
+        });
+      });
+
+      group('withDueDate', () {
+        test('creates query filtering for tasks with due date set', () {
+          final query = TaskQuery.withDueDate();
+
+          final datePred = query.filter.shared
+              .whereType<TaskDatePredicate>()
+              .first;
+          expect(datePred.field, TaskDateField.deadlineDate);
+          expect(datePred.operator, DateOperator.isNotNull);
+        });
+      });
+
+      group('inProject', () {
+        test('creates query filtering for tasks in any project', () {
+          final query = TaskQuery.inProject();
+
+          final projectPred = query.filter.shared
+              .whereType<TaskProjectPredicate>()
+              .first;
+          expect(projectPred.operator, ProjectOperator.isNotNull);
+        });
+      });
+
+      group('dueToday', () {
+        test('creates query filtering for tasks due today', () {
+          final query = TaskQuery.dueToday();
+
+          final datePreds = query.filter.shared
+              .whereType<TaskDatePredicate>()
+              .toList();
+          expect(datePreds.length, greaterThanOrEqualTo(1));
+        });
+      });
+
+      group('dueThisWeek', () {
+        test('creates query filtering for tasks due this week', () {
+          final query = TaskQuery.dueThisWeek();
+
+          final datePreds = query.filter.shared
+              .whereType<TaskDatePredicate>()
+              .toList();
+          expect(datePreds.length, greaterThanOrEqualTo(1));
+        });
+      });
+
+      group('overdue', () {
+        test('creates query filtering for overdue tasks', () {
+          final query = TaskQuery.overdue();
+
+          // Should have both incomplete and past due date filter
+          final boolPred = query.filter.shared
+              .whereType<TaskBoolPredicate>()
+              .first;
+          expect(boolPred.field, TaskBoolField.completed);
+          expect(boolPred.operator, BoolOperator.isFalse);
+
+          final datePred = query.filter.shared
+              .whereType<TaskDatePredicate>()
+              .first;
+          expect(datePred.field, TaskDateField.deadlineDate);
+        });
+      });
+
+      group('byProject', () {
+        test('creates query filtering by specific project ID', () {
+          final query = TaskQuery.byProject('project-abc');
+
+          final projectPred = query.filter.shared
+              .whereType<TaskProjectPredicate>()
+              .first;
+          expect(projectPred.operator, ProjectOperator.matches);
+          expect(projectPred.projectId, 'project-abc');
+        });
+
+        test('byProject accepts custom sort criteria', () {
+          final query = TaskQuery.byProject(
+            'project-abc',
+            sortCriteria: const [
+              SortCriterion(field: SortField.name),
+            ],
+          );
+
+          expect(query.sortCriteria, hasLength(1));
+          expect(query.sortCriteria[0].field, SortField.name);
+        });
+      });
+
+      group('byLabels', () {
+        test('creates query filtering by multiple label IDs', () {
+          final query = TaskQuery.byLabels(
+            const ['label-1', 'label-2'],
+          );
+
+          final labelPred = query.filter.shared
+              .whereType<TaskLabelPredicate>()
+              .first;
+          expect(labelPred.labelIds, ['label-1', 'label-2']);
+        });
+
+        test('byLabels accepts custom label type', () {
+          final query = TaskQuery.byLabels(
+            const ['value-1'],
+            labelType: LabelType.value,
+          );
+
+          final labelPred = query.filter.shared
+              .whereType<TaskLabelPredicate>()
+              .first;
+          expect(labelPred.labelType, LabelType.value);
+        });
+
+        test('byLabels accepts custom sort criteria', () {
+          final query = TaskQuery.byLabels(
+            const ['label-1'],
+            sortCriteria: const [
+              SortCriterion(field: SortField.deadlineDate),
+            ],
+          );
+
+          expect(query.sortCriteria, hasLength(1));
+        });
+      });
     });
 
     group('helper properties', () {

@@ -4,12 +4,13 @@ import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart'
     as display;
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
@@ -22,6 +23,7 @@ import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Test data builders using the Object Mother pattern.
 ///
@@ -409,17 +411,25 @@ class TestData {
 
   /// Creates a workflow step for testing
   static WorkflowStep workflowStep({
-    String stepName = 'Test Step',
-    ViewDefinition? view,
+    String? id,
+    String name = 'Test Step',
+    int order = 0,
+    List<Section>? sections,
+    String? description,
   }) {
     return WorkflowStep(
-      stepName: stepName,
-      view:
-          view ??
-          const ViewDefinition.collection(
-            selector: EntitySelector(entityType: EntityType.task),
-            display: display.DisplayConfig(),
-          ),
+      id: id ?? _nextId('workflow-step'),
+      name: name,
+      order: order,
+      sections:
+          sections ??
+          [
+            Section.data(
+              config: DataConfig.task(query: TaskQuery.all()),
+              title: 'Test Section',
+            ),
+          ],
+      description: description,
     );
   }
 
@@ -469,7 +479,8 @@ class TestData {
     String? id,
     String? screenKey,
     String name = 'Test Screen',
-    ViewDefinition? view,
+    ScreenType screenType = ScreenType.list,
+    List<Section>? sections,
     EntitySelector? selector,
     display.DisplayConfig? displayConfig,
     DateTime? createdAt,
@@ -485,13 +496,16 @@ class TestData {
       id: id ?? _nextId('screen'),
       screenKey: screenKey ?? 'screen-key-1',
       name: name,
-      view:
-          view ??
-          ViewDefinition.collection(
-            selector:
-                selector ?? const EntitySelector(entityType: EntityType.task),
-            display: displayConfig ?? const display.DisplayConfig(),
-          ),
+      screenType: screenType,
+      sections:
+          sections ??
+          [
+            Section.data(
+              config: DataConfig.task(query: TaskQuery.all()),
+              display: displayConfig,
+              title: 'Test Section',
+            ),
+          ],
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
       iconName: iconName,

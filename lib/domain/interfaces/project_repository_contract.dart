@@ -34,6 +34,15 @@ abstract class ProjectRepositoryContract {
   /// occurrences (virtual rows) instead of base project rows.
   Stream<int> watchCount([ProjectQuery? query]);
 
+  /// Query projects using ProjectQuery (returns a Future, not a Stream).
+  Future<List<Project>> queryProjects(ProjectQuery query);
+
+  /// Get projects by IDs.
+  Future<List<Project>> getProjectsByIds(List<String> ids);
+
+  /// Get projects by label ID.
+  Future<List<Project>> getProjectsByLabel(String labelId);
+
   Future<void> create({
     required String name,
     String? description,

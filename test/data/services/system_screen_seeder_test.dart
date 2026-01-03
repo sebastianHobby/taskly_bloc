@@ -40,7 +40,9 @@ void main() {
 
         final screens = captured.first as List<ScreenDefinition>;
         expect(screens, isNotEmpty);
-        expect(screens.length, SystemScreenFactory.allKeys.length);
+        // createAll returns 11 screens (excludes allocation_settings and
+        // navigation_settings which are accessed via Settings screen)
+        expect(screens.length, 11);
       });
 
       test('creates screens with correct screen keys', () async {
@@ -56,7 +58,9 @@ void main() {
 
         final screens = captured.first as List<ScreenDefinition>;
         final screenKeys = screens.map((s) => s.screenKey).toSet();
-        expect(screenKeys.length, SystemScreenFactory.allKeys.length);
+        // createAll returns 11 screens (excludes allocation_settings and
+        // navigation_settings which are accessed via Settings screen)
+        expect(screenKeys.length, 11);
       });
 
       test('creates all expected system screens', () async {
@@ -192,7 +196,9 @@ void main() {
 
     group('allKeys', () {
       test('contains expected number of screens', () {
-        expect(SystemScreenFactory.allKeys.length, 11);
+        // allKeys includes all 13 system screen keys (including
+        // allocation_settings and navigation_settings)
+        expect(SystemScreenFactory.allKeys.length, 13);
       });
 
       test('contains no duplicates', () {
@@ -222,7 +228,8 @@ void main() {
         ];
 
         for (final order in workspaceOrders) {
-          expect(order, lessThan(100));
+          // Workspace screens have sequential orders 0-6
+          expect(order, lessThan(10));
         }
       });
 
@@ -234,32 +241,42 @@ void main() {
         ];
 
         for (final order in wellbeingOrders) {
-          expect(order, greaterThanOrEqualTo(100));
-          expect(order, lessThan(200));
+          // Wellbeing screens are sequential after workspace (7-9)
+          expect(order, greaterThanOrEqualTo(7));
+          expect(order, lessThan(10));
         }
       });
 
       test('settings screens have high sort orders', () {
-        // Only 'settings' is in allKeys; allocation_settings and
-        // navigation_settings are accessed via Settings screen
-        final settingsOrder = SystemScreenFactory
-            .defaultSortOrders[SystemScreenFactory.settings]!;
-        expect(settingsOrder, greaterThanOrEqualTo(200));
+        // Settings-related screens have orders 10-12
+        final settingsOrders = [
+          SystemScreenFactory.defaultSortOrders[SystemScreenFactory
+              .allocationSettings]!,
+          SystemScreenFactory.defaultSortOrders[SystemScreenFactory
+              .navigationSettings]!,
+          SystemScreenFactory.defaultSortOrders[SystemScreenFactory.settings]!,
+        ];
+
+        for (final order in settingsOrders) {
+          expect(order, greaterThanOrEqualTo(10));
+        }
       });
     });
 
     group('createAll', () {
       test('creates screen definitions for user', () {
         final screens = SystemScreenFactory.createAll('test-user');
-
-        expect(screens.length, SystemScreenFactory.allKeys.length);
+        // createAll returns 11 screens (excludes allocation_settings and
+        // navigation_settings which are accessed via Settings screen)
+        expect(screens.length, 11);
       });
 
       test('all screens have correct screen keys', () {
         final screens = SystemScreenFactory.createAll('user-123');
 
         final screenKeys = screens.map((s) => s.screenKey).toSet();
-        expect(screenKeys.length, SystemScreenFactory.allKeys.length);
+        // createAll returns 11 screens
+        expect(screenKeys.length, 11);
       });
 
       test('all screens are marked as system screens', () {

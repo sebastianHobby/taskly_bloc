@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_creator_page.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 
@@ -513,21 +513,9 @@ class _ScreenMetadata extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
 
-    // Extract view type info
-    String viewType = 'Collection';
-    String entityType = 'Items';
-
-    switch (screen.view) {
-      case CollectionView(:final selector):
-        entityType = _getEntityTypeLabel(selector.entityType);
-      case AgendaView(:final selector):
-        viewType = 'Agenda';
-        entityType = _getEntityTypeLabel(selector.entityType);
-      case DetailView():
-        viewType = 'Detail';
-      case AllocatedView():
-        viewType = 'Allocation';
-    }
+    // Extract screen type and entity type info
+    final screenType = _getScreenTypeLabel(screen.screenType);
+    final entityType = _getEntityTypeFromSections(screen.sections);
 
     return Wrap(
       spacing: 16,
@@ -542,7 +530,7 @@ class _ScreenMetadata extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 4),
-            Text(viewType, style: textStyle),
+            Text(screenType, style: textStyle),
           ],
         ),
         Row(
@@ -561,16 +549,30 @@ class _ScreenMetadata extends StatelessWidget {
     );
   }
 
-  String _getEntityTypeLabel(EntityType entityType) {
-    switch (entityType) {
-      case EntityType.task:
+  String _getScreenTypeLabel(ScreenType type) {
+    return switch (type) {
+      ScreenType.list => 'List',
+      ScreenType.dashboard => 'Dashboard',
+      ScreenType.focus => 'Focus',
+      ScreenType.workflow => 'Workflow',
+    };
+  }
+
+  String _getEntityTypeFromSections(List<Section> sections) {
+    for (final section in sections) {
+      if (section is DataSection) {
+        return switch (section.config) {
+          TaskDataConfig() => 'Tasks',
+          ProjectDataConfig() => 'Projects',
+          LabelDataConfig() => 'Labels',
+          ValueDataConfig() => 'Values',
+        };
+      } else if (section is AllocationSection) {
         return 'Tasks';
-      case EntityType.project:
-        return 'Projects';
-      case EntityType.label:
-        return 'Labels';
-      case EntityType.goal:
-        return 'Goals';
+      } else if (section is AgendaSection) {
+        return 'Tasks';
+      }
     }
+    return 'Items';
   }
 }

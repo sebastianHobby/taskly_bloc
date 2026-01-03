@@ -1,2 +1,1 @@
-export 'schedule_view.dart';
-export 'schedule_view_config.dart';
+// Legacy views removed - use unified screen model

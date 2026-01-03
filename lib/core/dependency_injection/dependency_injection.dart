@@ -45,12 +45,12 @@ import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_grouper.dart';
 import 'package:taskly_bloc/domain/services/screens/trigger_evaluator.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
-import 'package:taskly_bloc/domain/services/screens/view_service.dart';
 import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -69,6 +69,7 @@ Future<void> setupDependencies() async {
   );
 
   getIt
+    ..registerSingleton<PowerSyncDatabase>(syncDb)
     ..registerSingleton<AppDatabase>(appDatabase)
     ..registerLazySingleton<SupabaseClient>(
       () => Supabase.instance.client,
@@ -147,6 +148,14 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
+    ..registerLazySingleton<SectionDataService>(
+      () => SectionDataService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        labelRepository: getIt<LabelRepositoryContract>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
+      ),
+    )
     // Analytics
     ..registerLazySingleton<AnalyticsRepositoryContract>(
       () => AnalyticsRepositoryImpl(
@@ -183,19 +192,12 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
     ..registerLazySingleton<SupportBlockComputer>(
       () => SupportBlockComputer(
-        getIt<TaskStatsCalculator>(),
-        getIt<AnalyticsService>(),
+        statsCalculator: getIt<TaskStatsCalculator>(),
+        analyticsService: getIt<AnalyticsService>(),
+        problemDetectorService: getIt<ProblemDetectorService>(),
       ),
     )
     // Screen architecture services
-    ..registerLazySingleton<ViewService>(
-      () => ViewService(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
-        queryBuilder: getIt<ScreenQueryBuilder>(),
-      ),
-    )
     ..registerLazySingleton<ProblemDetectorService>(
       () => ProblemDetectorService(
         settingsRepository: getIt<SettingsRepositoryContract>(),
@@ -204,7 +206,6 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<WorkflowService>(
       () => WorkflowService(
         workflowRepository: getIt<WorkflowRepositoryContract>(),
-        viewService: getIt<ViewService>(),
       ),
     )
     // Notifications (server-enqueued + PowerSync synced)

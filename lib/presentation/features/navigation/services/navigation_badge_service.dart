@@ -1,27 +1,30 @@
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
+/// Service for computing badge counts for navigation screens.
+///
+/// Badge counts are computed based on the first section of a screen that
+/// contains task or project data. Only workspace screens (not wellbeing
+/// or settings) show badge counts.
 class NavigationBadgeService {
   NavigationBadgeService({
-    required ScreenQueryBuilder queryBuilder,
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    DateTime Function()? nowFactory,
-  }) : _queryBuilder = queryBuilder,
-       _taskRepository = taskRepository,
-       _projectRepository = projectRepository,
-       _nowFactory = nowFactory ?? DateTime.now;
+  }) : _taskRepository = taskRepository,
+       _projectRepository = projectRepository;
 
-  final ScreenQueryBuilder _queryBuilder;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final DateTime Function() _nowFactory;
 
+  /// Returns a stream of badge counts for the given screen.
+  ///
+  /// Returns null if the screen should not display a badge (e.g., settings).
   Stream<int>? badgeStreamFor(ScreenDefinition screen) {
     // Only show badges for workspace screens (task lists, projects, etc.)
     // Wellbeing and settings screens don't need task count badges
@@ -29,30 +32,62 @@ class NavigationBadgeService {
       return null;
     }
 
-    return screen.view.when(
-      collection: (selector, display, supportBlocks) {
-        switch (selector.entityType) {
-          case EntityType.task:
-            final query = _queryBuilder.buildTaskQuery(
-              selector: selector,
-              display: display,
-              now: _nowFactory(),
-            );
-            return _taskRepository.watchCount(query);
-          case EntityType.project:
-            final query = _queryBuilder.buildProjectQuery(
-              selector: selector,
-              display: display,
-            );
-            return _projectRepository.watchCount(query);
-          case EntityType.label:
-          case EntityType.goal:
-            return null;
-        }
-      },
-      agenda: (selector, display, config, supportBlocks) => null,
-      detail: (parentType, childView, supportBlocks) => null,
-      allocated: (selector, display, supportBlocks) => null,
-    );
+    // Find the first data section to use for badge counting
+    final dataSection = _findFirstDataSection(screen.sections);
+    if (dataSection == null) {
+      return null;
+    }
+
+    // Get the query from the data config and return appropriate stream
+    return switch (dataSection.config) {
+      TaskDataConfig(:final query) => _taskRepository.watchCount(query),
+      ProjectDataConfig(:final query) => _projectRepository.watchCount(query),
+      LabelDataConfig() => null, // Labels don't show counts
+      ValueDataConfig() => null, // Values don't show counts
+    };
+  }
+
+  /// Finds the first data section in the list.
+  DataSection? _findFirstDataSection(List<Section> sections) {
+    for (final section in sections) {
+      if (section is DataSection) {
+        return section;
+      }
+    }
+    return null;
+  }
+
+  /// Returns the task query for badge counting if the screen has task data.
+  TaskQuery? getTaskQueryForScreen(ScreenDefinition screen) {
+    if (screen.category != ScreenCategory.workspace) {
+      return null;
+    }
+
+    final dataSection = _findFirstDataSection(screen.sections);
+    if (dataSection == null) {
+      return null;
+    }
+
+    return switch (dataSection.config) {
+      TaskDataConfig(:final query) => query,
+      _ => null,
+    };
+  }
+
+  /// Returns the project query for badge counting if the screen has project data.
+  ProjectQuery? getProjectQueryForScreen(ScreenDefinition screen) {
+    if (screen.category != ScreenCategory.workspace) {
+      return null;
+    }
+
+    final dataSection = _findFirstDataSection(screen.sections);
+    if (dataSection == null) {
+      return null;
+    }
+
+    return switch (dataSection.config) {
+      ProjectDataConfig(:final query) => query,
+      _ => null,
+    };
   }
 }

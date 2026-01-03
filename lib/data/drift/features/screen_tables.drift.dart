@@ -2,21 +2,19 @@ import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 
-/// Screen types for generic screen system
-enum ScreenType { collection, workflow }
-
-/// Entity types for screens
-enum EntityType { task, project, label, goal }
+/// Screen types for unified screen system
+enum ScreenType { list, dashboard, focus, workflow }
 
 /// Screen categories for organizing navigation
 enum ScreenCategory { workspace, wellbeing, settings }
 
-/// Generic screen system - defines both collection and workflow screens
+/// Unified screen system - all screens are composed of sections
 @DataClassName('ScreenDefinitionEntity')
 class ScreenDefinitions extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text().nullable()();
-  TextColumn get screenType => textEnum<ScreenType>()();
+  // Screen type - nullable to handle corrupted/partial sync data gracefully
+  TextColumn get screenType => textEnum<ScreenType>().nullable()();
   TextColumn get screenKey =>
       text()(); // Stable per-user identifier like 'today', 'inbox'
   TextColumn get name => text()();
@@ -30,16 +28,15 @@ class ScreenDefinitions extends Table {
       .withDefault(const Constant('workspace'))
       .nullable()();
 
-  // EntitySelector configuration (stored as JSON text)
-  TextColumn get entityType => textEnum<EntityType>().nullable()();
-  TextColumn get selectorConfig =>
-      text().map(entitySelectorConverter).nullable()();
+  // Sections configuration (stored as JSON text) - DR-017
+  TextColumn get sectionsConfig =>
+      text().map(sectionsConfigConverter).nullable()();
 
-  // DisplayConfig (stored as JSON text)
-  TextColumn get displayConfig =>
-      text().map(displayConfigConverter).nullable()();
+  // Support blocks configuration (stored as JSON text) - DR-018
+  TextColumn get supportBlocksConfig =>
+      text().map(supportBlocksConfigConverter).nullable()();
 
-  // Workflow-specific (NULL for collection screens)
+  // Workflow-specific (NULL for non-workflow screens)
   TextColumn get triggerConfig =>
       text().map(triggerConfigConverter).nullable()();
 

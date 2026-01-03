@@ -3,18 +3,33 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_entity_type_picker.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
+
+/// Entity type options for the screen creator
+enum EntityTypeOption {
+  task('Tasks', Icons.check_box_outlined),
+  project('Projects', Icons.folder_outlined),
+  label('Labels', Icons.label_outlined),
+  value('Values', Icons.star_outlined);
+
+  const EntityTypeOption(this.displayName, this.icon);
+
+  final String displayName;
+  final IconData icon;
+}
 
 /// Page for creating or editing screen definitions.
 ///
 /// Uses FormBuilder for form state management and validation.
-/// Supports basic collection views with entity type selection.
+/// Supports basic data sections with entity type selection.
 class ScreenCreatorPage extends StatefulWidget {
   const ScreenCreatorPage({
     required this.screensRepository,
@@ -121,7 +136,7 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
             const SizedBox(height: 12),
 
             // Entity type
-            FormBuilderEntityTypePicker(
+            FormBuilderDropdown<EntityTypeOption>(
               name: 'entityType',
               decoration: const InputDecoration(
                 labelText: 'What to Display',
@@ -129,6 +144,18 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
                 border: OutlineInputBorder(),
               ),
               validator: FormBuilderValidators.required(),
+              items: EntityTypeOption.values.map((e) {
+                return DropdownMenuItem(
+                  value: e,
+                  child: Row(
+                    children: [
+                      Icon(e.icon, size: 20),
+                      const SizedBox(width: 12),
+                      Text(e.displayName),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
             const SizedBox(height: 24),
 
@@ -154,79 +181,70 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
             FormBuilderSwitch(
               name: 'showArchived',
               title: const Text('Show Archived Items'),
-              subtitle: const Text('Include archived projects and labels'),
+              subtitle: const Text('Include archived items in the view'),
               decoration: const InputDecoration(
                 border: InputBorder.none,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-            // Group by
-            FormBuilderDropdown<GroupByField>(
-              name: 'groupBy',
-              decoration: const InputDecoration(
-                labelText: 'Group By',
-                border: OutlineInputBorder(),
-              ),
-              items: GroupByField.values.map((g) {
-                return DropdownMenuItem(
-                  value: g,
-                  child: Text(_getGroupByLabel(g)),
-                );
-              }).toList(),
+            // ===== Sorting Section =====
+            _SectionHeader(
+              icon: Icons.sort,
+              title: 'Sorting',
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Sort by
-            FormBuilderDropdown<SortField>(
-              name: 'sortField',
-              decoration: const InputDecoration(
-                labelText: 'Sort By',
-                border: OutlineInputBorder(),
-              ),
-              items: SortField.values.map((s) {
-                return DropdownMenuItem(
-                  value: s,
-                  child: Text(_getSortFieldLabel(s)),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-
-            // Sort direction
-            FormBuilderDropdown<SortDirection>(
-              name: 'sortDirection',
-              decoration: const InputDecoration(
-                labelText: 'Sort Direction',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: SortDirection.asc,
-                  child: Text('Ascending'),
+            Row(
+              children: [
+                Expanded(
+                  child: FormBuilderDropdown<SortField>(
+                    name: 'sortField',
+                    decoration: const InputDecoration(
+                      labelText: 'Sort By',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: SortField.values.map((f) {
+                      return DropdownMenuItem(
+                        value: f,
+                        child: Text(_sortFieldDisplayName(f)),
+                      );
+                    }).toList(),
+                  ),
                 ),
-                DropdownMenuItem(
-                  value: SortDirection.desc,
-                  child: Text('Descending'),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FormBuilderDropdown<SortDirection>(
+                    name: 'sortDirection',
+                    decoration: const InputDecoration(
+                      labelText: 'Direction',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: SortDirection.values.map((d) {
+                      return DropdownMenuItem(
+                        value: d,
+                        child: Text(_sortDirectionDisplayName(d)),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
 
-            // ===== Active Status =====
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: FormBuilderSwitch(
-                  name: 'isActive',
-                  title: const Text('Active'),
-                  subtitle: const Text(
-                    'Inactive screens are hidden from navigation',
-                  ),
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                  ),
-                ),
+            // ===== Visibility Section =====
+            _SectionHeader(
+              icon: Icons.visibility,
+              title: 'Visibility',
+            ),
+            const SizedBox(height: 12),
+
+            FormBuilderSwitch(
+              name: 'isActive',
+              title: const Text('Active'),
+              subtitle: const Text('Show this screen in navigation'),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
               ),
             ),
             const SizedBox(height: 32),
@@ -254,32 +272,35 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
   Map<String, dynamic> _getInitialValues() {
     if (widget.existingScreen case final screen?) {
       // Extract values from existing screen
-      final view = screen.view;
-      EntityType? entityType;
+      EntityTypeOption? entityType;
       GroupByField groupBy = GroupByField.none;
       SortField sortField = SortField.updatedAt;
       SortDirection sortDirection = SortDirection.desc;
       bool showCompleted = true;
       bool showArchived = false;
 
-      if (view case CollectionView(:final selector, :final display)) {
-        entityType = selector.entityType;
-        groupBy = display.groupBy;
-        if (display.sorting.isNotEmpty) {
-          sortField = display.sorting.first.field;
-          sortDirection = display.sorting.first.direction;
+      final firstSection = screen.sections.isNotEmpty
+          ? screen.sections.first
+          : null;
+      if (firstSection is DataSection) {
+        // Determine entity type from config
+        entityType = switch (firstSection.config) {
+          TaskDataConfig() => EntityTypeOption.task,
+          ProjectDataConfig() => EntityTypeOption.project,
+          LabelDataConfig() => EntityTypeOption.label,
+          ValueDataConfig() => EntityTypeOption.value,
+        };
+
+        // Extract display settings
+        if (firstSection.display case final display?) {
+          groupBy = display.groupBy;
+          if (display.sorting.isNotEmpty) {
+            sortField = display.sorting.first.field;
+            sortDirection = display.sorting.first.direction;
+          }
+          showCompleted = display.showCompleted;
+          showArchived = display.showArchived;
         }
-        showCompleted = display.showCompleted;
-        showArchived = display.showArchived;
-      } else if (view case AgendaView(:final selector, :final display)) {
-        entityType = selector.entityType;
-        groupBy = display.groupBy;
-        if (display.sorting.isNotEmpty) {
-          sortField = display.sorting.first.field;
-          sortDirection = display.sorting.first.direction;
-        }
-        showCompleted = display.showCompleted;
-        showArchived = display.showArchived;
       }
 
       return {
@@ -287,11 +308,11 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
         'iconName': screen.iconName,
         'category': screen.category,
         'entityType': entityType,
-        'showCompleted': showCompleted,
-        'showArchived': showArchived,
         'groupBy': groupBy,
         'sortField': sortField,
         'sortDirection': sortDirection,
+        'showCompleted': showCompleted,
+        'showArchived': showArchived,
         'isActive': screen.isActive,
       };
     }
@@ -301,52 +322,36 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
       'name': '',
       'iconName': null,
       'category': ScreenCategory.workspace,
-      'entityType': EntityType.task,
-      'showCompleted': false,
-      'showArchived': false,
+      'entityType': EntityTypeOption.task,
       'groupBy': GroupByField.none,
       'sortField': SortField.updatedAt,
       'sortDirection': SortDirection.desc,
+      'showCompleted': false,
+      'showArchived': false,
       'isActive': true,
     };
   }
 
-  String _getGroupByLabel(GroupByField field) {
-    switch (field) {
-      case GroupByField.none:
-        return 'None';
-      case GroupByField.project:
-        return 'Project';
-      case GroupByField.value:
-        return 'Value';
-      case GroupByField.label:
-        return 'Label';
-      case GroupByField.date:
-        return 'Date';
-      case GroupByField.priority:
-        return 'Priority';
-    }
+  String _sortFieldDisplayName(SortField field) {
+    return switch (field) {
+      SortField.name => 'Name',
+      SortField.deadlineDate => 'Due Date',
+      SortField.startDate => 'Start Date',
+      SortField.priority => 'Priority',
+      SortField.createdAt => 'Created',
+      SortField.updatedAt => 'Updated',
+    };
   }
 
-  String _getSortFieldLabel(SortField field) {
-    switch (field) {
-      case SortField.name:
-        return 'Name';
-      case SortField.createdAt:
-        return 'Created Date';
-      case SortField.updatedAt:
-        return 'Updated Date';
-      case SortField.deadlineDate:
-        return 'Deadline';
-      case SortField.startDate:
-        return 'Start Date';
-      case SortField.priority:
-        return 'Priority';
-    }
+  String _sortDirectionDisplayName(SortDirection direction) {
+    return switch (direction) {
+      SortDirection.asc => 'Ascending',
+      SortDirection.desc => 'Descending',
+    };
   }
 
   Future<void> _saveScreen() async {
-    if (!(_formKey.currentState?.saveAndValidate() ?? false)) {
+    if (_formKey.currentState?.saveAndValidate() != true) {
       return;
     }
 
@@ -358,25 +363,34 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
 
       // Build display config
       final displayConfig = DisplayConfig(
-        groupBy: values['groupBy'] as GroupByField,
+        groupBy: values['groupBy'] as GroupByField? ?? GroupByField.none,
         sorting: [
           SortCriterion(
-            field: values['sortField'] as SortField,
-            direction: values['sortDirection'] as SortDirection,
+            field: values['sortField'] as SortField? ?? SortField.updatedAt,
+            direction:
+                values['sortDirection'] as SortDirection? ?? SortDirection.desc,
           ),
         ],
         showCompleted: values['showCompleted'] as bool? ?? false,
         showArchived: values['showArchived'] as bool? ?? false,
       );
 
-      // Build entity selector
-      final entitySelector = EntitySelector(
-        entityType: values['entityType'] as EntityType,
-      );
+      // Build data config based on entity type
+      final entityType = values['entityType'] as EntityTypeOption;
+      final dataConfig = switch (entityType) {
+        EntityTypeOption.task => DataConfig.task(query: const TaskQuery()),
+        EntityTypeOption.project => DataConfig.project(
+          query: const ProjectQuery(),
+        ),
+        EntityTypeOption.label => DataConfig.label(
+          query: LabelQuery.labelsOnly(),
+        ),
+        EntityTypeOption.value => const DataConfig.value(),
+      };
 
-      // Build view definition (simple collection view)
-      final viewDefinition = ViewDefinition.collection(
-        selector: entitySelector,
+      // Build the section
+      final section = Section.data(
+        config: dataConfig,
         display: displayConfig,
       );
 
@@ -385,7 +399,7 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
           name: values['name'] as String,
           iconName: values['iconName'] as String?,
           category: values['category'] as ScreenCategory,
-          view: viewDefinition,
+          sections: [section],
           isActive: values['isActive'] as bool? ?? true,
           updatedAt: now,
         );
@@ -395,9 +409,10 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
           id: '', // Repository generates v5 ID based on screenKey
           screenKey: _generateScreenKey(values['name'] as String),
           name: values['name'] as String,
+          screenType: ScreenType.list,
           iconName: values['iconName'] as String?,
           category: values['category'] as ScreenCategory,
-          view: viewDefinition,
+          sections: [section],
           isActive: values['isActive'] as bool? ?? true,
           sortOrder: 999, // Will be adjusted by the system
           createdAt: now,
@@ -459,19 +474,28 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
       ),
     );
 
-    if (confirmed ?? false) {
-      await widget.screensRepository.deleteScreen(widget.existingScreen!.id);
-      if (mounted) {
-        Navigator.of(context).pop(true);
+    if ((confirmed ?? false) && mounted) {
+      try {
+        await widget.screensRepository.deleteScreen(widget.existingScreen!.id);
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      } catch (e, st) {
+        talker.handle(e, st, '[ScreenCreatorPage] Error deleting screen');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting screen: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
       }
     }
   }
 }
 
-// =============================================================================
-// Section Header Widget
-// =============================================================================
-
+/// Section header widget for organizing form fields
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({
     required this.icon,
@@ -484,20 +508,15 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Row(
       children: [
-        Icon(
-          icon,
-          size: 20,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(icon, size: 20, color: theme.colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           title,
           style: theme.textTheme.titleMedium?.copyWith(
             color: theme.colorScheme.primary,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],

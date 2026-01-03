@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -8,7 +9,7 @@ class ProjectListTile extends StatelessWidget {
   const ProjectListTile({
     required this.project,
     required this.onCheckboxChanged,
-    required this.onTap,
+    this.onTap,
     this.taskCount,
     this.completedTaskCount,
     super.key,
@@ -16,7 +17,9 @@ class ProjectListTile extends StatelessWidget {
 
   final Project project;
   final void Function(Project, bool?) onCheckboxChanged;
-  final void Function(Project) onTap;
+
+  /// Optional tap handler. If null, navigates to project detail via EntityNavigator.
+  final void Function(Project)? onTap;
 
   /// Optional task count to show progress.
   final int? taskCount;
@@ -96,7 +99,9 @@ class ProjectListTile extends StatelessWidget {
           ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.5)
           : colorScheme.surface,
       child: InkWell(
-        onTap: () => onTap(project),
+        onTap: () => onTap != null
+            ? onTap!(project)
+            : EntityNavigator.toProject(context, project.id),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),

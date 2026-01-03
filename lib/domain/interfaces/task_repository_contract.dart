@@ -25,6 +25,18 @@ abstract class TaskRepositoryContract {
   /// occurrences (virtual rows) instead of base task rows.
   Stream<int> watchCount([TaskQuery? query]);
 
+  /// Query tasks using TaskQuery (returns a Future, not a Stream).
+  Future<List<Task>> queryTasks(TaskQuery query);
+
+  /// Get tasks by project ID.
+  Future<List<Task>> getTasksByProject(String projectId);
+
+  /// Get tasks by label ID.
+  Future<List<Task>> getTasksByLabel(String labelId);
+
+  /// Get tasks by IDs.
+  Future<List<Task>> getTasksByIds(List<String> ids);
+
   /// Get a single task by ID with related entities.
   Future<Task?> getById(String id);
 

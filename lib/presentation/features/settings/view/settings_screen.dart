@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
+import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -77,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Developer',
                   children: [
                     _buildViewLogsItem(),
+                    if (kDebugMode) _buildClearLocalDataItem(),
                   ],
                 ),
                 _buildSection(
@@ -313,6 +317,89 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       },
     );
+  }
+
+  Widget _buildClearLocalDataItem() {
+    return ListTile(
+      leading: Icon(
+        Icons.delete_forever,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: const Text('Clear Local Data'),
+      subtitle: const Text('Delete all cached data and resync'),
+      trailing: Icon(
+        Icons.warning_amber,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      onTap: _showClearLocalDataConfirmation,
+    );
+  }
+
+  Future<void> _showClearLocalDataConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear Local Data'),
+        content: const Text(
+          'This will delete all locally cached data and force a full resync '
+          'from the server. The app will restart after clearing.\n\n'
+          'Use this to fix data sync issues or corrupted local state.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Clear & Restart'),
+          ),
+        ],
+      ),
+    );
+
+    if ((confirmed ?? false) && mounted) {
+      await _clearLocalData();
+    }
+  }
+
+  Future<void> _clearLocalData() async {
+    try {
+      final db = GetIt.instance<PowerSyncDatabase>();
+
+      // Disconnect from sync
+      await db.disconnect();
+
+      // Delete all local data
+      await db.disconnectedAndClear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Local data cleared. Please restart the app.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+
+      // Force sign out to trigger full re-auth and resync
+      if (mounted) {
+        context.read<AuthBloc>().add(const AuthSignOutRequested());
+      }
+    } catch (e, st) {
+      talker.handle(e, st, '[Settings] Failed to clear local data');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to clear data: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _showResetConfirmation() async {

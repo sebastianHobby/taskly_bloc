@@ -5,13 +5,13 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 
 part 'workflow_run_bloc.freezed.dart';
 
@@ -77,6 +77,9 @@ sealed class WorkflowRunState with _$WorkflowRunState {
     required List<Task> currentStepItems,
     required int currentItemIndex,
     required WorkflowProgress progress,
+
+    /// Section data results for the current step (used for display)
+    @Default([]) List<SectionDataResult> sectionDataResults,
   }) = WorkflowRunning;
 
   const factory WorkflowRunState.stepComplete({
@@ -146,10 +149,10 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
   WorkflowRunBloc({
     required WorkflowRepositoryContract workflowRepository,
     required TaskRepositoryContract taskRepository,
-    required ScreenQueryBuilder queryBuilder,
+    required SectionDataService sectionDataService,
   }) : _workflowRepository = workflowRepository,
        _taskRepository = taskRepository,
-       _queryBuilder = queryBuilder,
+       _sectionDataService = sectionDataService,
        super(const WorkflowRunState.initial()) {
     on<WorkflowStarted>(_onStarted);
     on<WorkflowResumed>(_onResumed);
@@ -166,7 +169,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
 
   final WorkflowRepositoryContract _workflowRepository;
   final TaskRepositoryContract _taskRepository;
-  final ScreenQueryBuilder _queryBuilder;
+  final SectionDataService _sectionDataService;
 
   Future<void> _onStarted(
     WorkflowStarted event,
@@ -204,10 +207,9 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
         ),
       );
 
-      // Load items for first step
-      final firstStepItems = await _loadItemsForStep(
+      // Load items for first step using SectionDataService
+      final (firstStepItems, firstStepSectionData) = await _loadStepData(
         definition.steps.first,
-        now,
       );
 
       final progress = _calculateProgress(definition, workflow, firstStepItems);
@@ -220,6 +222,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
           currentStepItems: firstStepItems,
           currentItemIndex: 0,
           progress: progress,
+          sectionDataResults: firstStepSectionData,
         ),
       );
     } catch (e, st) {
@@ -237,10 +240,9 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
     try {
       final definition = event.definition;
       final workflow = event.workflow;
-      final now = DateTime.now();
 
       final currentStep = definition.steps[workflow.currentStepIndex];
-      final items = await _loadItemsForStep(currentStep, now);
+      final (items, sectionData) = await _loadStepData(currentStep);
       final progress = _calculateProgress(definition, workflow, items);
 
       emit(
@@ -251,6 +253,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
           currentStepItems: items,
           currentItemIndex: 0,
           progress: progress,
+          sectionDataResults: sectionData,
         ),
       );
     } catch (e, st) {
@@ -437,7 +440,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
 
       final now = DateTime.now();
       final nextStep = definition.steps[nextStepIndex];
-      final items = await _loadItemsForStep(nextStep, now);
+      final (items, sectionData) = await _loadStepData(nextStep);
 
       final updatedWorkflow = workflow.copyWith(
         currentStepIndex: nextStepIndex,
@@ -460,6 +463,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
           currentStepItems: items,
           currentItemIndex: 0,
           progress: newProgress,
+          sectionDataResults: sectionData,
         ),
       );
     } catch (e, st) {
@@ -483,7 +487,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
 
       final now = DateTime.now();
       final prevStep = current.definition.steps[prevStepIndex];
-      final items = await _loadItemsForStep(prevStep, now);
+      final (items, sectionData) = await _loadStepData(prevStep);
 
       final updatedWorkflow = current.workflow.copyWith(
         currentStepIndex: prevStepIndex,
@@ -506,6 +510,7 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
           currentStepItems: items,
           currentItemIndex: 0,
           progress: progress,
+          sectionDataResults: sectionData,
         ),
       );
     } catch (e, st) {
@@ -595,40 +600,36 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
     }
   }
 
+  /// Load data for a workflow step using SectionDataService
+  /// Returns a tuple of (tasks, sectionDataResults) for the step
+  Future<(List<Task>, List<SectionDataResult>)> _loadStepData(
+    WorkflowStep step,
+  ) async {
+    final sectionResults = <SectionDataResult>[];
+    final allTasks = <Task>[];
+
+    // Load data for all sections in this step
+    for (final section in step.sections) {
+      final result = await _sectionDataService.fetchSectionData(section);
+      sectionResults.add(result);
+
+      // Collect tasks from the result
+      allTasks.addAll(result.allTasks);
+    }
+
+    return (allTasks, sectionResults);
+  }
+
+  /// Loads task items for a workflow step.
+  ///
+  /// Used during workflow initialization to populate step states with entity IDs.
+  /// Delegates to [_loadStepData] which uses SectionDataService.
   Future<List<Task>> _loadItemsForStep(
     WorkflowStep step,
     DateTime now,
   ) async {
-    final view = step.view;
-
-    // Extract selector and display from ViewDefinition based on type
-    return switch (view) {
-      CollectionView(:final selector, :final display) => () async {
-        final query = _queryBuilder.buildTaskQuery(
-          selector: selector,
-          display: display,
-          now: now,
-        );
-        return _taskRepository.watchAll(query).first;
-      }(),
-      AgendaView(:final selector, :final display) => () async {
-        final query = _queryBuilder.buildTaskQuery(
-          selector: selector,
-          display: display,
-          now: now,
-        );
-        return _taskRepository.watchAll(query).first;
-      }(),
-      DetailView() => Future.value(<Task>[]),
-      AllocatedView(:final selector, :final display) => () async {
-        final query = _queryBuilder.buildTaskQuery(
-          selector: selector,
-          display: display,
-          now: now,
-        );
-        return _taskRepository.watchAll(query).first;
-      }(),
-    };
+    final (tasks, _) = await _loadStepData(step);
+    return tasks;
   }
 
   WorkflowProgress _calculateProgress(

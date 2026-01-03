@@ -281,7 +281,10 @@ as SortDirection,
 /// @nodoc
 mixin _$DisplayConfig {
 
- GroupByField get groupBy; List<SortCriterion> get sorting; List<ProblemType> get problemsToDetect; bool get showCompleted; bool get showArchived;
+ GroupByField get groupBy; List<SortCriterion> get sorting; List<ProblemType> get problemsToDetect; bool get showCompleted; bool get showArchived;/// Whether to group tasks by completion status (active vs completed)
+ bool get groupByCompletion;/// Whether completed section is collapsed by default
+ bool get completedCollapsed;/// Whether to enable swipe-to-delete on list items
+ bool get enableSwipeToDelete;
 /// Create a copy of DisplayConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -294,16 +297,16 @@ $DisplayConfigCopyWith<DisplayConfig> get copyWith => _$DisplayConfigCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DisplayConfig&&(identical(other.groupBy, groupBy) || other.groupBy == groupBy)&&const DeepCollectionEquality().equals(other.sorting, sorting)&&const DeepCollectionEquality().equals(other.problemsToDetect, problemsToDetect)&&(identical(other.showCompleted, showCompleted) || other.showCompleted == showCompleted)&&(identical(other.showArchived, showArchived) || other.showArchived == showArchived));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DisplayConfig&&(identical(other.groupBy, groupBy) || other.groupBy == groupBy)&&const DeepCollectionEquality().equals(other.sorting, sorting)&&const DeepCollectionEquality().equals(other.problemsToDetect, problemsToDetect)&&(identical(other.showCompleted, showCompleted) || other.showCompleted == showCompleted)&&(identical(other.showArchived, showArchived) || other.showArchived == showArchived)&&(identical(other.groupByCompletion, groupByCompletion) || other.groupByCompletion == groupByCompletion)&&(identical(other.completedCollapsed, completedCollapsed) || other.completedCollapsed == completedCollapsed)&&(identical(other.enableSwipeToDelete, enableSwipeToDelete) || other.enableSwipeToDelete == enableSwipeToDelete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,groupBy,const DeepCollectionEquality().hash(sorting),const DeepCollectionEquality().hash(problemsToDetect),showCompleted,showArchived);
+int get hashCode => Object.hash(runtimeType,groupBy,const DeepCollectionEquality().hash(sorting),const DeepCollectionEquality().hash(problemsToDetect),showCompleted,showArchived,groupByCompletion,completedCollapsed,enableSwipeToDelete);
 
 @override
 String toString() {
-  return 'DisplayConfig(groupBy: $groupBy, sorting: $sorting, problemsToDetect: $problemsToDetect, showCompleted: $showCompleted, showArchived: $showArchived)';
+  return 'DisplayConfig(groupBy: $groupBy, sorting: $sorting, problemsToDetect: $problemsToDetect, showCompleted: $showCompleted, showArchived: $showArchived, groupByCompletion: $groupByCompletion, completedCollapsed: $completedCollapsed, enableSwipeToDelete: $enableSwipeToDelete)';
 }
 
 
@@ -314,7 +317,7 @@ abstract mixin class $DisplayConfigCopyWith<$Res>  {
   factory $DisplayConfigCopyWith(DisplayConfig value, $Res Function(DisplayConfig) _then) = _$DisplayConfigCopyWithImpl;
 @useResult
 $Res call({
- GroupByField groupBy, List<SortCriterion> sorting, List<ProblemType> problemsToDetect, bool showCompleted, bool showArchived
+ GroupByField groupBy, List<SortCriterion> sorting, List<ProblemType> problemsToDetect, bool showCompleted, bool showArchived, bool groupByCompletion, bool completedCollapsed, bool enableSwipeToDelete
 });
 
 
@@ -331,13 +334,16 @@ class _$DisplayConfigCopyWithImpl<$Res>
 
 /// Create a copy of DisplayConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? groupBy = null,Object? sorting = null,Object? problemsToDetect = null,Object? showCompleted = null,Object? showArchived = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? groupBy = null,Object? sorting = null,Object? problemsToDetect = null,Object? showCompleted = null,Object? showArchived = null,Object? groupByCompletion = null,Object? completedCollapsed = null,Object? enableSwipeToDelete = null,}) {
   return _then(_self.copyWith(
 groupBy: null == groupBy ? _self.groupBy : groupBy // ignore: cast_nullable_to_non_nullable
 as GroupByField,sorting: null == sorting ? _self.sorting : sorting // ignore: cast_nullable_to_non_nullable
 as List<SortCriterion>,problemsToDetect: null == problemsToDetect ? _self.problemsToDetect : problemsToDetect // ignore: cast_nullable_to_non_nullable
 as List<ProblemType>,showCompleted: null == showCompleted ? _self.showCompleted : showCompleted // ignore: cast_nullable_to_non_nullable
 as bool,showArchived: null == showArchived ? _self.showArchived : showArchived // ignore: cast_nullable_to_non_nullable
+as bool,groupByCompletion: null == groupByCompletion ? _self.groupByCompletion : groupByCompletion // ignore: cast_nullable_to_non_nullable
+as bool,completedCollapsed: null == completedCollapsed ? _self.completedCollapsed : completedCollapsed // ignore: cast_nullable_to_non_nullable
+as bool,enableSwipeToDelete: null == enableSwipeToDelete ? _self.enableSwipeToDelete : enableSwipeToDelete // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -423,10 +429,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived,  bool groupByCompletion,  bool completedCollapsed,  bool enableSwipeToDelete)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _DisplayConfig() when $default != null:
-return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived);case _:
+return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived,_that.groupByCompletion,_that.completedCollapsed,_that.enableSwipeToDelete);case _:
   return orElse();
 
 }
@@ -444,10 +450,10 @@ return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCom
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived,  bool groupByCompletion,  bool completedCollapsed,  bool enableSwipeToDelete)  $default,) {final _that = this;
 switch (_that) {
 case _DisplayConfig():
-return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived);case _:
+return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived,_that.groupByCompletion,_that.completedCollapsed,_that.enableSwipeToDelete);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -464,10 +470,10 @@ return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCom
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( GroupByField groupBy,  List<SortCriterion> sorting,  List<ProblemType> problemsToDetect,  bool showCompleted,  bool showArchived,  bool groupByCompletion,  bool completedCollapsed,  bool enableSwipeToDelete)?  $default,) {final _that = this;
 switch (_that) {
 case _DisplayConfig() when $default != null:
-return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived);case _:
+return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCompleted,_that.showArchived,_that.groupByCompletion,_that.completedCollapsed,_that.enableSwipeToDelete);case _:
   return null;
 
 }
@@ -479,7 +485,7 @@ return $default(_that.groupBy,_that.sorting,_that.problemsToDetect,_that.showCom
 @JsonSerializable()
 
 class _DisplayConfig implements DisplayConfig {
-  const _DisplayConfig({this.groupBy = GroupByField.none, final  List<SortCriterion> sorting = const [], final  List<ProblemType> problemsToDetect = const [], this.showCompleted = true, this.showArchived = false}): _sorting = sorting,_problemsToDetect = problemsToDetect;
+  const _DisplayConfig({this.groupBy = GroupByField.none, final  List<SortCriterion> sorting = const [], final  List<ProblemType> problemsToDetect = const [], this.showCompleted = true, this.showArchived = false, this.groupByCompletion = false, this.completedCollapsed = true, this.enableSwipeToDelete = false}): _sorting = sorting,_problemsToDetect = problemsToDetect;
   factory _DisplayConfig.fromJson(Map<String, dynamic> json) => _$DisplayConfigFromJson(json);
 
 @override@JsonKey() final  GroupByField groupBy;
@@ -499,6 +505,12 @@ class _DisplayConfig implements DisplayConfig {
 
 @override@JsonKey() final  bool showCompleted;
 @override@JsonKey() final  bool showArchived;
+/// Whether to group tasks by completion status (active vs completed)
+@override@JsonKey() final  bool groupByCompletion;
+/// Whether completed section is collapsed by default
+@override@JsonKey() final  bool completedCollapsed;
+/// Whether to enable swipe-to-delete on list items
+@override@JsonKey() final  bool enableSwipeToDelete;
 
 /// Create a copy of DisplayConfig
 /// with the given fields replaced by the non-null parameter values.
@@ -513,16 +525,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DisplayConfig&&(identical(other.groupBy, groupBy) || other.groupBy == groupBy)&&const DeepCollectionEquality().equals(other._sorting, _sorting)&&const DeepCollectionEquality().equals(other._problemsToDetect, _problemsToDetect)&&(identical(other.showCompleted, showCompleted) || other.showCompleted == showCompleted)&&(identical(other.showArchived, showArchived) || other.showArchived == showArchived));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DisplayConfig&&(identical(other.groupBy, groupBy) || other.groupBy == groupBy)&&const DeepCollectionEquality().equals(other._sorting, _sorting)&&const DeepCollectionEquality().equals(other._problemsToDetect, _problemsToDetect)&&(identical(other.showCompleted, showCompleted) || other.showCompleted == showCompleted)&&(identical(other.showArchived, showArchived) || other.showArchived == showArchived)&&(identical(other.groupByCompletion, groupByCompletion) || other.groupByCompletion == groupByCompletion)&&(identical(other.completedCollapsed, completedCollapsed) || other.completedCollapsed == completedCollapsed)&&(identical(other.enableSwipeToDelete, enableSwipeToDelete) || other.enableSwipeToDelete == enableSwipeToDelete));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,groupBy,const DeepCollectionEquality().hash(_sorting),const DeepCollectionEquality().hash(_problemsToDetect),showCompleted,showArchived);
+int get hashCode => Object.hash(runtimeType,groupBy,const DeepCollectionEquality().hash(_sorting),const DeepCollectionEquality().hash(_problemsToDetect),showCompleted,showArchived,groupByCompletion,completedCollapsed,enableSwipeToDelete);
 
 @override
 String toString() {
-  return 'DisplayConfig(groupBy: $groupBy, sorting: $sorting, problemsToDetect: $problemsToDetect, showCompleted: $showCompleted, showArchived: $showArchived)';
+  return 'DisplayConfig(groupBy: $groupBy, sorting: $sorting, problemsToDetect: $problemsToDetect, showCompleted: $showCompleted, showArchived: $showArchived, groupByCompletion: $groupByCompletion, completedCollapsed: $completedCollapsed, enableSwipeToDelete: $enableSwipeToDelete)';
 }
 
 
@@ -533,7 +545,7 @@ abstract mixin class _$DisplayConfigCopyWith<$Res> implements $DisplayConfigCopy
   factory _$DisplayConfigCopyWith(_DisplayConfig value, $Res Function(_DisplayConfig) _then) = __$DisplayConfigCopyWithImpl;
 @override @useResult
 $Res call({
- GroupByField groupBy, List<SortCriterion> sorting, List<ProblemType> problemsToDetect, bool showCompleted, bool showArchived
+ GroupByField groupBy, List<SortCriterion> sorting, List<ProblemType> problemsToDetect, bool showCompleted, bool showArchived, bool groupByCompletion, bool completedCollapsed, bool enableSwipeToDelete
 });
 
 
@@ -550,13 +562,16 @@ class __$DisplayConfigCopyWithImpl<$Res>
 
 /// Create a copy of DisplayConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? groupBy = null,Object? sorting = null,Object? problemsToDetect = null,Object? showCompleted = null,Object? showArchived = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? groupBy = null,Object? sorting = null,Object? problemsToDetect = null,Object? showCompleted = null,Object? showArchived = null,Object? groupByCompletion = null,Object? completedCollapsed = null,Object? enableSwipeToDelete = null,}) {
   return _then(_DisplayConfig(
 groupBy: null == groupBy ? _self.groupBy : groupBy // ignore: cast_nullable_to_non_nullable
 as GroupByField,sorting: null == sorting ? _self._sorting : sorting // ignore: cast_nullable_to_non_nullable
 as List<SortCriterion>,problemsToDetect: null == problemsToDetect ? _self._problemsToDetect : problemsToDetect // ignore: cast_nullable_to_non_nullable
 as List<ProblemType>,showCompleted: null == showCompleted ? _self.showCompleted : showCompleted // ignore: cast_nullable_to_non_nullable
 as bool,showArchived: null == showArchived ? _self.showArchived : showArchived // ignore: cast_nullable_to_non_nullable
+as bool,groupByCompletion: null == groupByCompletion ? _self.groupByCompletion : groupByCompletion // ignore: cast_nullable_to_non_nullable
+as bool,completedCollapsed: null == completedCollapsed ? _self.completedCollapsed : completedCollapsed // ignore: cast_nullable_to_non_nullable
+as bool,enableSwipeToDelete: null == enableSwipeToDelete ? _self.enableSwipeToDelete : enableSwipeToDelete // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

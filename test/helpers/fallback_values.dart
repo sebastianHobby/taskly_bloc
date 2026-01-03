@@ -2,9 +2,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
 import 'package:taskly_bloc/domain/models/page_key.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_action.dart';
@@ -71,13 +72,13 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeProblemDefinition());
 
   // === Sealed Classes (use real instances) ===
+  registerFallbackValue(const ProblemAction.rescheduleToday());
   registerFallbackValue(
-    const ViewDefinition.collection(
-      selector: EntitySelector(entityType: EntityType.task),
-      display: DisplayConfig(),
+    Section.data(
+      config: DataConfig.task(query: TaskQuery.all()),
+      title: 'Fallback Section',
     ),
   );
-  registerFallbackValue(const ProblemAction.rescheduleToday());
 
   // === Core Domain ===
   registerFallbackValue(TestData.task());

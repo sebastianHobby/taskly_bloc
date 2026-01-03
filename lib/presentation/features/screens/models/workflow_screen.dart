@@ -1,7 +1,8 @@
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Presentation model for workflow execution.
 ///
@@ -12,43 +13,58 @@ class WorkflowScreen {
     required this.id,
     required this.screenKey,
     required this.name,
-    required this.selector,
+    required this.taskQuery,
     required this.display,
   });
 
   /// Creates a [WorkflowScreen] from a [ScreenDefinition].
   ///
-  /// Throws [ArgumentError] if the view definition doesn't support
-  /// workflow execution (must be collection, agenda, or allocated).
+  /// Throws [ArgumentError] if the screen doesn't have task data
+  /// that supports workflow execution.
   factory WorkflowScreen.fromScreenDefinition(ScreenDefinition definition) {
-    final view = definition.view;
+    final taskQuery = _extractTaskQuery(definition.sections);
+    if (taskQuery == null) {
+      throw ArgumentError(
+        'Screen "${definition.name}" does not have task data for workflow',
+      );
+    }
 
-    return switch (view) {
-      CollectionView(:final selector, :final display) => WorkflowScreen(
-        id: definition.id,
-        screenKey: definition.screenKey,
-        name: definition.name,
-        selector: selector,
-        display: display,
-      ),
-      AgendaView(:final selector, :final display) => WorkflowScreen(
-        id: definition.id,
-        screenKey: definition.screenKey,
-        name: definition.name,
-        selector: selector,
-        display: display,
-      ),
-      AllocatedView(:final selector, :final display) => WorkflowScreen(
-        id: definition.id,
-        screenKey: definition.screenKey,
-        name: definition.name,
-        selector: selector,
-        display: display,
-      ),
-      DetailView() => throw ArgumentError(
-        'DetailView does not support workflow execution',
-      ),
-    };
+    final display = _extractDisplayConfig(definition.sections);
+
+    return WorkflowScreen(
+      id: definition.id,
+      screenKey: definition.screenKey,
+      name: definition.name,
+      taskQuery: taskQuery,
+      display: display ?? const DisplayConfig(),
+    );
+  }
+
+  /// Extracts the TaskQuery from sections.
+  static TaskQuery? _extractTaskQuery(List<Section> sections) {
+    for (final section in sections) {
+      switch (section) {
+        case DataSection(:final config):
+          if (config is TaskDataConfig) {
+            return config.query;
+          }
+        case AllocationSection(:final sourceFilter):
+          return sourceFilter ?? TaskQuery.incomplete();
+        case AgendaSection(:final additionalFilter):
+          return additionalFilter ?? TaskQuery.incomplete();
+      }
+    }
+    return null;
+  }
+
+  /// Extracts the DisplayConfig from sections.
+  static DisplayConfig? _extractDisplayConfig(List<Section> sections) {
+    for (final section in sections) {
+      if (section is DataSection && section.display != null) {
+        return section.display;
+      }
+    }
+    return null;
   }
 
   /// Unique identifier for this screen definition.
@@ -60,8 +76,8 @@ class WorkflowScreen {
   /// Display name for the workflow.
   final String name;
 
-  /// Selector determining which entities to include.
-  final EntitySelector selector;
+  /// Query determining which tasks to include.
+  final TaskQuery taskQuery;
 
   /// Display configuration including sort, filter, and problem detection.
   final DisplayConfig display;
@@ -74,9 +90,19 @@ class WorkflowScreen {
           id == other.id &&
           screenKey == other.screenKey &&
           name == other.name &&
-          selector == other.selector &&
+          taskQuery == other.taskQuery &&
           display == other.display;
 
   @override
-  int get hashCode => Object.hash(id, screenKey, name, selector, display);
+  int get hashCode =>
+      id.hashCode ^
+      screenKey.hashCode ^
+      name.hashCode ^
+      taskQuery.hashCode ^
+      display.hashCode;
+
+  @override
+  String toString() {
+    return 'WorkflowScreen(id: $id, screenKey: $screenKey, name: $name)';
+  }
 }

@@ -23,12 +23,41 @@ sealed class ProjectPredicate {
   static ProjectPredicate fromJson(Map<String, dynamic> json) {
     final type = json['type'] as String?;
     return switch (type) {
+      'id' => ProjectIdPredicate.fromJson(json),
       'bool' => ProjectBoolPredicate.fromJson(json),
       'date' => ProjectDatePredicate.fromJson(json),
       'label' => ProjectLabelPredicate.fromJson(json),
       _ => throw ArgumentError('Unknown ProjectPredicate type: $type'),
     };
   }
+}
+
+/// Predicate for filtering projects by ID.
+@immutable
+final class ProjectIdPredicate extends ProjectPredicate {
+  const ProjectIdPredicate({required this.id});
+
+  factory ProjectIdPredicate.fromJson(Map<String, dynamic> json) {
+    return ProjectIdPredicate(
+      id: json['id'] as String,
+    );
+  }
+
+  final String id;
+
+  @override
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'type': 'id',
+    'id': id,
+  };
+
+  @override
+  bool operator ==(Object other) {
+    return other is ProjectIdPredicate && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }
 
 @immutable

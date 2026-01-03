@@ -3,26 +3,18 @@ import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
-import 'package:taskly_bloc/domain/services/screens/view_service.dart';
 
 /// Service for orchestrating multi-step workflows.
 ///
 /// Handles workflow lifecycle, step progression, and state management.
-/// Works with ViewService to fetch entities for each step's view.
+/// Entity fetching for workflow steps happens in WorkflowRunBloc via
+/// ScreenQueryBuilder and SectionDataService.
 class WorkflowService {
   WorkflowService({
     required WorkflowRepositoryContract workflowRepository,
-    required ViewService viewService,
-  }) : _workflowRepository = workflowRepository,
-       _viewService = viewService;
+  }) : _workflowRepository = workflowRepository;
 
   final WorkflowRepositoryContract _workflowRepository;
-
-  /// ViewService for step entity fetching (currently unused - entity fetching
-  /// happens in WorkflowRunBloc via ScreenQueryBuilder). May be used in future
-  /// to provide service-level entity fetching.
-  // ignore: unused_field
-  final ViewService _viewService;
 
   /// Start a new workflow from a definition
   Future<Workflow> startWorkflow({

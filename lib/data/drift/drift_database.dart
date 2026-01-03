@@ -8,9 +8,8 @@ import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dar
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 // Domain models needed by TypeConverters in generated code
 import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
-    hide EntityType;
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';

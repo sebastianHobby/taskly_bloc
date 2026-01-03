@@ -1,4 +1,4 @@
-limport 'package:rrule/rrule.dart';
+import 'package:rrule/rrule.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/models/occurrence_data.dart';
