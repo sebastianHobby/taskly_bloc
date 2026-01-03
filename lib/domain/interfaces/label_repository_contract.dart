@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/label_query.dart';
 
 abstract class LabelRepositoryContract {
   Stream<List<Label>> watchAll();
@@ -7,6 +8,12 @@ abstract class LabelRepositoryContract {
   Future<List<Label>> getAllByType(LabelType type);
   Stream<Label?> watchById(String id);
   Future<Label?> getById(String id);
+
+  /// Query labels using LabelQuery.
+  Future<List<Label>> queryLabels(LabelQuery query);
+
+  /// Get labels by IDs.
+  Future<List<Label>> getLabelsByIds(List<String> ids);
 
   /// Get system label by type
   Future<Label?> getSystemLabel(SystemLabelType type);

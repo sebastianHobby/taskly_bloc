@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart'
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
@@ -236,6 +237,21 @@ class FakeTaskRepository implements TaskRepositoryContract {
   @override
   Stream<int> watchCount([TaskQuery? query]) =>
       _controller.stream.map((tasks) => tasks.length);
+
+  @override
+  Future<List<Task>> queryTasks(TaskQuery query) async => _last;
+
+  @override
+  Future<List<Task>> getTasksByIds(List<String> ids) async =>
+      _last.where((t) => ids.contains(t.id)).toList();
+
+  @override
+  Future<List<Task>> getTasksByProject(String projectId) async =>
+      _last.where((t) => t.projectId == projectId).toList();
+
+  @override
+  Future<List<Task>> getTasksByLabel(String labelId) async =>
+      _last.where((t) => t.labels.any((l) => l.id == labelId)).toList();
 
   void dispose() {
     _controller.close();
@@ -640,6 +656,17 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     DateTime? newDeadline,
   }) async {}
 
+  @override
+  Future<List<Project>> queryProjects(ProjectQuery query) async => _last;
+
+  @override
+  Future<List<Project>> getProjectsByIds(List<String> ids) async =>
+      _last.where((p) => ids.contains(p.id)).toList();
+
+  @override
+  Future<List<Project>> getProjectsByLabel(String labelId) async =>
+      _last.where((p) => p.labels.any((l) => l.id == labelId)).toList();
+
   void dispose() {
     _controller.close();
   }
@@ -808,6 +835,13 @@ class FakeLabelRepository implements LabelRepositoryContract {
     required String taskId,
     required String labelId,
   }) async {}
+
+  @override
+  Future<List<Label>> queryLabels(LabelQuery query) async => _last;
+
+  @override
+  Future<List<Label>> getLabelsByIds(List<String> ids) async =>
+      _last.where((l) => ids.contains(l.id)).toList();
 
   void dispose() {
     _controller.close();

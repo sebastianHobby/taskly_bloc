@@ -20,10 +20,18 @@ class ProjectPredicateMapper with QueryBuilderMixin {
     $ProjectTableTable p,
   ) {
     return switch (predicate) {
+      ProjectIdPredicate() => _idPredicateToExpression(predicate, p),
       ProjectBoolPredicate() => _boolPredicateToExpression(predicate, p),
       ProjectDatePredicate() => _datePredicateToExpression(predicate, p),
       ProjectLabelPredicate() => _labelPredicateToExpression(predicate, p),
     };
+  }
+
+  Expression<bool> _idPredicateToExpression(
+    ProjectIdPredicate predicate,
+    $ProjectTableTable p,
+  ) {
+    return p.id.equals(predicate.id);
   }
 
   Expression<bool> _boolPredicateToExpression(

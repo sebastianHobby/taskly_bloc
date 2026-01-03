@@ -6,6 +6,9 @@ import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
+import 'package:taskly_bloc/domain/queries/label_predicate.dart';
+import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
 
 class LabelRepository implements LabelRepositoryContract {
   LabelRepository({
@@ -87,6 +90,91 @@ class LabelRepository implements LabelRepositoryContract {
   Future<Label?> getById(String id) async {
     final data = await _getLabelById(id);
     return data == null ? null : labelFromTable(data);
+  }
+
+  @override
+  Future<List<Label>> queryLabels(LabelQuery query) async {
+    final select = driftDb.select(driftDb.labelTable);
+
+    // Apply filter predicates
+    final where = _whereExpressionFromFilter(query.filter);
+    if (where != null) select.where((_) => where);
+
+    // Default ordering by type (desc) then name (asc)
+    select.orderBy([
+      (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+      (l) => OrderingTerm(expression: l.name),
+    ]);
+
+    final rows = await select.get();
+    return rows.map(labelFromTable).toList();
+  }
+
+  @override
+  Future<List<Label>> getLabelsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final rows = await (driftDb.select(
+      driftDb.labelTable,
+    )..where((l) => l.id.isIn(ids))).get();
+    return rows.map(labelFromTable).toList();
+  }
+
+  Expression<bool>? _whereExpressionFromFilter(
+    QueryFilter<LabelPredicate> filter,
+  ) {
+    if (filter.shared.isEmpty && filter.orGroups.isEmpty) return null;
+
+    Expression<bool>? result;
+
+    // Apply shared predicates (AND)
+    for (final predicate in filter.shared) {
+      final expr = _predicateToExpression(predicate);
+      result = result == null ? expr : result & expr;
+    }
+
+    // Apply orGroups (OR of AND groups)
+    if (filter.orGroups.isNotEmpty) {
+      Expression<bool>? orResult;
+      for (final group in filter.orGroups) {
+        Expression<bool>? groupExpr;
+        for (final predicate in group) {
+          final expr = _predicateToExpression(predicate);
+          groupExpr = groupExpr == null ? expr : groupExpr & expr;
+        }
+        if (groupExpr != null) {
+          orResult = orResult == null ? groupExpr : orResult | groupExpr;
+        }
+      }
+      if (orResult != null) {
+        result = result == null ? orResult : result & orResult;
+      }
+    }
+
+    return result;
+  }
+
+  Expression<bool> _predicateToExpression(LabelPredicate predicate) {
+    final l = driftDb.labelTable;
+    return switch (predicate) {
+      LabelTypePredicate(:final labelType) => l.type.equals(labelType.name),
+      LabelNamePredicate(:final value, :final operator) =>
+        _namePredicateToExpression(value, operator),
+      LabelColorPredicate(:final colorHex) => l.color.equals(colorHex),
+      LabelIdPredicate(:final labelId) => l.id.equals(labelId),
+      LabelIdsPredicate(:final labelIds) => l.id.isIn(labelIds),
+    };
+  }
+
+  Expression<bool> _namePredicateToExpression(String value, StringOperator op) {
+    final l = driftDb.labelTable;
+    return switch (op) {
+      StringOperator.equals => l.name.equals(value),
+      StringOperator.contains => l.name.contains(value),
+      StringOperator.startsWith => l.name.like('$value%'),
+      StringOperator.endsWith => l.name.like('%$value'),
+      StringOperator.isNull => l.name.isNull(),
+      StringOperator.isNotNull => l.name.isNotNull(),
+    };
   }
 
   @override

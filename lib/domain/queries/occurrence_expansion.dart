@@ -8,6 +8,13 @@ class OccurrenceExpansion {
     required this.rangeEnd,
   });
 
+  factory OccurrenceExpansion.fromJson(Map<String, dynamic> json) {
+    return OccurrenceExpansion(
+      rangeStart: DateTime.parse(json['rangeStart'] as String),
+      rangeEnd: DateTime.parse(json['rangeEnd'] as String),
+    );
+  }
+
   /// Start of the occurrence expansion date range (inclusive).
   final DateTime rangeStart;
 
@@ -39,4 +46,9 @@ class OccurrenceExpansion {
   String toString() {
     return 'OccurrenceExpansion(rangeStart: $rangeStart, rangeEnd: $rangeEnd)';
   }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'rangeStart': rangeStart.toIso8601String(),
+    'rangeEnd': rangeEnd.toIso8601String(),
+  };
 }

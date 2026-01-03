@@ -5,11 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -36,10 +36,12 @@ void main() {
           id: 'fallback-id',
           screenKey: 'fallback',
           name: 'Fallback',
-          view: ViewDefinition.collection(
-            selector: const EntitySelector(entityType: EntityType.task),
-            display: const DisplayConfig(),
-          ),
+          screenType: ScreenType.list,
+          sections: [
+            Section.data(
+              config: DataConfig.task(query: TaskQuery.all()),
+            ),
+          ],
           createdAt: now,
           updatedAt: now,
         ),
@@ -76,10 +78,12 @@ void main() {
         id: id,
         screenKey: screenKey,
         name: name,
-        view: ViewDefinition.collection(
-          selector: const EntitySelector(entityType: EntityType.task),
-          display: const DisplayConfig(),
-        ),
+        screenType: ScreenType.list,
+        sections: [
+          Section.data(
+            config: DataConfig.task(query: TaskQuery.all()),
+          ),
+        ],
         createdAt: now,
         updatedAt: now,
         isSystem: isSystem,

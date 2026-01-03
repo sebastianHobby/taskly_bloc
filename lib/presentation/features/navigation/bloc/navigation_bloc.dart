@@ -140,28 +140,29 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   }
 
   String _buildRoute(ScreenDefinition screen) {
+    talker.debug(
+      '[NavigationBloc] _buildRoute: screenKey=${screen.screenKey}, category=${screen.category}',
+    );
+
     // For workspace screens, use the dynamic screen route
     if (screen.category == ScreenCategory.workspace) {
-      return _routeBuilder(screen.screenKey);
+      final route = _routeBuilder(screen.screenKey);
+      talker.debug('[NavigationBloc] -> workspace route: $route');
+      return route;
     }
 
     // For wellbeing and settings screens, use direct routes
-    switch (screen.screenKey) {
-      case 'wellbeing':
-        return '/wellbeing';
-      case 'journal':
-        return '/wellbeing/journal';
-      case 'trackers':
-        return '/wellbeing/trackers';
-      case 'allocation_settings':
-        return '/tasks/next-actions/settings';
-      case 'navigation_settings':
-        return '/settings/navigation';
-      case 'settings':
-        return '/settings/app';
-      default:
-        return _routeBuilder(screen.screenKey);
-    }
+    final route = switch (screen.screenKey) {
+      'wellbeing' => '/wellbeing',
+      'journal' => '/wellbeing/journal',
+      'trackers' => '/wellbeing/trackers',
+      'allocation_settings' => '/tasks/next-actions/settings',
+      'navigation_settings' => '/settings/navigation',
+      'settings' => '/settings/app',
+      _ => _routeBuilder(screen.screenKey),
+    };
+    talker.debug('[NavigationBloc] -> direct route: $route');
+    return route;
   }
 
   @override

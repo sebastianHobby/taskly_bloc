@@ -108,3 +108,15 @@ class QueryFilter<TPredicate> {
     return true;
   }
 }
+
+/// Extension methods for [QueryFilter].
+extension QueryFilterExtension<T> on QueryFilter<T> {
+  /// Merge with another filter (combines shared predicates and orGroups).
+  QueryFilter<T> merge(QueryFilter<T>? other) {
+    if (other == null) return this;
+    return QueryFilter<T>(
+      shared: [...shared, ...other.shared],
+      orGroups: [...orGroups, ...other.orGroups],
+    );
+  }
+}

@@ -1,33 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-
-import '../../../helpers/fallback_values.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/support_block.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 void main() {
-  setUpAll(registerAllFallbackValues);
-
-  final now = DateTime(2025, 1, 15, 12);
-
-  ViewDefinition createTestView() {
-    return ViewDefinition.collection(
-      selector: EntitySelector(entityType: EntityType.task),
-      display: DisplayConfig(),
-    );
-  }
-
   group('ScreenDefinition', () {
+    final now = DateTime.now();
+
     group('construction', () {
       test('creates with required fields', () {
-        final view = createTestView();
         final screen = ScreenDefinition(
           id: 'screen-1',
           screenKey: 'inbox',
           name: 'Inbox',
-          view: view,
+          screenType: ScreenType.list,
           createdAt: now,
           updatedAt: now,
         );
@@ -35,250 +24,201 @@ void main() {
         expect(screen.id, 'screen-1');
         expect(screen.screenKey, 'inbox');
         expect(screen.name, 'Inbox');
-        expect(screen.view, view);
-        expect(screen.createdAt, now);
-        expect(screen.updatedAt, now);
+        expect(screen.screenType, ScreenType.list);
       });
 
-      test('iconName defaults to null', () {
+      test('uses default values for optional fields', () {
         final screen = ScreenDefinition(
           id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
+          screenKey: 'test',
+          name: 'Test',
+          screenType: ScreenType.list,
           createdAt: now,
           updatedAt: now,
         );
 
+        expect(screen.sections, isEmpty);
+        expect(screen.supportBlocks, isEmpty);
         expect(screen.iconName, isNull);
-      });
-
-      test('isSystem defaults to false', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        expect(screen.isSystem, false);
-      });
-
-      test('isActive defaults to true', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        expect(screen.isActive, true);
-      });
-
-      test('sortOrder defaults to 0', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-        );
-
+        expect(screen.isSystem, isFalse);
+        expect(screen.isActive, isTrue);
         expect(screen.sortOrder, 0);
+        expect(screen.category, ScreenCategory.workspace);
+        expect(screen.triggerConfig, isNull);
       });
 
-      test('category defaults to workspace', () {
+      test('creates with sections', () {
         final screen = ScreenDefinition(
           id: 'screen-1',
           screenKey: 'inbox',
           name: 'Inbox',
-          view: createTestView(),
+          screenType: ScreenType.list,
           createdAt: now,
           updatedAt: now,
+          sections: [
+            DataSection(
+              config: DataConfig.task(query: TaskQuery.inbox()),
+              title: 'Tasks',
+            ),
+          ],
+        );
+
+        expect(screen.sections, hasLength(1));
+      });
+
+      test('creates with support blocks', () {
+        final screen = ScreenDefinition(
+          id: 'screen-1',
+          screenKey: 'inbox',
+          name: 'Inbox',
+          screenType: ScreenType.list,
+          createdAt: now,
+          updatedAt: now,
+          supportBlocks: const [
+            SupportBlock.problemSummary(),
+          ],
+        );
+
+        expect(screen.supportBlocks, hasLength(1));
+      });
+    });
+
+    group('screen types', () {
+      test('list type', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'list',
+          name: 'List',
+          screenType: ScreenType.list,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(screen.screenType, ScreenType.list);
+      });
+
+      test('dashboard type', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'dash',
+          name: 'Dashboard',
+          screenType: ScreenType.dashboard,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(screen.screenType, ScreenType.dashboard);
+      });
+
+      test('focus type', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'focus',
+          name: 'Focus',
+          screenType: ScreenType.focus,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(screen.screenType, ScreenType.focus);
+      });
+
+      test('workflow type', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'workflow',
+          name: 'Workflow',
+          screenType: ScreenType.workflow,
+          createdAt: now,
+          updatedAt: now,
+        );
+
+        expect(screen.screenType, ScreenType.workflow);
+      });
+    });
+
+    group('screen categories', () {
+      test('workspace category', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'inbox',
+          name: 'Inbox',
+          screenType: ScreenType.list,
+          createdAt: now,
+          updatedAt: now,
+          category: ScreenCategory.workspace,
         );
 
         expect(screen.category, ScreenCategory.workspace);
       });
 
-      test('creates with all optional fields', () {
+      test('wellbeing category', () {
         final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'today',
-          name: 'Today',
-          view: createTestView(),
+          id: 's-1',
+          screenKey: 'wellbeing',
+          name: 'Wellbeing',
+          screenType: ScreenType.dashboard,
           createdAt: now,
           updatedAt: now,
-          iconName: 'today',
-          isSystem: true,
-          isActive: false,
-          sortOrder: 5,
           category: ScreenCategory.wellbeing,
         );
 
-        expect(screen.iconName, 'today');
-        expect(screen.isSystem, true);
-        expect(screen.isActive, false);
-        expect(screen.sortOrder, 5);
         expect(screen.category, ScreenCategory.wellbeing);
       });
-    });
 
-    group('equality', () {
-      test('equal when all fields match', () {
-        final view = createTestView();
-        final screen1 = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: view,
+      test('settings category', () {
+        final screen = ScreenDefinition(
+          id: 's-1',
+          screenKey: 'settings',
+          name: 'Settings',
+          screenType: ScreenType.list,
           createdAt: now,
           updatedAt: now,
-        );
-        final screen2 = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: view,
-          createdAt: now,
-          updatedAt: now,
+          category: ScreenCategory.settings,
         );
 
-        expect(screen1, equals(screen2));
-        expect(screen1.hashCode, equals(screen2.hashCode));
-      });
-
-      test('not equal when id differs', () {
-        final view = createTestView();
-        final screen1 = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: view,
-          createdAt: now,
-          updatedAt: now,
-        );
-        final screen2 = ScreenDefinition(
-          id: 'screen-2',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: view,
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        expect(screen1, isNot(equals(screen2)));
-      });
-
-      test('not equal when screenKey differs', () {
-        final view = createTestView();
-        final screen1 = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: view,
-          createdAt: now,
-          updatedAt: now,
-        );
-        final screen2 = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'today',
-          name: 'Inbox',
-          view: view,
-          createdAt: now,
-          updatedAt: now,
-        );
-
-        expect(screen1, isNot(equals(screen2)));
+        expect(screen.category, ScreenCategory.settings);
       });
     });
 
-    group('copyWith', () {
-      test('copies with new name', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
+    group('serialization', () {
+      test('round-trips through JSON', () {
+        final original = ScreenDefinition(
+          id: 'screen-123',
           screenKey: 'inbox',
           name: 'Inbox',
-          view: createTestView(),
+          screenType: ScreenType.list,
           createdAt: now,
           updatedAt: now,
-        );
-        final copied = screen.copyWith(name: 'My Inbox');
-
-        expect(copied.name, 'My Inbox');
-        expect(copied.id, 'screen-1');
-        expect(copied.screenKey, 'inbox');
-      });
-
-      test('copies with new sortOrder', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-        );
-        final copied = screen.copyWith(sortOrder: 10);
-
-        expect(copied.sortOrder, 10);
-      });
-
-      test('copies with new isActive', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-        );
-        final copied = screen.copyWith(isActive: false);
-
-        expect(copied.isActive, false);
-      });
-
-      test('copies with new view', () {
-        final oldView = createTestView();
-        final newView = ViewDefinition.detail(
-          parentType: DetailParentType.project,
-        );
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'inbox',
-          name: 'Inbox',
-          view: oldView,
-          createdAt: now,
-          updatedAt: now,
-        );
-        final copied = screen.copyWith(view: newView);
-
-        expect(copied.view, newView);
-        expect(copied.view, isNot(equals(oldView)));
-      });
-
-      test('preserves unchanged fields', () {
-        final screen = ScreenDefinition(
-          id: 'screen-1',
-          screenKey: 'today',
-          name: 'Today',
-          view: createTestView(),
-          createdAt: now,
-          updatedAt: now,
-          iconName: 'star',
+          iconName: 'inbox',
           isSystem: true,
-          sortOrder: 5,
+          isActive: true,
+          sortOrder: 1,
+          category: ScreenCategory.workspace,
         );
-        final copied = screen.copyWith(name: 'My Today');
 
-        expect(copied.iconName, 'star');
-        expect(copied.isSystem, true);
-        expect(copied.sortOrder, 5);
+        final json = original.toJson();
+        final restored = ScreenDefinition.fromJson(json);
+
+        expect(restored.id, original.id);
+        expect(restored.screenKey, original.screenKey);
+        expect(restored.name, original.name);
+        expect(restored.screenType, original.screenType);
+        expect(restored.iconName, original.iconName);
+        expect(restored.isSystem, original.isSystem);
+        expect(restored.isActive, original.isActive);
+        expect(restored.sortOrder, original.sortOrder);
+        expect(restored.category, original.category);
       });
+    });
+  });
+
+  group('ScreenType', () {
+    test('contains all expected values', () {
+      expect(ScreenType.values, contains(ScreenType.list));
+      expect(ScreenType.values, contains(ScreenType.dashboard));
+      expect(ScreenType.values, contains(ScreenType.focus));
+      expect(ScreenType.values, contains(ScreenType.workflow));
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
@@ -11,19 +12,18 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
-import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
-import 'package:taskly_bloc/presentation/features/labels/view/label_detail_page.dart';
+import 'package:taskly_bloc/presentation/features/labels/view/label_detail_unified_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/next_action/view/allocation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/projects/projects.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/screen_host_page.dart';
+import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
@@ -46,7 +46,7 @@ final router = GoRouter(
   initialLocation: '${AppRoutePath.screenBase}/inbox',
   observers: [TalkerRouteObserver(talker)],
   routes: [
-    // Legacy aliases redirect to dynamic screen routes
+    // Legacy aliases redirect to unified screen routes
     GoRoute(
       name: AppRouteName.inbox,
       path: '/inbox',
@@ -105,11 +105,15 @@ final router = GoRouter(
           }
         }
 
+        // Use a constant key to prevent NavigationBloc from being recreated
+        // on every ShellRoute builder call. Without a key, each navigation
+        // would dispose the old BlocProvider and create a new one, closing
+        // all child blocs (ScreenDefinitionBloc, TaskOverviewBloc, etc.)
         return BlocProvider(
+          key: const ValueKey('navigation_bloc_provider'),
           create: (_) => NavigationBloc(
             screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
             badgeService: NavigationBadgeService(
-              queryBuilder: getIt<ScreenQueryBuilder>(),
               taskRepository: getIt<TaskRepositoryContract>(),
               projectRepository: getIt<ProjectRepositoryContract>(),
             ),
@@ -123,19 +127,20 @@ final router = GoRouter(
         );
       },
       routes: [
+        // Unified screen route - renders any screen via unified path
         GoRoute(
           name: AppRouteName.screen,
           path: AppRoutePath.screen,
-          builder: (context, state) => ScreenHostPage(
-            screenId: state.pathParameters['screenId']!,
-            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
-            queryBuilder: getIt<ScreenQueryBuilder>(),
-            supportBlockComputer: getIt<SupportBlockComputer>(),
-            taskRepository: getIt<TaskRepositoryContract>(),
-            projectRepository: getIt<ProjectRepositoryContract>(),
-            labelRepository: getIt<LabelRepositoryContract>(),
-            settingsRepository: getIt<SettingsRepositoryContract>(),
-          ),
+          builder: (context, state) {
+            final screenId = state.pathParameters['screenId']!;
+            // Check if it's a system screen
+            final systemScreen = SystemScreenDefinitions.getById(screenId);
+            if (systemScreen != null) {
+              return UnifiedScreenPage(definition: systemScreen);
+            }
+            // Otherwise load from repository
+            return UnifiedScreenPageById(screenId: screenId);
+          },
         ),
         GoRoute(
           name: AppRouteName.navigationSettings,
@@ -154,11 +159,8 @@ final router = GoRouter(
         GoRoute(
           name: AppRouteName.projectDetail,
           path: AppRoutePath.projectDetail,
-          builder: (context, state) => ProjectDetailPage(
+          builder: (context, state) => ProjectDetailUnifiedPage(
             projectId: state.pathParameters['projectId']!,
-            projectRepository: getIt<ProjectRepositoryContract>(),
-            taskRepository: getIt<TaskRepositoryContract>(),
-            labelRepository: getIt<LabelRepositoryContract>(),
           ),
         ),
         GoRoute(
@@ -185,11 +187,15 @@ final router = GoRouter(
         GoRoute(
           name: AppRouteName.labelDetail,
           path: '${AppRoutePath.labels}/:labelId',
-          builder: (context, state) => LabelDetailPage(
+          builder: (context, state) => LabelDetailUnifiedPage(
             labelId: state.pathParameters['labelId']!,
-            labelRepository: getIt<LabelRepositoryContract>(),
-            taskRepository: getIt<TaskRepositoryContract>(),
-            projectRepository: getIt<ProjectRepositoryContract>(),
+          ),
+        ),
+        // Values are labels with type=value, reuse LabelDetailUnifiedPage
+        GoRoute(
+          path: '${AppRoutePath.values}/:valueId',
+          builder: (context, state) => LabelDetailUnifiedPage(
+            labelId: state.pathParameters['valueId']!,
           ),
         ),
         GoRoute(

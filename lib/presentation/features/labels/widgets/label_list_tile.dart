@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -7,12 +8,14 @@ import 'package:taskly_bloc/domain/domain.dart';
 class LabelListTile extends StatelessWidget {
   const LabelListTile({
     required this.label,
-    required this.onTap,
+    this.onTap,
     super.key,
   });
 
   final Label label;
-  final void Function(Label) onTap;
+
+  /// Optional tap handler. If null, navigates to label/value detail via EntityNavigator.
+  final void Function(Label)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +54,8 @@ class LabelListTile extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => onTap(label),
+        onTap: () =>
+            onTap != null ? onTap!(label) : _defaultNavigation(context),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -122,5 +126,13 @@ class LabelListTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _defaultNavigation(BuildContext context) {
+    if (label.type == LabelType.value) {
+      EntityNavigator.toValue(context, label.id);
+    } else {
+      EntityNavigator.toLabel(context, label.id);
+    }
   }
 }

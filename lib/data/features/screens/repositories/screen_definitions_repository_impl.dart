@@ -4,12 +4,10 @@ import 'package:taskly_bloc/data/drift/drift_database.dart' as db;
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart'
     as db_screens;
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
-    as domain_screens;
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 
 /// Drift implementation of [ScreenDefinitionsRepositoryContract].
@@ -88,7 +86,7 @@ class ScreenDefinitionsRepositoryImpl
         return mapped;
       } catch (err, st) {
         talker.databaseError(
-          'Screens.watchScreenByScreenKey._mapEntity - Raw entity data: id=${e.id}, screenKey=${e.screenKey}, selectorConfig type=${e.selectorConfig.runtimeType}',
+          'Screens.watchScreenByScreenKey._mapEntity - Raw entity data: id=${e.id}, screenKey=${e.screenKey}',
           err,
           st,
         );
@@ -102,7 +100,7 @@ class ScreenDefinitionsRepositoryImpl
     final now = DateTime.now();
 
     final id = _extractOrGenerateId(screen);
-    final (screenType, selector, display) = _split(screen);
+    final screenType = _toDbScreenType(screen.screenType);
 
     final iconName = _requireIconName(screen);
 
@@ -111,17 +109,17 @@ class ScreenDefinitionsRepositoryImpl
         .insert(
           db.ScreenDefinitionsCompanion.insert(
             id: id,
-            screenType: screenType,
-            screenKey: _extractScreenKey(screen),
-            name: _extractName(screen),
+            screenType: Value(screenType),
+            screenKey: screen.screenKey,
+            name: screen.name,
             iconName: Value(iconName),
-            isSystem: Value(_extractIsSystem(screen)),
-            isActive: Value(_extractIsActive(screen)),
-            sortOrder: Value(_extractSortOrder(screen)),
-            category: Value(_extractCategory(screen)),
-            entityType: Value(_toDbEntityType(selector.entityType)),
-            selectorConfig: Value(selector),
-            displayConfig: Value(display),
+            isSystem: Value(screen.isSystem),
+            isActive: Value(screen.isActive),
+            sortOrder: Value(screen.sortOrder),
+            category: Value(_toDbCategory(screen.category)),
+            sectionsConfig: Value(screen.sections),
+            supportBlocksConfig: Value(screen.supportBlocks),
+            triggerConfig: Value(screen.triggerConfig),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -137,8 +135,7 @@ class ScreenDefinitionsRepositoryImpl
 
     await _db.batch((batch) {
       for (final screen in screens) {
-        final (screenType, selector, display) = _split(screen);
-
+        final screenType = _toDbScreenType(screen.screenType);
         final iconName = _requireIconName(screen);
 
         // Generate v5 ID if empty (system screens from factory)
@@ -151,17 +148,17 @@ class ScreenDefinitionsRepositoryImpl
           db.ScreenDefinitionsCompanion.insert(
             id: id,
             // userId is set by Supabase trigger/RLS, we don't set it locally
-            screenType: screenType,
-            screenKey: _extractScreenKey(screen),
-            name: _extractName(screen),
+            screenType: Value(screenType),
+            screenKey: screen.screenKey,
+            name: screen.name,
             iconName: Value(iconName),
             isSystem: Value(true),
-            isActive: Value(_extractIsActive(screen)),
-            sortOrder: Value(_extractSortOrder(screen)),
-            category: Value(_extractCategory(screen)),
-            entityType: Value(_toDbEntityType(selector.entityType)),
-            selectorConfig: Value(selector),
-            displayConfig: Value(display),
+            isActive: Value(screen.isActive),
+            sortOrder: Value(screen.sortOrder),
+            category: Value(_toDbCategory(screen.category)),
+            sectionsConfig: Value(screen.sections),
+            supportBlocksConfig: Value(screen.supportBlocks),
+            triggerConfig: Value(screen.triggerConfig),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -179,24 +176,24 @@ class ScreenDefinitionsRepositoryImpl
   @override
   Future<void> updateScreen(ScreenDefinition screen) async {
     final now = DateTime.now();
-    final (screenType, selector, display) = _split(screen);
-
+    final screenType = _toDbScreenType(screen.screenType);
     final iconName = _requireIconName(screen);
 
     await (_db.update(
       _db.screenDefinitions,
-    )..where((t) => t.id.equals(_extractId(screen)))).write(
+    )..where((t) => t.id.equals(screen.id))).write(
       db.ScreenDefinitionsCompanion(
         screenType: Value(screenType),
-        screenKey: Value(_extractScreenKey(screen)),
-        name: Value(_extractName(screen)),
+        screenKey: Value(screen.screenKey),
+        name: Value(screen.name),
         iconName: Value(iconName),
-        isSystem: Value(_extractIsSystem(screen)),
-        isActive: Value(_extractIsActive(screen)),
-        sortOrder: Value(_extractSortOrder(screen)),
-        entityType: Value(_toDbEntityType(selector.entityType)),
-        selectorConfig: Value(selector),
-        displayConfig: Value(display),
+        isSystem: Value(screen.isSystem),
+        isActive: Value(screen.isActive),
+        sortOrder: Value(screen.sortOrder),
+        category: Value(_toDbCategory(screen.category)),
+        sectionsConfig: Value(screen.sections),
+        supportBlocksConfig: Value(screen.supportBlocks),
+        triggerConfig: Value(screen.triggerConfig),
         updatedAt: Value(now),
       ),
     );
@@ -247,6 +244,10 @@ class ScreenDefinitionsRepositoryImpl
     });
   }
 
+  // ============================================================================
+  // Mapping Methods
+  // ============================================================================
+
   List<ScreenDefinition> _mapEntities(
     List<db.ScreenDefinitionEntity> e,
   ) {
@@ -254,14 +255,6 @@ class ScreenDefinitionsRepositoryImpl
   }
 
   ScreenDefinition _mapEntity(db.ScreenDefinitionEntity e) {
-    // TypeConverters handle all JSON deserialization automatically
-    final selector =
-        e.selectorConfig ??
-        domain_screens.EntitySelector(
-          entityType: _fromDbEntityType(e.entityType),
-        );
-    final display = e.displayConfig ?? const DisplayConfig();
-
     // Map category from Drift enum to domain enum
     final category = switch (e.category) {
       db_screens.ScreenCategory.workspace => ScreenCategory.workspace,
@@ -270,90 +263,62 @@ class ScreenDefinitionsRepositoryImpl
       null => ScreenCategory.workspace,
     };
 
-    // Create ViewDefinition based on screen type
-    // For now, all screens use collection view (will expand in later phases)
-    final view = ViewDefinition.collection(
-      selector: selector,
-      display: display,
-    );
+    // Map screen type from Drift enum to domain enum (default to list if null)
+    final screenType = switch (e.screenType) {
+      db_screens.ScreenType.list => ScreenType.list,
+      db_screens.ScreenType.dashboard => ScreenType.dashboard,
+      db_screens.ScreenType.focus => ScreenType.focus,
+      db_screens.ScreenType.workflow => ScreenType.workflow,
+      null => ScreenType.list, // Default for corrupted/partial data
+    };
 
     return ScreenDefinition(
       id: e.id,
       screenKey: e.screenKey,
       name: e.name,
-      view: view,
-      createdAt: e.createdAt,
-      updatedAt: e.updatedAt,
+      screenType: screenType,
+      sections: e.sectionsConfig ?? const <Section>[],
+      supportBlocks: e.supportBlocksConfig ?? const <SupportBlock>[],
       iconName: e.iconName,
       isSystem: e.isSystem,
       isActive: e.isActive,
       sortOrder: e.sortOrder,
       category: category,
+      triggerConfig: e.triggerConfig,
+      createdAt: e.createdAt,
+      updatedAt: e.updatedAt,
     );
   }
 
-  db_screens.EntityType _toDbEntityType(domain_screens.EntityType type) {
-    return db_screens.EntityType.values.byName(type.name);
+  // ============================================================================
+  // Conversion Methods
+  // ============================================================================
+
+  db_screens.ScreenType _toDbScreenType(ScreenType type) {
+    return switch (type) {
+      ScreenType.list => db_screens.ScreenType.list,
+      ScreenType.dashboard => db_screens.ScreenType.dashboard,
+      ScreenType.focus => db_screens.ScreenType.focus,
+      ScreenType.workflow => db_screens.ScreenType.workflow,
+    };
   }
 
-  domain_screens.EntityType _fromDbEntityType(db_screens.EntityType? type) {
-    if (type == null) return domain_screens.EntityType.task;
-    return domain_screens.EntityType.values.byName(type.name);
+  db_screens.ScreenCategory _toDbCategory(ScreenCategory category) {
+    return switch (category) {
+      ScreenCategory.workspace => db_screens.ScreenCategory.workspace,
+      ScreenCategory.wellbeing => db_screens.ScreenCategory.wellbeing,
+      ScreenCategory.settings => db_screens.ScreenCategory.settings,
+    };
   }
 
-  (
-    db_screens.ScreenType,
-    domain_screens.EntitySelector,
-    DisplayConfig,
-  )
-  _split(ScreenDefinition screen) {
-    // Extract selector and display from ViewDefinition
-    return screen.view.when(
-      collection: (selector, display, supportBlocks) => (
-        db_screens.ScreenType.collection,
-        selector,
-        display,
-      ),
-      agenda: (selector, display, config, supportBlocks) => (
-        // For agenda views, we'll use collection type with default selector
-        db_screens.ScreenType.collection,
-        selector,
-        display,
-      ),
-      detail: (parentType, childView, supportBlocks) => (
-        // For detail views, we'll use collection type with default selector
-        db_screens.ScreenType.collection,
-        const domain_screens.EntitySelector(
-          entityType: domain_screens.EntityType.task,
-        ),
-        const DisplayConfig(),
-      ),
-      allocated: (selector, display, supportBlocks) => (
-        // For allocated views, we'll use collection type with default selector
-        db_screens.ScreenType.collection,
-        selector,
-        display,
-      ),
-    );
-  }
+  // ============================================================================
+  // Helper Methods
+  // ============================================================================
 
   String _extractOrGenerateId(ScreenDefinition screen) {
-    final id = _extractId(screen);
-    if (id.isNotEmpty) return id;
+    if (screen.id.isNotEmpty) return screen.id;
     // Use v5 deterministic ID based on screenKey
     return _idGenerator.screenDefinitionId(screenKey: screen.screenKey);
-  }
-
-  String _extractId(ScreenDefinition screen) {
-    return screen.id;
-  }
-
-  String _extractScreenKey(ScreenDefinition screen) {
-    return screen.screenKey;
-  }
-
-  String _extractName(ScreenDefinition screen) {
-    return screen.name;
   }
 
   String _requireIconName(ScreenDefinition screen) {
@@ -361,32 +326,10 @@ class ScreenDefinitionsRepositoryImpl
 
     if (iconName == null || iconName.trim().isEmpty) {
       throw ArgumentError(
-        'iconName is required for screen ${_extractScreenKey(screen)}',
+        'iconName is required for screen ${screen.screenKey}',
       );
     }
 
     return iconName.trim();
-  }
-
-  bool _extractIsSystem(ScreenDefinition screen) {
-    return screen.isSystem;
-  }
-
-  bool _extractIsActive(ScreenDefinition screen) {
-    return screen.isActive;
-  }
-
-  int _extractSortOrder(ScreenDefinition screen) {
-    return screen.sortOrder;
-  }
-
-  db_screens.ScreenCategory _extractCategory(ScreenDefinition screen) {
-    final category = screen.category;
-
-    return switch (category) {
-      ScreenCategory.workspace => db_screens.ScreenCategory.workspace,
-      ScreenCategory.wellbeing => db_screens.ScreenCategory.wellbeing,
-      ScreenCategory.settings => db_screens.ScreenCategory.settings,
-    };
   }
 }

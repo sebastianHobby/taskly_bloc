@@ -1,0 +1,266 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
+import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
+import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
+import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
+import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
+
+/// Unified page for rendering all screen types.
+///
+/// This is the single rendering path for both system screens (Inbox, Today)
+/// and user-created screens via ScreenBuilder.
+class UnifiedScreenPage extends StatelessWidget {
+  const UnifiedScreenPage({
+    required this.definition,
+    super.key,
+  });
+
+  /// The screen definition to render.
+  final ScreenDefinition definition;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ScreenBloc(
+        screenRepository: getIt(),
+        interpreter: getIt<ScreenDataInterpreter>(),
+      )..add(ScreenEvent.load(definition: definition)),
+      child: const _UnifiedScreenView(),
+    );
+  }
+}
+
+/// Alternative constructor for loading by screen ID.
+class UnifiedScreenPageById extends StatelessWidget {
+  const UnifiedScreenPageById({
+    required this.screenId,
+    super.key,
+  });
+
+  final String screenId;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (context) => ScreenBloc(
+        screenRepository: getIt(),
+        interpreter: getIt<ScreenDataInterpreter>(),
+      )..add(ScreenEvent.loadById(screenId: screenId)),
+      child: const _UnifiedScreenView(),
+    );
+  }
+}
+
+class _UnifiedScreenView extends StatelessWidget {
+  const _UnifiedScreenView();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ScreenBloc, ScreenState>(
+      builder: (context, state) {
+        return switch (state) {
+          ScreenInitialState() => const _LoadingView(),
+          ScreenLoadingState(:final definition) => _LoadingView(
+            title: definition?.name,
+          ),
+          ScreenLoadedState(:final data, :final isRefreshing) => _LoadedView(
+            data: data,
+            isRefreshing: isRefreshing,
+          ),
+          ScreenErrorState(:final message, :final definition) => _ErrorView(
+            message: message,
+            definition: definition,
+          ),
+        };
+      },
+    );
+  }
+}
+
+class _LoadingView extends StatelessWidget {
+  const _LoadingView({this.title});
+
+  final String? title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title ?? 'Loading...'),
+      ),
+      body: const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class _LoadedView extends StatelessWidget {
+  const _LoadedView({
+    required this.data,
+    required this.isRefreshing,
+  });
+
+  final ScreenData data;
+  final bool isRefreshing;
+
+  @override
+  Widget build(BuildContext context) {
+    final entityActionService = getIt<EntityActionService>();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(data.definition.name),
+        actions: [
+          if (isRefreshing)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+              },
+            ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+          // Wait a bit for the refresh to complete
+          await Future<void>.delayed(const Duration(milliseconds: 500));
+        },
+        child: _ScreenContent(
+          data: data,
+          entityActionService: entityActionService,
+        ),
+      ),
+    );
+  }
+}
+
+class _ScreenContent extends StatelessWidget {
+  const _ScreenContent({
+    required this.data,
+    required this.entityActionService,
+  });
+
+  final ScreenData data;
+  final EntityActionService entityActionService;
+
+  @override
+  Widget build(BuildContext context) {
+    if (data.sections.isEmpty) {
+      return const Center(
+        child: Text('No sections configured'),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: data.sections.length,
+      itemBuilder: (context, index) {
+        final section = data.sections[index];
+        return SectionWidget(
+          section: section,
+          onEntityTap: (entityId, entityType) {
+            EntityNavigator.toEntity(
+              context,
+              entityId: entityId,
+              entityType: entityType,
+            );
+          },
+          onTaskCheckboxChanged: (task, value) async {
+            if (value ?? false) {
+              await entityActionService.completeTask(task.id);
+            } else {
+              await entityActionService.uncompleteTask(task.id);
+            }
+            // Refresh data after action
+            if (context.mounted) {
+              context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+            }
+          },
+          onProjectCheckboxChanged: (project, value) async {
+            if (value ?? false) {
+              await entityActionService.completeProject(project.id);
+            } else {
+              await entityActionService.uncompleteProject(project.id);
+            }
+            // Refresh data after action
+            if (context.mounted) {
+              context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+            }
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  const _ErrorView({
+    required this.message,
+    this.definition,
+  });
+
+  final String message;
+  final ScreenDefinition? definition;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(definition?.name ?? 'Error'),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Failed to load screen',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,31 +1,73 @@
-import 'package:taskly_bloc/data/services/system_screen_seeder.dart'
-    show SystemScreenSeeder;
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/view_definition.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Factory for creating system screen definitions.
 ///
-/// Creates screen definitions with empty IDs. The repository will generate
-/// deterministic v5 IDs based on screenKey when seeding.
+/// System screens are the built-in screens that every user gets by default.
+/// They include task views (Inbox, Today, Upcoming, etc.), project views,
+/// label views, value views, and utility screens (Wellbeing, Settings, etc.).
 ///
-/// System screens are seeded to the database on login via [SystemScreenSeeder].
+/// ## Screen Key Convention
+/// System screens use snake_case identifiers (e.g., `inbox`, `next_actions`).
+/// These keys are used to generate deterministic v5 UUIDs during seeding.
+///
+/// ## ID Generation
+/// Screen IDs are NOT generated here. The repository is responsible for
+/// generating deterministic v5 IDs based on screenKey during seeding.
 class SystemScreenFactory {
   SystemScreenFactory._();
 
   // =========================================================================
-  // Screen Keys
+  // Screen Keys (snake_case)
   // =========================================================================
 
-  /// All system screen keys in display order.
-  ///
-  /// Note: allocation_settings and navigation_settings are accessed via the
-  /// Settings screen and are not shown in the navigation menu.
-  static const List<String> allKeys = [
+  /// Inbox screen key
+  static const String inbox = 'inbox';
+
+  /// Today screen key
+  static const String today = 'today';
+
+  /// Upcoming screen key
+  static const String upcoming = 'upcoming';
+
+  /// Next Actions screen key
+  static const String nextActions = 'next_actions';
+
+  /// Projects screen key
+  static const String projects = 'projects';
+
+  /// Labels screen key
+  static const String labels = 'labels';
+
+  /// Values screen key
+  static const String values = 'values';
+
+  /// Wellbeing screen key
+  static const String wellbeing = 'wellbeing';
+
+  /// Journal screen key
+  static const String journal = 'journal';
+
+  /// Trackers screen key
+  static const String trackers = 'trackers';
+
+  /// Allocation settings screen key
+  static const String allocationSettings = 'allocation_settings';
+
+  /// Navigation settings screen key
+  static const String navigationSettings = 'navigation_settings';
+
+  /// Settings screen key
+  static const String settings = 'settings';
+
+  /// All system screen keys
+  static const List<String> allSystemScreenKeys = [
     inbox,
     today,
     upcoming,
@@ -36,25 +78,12 @@ class SystemScreenFactory {
     wellbeing,
     journal,
     trackers,
+    allocationSettings,
+    navigationSettings,
     settings,
   ];
 
-  // Screen keys as constants for type-safe references
-  static const String inbox = 'inbox';
-  static const String today = 'today';
-  static const String upcoming = 'upcoming';
-  static const String nextActions = 'next_actions';
-  static const String projects = 'projects';
-  static const String labels = 'labels';
-  static const String values = 'values';
-  static const String wellbeing = 'wellbeing';
-  static const String journal = 'journal';
-  static const String trackers = 'trackers';
-  static const String allocationSettings = 'allocation_settings';
-  static const String navigationSettings = 'navigation_settings';
-  static const String settings = 'settings';
-
-  /// Default sort orders for system screens.
+  /// Default sort orders for system screens
   static const Map<String, int> defaultSortOrders = {
     inbox: 0,
     today: 1,
@@ -63,41 +92,46 @@ class SystemScreenFactory {
     projects: 4,
     labels: 5,
     values: 6,
-    wellbeing: 100,
-    journal: 101,
-    trackers: 102,
-    settings: 200,
+    wellbeing: 7,
+    journal: 8,
+    trackers: 9,
+    allocationSettings: 10,
+    navigationSettings: 11,
+    settings: 12,
   };
 
-  // =========================================================================
-  // Factory Methods
-  // =========================================================================
+  /// Alias for [allSystemScreenKeys] for convenience.
+  static List<String> get allKeys => allSystemScreenKeys;
 
-  /// Check if a screen key is a system screen.
+  /// Returns true if the given screenKey is a system screen.
   static bool isSystemScreen(String screenKey) {
-    return allKeys.contains(screenKey);
+    return allSystemScreenKeys.contains(screenKey);
   }
 
-  /// Get the category for a screen key.
+  /// Returns the [ScreenCategory] for the given system screen key.
+  ///
+  /// Returns [ScreenCategory.workspace] for unknown keys.
   static ScreenCategory getCategoryForKey(String screenKey) {
-    switch (screenKey) {
-      case wellbeing:
-      case journal:
-      case trackers:
-        return ScreenCategory.wellbeing;
-      case allocationSettings:
-      case navigationSettings:
-      case settings:
-        return ScreenCategory.settings;
-      default:
-        return ScreenCategory.workspace;
-    }
+    return switch (screenKey) {
+      inbox ||
+      today ||
+      upcoming ||
+      nextActions ||
+      projects ||
+      labels ||
+      values => ScreenCategory.workspace,
+      wellbeing || journal || trackers => ScreenCategory.wellbeing,
+      allocationSettings ||
+      navigationSettings ||
+      settings => ScreenCategory.settings,
+      _ => ScreenCategory.workspace,
+    };
   }
 
   /// Creates all system screen definitions for a user.
   ///
-  /// Screens are created with empty IDs. The repository will generate
-  /// deterministic v5 IDs based on screenKey during seeding.
+  /// The repository is responsible for generating deterministic v5 IDs
+  /// based on screenKey during seeding.
   static List<ScreenDefinition> createAll(String userId) {
     final now = DateTime.now();
     return [
@@ -149,83 +183,47 @@ class SystemScreenFactory {
       name: 'Inbox',
       iconName: 'inbox',
       sortOrder: defaultSortOrders[inbox]!,
-      filter: const QueryFilter<TaskPredicate>(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-          TaskProjectPredicate(operator: ProjectOperator.isNull),
-        ],
-      ),
+      query: TaskQuery.inbox(),
       now: now,
     );
   }
 
   static ScreenDefinition _createToday(String userId, DateTime now) {
-    return _taskScreen(
+    return _agendaScreen(
       userId: userId,
       screenKey: today,
       name: 'Today',
       iconName: 'today',
       sortOrder: defaultSortOrders[today]!,
-      filter: const QueryFilter<TaskPredicate>(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-          TaskDatePredicate(
-            field: TaskDateField.deadlineDate,
-            operator: DateOperator.relative,
-            relativeComparison: RelativeComparison.onOrBefore,
-            relativeDays: 0,
-          ),
-        ],
-      ),
+      dateField: AgendaDateField.deadlineDate,
+      grouping: AgendaGrouping.overdueFirst,
+      additionalFilter: TaskQuery.incomplete(),
       now: now,
     );
   }
 
   static ScreenDefinition _createUpcoming(String userId, DateTime now) {
-    return _taskScreen(
+    return _agendaScreen(
       userId: userId,
       screenKey: upcoming,
       name: 'Upcoming',
       iconName: 'upcoming',
       sortOrder: defaultSortOrders[upcoming]!,
-      filter: const QueryFilter<TaskPredicate>(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-          TaskDatePredicate(
-            field: TaskDateField.deadlineDate,
-            operator: DateOperator.isNotNull,
-          ),
-        ],
-      ),
+      dateField: AgendaDateField.deadlineDate,
+      grouping: AgendaGrouping.byDate,
+      additionalFilter: TaskQuery.withDueDate(),
       now: now,
     );
   }
 
   static ScreenDefinition _createNextActions(String userId, DateTime now) {
-    return _taskScreen(
+    return _allocationScreen(
       userId: userId,
       screenKey: nextActions,
       name: 'Next Actions',
       iconName: 'next_actions',
       sortOrder: defaultSortOrders[nextActions]!,
-      filter: const QueryFilter<TaskPredicate>(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-          TaskProjectPredicate(operator: ProjectOperator.isNotNull),
-        ],
-      ),
+      sourceFilter: TaskQuery.inProject(),
       now: now,
     );
   }
@@ -248,12 +246,13 @@ class SystemScreenFactory {
       name: 'Labels',
       iconName: 'labels',
       sortOrder: defaultSortOrders[labels]!,
+      query: LabelQuery.labelsOnly(),
       now: now,
     );
   }
 
   static ScreenDefinition _createValues(String userId, DateTime now) {
-    return _labelScreen(
+    return _valueScreen(
       userId: userId,
       screenKey: values,
       name: 'Values',
@@ -345,32 +344,33 @@ class SystemScreenFactory {
   // Helper Methods
   // =========================================================================
 
+  /// Creates a task-based list screen with a data section
   static ScreenDefinition _taskScreen({
     required String userId,
     required String screenKey,
     required String name,
     required String iconName,
     required int sortOrder,
-    required QueryFilter<TaskPredicate> filter,
+    required TaskQuery query,
     required DateTime now,
   }) {
     return ScreenDefinition(
       id: '', // Repository generates v5 ID based on screenKey
       screenKey: screenKey,
       name: name,
-      view: ViewDefinition.collection(
-        selector: EntitySelector(
-          entityType: EntityType.task,
-          taskFilter: filter,
+      screenType: ScreenType.list,
+      sections: [
+        Section.data(
+          config: DataConfig.task(query: query),
+          display: const DisplayConfig(
+            sorting: [
+              SortCriterion(field: SortField.deadlineDate),
+              SortCriterion(field: SortField.name),
+            ],
+            showCompleted: false,
+          ),
         ),
-        display: const DisplayConfig(
-          sorting: [
-            SortCriterion(field: SortField.deadlineDate),
-            SortCriterion(field: SortField.name),
-          ],
-          showCompleted: false,
-        ),
-      ),
+      ],
       createdAt: now,
       updatedAt: now,
       isSystem: true,
@@ -379,6 +379,69 @@ class SystemScreenFactory {
     );
   }
 
+  /// Creates an agenda-based screen with date grouping
+  static ScreenDefinition _agendaScreen({
+    required String userId,
+    required String screenKey,
+    required String name,
+    required String iconName,
+    required int sortOrder,
+    required AgendaDateField dateField,
+    required AgendaGrouping grouping,
+    required DateTime now,
+    TaskQuery? additionalFilter,
+  }) {
+    return ScreenDefinition(
+      id: '', // Repository generates v5 ID based on screenKey
+      screenKey: screenKey,
+      name: name,
+      screenType: ScreenType.list,
+      sections: [
+        Section.agenda(
+          dateField: dateField,
+          grouping: grouping,
+          additionalFilter: additionalFilter,
+        ),
+      ],
+      createdAt: now,
+      updatedAt: now,
+      isSystem: true,
+      sortOrder: sortOrder,
+      iconName: iconName,
+    );
+  }
+
+  /// Creates an allocation-based screen (Focus/Next Actions)
+  static ScreenDefinition _allocationScreen({
+    required String userId,
+    required String screenKey,
+    required String name,
+    required String iconName,
+    required int sortOrder,
+    required DateTime now,
+    TaskQuery? sourceFilter,
+    int? maxTasks,
+  }) {
+    return ScreenDefinition(
+      id: '', // Repository generates v5 ID based on screenKey
+      screenKey: screenKey,
+      name: name,
+      screenType: ScreenType.focus,
+      sections: [
+        Section.allocation(
+          sourceFilter: sourceFilter,
+          maxTasks: maxTasks,
+        ),
+      ],
+      createdAt: now,
+      updatedAt: now,
+      isSystem: true,
+      sortOrder: sortOrder,
+      iconName: iconName,
+    );
+  }
+
+  /// Creates a project-based list screen
   static ScreenDefinition _projectScreen({
     required String userId,
     required String screenKey,
@@ -391,16 +454,16 @@ class SystemScreenFactory {
       id: '', // Repository generates v5 ID based on screenKey
       screenKey: screenKey,
       name: name,
-      view: ViewDefinition.collection(
-        selector: EntitySelector(
-          entityType: EntityType.project,
-          projectFilter: const QueryFilter.matchAll(),
+      screenType: ScreenType.list,
+      sections: [
+        Section.data(
+          config: DataConfig.project(query: ProjectQuery.active()),
+          display: const DisplayConfig(
+            sorting: [SortCriterion(field: SortField.name)],
+            showCompleted: false,
+          ),
         ),
-        display: const DisplayConfig(
-          sorting: [SortCriterion(field: SortField.name)],
-          showCompleted: false,
-        ),
-      ),
+      ],
       createdAt: now,
       updatedAt: now,
       isSystem: true,
@@ -409,7 +472,40 @@ class SystemScreenFactory {
     );
   }
 
+  /// Creates a label-based list screen
   static ScreenDefinition _labelScreen({
+    required String userId,
+    required String screenKey,
+    required String name,
+    required String iconName,
+    required int sortOrder,
+    required LabelQuery query,
+    required DateTime now,
+  }) {
+    return ScreenDefinition(
+      id: '', // Repository generates v5 ID based on screenKey
+      screenKey: screenKey,
+      name: name,
+      screenType: ScreenType.list,
+      sections: [
+        Section.data(
+          config: DataConfig.label(query: query),
+          display: const DisplayConfig(
+            sorting: [SortCriterion(field: SortField.name)],
+            showCompleted: false,
+          ),
+        ),
+      ],
+      createdAt: now,
+      updatedAt: now,
+      isSystem: true,
+      sortOrder: sortOrder,
+      iconName: iconName,
+    );
+  }
+
+  /// Creates a value-based list screen (values are labels with type=value)
+  static ScreenDefinition _valueScreen({
     required String userId,
     required String screenKey,
     required String name,
@@ -421,13 +517,16 @@ class SystemScreenFactory {
       id: '', // Repository generates v5 ID based on screenKey
       screenKey: screenKey,
       name: name,
-      view: ViewDefinition.collection(
-        selector: const EntitySelector(entityType: EntityType.label),
-        display: const DisplayConfig(
-          sorting: [SortCriterion(field: SortField.name)],
-          showCompleted: false,
+      screenType: ScreenType.list,
+      sections: [
+        const Section.data(
+          config: DataConfig.value(),
+          display: DisplayConfig(
+            sorting: [SortCriterion(field: SortField.name)],
+            showCompleted: false,
+          ),
         ),
-      ),
+      ],
       createdAt: now,
       updatedAt: now,
       isSystem: true,
@@ -436,6 +535,7 @@ class SystemScreenFactory {
     );
   }
 
+  /// Creates a utility screen (Wellbeing, Settings, etc.)
   static ScreenDefinition _utilityScreen({
     required String userId,
     required String screenKey,
@@ -449,13 +549,8 @@ class SystemScreenFactory {
       id: '', // Repository generates v5 ID based on screenKey
       screenKey: screenKey,
       name: name,
-      view: ViewDefinition.collection(
-        selector: const EntitySelector(
-          entityType: EntityType.task,
-          taskFilter: QueryFilter.matchAll(),
-        ),
-        display: const DisplayConfig(showCompleted: false),
-      ),
+      screenType: ScreenType.dashboard,
+      sections: [], // Utility screens have no data sections
       createdAt: now,
       updatedAt: now,
       isSystem: true,

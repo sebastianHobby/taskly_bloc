@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -8,7 +9,7 @@ class TaskListTile extends StatelessWidget {
   const TaskListTile({
     required this.task,
     required this.onCheckboxChanged,
-    required this.onTap,
+    this.onTap,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
     super.key,
@@ -16,7 +17,9 @@ class TaskListTile extends StatelessWidget {
 
   final Task task;
   final void Function(Task, bool?) onCheckboxChanged;
-  final void Function(Task) onTap;
+
+  /// Optional tap handler. If null, navigates to task detail via EntityNavigator.
+  final void Function(Task)? onTap;
 
   /// Callback when user removes the Next Action status from the task.
   /// If null, the indicator won't show the unpin option.
@@ -92,7 +95,9 @@ class TaskListTile extends StatelessWidget {
           ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.5)
           : colorScheme.surface,
       child: InkWell(
-        onTap: () => onTap(task),
+        onTap: () => onTap != null
+            ? onTap!(task)
+            : EntityNavigator.toTask(context, task.id),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_picker_dialog.dart';
 
 /// A FormBuilder field for selecting an icon from a predefined list.
 ///
-/// Displays icons in a grid and allows selection with visual feedback.
+/// Displays a compact preview that opens a dialog for icon selection.
 /// Returns the icon name as a String for database storage.
 class FormBuilderIconPicker extends FormBuilderFieldDecoration<String> {
   FormBuilderIconPicker({
@@ -13,10 +14,9 @@ class FormBuilderIconPicker extends FormBuilderFieldDecoration<String> {
     super.initialValue,
     super.onChanged,
     super.enabled = true,
-    super.decoration = const InputDecoration(border: InputBorder.none),
-    this.icons = defaultIcons,
-    this.gridCrossAxisCount = 5,
-    this.iconSize = 28.0,
+    super.decoration = const InputDecoration(),
+    this.iconSize = 32.0,
+    this.hintText = 'Tap to select an icon',
   }) : super(
          builder: (FormFieldState<String> field) {
            final state =
@@ -29,178 +29,134 @@ class FormBuilderIconPicker extends FormBuilderFieldDecoration<String> {
 
            return InputDecorator(
              decoration: state.decoration,
-             child: _IconPickerGrid(
-               icons: widget.icons,
+             child: _IconPickerButton(
                selected: state.value,
                enabled: state.enabled,
                onSelected: state.didChange,
-               crossAxisCount: widget.gridCrossAxisCount,
                iconSize: widget.iconSize,
+               hintText: widget.hintText,
              ),
            );
          },
        );
 
-  /// List of available icons to choose from.
-  final List<IconPickerItem> icons;
-
-  /// Number of columns in the icon grid.
-  final int gridCrossAxisCount;
-
-  /// Size of each icon.
+  /// Size of the icon in the preview.
   final double iconSize;
+
+  /// Hint text shown when no icon is selected.
+  final String hintText;
 
   @override
   FormBuilderFieldDecorationState<FormBuilderIconPicker, String>
   createState() => FormBuilderFieldDecorationState();
 
-  /// Default icons for screens and workflows.
-  static const List<IconPickerItem> defaultIcons = [
-    // Task/Action Icons
-    IconPickerItem(name: 'inbox', icon: Icons.inbox),
-    IconPickerItem(name: 'today', icon: Icons.today),
-    IconPickerItem(name: 'upcoming', icon: Icons.event),
-    IconPickerItem(name: 'next_actions', icon: Icons.playlist_play),
-    IconPickerItem(name: 'checklist', icon: Icons.checklist),
-    IconPickerItem(name: 'task', icon: Icons.task_alt),
-    IconPickerItem(name: 'done', icon: Icons.done_all),
-
-    // Project Icons
-    IconPickerItem(name: 'projects', icon: Icons.folder),
-    IconPickerItem(name: 'folder_open', icon: Icons.folder_open),
-    IconPickerItem(name: 'work', icon: Icons.work),
-    IconPickerItem(name: 'business', icon: Icons.business_center),
-
-    // Label/Category Icons
-    IconPickerItem(name: 'labels', icon: Icons.label),
-    IconPickerItem(name: 'tag', icon: Icons.local_offer),
-    IconPickerItem(name: 'category', icon: Icons.category),
-    IconPickerItem(name: 'bookmark', icon: Icons.bookmark),
-
-    // Value/Goal Icons
-    IconPickerItem(name: 'values', icon: Icons.star),
-    IconPickerItem(name: 'flag', icon: Icons.flag),
-    IconPickerItem(name: 'target', icon: Icons.gps_fixed),
-    IconPickerItem(name: 'trophy', icon: Icons.emoji_events),
-
-    // Review/Workflow Icons
-    IconPickerItem(name: 'rate_review', icon: Icons.rate_review),
-    IconPickerItem(name: 'review', icon: Icons.reviews),
-    IconPickerItem(name: 'refresh', icon: Icons.refresh),
-    IconPickerItem(name: 'sync', icon: Icons.sync),
-    IconPickerItem(name: 'loop', icon: Icons.loop),
-
-    // Time Icons
-    IconPickerItem(name: 'schedule', icon: Icons.schedule),
-    IconPickerItem(name: 'calendar', icon: Icons.calendar_month),
-    IconPickerItem(name: 'timer', icon: Icons.timer),
-    IconPickerItem(name: 'alarm', icon: Icons.alarm),
-
-    // Wellbeing Icons
-    IconPickerItem(name: 'wellbeing', icon: Icons.favorite),
-    IconPickerItem(name: 'mood', icon: Icons.mood),
-    IconPickerItem(name: 'journal', icon: Icons.book),
-    IconPickerItem(name: 'self_care', icon: Icons.spa),
-
-    // Settings Icons
-    IconPickerItem(name: 'settings', icon: Icons.settings),
-    IconPickerItem(name: 'tune', icon: Icons.tune),
-    IconPickerItem(name: 'dashboard', icon: Icons.dashboard),
-
-    // Misc Icons
-    IconPickerItem(name: 'list', icon: Icons.list),
-    IconPickerItem(name: 'view_list', icon: Icons.view_list),
-    IconPickerItem(name: 'grid', icon: Icons.grid_view),
-    IconPickerItem(name: 'filter', icon: Icons.filter_list),
-    IconPickerItem(name: 'sort', icon: Icons.sort),
-    IconPickerItem(name: 'search', icon: Icons.search),
-    IconPickerItem(name: 'lightbulb', icon: Icons.lightbulb),
-    IconPickerItem(name: 'info', icon: Icons.info),
-  ];
-
   /// Get an IconData from a stored icon name.
   static IconData? getIconData(String? iconName) {
-    if (iconName == null) return null;
-    final item = defaultIcons.where((i) => i.name == iconName).firstOrNull;
-    return item?.icon;
+    return getIconDataFromName(iconName);
   }
 }
 
-/// Represents an icon option with its name and IconData.
-class IconPickerItem {
-  const IconPickerItem({
-    required this.name,
-    required this.icon,
-  });
-
-  /// The name stored in the database.
-  final String name;
-
-  /// The icon to display.
-  final IconData icon;
-}
-
-class _IconPickerGrid extends StatelessWidget {
-  const _IconPickerGrid({
-    required this.icons,
+class _IconPickerButton extends StatelessWidget {
+  const _IconPickerButton({
     required this.selected,
     required this.enabled,
     required this.onSelected,
-    required this.crossAxisCount,
     required this.iconSize,
+    required this.hintText,
   });
 
-  final List<IconPickerItem> icons;
   final String? selected;
   final bool enabled;
   final ValueChanged<String?> onSelected;
-  final int crossAxisCount;
   final double iconSize;
+  final String hintText;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final iconData = selected != null ? getIconDataFromName(selected) : null;
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-      ),
-      itemCount: icons.length,
-      itemBuilder: (context, index) {
-        final item = icons[index];
-        final isSelected = selected == item.name;
-
-        return Material(
-          color: isSelected
-              ? colorScheme.primaryContainer
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
-          child: InkWell(
-            onTap: enabled ? () => onSelected(item.name) : null,
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
+    return InkWell(
+      onTap: enabled
+          ? () async {
+              final result = await IconPickerDialog.show(
+                context,
+                selectedIcon: selected,
+              );
+              if (result != null) {
+                onSelected(result);
+              }
+            }
+          : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: iconSize + 16,
+              height: iconSize + 16,
               decoration: BoxDecoration(
+                color: iconData != null
+                    ? colorScheme.primaryContainer
+                    : colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
-                border: isSelected
+                border: iconData != null
                     ? Border.all(color: colorScheme.primary, width: 2)
-                    : null,
+                    : Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.5),
+                      ),
               ),
-              child: Icon(
-                item.icon,
-                size: iconSize,
-                color: isSelected
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurfaceVariant,
+              child: iconData != null
+                  ? Icon(
+                      iconData,
+                      size: iconSize,
+                      color: colorScheme.onPrimaryContainer,
+                    )
+                  : Icon(
+                      Icons.add,
+                      size: iconSize * 0.75,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                iconData != null ? _getIconLabel(selected!) : hintText,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: iconData != null
+                      ? colorScheme.onSurface
+                      : colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
-          ),
-        );
-      },
+            Icon(
+              Icons.chevron_right,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  String _getIconLabel(String iconName) {
+    for (final category in defaultIconCategories) {
+      for (final icon in category.icons) {
+        if (icon.name == iconName) {
+          return icon.label;
+        }
+      }
+    }
+    // Fallback: format the name nicely
+    return iconName
+        .replaceAll('_', ' ')
+        .split(' ')
+        .map((word) {
+          if (word.isEmpty) return word;
+          return word[0].toUpperCase() + word.substring(1);
+        })
+        .join(' ');
   }
 }

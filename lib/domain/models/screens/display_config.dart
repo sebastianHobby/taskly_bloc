@@ -65,6 +65,15 @@ abstract class DisplayConfig with _$DisplayConfig {
     @Default([]) List<ProblemType> problemsToDetect,
     @Default(true) bool showCompleted,
     @Default(false) bool showArchived,
+
+    /// Whether to group tasks by completion status (active vs completed)
+    @Default(false) bool groupByCompletion,
+
+    /// Whether completed section is collapsed by default
+    @Default(true) bool completedCollapsed,
+
+    /// Whether to enable swipe-to-delete on list items
+    @Default(false) bool enableSwipeToDelete,
   }) = _DisplayConfig;
 
   factory DisplayConfig.fromJson(Map<String, dynamic> json) =>

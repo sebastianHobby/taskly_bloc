@@ -95,6 +95,29 @@ void main() {
     );
 
     blocTest<AuthBloc, AppAuthState>(
+      'subscriptionRequested continues on seeding failure',
+      build: () {
+        when(() => authRepo.currentSession).thenReturn(mockSession);
+        when(
+          () => authRepo.watchAuthState(),
+        ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => userDataSeeder.seedAll(any()),
+        ).thenThrow(Exception('Seeding failed'));
+        return buildBloc();
+      },
+      act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
+      expect: () => [
+        const AppAuthState(status: AuthStatus.loading),
+        isA<AppAuthState>().having(
+          (s) => s.status,
+          'status',
+          AuthStatus.authenticated,
+        ),
+      ],
+    );
+
+    blocTest<AuthBloc, AppAuthState>(
       'signInRequested emits loading then lets auth stream handle success',
       build: () {
         final response = MockAuthResponse();

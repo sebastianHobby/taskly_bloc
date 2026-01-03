@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/queries/label_match_mode.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator;
+    show BoolOperator, DateOperator, LabelOperator;
 
 /// Unified query configuration for fetching projects.
 ///
@@ -22,9 +24,38 @@ class ProjectQuery {
     this.occurrenceExpansion,
   });
 
+  factory ProjectQuery.fromJson(Map<String, dynamic> json) {
+    return ProjectQuery(
+      filter: QueryFilter.fromJson<ProjectPredicate>(
+        json['filter'] as Map<String, dynamic>? ?? const <String, dynamic>{},
+        ProjectPredicate.fromJson,
+      ),
+      sortCriteria:
+          (json['sortCriteria'] as List<dynamic>?)
+              ?.whereType<Map<String, dynamic>>()
+              .map(SortCriterion.fromJson)
+              .toList(growable: false) ??
+          const <SortCriterion>[],
+      occurrenceExpansion: json['occurrenceExpansion'] != null
+          ? OccurrenceExpansion.fromJson(
+              json['occurrenceExpansion'] as Map<String, dynamic>,
+            )
+          : null,
+    );
+  }
+
   // ========================================================================
   // Factory Methods
   // ========================================================================
+
+  /// Factory: Single project by ID.
+  factory ProjectQuery.byId(String projectId) {
+    return ProjectQuery(
+      filter: QueryFilter<ProjectPredicate>(
+        shared: [ProjectIdPredicate(id: projectId)],
+      ),
+    );
+  }
 
   /// Factory: All projects (no filtering).
   factory ProjectQuery.all({List<SortCriterion>? sortCriteria}) {
@@ -39,6 +70,52 @@ class ProjectQuery {
           ProjectBoolPredicate(
             field: ProjectBoolField.completed,
             operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
+      sortCriteria: sortCriteria ?? _defaultSortCriteria,
+    );
+  }
+
+  /// Factory: Active projects (not completed) - alias for incomplete.
+  factory ProjectQuery.active({List<SortCriterion>? sortCriteria}) {
+    return ProjectQuery.incomplete(sortCriteria: sortCriteria);
+  }
+
+  /// Factory: Completed projects only.
+  factory ProjectQuery.completed({List<SortCriterion>? sortCriteria}) {
+    return ProjectQuery(
+      filter: const QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+        ],
+      ),
+      sortCriteria: sortCriteria ?? _defaultSortCriteria,
+    );
+  }
+
+  /// Factory: Projects with specific labels/values.
+  factory ProjectQuery.byLabels(
+    List<String> labelIds, {
+    LabelMatchMode mode = LabelMatchMode.any,
+    LabelType labelType = LabelType.label,
+    List<SortCriterion>? sortCriteria,
+  }) {
+    final labelOp = switch (mode) {
+      LabelMatchMode.any => LabelOperator.hasAny,
+      LabelMatchMode.all => LabelOperator.hasAll,
+      LabelMatchMode.none => LabelOperator.isNull,
+    };
+    return ProjectQuery(
+      filter: QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectLabelPredicate(
+            operator: labelOp,
+            labelIds: labelIds,
+            labelType: labelType,
           ),
         ],
       ),
@@ -118,6 +195,16 @@ class ProjectQuery {
     return 'ProjectQuery(filter: $filter, sortCriteria: $sortCriteria, '
         'occurrenceExpansion: $occurrenceExpansion)';
   }
+
+  // ========================================================================
+  // JSON Serialization
+  // ========================================================================
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'filter': filter.toJson((p) => p.toJson()),
+    'sortCriteria': sortCriteria.map((s) => s.toJson()).toList(),
+    'occurrenceExpansion': occurrenceExpansion?.toJson(),
+  };
 
   static const _defaultSortCriteria = [
     SortCriterion(field: SortField.deadlineDate),

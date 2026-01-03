@@ -247,6 +247,7 @@ final class TaskLabelPredicate extends TaskPredicate {
     required this.operator,
     required this.labelType,
     this.labelIds = const <String>[],
+    this.includeInherited = false,
   });
 
   factory TaskLabelPredicate.fromJson(Map<String, dynamic> json) {
@@ -260,6 +261,7 @@ final class TaskLabelPredicate extends TaskPredicate {
       labelIds: (json['labelIds'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .toList(growable: false),
+      includeInherited: json['includeInherited'] as bool? ?? false,
     );
   }
 
@@ -267,12 +269,22 @@ final class TaskLabelPredicate extends TaskPredicate {
   final LabelType labelType;
   final List<String> labelIds;
 
+  /// Whether to include labels/values inherited from the task's project.
+  ///
+  /// When true, a task matches if it has the label directly OR its parent
+  /// project has the label. This is particularly useful for values where
+  /// a project's value (e.g., "Health") should apply to all its tasks.
+  ///
+  /// Defaults to false for labels, but [TaskQuery.forValue] defaults to true.
+  final bool includeInherited;
+
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': 'label',
     'operator': operator.name,
     'labelType': labelType.name,
     'labelIds': labelIds,
+    'includeInherited': includeInherited,
   };
 
   @override
@@ -280,12 +292,17 @@ final class TaskLabelPredicate extends TaskPredicate {
     return other is TaskLabelPredicate &&
         other.operator == operator &&
         other.labelType == labelType &&
+        other.includeInherited == includeInherited &&
         listEquals(other.labelIds, labelIds);
   }
 
   @override
-  int get hashCode =>
-      Object.hash(operator, labelType, Object.hashAll(labelIds));
+  int get hashCode => Object.hash(
+    operator,
+    labelType,
+    includeInherited,
+    Object.hashAll(labelIds),
+  );
 }
 
 extension _Let<T> on T {

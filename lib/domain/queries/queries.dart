@@ -1,6 +1,9 @@
 /// Domain query models for building type-safe database queries.
 library;
 
+export 'label_match_mode.dart';
+export 'label_predicate.dart';
+export 'label_query.dart';
 export 'occurrence_expansion.dart';
 export 'query_filter.dart';
 export 'task_predicate.dart';

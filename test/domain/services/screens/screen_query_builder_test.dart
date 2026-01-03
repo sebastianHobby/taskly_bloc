@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart' as sp;
 
@@ -438,6 +442,203 @@ void main() {
         expect(query.sortCriteria[0].field, sp.SortField.name);
         expect(query.sortCriteria[1].field, sp.SortField.startDate);
         expect(query.sortCriteria[1].direction, sp.SortDirection.descending);
+      });
+    });
+
+    group('buildTaskQueryFromSection', () {
+      test('builds query from TaskDataConfig section', () {
+        final section = DataSection(
+          config: DataConfig.task(query: TaskQuery.incomplete()),
+          title: 'Test Section',
+        );
+
+        final query = queryBuilder.buildTaskQueryFromSection(
+          section: section,
+          now: now,
+        );
+
+        expect(query, isA<TaskQuery>());
+        expect(query.filter.shared, isNotEmpty);
+      });
+
+      test('throws for non-TaskDataConfig sections', () {
+        final section = DataSection(
+          config: DataConfig.project(query: ProjectQuery.all()),
+          title: 'Projects',
+        );
+
+        expect(
+          () => queryBuilder.buildTaskQueryFromSection(
+            section: section,
+            now: now,
+          ),
+          throwsArgumentError,
+        );
+      });
+
+      test('applies display config showCompleted=false filter', () {
+        final section = DataSection(
+          config: DataConfig.task(query: TaskQuery.all()),
+          title: 'Test',
+          display: const DisplayConfig(showCompleted: false),
+        );
+
+        final query = queryBuilder.buildTaskQueryFromSection(
+          section: section,
+          now: now,
+        );
+
+        final hasIncompletePredicate = query.filter.shared.any(
+          (p) =>
+              p is TaskBoolPredicate &&
+              p.field == TaskBoolField.completed &&
+              p.operator == BoolOperator.isFalse,
+        );
+        expect(hasIncompletePredicate, isTrue);
+      });
+
+      test('preserves display sorting when query has no sort criteria', () {
+        final section = DataSection(
+          config: DataConfig.task(query: const TaskQuery()),
+          title: 'Test',
+          display: const DisplayConfig(
+            sorting: [
+              SortCriterion(field: SortField.name),
+            ],
+          ),
+        );
+
+        final query = queryBuilder.buildTaskQueryFromSection(
+          section: section,
+          now: now,
+        );
+
+        expect(query.sortCriteria, isNotEmpty);
+      });
+    });
+
+    group('buildTaskQueryFromAllocationSection', () {
+      test('returns sourceFilter when provided', () {
+        final sourceQuery = TaskQuery.incomplete();
+        final section = AllocationSection(
+          title: 'Focus',
+          sourceFilter: sourceQuery,
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAllocationSection(
+          section: section,
+          now: now,
+        );
+
+        expect(query, sourceQuery);
+      });
+
+      test('returns default incomplete query when no sourceFilter', () {
+        const section = AllocationSection(
+          title: 'Focus',
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAllocationSection(
+          section: section,
+          now: now,
+        );
+
+        final hasIncompletePredicate = query.filter.shared.any(
+          (p) =>
+              p is TaskBoolPredicate &&
+              p.field == TaskBoolField.completed &&
+              p.operator == BoolOperator.isFalse,
+        );
+        expect(hasIncompletePredicate, isTrue);
+      });
+    });
+
+    group('buildTaskQueryFromAgendaSection', () {
+      test('builds query with date filter for deadlineDate field', () {
+        const section = AgendaSection(
+          title: 'Agenda',
+          dateField: AgendaDateField.deadlineDate,
+          grouping: AgendaGrouping.standard,
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+          section: section,
+          now: now,
+        );
+
+        final datePreds = query.filter.shared
+            .whereType<TaskDatePredicate>()
+            .toList();
+        expect(datePreds, isNotEmpty);
+        expect(datePreds.first.field, TaskDateField.deadlineDate);
+      });
+
+      test('builds query with date filter for startDate field', () {
+        const section = AgendaSection(
+          title: 'Agenda',
+          dateField: AgendaDateField.startDate,
+          grouping: AgendaGrouping.standard,
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+          section: section,
+          now: now,
+        );
+
+        final datePreds = query.filter.shared
+            .whereType<TaskDatePredicate>()
+            .toList();
+        expect(datePreds, isNotEmpty);
+        expect(datePreds.first.field, TaskDateField.startDate);
+      });
+
+      test('includes incomplete filter', () {
+        const section = AgendaSection(
+          title: 'Agenda',
+          dateField: AgendaDateField.deadlineDate,
+          grouping: AgendaGrouping.standard,
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+          section: section,
+          now: now,
+        );
+
+        final hasIncompletePredicate = query.filter.shared.any(
+          (p) =>
+              p is TaskBoolPredicate &&
+              p.field == TaskBoolField.completed &&
+              p.operator == BoolOperator.isFalse,
+        );
+        expect(hasIncompletePredicate, isTrue);
+      });
+
+      test('includes additional filter predicates when provided', () {
+        final additionalQuery = TaskQuery(
+          filter: const QueryFilter(
+            shared: [
+              TaskProjectPredicate(
+                operator: ProjectOperator.isNotNull,
+              ),
+            ],
+          ),
+        );
+        final section = AgendaSection(
+          title: 'Agenda',
+          dateField: AgendaDateField.deadlineDate,
+          grouping: AgendaGrouping.standard,
+          additionalFilter: additionalQuery,
+        );
+
+        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+          section: section,
+          now: now,
+        );
+
+        final hasProjectPredicate = query.filter.shared.any(
+          (p) => p is TaskProjectPredicate,
+        );
+        expect(hasProjectPredicate, isTrue);
       });
     });
   });

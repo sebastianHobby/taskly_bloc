@@ -65,7 +65,7 @@ class TaskPredicateMapper with QueryBuilderMixin {
     TaskLabelPredicate predicate,
     $TaskTableTable t,
   ) {
-    return switch (predicate.operator) {
+    final directMatch = switch (predicate.operator) {
       LabelOperator.hasAny => existsQuery(
         driftDb.selectOnly(driftDb.taskLabelsTable)
           ..addColumns([driftDb.taskLabelsTable.taskId])
@@ -90,6 +90,39 @@ class TaskPredicateMapper with QueryBuilderMixin {
           ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
       ),
     };
+
+    // If not including inherited, return direct match only
+    if (!predicate.includeInherited) {
+      return directMatch;
+    }
+
+    // Include inherited: also check project_labels table
+    // Task matches if it has the label directly OR its project has the label
+    final inheritedMatch = switch (predicate.operator) {
+      LabelOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(t.projectId))
+          ..where(driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds)),
+      ),
+      LabelOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.projectLabelsTable)
+          ..addColumns([driftDb.projectLabelsTable.projectId])
+          ..where(driftDb.projectLabelsTable.projectId.equalsExp(t.projectId))
+          ..where(driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds))
+          ..groupBy([driftDb.projectLabelsTable.projectId]),
+      ),
+      // For isNull/isNotNull, inheritance doesn't apply - return direct only
+      LabelOperator.isNull || LabelOperator.isNotNull => directMatch,
+    };
+
+    // For isNull/isNotNull operators, we already returned directMatch above
+    if (predicate.operator == LabelOperator.isNull ||
+        predicate.operator == LabelOperator.isNotNull) {
+      return directMatch;
+    }
+
+    return directMatch | inheritedMatch;
   }
 
   Expression<bool> _datePredicateToExpression(
@@ -149,10 +182,12 @@ class TaskPredicateMapper with QueryBuilderMixin {
     // Get the original typed column (with type converter) for null checks
     final GeneratedColumnWithTypeConverter<DateTime?, String> typedColumn =
         switch (predicate.field) {
-      TaskDateField.startDate => t.startDate,
-      TaskDateField.deadlineDate => t.deadlineDate,
-      _ => throw ArgumentError('Not a text date column: ${predicate.field}'),
-    };
+          TaskDateField.startDate => t.startDate,
+          TaskDateField.deadlineDate => t.deadlineDate,
+          _ => throw ArgumentError(
+            'Not a text date column: ${predicate.field}',
+          ),
+        };
 
     // Get the column as Expression<String> (the underlying SQL type) for comparisons
     final Expression<String> column = typedColumn.dartCast<String>();

@@ -383,6 +383,44 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Future<List<Project>> queryProjects(ProjectQuery query) async {
+    return getAllByQuery(query, withRelated: true);
+  }
+
+  @override
+  Future<List<Project>> getProjectsByIds(List<String> ids) async {
+    if (ids.isEmpty) return [];
+    final joined =
+        (driftDb.select(
+          driftDb.projectTable,
+        )..where((p) => p.id.isIn(ids))).join([
+          leftOuterJoin(
+            driftDb.projectLabelsTable,
+            driftDb.projectLabelsTable.projectId.equalsExp(
+              driftDb.projectTable.id,
+            ),
+          ),
+          leftOuterJoin(
+            driftDb.labelTable,
+            driftDb.projectLabelsTable.labelId.equalsExp(
+              driftDb.labelTable.id,
+            ),
+          ),
+        ]);
+    final rows = await joined.get();
+    return ProjectAggregation.fromRows(
+      rows: rows,
+      driftDb: driftDb,
+    ).toProjects();
+  }
+
+  @override
+  Future<List<Project>> getProjectsByLabel(String labelId) async {
+    final query = ProjectQuery.byLabels([labelId]);
+    return queryProjects(query);
+  }
+
+  @override
   Future<void> create({
     required String name,
     String? description,

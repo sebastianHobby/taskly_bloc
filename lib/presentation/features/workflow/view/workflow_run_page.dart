@@ -7,7 +7,7 @@ import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart'
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 import 'package:taskly_bloc/presentation/features/workflow/bloc/workflow_run_bloc.dart';
 
 /// Page for running a multi-step workflow
@@ -31,7 +31,7 @@ class WorkflowRunPage extends StatelessWidget {
         final bloc = WorkflowRunBloc(
           workflowRepository: getIt<WorkflowRepositoryContract>(),
           taskRepository: getIt<TaskRepositoryContract>(),
-          queryBuilder: getIt<ScreenQueryBuilder>(),
+          sectionDataService: getIt<SectionDataService>(),
         );
 
         if (existingWorkflow != null) {
@@ -268,7 +268,7 @@ class _WorkflowRunningView extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
-            currentStep.stepName,
+            currentStep.name,
             style: Theme.of(context).textTheme.titleLarge,
           ),
         ),
@@ -419,7 +419,7 @@ class _StepCompleteView extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            completedStep.stepName,
+            completedStep.name,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 32),
@@ -432,7 +432,7 @@ class _StepCompleteView extends StatelessWidget {
               },
               icon: const Icon(Icons.arrow_forward),
               label: Text(
-                'Continue to ${state.definition.steps[state.completedStepIndex + 1].stepName}',
+                'Continue to ${state.definition.steps[state.completedStepIndex + 1].name}',
               ),
             )
           else
