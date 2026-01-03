@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -20,6 +21,11 @@ sealed class Section with _$Section {
 
     /// Display configuration (grouping, sorting, etc.)
     DisplayConfig? display,
+
+    /// Optional enrichment configuration for computed statistics.
+    /// When set, the section data service will compute the requested
+    /// enrichment and include it in the result.
+    EnrichmentConfig? enrichment,
 
     /// Optional section title
     String? title,

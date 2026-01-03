@@ -1,6 +1,7 @@
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
@@ -20,7 +21,7 @@ abstract class SystemScreenDefinitions {
   SystemScreenDefinitions._();
 
   /// Inbox screen - tasks without a project
-  static final inbox = ScreenDefinition(
+  static final inbox = ScreenDefinition.dataDriven(
     id: 'inbox',
     screenKey: 'inbox',
     name: 'Inbox',
@@ -30,6 +31,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'inbox',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createTask],
     sections: [
       Section.data(
         config: DataConfig.task(query: TaskQuery.inbox()),
@@ -38,7 +40,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Today screen - tasks due/starting today
-  static final today = ScreenDefinition(
+  static final today = ScreenDefinition.dataDriven(
     id: 'today',
     screenKey: 'today',
     name: 'Today',
@@ -48,6 +50,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'today',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createTask],
     sections: [
       Section.agenda(
         dateField: AgendaDateField.deadlineDate,
@@ -58,7 +61,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Upcoming screen - future tasks
-  static final upcoming = ScreenDefinition(
+  static final upcoming = ScreenDefinition.dataDriven(
     id: 'upcoming',
     screenKey: 'upcoming',
     name: 'Upcoming',
@@ -68,6 +71,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'upcoming',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createTask],
     sections: [
       Section.agenda(
         dateField: AgendaDateField.deadlineDate,
@@ -77,7 +81,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Logbook screen - completed tasks
-  static final logbook = ScreenDefinition(
+  static final logbook = ScreenDefinition.dataDriven(
     id: 'logbook',
     screenKey: 'logbook',
     name: 'Logbook',
@@ -107,7 +111,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Projects screen - list of projects
-  static final projects = ScreenDefinition(
+  static final projects = ScreenDefinition.dataDriven(
     id: 'projects',
     screenKey: 'projects',
     name: 'Projects',
@@ -117,6 +121,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'folder',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createProject],
     sections: [
       Section.data(
         config: DataConfig.project(query: const ProjectQuery()),
@@ -125,7 +130,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Labels screen - list of labels
-  static final labels = ScreenDefinition(
+  static final labels = ScreenDefinition.dataDriven(
     id: 'labels',
     screenKey: 'labels',
     name: 'Labels',
@@ -135,6 +140,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'label',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createLabel],
     sections: [
       Section.data(
         config: DataConfig.label(query: const LabelQuery()),
@@ -143,7 +149,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Values screen - list of values (labels with type=value)
-  static final values = ScreenDefinition(
+  static final values = ScreenDefinition.dataDriven(
     id: 'values',
     screenKey: 'values',
     name: 'Values',
@@ -153,6 +159,7 @@ abstract class SystemScreenDefinitions {
     isSystem: true,
     iconName: 'star',
     category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createValue],
     sections: [
       Section.data(
         config: DataConfig.value(query: const LabelQuery()),
@@ -161,7 +168,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Next Actions / Focus screen - allocated tasks
-  static final nextActions = ScreenDefinition(
+  static final nextActions = ScreenDefinition.dataDriven(
     id: 'next_actions',
     screenKey: 'next_actions',
     name: 'Next Actions',
@@ -185,7 +192,7 @@ abstract class SystemScreenDefinitions {
   );
 
   /// Orphan Tasks screen - incomplete tasks without any value assigned
-  static final orphanTasks = ScreenDefinition(
+  static final orphanTasks = ScreenDefinition.dataDriven(
     id: 'orphan_tasks',
     screenKey: 'orphan_tasks',
     name: 'Unassigned Tasks',
@@ -224,6 +231,58 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // Navigation-only screens (no sections, route to standalone pages)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Settings screen - app configuration
+  static final settings = ScreenDefinition.navigationOnly(
+    id: 'settings',
+    screenKey: 'settings',
+    name: 'Settings',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    isSystem: true,
+    iconName: 'settings',
+    category: ScreenCategory.settings,
+  );
+
+  /// Wellbeing dashboard - mood tracking and analytics
+  static final wellbeing = ScreenDefinition.navigationOnly(
+    id: 'wellbeing',
+    screenKey: 'wellbeing',
+    name: 'Wellbeing',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    isSystem: true,
+    iconName: 'self_improvement',
+    category: ScreenCategory.wellbeing,
+  );
+
+  /// Workflows - automation and scheduled tasks
+  static final workflows = ScreenDefinition.navigationOnly(
+    id: 'workflows',
+    screenKey: 'workflows',
+    name: 'Workflows',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    isSystem: true,
+    iconName: 'account_tree',
+    category: ScreenCategory.settings,
+  );
+
+  /// Screen management - customize screens and navigation
+  static final screenManagement = ScreenDefinition.navigationOnly(
+    id: 'screen_management',
+    screenKey: 'screen_management',
+    name: 'Screens',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    isSystem: true,
+    iconName: 'dashboard_customize',
+    category: ScreenCategory.settings,
+  );
+
   /// Get all system screens
   static List<ScreenDefinition> get all => [
     inbox,
@@ -234,11 +293,16 @@ abstract class SystemScreenDefinitions {
     labels,
     values,
     nextActions,
+    // Navigation-only screens
+    settings,
+    wellbeing,
+    workflows,
+    screenManagement,
   ];
 
-  /// Get a system screen by ID
-  static ScreenDefinition? getById(String id) {
-    return switch (id) {
+  /// Get a system screen by screenKey
+  static ScreenDefinition? getByKey(String screenKey) {
+    return switch (screenKey) {
       'inbox' => inbox,
       'today' => today,
       'upcoming' => upcoming,
@@ -248,17 +312,56 @@ abstract class SystemScreenDefinitions {
       'values' => values,
       'next_actions' => nextActions,
       'orphan_tasks' => orphanTasks,
+      'settings' => settings,
+      'wellbeing' => wellbeing,
+      'workflows' => workflows,
+      'screen_management' => screenManagement,
       _ => null,
     };
   }
 
+  /// Alias for [getByKey] for backward compatibility
+  static ScreenDefinition? getById(String id) => getByKey(id);
+
+  /// All system screen keys
+  static List<String> get allKeys => all.map((s) => s.screenKey).toList();
+
+  /// Returns true if the given screenKey is a system screen
+  static bool isSystemScreen(String screenKey) => getByKey(screenKey) != null;
+
+  /// Default sort orders for system screens.
+  ///
+  /// These are used when user has not customized the sort order.
+  static const Map<String, int> defaultSortOrders = {
+    'inbox': 0,
+    'today': 1,
+    'upcoming': 2,
+    'logbook': 3,
+    'next_actions': 4,
+    'projects': 5,
+    'labels': 6,
+    'values': 7,
+    'orphan_tasks': 8,
+    'settings': 100,
+    'wellbeing': 101,
+    'workflows': 102,
+    'screen_management': 103,
+  };
+
+  /// Returns the default sort order for a screen key.
+  ///
+  /// Returns 999 for unknown keys (sorts them last).
+  static int getDefaultSortOrder(String screenKey) {
+    return defaultSortOrders[screenKey] ?? 999;
+  }
+
   /// Create a screen definition for a specific project
-  static ScreenDefinition forProject({
+  static DataDrivenScreenDefinition forProject({
     required String projectId,
     required String projectName,
     String? projectColor,
   }) {
-    return ScreenDefinition(
+    return DataDrivenScreenDefinition(
       id: 'project_$projectId',
       screenKey: 'project_detail',
       name: projectName,
@@ -294,12 +397,12 @@ abstract class SystemScreenDefinitions {
   }
 
   /// Create a screen definition for a specific label
-  static ScreenDefinition forLabel({
+  static DataDrivenScreenDefinition forLabel({
     required String labelId,
     required String labelName,
     String? labelColor,
   }) {
-    return ScreenDefinition(
+    return DataDrivenScreenDefinition(
       id: 'label_$labelId',
       screenKey: 'label_detail',
       name: labelName,

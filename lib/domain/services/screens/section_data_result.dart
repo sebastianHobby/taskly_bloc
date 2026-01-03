@@ -3,6 +3,7 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 
 part 'section_data_result.freezed.dart';
 
@@ -42,6 +43,10 @@ sealed class SectionDataResult with _$SectionDataResult {
     required List<dynamic> primaryEntities,
     required String primaryEntityType,
     @Default({}) Map<String, List<dynamic>> relatedEntities,
+
+    /// Computed enrichment data (e.g., value statistics).
+    /// Present when the section requested enrichment via EnrichmentConfig.
+    EnrichmentResult? enrichment,
   }) = DataSectionResult;
 
   /// Allocation section result - tasks allocated for focus/next actions (DR-020)

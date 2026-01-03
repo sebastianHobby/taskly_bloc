@@ -18,10 +18,7 @@ enum PageKey {
   projectOverview('project_overview'),
 
   /// Labels overview page
-  labelOverview('label_overview'),
-
-  /// Label value overview page
-  labelValueOverview('label_value_overview');
+  labelOverview('label_overview');
 
   const PageKey(this.key);
 

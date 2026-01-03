@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/features/next_action/widgets/persona_selection_card.dart';
 
 /// Settings page for configuring task allocation strategy and value rankings.
@@ -618,12 +619,23 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _rankedValues.length,
                 onReorder: _onValueReordered,
+                buildDefaultDragHandles: false,
                 itemBuilder: (context, index) {
-                  final value = _rankedValues[index];
-                  return _ValueRankTile(
-                    key: ValueKey(value.label.id),
-                    value: value,
-                    index: index,
+                  final rankableValue = _rankedValues[index];
+                  return EnhancedValueCard.compact(
+                    key: ValueKey(rankableValue.label.id),
+                    value: rankableValue.label,
+                    rank: index + 1,
+                    stats: rankableValue.isRanked
+                        ? ValueStats(
+                            targetPercent: rankableValue.weight.toDouble(),
+                            actualPercent: 0,
+                            taskCount: 0,
+                            projectCount: 0,
+                            weeklyTrend: const [],
+                          )
+                        : null,
+                    notRankedMessage: l10n.notRankedDragToRank,
                   );
                 },
               ),
@@ -669,53 +681,6 @@ class _RankableValue {
       label: label ?? this.label,
       weight: weight ?? this.weight,
       isRanked: isRanked ?? this.isRanked,
-    );
-  }
-}
-
-class _ValueRankTile extends StatelessWidget {
-  const _ValueRankTile({
-    required super.key,
-    required this.value,
-    required this.index,
-  });
-
-  final _RankableValue value;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = context.l10n;
-    final label = value.label;
-
-    return Material(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Text(
-            '${index + 1}',
-            style: TextStyle(
-              color: theme.colorScheme.onPrimaryContainer,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        title: Text(label.name),
-        subtitle: value.isRanked
-            ? Text('${l10n.weightLabel}: ${value.weight}')
-            : Text(
-                l10n.notRankedDragToRank,
-                style: TextStyle(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-        trailing: ReorderableDragStartListener(
-          index: index,
-          child: const Icon(Icons.drag_handle),
-        ),
-      ),
     );
   }
 }

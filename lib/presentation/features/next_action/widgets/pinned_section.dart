@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 
 /// Section displaying pinned/next action tasks
 class PinnedSection extends StatelessWidget {
@@ -69,113 +69,17 @@ class PinnedSection extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final allocatedTask = pinnedTasks[index];
-              return _PinnedTaskTile(
-                allocatedTask: allocatedTask,
-                onUnpin: () => onUnpin(allocatedTask.task.id),
-                onTaskTap: () => onTaskTap(allocatedTask.task.id),
-                onToggleComplete: () => onToggleComplete(allocatedTask.task.id),
+              return TaskListTile(
+                task: allocatedTask.task,
+                onTap: (task) => onTaskTap(task.id),
+                onCheckboxChanged: (task, _) => onToggleComplete(task.id),
+                onNextActionRemoved: (task) => onUnpin(task.id),
+                showNextActionIndicator: true,
               );
             },
           ),
         ],
       ),
     );
-  }
-}
-
-class _PinnedTaskTile extends StatelessWidget {
-  const _PinnedTaskTile({
-    required this.allocatedTask,
-    required this.onUnpin,
-    required this.onTaskTap,
-    required this.onToggleComplete,
-  });
-
-  final AllocatedTask allocatedTask;
-  final VoidCallback onUnpin;
-  final VoidCallback onTaskTap;
-  final VoidCallback onToggleComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    final task = allocatedTask.task;
-
-    return ListTile(
-      leading: Semantics(
-        label: task.completed
-            ? 'Mark "${task.name}" as incomplete'
-            : 'Mark "${task.name}" as complete',
-        child: Checkbox(
-          value: task.completed,
-          onChanged: (_) {
-            HapticFeedback.lightImpact();
-            onToggleComplete();
-          },
-        ),
-      ),
-      title: Text(
-        task.name,
-        style: task.completed
-            ? const TextStyle(decoration: TextDecoration.lineThrough)
-            : null,
-      ),
-      subtitle: task.deadlineDate != null
-          ? Row(
-              children: [
-                Icon(
-                  Icons.calendar_today,
-                  size: 14,
-                  color: _getDeadlineColor(
-                    task.deadlineDate!,
-                    context,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _formatDeadline(task.deadlineDate!),
-                  style: TextStyle(
-                    color: _getDeadlineColor(
-                      task.deadlineDate!,
-                      context,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          : null,
-      trailing: IconButton(
-        icon: const Icon(Icons.push_pin),
-        tooltip: 'Remove Next Action',
-        onPressed: onUnpin,
-      ),
-      onTap: onTaskTap,
-    );
-  }
-
-  Color _getDeadlineColor(DateTime deadline, BuildContext context) {
-    final daysUntil = deadline.difference(DateTime.now()).inDays;
-    if (daysUntil < 0) {
-      return Colors.red;
-    } else if (daysUntil <= 3) {
-      return Colors.orange;
-    }
-    return Theme.of(context).colorScheme.onSurfaceVariant;
-  }
-
-  String _formatDeadline(DateTime deadline) {
-    final now = DateTime.now();
-    final diff = deadline.difference(now);
-
-    if (diff.inDays < 0) {
-      return 'Overdue';
-    } else if (diff.inDays == 0) {
-      return 'Today';
-    } else if (diff.inDays == 1) {
-      return 'Tomorrow';
-    } else if (diff.inDays <= 7) {
-      return 'in ${diff.inDays} days';
-    } else {
-      return '${deadline.month}/${deadline.day}';
-    }
   }
 }

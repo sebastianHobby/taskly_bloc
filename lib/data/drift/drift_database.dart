@@ -210,6 +210,11 @@ class UserProfileTable extends Table {
 
   /// Individual settings columns for PowerSync field-level sync.
   /// Each column syncs independently to prevent cross-device conflicts.
+  ///
+  /// IMPORTANT: When inserting via PowerSync, you MUST explicitly provide
+  /// values for all columns. The withDefault() only applies to Drift's own
+  /// schema - PowerSync stores data as JSON blobs and will return NULL for
+  /// any keys not present in the JSON.
   TextColumn get globalSettings =>
       text().withDefault(const Constant('{}')).named('global_settings')();
   TextColumn get allocationSettings =>

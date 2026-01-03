@@ -76,7 +76,7 @@ class LabelListTile extends StatelessWidget {
                       ? Text(
                           label.iconName?.isNotEmpty ?? false
                               ? label.iconName!
-                              : '❤️',
+                              : '⭐',
                           style: EmojiUtils.emojiTextStyle(),
                         )
                       : Icon(

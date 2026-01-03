@@ -30,6 +30,37 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   final AppDatabase driftDb;
 
+  /// Debug method to dump raw SQL data - helps identify PowerSync sync issues
+  Future<void> debugDumpRawProfileData() async {
+    talker.repositoryLog(
+      'Settings',
+      '=== DEBUG: Raw SQL user_profiles dump ===',
+    );
+    try {
+      // Query using raw SQL to bypass Drift mapping
+      final results = await driftDb
+          .customSelect(
+            'SELECT * FROM user_profiles LIMIT 10',
+          )
+          .get();
+
+      talker.repositoryLog(
+        'Settings',
+        'Raw SQL returned ${results.length} rows',
+      );
+      for (var i = 0; i < results.length; i++) {
+        final row = results[i].data;
+        talker.repositoryLog(
+          'Settings',
+          'RAW SQL row[$i]: ${row.entries.map((e) => '${e.key}=${e.value ?? "NULL"}').join(', ')}',
+        );
+      }
+    } catch (e, st) {
+      talker.databaseError('[Settings] debugDumpRawProfileData FAILED', e, st);
+    }
+    talker.repositoryLog('Settings', '=== END DEBUG dump ===');
+  }
+
   // =========================================================================
   // Public API (SettingsRepositoryContract)
   // =========================================================================
@@ -44,8 +75,23 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   @override
   Future<T> load<T>(SettingsKey<T> key) async {
-    final row = await _selectProfile();
-    return _extractValue(key, row);
+    talker.repositoryLog('Settings', 'load<$T>: key=$key');
+    try {
+      final row = await _selectProfile();
+      talker.repositoryLog(
+        'Settings',
+        'load<$T>: _selectProfile returned ${row == null ? "null" : "row(id=${row.id})"}',
+      );
+      final value = _extractValue(key, row);
+      talker.repositoryLog(
+        'Settings',
+        'load<$T>: extracted value successfully',
+      );
+      return value;
+    } catch (e, st) {
+      talker.databaseError('[Settings] load<$T> FAILED for key=$key', e, st);
+      rethrow;
+    }
   }
 
   @override
@@ -324,21 +370,72 @@ class SettingsRepository implements SettingsRepositoryContract {
   // =========================================================================
 
   Stream<List<UserProfileTableData>> get _profileStream =>
-      driftDb.select(driftDb.userProfileTable).watch();
+      driftDb.select(driftDb.userProfileTable).watch().map((rows) {
+        talker.repositoryLog(
+          'Settings',
+          '_profileStream emitted ${rows.length} rows',
+        );
+        for (final row in rows) {
+          _logRawProfileData('_profileStream', row);
+        }
+        return rows;
+      });
 
-  Future<UserProfileTableData?> _selectProfile() {
+  Future<UserProfileTableData?> _selectProfile() async {
+    talker.repositoryLog('Settings', '_selectProfile: querying user_profiles');
+
+    // First dump raw SQL to see what PowerSync actually has
+    await debugDumpRawProfileData();
+
     final query = driftDb.select(driftDb.userProfileTable)
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
-    return query.getSingleOrNull();
+
+    try {
+      final result = await query.getSingleOrNull();
+      if (result == null) {
+        talker.repositoryLog('Settings', '_selectProfile: no rows found');
+      } else {
+        _logRawProfileData('_selectProfile', result);
+      }
+      return result;
+    } catch (e, st) {
+      talker.databaseError(
+        '[Settings] _selectProfile FAILED during getSingleOrNull',
+        e,
+        st,
+      );
+      rethrow;
+    }
+  }
+
+  void _logRawProfileData(String source, UserProfileTableData row) {
+    talker.repositoryLog(
+      'Settings',
+      '[$source] RAW user_profile data: '
+          'id=${row.id}, '
+          'globalSettings="${row.globalSettings.length} chars", '
+          'allocationSettings="${row.allocationSettings.length} chars", '
+          'softGatesSettings="${row.softGatesSettings.length} chars", '
+          'nextActionsSettings="${row.nextActionsSettings.length} chars", '
+          'valueRanking="${row.valueRanking.length} chars", '
+          'pageSortPreferences="${row.pageSortPreferences.length} chars", '
+          'pageDisplaySettings="${row.pageDisplaySettings.length} chars", '
+          'screenPreferences="${row.screenPreferences.length} chars", '
+          'createdAt=${row.createdAt}, '
+          'updatedAt=${row.updatedAt}',
+    );
   }
 
   UserProfileTableData? _latestRow(List<UserProfileTableData> rows) {
     if (rows.isEmpty) return null;
-    return rows.reduce((a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b);
+    return rows.reduce(
+      (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
+    );
   }
 
   Map<String, dynamic> _parseJson(String json) {
+    if (json.isEmpty) return {};
     try {
       final parsed = jsonDecode(json);
       return parsed is Map<String, dynamic> ? parsed : {};
@@ -349,19 +446,63 @@ class SettingsRepository implements SettingsRepositoryContract {
   }
 
   Future<UserProfileTableData> _ensureProfile() async {
+    talker.repositoryLog(
+      'Settings',
+      '_ensureProfile: checking for existing profile',
+    );
     final existing = await _selectProfile();
-    if (existing != null) return existing;
+    if (existing != null) {
+      talker.repositoryLog(
+        'Settings',
+        '_ensureProfile: found existing profile id=${existing.id}',
+      );
+      return existing;
+    }
 
+    talker.repositoryLog(
+      'Settings',
+      '_ensureProfile: NO existing profile - creating new one',
+    );
     final now = DateTime.now();
+    // IMPORTANT: Must explicitly provide ALL columns because PowerSync stores
+    // data as JSON blobs - any missing keys will be NULL when read back via
+    // the SQLite VIEW, regardless of Drift's withDefault() settings.
     await driftDb
         .into(driftDb.userProfileTable)
         .insert(
           UserProfileTableCompanion.insert(
+            globalSettings: const Value('{}'),
+            allocationSettings: const Value('{}'),
+            softGatesSettings: const Value('{}'),
+            nextActionsSettings: const Value('{}'),
+            valueRanking: const Value('{}'),
+            pageSortPreferences: const Value('{}'),
+            pageDisplaySettings: const Value('{}'),
+            screenPreferences: const Value('{}'),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
         );
-    return (await _selectProfile())!;
+
+    talker.repositoryLog(
+      'Settings',
+      '_ensureProfile: inserted new profile, reading back',
+    );
+    final newProfile = await _selectProfile();
+    if (newProfile == null) {
+      talker.databaseError(
+        '[Settings] _ensureProfile: CRITICAL - inserted profile but read-back returned NULL',
+        Exception('Profile insert succeeded but read-back failed'),
+        StackTrace.current,
+      );
+      throw StateError('Failed to read back newly created profile');
+    }
+
+    talker.repositoryLog(
+      'Settings',
+      '_ensureProfile: created new profile id=${newProfile.id}',
+    );
+    return newProfile;
   }
 
   Map<String, SortPreferences> _parsePageSortPreferences(String json) {

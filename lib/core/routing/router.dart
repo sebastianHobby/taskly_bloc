@@ -136,10 +136,16 @@ final router = GoRouter(
             // Check if it's a system screen
             final systemScreen = SystemScreenDefinitions.getById(screenId);
             if (systemScreen != null) {
-              return UnifiedScreenPage(definition: systemScreen);
+              return UnifiedScreenPage(
+                key: ValueKey('screen_$screenId'),
+                definition: systemScreen,
+              );
             }
             // Otherwise load from repository
-            return UnifiedScreenPageById(screenId: screenId);
+            return UnifiedScreenPageById(
+              key: ValueKey('screen_$screenId'),
+              screenId: screenId,
+            );
           },
         ),
         GoRoute(

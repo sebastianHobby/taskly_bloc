@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/presentation/widgets/label_chip.dart';
 
 /// A widget that displays label chips with colored icons.
 ///
@@ -44,7 +43,7 @@ class TruncatedLabelChips extends StatelessWidget {
       return Wrap(
         spacing: spacing,
         runSpacing: runSpacing,
-        children: labels.map((label) => _LabelChip(label: label)).toList(),
+        children: labels.map((label) => LabelChip(label: label)).toList(),
       );
     }
 
@@ -57,75 +56,10 @@ class TruncatedLabelChips extends StatelessWidget {
       spacing: spacing,
       runSpacing: runSpacing,
       labels: labels,
-      chipBuilder: (label) => _LabelChip(label: label),
+      chipBuilder: (label) => LabelChip(label: label),
       moreTextStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
         color: Theme.of(context).colorScheme.onSurfaceVariant,
         fontStyle: FontStyle.italic,
-      ),
-    );
-  }
-}
-
-/// A chip displaying a single label with its color.
-class _LabelChip extends StatelessWidget {
-  const _LabelChip({required this.label});
-
-  final Label label;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final color = ColorUtils.fromHexWithThemeFallback(context, label.color);
-    final isValue = label.type == LabelType.value;
-
-    // For values: use colored background with contrasting text
-    // For labels: use neutral background with colored icon
-    final backgroundColor = isValue ? color : colorScheme.surfaceContainerLow;
-    final textColor = isValue
-        ? (color.computeLuminance() > 0.5 ? Colors.black87 : Colors.white)
-        : colorScheme.onSurface;
-
-    // Get the icon - emoji for values, colored label icon for labels
-    final Widget icon;
-    if (isValue) {
-      final emoji = label.iconName?.isNotEmpty ?? false
-          ? label.iconName!
-          : '❤️';
-      icon = Text(
-        emoji,
-        style: EmojiUtils.emojiTextStyle(fontSize: 12),
-      );
-    } else {
-      icon = Icon(
-        Icons.label,
-        size: 12,
-        color: color,
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          icon,
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              label.name,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w500,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }

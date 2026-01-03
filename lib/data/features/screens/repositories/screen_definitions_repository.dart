@@ -2,14 +2,13 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart'
     show ScreenDefinitionsRepositoryImpl;
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 
 /// Repository wrapper that delegates to the database implementation.
 ///
-/// After the UUID5 migration, system screens are seeded directly to the
-/// database, eliminating the need for template merging. This wrapper is
-/// kept as a thin layer for logging and potential future cross-cutting
-/// concerns.
+/// This wrapper provides logging and potential future cross-cutting concerns.
 ///
 /// For the database implementation, see [ScreenDefinitionsRepositoryImpl].
 class ScreenDefinitionsRepository
@@ -21,72 +20,67 @@ class ScreenDefinitionsRepository
   final ScreenDefinitionsRepositoryContract _dbRepo;
 
   @override
-  Stream<List<ScreenDefinition>> watchAllScreens() {
+  Stream<List<ScreenWithPreferences>> watchAllScreens() {
     talker.repositoryLog('Screens', 'watchAllScreens');
     return _dbRepo.watchAllScreens();
   }
 
   @override
-  Stream<List<ScreenDefinition>> watchSystemScreens() {
+  Stream<List<ScreenWithPreferences>> watchSystemScreens() {
     talker.repositoryLog('Screens', 'watchSystemScreens');
     return _dbRepo.watchSystemScreens();
   }
 
   @override
-  Stream<List<ScreenDefinition>> watchUserScreens() {
-    talker.repositoryLog('Screens', 'watchUserScreens');
-    return _dbRepo.watchUserScreens();
+  Stream<List<ScreenDefinition>> watchCustomScreens() {
+    talker.repositoryLog('Screens', 'watchCustomScreens');
+    return _dbRepo.watchCustomScreens();
   }
 
   @override
-  Future<void> seedSystemScreens(List<ScreenDefinition> screens) {
+  Stream<ScreenWithPreferences?> watchScreen(String screenKey) {
+    talker.repositoryLog('Screens', 'watchScreen: screenKey="$screenKey"');
+    return _dbRepo.watchScreen(screenKey);
+  }
+
+  @override
+  Future<bool> screenKeyExists(String screenKey) {
+    talker.repositoryLog('Screens', 'screenKeyExists: screenKey="$screenKey"');
+    return _dbRepo.screenKeyExists(screenKey);
+  }
+
+  @override
+  Future<String> createCustomScreen(ScreenDefinition screen) {
+    talker.repositoryLog('Screens', 'createCustomScreen: ${screen.screenKey}');
+    return _dbRepo.createCustomScreen(screen);
+  }
+
+  @override
+  Future<void> updateCustomScreen(ScreenDefinition screen) {
+    talker.repositoryLog('Screens', 'updateCustomScreen: ${screen.screenKey}');
+    return _dbRepo.updateCustomScreen(screen);
+  }
+
+  @override
+  Future<void> deleteCustomScreen(String screenKey) {
     talker.repositoryLog(
       'Screens',
-      'seedSystemScreens: ${screens.length} screens',
+      'deleteCustomScreen: screenKey="$screenKey"',
     );
-    return _dbRepo.seedSystemScreens(screens);
+    return _dbRepo.deleteCustomScreen(screenKey);
   }
 
   @override
-  Stream<ScreenDefinition?> watchScreen(String id) {
-    talker.repositoryLog('Screens', 'watchScreen: id="$id"');
-    return _dbRepo.watchScreen(id);
-  }
-
-  @override
-  Stream<ScreenDefinition?> watchScreenByScreenKey(String screenKey) {
+  Future<void> updateScreenPreferences(
+    String screenKey,
+    ScreenPreferences preferences,
+  ) {
     talker.repositoryLog(
       'Screens',
-      'watchScreenByScreenKey: screenKey="$screenKey"',
+      'updateScreenPreferences: screenKey="$screenKey", '
+          'sortOrder=${preferences.sortOrder}, isActive=${preferences.isActive}',
     );
-    return _dbRepo.watchScreenByScreenKey(screenKey);
-  }
-
-  @override
-  Future<String> createScreen(ScreenDefinition screen) {
-    talker.repositoryLog('Screens', 'createScreen: ${screen.screenKey}');
-    return _dbRepo.createScreen(screen);
-  }
-
-  @override
-  Future<void> updateScreen(ScreenDefinition screen) {
-    talker.repositoryLog('Screens', 'updateScreen: ${screen.screenKey}');
-    return _dbRepo.updateScreen(screen);
-  }
-
-  @override
-  Future<void> deleteScreen(String id) {
-    talker.repositoryLog('Screens', 'deleteScreen: id="$id"');
-    return _dbRepo.deleteScreen(id);
-  }
-
-  @override
-  Future<void> setScreenActive(String screenKey, bool isActive) {
-    talker.repositoryLog(
-      'Screens',
-      'setScreenActive: screenKey="$screenKey", isActive=$isActive',
-    );
-    return _dbRepo.setScreenActive(screenKey, isActive);
+    return _dbRepo.updateScreenPreferences(screenKey, preferences);
   }
 
   @override

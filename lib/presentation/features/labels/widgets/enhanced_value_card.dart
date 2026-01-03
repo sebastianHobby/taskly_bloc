@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// Data class for value statistics.
 class ValueStats {
@@ -31,25 +32,56 @@ class ValueStats {
 }
 
 /// Enhanced card showing value with statistics.
+///
+/// Supports two display modes:
+/// - Full mode (default): Shows stats row, sparkline, and activity counts
+/// - Compact mode: Shows inline stats and activity counts, no sparkline
 class EnhancedValueCard extends StatelessWidget {
   const EnhancedValueCard({
     required this.value,
-    required this.stats,
     required this.rank,
-    required this.onTap,
+    this.stats,
+    this.onTap,
+    this.compact = false,
+    this.notRankedMessage,
     super.key,
   });
 
+  /// Creates a compact version for settings/ranking contexts.
+  const EnhancedValueCard.compact({
+    required this.value,
+    required this.rank,
+    this.stats,
+    this.onTap,
+    this.notRankedMessage,
+    super.key,
+  }) : compact = true;
+
   final Label value;
-  final ValueStats stats;
+
+  /// Statistics for the value. Optional in compact mode to show "not ranked".
+  final ValueStats? stats;
   final int rank;
-  final VoidCallback onTap;
+
+  /// Tap callback. If null, card is not tappable.
+  final VoidCallback? onTap;
+
+  /// Whether to use compact layout (no sparkline, inline stats).
+  final bool compact;
+
+  /// Message to show when stats is null (e.g., "Not ranked - drag to rank").
+  final String? notRankedMessage;
 
   @override
   Widget build(BuildContext context) {
+    return compact ? _buildCompact(context) : _buildFull(context);
+  }
+
+  Widget _buildFull(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
+    final valueStats = stats;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -62,6 +94,64 @@ class EnhancedValueCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header row with drag handle and rank
+              _buildHeader(theme, colorScheme),
+              const SizedBox(height: 12),
+
+              // Stats row
+              if (valueStats != null) ...[
+                _StatsRow(stats: valueStats, colorScheme: colorScheme),
+                const SizedBox(height: 8),
+
+                // Sparkline
+                _Sparkline(
+                  data: valueStats.weeklyTrend,
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(height: 8),
+
+                // Activity counts
+                Text(
+                  l10n.valueActivityCounts(
+                    valueStats.taskCount,
+                    valueStats.projectCount,
+                  ),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ] else if (notRankedMessage != null)
+                Text(
+                  notRankedMessage!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompact(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+    final valueStats = stats;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header row with inline stats
               Row(
                 children: [
                   ReorderableDragStartListener(
@@ -69,61 +159,200 @@ class EnhancedValueCard extends StatelessWidget {
                     child: Icon(
                       Icons.drag_handle,
                       color: colorScheme.onSurfaceVariant,
+                      size: 20,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   Text(
                     '$rank.',
-                    style: theme.textTheme.titleMedium?.copyWith(
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  if (value.color != null)
-                    Container(
-                      width: 12,
-                      height: 12,
-                      margin: const EdgeInsets.only(right: 8),
-                      decoration: BoxDecoration(
-                        color: Color(
-                          int.parse(value.color!.replaceFirst('#', '0xFF')),
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
+                  const SizedBox(width: 6),
+                  Text(
+                    (value.iconName?.isNotEmpty ?? false)
+                        ? value.iconName!
+                        : '⭐',
+                    style: EmojiUtils.emojiTextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       value.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // Inline stats on the right
+                  if (valueStats != null) ...[
+                    _CompactStatChip(
+                      label: l10n.targetLabel,
+                      value: '${valueStats.targetPercent.toStringAsFixed(0)}%',
+                      colorScheme: colorScheme,
+                    ),
+                    const SizedBox(width: 8),
+                    _CompactStatChip(
+                      label: l10n.actualLabel,
+                      value: '${valueStats.actualPercent.toStringAsFixed(0)}%',
+                      colorScheme: colorScheme,
+                    ),
+                    const SizedBox(width: 8),
+                    _CompactGapIndicator(
+                      stats: valueStats,
+                      colorScheme: colorScheme,
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 12),
-
-              // Stats row
-              _StatsRow(stats: stats, colorScheme: colorScheme),
-
-              const SizedBox(height: 8),
-
-              // Sparkline
-              _Sparkline(data: stats.weeklyTrend, colorScheme: colorScheme),
-
-              const SizedBox(height: 8),
-
-              // Activity counts
-              Text(
-                l10n.valueActivityCounts(stats.taskCount, stats.projectCount),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              // Second row: activity counts or not-ranked message
+              Padding(
+                padding: const EdgeInsets.only(left: 32, top: 2),
+                child: valueStats != null
+                    ? Text(
+                        l10n.valueActivityCounts(
+                          valueStats.taskCount,
+                          valueStats.projectCount,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    : Text(
+                        notRankedMessage ?? l10n.notRankedDragToRank,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme, ColorScheme colorScheme) {
+    return Row(
+      children: [
+        ReorderableDragStartListener(
+          index: rank - 1,
+          child: Icon(
+            Icons.drag_handle,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$rank.',
+          style: theme.textTheme.titleMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          (value.iconName?.isNotEmpty ?? false) ? value.iconName! : '⭐',
+          style: EmojiUtils.emojiTextStyle(fontSize: 22),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value.name,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact stat chip for inline display.
+class _CompactStatChip extends StatelessWidget {
+  const _CompactStatChip({
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
+
+  final String label;
+  final String value;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact gap indicator for inline display.
+class _CompactGapIndicator extends StatelessWidget {
+  const _CompactGapIndicator({
+    required this.stats,
+    required this.colorScheme,
+  });
+
+  final ValueStats stats;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = stats.gap;
+    final gapColor = stats.isSignificantGap
+        ? (gap > 0 ? colorScheme.error : colorScheme.tertiary)
+        : colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: stats.isSignificantGap
+            ? gapColor.withOpacity(0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '${gap >= 0 ? '+' : ''}${gap.toStringAsFixed(0)}%',
+            style: TextStyle(
+              fontSize: 12,
+              color: gapColor,
+              fontWeight: stats.isSignificantGap
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
+          if (stats.isSignificantGap) ...[
+            const SizedBox(width: 2),
+            Icon(Icons.warning_amber, size: 12, color: gapColor),
+          ],
+        ],
       ),
     );
   }

@@ -47,7 +47,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
         ],
       ),
       body: StreamBuilder<List<ScreenDefinition>>(
-        stream: _screensRepository.watchAllScreens(),
+        stream: _screensRepository.watchCustomScreens(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _ErrorView(
@@ -60,8 +60,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final screens = snapshot.data!;
-          final customScreens = screens.where((s) => !s.isSystem).toList();
+          final customScreens = snapshot.data!;
 
           if (customScreens.isEmpty) {
             return _EmptyView(
@@ -144,7 +143,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     );
 
     if (confirmed ?? false) {
-      await _screensRepository.deleteScreen(screen.id);
+      await _screensRepository.deleteCustomScreen(screen.screenKey);
       if (mounted && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Deleted "${screen.name}"')),
@@ -456,24 +455,7 @@ class _ScreenTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (!screen.isActive)
-                          Container(
-                            margin: const EdgeInsets.only(left: 8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              'Inactive',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
+                        // Note: isActive is now stored in preferences, not definition
                       ],
                     ),
                     const SizedBox(height: 4),
@@ -513,46 +495,56 @@ class _ScreenMetadata extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
 
-    // Extract screen type and entity type info
-    final screenType = _getScreenTypeLabel(screen.screenType);
-    final entityType = _getEntityTypeFromSections(screen.sections);
-
-    return Wrap(
-      spacing: 16,
-      runSpacing: 4,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.view_list,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(screenType, style: textStyle),
-          ],
-        ),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.category_outlined,
-              size: 14,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(entityType, style: textStyle),
-          ],
-        ),
-      ],
-    );
+    // Extract screen type and entity type info based on variant
+    return switch (screen) {
+      DataDrivenScreenDefinition(:final screenType, :final sections) => Wrap(
+        spacing: 16,
+        runSpacing: 4,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.view_list,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(_getScreenTypeLabel(screenType), style: textStyle),
+            ],
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.category_outlined,
+                size: 14,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Text(_getEntityTypeFromSections(sections), style: textStyle),
+            ],
+          ),
+        ],
+      ),
+      NavigationOnlyScreenDefinition() => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.widgets_outlined,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 4),
+          Text('Custom Widget', style: textStyle),
+        ],
+      ),
+    };
   }
 
   String _getScreenTypeLabel(ScreenType type) {
     return switch (type) {
       ScreenType.list => 'List',
-      ScreenType.dashboard => 'Dashboard',
       ScreenType.focus => 'Focus',
       ScreenType.workflow => 'Workflow',
     };

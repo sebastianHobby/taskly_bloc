@@ -271,7 +271,22 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
 
   Map<String, dynamic> _getInitialValues() {
     if (widget.existingScreen case final screen?) {
-      // Extract values from existing screen
+      // Only DataDriven screens can be edited
+      if (screen is! DataDrivenScreenDefinition) {
+        return {
+          'name': screen.name,
+          'iconName': screen.iconName,
+          'category': screen.category,
+          'entityType': null,
+          'groupBy': GroupByField.none,
+          'sortField': SortField.updatedAt,
+          'sortDirection': SortDirection.desc,
+          'showCompleted': true,
+          'showArchived': false,
+        };
+      }
+
+      // Extract values from existing data-driven screen
       EntityTypeOption? entityType;
       GroupByField groupBy = GroupByField.none;
       SortField sortField = SortField.updatedAt;
@@ -314,7 +329,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
         'sortDirection': sortDirection,
         'showCompleted': showCompleted,
         'showArchived': showArchived,
-        'isActive': screen.isActive,
       };
     }
 
@@ -329,7 +343,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
       'sortDirection': SortDirection.desc,
       'showCompleted': false,
       'showArchived': false,
-      'isActive': true,
     };
   }
 
@@ -396,30 +409,52 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
       );
 
       if (widget.isEditing) {
-        final updated = widget.existingScreen!.copyWith(
+        final existing = widget.existingScreen!;
+        if (existing is! DataDrivenScreenDefinition) {
+          throw StateError('Cannot edit a non-data-driven screen');
+        }
+        final updated = existing.copyWith(
           name: values['name'] as String,
           iconName: values['iconName'] as String?,
           category: values['category'] as ScreenCategory,
           sections: [section],
-          isActive: values['isActive'] as bool? ?? true,
           updatedAt: now,
         );
-        await widget.screensRepository.updateScreen(updated);
+        await widget.screensRepository.updateCustomScreen(updated);
       } else {
-        final screen = ScreenDefinition(
+        final screenKey = _generateScreenKey(values['name'] as String);
+
+        // Validate screenKey uniqueness before creating
+        final exists = await widget.screensRepository.screenKeyExists(
+          screenKey,
+        );
+        if (exists) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'A screen with the key "$screenKey" already exists. '
+                  'Please choose a different name.',
+                ),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          }
+          return;
+        }
+
+        final screen = ScreenDefinition.dataDriven(
           id: '', // Repository generates v5 ID based on screenKey
-          screenKey: _generateScreenKey(values['name'] as String),
+          screenKey: screenKey,
           name: values['name'] as String,
           screenType: ScreenType.list,
           iconName: values['iconName'] as String?,
           category: values['category'] as ScreenCategory,
           sections: [section],
-          isActive: values['isActive'] as bool? ?? true,
-          sortOrder: 999, // Will be adjusted by the system
           createdAt: now,
           updatedAt: now,
         );
-        await widget.screensRepository.createScreen(screen);
+        await widget.screensRepository.createCustomScreen(screen);
       }
 
       if (mounted) {
@@ -477,7 +512,9 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
 
     if ((confirmed ?? false) && mounted) {
       try {
-        await widget.screensRepository.deleteScreen(widget.existingScreen!.id);
+        await widget.screensRepository.deleteCustomScreen(
+          widget.existingScreen!.id,
+        );
         if (mounted) {
           Navigator.of(context).pop(true);
         }

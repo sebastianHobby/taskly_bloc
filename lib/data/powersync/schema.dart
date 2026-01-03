@@ -83,8 +83,6 @@ const schema = Schema([
     Column.text('name'),
     Column.text('icon_name'),
     Column.integer('is_system'),
-    Column.integer('is_active'),
-    Column.integer('sort_order'),
     Column.text('category'),
     Column.text('sections_config'),
     Column.text('support_blocks_config'),

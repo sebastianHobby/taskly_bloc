@@ -1,108 +1,241 @@
 import 'package:drift/drift.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as db;
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart'
     as db_screens;
 import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 
 /// Drift implementation of [ScreenDefinitionsRepositoryContract].
+///
+/// ## Architecture
+///
+/// This repository merges screens from two sources:
+/// 1. **System screens** - From [SystemScreenProvider] (code-based)
+/// 2. **Custom screens** - From database (user-created)
+///
+/// User preferences (sortOrder, isActive) are stored in
+/// `AppSettings.screenPreferences` via [SettingsRepositoryContract].
 class ScreenDefinitionsRepositoryImpl
     implements ScreenDefinitionsRepositoryContract {
-  ScreenDefinitionsRepositoryImpl(this._db, this._idGenerator);
+  ScreenDefinitionsRepositoryImpl(
+    this._db,
+    this._idGenerator,
+    this._systemScreenProvider,
+    this._settingsRepository,
+  );
 
   final db.AppDatabase _db;
   final IdGenerator _idGenerator;
+  final SystemScreenProvider _systemScreenProvider;
+  final SettingsRepositoryContract _settingsRepository;
 
   @override
-  Stream<List<ScreenDefinition>> watchAllScreens() {
-    return (_db.select(_db.screenDefinitions)
-          ..where((t) => t.isActive.equals(true))
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.sortOrder),
-            (t) => OrderingTerm(expression: t.createdAt),
-          ]))
-        .watch()
-        .map(_mapEntities);
-  }
+  Stream<List<ScreenWithPreferences>> watchAllScreens() {
+    // Combine system screens + custom screens + preferences
+    return Rx.combineLatest3<
+      List<ScreenDefinition>,
+      List<ScreenDefinition>,
+      Map<String, ScreenPreferences>,
+      List<ScreenWithPreferences>
+    >(
+      Stream.value(_systemScreenProvider.getSystemScreens()),
+      watchCustomScreens(),
+      _settingsRepository.watch(SettingsKey.allScreenPrefs),
+      (systemScreens, customScreens, allPrefs) {
+        final allScreens = <ScreenWithPreferences>[];
 
-  @override
-  Stream<List<ScreenDefinition>> watchSystemScreens() {
-    return (_db.select(_db.screenDefinitions)
-          ..where((t) => t.isActive.equals(true) & t.isSystem.equals(true))
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.sortOrder),
-            (t) => OrderingTerm(expression: t.createdAt),
-          ]))
-        .watch()
-        .map(_mapEntities);
-  }
+        // Add system screens with preferences
+        for (final screen in systemScreens) {
+          final prefs = allPrefs[screen.screenKey] ?? const ScreenPreferences();
+          if (prefs.isActive) {
+            allScreens.add(
+              ScreenWithPreferences(
+                screen: screen,
+                preferences: prefs,
+              ),
+            );
+          }
+        }
 
-  @override
-  Stream<List<ScreenDefinition>> watchUserScreens() {
-    return (_db.select(_db.screenDefinitions)
-          ..where((t) => t.isActive.equals(true) & t.isSystem.equals(false))
-          ..orderBy([
-            (t) => OrderingTerm(expression: t.sortOrder),
-            (t) => OrderingTerm(expression: t.createdAt),
-          ]))
-        .watch()
-        .map(_mapEntities);
-  }
+        // Add custom screens with preferences
+        for (final screen in customScreens) {
+          final prefs = allPrefs[screen.screenKey] ?? const ScreenPreferences();
+          if (prefs.isActive) {
+            allScreens.add(
+              ScreenWithPreferences(
+                screen: screen,
+                preferences: prefs,
+              ),
+            );
+          }
+        }
 
-  @override
-  Stream<ScreenDefinition?> watchScreen(String id) {
-    return (_db.select(_db.screenDefinitions)..where((t) => t.id.equals(id)))
-        .watchSingleOrNull()
-        .map((e) => e == null ? null : _mapEntity(e));
-  }
+        // Sort by effective sortOrder
+        allScreens.sort((a, b) {
+          final aOrder =
+              a.preferences.sortOrder ??
+              _systemScreenProvider.getDefaultSortOrder(a.screen.screenKey);
+          final bOrder =
+              b.preferences.sortOrder ??
+              _systemScreenProvider.getDefaultSortOrder(b.screen.screenKey);
+          return aOrder.compareTo(bOrder);
+        });
 
-  @override
-  Stream<ScreenDefinition?> watchScreenByScreenKey(String screenKey) {
-    talker.repositoryLog(
-      'Screens',
-      'watchScreenByScreenKey called: screenKey="$screenKey"',
-    );
-    return (_db.select(
-      _db.screenDefinitions,
-    )..where((t) => t.screenKey.equals(screenKey))).watchSingleOrNull().map((
-      e,
-    ) {
-      talker.repositoryLog(
-        'Screens',
-        'watchScreenByScreenKey stream emission: screenKey="$screenKey", entity=${e == null ? "null" : "exists(id=${e.id})"}',
-      );
-      if (e == null) return null;
-      try {
-        final mapped = _mapEntity(e);
         talker.repositoryLog(
           'Screens',
-          'watchScreenByScreenKey mapped successfully: ${mapped.screenKey}',
+          'watchAllScreens: ${allScreens.length} active screens '
+              '(${systemScreens.length} system, ${customScreens.length} custom)',
         );
-        return mapped;
-      } catch (err, st) {
-        talker.databaseError(
-          'Screens.watchScreenByScreenKey._mapEntity - Raw entity data: id=${e.id}, screenKey=${e.screenKey}',
-          err,
-          st,
+
+        return allScreens;
+      },
+    );
+  }
+
+  @override
+  Stream<List<ScreenWithPreferences>> watchSystemScreens() {
+    return _settingsRepository.watch(SettingsKey.allScreenPrefs).map((
+      allPrefs,
+    ) {
+      final systemScreens = _systemScreenProvider.getSystemScreens();
+      final result = <ScreenWithPreferences>[];
+
+      for (final screen in systemScreens) {
+        final prefs = allPrefs[screen.screenKey] ?? const ScreenPreferences();
+        result.add(
+          ScreenWithPreferences(
+            screen: screen,
+            preferences: prefs,
+          ),
         );
-        rethrow;
       }
+
+      // Sort by effective sortOrder
+      result.sort((a, b) {
+        final aOrder =
+            a.preferences.sortOrder ??
+            _systemScreenProvider.getDefaultSortOrder(a.screen.screenKey);
+        final bOrder =
+            b.preferences.sortOrder ??
+            _systemScreenProvider.getDefaultSortOrder(b.screen.screenKey);
+        return aOrder.compareTo(bOrder);
+      });
+
+      return result;
     });
   }
 
   @override
-  Future<String> createScreen(ScreenDefinition screen) async {
+  Stream<List<ScreenDefinition>> watchCustomScreens() {
+    return (_db.select(_db.screenDefinitions)
+          ..where((t) => t.isSystem.equals(false))
+          ..orderBy([
+            (t) => OrderingTerm(expression: t.createdAt),
+          ]))
+        .watch()
+        .map((entities) {
+          talker.repositoryLog(
+            'Screens',
+            'watchCustomScreens: ${entities.length} custom screens from DB',
+          );
+          return _mapEntities(entities);
+        });
+  }
+
+  @override
+  Stream<ScreenWithPreferences?> watchScreen(String screenKey) {
+    // Check if it's a system screen
+    if (_systemScreenProvider.isSystemScreen(screenKey)) {
+      return _settingsRepository.watch(SettingsKey.screenPrefs(screenKey)).map((
+        prefs,
+      ) {
+        final screen = _systemScreenProvider.getSystemScreen(screenKey);
+        if (screen == null) return null;
+        return ScreenWithPreferences(screen: screen, preferences: prefs);
+      });
+    }
+
+    // Look up custom screen from database
+    return Rx.combineLatest2<
+      ScreenDefinition?,
+      ScreenPreferences,
+      ScreenWithPreferences?
+    >(
+      (_db.select(_db.screenDefinitions)
+            ..where((t) => t.screenKey.equals(screenKey)))
+          .watchSingleOrNull()
+          .map((e) => e == null ? null : _mapEntity(e)),
+      _settingsRepository.watch(SettingsKey.screenPrefs(screenKey)),
+      (screen, prefs) {
+        if (screen == null) return null;
+        return ScreenWithPreferences(screen: screen, preferences: prefs);
+      },
+    );
+  }
+
+  @override
+  Future<bool> screenKeyExists(String screenKey) async {
+    // Check system screens first
+    if (_systemScreenProvider.isSystemScreen(screenKey)) {
+      return true;
+    }
+
+    // Check custom screens in database
+    final existing = await (_db.select(
+      _db.screenDefinitions,
+    )..where((t) => t.screenKey.equals(screenKey))).getSingleOrNull();
+
+    return existing != null;
+  }
+
+  @override
+  Future<String> createCustomScreen(ScreenDefinition screen) async {
+    if (screen.isSystem) {
+      throw ArgumentError('Cannot create system screen via repository');
+    }
+
     final now = DateTime.now();
-
-    final id = _extractOrGenerateId(screen);
-    final screenType = _toDbScreenType(screen.screenType);
-
+    final id = screen.id.isNotEmpty
+        ? screen.id
+        : _idGenerator.screenDefinitionId(screenKey: screen.screenKey);
     final iconName = _requireIconName(screen);
+
+    // Extract variant-specific fields
+    final (
+      screenType,
+      sections,
+      supportBlocks,
+      triggerConfig,
+    ) = switch (screen) {
+      DataDrivenScreenDefinition(
+        :final screenType,
+        :final sections,
+        :final supportBlocks,
+        :final triggerConfig,
+      ) =>
+        (
+          _toDbScreenType(screenType),
+          sections,
+          supportBlocks,
+          triggerConfig,
+        ),
+      NavigationOnlyScreenDefinition() => (
+        null,
+        const <Section>[],
+        const <SupportBlock>[],
+        null,
+      ),
+    };
 
     await _db
         .into(_db.screenDefinitions)
@@ -113,135 +246,138 @@ class ScreenDefinitionsRepositoryImpl
             screenKey: screen.screenKey,
             name: screen.name,
             iconName: Value(iconName),
-            isSystem: Value(screen.isSystem),
-            isActive: Value(screen.isActive),
-            sortOrder: Value(screen.sortOrder),
+            isSystem: const Value(false),
             category: Value(_toDbCategory(screen.category)),
-            sectionsConfig: Value(screen.sections),
-            supportBlocksConfig: Value(screen.supportBlocks),
-            triggerConfig: Value(screen.triggerConfig),
+            sectionsConfig: Value(sections),
+            supportBlocksConfig: Value(supportBlocks),
+            triggerConfig: Value(triggerConfig),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
           mode: InsertMode.insertOrAbort,
         );
 
+    talker.repositoryLog(
+      'Screens',
+      'createCustomScreen: created screenKey=${screen.screenKey}, id=$id',
+    );
+
     return id;
   }
 
   @override
-  Future<void> seedSystemScreens(List<ScreenDefinition> screens) async {
+  Future<void> updateCustomScreen(ScreenDefinition screen) async {
+    if (screen.isSystem) {
+      throw ArgumentError('Cannot update system screen via repository');
+    }
+
     final now = DateTime.now();
-
-    await _db.batch((batch) {
-      for (final screen in screens) {
-        final screenType = _toDbScreenType(screen.screenType);
-        final iconName = _requireIconName(screen);
-
-        // Generate v5 ID if empty (system screens from factory)
-        final id = screen.id.isEmpty
-            ? _idGenerator.screenDefinitionId(screenKey: screen.screenKey)
-            : screen.id;
-
-        batch.insert(
-          _db.screenDefinitions,
-          db.ScreenDefinitionsCompanion.insert(
-            id: id,
-            // userId is set by Supabase trigger/RLS, we don't set it locally
-            screenType: Value(screenType),
-            screenKey: screen.screenKey,
-            name: screen.name,
-            iconName: Value(iconName),
-            isSystem: Value(true),
-            isActive: Value(screen.isActive),
-            sortOrder: Value(screen.sortOrder),
-            category: Value(_toDbCategory(screen.category)),
-            sectionsConfig: Value(screen.sections),
-            supportBlocksConfig: Value(screen.supportBlocks),
-            triggerConfig: Value(screen.triggerConfig),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-      }
-    });
-
-    talker.repositoryLog(
-      'Screens',
-      'seedSystemScreens: seeded ${screens.length} system screens',
-    );
-  }
-
-  @override
-  Future<void> updateScreen(ScreenDefinition screen) async {
-    final now = DateTime.now();
-    final screenType = _toDbScreenType(screen.screenType);
     final iconName = _requireIconName(screen);
+
+    // Extract variant-specific fields
+    final (
+      screenType,
+      sections,
+      supportBlocks,
+      triggerConfig,
+    ) = switch (screen) {
+      DataDrivenScreenDefinition(
+        :final screenType,
+        :final sections,
+        :final supportBlocks,
+        :final triggerConfig,
+      ) =>
+        (
+          _toDbScreenType(screenType),
+          sections,
+          supportBlocks,
+          triggerConfig,
+        ),
+      NavigationOnlyScreenDefinition() => (
+        null,
+        const <Section>[],
+        const <SupportBlock>[],
+        null,
+      ),
+    };
 
     await (_db.update(
       _db.screenDefinitions,
-    )..where((t) => t.id.equals(screen.id))).write(
+    )..where((t) => t.screenKey.equals(screen.screenKey))).write(
       db.ScreenDefinitionsCompanion(
         screenType: Value(screenType),
-        screenKey: Value(screen.screenKey),
         name: Value(screen.name),
         iconName: Value(iconName),
-        isSystem: Value(screen.isSystem),
-        isActive: Value(screen.isActive),
-        sortOrder: Value(screen.sortOrder),
         category: Value(_toDbCategory(screen.category)),
-        sectionsConfig: Value(screen.sections),
-        supportBlocksConfig: Value(screen.supportBlocks),
-        triggerConfig: Value(screen.triggerConfig),
+        sectionsConfig: Value(sections),
+        supportBlocksConfig: Value(supportBlocks),
+        triggerConfig: Value(triggerConfig),
         updatedAt: Value(now),
       ),
+    );
+
+    talker.repositoryLog(
+      'Screens',
+      'updateCustomScreen: updated screenKey=${screen.screenKey}',
     );
   }
 
   @override
-  Future<void> deleteScreen(String id) async {
-    final existing = await (_db.select(
-      _db.screenDefinitions,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-
-    if (existing == null) return;
-    if (existing.isSystem) {
-      throw StateError('Cannot delete system screen $id');
+  Future<void> deleteCustomScreen(String screenKey) async {
+    if (_systemScreenProvider.isSystemScreen(screenKey)) {
+      throw StateError('Cannot delete system screen: $screenKey');
     }
 
     await (_db.delete(
       _db.screenDefinitions,
-    )..where((t) => t.id.equals(id))).go();
-  }
+    )..where((t) => t.screenKey.equals(screenKey))).go();
 
-  @override
-  Future<void> setScreenActive(String id, bool isActive) async {
-    await (_db.update(
-      _db.screenDefinitions,
-    )..where((t) => t.id.equals(id))).write(
-      db.ScreenDefinitionsCompanion(
-        isActive: Value(isActive),
-        updatedAt: Value(DateTime.now()),
-      ),
+    talker.repositoryLog(
+      'Screens',
+      'deleteCustomScreen: deleted screenKey=$screenKey',
     );
   }
 
   @override
-  Future<void> reorderScreens(List<String> orderedIds) async {
-    final now = DateTime.now();
-    await _db.transaction(() async {
-      for (var index = 0; index < orderedIds.length; index++) {
-        await (_db.update(
-          _db.screenDefinitions,
-        )..where((t) => t.id.equals(orderedIds[index]))).write(
-          db.ScreenDefinitionsCompanion(
-            sortOrder: Value(index),
-            updatedAt: Value(now),
-          ),
-        );
-      }
-    });
+  Future<void> updateScreenPreferences(
+    String screenKey,
+    ScreenPreferences preferences,
+  ) async {
+    await _settingsRepository.save(
+      SettingsKey.screenPrefs(screenKey),
+      preferences,
+    );
+
+    talker.repositoryLog(
+      'Screens',
+      'updateScreenPreferences: screenKey=$screenKey, '
+          'sortOrder=${preferences.sortOrder}, isActive=${preferences.isActive}',
+    );
+  }
+
+  @override
+  Future<void> reorderScreens(List<String> orderedScreenKeys) async {
+    // Load current preferences
+    final allPrefs = await _settingsRepository.load(SettingsKey.allScreenPrefs);
+    final updatedPrefs = Map<String, ScreenPreferences>.from(allPrefs);
+
+    // Update sortOrder for each screen
+    for (var index = 0; index < orderedScreenKeys.length; index++) {
+      final screenKey = orderedScreenKeys[index];
+      final existing = updatedPrefs[screenKey] ?? const ScreenPreferences();
+      updatedPrefs[screenKey] = ScreenPreferences(
+        sortOrder: index,
+        isActive: existing.isActive,
+      );
+    }
+
+    // Save updated preferences
+    await _settingsRepository.save(SettingsKey.allScreenPrefs, updatedPrefs);
+
+    talker.repositoryLog(
+      'Screens',
+      'reorderScreens: updated ${orderedScreenKeys.length} screen orders',
+    );
   }
 
   // ============================================================================
@@ -249,9 +385,9 @@ class ScreenDefinitionsRepositoryImpl
   // ============================================================================
 
   List<ScreenDefinition> _mapEntities(
-    List<db.ScreenDefinitionEntity> e,
+    List<db.ScreenDefinitionEntity> entities,
   ) {
-    return e.map(_mapEntity).toList(growable: false);
+    return entities.map(_mapEntity).toList(growable: false);
   }
 
   ScreenDefinition _mapEntity(db.ScreenDefinitionEntity e) {
@@ -263,28 +399,45 @@ class ScreenDefinitionsRepositoryImpl
       null => ScreenCategory.workspace,
     };
 
-    // Map screen type from Drift enum to domain enum (default to list if null)
-    final screenType = switch (e.screenType) {
-      db_screens.ScreenType.list => ScreenType.list,
-      db_screens.ScreenType.dashboard => ScreenType.dashboard,
-      db_screens.ScreenType.focus => ScreenType.focus,
-      db_screens.ScreenType.workflow => ScreenType.workflow,
-      null => ScreenType.list, // Default for corrupted/partial data
-    };
+    // Infer screen type from data: empty sections = navigation-only
+    final sections = e.sectionsConfig ?? const <Section>[];
+    final hasContent = sections.isNotEmpty;
 
-    return ScreenDefinition(
+    if (hasContent) {
+      // Map screen type from Drift enum to domain enum (default to list if null)
+      final screenType = switch (e.screenType) {
+        db_screens.ScreenType.list => ScreenType.list,
+        db_screens.ScreenType.dashboard =>
+          ScreenType.list, // Legacy: treat as list
+        db_screens.ScreenType.focus => ScreenType.focus,
+        db_screens.ScreenType.workflow => ScreenType.workflow,
+        null => ScreenType.list, // Default for corrupted/partial data
+      };
+
+      return ScreenDefinition.dataDriven(
+        id: e.id,
+        screenKey: e.screenKey,
+        name: e.name,
+        screenType: screenType,
+        sections: sections,
+        supportBlocks: e.supportBlocksConfig ?? const <SupportBlock>[],
+        iconName: e.iconName,
+        isSystem: e.isSystem,
+        category: category,
+        triggerConfig: e.triggerConfig,
+        createdAt: e.createdAt,
+        updatedAt: e.updatedAt,
+      );
+    }
+
+    // Navigation-only screen (no sections)
+    return ScreenDefinition.navigationOnly(
       id: e.id,
       screenKey: e.screenKey,
       name: e.name,
-      screenType: screenType,
-      sections: e.sectionsConfig ?? const <Section>[],
-      supportBlocks: e.supportBlocksConfig ?? const <SupportBlock>[],
       iconName: e.iconName,
       isSystem: e.isSystem,
-      isActive: e.isActive,
-      sortOrder: e.sortOrder,
       category: category,
-      triggerConfig: e.triggerConfig,
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
     );
@@ -294,12 +447,23 @@ class ScreenDefinitionsRepositoryImpl
   // Conversion Methods
   // ============================================================================
 
+  /// Converts domain ScreenType to DB ScreenType.
+  /// Note: NavigationOnly screens don't have a screenType, caller should handle null.
   db_screens.ScreenType _toDbScreenType(ScreenType type) {
     return switch (type) {
       ScreenType.list => db_screens.ScreenType.list,
-      ScreenType.dashboard => db_screens.ScreenType.dashboard,
       ScreenType.focus => db_screens.ScreenType.focus,
       ScreenType.workflow => db_screens.ScreenType.workflow,
+    };
+  }
+
+  /// Extracts screen type from definition, returns null for navigation-only screens.
+  db_screens.ScreenType? _screenTypeForDb(ScreenDefinition screen) {
+    return switch (screen) {
+      DataDrivenScreenDefinition(:final screenType) => _toDbScreenType(
+        screenType,
+      ),
+      NavigationOnlyScreenDefinition() => null,
     };
   }
 
@@ -314,12 +478,6 @@ class ScreenDefinitionsRepositoryImpl
   // ============================================================================
   // Helper Methods
   // ============================================================================
-
-  String _extractOrGenerateId(ScreenDefinition screen) {
-    if (screen.id.isNotEmpty) return screen.id;
-    // Use v5 deterministic ID based on screenKey
-    return _idGenerator.screenDefinitionId(screenKey: screen.screenKey);
-  }
 
   String _requireIconName(ScreenDefinition screen) {
     final iconName = screen.iconName;

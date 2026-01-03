@@ -9,7 +9,8 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   group('SystemScreenFactory', () {
-    const userId = 'test-user-123';
+    // Note: SystemScreenFactory no longer requires userId since screens are
+    // generated without IDs (IDs are assigned by the provider)
 
     group('constants', () {
       test('all screen keys are defined', () {
@@ -219,15 +220,15 @@ void main() {
     });
 
     group('createAll', () {
-      test('creates all system screens for user', () {
-        final screens = SystemScreenFactory.createAll(userId);
+      test('creates all system screens', () {
+        final screens = SystemScreenFactory.createAll();
 
-        // 11 screens in createAll (excludes allocationSettings and navigationSettings)
-        expect(screens, hasLength(11));
+        // 13 screens in createAll (includes allocationSettings, navigationSettings, and settings)
+        expect(screens, hasLength(13));
       });
 
       test('all screens are marked as system', () {
-        final screens = SystemScreenFactory.createAll(userId);
+        final screens = SystemScreenFactory.createAll();
 
         for (final screen in screens) {
           expect(screen.isSystem, isTrue);
@@ -235,7 +236,7 @@ void main() {
       });
 
       test('screens have empty id (repository generates)', () {
-        final screens = SystemScreenFactory.createAll(userId);
+        final screens = SystemScreenFactory.createAll();
 
         for (final screen in screens) {
           expect(screen.id, isEmpty);
@@ -243,7 +244,7 @@ void main() {
       });
 
       test('screens have correct screenKey set', () {
-        final screens = SystemScreenFactory.createAll(userId);
+        final screens = SystemScreenFactory.createAll();
         final screenKeys = screens.map((s) => s.screenKey).toSet();
 
         expect(screenKeys, contains('inbox'));
@@ -253,7 +254,7 @@ void main() {
       });
 
       test('screens have names set', () {
-        final screens = SystemScreenFactory.createAll(userId);
+        final screens = SystemScreenFactory.createAll();
 
         for (final screen in screens) {
           expect(screen.name, isNotEmpty);
@@ -263,7 +264,7 @@ void main() {
 
     group('create', () {
       test('creates inbox screen', () {
-        final screen = SystemScreenFactory.create(userId, 'inbox');
+        final screen = SystemScreenFactory.create('inbox');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'inbox');
@@ -273,7 +274,7 @@ void main() {
       });
 
       test('creates today screen', () {
-        final screen = SystemScreenFactory.create(userId, 'today');
+        final screen = SystemScreenFactory.create('today');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'today');
@@ -281,7 +282,7 @@ void main() {
       });
 
       test('creates upcoming screen', () {
-        final screen = SystemScreenFactory.create(userId, 'upcoming');
+        final screen = SystemScreenFactory.create('upcoming');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'upcoming');
@@ -289,7 +290,7 @@ void main() {
       });
 
       test('creates next_actions screen', () {
-        final screen = SystemScreenFactory.create(userId, 'next_actions');
+        final screen = SystemScreenFactory.create('next_actions');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'next_actions');
@@ -298,7 +299,7 @@ void main() {
       });
 
       test('creates projects screen', () {
-        final screen = SystemScreenFactory.create(userId, 'projects');
+        final screen = SystemScreenFactory.create('projects');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'projects');
@@ -306,7 +307,7 @@ void main() {
       });
 
       test('creates labels screen', () {
-        final screen = SystemScreenFactory.create(userId, 'labels');
+        final screen = SystemScreenFactory.create('labels');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'labels');
@@ -314,7 +315,7 @@ void main() {
       });
 
       test('creates values screen', () {
-        final screen = SystemScreenFactory.create(userId, 'values');
+        final screen = SystemScreenFactory.create('values');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'values');
@@ -322,7 +323,7 @@ void main() {
       });
 
       test('creates wellbeing screen', () {
-        final screen = SystemScreenFactory.create(userId, 'wellbeing');
+        final screen = SystemScreenFactory.create('wellbeing');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'wellbeing');
@@ -330,7 +331,7 @@ void main() {
       });
 
       test('creates journal screen', () {
-        final screen = SystemScreenFactory.create(userId, 'journal');
+        final screen = SystemScreenFactory.create('journal');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'journal');
@@ -338,7 +339,7 @@ void main() {
       });
 
       test('creates trackers screen', () {
-        final screen = SystemScreenFactory.create(userId, 'trackers');
+        final screen = SystemScreenFactory.create('trackers');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'trackers');
@@ -346,7 +347,7 @@ void main() {
       });
 
       test('creates settings screen', () {
-        final screen = SystemScreenFactory.create(userId, 'settings');
+        final screen = SystemScreenFactory.create('settings');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'settings');
@@ -354,10 +355,7 @@ void main() {
       });
 
       test('creates allocation_settings screen', () {
-        final screen = SystemScreenFactory.create(
-          userId,
-          'allocation_settings',
-        );
+        final screen = SystemScreenFactory.create('allocation_settings');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'allocation_settings');
@@ -365,10 +363,7 @@ void main() {
       });
 
       test('creates navigation_settings screen', () {
-        final screen = SystemScreenFactory.create(
-          userId,
-          'navigation_settings',
-        );
+        final screen = SystemScreenFactory.create('navigation_settings');
 
         expect(screen, isNotNull);
         expect(screen!.screenKey, 'navigation_settings');
@@ -376,13 +371,13 @@ void main() {
       });
 
       test('returns null for unknown key', () {
-        final screen = SystemScreenFactory.create(userId, 'unknown_screen');
+        final screen = SystemScreenFactory.create('unknown_screen');
 
         expect(screen, isNull);
       });
 
       test('returns null for empty key', () {
-        final screen = SystemScreenFactory.create(userId, '');
+        final screen = SystemScreenFactory.create('');
 
         expect(screen, isNull);
       });
@@ -390,19 +385,19 @@ void main() {
 
     group('screen sections', () {
       test('inbox has data section', () {
-        final screen = SystemScreenFactory.create(userId, 'inbox');
+        final screen = SystemScreenFactory.create('inbox');
 
         expect(screen!.sections, isNotEmpty);
       });
 
       test('today has agenda section', () {
-        final screen = SystemScreenFactory.create(userId, 'today');
+        final screen = SystemScreenFactory.create('today');
 
         expect(screen!.sections, isNotEmpty);
       });
 
       test('next_actions has allocation section', () {
-        final screen = SystemScreenFactory.create(userId, 'next_actions');
+        final screen = SystemScreenFactory.create('next_actions');
 
         expect(screen!.sections, isNotEmpty);
       });

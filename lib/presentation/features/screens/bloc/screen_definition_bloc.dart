@@ -5,6 +5,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 
 part 'screen_definition_bloc.freezed.dart';
 
@@ -94,13 +95,14 @@ class ScreenDefinitionBloc
 
     talker.blocLog(
       'ScreenDefinition',
-      'Starting emit.forEach on watchScreenByScreenKey stream...',
+      'Starting emit.forEach on watchScreen stream...',
     );
     try {
-      await emit.forEach<ScreenDefinition?>(
-        _repository.watchScreenByScreenKey(event.screenKey),
-        onData: (screen) {
+      await emit.forEach<ScreenWithPreferences?>(
+        _repository.watchScreen(event.screenKey),
+        onData: (screenWithPrefs) {
           emissionCount++;
+          final screen = screenWithPrefs?.screen;
           talker.blocLog(
             'ScreenDefinition',
             'onData #$emissionCount: screen=${screen == null ? "null" : "ScreenDefinition(screenKey=${screen.screenKey}, name=${screen.name})"}',
