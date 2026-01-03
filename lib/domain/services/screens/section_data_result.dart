@@ -66,12 +66,18 @@ sealed class SectionDataResult with _$SectionDataResult {
     /// Count of tasks excluded from allocation
     @Default(0) int excludedCount,
 
-    /// Excluded urgent tasks (deadline within threshold)
-    @Default([]) List<ExcludedTask> excludedUrgent,
+    /// Urgent tasks that were excluded from allocation (for problem detection).
+    /// These are tasks that the allocation layer determined are urgent but
+    /// were excluded (e.g., due to UrgentTaskBehavior.warnOnly setting).
+    @Default([]) List<ExcludedTask> excludedUrgentTasks,
 
     /// Display mode for this allocation section
     @Default(AllocationDisplayMode.pinnedFirst)
     AllocationDisplayMode displayMode,
+
+    /// True if allocation cannot proceed because user has no values defined.
+    /// When true, the UI should show a gateway prompting value setup.
+    @Default(false) bool requiresValueSetup,
   }) = AllocationSectionResult;
 
   /// Agenda section result - tasks grouped by date

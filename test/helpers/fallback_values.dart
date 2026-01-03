@@ -101,7 +101,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(TestData.workflowStep());
   registerFallbackValue(TestData.workflowStepState());
   registerFallbackValue(WorkflowStatus.inProgress);
-  registerFallbackValue(ProblemType.staleTasks);
+  registerFallbackValue(ProblemType.taskStale);
 
   // === Analytics ===
   registerFallbackValue(TestData.correlation());

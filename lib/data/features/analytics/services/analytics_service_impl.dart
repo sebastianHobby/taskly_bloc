@@ -8,6 +8,11 @@ import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/mood_summary.dart';
+import 'package:taskly_bloc/domain/queries/project_predicate.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
@@ -331,5 +336,192 @@ class AnalyticsServiceImpl implements AnalyticsService {
     // Values are typically labels with type=value
     final label = await _labelRepo.getById(valueId);
     return label?.name ?? 'Unknown Value';
+  }
+
+  @override
+  Future<int> getOrphanTaskCount({bool excludeWithDeadline = false}) async {
+    // Query incomplete tasks
+    final tasks = await _taskRepo.watchAll().first;
+
+    return tasks.where((task) {
+      // Skip completed tasks
+      if (task.completed) return false;
+
+      // Check if task has no values
+      final hasNoValue = !task.labels.any((l) => l.type == LabelType.value);
+      if (!hasNoValue) return false;
+
+      // Optionally exclude tasks with deadlines
+      if (excludeWithDeadline && task.deadlineDate != null) {
+        return false;
+      }
+
+      return true;
+    }).length;
+  }
+
+  @override
+  Future<Map<String, int>> getRecentCompletionsByValue({
+    required int days,
+  }) async {
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+
+    // Query completed tasks since cutoff using TaskQuery
+    final query = TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.completedAt,
+            operator: DateOperator.onOrAfter,
+            date: cutoff,
+          ),
+        ],
+      ),
+    );
+    final completedTasks = await _taskRepo.queryTasks(query);
+
+    // Count by value
+    final counts = <String, int>{};
+    for (final task in completedTasks) {
+      // Get value labels for this task
+      final valueLabels = task.labels.where((l) => l.type == LabelType.value);
+      for (final valueLabel in valueLabels) {
+        counts[valueLabel.id] = (counts[valueLabel.id] ?? 0) + 1;
+      }
+    }
+
+    return counts;
+  }
+
+  @override
+  Future<int> getTotalRecentCompletions({required int days}) async {
+    final completionsByValue = await getRecentCompletionsByValue(days: days);
+    return completionsByValue.values.fold<int>(0, (sum, count) => sum + count);
+  }
+
+  @override
+  Future<Map<String, List<double>>> getValueWeeklyTrends({
+    required int weeks,
+  }) async {
+    final trends = <String, List<double>>{};
+    final now = DateTime.now();
+
+    // Initialize trends map for all values
+    final valueLabels = await _labelRepo.getAllByType(LabelType.value);
+    for (final value in valueLabels) {
+      trends[value.id] = List.filled(weeks, 0);
+    }
+
+    for (var i = weeks - 1; i >= 0; i--) {
+      final weekStart = now.subtract(Duration(days: (i + 1) * 7));
+      final weekEnd = now.subtract(Duration(days: i * 7));
+
+      // Query completed tasks in range using TaskQuery
+      final query = TaskQuery(
+        filter: QueryFilter<TaskPredicate>(
+          shared: [
+            const TaskBoolPredicate(
+              field: TaskBoolField.completed,
+              operator: BoolOperator.isTrue,
+            ),
+            TaskDatePredicate(
+              field: TaskDateField.completedAt,
+              operator: DateOperator.between,
+              startDate: weekStart,
+              endDate: weekEnd,
+            ),
+          ],
+        ),
+      );
+      final completions = await _taskRepo.queryTasks(query);
+
+      // Count total completions this week
+      final totalThisWeek = completions.length;
+      if (totalThisWeek == 0) continue;
+
+      // Count per value and calculate percentage
+      final valueCounts = <String, int>{};
+      for (final task in completions) {
+        final taskValueLabels = task.labels.where(
+          (l) => l.type == LabelType.value,
+        );
+        for (final valueLabel in taskValueLabels) {
+          valueCounts[valueLabel.id] = (valueCounts[valueLabel.id] ?? 0) + 1;
+        }
+      }
+
+      for (final entry in valueCounts.entries) {
+        final weekIndex = weeks - 1 - i;
+        if (trends.containsKey(entry.key)) {
+          trends[entry.key]![weekIndex] = entry.value / totalThisWeek * 100;
+        }
+      }
+    }
+
+    return trends;
+  }
+
+  @override
+  Future<Map<String, ValueActivityStats>> getValueActivityStats() async {
+    final stats = <String, ValueActivityStats>{};
+
+    // Get incomplete tasks using TaskQuery
+    final taskQuery = TaskQuery(
+      filter: const QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
+    );
+    final tasks = await _taskRepo.queryTasks(taskQuery);
+
+    final taskCounts = <String, int>{};
+    for (final task in tasks) {
+      final valueLabels = task.labels.where((l) => l.type == LabelType.value);
+      for (final valueLabel in valueLabels) {
+        taskCounts[valueLabel.id] = (taskCounts[valueLabel.id] ?? 0) + 1;
+      }
+    }
+
+    // Get incomplete projects using ProjectQuery
+    final projectQuery = ProjectQuery(
+      filter: const QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
+    );
+    final projects = await _projectRepo.queryProjects(projectQuery);
+
+    final projectCounts = <String, int>{};
+    for (final project in projects) {
+      final valueLabels = project.labels.where(
+        (l) => l.type == LabelType.value,
+      );
+      for (final valueLabel in valueLabels) {
+        projectCounts[valueLabel.id] = (projectCounts[valueLabel.id] ?? 0) + 1;
+      }
+    }
+
+    // Combine into stats
+    final allValueIds = {...taskCounts.keys, ...projectCounts.keys};
+    for (final valueId in allValueIds) {
+      stats[valueId] = ValueActivityStats(
+        taskCount: taskCounts[valueId] ?? 0,
+        projectCount: projectCounts[valueId] ?? 0,
+      );
+    }
+
+    return stats;
   }
 }

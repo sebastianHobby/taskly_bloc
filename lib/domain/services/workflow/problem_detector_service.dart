@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -83,33 +84,21 @@ class ProblemDetectorService {
     required SoftGatesSettings settings,
   }) {
     switch (problemType) {
-      case ProblemType.excludedUrgentTask:
-        // Check if task is urgent (has deadline within threshold)
-        if (task.deadlineDate != null) {
-          final daysUntilDeadline = task.deadlineDate!
-              .difference(DateTime.now())
-              .inDays;
-          if (daysUntilDeadline <= settings.urgentDeadlineWithinDays &&
-              !task.completed) {
-            return DetectedProblem(
-              type: ProblemType.excludedUrgentTask,
-              entityId: task.id,
-              entityType: EntityType.task,
-              title: 'Urgent task',
-              description:
-                  '"${task.name}" is due within ${settings.urgentDeadlineWithinDays} days',
-              suggestedAction: 'Review and prioritize this task',
-            );
-          }
-        }
+      case ProblemType.taskUrgentExcluded:
+        // This problem type is handled by the allocation layer,
+        // not by deadline-based detection here. The allocation
+        // orchestrator determines which tasks are urgent AND excluded,
+        // and passes that info through AllocationSectionResult.
+        // SupportBlockComputer creates DetectedProblem from that data.
+        break;
 
-      case ProblemType.overdueHighPriority:
+      case ProblemType.taskOverdue:
         // Check if task is overdue
         if (task.deadlineDate != null &&
             task.deadlineDate!.isBefore(DateTime.now()) &&
             !task.completed) {
           return DetectedProblem(
-            type: ProblemType.overdueHighPriority,
+            type: ProblemType.taskOverdue,
             entityId: task.id,
             entityType: EntityType.task,
             title: 'Overdue task',
@@ -119,7 +108,7 @@ class ProblemDetectorService {
           );
         }
 
-      case ProblemType.staleTasks:
+      case ProblemType.taskStale:
         // Check if task hasn't been updated recently
         final daysSinceUpdate = DateTime.now()
             .difference(task.updatedAt)
@@ -127,7 +116,7 @@ class ProblemDetectorService {
         if (daysSinceUpdate > settings.staleAfterDaysWithoutUpdates &&
             !task.completed) {
           return DetectedProblem(
-            type: ProblemType.staleTasks,
+            type: ProblemType.taskStale,
             entityId: task.id,
             entityType: EntityType.task,
             title: 'Stale task',
@@ -137,10 +126,33 @@ class ProblemDetectorService {
           );
         }
 
-      case ProblemType.noNextActions:
-      case ProblemType.unbalancedAllocation:
-        // These are allocation-level problems, not task-level
+      case ProblemType.projectIdle:
+      case ProblemType.allocationUnbalanced:
+      case ProblemType.journalOverdue:
+      case ProblemType.trackerMissing:
+        // These are allocation-level or wellbeing problems, not task-level
         break;
+
+      case ProblemType.taskOrphan:
+        // Check if task has no value assigned (direct or inherited via project)
+        if (!task.completed) {
+          final hasDirectValue = task.labels.any(
+            (l) => l.type == LabelType.value,
+          );
+          final hasInheritedValue =
+              task.project?.labels.any((l) => l.type == LabelType.value) ??
+              false;
+          if (!hasDirectValue && !hasInheritedValue) {
+            return DetectedProblem(
+              type: ProblemType.taskOrphan,
+              entityId: task.id,
+              entityType: EntityType.task,
+              title: 'Orphan task',
+              description: '"${task.name}" has no value assigned',
+              suggestedAction: 'Assign a value to include in allocation',
+            );
+          }
+        }
     }
 
     return null;
@@ -152,7 +164,7 @@ class ProblemDetectorService {
     required SoftGatesSettings settings,
   }) {
     switch (problemType) {
-      case ProblemType.staleTasks:
+      case ProblemType.taskStale:
         // Check if project hasn't been updated recently
         final daysSinceUpdate = DateTime.now()
             .difference(project.updatedAt)
@@ -160,7 +172,7 @@ class ProblemDetectorService {
         if (daysSinceUpdate > settings.staleAfterDaysWithoutUpdates &&
             !project.completed) {
           return DetectedProblem(
-            type: ProblemType.staleTasks,
+            type: ProblemType.taskStale,
             entityId: project.id,
             entityType: EntityType.project,
             title: 'Stale project',
@@ -170,11 +182,14 @@ class ProblemDetectorService {
           );
         }
 
-      case ProblemType.excludedUrgentTask:
-      case ProblemType.overdueHighPriority:
-      case ProblemType.noNextActions:
-      case ProblemType.unbalancedAllocation:
-        // These are task/allocation-level problems
+      case ProblemType.taskUrgentExcluded:
+      case ProblemType.taskOverdue:
+      case ProblemType.projectIdle:
+      case ProblemType.allocationUnbalanced:
+      case ProblemType.taskOrphan:
+      case ProblemType.journalOverdue:
+      case ProblemType.trackerMissing:
+        // These are task/allocation-level/wellbeing problems
         break;
     }
 

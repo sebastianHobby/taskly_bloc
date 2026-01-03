@@ -289,6 +289,7 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
           ProjectDataConfig() => EntityTypeOption.project,
           LabelDataConfig() => EntityTypeOption.label,
           ValueDataConfig() => EntityTypeOption.value,
+          JournalDataConfig() => null, // Journal editing not yet supported
         };
 
         // Extract display settings

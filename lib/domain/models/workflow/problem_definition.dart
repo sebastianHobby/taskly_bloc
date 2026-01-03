@@ -62,8 +62,8 @@ abstract class ProblemDefinition with _$ProblemDefinition {
 
   /// All predefined problem definitions
   static final Map<ProblemType, ProblemDefinition> _definitions = {
-    ProblemType.excludedUrgentTask: const ProblemDefinition(
-      type: ProblemType.excludedUrgentTask,
+    ProblemType.taskUrgentExcluded: const ProblemDefinition(
+      type: ProblemType.taskUrgentExcluded,
       title: 'Urgent Task Excluded',
       description:
           'This task has an approaching deadline but is not in your current allocation.',
@@ -78,8 +78,8 @@ abstract class ProblemDefinition with _$ProblemDefinition {
       ],
       iconName: 'warning_amber',
     ),
-    ProblemType.overdueHighPriority: const ProblemDefinition(
-      type: ProblemType.overdueHighPriority,
+    ProblemType.taskOverdue: const ProblemDefinition(
+      type: ProblemType.taskOverdue,
       title: 'Overdue Task',
       description: 'This task is past its deadline and needs attention.',
       severity: ProblemSeverity.high,
@@ -95,32 +95,8 @@ abstract class ProblemDefinition with _$ProblemDefinition {
       ],
       iconName: 'schedule',
     ),
-    ProblemType.noNextActions: const ProblemDefinition(
-      type: ProblemType.noNextActions,
-      title: 'No Next Actions',
-      description:
-          'This project or value has no actionable tasks assigned to it.',
-      severity: ProblemSeverity.medium,
-      applicableEntityTypes: [EntityType.project, EntityType.label],
-      availableActions: [
-        // Action to add task would be handled at UI level
-      ],
-      iconName: 'playlist_remove',
-    ),
-    ProblemType.unbalancedAllocation: const ProblemDefinition(
-      type: ProblemType.unbalancedAllocation,
-      title: 'Unbalanced Allocation',
-      description:
-          'Your task allocation is weighted heavily toward some values.',
-      severity: ProblemSeverity.low,
-      applicableEntityTypes: [EntityType.label],
-      availableActions: [
-        ProblemAction.pickValue(),
-      ],
-      iconName: 'balance',
-    ),
-    ProblemType.staleTasks: const ProblemDefinition(
-      type: ProblemType.staleTasks,
+    ProblemType.taskStale: const ProblemDefinition(
+      type: ProblemType.taskStale,
       title: 'Stale Item',
       description:
           "This item hasn't been updated in a while and may need review.",
@@ -132,6 +108,65 @@ abstract class ProblemDefinition with _$ProblemDefinition {
         ProblemAction.clearDeadline(),
       ],
       iconName: 'history',
+    ),
+    ProblemType.taskOrphan: const ProblemDefinition(
+      type: ProblemType.taskOrphan,
+      title: 'Unassigned Task',
+      description:
+          'This task has no value assigned and is excluded from Focus allocation.',
+      severity: ProblemSeverity.medium,
+      applicableEntityTypes: [EntityType.task],
+      availableActions: [
+        ProblemAction.pickValue(),
+      ],
+      iconName: 'label_off',
+    ),
+    ProblemType.projectIdle: const ProblemDefinition(
+      type: ProblemType.projectIdle,
+      title: 'Idle Project',
+      description: 'This project has no actionable tasks assigned to it.',
+      severity: ProblemSeverity.medium,
+      applicableEntityTypes: [EntityType.project, EntityType.label],
+      availableActions: [
+        // Action to add task would be handled at UI level
+      ],
+      iconName: 'playlist_remove',
+    ),
+    ProblemType.allocationUnbalanced: const ProblemDefinition(
+      type: ProblemType.allocationUnbalanced,
+      title: 'Unbalanced Allocation',
+      description:
+          'Your task allocation is weighted heavily toward some values.',
+      severity: ProblemSeverity.low,
+      applicableEntityTypes: [EntityType.label],
+      availableActions: [
+        ProblemAction.pickValue(),
+      ],
+      iconName: 'balance',
+    ),
+    ProblemType.journalOverdue: const ProblemDefinition(
+      type: ProblemType.journalOverdue,
+      title: 'Journal Overdue',
+      description:
+          "You haven't journaled recently. Regular journaling helps track your wellbeing.",
+      severity: ProblemSeverity.medium,
+      applicableEntityTypes: [EntityType.journal],
+      availableActions: [
+        // Action to create journal entry would be handled at UI level
+      ],
+      iconName: 'edit_note',
+    ),
+    ProblemType.trackerMissing: const ProblemDefinition(
+      type: ProblemType.trackerMissing,
+      title: 'Tracker Not Filled',
+      description:
+          "Today's tracker hasn't been filled. Consistent tracking improves insights.",
+      severity: ProblemSeverity.low,
+      applicableEntityTypes: [EntityType.tracker],
+      availableActions: [
+        // Action to fill tracker would be handled at UI level
+      ],
+      iconName: 'checklist',
     ),
   };
 

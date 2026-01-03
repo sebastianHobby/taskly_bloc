@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/routing/routes.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -128,8 +131,12 @@ class SectionWidget extends StatelessWidget {
         talker.debug(
           '[SectionWidget] AllocationSectionResult: tasks=${result.allocatedTasks.length}, '
           'pinned=${result.pinnedTasks.length}, groups=${result.tasksByValue.length}, '
-          'mode=${result.displayMode}',
+          'mode=${result.displayMode}, requiresValueSetup=${result.requiresValueSetup}',
         );
+        // Show gateway if value setup is required
+        if (result.requiresValueSetup) {
+          return _buildValuesGateway(context);
+        }
         return _buildAllocationSection(context, result);
       }(),
       AgendaSectionResult(:final groupedTasks, :final groupOrder) => () {
@@ -355,6 +362,67 @@ class SectionWidget extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  /// Values setup gateway for allocation section.
+  ///
+  /// Shown when user has no values defined and allocation cannot proceed.
+  Widget _buildValuesGateway(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Icon
+            Icon(
+              Icons.balance,
+              size: 72,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(height: 32),
+
+            // Title
+            Text(
+              l10n.valuesGatewayTitle,
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            // Description
+            Text(
+              l10n.valuesGatewayDescription,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            // Primary CTA
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => context.push(AppRoutePath.values),
+                icon: const Icon(Icons.star_outline),
+                label: Text(l10n.setUpMyValues),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

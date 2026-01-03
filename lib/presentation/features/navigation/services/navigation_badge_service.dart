@@ -44,6 +44,7 @@ class NavigationBadgeService {
       ProjectDataConfig(:final query) => _projectRepository.watchCount(query),
       LabelDataConfig() => null, // Labels don't show counts
       ValueDataConfig() => null, // Values don't show counts
+      JournalDataConfig() => null, // Journals don't show counts in badge
     };
   }
 

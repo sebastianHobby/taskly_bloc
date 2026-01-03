@@ -979,11 +979,11 @@ abstract class AppLocalizations {
   /// **'Pin task'**
   String get pinTask;
 
-  /// Warning message for excluded urgent tasks
+  /// Warning message for urgent tasks excluded from Focus screen
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 urgent task excluded} other{{count} urgent tasks excluded}}'**
-  String excludedUrgentTasksWarning(int count);
+  /// **'{count, plural, =1{1 urgent task excluded from Focus} other{{count} urgent tasks excluded from Focus}}'**
+  String taskUrgentExcludedWarning(int count);
 
   /// Action to review excluded urgent tasks
   ///
@@ -1560,6 +1560,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not ranked - drag to rank'**
   String get notRankedDragToRank;
+
+  /// Title for the recommended next task card in project detail
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended Next Action'**
+  String get recommendedNextActionLabel;
+
+  /// Label for the start button that pins a task to Focus
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startLabel;
+
+  /// Prefix shown before the next task name in project list
+  ///
+  /// In en, this message translates to:
+  /// **'→ Next:'**
+  String get projectNextTaskPrefix;
+
+  /// Snackbar message shown when a task is pinned to Focus
+  ///
+  /// In en, this message translates to:
+  /// **'\'{taskName}\' pinned to Focus'**
+  String taskPinnedToFocus(String taskName);
+
+  /// Format string for deadline relative to today
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =0{Due today} =1{Due tomorrow} other{Due in {days} days}}'**
+  String deadlineFormatDays(int days);
+
+  /// Label shown when a deadline has passed
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get deadlineOverdue;
+
+  /// Title for Reflector mode info banner when insufficient data
+  ///
+  /// In en, this message translates to:
+  /// **'Building your history...'**
+  String get reflectorBuildingHistory;
+
+  /// Explanation for Reflector mode with insufficient history
+  ///
+  /// In en, this message translates to:
+  /// **'Reflector works best with more data. You have {count} completions in the last {days} days. Using value weights for now.'**
+  String reflectorHistoryExplanation(int count, int days);
+
+  /// Label for target percentage in value stats
+  ///
+  /// In en, this message translates to:
+  /// **'Target'**
+  String get targetLabel;
+
+  /// Label for actual percentage in value stats
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get actualLabel;
+
+  /// Label for gap percentage in value stats
+  ///
+  /// In en, this message translates to:
+  /// **'Gap'**
+  String get gapLabel;
+
+  /// Activity counts for a value showing tasks and projects
+  ///
+  /// In en, this message translates to:
+  /// **'{taskCount} tasks · {projectCount} projects'**
+  String valueActivityCounts(int taskCount, int projectCount);
+
+  /// Title for weekly trend chart
+  ///
+  /// In en, this message translates to:
+  /// **'{weeks}-Week Trend'**
+  String weekTrendTitle(int weeks);
+
+  /// Message shown when there is no trend data to display
+  ///
+  /// In en, this message translates to:
+  /// **'No trend data yet'**
+  String get noTrendData;
+
+  /// Title for activity section in value detail modal
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get activitySectionTitle;
+
+  /// Count of active tasks for a value
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active tasks'**
+  String activeTasksCount(int count);
+
+  /// Count of projects for a value
+  ///
+  /// In en, this message translates to:
+  /// **'{count} projects'**
+  String projectsCount(int count);
+
+  /// Title for unassigned work section in values screen
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned Work'**
+  String get unassignedWorkTitle;
+
+  /// Title for values setup gateway
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize What Matters'**
+  String get valuesGatewayTitle;
+
+  /// Description for values setup gateway
+  ///
+  /// In en, this message translates to:
+  /// **'Focus uses your personal values to recommend which tasks deserve your attention today.\n\nDefine what\'s important to you—like Health, Family, Career—and Focus will help you spend time on what truly matters.'**
+  String get valuesGatewayDescription;
+
+  /// Button to set up values
+  ///
+  /// In en, this message translates to:
+  /// **'Set Up My Values'**
+  String get setUpMyValues;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

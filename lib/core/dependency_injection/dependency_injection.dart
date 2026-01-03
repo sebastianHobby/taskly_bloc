@@ -51,6 +51,8 @@ import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
+import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -146,6 +148,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         labelRepository: getIt<LabelRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        analyticsService: getIt<AnalyticsService>(),
       ),
     )
     ..registerLazySingleton<SectionDataService>(
@@ -195,6 +198,21 @@ Future<void> setupDependencies() async {
         statsCalculator: getIt<TaskStatsCalculator>(),
         analyticsService: getIt<AnalyticsService>(),
         problemDetectorService: getIt<ProblemDetectorService>(),
+      ),
+    )
+    // ScreenDataInterpreter - coordinates section data and support blocks
+    ..registerLazySingleton<ScreenDataInterpreter>(
+      () => ScreenDataInterpreter(
+        sectionDataService: getIt<SectionDataService>(),
+        supportBlockComputer: getIt<SupportBlockComputer>(),
+      ),
+    )
+    // EntityActionService - performs actions on entities from screens
+    ..registerLazySingleton<EntityActionService>(
+      () => EntityActionService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
       ),
     )
     // Screen architecture services

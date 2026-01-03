@@ -16,6 +16,10 @@ enum EntityType {
   label,
   @JsonValue('goal')
   goal,
+  @JsonValue('journal')
+  journal,
+  @JsonValue('tracker')
+  tracker,
 }
 
 /// Selects which entities to display in a screen

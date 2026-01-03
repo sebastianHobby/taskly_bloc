@@ -2,12 +2,15 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -25,14 +28,17 @@ class SectionDataService {
     required ProjectRepositoryContract projectRepository,
     required LabelRepositoryContract labelRepository,
     required AllocationOrchestrator allocationOrchestrator,
+    WellbeingRepositoryContract? wellbeingRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _labelRepository = labelRepository,
+       _wellbeingRepository = wellbeingRepository,
        _allocationOrchestrator = allocationOrchestrator;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final LabelRepositoryContract _labelRepository;
+  final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
 
   /// Fetch data for a section (one-time)
@@ -136,6 +142,7 @@ class SectionDataService {
       ProjectDataConfig() => 'project',
       LabelDataConfig() => 'label',
       ValueDataConfig() => 'value',
+      JournalDataConfig() => 'journal',
     };
   }
 
@@ -159,6 +166,10 @@ class SectionDataService {
         await _fetchLabels(query, valuesOnly: true),
         'value',
       ),
+      JournalDataConfig(:final query) => (
+        await _fetchJournalEntries(query),
+        'journal',
+      ),
     };
   }
 
@@ -178,6 +189,21 @@ class SectionDataService {
     }
   }
 
+  Future<List<JournalEntry>> _fetchJournalEntries(JournalQuery? query) async {
+    if (_wellbeingRepository == null) {
+      talker.warning(
+        '[SectionDataService] WellbeingRepository not available for journal query',
+      );
+      return [];
+    }
+    // Use the repository's watchByQuery if available, otherwise fall back
+    return _wellbeingRepository
+        .watchJournalEntriesByQuery(
+          query ?? JournalQuery.all(),
+        )
+        .first;
+  }
+
   Stream<List<dynamic>> _watchPrimaryEntities(DataConfig config) {
     return switch (config) {
       TaskDataConfig(:final query) => _taskRepository.watchAll(query),
@@ -186,7 +212,20 @@ class SectionDataService {
       ),
       LabelDataConfig() => _labelRepository.watchByType(LabelType.label),
       ValueDataConfig() => _labelRepository.watchByType(LabelType.value),
+      JournalDataConfig(:final query) => _watchJournalEntries(query),
     };
+  }
+
+  Stream<List<JournalEntry>> _watchJournalEntries(JournalQuery? query) {
+    if (_wellbeingRepository == null) {
+      talker.warning(
+        '[SectionDataService] WellbeingRepository not available for journal watch',
+      );
+      return Stream.value([]);
+    }
+    return _wellbeingRepository.watchJournalEntriesByQuery(
+      query ?? JournalQuery.all(),
+    );
   }
 
   Future<Map<String, List<dynamic>>> _fetchRelatedData(
@@ -323,6 +362,15 @@ class SectionDataService {
     // Get current allocation from orchestrator
     final allocation = await _allocationOrchestrator.watchAllocation().first;
 
+    // Check if value setup is required
+    if (allocation.requiresValueSetup) {
+      return SectionDataResult.allocation(
+        allocatedTasks: const [],
+        totalAvailable: 0,
+        requiresValueSetup: true,
+      );
+    }
+
     var tasks = allocation.allocatedTasks.map((at) => at.task).toList();
 
     // Apply source filter if provided
@@ -338,9 +386,16 @@ class SectionDataService {
     // Count total available (all non-completed tasks)
     final totalAvailable = await _taskRepository.count(TaskQuery.incomplete());
 
+    // Extract excluded urgent tasks for problem detection
+    final excludedUrgentTasks = allocation.excludedTasks
+        .where((e) => e.isUrgent ?? false)
+        .toList();
+
     return SectionDataResult.allocation(
       allocatedTasks: tasks,
       totalAvailable: totalAvailable,
+      excludedCount: allocation.excludedTasks.length,
+      excludedUrgentTasks: excludedUrgentTasks,
     );
   }
 
@@ -349,6 +404,16 @@ class SectionDataService {
     int? maxTasks,
   ) async* {
     await for (final allocation in _allocationOrchestrator.watchAllocation()) {
+      // Check if value setup is required
+      if (allocation.requiresValueSetup) {
+        yield SectionDataResult.allocation(
+          allocatedTasks: const [],
+          totalAvailable: 0,
+          requiresValueSetup: true,
+        );
+        continue;
+      }
+
       var tasks = allocation.allocatedTasks.map((at) => at.task).toList();
 
       // Apply source filter if provided
@@ -366,9 +431,16 @@ class SectionDataService {
         TaskQuery.incomplete(),
       );
 
+      // Extract excluded urgent tasks for problem detection
+      final excludedUrgentTasks = allocation.excludedTasks
+          .where((e) => e.isUrgent ?? false)
+          .toList();
+
       yield SectionDataResult.allocation(
         allocatedTasks: tasks,
         totalAvailable: totalAvailable,
+        excludedCount: allocation.excludedTasks.length,
+        excludedUrgentTasks: excludedUrgentTasks,
       );
     }
   }

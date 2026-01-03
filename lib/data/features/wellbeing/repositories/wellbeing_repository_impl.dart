@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_bloc/data/repositories/mappers/journal_predicate_mapper.dart';
+import 'package:taskly_bloc/data/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
@@ -10,11 +12,18 @@ import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker_response_config.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
+import 'package:taskly_bloc/domain/queries/journal_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
 
-class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
+class WellbeingRepositoryImpl
+    with QueryBuilderMixin
+    implements WellbeingRepositoryContract {
   WellbeingRepositoryImpl(this._database, this._idGenerator);
   final AppDatabase _database;
   final IdGenerator _idGenerator;
+  final JournalPredicateMapper _predicateMapper =
+      const JournalPredicateMapper();
 
   @override
   Stream<List<JournalEntry>> watchJournalEntries({
@@ -40,6 +49,43 @@ class WellbeingRepositoryImpl implements WellbeingRepositoryContract {
       }
       return entries;
     });
+  }
+
+  @override
+  Stream<List<JournalEntry>> watchJournalEntriesByQuery(
+    JournalQuery journalQuery,
+  ) {
+    final query = _database.select(_database.journalEntries);
+
+    // Apply filter from JournalQuery
+    final whereExpr = _whereExpressionFromFilter(journalQuery.filter);
+    if (whereExpr != null) {
+      query.where((tbl) => whereExpr);
+    }
+
+    // Apply sorting - default to newest first
+    query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
+
+    return query.watch().asyncMap((rows) async {
+      final entries = <JournalEntry>[];
+      for (final row in rows) {
+        final responses = await _getTrackerResponsesForEntry(row.id);
+        entries.add(_mapToJournalEntry(row, responses));
+      }
+      return entries;
+    });
+  }
+
+  Expression<bool>? _whereExpressionFromFilter(
+    QueryFilter<JournalPredicate> filter,
+  ) {
+    return whereExpressionFromFilter(
+      filter: filter,
+      predicateToExpression: (p) => _predicateMapper.predicateToExpression(
+        p,
+        _database.journalEntries,
+      ),
+    );
   }
 
   @override

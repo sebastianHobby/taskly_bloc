@@ -179,12 +179,14 @@ void main() {
         build: () {
           final controller = StreamController<List<String>>();
           final bloc = TestListBloc(itemStream: controller.stream);
-          Future.microtask(() async {
-            controller.add(['a']);
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-            controller.add(['a', 'b']);
-            controller.close();
-          });
+          unawaited(
+            Future.microtask(() async {
+              controller.add(['a']);
+              await Future<void>.delayed(const Duration(milliseconds: 10));
+              controller.add(['a', 'b']);
+              controller.close();
+            }),
+          );
           return bloc;
         },
         act: (bloc) => bloc.add(LoadItemsEvent()),

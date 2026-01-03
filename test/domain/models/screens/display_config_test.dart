@@ -187,8 +187,8 @@ void main() {
 
       test('creates with problemsToDetect', () {
         final problems = [
-          ProblemType.staleTasks,
-          ProblemType.excludedUrgentTask,
+          ProblemType.taskStale,
+          ProblemType.taskUrgentExcluded,
         ];
         final config = DisplayConfig(problemsToDetect: problems);
 

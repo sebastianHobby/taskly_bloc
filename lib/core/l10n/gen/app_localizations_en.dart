@@ -484,12 +484,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pinTask => 'Pin task';
 
   @override
-  String excludedUrgentTasksWarning(int count) {
+  String taskUrgentExcludedWarning(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count urgent tasks excluded',
-      one: '1 urgent task excluded',
+      other: '$count urgent tasks excluded from Focus',
+      one: '1 urgent task excluded from Focus',
     );
     return '$_temp0';
   }
@@ -785,4 +785,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notRankedDragToRank => 'Not ranked - drag to rank';
+
+  @override
+  String get recommendedNextActionLabel => 'Recommended Next Action';
+
+  @override
+  String get startLabel => 'Start';
+
+  @override
+  String get projectNextTaskPrefix => '→ Next:';
+
+  @override
+  String taskPinnedToFocus(String taskName) {
+    return '\'$taskName\' pinned to Focus';
+  }
+
+  @override
+  String deadlineFormatDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Due in $days days',
+      one: 'Due tomorrow',
+      zero: 'Due today',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get deadlineOverdue => 'Overdue';
+
+  @override
+  String get reflectorBuildingHistory => 'Building your history...';
+
+  @override
+  String reflectorHistoryExplanation(int count, int days) {
+    return 'Reflector works best with more data. You have $count completions in the last $days days. Using value weights for now.';
+  }
+
+  @override
+  String get targetLabel => 'Target';
+
+  @override
+  String get actualLabel => 'Actual';
+
+  @override
+  String get gapLabel => 'Gap';
+
+  @override
+  String valueActivityCounts(int taskCount, int projectCount) {
+    return '$taskCount tasks · $projectCount projects';
+  }
+
+  @override
+  String weekTrendTitle(int weeks) {
+    return '$weeks-Week Trend';
+  }
+
+  @override
+  String get noTrendData => 'No trend data yet';
+
+  @override
+  String get activitySectionTitle => 'Activity';
+
+  @override
+  String activeTasksCount(int count) {
+    return '$count active tasks';
+  }
+
+  @override
+  String projectsCount(int count) {
+    return '$count projects';
+  }
+
+  @override
+  String get unassignedWorkTitle => 'Unassigned Work';
+
+  @override
+  String get valuesGatewayTitle => 'Prioritize What Matters';
+
+  @override
+  String get valuesGatewayDescription => 'Focus uses your personal values to recommend which tasks deserve your attention today.\n\nDefine what\'s important to you—like Health, Family, Career—and Focus will help you spend time on what truly matters.';
+
+  @override
+  String get setUpMyValues => 'Set Up My Values';
 }
