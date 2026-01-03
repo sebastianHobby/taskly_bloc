@@ -1290,6 +1290,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm'**
   String get confirmButton;
+
+  /// Name of the Idealist allocation persona
+  ///
+  /// In en, this message translates to:
+  /// **'Idealist'**
+  String get personaIdealist;
+
+  /// Short description of the Idealist persona
+  ///
+  /// In en, this message translates to:
+  /// **'Pure value alignment. Ignores urgency entirely.'**
+  String get personaIdealistDescription;
+
+  /// Detailed explanation of how Idealist persona works
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.'**
+  String get personaIdealistHowItWorks;
+
+  /// Name of the Reflector allocation persona
+  ///
+  /// In en, this message translates to:
+  /// **'Reflector'**
+  String get personaReflector;
+
+  /// Short description of the Reflector persona
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritizes values you\'ve been neglecting.'**
+  String get personaReflectorDescription;
+
+  /// Detailed explanation of how Reflector persona works
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzes your recent completions and prioritizes values you\'ve been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.'**
+  String get personaReflectorHowItWorks;
+
+  /// Name of the Realist allocation persona
+  ///
+  /// In en, this message translates to:
+  /// **'Realist'**
+  String get personaRealist;
+
+  /// Short description of the Realist persona
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced approach with urgency awareness.'**
+  String get personaRealistDescription;
+
+  /// Detailed explanation of how Realist persona works
+  ///
+  /// In en, this message translates to:
+  /// **'Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.'**
+  String get personaRealistHowItWorks;
+
+  /// Name of the Firefighter allocation persona
+  ///
+  /// In en, this message translates to:
+  /// **'Firefighter'**
+  String get personaFirefighter;
+
+  /// Short description of the Firefighter persona
+  ///
+  /// In en, this message translates to:
+  /// **'Urgency-first. All urgent tasks included.'**
+  String get personaFirefighterDescription;
+
+  /// Detailed explanation of how Firefighter persona works
+  ///
+  /// In en, this message translates to:
+  /// **'Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.'**
+  String get personaFirefighterHowItWorks;
+
+  /// Name of the Custom allocation persona
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get personaCustom;
+
+  /// Short description of the Custom persona
+  ///
+  /// In en, this message translates to:
+  /// **'Configure all settings manually.'**
+  String get personaCustomDescription;
+
+  /// Detailed explanation of how Custom persona works
+  ///
+  /// In en, this message translates to:
+  /// **'Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.'**
+  String get personaCustomHowItWorks;
+
+  /// Badge text for recommended persona
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get personaRecommended;
+
+  /// Expandable section title for persona explanation
+  ///
+  /// In en, this message translates to:
+  /// **'How it works'**
+  String get personaHowItWorks;
+
+  /// Section title for persona selection
+  ///
+  /// In en, this message translates to:
+  /// **'How should Focus prioritize tasks?'**
+  String get personaSectionTitle;
+
+  /// Section title for urgency threshold settings
+  ///
+  /// In en, this message translates to:
+  /// **'Urgency Thresholds'**
+  String get urgencyThresholdsSection;
+
+  /// Label for task urgency threshold setting
+  ///
+  /// In en, this message translates to:
+  /// **'Task urgency (days before deadline)'**
+  String get taskUrgencyDays;
+
+  /// Label for project urgency threshold setting
+  ///
+  /// In en, this message translates to:
+  /// **'Project urgency (days before deadline)'**
+  String get projectUrgencyDays;
+
+  /// Section title for display options
+  ///
+  /// In en, this message translates to:
+  /// **'Display Options'**
+  String get displayOptionsSection;
+
+  /// Toggle label for showing orphan task count
+  ///
+  /// In en, this message translates to:
+  /// **'Show unassigned task count'**
+  String get showUnassignedTaskCount;
+
+  /// Toggle label for showing next task on project cards
+  ///
+  /// In en, this message translates to:
+  /// **'Show project next task'**
+  String get showProjectNextTask;
+
+  /// Label for daily focus task limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Daily task limit'**
+  String get dailyTaskLimit;
+
+  /// Section title for advanced settings
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Settings'**
+  String get advancedSettingsSection;
+
+  /// Label for urgent task behavior setting
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent task handling'**
+  String get urgentTaskHandling;
+
+  /// Urgent task behavior option: ignore
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore'**
+  String get urgentTaskIgnore;
+
+  /// Description for ignore urgent task behavior
+  ///
+  /// In en, this message translates to:
+  /// **'Urgency has no effect, no warnings'**
+  String get urgentTaskIgnoreDescription;
+
+  /// Urgent task behavior option: warn only
+  ///
+  /// In en, this message translates to:
+  /// **'Warn only'**
+  String get urgentTaskWarnOnly;
+
+  /// Description for warn only urgent task behavior
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent tasks excluded but show warnings'**
+  String get urgentTaskWarnOnlyDescription;
+
+  /// Urgent task behavior option: include all
+  ///
+  /// In en, this message translates to:
+  /// **'Include all'**
+  String get urgentTaskIncludeAll;
+
+  /// Description for include all urgent task behavior
+  ///
+  /// In en, this message translates to:
+  /// **'All urgent tasks are included'**
+  String get urgentTaskIncludeAllDescription;
+
+  /// Label for urgency boost multiplier setting
+  ///
+  /// In en, this message translates to:
+  /// **'Value-aligned urgency boost'**
+  String get valueAlignedUrgencyBoost;
+
+  /// Toggle label for neglect-based weighting feature
+  ///
+  /// In en, this message translates to:
+  /// **'Enable neglect weighting'**
+  String get enableNeglectWeighting;
+
+  /// Label for neglect lookback days setting
+  ///
+  /// In en, this message translates to:
+  /// **'Reflector lookback (days)'**
+  String get reflectorLookbackDays;
+
+  /// Label for neglect influence setting
+  ///
+  /// In en, this message translates to:
+  /// **'Neglect influence (0-1)'**
+  String get neglectInfluence;
+
+  /// Snackbar message when auto-switching to Custom persona
+  ///
+  /// In en, this message translates to:
+  /// **'Switched to Custom mode'**
+  String get switchedToCustomMode;
+
+  /// Title for allocation settings page
+  ///
+  /// In en, this message translates to:
+  /// **'Allocation Settings'**
+  String get allocationSettingsTitle;
+
+  /// Save button label
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveLabel;
+
+  /// Title for value rankings section
+  ///
+  /// In en, this message translates to:
+  /// **'Value Rankings'**
+  String get valueRankingsTitle;
+
+  /// Description for value rankings section
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to reorder. Higher values get more focus tasks.'**
+  String get valueRankingsDescription;
+
+  /// Empty state for value rankings
+  ///
+  /// In en, this message translates to:
+  /// **'No values found. Create values in the Values screen.'**
+  String get noValuesForRanking;
+
+  /// Label for weight value
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get weightLabel;
+
+  /// Subtitle for unranked values
+  ///
+  /// In en, this message translates to:
+  /// **'Not ranked - drag to rank'**
+  String get notRankedDragToRank;
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

@@ -870,5 +870,185 @@
     "confirmButton": "Confirm",
     "@confirmButton": {
         "description": "Confirm action button"
+    },
+    "personaIdealist": "Idealist",
+    "@personaIdealist": {
+        "description": "Name of the Idealist allocation persona"
+    },
+    "personaIdealistDescription": "Pure value alignment. Ignores urgency entirely.",
+    "@personaIdealistDescription": {
+        "description": "Short description of the Idealist persona"
+    },
+    "personaIdealistHowItWorks": "Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.",
+    "@personaIdealistHowItWorks": {
+        "description": "Detailed explanation of how Idealist persona works"
+    },
+    "personaReflector": "Reflector",
+    "@personaReflector": {
+        "description": "Name of the Reflector allocation persona"
+    },
+    "personaReflectorDescription": "Prioritizes values you've been neglecting.",
+    "@personaReflectorDescription": {
+        "description": "Short description of the Reflector persona"
+    },
+    "personaReflectorHowItWorks": "Analyzes your recent completions and prioritizes values you've been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.",
+    "@personaReflectorHowItWorks": {
+        "description": "Detailed explanation of how Reflector persona works"
+    },
+    "personaRealist": "Realist",
+    "@personaRealist": {
+        "description": "Name of the Realist allocation persona"
+    },
+    "personaRealistDescription": "Balanced approach with urgency awareness.",
+    "@personaRealistDescription": {
+        "description": "Short description of the Realist persona"
+    },
+    "personaRealistHowItWorks": "Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.",
+    "@personaRealistHowItWorks": {
+        "description": "Detailed explanation of how Realist persona works"
+    },
+    "personaFirefighter": "Firefighter",
+    "@personaFirefighter": {
+        "description": "Name of the Firefighter allocation persona"
+    },
+    "personaFirefighterDescription": "Urgency-first. All urgent tasks included.",
+    "@personaFirefighterDescription": {
+        "description": "Short description of the Firefighter persona"
+    },
+    "personaFirefighterHowItWorks": "Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.",
+    "@personaFirefighterHowItWorks": {
+        "description": "Detailed explanation of how Firefighter persona works"
+    },
+    "personaCustom": "Custom",
+    "@personaCustom": {
+        "description": "Name of the Custom allocation persona"
+    },
+    "personaCustomDescription": "Configure all settings manually.",
+    "@personaCustomDescription": {
+        "description": "Short description of the Custom persona"
+    },
+    "personaCustomHowItWorks": "Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.",
+    "@personaCustomHowItWorks": {
+        "description": "Detailed explanation of how Custom persona works"
+    },
+    "personaRecommended": "Recommended",
+    "@personaRecommended": {
+        "description": "Badge text for recommended persona"
+    },
+    "personaHowItWorks": "How it works",
+    "@personaHowItWorks": {
+        "description": "Expandable section title for persona explanation"
+    },
+    "personaSectionTitle": "How should Focus prioritize tasks?",
+    "@personaSectionTitle": {
+        "description": "Section title for persona selection"
+    },
+    "urgencyThresholdsSection": "Urgency Thresholds",
+    "@urgencyThresholdsSection": {
+        "description": "Section title for urgency threshold settings"
+    },
+    "taskUrgencyDays": "Task urgency (days before deadline)",
+    "@taskUrgencyDays": {
+        "description": "Label for task urgency threshold setting"
+    },
+    "projectUrgencyDays": "Project urgency (days before deadline)",
+    "@projectUrgencyDays": {
+        "description": "Label for project urgency threshold setting"
+    },
+    "displayOptionsSection": "Display Options",
+    "@displayOptionsSection": {
+        "description": "Section title for display options"
+    },
+    "showUnassignedTaskCount": "Show unassigned task count",
+    "@showUnassignedTaskCount": {
+        "description": "Toggle label for showing orphan task count"
+    },
+    "showProjectNextTask": "Show project next task",
+    "@showProjectNextTask": {
+        "description": "Toggle label for showing next task on project cards"
+    },
+    "dailyTaskLimit": "Daily task limit",
+    "@dailyTaskLimit": {
+        "description": "Label for daily focus task limit setting"
+    },
+    "advancedSettingsSection": "Advanced Settings",
+    "@advancedSettingsSection": {
+        "description": "Section title for advanced settings"
+    },
+    "urgentTaskHandling": "Urgent task handling",
+    "@urgentTaskHandling": {
+        "description": "Label for urgent task behavior setting"
+    },
+    "urgentTaskIgnore": "Ignore",
+    "@urgentTaskIgnore": {
+        "description": "Urgent task behavior option: ignore"
+    },
+    "urgentTaskIgnoreDescription": "Urgency has no effect, no warnings",
+    "@urgentTaskIgnoreDescription": {
+        "description": "Description for ignore urgent task behavior"
+    },
+    "urgentTaskWarnOnly": "Warn only",
+    "@urgentTaskWarnOnly": {
+        "description": "Urgent task behavior option: warn only"
+    },
+    "urgentTaskWarnOnlyDescription": "Urgent tasks excluded but show warnings",
+    "@urgentTaskWarnOnlyDescription": {
+        "description": "Description for warn only urgent task behavior"
+    },
+    "urgentTaskIncludeAll": "Include all",
+    "@urgentTaskIncludeAll": {
+        "description": "Urgent task behavior option: include all"
+    },
+    "urgentTaskIncludeAllDescription": "All urgent tasks are included",
+    "@urgentTaskIncludeAllDescription": {
+        "description": "Description for include all urgent task behavior"
+    },
+    "valueAlignedUrgencyBoost": "Value-aligned urgency boost",
+    "@valueAlignedUrgencyBoost": {
+        "description": "Label for urgency boost multiplier setting"
+    },
+    "enableNeglectWeighting": "Enable neglect weighting",
+    "@enableNeglectWeighting": {
+        "description": "Toggle label for neglect-based weighting feature"
+    },
+    "reflectorLookbackDays": "Reflector lookback (days)",
+    "@reflectorLookbackDays": {
+        "description": "Label for neglect lookback days setting"
+    },
+    "neglectInfluence": "Neglect influence (0-1)",
+    "@neglectInfluence": {
+        "description": "Label for neglect influence setting"
+    },
+    "switchedToCustomMode": "Switched to Custom mode",
+    "@switchedToCustomMode": {
+        "description": "Snackbar message when auto-switching to Custom persona"
+    },
+    "allocationSettingsTitle": "Allocation Settings",
+    "@allocationSettingsTitle": {
+        "description": "Title for allocation settings page"
+    },
+    "saveLabel": "Save",
+    "@saveLabel": {
+        "description": "Save button label"
+    },
+    "valueRankingsTitle": "Value Rankings",
+    "@valueRankingsTitle": {
+        "description": "Title for value rankings section"
+    },
+    "valueRankingsDescription": "Drag to reorder. Higher values get more focus tasks.",
+    "@valueRankingsDescription": {
+        "description": "Description for value rankings section"
+    },
+    "noValuesForRanking": "No values found. Create values in the Values screen.",
+    "@noValuesForRanking": {
+        "description": "Empty state for value rankings"
+    },
+    "weightLabel": "Weight",
+    "@weightLabel": {
+        "description": "Label for weight value"
+    },
+    "notRankedDragToRank": "Not ranked - drag to rank",
+    "@notRankedDragToRank": {
+        "description": "Subtitle for unranked values"
     }
 }
