@@ -6,7 +6,7 @@ import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Presentation model for workflow execution.
 ///
-/// Extracts the essential fields from a [ScreenDefinition] needed
+/// Extracts the essential fields from a [DataDrivenScreenDefinition] needed
 /// to run a workflow, simplifying the BLoC interface.
 class WorkflowScreen {
   const WorkflowScreen({
@@ -22,6 +22,12 @@ class WorkflowScreen {
   /// Throws [ArgumentError] if the screen doesn't have task data
   /// that supports workflow execution.
   factory WorkflowScreen.fromScreenDefinition(ScreenDefinition definition) {
+    if (definition is! DataDrivenScreenDefinition) {
+      throw ArgumentError(
+        'Screen "${definition.name}" is not a data-driven screen',
+      );
+    }
+
     final taskQuery = _extractTaskQuery(definition.sections);
     if (taskQuery == null) {
       throw ArgumentError(

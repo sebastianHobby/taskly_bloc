@@ -10,15 +10,15 @@ import 'package:taskly_bloc/presentation/features/navigation/services/navigation
 
 import '../../../../mocks/repository_mocks.dart';
 
-/// Helper to create a test ScreenDefinition with required fields.
-ScreenDefinition _makeScreen({
+/// Helper to create a test DataDrivenScreenDefinition with required fields.
+DataDrivenScreenDefinition _makeScreen({
   required String id,
   required String name,
   ScreenCategory category = ScreenCategory.workspace,
   List<Section> sections = const [],
 }) {
   final now = DateTime.now();
-  return ScreenDefinition(
+  return DataDrivenScreenDefinition(
     id: id,
     screenKey: 'test-$id',
     name: name,

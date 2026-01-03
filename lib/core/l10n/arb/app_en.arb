@@ -52,6 +52,10 @@
     "@createLabelTooltip": {
         "description": "Tooltip for the create label floating action button"
     },
+    "createValueTooltip": "Create value",
+    "@createValueTooltip": {
+        "description": "Tooltip for the create value floating action button"
+    },
     "createLabelOption": "Create label",
     "@createLabelOption": {
         "description": "Option text for creating a label"

@@ -13,16 +13,8 @@ void main(List<String> arguments) {
 Future<bool> preCommit() async {
   print('🔍 Running pre-commit checks...\n');
 
-  var allPassed = true;
-
-  // 1. Check for unsafe testWidgets usage
-  allPassed = await _checkUnsafeTests() && allPassed;
-
-  // 2. Run dart analyze (no warnings allowed)
-  allPassed = await _runAnalyze() && allPassed;
-
-  // 3. Run dart format check
-  allPassed = await _runFormatCheck() && allPassed;
+  // Pre-commit is lightweight - just auto-format staged files
+  final allPassed = await _runFormatCheck();
 
   if (allPassed) {
     print('\n✅ All pre-commit checks passed!');
@@ -39,10 +31,16 @@ Future<bool> prePush() async {
 
   var allPassed = true;
 
-  // 1. Validate IdGenerator table registration
+  // 1. Check for unsafe testWidgets usage
+  allPassed = await _checkUnsafeTests() && allPassed;
+
+  // 2. Run dart analyze (no warnings allowed)
+  allPassed = await _runAnalyze() && allPassed;
+
+  // 3. Validate IdGenerator table registration
   allPassed = await _validateTableRegistration() && allPassed;
 
-  // 2. Run tests with coverage (80% minimum)
+  // 4. Run tests with coverage (80% minimum)
   allPassed = await _runTestsWithCoverage() && allPassed;
 
   if (allPassed) {

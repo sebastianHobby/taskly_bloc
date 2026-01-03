@@ -52,6 +52,10 @@
     "@createLabelTooltip": {
         "description": "Tooltip del botón flotante para crear etiqueta"
     },
+    "createValueTooltip": "Crear valor",
+    "@createValueTooltip": {
+        "description": "Tooltip del botón flotante para crear valor"
+    },
     "createLabelOption": "Crear etiqueta",
     "@createLabelOption": {
         "description": "Texto de opción para crear una etiqueta"

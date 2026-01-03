@@ -115,7 +115,28 @@ jobs:
             echo "Replace testWidgets() with testWidgetsSafe() from test_helpers.dart"
             exit 1
           fi
-          echo "✓ No unsafe test patterns found."
+          echo "✓ No unsafe testWidgets patterns found."
+      
+      - name: Check for unsafe async test() with StreamController
+        run: |
+          # Find test files using StreamController with test() instead of testSafe()
+          STREAM_FILES=$(grep -rl "StreamController" test/ --include="*_test.dart" || true)
+          UNSAFE_ASYNC=""
+          for file in $STREAM_FILES; do
+            # Check if file has test( with async but not testSafe(
+            if grep -q "test(" "$file" && grep -q "async" "$file" && ! grep -q "testSafe(" "$file" && ! grep -q "// safe:" "$file"; then
+              UNSAFE_ASYNC="$UNSAFE_ASYNC\n$file"
+            fi
+          done
+          if [ -n "$UNSAFE_ASYNC" ]; then
+            echo "❌ Found async test() in files using StreamController:"
+            echo -e "$UNSAFE_ASYNC"
+            echo ""
+            echo "This combination can hang indefinitely with BLoC streams."
+            echo "Replace test() with testSafe() for async tests using streams"
+            exit 1
+          fi
+          echo "✓ No unsafe async test patterns found."
       
       - name: Validate IdGenerator table registration
         run: |

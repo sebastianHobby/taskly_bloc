@@ -32,6 +32,11 @@ class NavigationBadgeService {
       return null;
     }
 
+    // Only data-driven screens can have badges
+    if (screen is! DataDrivenScreenDefinition) {
+      return null;
+    }
+
     // Find the first data section to use for badge counting
     final dataSection = _findFirstDataSection(screen.sections);
     if (dataSection == null) {
@@ -64,6 +69,10 @@ class NavigationBadgeService {
       return null;
     }
 
+    if (screen is! DataDrivenScreenDefinition) {
+      return null;
+    }
+
     final dataSection = _findFirstDataSection(screen.sections);
     if (dataSection == null) {
       return null;
@@ -78,6 +87,10 @@ class NavigationBadgeService {
   /// Returns the project query for badge counting if the screen has project data.
   ProjectQuery? getProjectQueryForScreen(ScreenDefinition screen) {
     if (screen.category != ScreenCategory.workspace) {
+      return null;
+    }
+
+    if (screen is! DataDrivenScreenDefinition) {
       return null;
     }
 
