@@ -219,46 +219,13 @@ class NeglectBasedAllocator implements AllocationStrategy {
     scoredTasks.sort((a, b) => b.score.compareTo(a.score));
     final topTasks = scoredTasks.take(parameters.dailyLimit).toList();
 
-    // Allocate proportionally using effective weights
-    final allocated = _allocateByWeights(
-      tasksByValue: tasksByValue,
-      effectiveWeights: effectiveWeights,
-      limit: parameters.dailyLimit,
-    );
-
     return AllocationResult(
-      allocatedTasks: allocated.map((t) => AllocatedTask(
-        task: t,
-        reason: _buildReason(t, neglectScores, parameters.urgencyBoostMultiplier > 1.0),
+      allocatedTasks: topTasks.map((scored) => AllocatedTask(
+        task: scored.task,
+        reason: _buildReason(scored),
       )).toList(),
       warnings: [],
     );
-  }
-
-  /// Apply urgency boost to tasks with approaching deadlines.
-  void _applyUrgencyBoost({
-    required List<Task> tasks,
-    required UrgencyDetector detector,
-    required double boostMultiplier,
-    required Map<String, double> effectiveWeights,
-  }) {
-    // Boost weights for values that have urgent tasks
-    for (final task in tasks) {
-      if (task.valueId != null && detector.isTaskUrgent(task)) {
-        final valueId = task.valueId!;
-        if (effectiveWeights.containsKey(valueId)) {
-          effectiveWeights[valueId] = effectiveWeights[valueId]! * boostMultiplier;
-        }
-      }
-    }
-    
-    // Re-normalize weights to sum to 1
-    final total = effectiveWeights.values.fold(0.0, (a, b) => a + b);
-    if (total > 0) {
-      for (final key in effectiveWeights.keys) {
-        effectiveWeights[key] = effectiveWeights[key]! / total;
-      }
-    }
   }
 
   /// Calculate neglect score for each value.
@@ -295,108 +262,68 @@ class NeglectBasedAllocator implements AllocationStrategy {
   }
 
   /// Blend base weights with neglect scores.
-  Map<String, double> _calculateEffectiveWeights({
-    required List<ValueLabel> values,
+  /// Returns multiplier values (centered around 1.0) for each value.
+  Map<String, double> _normalizeNeglectScores({
     required Map<String, double> neglectScores,
     required double neglectInfluence,
   }) {
-    final weights = <String, double>{};
+    final multipliers = <String, double>{};
 
-    // Normalize neglect scores to 0-1 range
+    // Find max absolute neglect score for normalization
     final maxNeglect = neglectScores.values
         .map((s) => s.abs())
         .fold(0.0, (a, b) => a > b ? a : b);
     
-    final normalizedScores = <String, double>{};
+    if (maxNeglect == 0) {
+      // No neglect data, all multipliers = 1.0 (no effect)
+      for (final entry in neglectScores.entries) {
+        multipliers[entry.key] = 1.0;
+      }
+      return multipliers;
+    }
+
     for (final entry in neglectScores.entries) {
-      normalizedScores[entry.key] = maxNeglect > 0 
-          ? (entry.value / maxNeglect + 1) / 2  // Scale to 0-1
-          : 0.5;
-    }
-
-    // Total weight for normalization
-    final totalWeight = values.fold(0.0, (sum, v) => sum + v.weight);
-
-    for (final value in values) {
-      final baseWeight = value.weight / totalWeight;
-      final neglectBoost = normalizedScores[value.id] ?? 0.5;
+      // Scale neglect score to -1..+1 range
+      final normalizedScore = entry.value / maxNeglect;
       
-      // Blend: (1 - influence) * base + influence * neglect
-      weights[value.id] = (1 - neglectInfluence) * baseWeight 
-                        + neglectInfluence * neglectBoost;
+      // Convert to multiplier: 1.0 + (score * influence)
+      // Neglected (positive score) → multiplier > 1.0
+      // Over-represented (negative score) → multiplier < 1.0
+      multipliers[entry.key] = 1.0 + (normalizedScore * neglectInfluence);
     }
 
-    // Normalize to sum to 1
-    final totalEffective = weights.values.fold(0.0, (a, b) => a + b);
-    if (totalEffective > 0) {
-      for (final key in weights.keys) {
-        weights[key] = weights[key]! / totalEffective;
-      }
-    }
-
-    return weights;
+    return multipliers;
   }
 
-  Map<String, List<Task>> _groupTasksByValue(List<Task> tasks) {
-    final grouped = <String, List<Task>>{};
-    for (final task in tasks) {
-      final valueId = task.valueId;
-      if (valueId != null && valueId.isNotEmpty) {
-        grouped.putIfAbsent(valueId, () => []).add(task);
-      }
-    }
-    return grouped;
-  }
-
-  List<Task> _allocateByWeights({
-    required Map<String, List<Task>> tasksByValue,
-    required Map<String, double> effectiveWeights,
-    required int limit,
-  }) {
-    final allocated = <Task>[];
-    final remaining = <String, List<Task>>{};
-    
-    // Copy tasks so we can remove as we allocate
-    for (final entry in tasksByValue.entries) {
-      remaining[entry.key] = List.from(entry.value);
-    }
-
-    // Allocate in rounds to maintain proportions
-    while (allocated.length < limit) {
-      var addedThisRound = false;
-      
-      for (final valueId in effectiveWeights.keys) {
-        if (allocated.length >= limit) break;
-        
-        final valueTasks = remaining[valueId];
-        if (valueTasks == null || valueTasks.isEmpty) continue;
-
-        // Check if this value deserves another slot
-        final currentCount = allocated.where((t) => t.valueId == valueId).length;
-        final targetCount = (limit * effectiveWeights[valueId]!).ceil();
-        
-        if (currentCount < targetCount && valueTasks.isNotEmpty) {
-          allocated.add(valueTasks.removeAt(0));
-          addedThisRound = true;
-        }
-      }
-
-      if (!addedThisRound) break; // No more tasks available
-    }
-
-    return allocated;
-  }
-
-  String _buildReason(Task task, Map<String, double> neglectScores, bool urgencyEnabled) {
-    final score = neglectScores[task.valueId] ?? 0;
-    final isUrgent = urgencyEnabled && task.deadline != null;
-    
-    if (score > 0 && isUrgent) {
+  String _buildReason(_ScoredTask scored) {
+    if (scored.isUrgent && scored.isNeglectedValue) {
       return 'Urgent + balancing neglected value';
-    } else if (score > 0) {
+    } else if (scored.isNeglectedValue) {
       return 'Balancing neglected value';
-    } else if (isUrgent) {
+    } else if (scored.isUrgent) {
       return 'Urgent task';
+    }
+    return 'Value alignment';
+  }
+}
+
+/// Internal helper class for scoring tasks.
+class _ScoredTask {
+  const _ScoredTask({
+    required this.task,
+    required this.score,
+    required this.isUrgent,
+    required this.isNeglectedValue,
+  });
+
+  final Task task;
+  final double score;
+  final bool isUrgent;
+  final bool isNeglectedValue;
+}
+```
+
+---
     } else if (score < 0) {
       return 'Value alignment';
     }
@@ -747,31 +674,52 @@ Neglect scores: all 0
 Effective weights = base weights
 ```
 
-### Example 4: Combo Mode (Neglect + Urgency)
+### Example 4: Combo Mode (Neglect + Urgency) - Per-Task Scoring
 
 **Setup (Custom mode with both features enabled):**
 - Values: Health (40%), Work (40%), Social (20%)
 - Last 7 days: 6 Work, 4 Health, 0 Social (Social neglected)
 - `enableNeglectWeighting = true`
 - `urgencyBoostMultiplier = 1.5`
-- Work task has deadline in 2 days (urgent)
+- Tasks:
+  - Task A: Social value, no deadline
+  - Task B: Work value, deadline in 2 days (urgent)
+  - Task C: Health value, no deadline
 
-**Calculation:**
+**Calculation (per-task combined scoring):**
 ```
-Step 1: Calculate neglect-based weights
-  Social boosted due to neglect
-  Effective weights: Health 35%, Work 25%, Social 40%
+Step 1: Calculate neglect multipliers (per value)
+  maxNeglect = 2
+  Health: 1.0 + (0/2 * 0.7) = 1.0   (balanced)
+  Work:   1.0 + (-2/2 * 0.7) = 0.3  (over-represented, penalized)
+  Social: 1.0 + (2/2 * 0.7) = 1.7   (neglected, boosted)
 
-Step 2: Apply urgency boost
-  Work has urgent task → Work weight * 1.5
-  Pre-normalize: Health 35%, Work 37.5%, Social 40%
-  Re-normalize to sum to 1: Health 31%, Work 33%, Social 36%
+Step 2: Calculate combined score for EACH task
+  Task A (Social, not urgent):
+    baseScore = 0.2
+    neglectFactor = 1.7
+    urgencyFactor = 1.0
+    combinedScore = 0.2 * 1.7 * 1.0 = 0.34
 
-Result: Social still gets priority (neglected), but
-        Work's urgent task competes effectively
+  Task B (Work, urgent):
+    baseScore = 0.4
+    neglectFactor = 0.3
+    urgencyFactor = 1.5  ← urgency boost applied!
+    combinedScore = 0.4 * 0.3 * 1.5 = 0.18
+
+  Task C (Health, not urgent):
+    baseScore = 0.4
+    neglectFactor = 1.0
+    urgencyFactor = 1.0
+    combinedScore = 0.4 * 1.0 * 1.0 = 0.40
+
+Step 3: Sort by score, take top N
+  Ranked: C (0.40) > A (0.34) > B (0.18)
 ```
 
-This combo allows users to say "help me catch up on neglected areas, but don't let me miss deadlines".
+**Result**: Health task ranks highest (balanced value, high weight), Social task second (neglect boost overcomes low weight), Work urgent task third (urgency boost partially compensates for over-representation penalty).
+
+**Key insight**: All factors multiply together PER TASK. Urgency helps individual tasks compete, but doesn't override value-level neglect completely.
 
 ---
 
