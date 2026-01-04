@@ -22,6 +22,7 @@ import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile
 import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/widgets/allocation_alert_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/widgets/focus_hero_card.dart';
 import 'package:taskly_bloc/presentation/widgets/outside_focus_section.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 import 'package:taskly_bloc/presentation/widgets/allocated_task_tile.dart';
@@ -290,133 +291,71 @@ class _SectionWidgetState extends State<SectionWidget> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Calculate summary stats
-    final totalTasks = result.tasksByValue.values.fold<int>(
-      0,
-      (sum, group) => sum + group.tasks.length,
-    );
-    final valueCount = result.tasksByValue.length;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Page-level greeting
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-          child: Text(
-            _getGreeting(),
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        // Focus Hero Card
+        FocusHeroCard(result: result),
 
-        // Today's Focus Section with strong containment
+        // Today's Focus Container
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLowest,
+            color: colorScheme.primaryContainer.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              width: 1.5,
+              color: colorScheme.primary.withValues(alpha: 0.08),
+              width: 1,
             ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // "Today's Focus" header with summary and settings icon
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Text(
-                                '📋',
-                                style: TextStyle(fontSize: 16),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "Today's Focus",
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$valueCount values • $totalTasks tasks',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
+              // "Today's Focus" header
+              Row(
+                children: [
+                  Icon(
+                    Icons.center_focus_strong,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Today's Focus",
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
                     ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.settings_outlined,
-                        size: 20,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      onPressed: () => Routing.toScreenKey(context, 'settings'),
-                      tooltip: 'Settings',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Divider(
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 16),
 
               // Pinned section
               if (result.pinnedTasks.isNotEmpty) ...[
                 _buildPinnedSection(context, result.pinnedTasks),
-                const Divider(height: 1, indent: 20, endIndent: 20),
+                const SizedBox(height: 16),
               ],
 
-              // All value groups with dividers between them
-              ...result.tasksByValue.entries.expand((entry) {
+              // Value groups
+              ...result.tasksByValue.entries.map((entry) {
                 final group = entry.value;
-                final isLast = entry.key == result.tasksByValue.keys.last;
-                return [
-                  _buildAllocationGroup(context, group),
-                  if (!isLast)
-                    const Divider(
-                      height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                    ),
-                ];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildAllocationGroup(context, group),
+                );
               }),
             ],
           ),
         ),
       ],
     );
-  }
-
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    final timeGreeting = hour < 12
-        ? '🌅 Good Morning'
-        : hour < 17
-        ? '🌤️ Good Afternoon'
-        : '🌙 Good Evening';
-    return '$timeGreeting, Sebastian';
   }
 
   /// Builds a pinned tasks section with modern design
@@ -549,62 +488,88 @@ class _SectionWidgetState extends State<SectionWidget> {
     // Get emoji or fallback icon
     final emoji = group.iconName?.isNotEmpty ?? false ? group.iconName! : '⭐';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Subtle value label - inline with task list
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Row(
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with underline
+            Row(
               children: [
                 Text(
                   emoji,
-                  style: const TextStyle(fontSize: 16),
+                  style: const TextStyle(fontSize: 18),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     group.valueName,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: accentColor,
                     ),
                   ),
                 ),
-                Text(
-                  '${group.tasks.where((t) => t.task.completed).length}/${group.tasks.length}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${group.tasks.where((t) => t.task.completed).length}/${group.tasks.length}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 4),
-          // Task list (no separators - tasks have bottom borders)
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: group.tasks.length,
-            itemBuilder: (context, index) {
-              final allocatedTask = group.tasks[index];
-              return AllocatedTaskTile(
-                allocatedTask: allocatedTask,
-                onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
-                onTap: widget.onEntityTap != null
-                    ? (_) => widget.onEntityTap!(allocatedTask.task.id, 'task')
-                    : null,
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: 8),
+            Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.5),
+                    accentColor.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Task list
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: group.tasks.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 4),
+              itemBuilder: (context, index) {
+                final allocatedTask = group.tasks[index];
+                return AllocatedTaskTile(
+                  allocatedTask: allocatedTask,
+                  onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
+                  onTap: widget.onEntityTap != null
+                      ? (_) =>
+                            widget.onEntityTap!(allocatedTask.task.id, 'task')
+                      : null,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Values setup gateway for allocation section.
+  /// Values setup gateway for allocation section.dget
   ///
   /// Shown when user has no values defined and allocation cannot proceed.
   Widget _buildValuesGateway(BuildContext context) {
