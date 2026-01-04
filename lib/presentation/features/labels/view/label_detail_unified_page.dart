@@ -6,13 +6,18 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/labels/view/label_detail_view.dart';
+import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -135,10 +140,107 @@ class _LabelScreenWithData extends StatelessWidget {
   }
 }
 
-class _LabelScreenView extends StatelessWidget {
+class _LabelScreenView extends StatefulWidget {
   const _LabelScreenView({required this.label});
 
   final Label label;
+
+  @override
+  State<_LabelScreenView> createState() => _LabelScreenViewState();
+}
+
+class _LabelScreenViewState extends State<_LabelScreenView> {
+  ValueStats? _valueStats;
+  int _valueRank = 1;
+  bool _isLoadingStats = true;
+
+  Label get label => widget.label;
+  bool get isValue => label.type == LabelType.value;
+
+  @override
+  void initState() {
+    super.initState();
+    if (isValue) {
+      _loadValueStats();
+    } else {
+      _isLoadingStats = false;
+    }
+  }
+
+  Future<void> _loadValueStats() async {
+    try {
+      final analyticsService = getIt<AnalyticsService>();
+      final settingsRepository = getIt<SettingsRepositoryContract>();
+
+      // Load all required data in parallel
+      final results = await Future.wait([
+        analyticsService.getValueWeeklyTrends(weeks: 8),
+        analyticsService.getValueActivityStats(),
+        analyticsService.getRecentCompletionsByValue(days: 56),
+        analyticsService.getTotalRecentCompletions(days: 56),
+        settingsRepository.load(SettingsKey.valueRanking),
+      ]);
+
+      final weeklyTrends = results[0] as Map<String, List<double>>;
+      final activityStats = results[1] as Map<String, ValueActivityStats>;
+      final recentCompletions = results[2] as Map<String, int>;
+      final totalRecentCompletions = results[3] as int;
+      final valueRanking = results[4] as ValueRanking;
+
+      // Calculate total weight for percentage calculation
+      final totalWeight = valueRanking.items.fold<int>(
+        0,
+        (sum, item) => sum + item.weight,
+      );
+
+      // Find ranking item for this value
+      final rankIndex = valueRanking.items.indexWhere(
+        (item) => item.labelId == label.id,
+      );
+      final rankItem = rankIndex >= 0
+          ? valueRanking.items[rankIndex]
+          : ValueRankItem(labelId: label.id, weight: 5);
+
+      // Calculate target percent from ranking weight
+      final targetPercent = totalWeight > 0
+          ? (rankItem.weight / totalWeight) * 100
+          : 0.0;
+
+      // Calculate actual percent from recent completions
+      final actualPercent = totalRecentCompletions > 0
+          ? ((recentCompletions[label.id] ?? 0) / totalRecentCompletions) * 100
+          : 0.0;
+
+      // Get weekly trend data
+      final weeklyTrend = weeklyTrends[label.id] ?? [];
+
+      // Get activity stats
+      final activity =
+          activityStats[label.id] ??
+          const ValueActivityStats(taskCount: 0, projectCount: 0);
+
+      if (mounted) {
+        setState(() {
+          _valueStats = ValueStats(
+            targetPercent: targetPercent,
+            actualPercent: actualPercent,
+            taskCount: activity.taskCount,
+            projectCount: activity.projectCount,
+            weeklyTrend: weeklyTrend,
+            gapWarningThreshold: 15,
+          );
+          _valueRank = rankIndex >= 0 ? rankIndex + 1 : 0;
+          _isLoadingStats = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingStats = false;
+        });
+      }
+    }
+  }
 
   void _showEditLabelSheet(BuildContext context) {
     unawaited(
@@ -247,11 +349,27 @@ class _LabelScreenView extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Entity header
-          EntityHeader.label(
-            label: label,
-            onTap: () => _showEditLabelSheet(context),
-          ),
+          // Entity header - use EnhancedValueCard for values, EntityHeader for labels
+          if (isValue)
+            _isLoadingStats
+                ? const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : EnhancedValueCard(
+                    value: label,
+                    rank: _valueRank,
+                    stats: _valueStats,
+                    onTap: () => _showEditLabelSheet(context),
+                    notRankedMessage: _valueRank == 0
+                        ? l10n.notRankedDragToRank
+                        : null,
+                  )
+          else
+            EntityHeader.label(
+              label: label,
+              onTap: () => _showEditLabelSheet(context),
+            ),
 
           // Related lists via ScreenBloc
           Expanded(

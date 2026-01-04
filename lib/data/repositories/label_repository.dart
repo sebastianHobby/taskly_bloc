@@ -64,12 +64,37 @@ class LabelRepository implements LabelRepositoryContract {
 
   // Domain-aware read methods
   @override
-  Stream<List<Label>> watchAll() =>
-      _labelStream.map((rows) => rows.map(labelFromTable).toList());
+  Stream<List<Label>> watchAll([LabelQuery? query]) {
+    if (query == null) {
+      return _labelStream.map((rows) => rows.map(labelFromTable).toList());
+    }
+
+    final select = driftDb.select(driftDb.labelTable);
+    final where = _whereExpressionFromFilter(query.filter);
+    if (where != null) select.where((_) => where);
+    select.orderBy([
+      (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+      (l) => OrderingTerm(expression: l.name),
+    ]);
+    return select.watch().map((rows) => rows.map(labelFromTable).toList());
+  }
 
   @override
-  Future<List<Label>> getAll() async =>
-      (await _labelList).map(labelFromTable).toList();
+  Future<List<Label>> getAll([LabelQuery? query]) async {
+    if (query == null) {
+      return (await _labelList).map(labelFromTable).toList();
+    }
+
+    final select = driftDb.select(driftDb.labelTable);
+    final where = _whereExpressionFromFilter(query.filter);
+    if (where != null) select.where((_) => where);
+    select.orderBy([
+      (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
+      (l) => OrderingTerm(expression: l.name),
+    ]);
+    final rows = await select.get();
+    return rows.map(labelFromTable).toList();
+  }
 
   @override
   Stream<List<Label>> watchByType(LabelType type) =>
@@ -90,24 +115,6 @@ class LabelRepository implements LabelRepositoryContract {
   Future<Label?> getById(String id) async {
     final data = await _getLabelById(id);
     return data == null ? null : labelFromTable(data);
-  }
-
-  @override
-  Future<List<Label>> queryLabels(LabelQuery query) async {
-    final select = driftDb.select(driftDb.labelTable);
-
-    // Apply filter predicates
-    final where = _whereExpressionFromFilter(query.filter);
-    if (where != null) select.where((_) => where);
-
-    // Default ordering by type (desc) then name (asc)
-    select.orderBy([
-      (l) => OrderingTerm(expression: l.type, mode: OrderingMode.desc),
-      (l) => OrderingTerm(expression: l.name),
-    ]);
-
-    final rows = await select.get();
-    return rows.map(labelFromTable).toList();
   }
 
   @override

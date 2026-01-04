@@ -120,10 +120,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     emit(const ProjectDetailState.loadInProgress());
     try {
       final labels = await _labelRepository.getAll();
-      final project = await _projectRepository.getById(
-        projectId,
-        withRelated: true,
-      );
+      final project = await _projectRepository.getById(projectId);
 
       if (project == null) {
         emit(

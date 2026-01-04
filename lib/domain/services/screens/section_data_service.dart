@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
@@ -205,7 +206,7 @@ class SectionDataService {
         'task',
       ),
       ProjectDataConfig(:final query) => (
-        await _projectRepository.watchAllByQuery(query).first,
+        await _projectRepository.watchAll(query).first,
         'project',
       ),
       LabelDataConfig(:final query) => (
@@ -257,9 +258,7 @@ class SectionDataService {
   Stream<List<dynamic>> _watchPrimaryEntities(DataConfig config) {
     return switch (config) {
       TaskDataConfig(:final query) => _taskRepository.watchAll(query),
-      ProjectDataConfig(:final query) => _projectRepository.watchAllByQuery(
-        query,
-      ),
+      ProjectDataConfig(:final query) => _projectRepository.watchAll(query),
       LabelDataConfig() => _labelRepository.watchByType(LabelType.label),
       ValueDataConfig() => _labelRepository.watchByType(LabelType.value),
       JournalDataConfig(:final query) => _watchJournalEntries(query),
@@ -425,17 +424,18 @@ class SectionDataService {
       );
     }
 
-    var tasks = allocation.allocatedTasks.map((at) => at.task).toList();
+    // Build pinned tasks and value groups for UI rendering
+    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
+      allocation.allocatedTasks,
+      sourceFilter,
+      maxTasks,
+    );
 
-    // Apply source filter if provided
-    if (sourceFilter != null) {
-      tasks = _applyTaskFilter(tasks, sourceFilter);
-    }
-
-    // Limit if maxTasks specified
-    if (maxTasks != null && tasks.length > maxTasks) {
-      tasks = tasks.take(maxTasks).toList();
-    }
+    // Extract just the Task objects for backward compatibility
+    final tasks = [
+      ...pinnedTasks,
+      ...tasksByValue.values.expand((g) => g.tasks),
+    ].map((at) => at.task).toList();
 
     // Count total available (all non-completed tasks)
     final totalAvailable = await _taskRepository.count(TaskQuery.incomplete());
@@ -460,6 +460,8 @@ class SectionDataService {
     return SectionDataResult.allocation(
       allocatedTasks: tasks,
       totalAvailable: totalAvailable,
+      pinnedTasks: pinnedTasks,
+      tasksByValue: tasksByValue,
       excludedCount: allocation.excludedTasks.length,
       excludedUrgentTasks: excludedUrgentTasks,
       excludedTasks: allocation.excludedTasks,
@@ -488,17 +490,18 @@ class SectionDataService {
         continue;
       }
 
-      var tasks = allocation.allocatedTasks.map((at) => at.task).toList();
+      // Build pinned tasks and value groups for UI rendering
+      final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
+        allocation.allocatedTasks,
+        sourceFilter,
+        maxTasks,
+      );
 
-      // Apply source filter if provided
-      if (sourceFilter != null) {
-        tasks = _applyTaskFilter(tasks, sourceFilter);
-      }
-
-      // Limit if maxTasks specified
-      if (maxTasks != null && tasks.length > maxTasks) {
-        tasks = tasks.take(maxTasks).toList();
-      }
+      // Extract just the Task objects for backward compatibility
+      final tasks = [
+        ...pinnedTasks,
+        ...tasksByValue.values.expand((g) => g.tasks),
+      ].map((at) => at.task).toList();
 
       // Count total available
       final totalAvailable = await _taskRepository.count(
@@ -525,6 +528,8 @@ class SectionDataService {
       yield SectionDataResult.allocation(
         allocatedTasks: tasks,
         totalAvailable: totalAvailable,
+        pinnedTasks: pinnedTasks,
+        tasksByValue: tasksByValue,
         excludedCount: allocation.excludedTasks.length,
         excludedUrgentTasks: excludedUrgentTasks,
         excludedTasks: allocation.excludedTasks,
@@ -533,6 +538,75 @@ class SectionDataService {
         showExcludedSection: showExcludedSection,
       );
     }
+  }
+
+  /// Builds pinned tasks list and value groups from allocated tasks.
+  ///
+  /// Separates pinned tasks (qualifyingValueId == 'pinned') from regular tasks,
+  /// then groups regular tasks by their qualifying value ID.
+  Future<(List<AllocatedTask>, Map<String, AllocationValueGroup>)>
+  _buildAllocationGroups(
+    List<AllocatedTask> allocatedTasks,
+    TaskQuery? sourceFilter,
+    int? maxTasks,
+  ) async {
+    // Apply source filter if provided
+    var filteredTasks = allocatedTasks;
+    if (sourceFilter != null) {
+      final filteredTaskObjects = _applyTaskFilter(
+        allocatedTasks.map((at) => at.task).toList(),
+        sourceFilter,
+      );
+      final filteredIds = filteredTaskObjects.map((t) => t.id).toSet();
+      filteredTasks = allocatedTasks
+          .where((at) => filteredIds.contains(at.task.id))
+          .toList();
+    }
+
+    // Limit if maxTasks specified
+    if (maxTasks != null && filteredTasks.length > maxTasks) {
+      filteredTasks = filteredTasks.take(maxTasks).toList();
+    }
+
+    // Separate pinned tasks from regular tasks
+    final pinnedTasks = filteredTasks
+        .where((at) => at.qualifyingValueId == 'pinned')
+        .toList();
+
+    final regularTasks = filteredTasks
+        .where((at) => at.qualifyingValueId != 'pinned')
+        .toList();
+
+    // Group regular tasks by their qualifying value ID
+    final groupedByValue = <String, List<AllocatedTask>>{};
+    for (final task in regularTasks) {
+      groupedByValue.putIfAbsent(task.qualifyingValueId, () => []).add(task);
+    }
+
+    // Build AllocationValueGroup for each value
+    final tasksByValue = <String, AllocationValueGroup>{};
+    for (final entry in groupedByValue.entries) {
+      final valueId = entry.key;
+      final tasks = entry.value;
+
+      // Look up value label for name, color, and icon
+      final valueLabel = await _labelRepository.getById(valueId);
+      final valueName = valueLabel?.name ?? 'Unknown Value';
+      final color = valueLabel?.color;
+      final iconName = valueLabel?.iconName;
+
+      tasksByValue[valueId] = AllocationValueGroup(
+        valueId: valueId,
+        valueName: valueName,
+        tasks: tasks,
+        weight: 1, // Default weight - could be enhanced later
+        quota: tasks.length,
+        color: color,
+        iconName: iconName,
+      );
+    }
+
+    return (pinnedTasks, tasksByValue);
   }
 
   List<Task> _applyTaskFilter(List<Task> tasks, TaskQuery query) {

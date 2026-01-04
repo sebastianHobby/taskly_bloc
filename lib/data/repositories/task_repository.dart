@@ -691,46 +691,25 @@ class TaskRepository implements TaskRepositoryContract {
       select.orderBy(orderingFuncs);
     }
 
-    // Build the join query if labels are needed
-    final JoinedSelectStatement<HasResultSet, dynamic> joinQuery;
-    if (query.needsLabels) {
-      joinQuery = select.join([
-        leftOuterJoin(
-          driftDb.projectTable,
-          driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
-        ),
-        leftOuterJoin(
-          driftDb.taskLabelsTable,
-          driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
-        ),
-        leftOuterJoin(
-          driftDb.labelTable,
-          driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
-        ),
-      ]);
-    } else {
-      joinQuery = select.join([
-        leftOuterJoin(
-          driftDb.projectTable,
-          driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
-        ),
-      ]);
-    }
+    // Build the join query - always include labels for complete domain model
+    final joinQuery = select.join([
+      leftOuterJoin(
+        driftDb.projectTable,
+        driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+      ),
+      leftOuterJoin(
+        driftDb.taskLabelsTable,
+        driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+      ),
+      leftOuterJoin(
+        driftDb.labelTable,
+        driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+      ),
+    ]);
 
     // Map results to Task objects
     Stream<List<Task>> stream = joinQuery.watch().map((rows) {
-      if (query.needsLabels) {
-        return TaskAggregation.fromRows(rows: rows, driftDb: driftDb).toTasks();
-      } else {
-        return rows.map((row) {
-          final taskData = row.readTable(driftDb.taskTable);
-          final projectData = row.readTableOrNull(driftDb.projectTable);
-          return taskFromTable(
-            taskData,
-            project: projectData != null ? projectFromTable(projectData) : null,
-          );
-        }).toList();
-      }
+      return TaskAggregation.fromRows(rows: rows, driftDb: driftDb).toTasks();
     });
 
     // Apply occurrence expansion if needed (with two-phase date filtering)

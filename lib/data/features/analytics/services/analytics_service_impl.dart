@@ -501,7 +501,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
         ],
       ),
     );
-    final projects = await _projectRepo.queryProjects(projectQuery);
+    final projects = await _projectRepo.getAll(projectQuery);
 
     final projectCounts = <String, int>{};
     for (final project in projects) {

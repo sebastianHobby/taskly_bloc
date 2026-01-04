@@ -250,9 +250,9 @@ class SettingsRepository implements SettingsRepositoryContract {
         ),
         updatedAt: now,
       ),
-      SettingsKey.valueRanking => UserProfileTableCompanion(
-        valueRanking: Value(jsonEncode((value as ValueRanking).toJson())),
-        updatedAt: now,
+      SettingsKey.valueRanking => _buildValueRankingCompanion(
+        value as ValueRanking,
+        now,
       ),
       SettingsKey.allScreenPrefs => _buildAllScreenPrefsCompanion(
         value as Map<String, ScreenPreferences>,
@@ -330,8 +330,33 @@ class SettingsRepository implements SettingsRepositoryContract {
   }
 
   ValueRanking _valueRankingFromRow(UserProfileTableData? row) {
-    if (row == null) return const ValueRanking();
-    return ValueRanking.fromJson(_parseJson(row.valueRanking));
+    talker.repositoryLog(
+      'Settings',
+      '[ValueRanking] _valueRankingFromRow: row=${row == null ? "null" : "exists"}',
+    );
+    if (row == null) {
+      talker.repositoryLog(
+        'Settings',
+        '[ValueRanking] Returning default empty ValueRanking (row is null)',
+      );
+      return const ValueRanking();
+    }
+    talker.repositoryLog(
+      'Settings',
+      '[ValueRanking] Raw DB column value_ranking: "${row.valueRanking}"',
+    );
+    final parsed = _parseJson(row.valueRanking);
+    talker.repositoryLog(
+      'Settings',
+      '[ValueRanking] Parsed JSON: $parsed',
+    );
+    final ranking = ValueRanking.fromJson(parsed);
+    talker.repositoryLog(
+      'Settings',
+      '[ValueRanking] Deserialized: ${ranking.items.length} items - '
+          '${ranking.items.map((i) => "${i.labelId.substring(0, 8)}:w${i.weight}").join(", ")}',
+    );
+    return ranking;
   }
 
   Map<String, ScreenPreferences> _allScreenPrefsFromRow(
@@ -386,6 +411,24 @@ class SettingsRepository implements SettingsRepositoryContract {
   // =========================================================================
   // Companion builders for keyed settings
   // =========================================================================
+
+  UserProfileTableCompanion _buildValueRankingCompanion(
+    ValueRanking value,
+    Value<DateTime> now,
+  ) {
+    final json = jsonEncode(value.toJson());
+    talker.repositoryLog(
+      'Settings',
+      '[ValueRanking] _buildValueRankingCompanion:\n'
+          '  items.length=${value.items.length}\n'
+          '  items=${value.items.map((i) => "${i.labelId.substring(0, 8)}:w${i.weight}").join(", ")}\n'
+          '  JSON to save: $json',
+    );
+    return UserProfileTableCompanion(
+      valueRanking: Value(json),
+      updatedAt: now,
+    );
+  }
 
   UserProfileTableCompanion _buildPageSortCompanion(
     String subKey,

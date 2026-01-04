@@ -2,15 +2,20 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
 
 abstract class LabelRepositoryContract {
-  Stream<List<Label>> watchAll();
-  Future<List<Label>> getAll();
+  /// Watch labels with optional filtering.
+  ///
+  /// If [query] is null, returns all labels.
+  Stream<List<Label>> watchAll([LabelQuery? query]);
+
+  /// Get labels with optional filtering.
+  ///
+  /// If [query] is null, returns all labels.
+  Future<List<Label>> getAll([LabelQuery? query]);
+
   Stream<List<Label>> watchByType(LabelType type);
   Future<List<Label>> getAllByType(LabelType type);
   Stream<Label?> watchById(String id);
   Future<Label?> getById(String id);
-
-  /// Query labels using LabelQuery.
-  Future<List<Label>> queryLabels(LabelQuery query);
 
   /// Get labels by IDs.
   Future<List<Label>> getLabelsByIds(List<String> ids);

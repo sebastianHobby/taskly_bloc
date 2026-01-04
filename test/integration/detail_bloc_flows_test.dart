@@ -236,10 +236,7 @@ void main() {
         );
 
         when(
-          () => mockProjectRepo.getById(
-            any(),
-            withRelated: any(named: 'withRelated'),
-          ),
+          () => mockProjectRepo.getById(any()),
         ).thenAnswer((_) async => project);
         when(mockLabelRepo.getAll).thenAnswer((_) async => []);
 

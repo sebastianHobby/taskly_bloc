@@ -80,22 +80,22 @@ class ValueChip extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
           ],
-          // Emoji icon
+          // Emoji icon (smaller)
           Text(
             emoji,
-            style: EmojiUtils.emojiTextStyle(fontSize: 14),
+            style: EmojiUtils.emojiTextStyle(fontSize: 11),
           ),
-          const SizedBox(width: 6),
-          // Value name
+          const SizedBox(width: 4),
+          // Value name (smaller, less bold)
           Flexible(
             child: Text(
               label.name,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: textColor,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: color, // Use value color for readability
+                fontWeight: FontWeight.w500, // Less bold
+                fontSize: 11, // Smaller
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -107,7 +107,7 @@ class ValueChip extends StatelessWidget {
     if (onTap != null) {
       return InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: chip,
       );
     }
