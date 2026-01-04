@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
@@ -17,7 +19,8 @@ import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart'
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 /// Unified page for rendering all screen types.
@@ -226,18 +229,26 @@ class _ScreenContent extends StatelessWidget {
         return SectionWidget(
           section: section,
           onEntityTap: (entityId, entityType) {
-            EntityNavigator.toEntity(
+            Routing.toEntity(
               context,
-              entityId: entityId,
-              entityType: entityType,
+              EntityType.fromString(entityType),
+              entityId,
             );
           },
           onTaskCheckboxChanged: (task, value) async {
+            developer.log(
+              'CHECKBOX: task=${task.id}, newValue=$value, task.completed=${task.completed}',
+              name: 'UnifiedScreenPage',
+            );
             if (value ?? false) {
               await entityActionService.completeTask(task.id);
             } else {
               await entityActionService.uncompleteTask(task.id);
             }
+            developer.log(
+              'CHECKBOX: action complete, triggering refresh',
+              name: 'UnifiedScreenPage',
+            );
             // Refresh data after action
             if (context.mounted) {
               context.read<ScreenBloc>().add(const ScreenEvent.refresh());

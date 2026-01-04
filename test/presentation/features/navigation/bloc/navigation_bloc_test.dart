@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -75,7 +76,7 @@ void main() {
       required String name,
       int sortOrder = 0,
       ScreenCategory category = ScreenCategory.workspace,
-      bool isSystem = true,
+      ScreenSource screenSource = ScreenSource.systemTemplate,
       bool isActive = true,
       String? iconName,
     }) {
@@ -92,7 +93,7 @@ void main() {
         ],
         createdAt: now,
         updatedAt: now,
-        isSystem: isSystem,
+        screenSource: screenSource,
         category: category,
         iconName: iconName,
       );
@@ -189,12 +190,11 @@ void main() {
         await bloc.close();
       });
 
-      testSafe('workspace screens use dynamic routes', () async {
+      testSafe('workspace screens use convention-based routes', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
           iconResolver: iconResolver,
-          routeBuilder: (id) => '/s/$id',
         );
 
         bloc.add(const NavigationStarted());
@@ -209,7 +209,7 @@ void main() {
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(bloc.state.destinations.first.route, '/s/inbox');
+        expect(bloc.state.destinations.first.route, '/inbox');
         await bloc.close();
       });
 
@@ -237,7 +237,7 @@ void main() {
         await bloc.close();
       });
 
-      testSafe('journal screen uses wellbeing/journal route', () async {
+      testSafe('journal screen uses convention-based route', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -257,11 +257,11 @@ void main() {
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(bloc.state.destinations.first.route, '/wellbeing/journal');
+        expect(bloc.state.destinations.first.route, '/journal');
         await bloc.close();
       });
 
-      testSafe('settings screens use correct routes', () async {
+      testSafe('settings screens use convention-based routes', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
           badgeService: mockBadgeService,
@@ -289,7 +289,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final routes = bloc.state.destinations.map((d) => d.route).toList();
-        expect(routes, ['/settings/app', '/settings/navigation']);
+        expect(routes, ['/settings', '/navigation-settings']);
         await bloc.close();
       });
     });
@@ -351,106 +351,138 @@ void main() {
       resolver = const NavigationIconResolver();
     });
 
-    test('resolves inbox icon when iconName is inbox', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'inbox');
+    // ─────────────────────────────────────────────────────────────────
+    // System screens (resolved by screenId - the single source of truth)
+    // ─────────────────────────────────────────────────────────────────
+
+    test('resolves inbox icon by screenId', () {
+      final result = resolver.resolve(screenId: 'inbox', iconName: null);
       expect(result.icon, Icons.inbox_outlined);
       expect(result.selectedIcon, Icons.inbox);
     });
 
-    test('resolves today icon when iconName is today', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'today');
+    test('resolves today icon by screenId', () {
+      final result = resolver.resolve(screenId: 'today', iconName: null);
       expect(result.icon, Icons.calendar_today_outlined);
       expect(result.selectedIcon, Icons.calendar_today);
     });
 
-    test('resolves upcoming icon when iconName is upcoming', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'upcoming');
+    test('resolves upcoming icon by screenId', () {
+      final result = resolver.resolve(screenId: 'upcoming', iconName: null);
       expect(result.icon, Icons.event_outlined);
       expect(result.selectedIcon, Icons.event);
     });
 
-    test('resolves next_actions icon when iconName is next_actions', () {
-      final result = resolver.resolve(
-        screenId: 'custom',
-        iconName: 'next_actions',
-      );
-      expect(result.icon, Icons.playlist_play_outlined);
-      expect(result.selectedIcon, Icons.playlist_play);
+    test('resolves logbook icon by screenId', () {
+      final result = resolver.resolve(screenId: 'logbook', iconName: null);
+      expect(result.icon, Icons.done_all_outlined);
+      expect(result.selectedIcon, Icons.done_all);
     });
 
-    test('resolves projects icon when iconName is projects', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'projects');
+    test('resolves next_actions icon by screenId', () {
+      final result = resolver.resolve(screenId: 'next_actions', iconName: null);
+      expect(result.icon, Icons.bolt_outlined);
+      expect(result.selectedIcon, Icons.bolt);
+    });
+
+    test('resolves projects icon by screenId', () {
+      final result = resolver.resolve(screenId: 'projects', iconName: null);
       expect(result.icon, Icons.folder_outlined);
       expect(result.selectedIcon, Icons.folder);
     });
 
-    test('resolves labels icon when iconName is labels', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'labels');
+    test('resolves labels icon by screenId', () {
+      final result = resolver.resolve(screenId: 'labels', iconName: null);
       expect(result.icon, Icons.label_outline);
       expect(result.selectedIcon, Icons.label);
     });
 
-    test('resolves values icon when iconName is values', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'values');
-      expect(result.icon, Icons.favorite_border);
-      expect(result.selectedIcon, Icons.favorite);
+    test('resolves values icon by screenId', () {
+      final result = resolver.resolve(screenId: 'values', iconName: null);
+      expect(result.icon, Icons.star_outline);
+      expect(result.selectedIcon, Icons.star);
     });
 
-    test('resolves wellbeing icon when iconName is wellbeing', () {
+    test('resolves wellbeing icon by screenId', () {
+      final result = resolver.resolve(screenId: 'wellbeing', iconName: null);
+      expect(result.icon, Icons.self_improvement_outlined);
+      expect(result.selectedIcon, Icons.self_improvement);
+    });
+
+    test('resolves workflows icon by screenId', () {
+      final result = resolver.resolve(screenId: 'workflows', iconName: null);
+      expect(result.icon, Icons.account_tree_outlined);
+      expect(result.selectedIcon, Icons.account_tree);
+    });
+
+    test('resolves screen_management icon by screenId', () {
       final result = resolver.resolve(
-        screenId: 'custom',
-        iconName: 'wellbeing',
+        screenId: 'screen_management',
+        iconName: null,
       );
-      expect(result.icon, Icons.psychology_outlined);
-      expect(result.selectedIcon, Icons.psychology);
+      expect(result.icon, Icons.dashboard_customize_outlined);
+      expect(result.selectedIcon, Icons.dashboard_customize);
     });
 
-    test('resolves journal icon when iconName is journal', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'journal');
-      expect(result.icon, Icons.book_outlined);
-      expect(result.selectedIcon, Icons.book);
-    });
-
-    test('resolves trackers icon when iconName is trackers', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'trackers');
-      expect(result.icon, Icons.timeline_outlined);
-      expect(result.selectedIcon, Icons.timeline);
-    });
-
-    test('resolves settings icon when iconName is settings', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'settings');
+    test('resolves settings icon by screenId', () {
+      final result = resolver.resolve(screenId: 'settings', iconName: null);
       expect(result.icon, Icons.settings_outlined);
       expect(result.selectedIcon, Icons.settings);
     });
 
-    test('uses iconName when provided', () {
-      final result = resolver.resolve(screenId: 'custom', iconName: 'inbox');
-      expect(result.icon, Icons.inbox_outlined);
-      expect(result.selectedIcon, Icons.inbox);
+    // ─────────────────────────────────────────────────────────────────
+    // Custom screens (fall back to iconName when screenId unknown)
+    // ─────────────────────────────────────────────────────────────────
+
+    test('uses iconName when screenId is unknown', () {
+      final result = resolver.resolve(screenId: 'custom', iconName: 'star');
+      expect(result.icon, Icons.star_outline);
+      expect(result.selectedIcon, Icons.star);
     });
 
-    test('returns default icon for unknown screens', () {
+    test('resolves folder iconName for custom screen', () {
+      final result = resolver.resolve(screenId: 'custom', iconName: 'folder');
+      expect(result.icon, Icons.folder_outlined);
+      expect(result.selectedIcon, Icons.folder);
+    });
+
+    test('resolves label iconName for custom screen', () {
+      final result = resolver.resolve(screenId: 'custom', iconName: 'label');
+      expect(result.icon, Icons.label_outline);
+      expect(result.selectedIcon, Icons.label);
+    });
+
+    test('returns default icon for unknown screenId and iconName', () {
       final result = resolver.resolve(screenId: 'unknown', iconName: 'unknown');
       expect(result.icon, Icons.widgets_outlined);
       expect(result.selectedIcon, Icons.widgets);
     });
 
-    test('handles empty iconName by falling back to screenId', () {
+    // ─────────────────────────────────────────────────────────────────
+    // Priority: screenId takes precedence over iconName
+    // ─────────────────────────────────────────────────────────────────
+
+    test('screenId takes priority over iconName for system screens', () {
+      // Even if iconName is 'folder', screenId 'inbox' wins
+      final result = resolver.resolve(screenId: 'inbox', iconName: 'folder');
+      expect(result.icon, Icons.inbox_outlined);
+      expect(result.selectedIcon, Icons.inbox);
+    });
+
+    test('handles empty iconName by using screenId', () {
       final result = resolver.resolve(screenId: 'inbox', iconName: '');
       expect(result.icon, Icons.inbox_outlined);
     });
 
-    test('handles whitespace iconName by falling back to screenId', () {
+    test('handles whitespace iconName by using screenId', () {
       final result = resolver.resolve(screenId: 'inbox', iconName: '  ');
       expect(result.icon, Icons.inbox_outlined);
     });
 
-    test('null iconName results in default icon due to toString behavior', () {
-      // Note: Due to (.toString()) on null, 'null' string is used which is
-      // unknown
+    test('handles null iconName by using screenId', () {
       final result = resolver.resolve(screenId: 'inbox', iconName: null);
-      expect(result.icon, Icons.widgets_outlined);
-      expect(result.selectedIcon, Icons.widgets);
+      expect(result.icon, Icons.inbox_outlined);
+      expect(result.selectedIcon, Icons.inbox);
     });
   });
 }

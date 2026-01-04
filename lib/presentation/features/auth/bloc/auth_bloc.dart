@@ -58,12 +58,13 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     );
 
     if (session != null) {
-      // Show loading while seeding data
+      // Show seeding state while preparing user data
+      // This signals to other components that auth is valid but data may not exist yet
       talker.blocLog('Auth', 'Initial session found, preparing user data...');
-      emit(state.copyWith(status: AuthStatus.loading));
+      emit(state.copyWith(status: AuthStatus.seeding, user: session.user));
 
       // Seed user data and wait for completion
-      // This ensures system labels and screens exist before showing UI
+      // This ensures system labels exist before emitting authenticated
       try {
         await _userDataSeeder.seedAll(session.user.id);
         talker.blocLog('Auth', 'User data seeded, emitting authenticated');
@@ -111,9 +112,10 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         return;
       }
 
-      // Show loading while seeding data
+      // Show seeding state while preparing user data
+      // This signals to other components that auth is valid but data may not exist yet
       talker.blocLog('Auth', 'Session found, preparing user data...');
-      emit(state.copyWith(status: AuthStatus.loading));
+      emit(state.copyWith(status: AuthStatus.seeding, user: session.user));
 
       // Seed user data and wait for completion
       try {

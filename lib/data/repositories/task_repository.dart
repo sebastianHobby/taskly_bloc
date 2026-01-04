@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:drift/drift.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -860,7 +862,13 @@ class TaskRepository implements TaskRepositoryContract {
   /// Gets or creates the shared inbox stream with tier-based caching.
   Stream<List<Task>> _getOrCreateInboxStream(TaskQuery query) {
     if (_sharedInboxStream == null) {
-      final stream = _buildAndExecuteQuery(query);
+      final stream = _buildAndExecuteQuery(query).map((tasks) {
+        developer.log(
+          'INBOX STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(completed=${t.completed})").join(", ")}',
+          name: 'TaskRepository',
+        );
+        return tasks;
+      });
       _sharedInboxStream = stream.shareValue();
     }
     return _sharedInboxStream!;
@@ -869,7 +877,13 @@ class TaskRepository implements TaskRepositoryContract {
   /// Gets or creates the shared today stream with tier-based caching.
   Stream<List<Task>> _getOrCreateTodayStream(TaskQuery query) {
     if (_sharedTodayStream == null) {
-      final stream = _buildAndExecuteQuery(query);
+      final stream = _buildAndExecuteQuery(query).map((tasks) {
+        developer.log(
+          'TODAY STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
+          name: 'TaskRepository',
+        );
+        return tasks;
+      });
       _sharedTodayStream = stream.shareValue();
     }
     return _sharedTodayStream!;
@@ -878,7 +892,13 @@ class TaskRepository implements TaskRepositoryContract {
   /// Gets or creates the shared upcoming stream with tier-based caching.
   Stream<List<Task>> _getOrCreateUpcomingStream(TaskQuery query) {
     if (_sharedUpcomingStream == null) {
-      final stream = _buildAndExecuteQuery(query);
+      final stream = _buildAndExecuteQuery(query).map((tasks) {
+        developer.log(
+          'UPCOMING STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
+          name: 'TaskRepository',
+        );
+        return tasks;
+      });
       _sharedUpcomingStream = stream.shareValue();
     }
     return _sharedUpcomingStream!;

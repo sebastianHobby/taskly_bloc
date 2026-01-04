@@ -3,10 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:go_router/go_router.dart';
 import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:talker_flutter/talker_flutter.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -248,9 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: const Text('Task Allocation'),
       subtitle: const Text('Strategy, limits, and value ranking'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        context.pushNamed(AppRouteName.taskNextActionsSettings);
-      },
+      onTap: () => Routing.toScreenKey(context, 'allocation-settings'),
     );
   }
 
@@ -260,9 +257,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: const Text('Navigation Order'),
       subtitle: const Text('Reorder sidebar items'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        context.pushNamed(AppRouteName.navigationSettings);
-      },
+      onTap: () => Routing.toScreenKey(context, 'navigation-settings'),
     );
   }
 
@@ -272,9 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: const Text('Custom Screens'),
       subtitle: const Text('Create and manage custom screens'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        context.pushNamed(AppRouteName.screenManagement);
-      },
+      onTap: () => Routing.toScreenKey(context, 'screen-management'),
     );
   }
 
@@ -284,9 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       title: const Text('Review Workflows'),
       subtitle: const Text('Create and manage review workflows'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        context.pushNamed(AppRouteName.workflows);
-      },
+      onTap: () => Routing.toScreenKey(context, 'workflows'),
     );
   }
 

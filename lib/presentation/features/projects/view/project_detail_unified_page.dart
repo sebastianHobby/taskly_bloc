@@ -25,7 +25,8 @@ import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart'
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/entity_header.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
@@ -360,7 +361,7 @@ class _ProjectScreenView extends StatelessWidget {
                   task: nextTask,
                   onStartTap: () => _pinToFocus(context, nextTask!),
                   onTaskTap: () =>
-                      EntityNavigator.toTask(context, nextTask!.id),
+                      Routing.toEntity(context, EntityType.task, nextTask!.id),
                 ),
               ),
             ),
@@ -373,10 +374,10 @@ class _ProjectScreenView extends StatelessWidget {
                   section: section,
                   displayConfig: section.displayConfig,
                   onEntityTap: (entityId, entityType) {
-                    EntityNavigator.toEntity(
+                    Routing.toEntity(
                       context,
-                      entityId: entityId,
-                      entityType: entityType,
+                      EntityType.fromString(entityType),
+                      entityId,
                     );
                   },
                   onTaskCheckboxChanged: (task, value) async {

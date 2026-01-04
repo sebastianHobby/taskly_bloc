@@ -10,6 +10,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
@@ -138,7 +139,11 @@ class ScreenDefinitionsRepositoryImpl
   @override
   Stream<List<ScreenDefinition>> watchCustomScreens() {
     return (_db.select(_db.screenDefinitions)
-          ..where((t) => t.isSystem.equals(false))
+          ..where(
+            (t) => t.screenSource.equalsValue(
+              db_screens.ScreenSource.userDefined,
+            ),
+          )
           ..orderBy([
             (t) => OrderingTerm(expression: t.createdAt),
           ]))
@@ -200,7 +205,7 @@ class ScreenDefinitionsRepositoryImpl
 
   @override
   Future<String> createCustomScreen(ScreenDefinition screen) async {
-    if (screen.isSystem) {
+    if (screen.isSystemScreen) {
       throw ArgumentError('Cannot create system screen via repository');
     }
 
@@ -246,7 +251,7 @@ class ScreenDefinitionsRepositoryImpl
             screenKey: screen.screenKey,
             name: screen.name,
             iconName: Value(iconName),
-            isSystem: const Value(false),
+            screenSource: const Value(db_screens.ScreenSource.userDefined),
             category: Value(_toDbCategory(screen.category)),
             sectionsConfig: Value(sections),
             supportBlocksConfig: Value(supportBlocks),
@@ -267,7 +272,7 @@ class ScreenDefinitionsRepositoryImpl
 
   @override
   Future<void> updateCustomScreen(ScreenDefinition screen) async {
-    if (screen.isSystem) {
+    if (screen.isSystemScreen) {
       throw ArgumentError('Cannot update system screen via repository');
     }
 
@@ -422,7 +427,7 @@ class ScreenDefinitionsRepositoryImpl
         sections: sections,
         supportBlocks: e.supportBlocksConfig ?? const <SupportBlock>[],
         iconName: e.iconName,
-        isSystem: e.isSystem,
+        screenSource: _toScreenSource(e.screenSource),
         category: category,
         triggerConfig: e.triggerConfig,
         createdAt: e.createdAt,
@@ -436,7 +441,7 @@ class ScreenDefinitionsRepositoryImpl
       screenKey: e.screenKey,
       name: e.name,
       iconName: e.iconName,
-      isSystem: e.isSystem,
+      screenSource: _toScreenSource(e.screenSource),
       category: category,
       createdAt: e.createdAt,
       updatedAt: e.updatedAt,
@@ -462,6 +467,15 @@ class ScreenDefinitionsRepositoryImpl
       ScreenCategory.workspace => db_screens.ScreenCategory.workspace,
       ScreenCategory.wellbeing => db_screens.ScreenCategory.wellbeing,
       ScreenCategory.settings => db_screens.ScreenCategory.settings,
+    };
+  }
+
+  /// Converts DB ScreenSource to domain ScreenSource.
+  ScreenSource _toScreenSource(db_screens.ScreenSource? dbSource) {
+    return switch (dbSource) {
+      db_screens.ScreenSource.systemTemplate => ScreenSource.systemTemplate,
+      db_screens.ScreenSource.userDefined => ScreenSource.userDefined,
+      null => ScreenSource.userDefined,
     };
   }
 

@@ -167,3 +167,15 @@ abstract class DisplaySettings with _$DisplaySettings {
   factory DisplaySettings.fromJson(Map<String, dynamic> json) =>
       _$DisplaySettingsFromJson(json);
 }
+
+/// Extension for persona-specific UI elements
+extension AllocationPersonaX on AllocationPersona {
+  /// Section title for excluded tasks in My Day view
+  String get excludedSectionTitle => switch (this) {
+    AllocationPersona.idealist => 'Needs Alignment',
+    AllocationPersona.reflector => 'Worth Considering',
+    AllocationPersona.realist => 'Overdue Attention',
+    AllocationPersona.firefighter => 'Active Fires',
+    AllocationPersona.custom => 'Outside Focus',
+  };
+}

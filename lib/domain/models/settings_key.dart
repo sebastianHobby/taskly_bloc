@@ -20,6 +20,11 @@ sealed class SettingsKey<T> {
   /// Allocation algorithm settings.
   static const allocation = _SingletonKey<AllocationConfig>('allocation');
 
+  /// Allocation alert configuration.
+  static const allocationAlerts = _SingletonKey<AllocationAlertSettings>(
+    'allocationAlerts',
+  );
+
   /// Soft gates threshold settings.
   static const softGates = _SingletonKey<SoftGatesSettings>('softGates');
 

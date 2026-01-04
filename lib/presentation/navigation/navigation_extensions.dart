@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 
 /// Extension methods for navigation on entity models
 extension TaskNavigation on Task {
   /// Navigate to this task's detail screen
   void navigateTo(BuildContext context) {
-    EntityNavigator.toTaskEntity(context, this);
+    Routing.toTask(context, this);
   }
 
   /// Get onTap callback for this task
@@ -21,7 +21,7 @@ extension TaskNavigation on Task {
 extension ProjectNavigation on Project {
   /// Navigate to this project's detail screen
   void navigateTo(BuildContext context) {
-    EntityNavigator.toProjectEntity(context, this);
+    Routing.toProject(context, this);
   }
 
   /// Get onTap callback for this project
@@ -34,7 +34,7 @@ extension ProjectNavigation on Project {
 extension LabelNavigation on Label {
   /// Navigate to this label's detail screen
   void navigateTo(BuildContext context) {
-    EntityNavigator.toLabelEntity(context, this);
+    Routing.toLabel(context, this);
   }
 
   /// Get onTap callback for this label

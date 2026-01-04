@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/labels/bloc/label_list_bloc.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
 
 class LabelsListView extends StatelessWidget {
   const LabelsListView({
@@ -53,10 +53,7 @@ class LabelsListView extends StatelessWidget {
               label: label,
               onTap: (label) async {
                 isSheetOpen?.value = true;
-                await context.pushNamed(
-                  AppRouteName.labelDetail,
-                  pathParameters: {'labelId': label.id},
-                );
+                Routing.toEntity(context, EntityType.label, label.id);
                 isSheetOpen?.value = false;
               },
             ),

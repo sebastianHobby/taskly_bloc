@@ -278,6 +278,7 @@ const List<IconCategory> defaultIconCategories = [
     label: 'Tasks',
     icons: [
       IconItem(name: 'inbox', label: 'Inbox', icon: Icons.inbox),
+      IconItem(name: 'my_day', label: 'My Day', icon: Icons.wb_sunny),
       IconItem(name: 'today', label: 'Today', icon: Icons.today),
       IconItem(name: 'upcoming', label: 'Upcoming', icon: Icons.event),
       IconItem(

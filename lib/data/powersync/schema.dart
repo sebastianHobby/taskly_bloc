@@ -82,7 +82,7 @@ const schema = Schema([
     Column.text('screen_key'),
     Column.text('name'),
     Column.text('icon_name'),
-    Column.integer('is_system'),
+    Column.text('screen_source'),
     Column.text('category'),
     Column.text('sections_config'),
     Column.text('support_blocks_config'),

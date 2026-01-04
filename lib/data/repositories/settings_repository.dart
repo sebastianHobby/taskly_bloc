@@ -369,17 +369,36 @@ class SettingsRepository implements SettingsRepositoryContract {
   // Private helpers
   // =========================================================================
 
-  Stream<List<UserProfileTableData>> get _profileStream =>
-      driftDb.select(driftDb.userProfileTable).watch().map((rows) {
-        talker.repositoryLog(
-          'Settings',
-          '_profileStream emitted ${rows.length} rows',
-        );
-        for (final row in rows) {
-          _logRawProfileData('_profileStream', row);
-        }
-        return rows;
-      });
+  /// Stream of user profile rows, filtering out ghost rows (all NULL values).
+  ///
+  /// Ghost rows can occur when PowerSync syncs orphaned rows from the server.
+  /// We filter them out at the SQL level to prevent Drift's mapper from
+  /// crashing on NULL values in non-nullable columns.
+  Stream<List<UserProfileTableData>> get _profileStream {
+    final query = driftDb.select(driftDb.userProfileTable)
+      ..where(
+        (row) =>
+            row.globalSettings.isNotNull() &
+            row.allocationSettings.isNotNull() &
+            row.softGatesSettings.isNotNull() &
+            row.nextActionsSettings.isNotNull() &
+            row.valueRanking.isNotNull() &
+            row.pageSortPreferences.isNotNull() &
+            row.pageDisplaySettings.isNotNull() &
+            row.screenPreferences.isNotNull(),
+      );
+
+    return query.watch().map((rows) {
+      talker.repositoryLog(
+        'Settings',
+        '_profileStream emitted ${rows.length} rows (ghost rows filtered)',
+      );
+      for (final row in rows) {
+        _logRawProfileData('_profileStream', row);
+      }
+      return rows;
+    });
+  }
 
   Future<UserProfileTableData?> _selectProfile() async {
     talker.repositoryLog('Settings', '_selectProfile: querying user_profiles');
@@ -387,14 +406,29 @@ class SettingsRepository implements SettingsRepositoryContract {
     // First dump raw SQL to see what PowerSync actually has
     await debugDumpRawProfileData();
 
+    // Filter out ghost rows (all NULL values) to prevent Drift mapper crash
     final query = driftDb.select(driftDb.userProfileTable)
+      ..where(
+        (row) =>
+            row.globalSettings.isNotNull() &
+            row.allocationSettings.isNotNull() &
+            row.softGatesSettings.isNotNull() &
+            row.nextActionsSettings.isNotNull() &
+            row.valueRanking.isNotNull() &
+            row.pageSortPreferences.isNotNull() &
+            row.pageDisplaySettings.isNotNull() &
+            row.screenPreferences.isNotNull(),
+      )
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
 
     try {
       final result = await query.getSingleOrNull();
       if (result == null) {
-        talker.repositoryLog('Settings', '_selectProfile: no rows found');
+        talker.repositoryLog(
+          'Settings',
+          '_selectProfile: no valid rows found (ghost rows filtered)',
+        );
       } else {
         _logRawProfileData('_selectProfile', result);
       }

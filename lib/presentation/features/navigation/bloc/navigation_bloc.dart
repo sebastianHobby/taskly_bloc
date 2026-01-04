@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
@@ -67,11 +66,9 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     required ScreenDefinitionsRepositoryContract screensRepository,
     required NavigationBadgeService badgeService,
     required NavigationIconResolver iconResolver,
-    String Function(String screenId)? routeBuilder,
   }) : _screensRepository = screensRepository,
        _badgeService = badgeService,
        _iconResolver = iconResolver,
-       _routeBuilder = routeBuilder ?? ((id) => '/s/$id'),
        super(const NavigationState.loading()) {
     on<NavigationStarted>(_onStarted);
     on<NavigationScreensChanged>(_onScreensChanged);
@@ -81,7 +78,6 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   final ScreenDefinitionsRepositoryContract _screensRepository;
   final NavigationBadgeService _badgeService;
   final NavigationIconResolver _iconResolver;
-  final String Function(String screenId) _routeBuilder;
 
   StreamSubscription<List<ScreenWithPreferences>>? _screensSub;
 
@@ -133,40 +129,12 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       label: screen.name,
       icon: iconSet.icon,
       selectedIcon: iconSet.selectedIcon,
-      route: _buildRoute(screen),
-      isSystem: screen.isSystem,
+      route: Routing.screenPath(screen.screenKey),
+      screenSource: screen.screenSource,
       badgeStream: _badgeService.badgeStreamFor(screen),
       sortOrder: screenWithPrefs.effectiveSortOrder,
       category: screen.category,
     );
-  }
-
-  String _buildRoute(ScreenDefinition screen) {
-    talker.debug(
-      '[NavigationBloc] _buildRoute: screenKey=${screen.screenKey}, category=${screen.category}',
-    );
-
-    // For workspace screens, use the dynamic screen route
-    if (screen.category == ScreenCategory.workspace) {
-      final route = _routeBuilder(screen.screenKey);
-      talker.debug('[NavigationBloc] -> workspace route: $route');
-      return route;
-    }
-
-    // For wellbeing and settings screens, use direct routes
-    final route = switch (screen.screenKey) {
-      'wellbeing' => '/wellbeing',
-      'journal' => '/wellbeing/journal',
-      'trackers' => '/wellbeing/trackers',
-      'allocation_settings' => '/tasks/next-actions/settings',
-      'navigation_settings' => '/settings/navigation',
-      'settings' => '/settings/app',
-      'workflows' => '/workflows',
-      'screen_management' => '/screens/manage',
-      _ => _routeBuilder(screen.screenKey),
-    };
-    talker.debug('[NavigationBloc] -> direct route: $route');
-    return route;
   }
 
   @override

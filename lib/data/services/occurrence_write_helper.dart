@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
@@ -28,6 +30,10 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? originalOccurrenceDate,
     String? notes,
   }) async {
+    developer.log(
+      'completeTaskOccurrence CALLED: taskId=$taskId, occurrenceDate=$occurrenceDate',
+      name: 'OccurrenceWriteHelper',
+    );
     final normalizedOccurrenceDate = occurrenceDate != null
         ? _normalizeDate(occurrenceDate)
         : null;
@@ -43,20 +49,82 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
       occurrenceDate: normalizedOccurrenceDate,
     );
 
-    await driftDb
-        .into(driftDb.taskCompletionHistoryTable)
-        .insert(
-          TaskCompletionHistoryTableCompanion.insert(
-            id: id,
-            taskId: taskId,
-            occurrenceDate: Value(normalizedOccurrenceDate),
-            originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
-            completedAt: Value(now),
-            notes: Value(notes),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
+    // Check if completion record already exists (PowerSync views don't support UPSERT)
+    final existing = await (driftDb.select(
+      driftDb.taskCompletionHistoryTable,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+    if (existing != null) {
+      // Update existing record
+      developer.log(
+        'Completion record exists, updating: id=$id',
+        name: 'OccurrenceWriteHelper',
+      );
+      await (driftDb.update(
+        driftDb.taskCompletionHistoryTable,
+      )..where((t) => t.id.equals(id))).write(
+        TaskCompletionHistoryTableCompanion(
+          completedAt: Value(now),
+          notes: Value(notes),
+          updatedAt: Value(now),
+        ),
+      );
+    } else {
+      // Insert new record
+      developer.log(
+        'Inserting new completion record: id=$id',
+        name: 'OccurrenceWriteHelper',
+      );
+      await driftDb
+          .into(driftDb.taskCompletionHistoryTable)
+          .insert(
+            TaskCompletionHistoryTableCompanion.insert(
+              id: id,
+              taskId: taskId,
+              occurrenceDate: Value(normalizedOccurrenceDate),
+              originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
+              completedAt: Value(now),
+              notes: Value(notes),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+    }
+
+    // For non-repeating tasks, also update the completed flag on the task itself
+    // This ensures queries filtering by tasks.completed work correctly
+    final task = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(taskId))).getSingleOrNull();
+
+    final isRepeating = task?.repeatIcalRrule?.isNotEmpty ?? false;
+    developer.log(
+      'Task lookup: found=${task != null}, isRepeating=$isRepeating, rrule=${task?.repeatIcalRrule}',
+      name: 'OccurrenceWriteHelper',
+    );
+    if (!isRepeating) {
+      developer.log(
+        'UPDATING tasks.completed=true for taskId=$taskId',
+        name: 'OccurrenceWriteHelper',
+      );
+      await (driftDb.update(
+        driftDb.taskTable,
+      )..where((t) => t.id.equals(taskId))).write(
+        TaskTableCompanion(
+          completed: const Value(true),
+          updatedAt: Value(now),
+        ),
+      );
+      developer.log(
+        'UPDATE COMPLETE for taskId=$taskId',
+        name: 'OccurrenceWriteHelper',
+      );
+    } else {
+      developer.log(
+        'SKIPPING completed flag update (repeating task)',
+        name: 'OccurrenceWriteHelper',
+      );
+    }
   }
 
   @override
@@ -75,6 +143,23 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     }
 
     await query.go();
+
+    // For non-repeating tasks, also update the completed flag on the task itself
+    final task = await (driftDb.select(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(taskId))).getSingleOrNull();
+
+    final isRepeating = task?.repeatIcalRrule?.isNotEmpty ?? false;
+    if (!isRepeating) {
+      await (driftDb.update(
+        driftDb.taskTable,
+      )..where((t) => t.id.equals(taskId))).write(
+        TaskTableCompanion(
+          completed: const Value(false),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
   }
 
   @override
@@ -216,20 +301,57 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
       occurrenceDate: normalizedOccurrenceDate,
     );
 
-    await driftDb
-        .into(driftDb.projectCompletionHistoryTable)
-        .insert(
-          ProjectCompletionHistoryTableCompanion.insert(
-            id: id,
-            projectId: projectId,
-            occurrenceDate: Value(normalizedOccurrenceDate),
-            originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
-            completedAt: Value(now),
-            notes: Value(notes),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
+    // Check if completion record already exists (PowerSync views don't support UPSERT)
+    final existing = await (driftDb.select(
+      driftDb.projectCompletionHistoryTable,
+    )..where((p) => p.id.equals(id))).getSingleOrNull();
+
+    if (existing != null) {
+      // Update existing record
+      await (driftDb.update(
+        driftDb.projectCompletionHistoryTable,
+      )..where((p) => p.id.equals(id))).write(
+        ProjectCompletionHistoryTableCompanion(
+          completedAt: Value(now),
+          notes: Value(notes),
+          updatedAt: Value(now),
+        ),
+      );
+    } else {
+      // Insert new record
+      await driftDb
+          .into(driftDb.projectCompletionHistoryTable)
+          .insert(
+            ProjectCompletionHistoryTableCompanion.insert(
+              id: id,
+              projectId: projectId,
+              occurrenceDate: Value(normalizedOccurrenceDate),
+              originalOccurrenceDate: Value(normalizedOriginalOccurrenceDate),
+              completedAt: Value(now),
+              notes: Value(notes),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+    }
+
+    // For non-repeating projects, also update the completed flag on the project itself
+    // This ensures queries filtering by projects.completed work correctly
+    final project = await (driftDb.select(
+      driftDb.projectTable,
+    )..where((p) => p.id.equals(projectId))).getSingleOrNull();
+
+    final isRepeating = project?.repeatIcalRrule?.isNotEmpty ?? false;
+    if (!isRepeating) {
+      await (driftDb.update(
+        driftDb.projectTable,
+      )..where((p) => p.id.equals(projectId))).write(
+        ProjectTableCompanion(
+          completed: const Value(true),
+          updatedAt: Value(now),
+        ),
+      );
+    }
   }
 
   @override
@@ -248,6 +370,23 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     }
 
     await query.go();
+
+    // For non-repeating projects, also update the completed flag on the project itself
+    final project = await (driftDb.select(
+      driftDb.projectTable,
+    )..where((p) => p.id.equals(projectId))).getSingleOrNull();
+
+    final isRepeating = project?.repeatIcalRrule?.isNotEmpty ?? false;
+    if (!isRepeating) {
+      await (driftDb.update(
+        driftDb.projectTable,
+      )..where((p) => p.id.equals(projectId))).write(
+        ProjectTableCompanion(
+          completed: const Value(false),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    }
   }
 
   @override

@@ -8,6 +8,9 @@ enum ScreenType { list, dashboard, focus, workflow }
 /// Screen categories for organizing navigation
 enum ScreenCategory { workspace, wellbeing, settings }
 
+/// Source/origin of a screen definition
+enum ScreenSource { systemTemplate, userDefined }
+
 /// Unified screen system - all screens are composed of sections
 @DataClassName('ScreenDefinitionEntity')
 class ScreenDefinitions extends Table {
@@ -19,9 +22,12 @@ class ScreenDefinitions extends Table {
       text()(); // Stable per-user identifier like 'today', 'inbox'
   TextColumn get name => text()();
   TextColumn get iconName => text().nullable()();
-  BoolColumn get isSystem => boolean().withDefault(
-    const Constant(false),
-  )(); // System screens can't be deleted
+
+  /// Source of the screen (system template vs user-defined).
+  /// Replaces the old isSystem boolean for more expressiveness.
+  TextColumn get screenSource => textEnum<ScreenSource>()
+      .withDefault(const Constant('userDefined'))
+      .nullable()();
   TextColumn get category => textEnum<ScreenCategory>()
       .withDefault(const Constant('workspace'))
       .nullable()();
