@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// Data class for value statistics.
@@ -44,6 +45,7 @@ class EnhancedValueCard extends StatelessWidget {
     this.onTap,
     this.compact = false,
     this.notRankedMessage,
+    this.showDragHandle = false,
     super.key,
   });
 
@@ -54,6 +56,7 @@ class EnhancedValueCard extends StatelessWidget {
     this.stats,
     this.onTap,
     this.notRankedMessage,
+    this.showDragHandle = false,
     super.key,
   }) : compact = true;
 
@@ -72,6 +75,10 @@ class EnhancedValueCard extends StatelessWidget {
   /// Message to show when stats is null (e.g., "Not ranked - drag to rank").
   final String? notRankedMessage;
 
+  /// Whether to show a drag handle for reordering.
+  /// Only set to true when inside a ReorderableListView.
+  final bool showDragHandle;
+
   @override
   Widget build(BuildContext context) {
     return compact ? _buildCompact(context) : _buildFull(context);
@@ -82,9 +89,14 @@ class EnhancedValueCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
     final valueStats = stats;
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      color: valueColor.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -102,12 +114,11 @@ class EnhancedValueCard extends StatelessWidget {
                 _StatsRow(stats: valueStats, colorScheme: colorScheme),
                 const SizedBox(height: 8),
 
-                // Sparkline
-                _Sparkline(
+                // Sparkline (only shows when data exists)
+                _SparklineWithSpacing(
                   data: valueStats.weeklyTrend,
                   colorScheme: colorScheme,
                 ),
-                const SizedBox(height: 8),
 
                 // Activity counts
                 Text(
@@ -139,9 +150,14 @@ class EnhancedValueCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
     final valueStats = stats;
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      color: valueColor.withOpacity(0.15),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
@@ -154,14 +170,21 @@ class EnhancedValueCard extends StatelessWidget {
               // Header row with inline stats
               Row(
                 children: [
-                  ReorderableDragStartListener(
-                    index: rank - 1,
-                    child: Icon(
-                      Icons.drag_handle,
+                  if (showDragHandle)
+                    ReorderableDragStartListener(
+                      index: rank - 1,
+                      child: Icon(
+                        Icons.drag_handle,
+                        color: colorScheme.onSurfaceVariant,
+                        size: 20,
+                      ),
+                    )
+                  else
+                    Icon(
+                      Icons.star_outline,
                       color: colorScheme.onSurfaceVariant,
                       size: 20,
                     ),
-                  ),
                   const SizedBox(width: 6),
                   Text(
                     '$rank.',
@@ -239,13 +262,19 @@ class EnhancedValueCard extends StatelessWidget {
   Widget _buildHeader(ThemeData theme, ColorScheme colorScheme) {
     return Row(
       children: [
-        ReorderableDragStartListener(
-          index: rank - 1,
-          child: Icon(
-            Icons.drag_handle,
+        if (showDragHandle)
+          ReorderableDragStartListener(
+            index: rank - 1,
+            child: Icon(
+              Icons.drag_handle,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          Icon(
+            Icons.star_outline,
             color: colorScheme.onSurfaceVariant,
           ),
-        ),
         const SizedBox(width: 8),
         Text(
           '$rank.',
@@ -462,6 +491,36 @@ class _StatChip extends StatelessWidget {
   }
 }
 
+/// Sparkline with conditional spacing - hides entirely when no data.
+class _SparklineWithSpacing extends StatelessWidget {
+  const _SparklineWithSpacing({
+    required this.data,
+    required this.colorScheme,
+  });
+
+  final List<double> data;
+  final ColorScheme colorScheme;
+
+  /// Returns true if the data has meaningful values to display.
+  bool get hasData => data.isNotEmpty && data.any((v) => v > 0);
+
+  @override
+  Widget build(BuildContext context) {
+    // Hide sparkline and spacing entirely when there's no data
+    if (!hasData) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _Sparkline(data: data, colorScheme: colorScheme),
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+}
+
 class _Sparkline extends StatelessWidget {
   const _Sparkline({
     required this.data,
@@ -471,10 +530,14 @@ class _Sparkline extends StatelessWidget {
   final List<double> data;
   final ColorScheme colorScheme;
 
+  /// Returns true if the data has meaningful values to display.
+  bool get hasData => data.isNotEmpty && data.any((v) => v > 0);
+
   @override
   Widget build(BuildContext context) {
-    if (data.isEmpty || data.every((v) => v == 0)) {
-      return const SizedBox(height: 24);
+    // Hide sparkline entirely when there's no data
+    if (!hasData) {
+      return const SizedBox.shrink();
     }
 
     return SizedBox(

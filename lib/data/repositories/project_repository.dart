@@ -34,15 +34,6 @@ class ProjectRepository implements ProjectRepositoryContract {
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
-  ValueStream<List<Project>>? _sharedProjectsSimple;
-
-  Stream<List<ProjectTableData>> get _projectStream => (driftDb.select(
-    driftDb.projectTable,
-  )..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
-
-  Future<List<ProjectTableData>> get _projectList => (driftDb.select(
-    driftDb.projectTable,
-  )..orderBy([(p) => OrderingTerm(expression: p.name)])).get();
 
   Future<ProjectTableData?> _getProjectById(String id) async {
     return driftDb.managers.projectTable
@@ -55,39 +46,26 @@ class ProjectRepository implements ProjectRepositoryContract {
   // Uses RxDart shareValue() to share a single database query across
   // multiple subscribers. This eliminates duplicate queries and ensures
   // all blocs see consistent data.
+  //
+  // All methods always load related labels - domain model is always complete.
   @override
-  Stream<List<Project>> watchAll({bool withRelated = false}) {
-    if (!withRelated) {
-      _sharedProjectsSimple ??= _projectStream
-          .map((rows) => rows.map(projectFromTable).toList())
-          .shareValue();
-      return _sharedProjectsSimple!;
+  Stream<List<Project>> watchAll([ProjectQuery? query]) {
+    // No query = return shared stream for all projects
+    if (query == null) {
+      _sharedProjectsWithRelated ??= _projectWithRelatedJoin().watch().map((
+        rows,
+      ) {
+        return ProjectAggregation.fromRows(
+          rows: rows,
+          driftDb: driftDb,
+        ).toProjects();
+      }).shareValue();
+      return _sharedProjectsWithRelated!;
     }
 
-    _sharedProjectsWithRelated ??= _projectWithRelatedJoin().watch().map((
-      rows,
-    ) {
-      return ProjectAggregation.fromRows(
-        rows: rows,
-        driftDb: driftDb,
-      ).toProjects();
-    }).shareValue();
-    return _sharedProjectsWithRelated!;
-  }
-
-  @override
-  Stream<List<Project>> watchAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  }) {
+    // With query = use query-specific logic
     if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(query, withRelated: withRelated);
-    }
-
-    if (!withRelated) {
-      return _buildProjectSelectForQuery(query).watch().map(
-        (rows) => rows.map(projectFromTable).toList(),
-      );
+      return _buildAndExecuteQuery(query);
     }
 
     return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
@@ -99,17 +77,19 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<List<Project>> getAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  }) async {
-    if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(query, withRelated: withRelated).first;
+  Future<List<Project>> getAll([ProjectQuery? query]) async {
+    // No query = return all projects
+    if (query == null) {
+      final rows = await _projectWithRelatedJoin().get();
+      return ProjectAggregation.fromRows(
+        rows: rows,
+        driftDb: driftDb,
+      ).toProjects();
     }
 
-    if (!withRelated) {
-      final rows = await _buildProjectSelectForQuery(query).get();
-      return rows.map(projectFromTable).toList();
+    // With query = use query-specific logic
+    if (query.shouldExpandOccurrences) {
+      return _buildAndExecuteQuery(query).first;
     }
 
     final rows = await _projectWithRelatedJoin(filter: query.filter).get();
@@ -124,10 +104,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     query ??= ProjectQuery.all();
 
     if (query.shouldExpandOccurrences) {
-      return (await _buildAndExecuteQuery(
-        query,
-        withRelated: false,
-      ).first).length;
+      return (await _buildAndExecuteQuery(query).first).length;
     }
 
     final countExp = driftDb.projectTable.id.count();
@@ -151,7 +128,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     if (query.shouldExpandOccurrences) {
       return _buildAndExecuteQuery(
         query,
-        withRelated: false,
       ).map((items) => items.length).distinct();
     }
 
@@ -171,27 +147,19 @@ class ProjectRepository implements ProjectRepositoryContract {
         .distinct();
   }
 
-  Stream<List<Project>> _buildAndExecuteQuery(
-    ProjectQuery query, {
-    required bool withRelated,
-  }) {
+  Stream<List<Project>> _buildAndExecuteQuery(ProjectQuery query) {
     final sqlFilter = query.shouldExpandOccurrences
         ? _removeDatePredicates(query.filter)
         : query.filter;
 
-    Stream<List<Project>> baseStream;
-    if (!withRelated) {
-      baseStream = _buildProjectSelectForFilter(sqlFilter).watch().map(
-        (rows) => rows.map(projectFromTable).toList(),
-      );
-    } else {
-      baseStream = _projectWithRelatedJoin(filter: sqlFilter).watch().map(
-        (rows) => ProjectAggregation.fromRows(
-          rows: rows,
-          driftDb: driftDb,
-        ).toProjects(),
-      );
-    }
+    // Always load with related labels - domain model is always complete
+    final Stream<List<Project>> baseStream =
+        _projectWithRelatedJoin(filter: sqlFilter).watch().map(
+          (rows) => ProjectAggregation.fromRows(
+            rows: rows,
+            driftDb: driftDb,
+          ).toProjects(),
+        );
 
     if (!query.shouldExpandOccurrences) return baseStream;
 
@@ -216,22 +184,6 @@ class ProjectRepository implements ProjectRepositoryContract {
       rangeEnd: expansion.rangeEnd,
       postExpansionFilter: (p) => evaluator.matches(p, query.filter, ctx),
     );
-  }
-
-  SimpleSelectStatement<$ProjectTableTable, ProjectTableData>
-  _buildProjectSelectForQuery(ProjectQuery query) {
-    final sqlFilter = query.shouldExpandOccurrences
-        ? _removeDatePredicates(query.filter)
-        : query.filter;
-    return _buildProjectSelectForFilter(sqlFilter);
-  }
-
-  SimpleSelectStatement<$ProjectTableTable, ProjectTableData>
-  _buildProjectSelectForFilter(QueryFilter<ProjectPredicate> filter) {
-    final select = driftDb.select(driftDb.projectTable);
-    final where = _whereExpressionFromFilter(filter, driftDb.projectTable);
-    if (where != null) select.where((_) => where);
-    return select;
   }
 
   QueryFilter<ProjectPredicate> _removeDatePredicates(
@@ -293,27 +245,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<List<Project>> getAll({bool withRelated = false}) async {
-    if (!withRelated) {
-      return (await _projectList).map(projectFromTable).toList();
-    }
-
-    final rows = await _projectWithRelatedJoin().get();
-    return ProjectAggregation.fromRows(
-      rows: rows,
-      driftDb: driftDb,
-    ).toProjects();
-  }
-
-  @override
-  Stream<Project?> watchById(String id, {bool withRelated = false}) {
-    if (!withRelated) {
-      return (driftDb.select(driftDb.projectTable)
-            ..where((p) => p.id.equals(id)))
-          .watch()
-          .map((rows) => rows.isEmpty ? null : projectFromTable(rows.first));
-    }
-
+  Stream<Project?> watchById(String id) {
     final joined =
         (driftDb.select(
           driftDb.projectTable,
@@ -339,12 +271,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<Project?> getById(String id, {bool withRelated = false}) async {
-    if (!withRelated) {
-      final data = await _getProjectById(id);
-      return data == null ? null : projectFromTable(data);
-    }
-
+  Future<Project?> getById(String id) async {
     final joined =
         (driftDb.select(
           driftDb.projectTable,
@@ -383,11 +310,6 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<List<Project>> queryProjects(ProjectQuery query) async {
-    return getAllByQuery(query, withRelated: true);
-  }
-
-  @override
   Future<List<Project>> getProjectsByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
     final joined =
@@ -417,7 +339,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   @override
   Future<List<Project>> getProjectsByLabel(String labelId) async {
     final query = ProjectQuery.byLabels([labelId]);
-    return queryProjects(query);
+    return getAll(query);
   }
 
   @override

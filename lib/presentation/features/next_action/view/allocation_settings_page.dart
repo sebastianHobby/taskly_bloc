@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -70,9 +71,25 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     setState(() => _isLoading = true);
 
     try {
+      developer.log('[AllocationSettingsPage] Loading settings...');
       final settings = await _settingsRepo.load(SettingsKey.allocation);
+      developer.log(
+        '[AllocationSettingsPage] Loaded allocation: '
+        'dailyLimit=${settings.dailyLimit}, persona=${settings.persona}',
+      );
+
       final ranking = await _settingsRepo.load(SettingsKey.valueRanking);
+      developer.log(
+        '[AllocationSettingsPage] Loaded valueRanking: '
+        '${ranking.items.length} items\n'
+        '  items=${ranking.items.map((i) => "${i.labelId.substring(0, 8)}:w${i.weight}").join(", ")}',
+      );
+
       final labels = await _labelRepo.getAllByType(LabelType.value);
+      developer.log(
+        '[AllocationSettingsPage] Loaded ${labels.length} value labels: '
+        '${labels.map((l) => "${l.name}(${l.id.substring(0, 8)})").join(", ")}',
+      );
 
       _allocationConfig = settings;
       _valueRanking = ranking;
@@ -101,9 +118,18 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
       // Build ranked values list
       _rankedValues = _buildRankedValues(labels, ranking);
+      developer.log(
+        '[AllocationSettingsPage] Built ${_rankedValues.length} ranked values: '
+        '${_rankedValues.map((v) => "${v.label.name}:w${v.weight}:ranked=${v.isRanked}").join(", ")}',
+      );
 
       if (mounted) setState(() => _isLoading = false);
-    } catch (e) {
+    } catch (e, st) {
+      developer.log(
+        '[AllocationSettingsPage] ERROR loading: $e',
+        error: e,
+        stackTrace: st,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to load settings: $e')),
@@ -626,6 +652,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
                     key: ValueKey(rankableValue.label.id),
                     value: rankableValue.label,
                     rank: index + 1,
+                    showDragHandle: true,
                     stats: rankableValue.isRanked
                         ? ValueStats(
                             targetPercent: rankableValue.weight.toDouble(),

@@ -2,25 +2,25 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 abstract class ProjectRepositoryContract {
-  Stream<List<Project>> watchAll({bool withRelated = false});
-  Future<List<Project>> getAll({bool withRelated = false});
-  Stream<Project?> watchById(String id, {bool withRelated = false});
-  Future<Project?> getById(String id, {bool withRelated = false});
-
-  /// Watch projects matching a [query].
+  /// Watch projects with optional filtering, sorting, and occurrence expansion.
   ///
-  /// This mirrors `TaskRepositoryContract.watchAll([TaskQuery?])` and enables
-  /// list retrieval for features that need SQL-level filtering.
-  Stream<List<Project>> watchAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  });
+  /// If [query] is null, returns all projects with related labels.
+  /// Query configuration determines:
+  /// - Which projects to include (via filter)
+  /// - How to sort results (via sortCriteria)
+  /// - Whether to expand repeating projects into occurrences (via occurrenceExpansion)
+  Stream<List<Project>> watchAll([ProjectQuery? query]);
 
-  /// Get projects matching a [query].
-  Future<List<Project>> getAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  });
+  /// Get projects with optional filtering, sorting, and occurrence expansion.
+  ///
+  /// If [query] is null, returns all projects with related labels.
+  Future<List<Project>> getAll([ProjectQuery? query]);
+
+  /// Watch a project by ID with its related labels.
+  Stream<Project?> watchById(String id);
+
+  /// Get a project by ID with its related labels.
+  Future<Project?> getById(String id);
 
   /// Count projects matching the optional [query].
   ///
@@ -33,9 +33,6 @@ abstract class ProjectRepositoryContract {
   /// When [query] includes `occurrenceExpansion`, this counts expanded
   /// occurrences (virtual rows) instead of base project rows.
   Stream<int> watchCount([ProjectQuery? query]);
-
-  /// Query projects using ProjectQuery (returns a Future, not a Stream).
-  Future<List<Project>> queryProjects(ProjectQuery query);
 
   /// Get projects by IDs.
   Future<List<Project>> getProjectsByIds(List<String> ids);

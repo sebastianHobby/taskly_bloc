@@ -371,42 +371,28 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Stream<List<Project>> watchAll({bool withRelated = false}) =>
-      _controller.stream;
+  Stream<List<Project>> watchAll([ProjectQuery? query]) => _controller.stream;
 
   @override
-  Future<List<Project>> getAll({bool withRelated = false}) async => _last;
+  Future<List<Project>> getAll([ProjectQuery? query]) async => _last;
 
   @override
-  Stream<Project?> watchById(String id, {bool withRelated = false}) =>
-      _controller.stream.map((projects) {
-        try {
-          return projects.firstWhere((p) => p.id == id);
-        } catch (_) {
-          return null;
-        }
-      });
+  Stream<Project?> watchById(String id) => _controller.stream.map((projects) {
+    try {
+      return projects.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  });
 
   @override
-  Future<Project?> getById(String id, {bool withRelated = false}) async {
+  Future<Project?> getById(String id) async {
     try {
       return _last.firstWhere((p) => p.id == id);
     } catch (_) {
       return null;
     }
   }
-
-  @override
-  Stream<List<Project>> watchAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  }) => _controller.stream;
-
-  @override
-  Future<List<Project>> getAllByQuery(
-    ProjectQuery query, {
-    bool withRelated = false,
-  }) async => _last;
 
   @override
   Future<int> count([ProjectQuery? query]) async => _last.length;
@@ -561,9 +547,6 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }) async {}
 
   @override
-  Future<List<Project>> queryProjects(ProjectQuery query) async => _last;
-
-  @override
   Future<List<Project>> getProjectsByIds(List<String> ids) async =>
       _last.where((p) => ids.contains(p.id)).toList();
 
@@ -589,10 +572,10 @@ class FakeLabelRepository implements LabelRepositoryContract {
   }
 
   @override
-  Stream<List<Label>> watchAll() => _controller.stream;
+  Stream<List<Label>> watchAll([LabelQuery? query]) => _controller.stream;
 
   @override
-  Future<List<Label>> getAll() async => _last;
+  Future<List<Label>> getAll([LabelQuery? query]) async => _last;
 
   @override
   Stream<List<Label>> watchByType(LabelType type) => _controller.stream.map(
@@ -739,9 +722,6 @@ class FakeLabelRepository implements LabelRepositoryContract {
     required String taskId,
     required String labelId,
   }) async {}
-
-  @override
-  Future<List<Label>> queryLabels(LabelQuery query) async => _last;
 
   @override
   Future<List<Label>> getLabelsByIds(List<String> ids) async =>

@@ -2,6 +2,7 @@ import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
@@ -163,6 +164,7 @@ abstract class SystemScreenDefinitions {
     sections: [
       Section.data(
         config: DataConfig.value(query: const LabelQuery()),
+        enrichment: const EnrichmentConfig.valueStats(),
       ),
     ],
   );

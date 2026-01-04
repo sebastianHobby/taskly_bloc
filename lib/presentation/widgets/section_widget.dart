@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
@@ -20,8 +22,10 @@ import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile
 import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/widgets/allocation_alert_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/widgets/focus_hero_card.dart';
 import 'package:taskly_bloc/presentation/widgets/outside_focus_section.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
+import 'package:taskly_bloc/presentation/widgets/allocated_task_tile.dart';
 
 /// Widget that renders a section from ScreenBloc state.
 ///
@@ -284,162 +288,288 @@ class _SectionWidgetState extends State<SectionWidget> {
       return _buildEmptyAllocation(context, result);
     }
 
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Pinned section
-        if (result.pinnedTasks.isNotEmpty) ...[
-          _buildPinnedSection(context, result.pinnedTasks),
-          const SizedBox(height: 16),
-        ],
+        // Focus Hero Card
+        FocusHeroCard(result: result),
 
-        // Value groups
-        ...result.tasksByValue.entries.map((entry) {
-          final group = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: _buildAllocationGroup(context, group),
-          );
-        }),
+        // Today's Focus Container
+        Container(
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: colorScheme.primaryContainer.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.primary.withValues(alpha: 0.08),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // "Today's Focus" header
+              Row(
+                children: [
+                  Icon(
+                    Icons.center_focus_strong,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Today's Focus",
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Divider(
+                thickness: 1,
+                color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+              ),
+              const SizedBox(height: 16),
+
+              // Pinned section
+              if (result.pinnedTasks.isNotEmpty) ...[
+                _buildPinnedSection(context, result.pinnedTasks),
+                const SizedBox(height: 16),
+              ],
+
+              // Value groups
+              ...result.tasksByValue.entries.map((entry) {
+                final group = entry.value;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _buildAllocationGroup(context, group),
+                );
+              }),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  /// Builds a pinned tasks section
+  /// Builds a pinned tasks section with modern design
   Widget _buildPinnedSection(
     BuildContext context,
     List<AllocatedTask> pinnedTasks,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
+      elevation: 1.5,
+      margin: const EdgeInsets.only(bottom: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: colorScheme.primary.withValues(alpha: 0.2),
+          width: 0.5,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: colorScheme.primary,
+                width: 4,
               ),
             ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.push_pin,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Modern header with subtle background
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'PINNED',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLowest,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    ),
                   ),
                 ),
-                const Spacer(),
-                Text(
-                  '${pinnedTasks.length}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.push_pin,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Pinned',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${pinnedTasks.length} of ${pinnedTasks.length}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              // Task list
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: pinnedTasks.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  thickness: 0.5,
+                  indent: 16,
+                  endIndent: 16,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                ),
+                itemBuilder: (context, index) {
+                  final allocatedTask = pinnedTasks[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: TaskListTile(
+                      task: allocatedTask.task,
+                      onTap: widget.onEntityTap != null
+                          ? (_) => widget.onEntityTap!(
+                              allocatedTask.task.id,
+                              'task',
+                            )
+                          : null,
+                      onCheckboxChanged:
+                          widget.onTaskCheckboxChanged ?? (_, __) {},
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: pinnedTasks.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final allocatedTask = pinnedTasks[index];
-              return TaskListTile(
-                task: allocatedTask.task,
-                onTap: widget.onEntityTap != null
-                    ? (_) => widget.onEntityTap!(allocatedTask.task.id, 'task')
-                    : null,
-                onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  /// Builds a single allocation group (value header + tasks)
+  /// Builds a single allocation group with clean inset badge header style
   Widget _buildAllocationGroup(
     BuildContext context,
     AllocationValueGroup group,
   ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    // Parse value color or use default
+    Color? accentColor;
+    if (group.color != null) {
+      try {
+        final hexColor = group.color!.replaceAll('#', '');
+        accentColor = Color(int.parse('FF$hexColor', radix: 16));
+      } catch (_) {
+        accentColor = null;
+      }
+    }
+    accentColor ??= colorScheme.primary;
+
+    // Get emoji or fallback icon
+    final emoji = group.iconName?.isNotEmpty ?? false ? group.iconName! : '⭐';
+
     return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-            ),
-            child: Row(
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with underline
+            Row(
               children: [
+                Text(
+                  emoji,
+                  style: const TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        group.valueName.toUpperCase(),
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      LinearProgressIndicator(
-                        value: group.quota > 0
-                            ? group.tasks.length / group.quota
-                            : 0,
-                        backgroundColor: Colors.grey[300],
-                      ),
-                    ],
+                  child: Text(
+                    group.valueName,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                Text(
-                  '${group.tasks.length} of ${group.quota}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${group.tasks.where((t) => t.task.completed).length}/${group.tasks.length}',
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: accentColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: group.tasks.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final allocatedTask = group.tasks[index];
-              return TaskListTile(
-                task: allocatedTask.task,
-                onTap: widget.onEntityTap != null
-                    ? (_) => widget.onEntityTap!(allocatedTask.task.id, 'task')
-                    : null,
-                onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: 8),
+            Container(
+              height: 2,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    accentColor.withValues(alpha: 0.5),
+                    accentColor.withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Task list
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: group.tasks.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 4),
+              itemBuilder: (context, index) {
+                final allocatedTask = group.tasks[index];
+                return AllocatedTaskTile(
+                  allocatedTask: allocatedTask,
+                  onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
+                  onTap: widget.onEntityTap != null
+                      ? (_) =>
+                            widget.onEntityTap!(allocatedTask.task.id, 'task')
+                      : null,
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// Values setup gateway for allocation section.
+  /// Values setup gateway for allocation section.dget
   ///
   /// Shown when user has no values defined and allocation cannot proceed.
   Widget _buildValuesGateway(BuildContext context) {
@@ -829,7 +959,7 @@ class _SectionWidgetState extends State<SectionWidget> {
               )
             : null;
 
-        return EnhancedValueCard.compact(
+        return EnhancedValueCard(
           value: value,
           rank: index + 1,
           stats: stats,

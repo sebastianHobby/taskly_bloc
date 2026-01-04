@@ -377,55 +377,6 @@ void main() {
     });
 
     group('helper properties', () {
-      group('needsLabels', () {
-        test('returns false when no label predicates', () {
-          const query = TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              shared: [
-                TaskBoolPredicate(
-                  field: TaskBoolField.completed,
-                  operator: BoolOperator.isFalse,
-                ),
-              ],
-            ),
-          );
-
-          expect(query.needsLabels, isFalse);
-        });
-
-        test('returns true when label predicate in shared', () {
-          const query = TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              shared: [
-                TaskLabelPredicate(
-                  operator: LabelOperator.hasAny,
-                  labelType: LabelType.label,
-                ),
-              ],
-            ),
-          );
-
-          expect(query.needsLabels, isTrue);
-        });
-
-        test('returns true when label predicate in orGroups', () {
-          const query = TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              orGroups: [
-                [
-                  TaskLabelPredicate(
-                    operator: LabelOperator.hasAny,
-                    labelType: LabelType.label,
-                  ),
-                ],
-              ],
-            ),
-          );
-
-          expect(query.needsLabels, isTrue);
-        });
-      });
-
       group('shouldExpandOccurrences', () {
         test('returns false when occurrenceExpansion is null', () {
           const query = TaskQuery();

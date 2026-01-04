@@ -31,6 +31,7 @@ abstract class AllocationValueGroup with _$AllocationValueGroup {
     required double weight,
     required int quota,
     String? color,
+    String? iconName,
   }) = _AllocationValueGroup;
 }
 

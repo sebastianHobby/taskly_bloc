@@ -391,12 +391,6 @@ class TaskQuery {
   // Helper Properties
   // ========================================================================
 
-  /// Whether this query requires label data to be loaded.
-  bool get needsLabels {
-    return filter.shared.any((p) => p is TaskLabelPredicate) ||
-        filter.orGroups.expand((g) => g).any((p) => p is TaskLabelPredicate);
-  }
-
   /// Whether this query should expand repeating tasks into occurrences.
   bool get shouldExpandOccurrences => occurrenceExpansion != null;
 
