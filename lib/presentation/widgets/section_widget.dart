@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/value_stats.dart'
     as domain_stats;
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
@@ -17,19 +18,22 @@ import 'package:taskly_bloc/presentation/features/projects/widgets/project_list_
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/enhanced_value_card.dart';
+import 'package:taskly_bloc/presentation/widgets/allocation_alert_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/widgets/outside_focus_section.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 
 /// Widget that renders a section from ScreenBloc state.
 ///
 /// Handles different section types (data, allocation, agenda) and
 /// displays appropriate UI for each.
-class SectionWidget extends StatelessWidget {
+class SectionWidget extends StatefulWidget {
   /// Creates a SectionWidget.
   const SectionWidget({
     required this.section,
     super.key,
     this.displayConfig,
+    this.persona,
     this.onEntityTap,
     this.onTaskComplete,
     this.onTaskCheckboxChanged,
@@ -43,6 +47,9 @@ class SectionWidget extends StatelessWidget {
 
   /// Display configuration for enhanced features (swipe-to-delete, grouping)
   final DisplayConfig? displayConfig;
+
+  /// Allocation persona for section titles (defaults to custom)
+  final AllocationPersona? persona;
 
   /// Optional custom entity tap callback
   final void Function(String entityId, String entityType)? onEntityTap;
@@ -63,27 +70,36 @@ class SectionWidget extends StatelessWidget {
   final void Function(Project project)? onProjectDelete;
 
   @override
+  State<SectionWidget> createState() => _SectionWidgetState();
+}
+
+class _SectionWidgetState extends State<SectionWidget> {
+  final GlobalKey<State<StatefulWidget>> _outsideFocusKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
     talker.debug(
-      '[SectionWidget] Building section[${section.index}]: title=${section.title}',
+      '[SectionWidget] Building section[${widget.section.index}]: title=${widget.section.title}',
     );
     talker.debug(
-      '[SectionWidget] isLoading=${section.isLoading}, error=${section.error}',
+      '[SectionWidget] isLoading=${widget.section.isLoading}, error=${widget.section.error}',
     );
-    talker.debug('[SectionWidget] data type: ${section.result.runtimeType}');
+    talker.debug(
+      '[SectionWidget] data type: ${widget.section.result.runtimeType}',
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (section.title != null) _buildHeader(context),
-        if (section.isLoading)
+        if (widget.section.title != null) _buildHeader(context),
+        if (widget.section.isLoading)
           const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
               child: CircularProgressIndicator(),
             ),
           )
-        else if (section.error != null)
+        else if (widget.section.error != null)
           _buildError(context)
         else
           _buildContent(context),
@@ -95,7 +111,7 @@ class SectionWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Text(
-        section.title!,
+        widget.section.title!,
         style: Theme.of(context).textTheme.titleMedium,
       ),
     );
@@ -105,7 +121,7 @@ class SectionWidget extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Text(
-        'Error: ${section.error}',
+        'Error: ${widget.section.error}',
         style: TextStyle(color: Theme.of(context).colorScheme.error),
       ),
     );
@@ -113,10 +129,10 @@ class SectionWidget extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     talker.debug(
-      '[SectionWidget] _buildContent: ${section.result.runtimeType}',
+      '[SectionWidget] _buildContent: ${widget.section.result.runtimeType}',
     );
 
-    return switch (section.result) {
+    return switch (widget.section.result) {
       DataSectionResult(
         :final primaryEntities,
         :final primaryEntityType,
@@ -161,7 +177,8 @@ class SectionWidget extends StatelessWidget {
     BuildContext context,
     AllocationSectionResult result,
   ) {
-    return switch (result.displayMode) {
+    // Build main content based on display mode
+    final mainContent = switch (result.displayMode) {
       AllocationDisplayMode.flat => _buildFlatAllocation(context, result),
       AllocationDisplayMode.groupedByValue => _buildGroupedAllocation(
         context,
@@ -172,6 +189,60 @@ class SectionWidget extends StatelessWidget {
         result,
       ),
     };
+
+    // Get alert banner if alerts present
+    final alertResult = result.alertEvaluationResult;
+    final showAlertBanner = alertResult != null && alertResult.hasAlerts;
+
+    // Show excluded section if enabled and has excluded tasks
+    final showExcluded =
+        result.showExcludedSection && result.excludedTasks.isNotEmpty;
+
+    // If no extras, return main content directly
+    if (!showAlertBanner && !showExcluded) {
+      return mainContent;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Alert banner at top
+        if (showAlertBanner)
+          AllocationAlertBanner(
+            alertResult: alertResult,
+            onReviewTap: showExcluded ? _scrollToOutsideFocus : () {},
+          ),
+
+        // Main allocation content
+        mainContent,
+
+        // Outside Focus section at bottom
+        if (showExcluded && alertResult != null)
+          OutsideFocusSection(
+            scrollKey: _outsideFocusKey,
+            alertResult: alertResult,
+            persona: widget.persona ?? AllocationPersona.custom,
+            onTaskTap: (excludedTask) {
+              widget.onEntityTap?.call(excludedTask.task.id, 'task');
+            },
+            onTaskComplete: (excludedTask, value) {
+              widget.onTaskCheckboxChanged?.call(excludedTask.task, value);
+            },
+          ),
+      ],
+    );
+  }
+
+  /// Scrolls to the Outside Focus section
+  void _scrollToOutsideFocus() {
+    final context = _outsideFocusKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   /// Flat list of all allocated tasks
@@ -286,10 +357,10 @@ class SectionWidget extends StatelessWidget {
               final allocatedTask = pinnedTasks[index];
               return TaskListTile(
                 task: allocatedTask.task,
-                onTap: onEntityTap != null
-                    ? (_) => onEntityTap!(allocatedTask.task.id, 'task')
+                onTap: widget.onEntityTap != null
+                    ? (_) => widget.onEntityTap!(allocatedTask.task.id, 'task')
                     : null,
-                onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
+                onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
               );
             },
           ),
@@ -356,10 +427,10 @@ class SectionWidget extends StatelessWidget {
               final allocatedTask = group.tasks[index];
               return TaskListTile(
                 task: allocatedTask.task,
-                onTap: onEntityTap != null
-                    ? (_) => onEntityTap!(allocatedTask.task.id, 'task')
+                onTap: widget.onEntityTap != null
+                    ? (_) => widget.onEntityTap!(allocatedTask.task.id, 'task')
                     : null,
-                onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
+                onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
               );
             },
           ),
@@ -566,7 +637,7 @@ class SectionWidget extends StatelessWidget {
       );
     }
 
-    final config = displayConfig;
+    final config = widget.displayConfig;
     final enableSwipe = config?.enableSwipeToDelete ?? false;
     final groupByCompletion = config?.groupByCompletion ?? false;
 
@@ -594,7 +665,7 @@ class SectionWidget extends StatelessWidget {
   ) {
     final activeTasks = tasks.where((t) => !t.completed).toList();
     final completedTasks = tasks.where((t) => t.completed).toList();
-    final completedCollapsed = displayConfig?.completedCollapsed ?? true;
+    final completedCollapsed = widget.displayConfig?.completedCollapsed ?? true;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,11 +689,13 @@ class SectionWidget extends StatelessWidget {
   Widget _buildTaskItem(BuildContext context, Task task, bool enableSwipe) {
     final item = TaskListTile(
       task: task,
-      onTap: onEntityTap != null ? (_) => onEntityTap!(task.id, 'task') : null,
-      onCheckboxChanged: onTaskCheckboxChanged ?? (_, __) {},
+      onTap: widget.onEntityTap != null
+          ? (_) => widget.onEntityTap!(task.id, 'task')
+          : null,
+      onCheckboxChanged: widget.onTaskCheckboxChanged ?? (_, __) {},
     );
 
-    if (!enableSwipe || onTaskDelete == null) {
+    if (!enableSwipe || widget.onTaskDelete == null) {
       return item;
     }
 
@@ -635,7 +708,7 @@ class SectionWidget extends StatelessWidget {
         description: 'This action cannot be undone.',
       ),
       onDismissed: () {
-        onTaskDelete!(task);
+        widget.onTaskDelete!(task);
         showDeleteSnackBar(context: context, message: 'Task deleted');
       },
       child: item,
@@ -658,10 +731,10 @@ class SectionWidget extends StatelessWidget {
         final project = projects[index];
         return ProjectListTile(
           project: project,
-          onTap: onEntityTap != null
-              ? (_) => onEntityTap!(project.id, 'project')
+          onTap: widget.onEntityTap != null
+              ? (_) => widget.onEntityTap!(project.id, 'project')
               : null,
-          onCheckboxChanged: onProjectCheckboxChanged ?? (_, __) {},
+          onCheckboxChanged: widget.onProjectCheckboxChanged ?? (_, __) {},
         );
       },
     );
@@ -716,8 +789,8 @@ class SectionWidget extends StatelessWidget {
         final label = labels[index];
         return LabelListTile(
           label: label,
-          onTap: onEntityTap != null
-              ? (_) => onEntityTap!(label.id, 'label')
+          onTap: widget.onEntityTap != null
+              ? (_) => widget.onEntityTap!(label.id, 'label')
               : null,
         );
       },
@@ -760,8 +833,8 @@ class SectionWidget extends StatelessWidget {
           value: value,
           rank: index + 1,
           stats: stats,
-          onTap: onEntityTap != null
-              ? () => onEntityTap!(value.id, 'value')
+          onTap: widget.onEntityTap != null
+              ? () => widget.onEntityTap!(value.id, 'value')
               : () => Routing.toEntity(context, EntityType.value, value.id),
         );
       },

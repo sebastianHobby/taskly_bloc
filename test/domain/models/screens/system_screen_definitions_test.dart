@@ -61,17 +61,17 @@ void main() {
           containsAll([
             'inbox',
             'my_day',
-            'upcoming',
-            'logbook',
-            'projects',
+            'planned',
             'labels',
             'values',
             'settings',
-            'wellbeing',
-            'workflows',
-            'screen_management',
+            'journal',
           ]),
         );
+        // These screens exist but are not in navigation
+        expect(keys.contains('logbook'), isFalse);
+        expect(keys.contains('workflows'), isFalse);
+        expect(keys.contains('screen_management'), isFalse);
       });
     });
 
@@ -94,15 +94,21 @@ void main() {
           SystemScreenDefinitions.inbox,
         );
         expect(
-          SystemScreenDefinitions.getByKey('upcoming'),
-          SystemScreenDefinitions.upcoming,
+          SystemScreenDefinitions.getByKey('planned'),
+          SystemScreenDefinitions.planned,
         );
+      });
+
+      test('returns null for legacy aliases (no longer supported)', () {
+        // Legacy aliases have been removed - unknown keys return null
+        expect(SystemScreenDefinitions.getByKey('upcoming'), isNull);
+        expect(SystemScreenDefinitions.getByKey('wellbeing'), isNull);
       });
     });
 
     group('defaultSortOrders', () {
-      test('has myDay at position 1', () {
-        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 1);
+      test('has myDay at position 0', () {
+        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 0);
       });
 
       test('does not have today or next_actions', () {
@@ -117,20 +123,35 @@ void main() {
       });
 
       test('has correct order for remaining screens', () {
-        expect(SystemScreenDefinitions.defaultSortOrders['inbox'], 0);
-        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 1);
-        expect(SystemScreenDefinitions.defaultSortOrders['upcoming'], 2);
-        expect(SystemScreenDefinitions.defaultSortOrders['logbook'], 3);
-        expect(SystemScreenDefinitions.defaultSortOrders['projects'], 4);
+        // New order: My Day, Planned, Journal, Values, Inbox, Labels
+        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 0);
+        expect(SystemScreenDefinitions.defaultSortOrders['planned'], 1);
+        expect(SystemScreenDefinitions.defaultSortOrders['journal'], 2);
+        expect(SystemScreenDefinitions.defaultSortOrders['values'], 3);
+        expect(SystemScreenDefinitions.defaultSortOrders['inbox'], 4);
         expect(SystemScreenDefinitions.defaultSortOrders['labels'], 5);
-        expect(SystemScreenDefinitions.defaultSortOrders['values'], 6);
+        expect(SystemScreenDefinitions.defaultSortOrders['projects'], 6);
         expect(SystemScreenDefinitions.defaultSortOrders['orphan_tasks'], 7);
+        // logbook, workflows, screen_management accessible via settings
+        expect(SystemScreenDefinitions.defaultSortOrders['logbook'], isNull);
+      });
+
+      test('does not have legacy aliases', () {
+        // Legacy aliases have been removed
+        expect(
+          SystemScreenDefinitions.defaultSortOrders.containsKey('upcoming'),
+          isFalse,
+        );
+        expect(
+          SystemScreenDefinitions.defaultSortOrders.containsKey('wellbeing'),
+          isFalse,
+        );
       });
     });
 
     group('getDefaultSortOrder', () {
       test('returns correct order for myDay', () {
-        expect(SystemScreenDefinitions.getDefaultSortOrder('my_day'), 1);
+        expect(SystemScreenDefinitions.getDefaultSortOrder('my_day'), 0);
       });
 
       test('returns 999 for removed screens', () {

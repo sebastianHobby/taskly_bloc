@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_alert_settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 
@@ -25,10 +27,27 @@ import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 /// - Direct stream mapping (not async* generators)
 /// - Automatic initial value emission from Drift's .watch()
 /// - Synchronous transformation of database rows to domain objects
+///
+/// ## Sync Bounce Protection
+/// This repository uses debouncing to protect against PowerSync CDC "sync bounce".
+/// When a save occurs, CDC may rapidly deliver: local echo → stale bounce → fresh.
+/// A 250ms debounce ensures we emit only the last (fresh) value after the
+/// burst settles. The BLoC's optimistic update provides instant UI feedback,
+/// so the debounce delay is invisible to users.
 class SettingsRepository implements SettingsRepositoryContract {
   SettingsRepository({required this.driftDb});
 
   final AppDatabase driftDb;
+
+  /// Debounce duration for sync bounce protection.
+  ///
+  /// 250ms is sufficient to catch the typical bounce pattern:
+  /// - T+0ms: Local echo
+  /// - T+50-100ms: CDC bounce (stale)
+  /// - T+100-200ms: CDC fresh
+  ///
+  /// After 250ms of quiet, we emit the last (fresh) value.
+  static const _syncBounceDebounce = Duration(milliseconds: 250);
 
   /// Debug method to dump raw SQL data - helps identify PowerSync sync issues
   Future<void> debugDumpRawProfileData() async {
@@ -55,6 +74,25 @@ class SettingsRepository implements SettingsRepositoryContract {
           'RAW SQL row[$i]: ${row.entries.map((e) => '${e.key}=${e.value ?? "NULL"}').join(', ')}',
         );
       }
+
+      // Also check PowerSync's internal ps_crud table for pending uploads
+      final crudResults = await driftDb
+          .customSelect(
+            "SELECT * FROM ps_crud WHERE data LIKE '%user_profiles%' LIMIT 5",
+          )
+          .get();
+      if (crudResults.isNotEmpty) {
+        talker.repositoryLog(
+          'Settings',
+          'ps_crud has ${crudResults.length} pending user_profiles uploads:',
+        );
+        for (final row in crudResults) {
+          talker.repositoryLog(
+            'Settings',
+            '  PENDING UPLOAD: ${row.data}',
+          );
+        }
+      }
     } catch (e, st) {
       talker.databaseError('[Settings] debugDumpRawProfileData FAILED', e, st);
     }
@@ -67,9 +105,20 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   @override
   Stream<T> watch<T>(SettingsKey<T> key) {
-    return _profileStream.map((rows) {
+    // Debounce protects against CDC sync bounce:
+    // After a save, CDC may emit: local echo → stale bounce → fresh value
+    // Debouncing ensures we wait for the burst to settle and emit only the
+    // final (fresh) value. BLoC optimistic updates provide instant UI feedback.
+    return _profileStream.debounceTime(_syncBounceDebounce).map((rows) {
       final row = _latestRow(rows);
-      return _extractValue(key, row);
+      final value = _extractValue(key, row);
+      talker.repositoryLog(
+        'Settings',
+        'watch<$T>: emitting value for key=$key, '
+            'rows.length=${rows.length}, '
+            'selectedRow.updatedAt=${row?.updatedAt}',
+      );
+      return value;
     }).distinct();
   }
 
@@ -96,11 +145,37 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   @override
   Future<void> save<T>(SettingsKey<T> key, T value) async {
+    final saveStartTime = DateTime.now();
+    talker.repositoryLog(
+      'Settings',
+      '[SEQUENCE 1/3] save<$T> START at $saveStartTime\n'
+          '  key=$key\n'
+          '  value=$value',
+    );
+
     final profile = await _ensureProfile();
     final companion = _buildCompanion(key, value, profile);
+    talker.repositoryLog(
+      'Settings',
+      '[SEQUENCE 2/3] save<$T>: about to write to Drift/SQLite\n'
+          '  profile.id=${profile.id}\n'
+          '  profile.updatedAt=${profile.updatedAt}\n'
+          '  companion will set updatedAt=${DateTime.now().toUtc()}',
+    );
+
+    // DRIFT WRITE - this updates local SQLite (owned by PowerSync)
     await (driftDb.update(
       driftDb.userProfileTable,
     )..where((row) => row.id.equals(profile.id))).write(companion);
+
+    final driftWriteTime = DateTime.now();
+    talker.repositoryLog(
+      'Settings',
+      '[SEQUENCE 3/3] save<$T> COMPLETE at $driftWriteTime\n'
+          '  Duration: ${driftWriteTime.difference(saveStartTime).inMilliseconds}ms\n'
+          '  PowerSync will detect change and trigger upload\n'
+          '  Stream debounce will filter any CDC bounce',
+    );
   }
 
   // =========================================================================
@@ -111,6 +186,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (key) {
       SettingsKey.global => _globalFromRow(row) as T,
       SettingsKey.allocation => _allocationFromRow(row) as T,
+      SettingsKey.allocationAlerts => _allocationAlertsFromRow(row) as T,
       SettingsKey.softGates => _softGatesFromRow(row) as T,
       SettingsKey.nextActions => _nextActionsFromRow(row) as T,
       SettingsKey.valueRanking => _valueRankingFromRow(row) as T,
@@ -143,7 +219,8 @@ class SettingsRepository implements SettingsRepositoryContract {
     T value,
     UserProfileTableData profile,
   ) {
-    final now = Value(DateTime.now());
+    // Use UTC to match Supabase server timestamps and avoid timezone comparison issues
+    final now = Value(DateTime.now().toUtc());
     return switch (key) {
       SettingsKey.global => UserProfileTableCompanion(
         globalSettings: Value(jsonEncode((value as GlobalSettings).toJson())),
@@ -152,6 +229,12 @@ class SettingsRepository implements SettingsRepositoryContract {
       SettingsKey.allocation => UserProfileTableCompanion(
         allocationSettings: Value(
           jsonEncode((value as AllocationConfig).toJson()),
+        ),
+        updatedAt: now,
+      ),
+      SettingsKey.allocationAlerts => UserProfileTableCompanion(
+        allocationAlertsSettings: Value(
+          jsonEncode((value as AllocationAlertSettings).toJson()),
         ),
         updatedAt: now,
       ),
@@ -227,6 +310,13 @@ class SettingsRepository implements SettingsRepositoryContract {
   AllocationConfig _allocationFromRow(UserProfileTableData? row) {
     if (row == null) return const AllocationConfig();
     return AllocationConfig.fromJson(_parseJson(row.allocationSettings));
+  }
+
+  AllocationAlertSettings _allocationAlertsFromRow(UserProfileTableData? row) {
+    if (row == null) return const AllocationAlertSettings();
+    return AllocationAlertSettings.fromJson(
+      _parseJson(row.allocationAlertsSettings),
+    );
   }
 
   SoftGatesSettings _softGatesFromRow(UserProfileTableData? row) {
@@ -389,12 +479,39 @@ class SettingsRepository implements SettingsRepositoryContract {
       );
 
     return query.watch().map((rows) {
+      final emitTime = DateTime.now();
       talker.repositoryLog(
         'Settings',
-        '_profileStream emitted ${rows.length} rows (ghost rows filtered)',
+        '[STREAM EMIT] _profileStream emitted at $emitTime\n'
+            '  rows.length=${rows.length} (ghost rows filtered)',
       );
       for (final row in rows) {
-        _logRawProfileData('_profileStream', row);
+        final updatedAt = row.updatedAt;
+        final age = emitTime.difference(updatedAt);
+
+        talker.repositoryLog(
+          'Settings',
+          '[STREAM EMIT] Row details:\n'
+              '  id=${row.id}\n'
+              '  updatedAt=$updatedAt\n'
+              '  age=${age.inMilliseconds}ms (${age.inSeconds}s)\n'
+              '  globalSettings first 80 chars: ${row.globalSettings.substring(0, row.globalSettings.length > 80 ? 80 : row.globalSettings.length)}',
+        );
+
+        // Detect potential sync bounce - stale data coming back
+        if (age.inMinutes > 1) {
+          talker.warning(
+            '[SYNC BOUNCE?] STALE DATA DETECTED!\n'
+            '  Row updatedAt=$updatedAt is ${age.inMinutes} minutes old\n'
+            '  Current time=$emitTime\n'
+            '  This may be a PowerSync sync bounce (old server data overwriting local).',
+          );
+        } else if (age.inSeconds < 2) {
+          talker.repositoryLog(
+            'Settings',
+            '[STREAM EMIT] FRESH data - likely our own save echoing back',
+          );
+        }
       }
       return rows;
     });

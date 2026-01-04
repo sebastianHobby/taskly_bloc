@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
@@ -81,10 +82,7 @@ class _UnifiedScreenView extends StatelessWidget {
           ScreenLoadingState(:final definition) => _LoadingView(
             title: definition?.name,
           ),
-          ScreenLoadedState(:final data, :final isRefreshing) => _LoadedView(
-            data: data,
-            isRefreshing: isRefreshing,
-          ),
+          ScreenLoadedState(:final data) => _LoadedView(data: data),
           ScreenErrorState(:final message, :final definition) => _ErrorView(
             message: message,
             definition: definition,
@@ -116,11 +114,9 @@ class _LoadingView extends StatelessWidget {
 class _LoadedView extends StatelessWidget {
   const _LoadedView({
     required this.data,
-    required this.isRefreshing,
   });
 
   final ScreenData data;
-  final bool isRefreshing;
 
   @override
   Widget build(BuildContext context) {
@@ -129,37 +125,52 @@ class _LoadedView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(data.definition.name),
-        actions: [
-          if (isRefreshing)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-              },
-            ),
-        ],
+        actions: _buildAppBarActions(context),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-          // Wait a bit for the refresh to complete
-          await Future<void>.delayed(const Duration(milliseconds: 500));
-        },
-        child: _ScreenContent(
-          data: data,
-          entityActionService: entityActionService,
-        ),
+      body: _ScreenContent(
+        data: data,
+        entityActionService: entityActionService,
       ),
       floatingActionButton: _buildFab(context),
+    );
+  }
+
+  /// Builds AppBar actions based on screen definition's appBarActions.
+  List<Widget> _buildAppBarActions(BuildContext context) {
+    final definition = data.definition;
+
+    return definition.appBarActions.map((action) {
+      return switch (action) {
+        AppBarAction.settingsLink => IconButton(
+          icon: const Icon(Icons.tune),
+          tooltip: context.l10n.settingsTitle,
+          onPressed: definition.settingsRoute != null
+              ? () => Routing.toScreenKey(context, definition.settingsRoute!)
+              : null,
+        ),
+        AppBarAction.help => IconButton(
+          icon: const Icon(Icons.help_outline),
+          tooltip: 'Help',
+          onPressed: () => _showHelpDialog(context),
+        ),
+      };
+    }).toList();
+  }
+
+  /// Shows a help dialog for the current screen.
+  void _showHelpDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('About ${data.definition.name}'),
+        content: const Text('Help content for this screen.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
     );
   }
 

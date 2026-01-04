@@ -1253,5 +1253,70 @@
     "alertSeverityNotice": "Notice",
     "@alertSeverityNotice": {
         "description": "Display name for notice severity"
+    },
+    "basicInfoSection": "Basic Information",
+    "@basicInfoSection": {
+        "description": "Section title for basic screen info"
+    },
+    "personaSectionSubtitle": "Choose a persona to control how tasks are prioritized",
+    "@personaSectionSubtitle": {
+        "description": "Subtitle for persona selection section"
+    },
+    "taskLimitSection": "Task Limit",
+    "@taskLimitSection": {
+        "description": "Section title for task limit setting"
+    },
+    "sourceFilterSection": "Narrow Source",
+    "@sourceFilterSection": {
+        "description": "Section title for source filter settings"
+    },
+    "sourceFilterSubtitle": "Limit which tasks are considered",
+    "@sourceFilterSubtitle": {
+        "description": "Subtitle for source filter section"
+    },
+    "saving": "Saving...",
+    "@saving": {
+        "description": "Label shown while saving"
+    },
+    "saveFocusScreen": "Save Focus Screen",
+    "@saveFocusScreen": {
+        "description": "Button label for saving focus screen"
+    },
+    "maxTasksLabel": "Maximum Tasks",
+    "@maxTasksLabel": {
+        "description": "Label for maximum tasks slider"
+    },
+    "showExcludedSection": "Show excluded section",
+    "@showExcludedSection": {
+        "description": "Toggle label for showing excluded tasks section"
+    },
+    "showExcludedSectionSubtitle": "Display excluded tasks at the bottom",
+    "@showExcludedSectionSubtitle": {
+        "description": "Subtitle for show excluded section toggle"
+    },
+    "urgentTaskBehaviorLabel": "Urgent task handling",
+    "@urgentTaskBehaviorLabel": {
+        "description": "Label for urgent task behavior dropdown"
+    },
+    "urgentBehaviorIgnore": "Ignore urgent tasks",
+    "@urgentBehaviorIgnore": {
+        "description": "Dropdown option to ignore urgent tasks"
+    },
+    "urgentBehaviorWarnOnly": "Warn about urgent tasks",
+    "@urgentBehaviorWarnOnly": {
+        "description": "Dropdown option to warn about urgent tasks"
+    },
+    "urgentBehaviorIncludeAll": "Include all urgent tasks",
+    "@urgentBehaviorIncludeAll": {
+        "description": "Dropdown option to include all urgent tasks"
+    },
+    "daysFormat": "{count} days",
+    "@daysFormat": {
+        "description": "Format for displaying days count",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
     }
 }

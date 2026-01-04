@@ -17,7 +17,6 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
@@ -183,7 +182,7 @@ void main() {
       'emits notFound when previously loaded screen is deleted',
       build: () {
         final screen = TestData.screenDefinition(screenKey: 'deletable');
-        final controller = StreamController<ScreenWithPreferences?>.broadcast();
+        final controller = TestStreamController<ScreenWithPreferences?>();
 
         when(() => mockRepository.watchScreen('deletable')).thenAnswer(
           (_) => controller.stream,
@@ -191,7 +190,7 @@ void main() {
 
         // Emit screen first, then null (simulating deletion)
         Future.delayed(const Duration(milliseconds: 100), () {
-          controller.add(
+          controller.emit(
             ScreenWithPreferences(
               screen: screen,
               preferences: const ScreenPreferences(
@@ -203,7 +202,7 @@ void main() {
         });
 
         Future.delayed(const Duration(milliseconds: 300), () {
-          controller.add(null); // Simulate deletion
+          controller.emit(null); // Simulate deletion
         });
 
         return buildBloc();
@@ -240,7 +239,7 @@ void main() {
           screenKey: 'editable',
           name: 'Updated Name',
         );
-        final controller = StreamController<ScreenWithPreferences?>.broadcast();
+        final controller = TestStreamController<ScreenWithPreferences?>();
 
         when(() => mockRepository.watchScreen('editable')).thenAnswer(
           (_) => controller.stream,
@@ -248,7 +247,7 @@ void main() {
 
         // Emit original, then updated
         Future.delayed(const Duration(milliseconds: 100), () {
-          controller.add(
+          controller.emit(
             ScreenWithPreferences(
               screen: screen1,
               preferences: const ScreenPreferences(
@@ -260,7 +259,7 @@ void main() {
         });
 
         Future.delayed(const Duration(milliseconds: 300), () {
-          controller.add(
+          controller.emit(
             ScreenWithPreferences(
               screen: screen2,
               preferences: const ScreenPreferences(

@@ -14,6 +14,7 @@ import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/value_stats.dart';
+import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings/value_ranking.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -22,6 +23,7 @@ import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_alert_evaluator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
@@ -37,6 +39,7 @@ class SectionDataService {
     required ProjectRepositoryContract projectRepository,
     required LabelRepositoryContract labelRepository,
     required AllocationOrchestrator allocationOrchestrator,
+    AllocationAlertEvaluator? alertEvaluator,
     WellbeingRepositoryContract? wellbeingRepository,
     AnalyticsService? analyticsService,
     SettingsRepositoryContract? settingsRepository,
@@ -45,6 +48,7 @@ class SectionDataService {
        _labelRepository = labelRepository,
        _wellbeingRepository = wellbeingRepository,
        _allocationOrchestrator = allocationOrchestrator,
+       _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator(),
        _analyticsService = analyticsService,
        _settingsRepository = settingsRepository;
 
@@ -53,6 +57,7 @@ class SectionDataService {
   final LabelRepositoryContract _labelRepository;
   final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
+  final AllocationAlertEvaluator _alertEvaluator;
   final AnalyticsService? _analyticsService;
   final SettingsRepositoryContract? _settingsRepository;
 
@@ -68,8 +73,18 @@ class SectionDataService {
       final result = await switch (section) {
         DataSection(:final config, :final relatedData, :final enrichment) =>
           _fetchDataSection(config, relatedData, enrichment),
-        AllocationSection(:final sourceFilter, :final maxTasks) =>
-          _fetchAllocationSection(sourceFilter, maxTasks),
+        AllocationSection(
+          :final sourceFilter,
+          :final maxTasks,
+          :final displayMode,
+          :final showExcludedSection,
+        ) =>
+          _fetchAllocationSection(
+            sourceFilter: sourceFilter,
+            maxTasks: maxTasks,
+            displayMode: displayMode,
+            showExcludedSection: showExcludedSection,
+          ),
         AgendaSection(
           :final dateField,
           :final grouping,
@@ -98,8 +113,18 @@ class SectionDataService {
     return switch (section) {
       DataSection(:final config, :final relatedData, :final enrichment) =>
         _watchDataSection(config, relatedData, enrichment),
-      AllocationSection(:final sourceFilter, :final maxTasks) =>
-        _watchAllocationSection(sourceFilter, maxTasks),
+      AllocationSection(
+        :final sourceFilter,
+        :final maxTasks,
+        :final displayMode,
+        :final showExcludedSection,
+      ) =>
+        _watchAllocationSection(
+          sourceFilter: sourceFilter,
+          maxTasks: maxTasks,
+          displayMode: displayMode,
+          showExcludedSection: showExcludedSection,
+        ),
       AgendaSection(
         :final dateField,
         :final grouping,
@@ -380,10 +405,12 @@ class SectionDataService {
   // ALLOCATION SECTION
   // ===========================================================================
 
-  Future<SectionDataResult> _fetchAllocationSection(
-    TaskQuery? sourceFilter,
-    int? maxTasks,
-  ) async {
+  Future<SectionDataResult> _fetchAllocationSection({
+    required TaskQuery? sourceFilter,
+    required int? maxTasks,
+    required AllocationDisplayMode displayMode,
+    required bool showExcludedSection,
+  }) async {
     // Get current allocation from orchestrator
     final allocation = await _allocationOrchestrator.watchAllocation().first;
 
@@ -393,6 +420,8 @@ class SectionDataService {
         allocatedTasks: const [],
         totalAvailable: 0,
         requiresValueSetup: true,
+        displayMode: displayMode,
+        showExcludedSection: showExcludedSection,
       );
     }
 
@@ -416,18 +445,36 @@ class SectionDataService {
         .where((e) => e.isUrgent ?? false)
         .toList();
 
+    // Evaluate alerts if section wants excluded section
+    AlertEvaluationResult? alertResult;
+    if (showExcludedSection && _settingsRepository != null) {
+      final alertSettings = await _settingsRepository.load(
+        SettingsKey.allocationAlerts,
+      );
+      alertResult = _alertEvaluator.evaluate(
+        excludedTasks: allocation.excludedTasks,
+        config: alertSettings.config,
+      );
+    }
+
     return SectionDataResult.allocation(
       allocatedTasks: tasks,
       totalAvailable: totalAvailable,
       excludedCount: allocation.excludedTasks.length,
       excludedUrgentTasks: excludedUrgentTasks,
+      excludedTasks: allocation.excludedTasks,
+      alertEvaluationResult: alertResult,
+      displayMode: displayMode,
+      showExcludedSection: showExcludedSection,
     );
   }
 
-  Stream<SectionDataResult> _watchAllocationSection(
-    TaskQuery? sourceFilter,
-    int? maxTasks,
-  ) async* {
+  Stream<SectionDataResult> _watchAllocationSection({
+    required TaskQuery? sourceFilter,
+    required int? maxTasks,
+    required AllocationDisplayMode displayMode,
+    required bool showExcludedSection,
+  }) async* {
     await for (final allocation in _allocationOrchestrator.watchAllocation()) {
       // Check if value setup is required
       if (allocation.requiresValueSetup) {
@@ -435,6 +482,8 @@ class SectionDataService {
           allocatedTasks: const [],
           totalAvailable: 0,
           requiresValueSetup: true,
+          displayMode: displayMode,
+          showExcludedSection: showExcludedSection,
         );
         continue;
       }
@@ -461,11 +510,27 @@ class SectionDataService {
           .where((e) => e.isUrgent ?? false)
           .toList();
 
+      // Evaluate alerts if section wants excluded section
+      AlertEvaluationResult? alertResult;
+      if (showExcludedSection && _settingsRepository != null) {
+        final alertSettings = await _settingsRepository.load(
+          SettingsKey.allocationAlerts,
+        );
+        alertResult = _alertEvaluator.evaluate(
+          excludedTasks: allocation.excludedTasks,
+          config: alertSettings.config,
+        );
+      }
+
       yield SectionDataResult.allocation(
         allocatedTasks: tasks,
         totalAvailable: totalAvailable,
         excludedCount: allocation.excludedTasks.length,
         excludedUrgentTasks: excludedUrgentTasks,
+        excludedTasks: allocation.excludedTasks,
+        alertEvaluationResult: alertResult,
+        displayMode: displayMode,
+        showExcludedSection: showExcludedSection,
       );
     }
   }

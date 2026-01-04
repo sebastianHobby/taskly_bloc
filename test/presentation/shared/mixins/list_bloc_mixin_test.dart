@@ -5,6 +5,8 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
 
+import '../../../helpers/bloc_test_patterns.dart';
+
 // Test event
 abstract class TestEvent {}
 
@@ -118,12 +120,11 @@ void main() {
       blocTest<TestListBloc, TestState>(
         'emits loading then loaded when stream emits items',
         build: () {
-          final controller = StreamController<List<String>>();
+          final controller = TestStreamController<List<String>>();
           final bloc = TestListBloc(itemStream: controller.stream);
           // Emit items after bloc is built
           Future.microtask(() {
-            controller.add(['item1', 'item2']);
-            controller.close();
+            controller.emit(['item1', 'item2']);
           });
           return bloc;
         },
@@ -141,11 +142,10 @@ void main() {
       blocTest<TestListBloc, TestState>(
         'emits loading then loaded with empty list when stream emits empty',
         build: () {
-          final controller = StreamController<List<String>>();
+          final controller = TestStreamController<List<String>>();
           final bloc = TestListBloc(itemStream: controller.stream);
           Future.microtask(() {
-            controller.add([]);
-            controller.close();
+            controller.emit([]);
           });
           return bloc;
         },
@@ -159,11 +159,10 @@ void main() {
       blocTest<TestListBloc, TestState>(
         'emits error when stream errors',
         build: () {
-          final controller = StreamController<List<String>>();
+          final controller = TestStreamController<List<String>>();
           final bloc = TestListBloc(itemStream: controller.stream);
           Future.microtask(() {
-            controller.addError(Exception('Stream error'));
-            controller.close();
+            controller.emitError(Exception('Stream error'));
           });
           return bloc;
         },
@@ -177,14 +176,13 @@ void main() {
       blocTest<TestListBloc, TestState>(
         'emits multiple loaded states when stream emits multiple times',
         build: () {
-          final controller = StreamController<List<String>>();
+          final controller = TestStreamController<List<String>>();
           final bloc = TestListBloc(itemStream: controller.stream);
           unawaited(
             Future.microtask(() async {
-              controller.add(['a']);
+              controller.emit(['a']);
               await Future<void>.delayed(const Duration(milliseconds: 10));
-              controller.add(['a', 'b']);
-              controller.close();
+              controller.emit(['a', 'b']);
             }),
           );
           return bloc;

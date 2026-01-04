@@ -146,6 +146,45 @@ After each discussion session:
 
 ## Session Notes
 
+### Session: Jan 4, 2026 - PowerSync Sync Bounce Investigation
+- **Problem**: UI flicker when changing theme settings (value shows → reverts → shows again)
+- **Root Cause**: **CDC timing race** + timezone mismatch, NOT a PowerSync checkpoint bug
+- **Evidence from logs**:
+  - Local write at `17:53:55.604773` (local time, no 'Z')
+  - Supabase stored `06:53:55.314977Z` (UTC)
+  - These are the SAME moment (UTC+11 timezone)
+  - BUT checkpoint contained OLD content (`themeMode: system`) with NEW timestamp
+- **Why CDC race occurs**:
+  1. Client writes to Supabase → WAL entry created
+  2. PowerSync CDC stream is slightly behind WAL
+  3. Checkpoint created from CDC position that hasn't seen new write yet
+  4. Checkpoint has correct timestamp but stale content
+- **Why `user_profiles` is affected more than other tables**:
+  - Single row per user (vs. many rows for tasks/projects)
+  - Every settings change touches same row
+  - JSON blob columns replaced entirely (no field-level merge)
+  - High-frequency updates during settings changes
+- **Analysis of `trackPreviousValues`**:
+  - NOT directly solving the problem
+  - Designed for diffing in `uploadData` for custom backend merge logic
+  - Doesn't prevent client-side overwrite from stale checkpoint
+- **Analysis of `ignoreEmptyUpdates`**:
+  - Skips uploading if no data changed
+  - Doesn't help when sync *downloads* stale data
+  - Still useful to reduce churn - added to schema
+- **Resolution**: 
+  - The existing `_pendingSave` pattern in `GlobalSettingsBloc` IS the correct approach
+  - Fixed `DateTime.now()` → `DateTime.now().toUtc()` for consistent timestamp comparison
+- **Changes Made**:
+  - Added `trackPreviousValues: true` and `ignoreEmptyUpdates: true` to `user_profiles` schema
+  - Changed `DateTime.now()` to `DateTime.now().toUtc()` in `_buildCompanion`
+  - Documented in OPEN_PROBLEMS.md
+- **Alternative Approaches Considered**:
+  1. Server-side optimistic locking (check `updated_at` before upsert) - adds complexity
+  2. Supabase Edge Function with version number - overkill for settings
+  3. Wait for PowerSync to improve CDC timing - not actionable
+- **Recommendation**: Keep `_pendingSave` pattern; it's the correct architectural solution
+
 ### Session: [Date of UPA Discussion]
 - **Decision**: Unified Predicate Architecture (UPA) selected as solution for query duplication
 - **Plan Created**: `doc/unified_predicate_plan/`

@@ -225,6 +225,9 @@ class UserProfileTable extends Table {
       text().withDefault(const Constant('{}')).named('next_actions_settings')();
   TextColumn get valueRanking =>
       text().withDefault(const Constant('{}')).named('value_ranking')();
+  TextColumn get allocationAlertsSettings => text()
+      .withDefault(const Constant('{}'))
+      .named('allocation_alerts_settings')();
   TextColumn get pageSortPreferences =>
       text().withDefault(const Constant('{}')).named('page_sort_preferences')();
   TextColumn get pageDisplaySettings =>

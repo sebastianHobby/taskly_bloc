@@ -27,8 +27,6 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 
-import 'test_helpers.dart' show kDefaultTestTimeout;
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Contract Test Wrapper
 // ═══════════════════════════════════════════════════════════════════════════

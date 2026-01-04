@@ -7,26 +7,19 @@ import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 
 /// Settings screen for global app configuration.
-class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({required this.settingsRepository, super.key});
-
-  final SettingsRepositoryContract settingsRepository;
-
-  @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
-
-class _SettingsScreenState extends State<SettingsScreen> {
-  SettingsRepositoryContract get _settingsRepo => widget.settingsRepository;
+///
+/// Uses [GlobalSettingsBloc] for reactive settings management with
+/// optimistic UI updates.
+class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,60 +27,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: StreamBuilder<GlobalSettings>(
-        stream: _settingsRepo.watch(SettingsKey.global),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+      body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+        builder: (context, state) {
+          if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final settings = snapshot.data!;
+          final settings = state.settings;
 
           return ResponsiveBody(
             child: ListView(
               children: [
                 _buildSection(
+                  context: context,
                   title: 'Appearance',
                   children: [
-                    _buildThemeModeSelector(settings),
-                    _buildColorPicker(settings),
-                    _buildTextSizeSlider(settings),
+                    _ThemeModeSelector(settings: settings),
+                    _ColorPicker(settings: settings),
+                    _TextSizeSlider(settings: settings),
                   ],
                 ),
                 _buildSection(
+                  context: context,
                   title: 'Language & Region',
                   children: [
-                    _buildLanguageSelector(settings),
-                    _buildDateFormatSelector(settings),
+                    _LanguageSelector(settings: settings),
+                    _DateFormatSelector(settings: settings),
                   ],
                 ),
                 _buildSection(
+                  context: context,
                   title: 'Customization',
                   children: [
-                    _buildTaskAllocationItem(),
-                    _buildNavigationOrderItem(),
+                    _buildTaskAllocationItem(context),
+                    _buildNavigationOrderItem(context),
                   ],
                 ),
                 _buildSection(
+                  context: context,
                   title: 'Advanced',
                   children: [
-                    _buildScreenManagementItem(),
-                    _buildWorkflowManagementItem(),
-                    _buildResetButton(),
+                    _buildScreenManagementItem(context),
+                    _buildWorkflowManagementItem(context),
+                    const _ResetButton(),
                   ],
                 ),
                 _buildSection(
+                  context: context,
                   title: 'Developer',
                   children: [
-                    _buildViewLogsItem(),
-                    if (kDebugMode) _buildClearLocalDataItem(),
+                    _buildViewLogsItem(context),
+                    if (kDebugMode) const _ClearLocalDataItem(),
                   ],
                 ),
                 _buildSection(
+                  context: context,
                   title: 'Account',
-                  children: [
-                    _buildAccountInfo(),
-                    _buildSignOutItem(),
+                  children: const [
+                    _AccountInfo(),
+                    _SignOutItem(),
                   ],
                 ),
                 const SizedBox(height: 32),
@@ -100,6 +98,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildSection({
+    required BuildContext context,
     required String title,
     required List<Widget> children,
   }) {
@@ -121,7 +120,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildThemeModeSelector(GlobalSettings settings) {
+  Widget _buildTaskAllocationItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.tune),
+      title: const Text('Task Allocation'),
+      subtitle: const Text('Strategy, limits, and value ranking'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'allocation-settings'),
+    );
+  }
+
+  Widget _buildNavigationOrderItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.menu),
+      title: const Text('Navigation Order'),
+      subtitle: const Text('Reorder sidebar items'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'navigation-settings'),
+    );
+  }
+
+  Widget _buildScreenManagementItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.dashboard_customize),
+      title: const Text('Custom Screens'),
+      subtitle: const Text('Create and manage custom screens'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'screen-management'),
+    );
+  }
+
+  Widget _buildWorkflowManagementItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.loop),
+      title: const Text('Review Workflows'),
+      subtitle: const Text('Create and manage review workflows'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'workflows'),
+    );
+  }
+
+  Widget _buildViewLogsItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.bug_report_outlined),
+      title: const Text('View App Logs'),
+      subtitle: const Text('View and share app logs for debugging'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TalkerScreen(talker: talker),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Private Widget Classes
+// ---------------------------------------------------------------------------
+
+class _ThemeModeSelector extends StatelessWidget {
+  const _ThemeModeSelector({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Theme Mode'),
       subtitle: const Text('Choose between light, dark, or system theme'),
@@ -141,30 +207,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
         selected: {settings.themeMode},
-        onSelectionChanged: (Set<AppThemeMode> newSelection) async {
-          final updated = settings.copyWith(themeMode: newSelection.first);
-          await _settingsRepo.save(SettingsKey.global, updated);
+        onSelectionChanged: (Set<AppThemeMode> newSelection) {
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.themeModeChanged(newSelection.first),
+          );
         },
       ),
     );
   }
+}
 
-  Widget _buildColorPicker(GlobalSettings settings) {
+class _ColorPicker extends StatelessWidget {
+  const _ColorPicker({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ColorPickerField(
         color: Color(settings.colorSchemeSeedArgb),
-        onColorChanged: (color) async {
-          final updated = settings.copyWith(colorSchemeSeedArgb: color.value);
-          await _settingsRepo.save(SettingsKey.global, updated);
+        onColorChanged: (color) {
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.colorChanged(color.toARGB32()),
+          );
         },
         label: 'Theme Color',
         showMaterialName: true,
       ),
     );
   }
+}
 
-  Widget _buildTextSizeSlider(GlobalSettings settings) {
+class _TextSizeSlider extends StatelessWidget {
+  const _TextSizeSlider({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Text Size'),
       subtitle: Slider(
@@ -173,9 +255,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         max: 1.4,
         divisions: 6,
         label: '${(settings.textScaleFactor * 100).round()}%',
-        onChanged: (value) async {
-          final updated = settings.copyWith(textScaleFactor: value);
-          await _settingsRepo.save(SettingsKey.global, updated);
+        onChanged: (value) {
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.textScaleChanged(value),
+          );
         },
       ),
       trailing: Text(
@@ -184,8 +267,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildLanguageSelector(GlobalSettings settings) {
+class _LanguageSelector extends StatelessWidget {
+  const _LanguageSelector({required this.settings});
+
+  final GlobalSettings settings;
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Language'),
       subtitle: const Text('Select your preferred language'),
@@ -204,225 +294,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text('Español'),
           ),
         ],
-        onChanged: (localeCode) async {
-          final updated = settings.copyWith(localeCode: localeCode);
-          await _settingsRepo.save(SettingsKey.global, updated);
+        onChanged: (localeCode) {
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.localeChanged(localeCode),
+          );
         },
       ),
     );
   }
+}
 
-  Widget _buildDateFormatSelector(GlobalSettings settings) {
-    final patterns = [
-      DateFormatPatterns.short,
-      DateFormatPatterns.medium,
-      DateFormatPatterns.long,
-      DateFormatPatterns.full,
-    ];
+class _DateFormatSelector extends StatelessWidget {
+  const _DateFormatSelector({required this.settings});
 
+  final GlobalSettings settings;
+
+  static const List<String> _patterns = [
+    DateFormatPatterns.short,
+    DateFormatPatterns.medium,
+    DateFormatPatterns.long,
+    DateFormatPatterns.full,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Date Format'),
       subtitle: Text(_getDateFormatExample(settings.dateFormatPattern)),
       trailing: DropdownButton<String>(
         value: settings.dateFormatPattern,
-        items: patterns.map((pattern) {
+        items: _patterns.map((pattern) {
           return DropdownMenuItem(
             value: pattern,
             child: Text(_getDateFormatLabel(pattern)),
           );
         }).toList(),
-        onChanged: (pattern) async {
+        onChanged: (pattern) {
           if (pattern != null) {
-            final updated = settings.copyWith(dateFormatPattern: pattern);
-            await _settingsRepo.save(SettingsKey.global, updated);
+            context.read<GlobalSettingsBloc>().add(
+              GlobalSettingsEvent.dateFormatChanged(pattern),
+            );
           }
         },
       ),
     );
-  }
-
-  Widget _buildTaskAllocationItem() {
-    return ListTile(
-      leading: const Icon(Icons.tune),
-      title: const Text('Task Allocation'),
-      subtitle: const Text('Strategy, limits, and value ranking'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'allocation-settings'),
-    );
-  }
-
-  Widget _buildNavigationOrderItem() {
-    return ListTile(
-      leading: const Icon(Icons.menu),
-      title: const Text('Navigation Order'),
-      subtitle: const Text('Reorder sidebar items'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'navigation-settings'),
-    );
-  }
-
-  Widget _buildScreenManagementItem() {
-    return ListTile(
-      leading: const Icon(Icons.dashboard_customize),
-      title: const Text('Custom Screens'),
-      subtitle: const Text('Create and manage custom screens'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'screen-management'),
-    );
-  }
-
-  Widget _buildWorkflowManagementItem() {
-    return ListTile(
-      leading: const Icon(Icons.loop),
-      title: const Text('Review Workflows'),
-      subtitle: const Text('Create and manage review workflows'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'workflows'),
-    );
-  }
-
-  Widget _buildResetButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: OutlinedButton.icon(
-        onPressed: _showResetConfirmation,
-        icon: const Icon(Icons.restore),
-        label: const Text('Reset to Defaults'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.error,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildViewLogsItem() {
-    return ListTile(
-      leading: const Icon(Icons.bug_report_outlined),
-      title: const Text('View App Logs'),
-      subtitle: const Text('View and share app logs for debugging'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => TalkerScreen(talker: talker),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildClearLocalDataItem() {
-    return ListTile(
-      leading: Icon(
-        Icons.delete_forever,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      title: const Text('Clear Local Data'),
-      subtitle: const Text('Delete all cached data and resync'),
-      trailing: Icon(
-        Icons.warning_amber,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      onTap: _showClearLocalDataConfirmation,
-    );
-  }
-
-  Future<void> _showClearLocalDataConfirmation() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear Local Data'),
-        content: const Text(
-          'This will delete all locally cached data and force a full resync '
-          'from the server. The app will restart after clearing.\n\n'
-          'Use this to fix data sync issues or corrupted local state.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear & Restart'),
-          ),
-        ],
-      ),
-    );
-
-    if ((confirmed ?? false) && mounted) {
-      await _clearLocalData();
-    }
-  }
-
-  Future<void> _clearLocalData() async {
-    try {
-      final db = GetIt.instance<PowerSyncDatabase>();
-
-      // Disconnect from sync
-      await db.disconnect();
-
-      // Delete all local data
-      await db.disconnectedAndClear();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Local data cleared. Please restart the app.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-
-      // Force sign out to trigger full re-auth and resync
-      if (mounted) {
-        context.read<AuthBloc>().add(const AuthSignOutRequested());
-      }
-    } catch (e, st) {
-      talker.handle(e, st, '[Settings] Failed to clear local data');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear data: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _showResetConfirmation() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reset Settings'),
-        content: const Text(
-          'Are you sure you want to reset all settings to their default values?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if ((confirmed ?? false) && mounted) {
-      await _settingsRepo.save(SettingsKey.global, const GlobalSettings());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings reset to defaults')),
-        );
-      }
-    }
   }
 
   String _getDateFormatLabel(String pattern) {
@@ -445,8 +360,149 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final formatter = DateFormatPatterns.getFormat(pattern);
     return 'Example: ${formatter.format(now)}';
   }
+}
 
-  Widget _buildAccountInfo() {
+class _ResetButton extends StatelessWidget {
+  const _ResetButton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: OutlinedButton.icon(
+        onPressed: () => _showResetConfirmation(context),
+        icon: const Icon(Icons.restore),
+        label: const Text('Reset to Defaults'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Theme.of(context).colorScheme.error,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showResetConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset Settings'),
+        content: const Text(
+          'Are you sure you want to reset all settings to their default values?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if ((confirmed ?? false) && context.mounted) {
+      context.read<GlobalSettingsBloc>().add(const GlobalSettingsEvent.reset());
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Settings reset to defaults')),
+      );
+    }
+  }
+}
+
+class _ClearLocalDataItem extends StatelessWidget {
+  const _ClearLocalDataItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        Icons.delete_forever,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: const Text('Clear Local Data'),
+      subtitle: const Text('Delete all cached data and resync'),
+      trailing: Icon(
+        Icons.warning_amber,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      onTap: () => _showClearLocalDataConfirmation(context),
+    );
+  }
+
+  Future<void> _showClearLocalDataConfirmation(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Clear Local Data'),
+        content: const Text(
+          'This will delete all locally cached data and force a full resync '
+          'from the server. The app will restart after clearing.\n\n'
+          'Use this to fix data sync issues or corrupted local state.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Clear & Restart'),
+          ),
+        ],
+      ),
+    );
+
+    if ((confirmed ?? false) && context.mounted) {
+      await _clearLocalData(context);
+    }
+  }
+
+  Future<void> _clearLocalData(BuildContext context) async {
+    try {
+      final db = GetIt.instance<PowerSyncDatabase>();
+
+      // Disconnect from sync
+      await db.disconnect();
+
+      // Delete all local data
+      await db.disconnectedAndClear();
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Local data cleared. Please restart the app.'),
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+
+      // Force sign out to trigger full re-auth and resync
+      if (context.mounted) {
+        context.read<AuthBloc>().add(const AuthSignOutRequested());
+      }
+    } catch (e, st) {
+      talker.handle(e, st, '[Settings] Failed to clear local data');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to clear data: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _AccountInfo extends StatelessWidget {
+  const _AccountInfo();
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AppAuthState>(
       builder: (context, state) {
         final user = state.user;
@@ -494,8 +550,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     return 'U';
   }
+}
 
-  Widget _buildSignOutItem() {
+class _SignOutItem extends StatelessWidget {
+  const _SignOutItem();
+
+  @override
+  Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AppAuthState>(
       listenWhen: (prev, curr) =>
           prev.error != curr.error && curr.error != null,
@@ -505,7 +566,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             content: const Text('Sign out failed. Please try again.'),
             action: SnackBarAction(
               label: 'Retry',
-              onPressed: _performSignOut,
+              onPressed: () => _performSignOut(context),
             ),
           ),
         );
@@ -513,7 +574,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: OutlinedButton.icon(
-          onPressed: _performSignOut,
+          onPressed: () => _performSignOut(context),
           icon: const Icon(Icons.logout_rounded),
           label: const Text('Sign Out'),
           style: OutlinedButton.styleFrom(
@@ -524,12 +585,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Future<void> _performSignOut() async {
+  Future<void> _performSignOut(BuildContext context) async {
     final confirmed = await showSignOutConfirmationDialog(context: context);
-    if (!confirmed || !mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     await HapticFeedback.lightImpact();
-    if (mounted) {
+    if (context.mounted) {
       context.read<AuthBloc>().add(const AuthSignOutRequested());
     }
   }

@@ -1,4 +1,6 @@
 import 'package:powersync/powersync.dart';
+import 'package:powersync_core/powersync_core.dart'
+    show TrackPreviousValuesOptions;
 
 //Generated from powersync dashboard --> Client setup
 // Note powersync expects everything as SQLITE types of text,integer or real
@@ -63,19 +65,29 @@ const schema = Schema([
     Column.text('updated_at'),
     Column.text('user_id'),
   ]),
-  Table('user_profiles', [
-    // Note: user_id not synced - handled by Supabase auth
-    Column.text('global_settings'),
-    Column.text('allocation_settings'),
-    Column.text('soft_gates_settings'),
-    Column.text('next_actions_settings'),
-    Column.text('value_ranking'),
-    Column.text('page_sort_preferences'),
-    Column.text('page_display_settings'),
-    Column.text('screen_preferences'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ]),
+  Table(
+    'user_profiles',
+    [
+      // Note: user_id not synced - handled by Supabase auth
+      Column.text('global_settings'),
+      Column.text('allocation_settings'),
+      Column.text('allocation_alerts_settings'),
+      Column.text('soft_gates_settings'),
+      Column.text('next_actions_settings'),
+      Column.text('value_ranking'),
+      Column.text('page_sort_preferences'),
+      Column.text('page_display_settings'),
+      Column.text('screen_preferences'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+    ],
+    // Advanced schema options for JSON settings columns:
+    // - trackPreviousValues: Enables diffing in uploadData for custom merge logic
+    // - ignoreEmptyUpdates: Skips sync when data hasn't actually changed
+    // These help with the sync bounce issue on single-row settings tables
+    trackPreviousValues: TrackPreviousValuesOptions(),
+    ignoreEmptyUpdates: true,
+  ),
   Table('screen_definitions', [
     Column.text('user_id'),
     Column.text('screen_type'),

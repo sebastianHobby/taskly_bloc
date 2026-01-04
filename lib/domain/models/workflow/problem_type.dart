@@ -6,10 +6,6 @@ import 'package:json_annotation/json_annotation.dart';
 /// - Entity: task, project, allocation, journal, tracker
 /// - State: the problem condition (overdue, stale, orphan, etc.)
 enum ProblemType {
-  /// Task is urgent but excluded from Focus allocation
-  @JsonValue('task_urgent_excluded')
-  taskUrgentExcluded,
-
   /// Task is past its deadline
   @JsonValue('task_overdue')
   taskOverdue,

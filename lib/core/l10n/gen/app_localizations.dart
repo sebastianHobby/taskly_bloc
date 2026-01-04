@@ -1692,6 +1692,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set Up My Values'**
   String get setUpMyValues;
+
+  /// Title for the My Day screen
+  ///
+  /// In en, this message translates to:
+  /// **'My Day'**
+  String get myDayTitle;
+
+  /// Alert banner text for single item outside focus
+  ///
+  /// In en, this message translates to:
+  /// **'1 item outside Focus'**
+  String get myDayAlertBannerSingular;
+
+  /// Alert banner text for multiple items outside focus
+  ///
+  /// In en, this message translates to:
+  /// **'{count} items outside Focus'**
+  String myDayAlertBannerPlural(int count);
+
+  /// Button text to review excluded items
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get myDayAlertBannerReview;
+
+  /// Excluded section title for Idealist persona
+  ///
+  /// In en, this message translates to:
+  /// **'Needs Alignment'**
+  String get excludedSectionNeedsAlignment;
+
+  /// Excluded section title for Reflector persona
+  ///
+  /// In en, this message translates to:
+  /// **'Worth Considering'**
+  String get excludedSectionWorthConsidering;
+
+  /// Excluded section title for Realist persona
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue Attention'**
+  String get excludedSectionOverdueAttention;
+
+  /// Excluded section title for Firefighter persona
+  ///
+  /// In en, this message translates to:
+  /// **'Active Fires'**
+  String get excludedSectionActiveFires;
+
+  /// Excluded section title for Custom persona
+  ///
+  /// In en, this message translates to:
+  /// **'Outside Focus'**
+  String get excludedSectionOutsideFocus;
+
+  /// Display name for urgent alert type
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent tasks'**
+  String get alertTypeUrgent;
+
+  /// Display name for overdue alert type
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue tasks'**
+  String get alertTypeOverdue;
+
+  /// Display name for no value alert type
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks without values'**
+  String get alertTypeNoValue;
+
+  /// Display name for low priority alert type
+  ///
+  /// In en, this message translates to:
+  /// **'Low priority tasks'**
+  String get alertTypeLowPriority;
+
+  /// Display name for quota full alert type
+  ///
+  /// In en, this message translates to:
+  /// **'Quota exceeded tasks'**
+  String get alertTypeQuotaFull;
+
+  /// Display name for critical severity
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get alertSeverityCritical;
+
+  /// Display name for warning severity
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get alertSeverityWarning;
+
+  /// Display name for notice severity
+  ///
+  /// In en, this message translates to:
+  /// **'Notice'**
+  String get alertSeverityNotice;
+
+  /// Section title for basic screen info
+  ///
+  /// In en, this message translates to:
+  /// **'Basic Information'**
+  String get basicInfoSection;
+
+  /// Subtitle for persona selection section
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a persona to control how tasks are prioritized'**
+  String get personaSectionSubtitle;
+
+  /// Section title for task limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Task Limit'**
+  String get taskLimitSection;
+
+  /// Section title for source filter settings
+  ///
+  /// In en, this message translates to:
+  /// **'Narrow Source'**
+  String get sourceFilterSection;
+
+  /// Subtitle for source filter section
+  ///
+  /// In en, this message translates to:
+  /// **'Limit which tasks are considered'**
+  String get sourceFilterSubtitle;
+
+  /// Label shown while saving
+  ///
+  /// In en, this message translates to:
+  /// **'Saving...'**
+  String get saving;
+
+  /// Button label for saving focus screen
+  ///
+  /// In en, this message translates to:
+  /// **'Save Focus Screen'**
+  String get saveFocusScreen;
+
+  /// Label for maximum tasks slider
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Tasks'**
+  String get maxTasksLabel;
+
+  /// Toggle label for showing excluded tasks section
+  ///
+  /// In en, this message translates to:
+  /// **'Show excluded section'**
+  String get showExcludedSection;
+
+  /// Subtitle for show excluded section toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Display excluded tasks at the bottom'**
+  String get showExcludedSectionSubtitle;
+
+  /// Label for urgent task behavior dropdown
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent task handling'**
+  String get urgentTaskBehaviorLabel;
+
+  /// Dropdown option to ignore urgent tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Ignore urgent tasks'**
+  String get urgentBehaviorIgnore;
+
+  /// Dropdown option to warn about urgent tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Warn about urgent tasks'**
+  String get urgentBehaviorWarnOnly;
+
+  /// Dropdown option to include all urgent tasks
+  ///
+  /// In en, this message translates to:
+  /// **'Include all urgent tasks'**
+  String get urgentBehaviorIncludeAll;
+
+  /// Format for displaying days count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days'**
+  String daysFormat(int count);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

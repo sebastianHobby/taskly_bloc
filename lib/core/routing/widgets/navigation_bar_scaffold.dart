@@ -49,8 +49,9 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
           ...visible.map(_toNavDestination),
           if (hasOverflow)
             const NavigationDestination(
-              label: 'More',
-              icon: Icon(Icons.more_horiz),
+              label: 'Browse',
+              icon: Icon(Icons.grid_view_outlined),
+              selectedIcon: Icon(Icons.grid_view),
             ),
         ],
         onDestinationSelected: (index) async {

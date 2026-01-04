@@ -1180,5 +1180,70 @@
     "setUpMyValues": "Configurar Mis Valores",
     "@setUpMyValues": {
         "description": "Botón para configurar valores"
+    },
+    "basicInfoSection": "Información Básica",
+    "@basicInfoSection": {
+        "description": "Section title for basic screen info"
+    },
+    "personaSectionSubtitle": "Elige una personalidad para controlar cómo se priorizan las tareas",
+    "@personaSectionSubtitle": {
+        "description": "Subtitle for persona selection section"
+    },
+    "taskLimitSection": "Límite de Tareas",
+    "@taskLimitSection": {
+        "description": "Section title for task limit setting"
+    },
+    "sourceFilterSection": "Filtrar Fuente",
+    "@sourceFilterSection": {
+        "description": "Section title for source filter settings"
+    },
+    "sourceFilterSubtitle": "Limitar qué tareas se consideran",
+    "@sourceFilterSubtitle": {
+        "description": "Subtitle for source filter section"
+    },
+    "saving": "Guardando...",
+    "@saving": {
+        "description": "Label shown while saving"
+    },
+    "saveFocusScreen": "Guardar Pantalla Focus",
+    "@saveFocusScreen": {
+        "description": "Button label for saving focus screen"
+    },
+    "maxTasksLabel": "Máximo de Tareas",
+    "@maxTasksLabel": {
+        "description": "Label for maximum tasks slider"
+    },
+    "showExcludedSection": "Mostrar sección excluida",
+    "@showExcludedSection": {
+        "description": "Toggle label for showing excluded tasks section"
+    },
+    "showExcludedSectionSubtitle": "Mostrar tareas excluidas al final",
+    "@showExcludedSectionSubtitle": {
+        "description": "Subtitle for show excluded section toggle"
+    },
+    "urgentTaskBehaviorLabel": "Manejo de tareas urgentes",
+    "@urgentTaskBehaviorLabel": {
+        "description": "Label for urgent task behavior dropdown"
+    },
+    "urgentBehaviorIgnore": "Ignorar tareas urgentes",
+    "@urgentBehaviorIgnore": {
+        "description": "Dropdown option to ignore urgent tasks"
+    },
+    "urgentBehaviorWarnOnly": "Advertir sobre tareas urgentes",
+    "@urgentBehaviorWarnOnly": {
+        "description": "Dropdown option to warn about urgent tasks"
+    },
+    "urgentBehaviorIncludeAll": "Incluir todas las tareas urgentes",
+    "@urgentBehaviorIncludeAll": {
+        "description": "Dropdown option to include all urgent tasks"
+    },
+    "daysFormat": "{count} días",
+    "@daysFormat": {
+        "description": "Format for displaying days count",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
     }
 }

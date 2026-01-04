@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/bloc_test_patterns.dart';
 import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -21,7 +22,7 @@ void main() {
   group('LabelOverviewBloc', () {
     late MockLabelRepositoryContract mockLabelRepository;
     late MockSettingsRepositoryContract mockSettingsRepository;
-    late StreamController<List<Label>> labelsController;
+    late TestStreamController<List<Label>> labelsController;
 
     setUpAll(() {
       initializeTalkerForTest();
@@ -34,7 +35,7 @@ void main() {
     setUp(() {
       mockLabelRepository = MockLabelRepositoryContract();
       mockSettingsRepository = MockSettingsRepositoryContract();
-      labelsController = StreamController<List<Label>>.broadcast();
+      labelsController = TestStreamController<List<Label>>();
 
       when(
         () => mockLabelRepository.watchAll(),
@@ -127,7 +128,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([
+        labelsController.emit([
           createLabel(id: '1', name: 'Work'),
           createLabel(id: '2', name: 'Personal'),
         ]);
@@ -147,7 +148,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.addError(Exception('Database error'));
+        labelsController.emitError(Exception('Database error'));
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(bloc.state, isA<LabelOverviewError>());
@@ -200,7 +201,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([
+        labelsController.emit([
           createLabel(id: '1', name: 'Zebra'),
           createLabel(id: '2', name: 'Apple'),
           createLabel(id: '3', name: 'Mango'),
@@ -231,7 +232,7 @@ void main() {
           bloc.add(const LabelOverviewSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          labelsController.add([
+          labelsController.emit([
             createLabel(id: '1', name: 'Apple'),
             createLabel(id: '2', name: 'Zebra'),
             createLabel(id: '3', name: 'Mango'),
@@ -255,7 +256,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([
+        labelsController.emit([
           createLabel(id: '1', name: 'Apple'),
           createLabel(id: '2', name: 'Zebra'),
         ]);
@@ -292,7 +293,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([createLabel(id: '1', name: 'Test')]);
+        labelsController.emit([createLabel(id: '1', name: 'Test')]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         const newSort = SortPreferences(
@@ -350,7 +351,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([createLabel(id: '1', name: 'Work')]);
+        labelsController.emit([createLabel(id: '1', name: 'Work')]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final label = createLabel(id: '1', name: 'Work');
@@ -373,7 +374,7 @@ void main() {
         bloc.add(const LabelOverviewSubscriptionRequested());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        labelsController.add([createLabel(id: '1', name: 'Work')]);
+        labelsController.emit([createLabel(id: '1', name: 'Work')]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final label = createLabel(id: '1', name: 'Work');

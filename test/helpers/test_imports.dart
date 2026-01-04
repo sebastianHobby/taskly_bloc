@@ -83,7 +83,7 @@ export 'bloc_test_helpers.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 /// Contract test utilities (verify component agreements).
-export 'contract_test_helpers.dart';
+export 'contract_test_helpers.dart' hide TimeoutException;
 
 /// Integration test utilities (real database, real components).
 export 'integration_test_helpers.dart';
@@ -92,4 +92,4 @@ export 'integration_test_helpers.dart';
 export 'widget_test_helpers.dart';
 
 /// BLoC test patterns and utilities.
-export 'bloc_test_patterns.dart';
+export 'bloc_test_patterns.dart' hide TimeoutException;

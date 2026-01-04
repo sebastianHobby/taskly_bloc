@@ -29,28 +29,43 @@ Future<bool> preCommit() async {
 Future<bool> prePush() async {
   print('🚀 Running pre-push checks...\n');
 
-  var allPassed = true;
-
   // 1. Check for unsafe testWidgets usage
-  allPassed = await _checkUnsafeTests() && allPassed;
-
-  // 2. Run dart analyze (no warnings allowed)
-  allPassed = await _runAnalyze() && allPassed;
-
-  // 3. Validate IdGenerator table registration
-  allPassed = await _validateTableRegistration() && allPassed;
-
-  // 4. Run tests with coverage (80% minimum)
-  allPassed = await _runTestsWithCoverage() && allPassed;
-
-  if (allPassed) {
-    print('\n✅ All pre-push checks passed!');
-  } else {
-    print('\n❌ Pre-push checks failed. Fix issues before pushing.');
-    print('   Use "git push --no-verify" to bypass (not recommended).');
+  if (!await _checkUnsafeTests()) {
+    _printFailure();
+    return false;
   }
 
-  return allPassed;
+  // 2. Check for raw StreamController usage in tests
+  if (!await _checkRawStreamController()) {
+    _printFailure();
+    return false;
+  }
+
+  // 3. Run dart analyze (no warnings allowed)
+  if (!await _runAnalyze()) {
+    _printFailure();
+    return false;
+  }
+
+  // 4. Validate IdGenerator table registration
+  if (!await _validateTableRegistration()) {
+    _printFailure();
+    return false;
+  }
+
+  // 5. Run tests with coverage (80% minimum)
+  if (!await _runTestsWithCoverage()) {
+    _printFailure();
+    return false;
+  }
+
+  print('\n✅ All pre-push checks passed!');
+  return true;
+}
+
+void _printFailure() {
+  print('\n❌ Pre-push checks failed. Fix issues before pushing.');
+  print('   Use "git push --no-verify" to bypass (not recommended).');
 }
 
 /// Validates that all PowerSync tables are registered in IdGenerator.
@@ -247,6 +262,109 @@ Future<bool> _checkUnsafeTests() async {
     return true;
   } catch (e) {
     print('   ⚠️  Could not check test files: $e');
+    return true; // Don't block on check failure
+  }
+}
+
+/// Checks for raw StreamController usage in bloc tests.
+///
+/// Raw StreamController can cause test hangs because:
+/// 1. `act()` fires event AND emits data simultaneously
+/// 2. Bloc's event handler subscribes to stream AFTER emit
+/// 3. Data is lost - test waits forever for states that never arrive
+///
+/// Use TestStreamController from bloc_test_patterns.dart instead.
+Future<bool> _checkRawStreamController() async {
+  print('🔄 Checking for raw StreamController usage in tests...');
+
+  try {
+    // Find all test files using git ls-files for better performance
+    final result = await Process.run(
+      'git',
+      ['ls-files', 'test/', '--', '*.dart'],
+    );
+
+    final testFiles = (result.stdout as String)
+        .split('\n')
+        .where((f) => f.endsWith('_test.dart'))
+        .toList();
+
+    if (testFiles.isEmpty) {
+      print('   No test files found.');
+      return true;
+    }
+
+    final violations = <String>[];
+
+    // Patterns to detect raw StreamController usage
+    final streamControllerPattern = RegExp(
+      r'StreamController\s*<',
+      caseSensitive: true,
+    );
+
+    // Allowed patterns (whitelist)
+    final allowedPatterns = [
+      'TestStreamController', // Our safe wrapper
+      'bloc_test_patterns.dart', // The file that defines TestStreamController
+      '// ignore-stream-controller', // Explicit opt-out
+      'widget_test_helpers.dart', // Other test infrastructure
+      'fake_repositories.dart', // Fake repos use internal streams safely
+    ];
+
+    for (final filePath in testFiles) {
+      final file = File(filePath);
+      if (!file.existsSync()) continue;
+
+      final content = file.readAsStringSync();
+
+      // Skip if file uses allowed patterns
+      if (allowedPatterns.any(content.contains)) continue;
+
+      // Check for raw StreamController
+      if (streamControllerPattern.hasMatch(content)) {
+        final lines = content.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          final line = lines[i];
+          if (streamControllerPattern.hasMatch(line) &&
+              !line.contains('TestStreamController') &&
+              !line.contains('// ignore-stream-controller')) {
+            violations.add('   $filePath:${i + 1}: ${line.trim()}');
+          }
+        }
+      }
+    }
+
+    if (violations.isNotEmpty) {
+      print('   ❌ Found raw StreamController usage in test files:\n');
+      for (final v in violations.take(10)) {
+        print(v);
+      }
+      if (violations.length > 10) {
+        print('   ... and ${violations.length - 10} more');
+      }
+      print('');
+      print('   Raw StreamController can cause tests to hang indefinitely.');
+      print(
+        '   Use TestStreamController from bloc_test_patterns.dart instead:',
+      );
+      print('');
+      print('     // Before (can hang):');
+      print('     final controller = StreamController<List<Task>>();');
+      print('');
+      print('     // After (safe):');
+      print('     final controller = TestStreamController<List<Task>>();');
+      print(
+        '     controller.emit([task]);  // Safe - replays to late subscribers',
+      );
+      print('');
+      print('   Add "// ignore-stream-controller" to line if intentional.');
+      return false;
+    }
+
+    print('   ✓ No raw StreamController usage found in tests.');
+    return true;
+  } catch (e) {
+    print('   ⚠️  Could not check for raw StreamController: $e');
     return true; // Don't block on check failure
   }
 }

@@ -84,14 +84,6 @@ class ProblemDetectorService {
     required SoftGatesSettings settings,
   }) {
     switch (problemType) {
-      case ProblemType.taskUrgentExcluded:
-        // This problem type is handled by the allocation layer,
-        // not by deadline-based detection here. The allocation
-        // orchestrator determines which tasks are urgent AND excluded,
-        // and passes that info through AllocationSectionResult.
-        // SupportBlockComputer creates DetectedProblem from that data.
-        break;
-
       case ProblemType.taskOverdue:
         // Check if task is overdue
         if (task.deadlineDate != null &&
@@ -182,7 +174,6 @@ class ProblemDetectorService {
           );
         }
 
-      case ProblemType.taskUrgentExcluded:
       case ProblemType.taskOverdue:
       case ProblemType.projectIdle:
       case ProblemType.allocationUnbalanced:

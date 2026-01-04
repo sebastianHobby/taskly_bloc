@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
@@ -67,6 +68,12 @@ sealed class ScreenDefinition with _$ScreenDefinition {
 
     /// FAB operations available on this screen.
     @Default([]) List<FabOperation> fabOperations,
+
+    /// AppBar actions available on this screen.
+    @Default([]) List<AppBarAction> appBarActions,
+
+    /// Route for settings link action (when appBarActions contains settingsLink).
+    String? settingsRoute,
   }) = DataDrivenScreenDefinition;
 
   /// Navigation-only screen for custom widget rendering.
@@ -150,6 +157,20 @@ sealed class ScreenDefinition with _$ScreenDefinition {
                   ),
                 )
                 .toList(),
+        appBarActions:
+            (json['appBarActions'] as List? ??
+                    json['app_bar_actions'] as List? ??
+                    [])
+                .map(
+                  (e) => AppBarAction.values.firstWhere(
+                    (op) => op.name == e || op.toString() == e,
+                    orElse: () => AppBarAction.help,
+                  ),
+                )
+                .toList(),
+        settingsRoute:
+            json['settingsRoute'] as String? ??
+            json['settings_route'] as String?,
       );
     }
 

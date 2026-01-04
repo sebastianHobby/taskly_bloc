@@ -41,6 +41,8 @@ class NavigationIconResolver {
         selectedIcon: Icons.wb_sunny,
       ),
       'upcoming' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
+      // Planned screen (renamed from upcoming)
+      'planned' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'logbook' => (
         icon: Icons.done_all_outlined,
         selectedIcon: Icons.done_all,

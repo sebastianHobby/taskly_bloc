@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
@@ -53,6 +54,8 @@ abstract class SystemScreenDefinitions {
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
+    appBarActions: [AppBarAction.settingsLink],
+    settingsRoute: 'allocation-settings',
     sections: [
       const Section.allocation(
         displayMode: AllocationDisplayMode.pinnedFirst,
@@ -62,11 +65,11 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Upcoming screen - future tasks
-  static final upcoming = ScreenDefinition.dataDriven(
-    id: 'upcoming',
-    screenKey: 'upcoming',
-    name: 'Upcoming',
+  /// Planned screen - future tasks
+  static final planned = ScreenDefinition.dataDriven(
+    id: 'planned',
+    screenKey: 'planned',
+    name: 'Planned',
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
@@ -218,11 +221,11 @@ abstract class SystemScreenDefinitions {
     category: ScreenCategory.settings,
   );
 
-  /// Wellbeing dashboard - mood tracking and analytics
-  static final wellbeing = ScreenDefinition.navigationOnly(
-    id: 'wellbeing',
-    screenKey: 'wellbeing',
-    name: 'Wellbeing',
+  /// Journal - mood tracking and reflection
+  static final journal = ScreenDefinition.navigationOnly(
+    id: 'journal',
+    screenKey: 'journal',
+    name: 'Journal',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
@@ -251,37 +254,94 @@ abstract class SystemScreenDefinitions {
     category: ScreenCategory.settings,
   );
 
-  /// Get all system screens
+  // ─────────────────────────────────────────────────────────────────────────
+  // Sub-screens (not in main navigation, accessed via parent screens)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Trackers - habit and metric tracking (accessed via Journal)
+  static final trackers = ScreenDefinition.navigationOnly(
+    id: 'trackers',
+    screenKey: 'trackers',
+    name: 'Trackers',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.wellbeing,
+  );
+
+  /// Wellbeing dashboard - analytics and insights (accessed via Journal)
+  static final wellbeingDashboard = ScreenDefinition.navigationOnly(
+    id: 'wellbeing_dashboard',
+    screenKey: 'wellbeing_dashboard',
+    name: 'Wellbeing',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.wellbeing,
+  );
+
+  /// Allocation settings - configure My Day allocation (accessed via My Day settings)
+  static final allocationSettings = ScreenDefinition.navigationOnly(
+    id: 'allocation_settings',
+    screenKey: 'allocation_settings',
+    name: 'Allocation Settings',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.settings,
+  );
+
+  /// Navigation settings - configure navigation bar (accessed via Settings)
+  static final navigationSettings = ScreenDefinition.navigationOnly(
+    id: 'navigation_settings',
+    screenKey: 'navigation_settings',
+    name: 'Navigation',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.settings,
+  );
+
+  /// Get all system screens that appear in navigation.
+  ///
+  /// Note: Some screens (logbook, workflows, screenManagement) are accessible
+  /// via settings but not shown in the main navigation.
+  /// Order: My Day, Planned, Journal, Values, Inbox, Labels, Settings
   static List<ScreenDefinition> get all => [
-    inbox,
     myDay,
-    upcoming,
-    logbook,
-    projects,
-    labels,
+    planned,
+    journal,
     values,
+    inbox,
+    labels,
     // Navigation-only screens
     settings,
-    wellbeing,
-    workflows,
-    screenManagement,
   ];
 
-  /// Get a system screen by screenKey
+  /// Get a system screen by screenKey.
+  ///
+  /// Returns null for unknown screen keys.
+  /// Includes both navigable screens and sub-screens.
   static ScreenDefinition? getByKey(String screenKey) {
     return switch (screenKey) {
+      // Main navigable screens
       'inbox' => inbox,
       'my_day' => myDay,
-      'upcoming' => upcoming,
+      'planned' => planned,
       'logbook' => logbook,
       'projects' => projects,
       'labels' => labels,
       'values' => values,
       'orphan_tasks' => orphanTasks,
       'settings' => settings,
-      'wellbeing' => wellbeing,
+      'journal' => journal,
       'workflows' => workflows,
       'screen_management' => screenManagement,
+      // Sub-screens (accessed via parent screens)
+      'trackers' => trackers,
+      'wellbeing_dashboard' => wellbeingDashboard,
+      'allocation_settings' => allocationSettings,
+      'navigation_settings' => navigationSettings,
       _ => null,
     };
   }
@@ -297,20 +357,19 @@ abstract class SystemScreenDefinitions {
 
   /// Default sort orders for system screens.
   ///
-  /// These are used when user has not customized the sort order.
+  /// Order: My Day, Planned, Journal, Values, Inbox, Labels, Settings
+  /// Note: logbook, workflows, screen_management not included as they're
+  /// accessible via settings, not navigation.
   static const Map<String, int> defaultSortOrders = {
-    'inbox': 0,
-    'my_day': 1,
-    'upcoming': 2,
-    'logbook': 3,
-    'projects': 4,
+    'my_day': 0,
+    'planned': 1,
+    'journal': 2,
+    'values': 3,
+    'inbox': 4,
     'labels': 5,
-    'values': 6,
+    'projects': 6,
     'orphan_tasks': 7,
     'settings': 100,
-    'wellbeing': 101,
-    'workflows': 102,
-    'screen_management': 103,
   };
 
   /// Returns the default sort order for a screen key.

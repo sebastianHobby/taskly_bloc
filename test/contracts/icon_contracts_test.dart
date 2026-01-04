@@ -112,13 +112,13 @@ void main() {
         expect(result.selectedIcon, Icons.star);
       });
 
-      test('wellbeing screen has self_improvement icon', () {
+      test('journal screen has book icon', () {
         final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.wellbeing.screenKey,
-          iconName: SystemScreenDefinitions.wellbeing.iconName,
+          screenId: SystemScreenDefinitions.journal.screenKey,
+          iconName: SystemScreenDefinitions.journal.iconName,
         );
-        expect(result.icon, Icons.self_improvement_outlined);
-        expect(result.selectedIcon, Icons.self_improvement);
+        expect(result.icon, Icons.book_outlined);
+        expect(result.selectedIcon, Icons.book);
       });
 
       test('workflows screen has account_tree icon', () {

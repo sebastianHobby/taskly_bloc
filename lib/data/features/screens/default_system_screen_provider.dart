@@ -46,8 +46,18 @@ class DefaultSystemScreenProvider implements SystemScreenProvider {
   }
 
   /// Assigns a deterministic v5 UUID to a screen template.
+  ///
+  /// Uses pattern matching to preserve all fields including subtype-specific
+  /// ones like `appBarActions`, `fabOperations`, and `sections`.
   ScreenDefinition _assignId(ScreenDefinition template) {
     final id = _idGenerator.screenDefinitionId(screenKey: template.screenKey);
-    return template.copyWith(id: id);
+
+    // Must use subtype-specific copyWith to preserve all fields.
+    // The base ScreenDefinition.copyWith only copies common fields,
+    // which would lose appBarActions, fabOperations, sections, etc.
+    return switch (template) {
+      DataDrivenScreenDefinition() => template.copyWith(id: id),
+      NavigationOnlyScreenDefinition() => template.copyWith(id: id),
+    };
   }
 }
