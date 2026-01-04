@@ -7,8 +7,6 @@
 /// data layer and presentation layer expectations.
 library;
 
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
@@ -156,7 +154,7 @@ void main() {
           ScreenCategory.workspace,
         );
         expect(
-          SystemScreenDefinitions.upcoming.category,
+          SystemScreenDefinitions.planned.category,
           ScreenCategory.workspace,
         );
         expect(

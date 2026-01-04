@@ -1,9 +1,5 @@
-import 'dart:async';
-
-import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
@@ -17,7 +13,7 @@ void main() {
 
   group('ScreenOrderBloc', () {
     late MockScreenDefinitionsRepositoryContract mockRepository;
-    late StreamController<List<ScreenWithPreferences>> screensController;
+    late TestStreamController<List<ScreenWithPreferences>> screensController;
 
     // Test screens using real system screen definitions
     late ScreenWithPreferences testScreen1;
@@ -30,7 +26,7 @@ void main() {
 
     setUp(() {
       mockRepository = MockScreenDefinitionsRepositoryContract();
-      screensController = StreamController<List<ScreenWithPreferences>>();
+      screensController = TestStreamController<List<ScreenWithPreferences>>();
 
       // Create test screens using real system screen definitions
       testScreen1 = ScreenWithPreferences(
@@ -44,7 +40,7 @@ void main() {
       );
 
       testScreen3 = ScreenWithPreferences(
-        screen: SystemScreenDefinitions.upcoming,
+        screen: SystemScreenDefinitions.planned,
         preferences: const ScreenPreferences(sortOrder: 2),
       );
 
@@ -73,7 +69,7 @@ void main() {
       build: buildBloc,
       act: (bloc) {
         bloc.add(const ScreenOrderStarted());
-        screensController.add([testScreen1, testScreen2, testScreen3]);
+        screensController.emit([testScreen1, testScreen2, testScreen3]);
       },
       wait: const Duration(milliseconds: 50),
       expect: () => [
@@ -97,7 +93,7 @@ void main() {
       act: (bloc) {
         bloc.add(const ScreenOrderStarted());
         // Add screens in wrong order
-        screensController.add([testScreen3, testScreen1, testScreen2]);
+        screensController.emit([testScreen3, testScreen1, testScreen2]);
       },
       wait: const Duration(milliseconds: 50),
       expect: () => [
@@ -106,7 +102,7 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'ordered keys',
-              ['inbox', 'today', 'upcoming'],
+              ['inbox', 'my_day', 'planned'],
             ),
       ],
     );
@@ -134,12 +130,12 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['today', 'inbox', 'upcoming'],
+              ['my_day', 'inbox', 'planned'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['today', 'inbox', 'upcoming']),
+          () => mockRepository.reorderScreens(['my_day', 'inbox', 'planned']),
         ).called(1);
       },
     );
@@ -167,12 +163,12 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['upcoming', 'inbox', 'today'],
+              ['planned', 'inbox', 'my_day'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['upcoming', 'inbox', 'today']),
+          () => mockRepository.reorderScreens(['planned', 'inbox', 'my_day']),
         ).called(1);
       },
     );
@@ -223,9 +219,9 @@ void main() {
       build: buildBloc,
       act: (bloc) {
         bloc.add(const ScreenOrderStarted());
-        screensController.add([testScreen1, testScreen2]);
+        screensController.emit([testScreen1, testScreen2]);
         // Simulate new screen added
-        screensController.add([testScreen1, testScreen2, testScreen3]);
+        screensController.emit([testScreen1, testScreen2, testScreen3]);
       },
       wait: const Duration(milliseconds: 100),
       expect: () => [
@@ -243,7 +239,7 @@ void main() {
         bloc.add(const ScreenOrderStarted());
         await Future<void>.delayed(const Duration(milliseconds: 10));
         bloc.add(const ScreenOrderStarted());
-        screensController.add([testScreen1]);
+        screensController.emit([testScreen1]);
       },
       wait: const Duration(milliseconds: 50),
       expect: () => [

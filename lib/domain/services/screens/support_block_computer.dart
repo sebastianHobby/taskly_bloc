@@ -1,13 +1,10 @@
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/workflow_item.dart';
 import 'package:taskly_bloc/domain/models/screens/workflow_progress.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/screens/support_block_result.dart';
@@ -220,25 +217,8 @@ class SupportBlockComputer {
 
     var allProblems = [...taskProblems, ...projectProblems];
 
-    // Add excluded urgent tasks as problems (from allocation layer)
-    // These are determined by the allocation layer, not re-detected here
-    if (displayConfig.problemsToDetect.contains(
-      ProblemType.taskUrgentExcluded,
-    )) {
-      for (final excluded in excludedUrgentTasks) {
-        allProblems.add(
-          DetectedProblem(
-            type: ProblemType.taskUrgentExcluded,
-            entityId: excluded.task.id,
-            entityType: EntityType.task,
-            title: 'Urgent task excluded',
-            description:
-                '"${excluded.task.name}" is urgent but excluded from Focus',
-            suggestedAction: 'Review allocation settings or add value to task',
-          ),
-        );
-      }
-    }
+    // NOTE: Excluded urgent tasks are now handled by AllocationAlertEvaluator
+    // and displayed in OutsideFocusSection, not in ProblemSummary.
 
     // Filter by problem types if specified
     if (block.problemTypes != null && block.problemTypes!.isNotEmpty) {

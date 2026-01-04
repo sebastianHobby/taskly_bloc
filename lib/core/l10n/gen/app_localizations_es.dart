@@ -872,4 +872,104 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get setUpMyValues => 'Configurar Mis Valores';
+
+  @override
+  String get myDayTitle => 'My Day';
+
+  @override
+  String get myDayAlertBannerSingular => '1 item outside Focus';
+
+  @override
+  String myDayAlertBannerPlural(int count) {
+    return '$count items outside Focus';
+  }
+
+  @override
+  String get myDayAlertBannerReview => 'Review';
+
+  @override
+  String get excludedSectionNeedsAlignment => 'Needs Alignment';
+
+  @override
+  String get excludedSectionWorthConsidering => 'Worth Considering';
+
+  @override
+  String get excludedSectionOverdueAttention => 'Overdue Attention';
+
+  @override
+  String get excludedSectionActiveFires => 'Active Fires';
+
+  @override
+  String get excludedSectionOutsideFocus => 'Outside Focus';
+
+  @override
+  String get alertTypeUrgent => 'Urgent tasks';
+
+  @override
+  String get alertTypeOverdue => 'Overdue tasks';
+
+  @override
+  String get alertTypeNoValue => 'Tasks without values';
+
+  @override
+  String get alertTypeLowPriority => 'Low priority tasks';
+
+  @override
+  String get alertTypeQuotaFull => 'Quota exceeded tasks';
+
+  @override
+  String get alertSeverityCritical => 'Critical';
+
+  @override
+  String get alertSeverityWarning => 'Warning';
+
+  @override
+  String get alertSeverityNotice => 'Notice';
+
+  @override
+  String get basicInfoSection => 'Información Básica';
+
+  @override
+  String get personaSectionSubtitle => 'Elige una personalidad para controlar cómo se priorizan las tareas';
+
+  @override
+  String get taskLimitSection => 'Límite de Tareas';
+
+  @override
+  String get sourceFilterSection => 'Filtrar Fuente';
+
+  @override
+  String get sourceFilterSubtitle => 'Limitar qué tareas se consideran';
+
+  @override
+  String get saving => 'Guardando...';
+
+  @override
+  String get saveFocusScreen => 'Guardar Pantalla Focus';
+
+  @override
+  String get maxTasksLabel => 'Máximo de Tareas';
+
+  @override
+  String get showExcludedSection => 'Mostrar sección excluida';
+
+  @override
+  String get showExcludedSectionSubtitle => 'Mostrar tareas excluidas al final';
+
+  @override
+  String get urgentTaskBehaviorLabel => 'Manejo de tareas urgentes';
+
+  @override
+  String get urgentBehaviorIgnore => 'Ignorar tareas urgentes';
+
+  @override
+  String get urgentBehaviorWarnOnly => 'Advertir sobre tareas urgentes';
+
+  @override
+  String get urgentBehaviorIncludeAll => 'Incluir todas las tareas urgentes';
+
+  @override
+  String daysFormat(int count) {
+    return '$count días';
+  }
 }

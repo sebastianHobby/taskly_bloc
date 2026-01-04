@@ -13,6 +13,8 @@ class TaskListTile extends StatelessWidget {
     this.onTap,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
+    this.reasonText,
+    this.reasonColor,
     super.key,
   });
 
@@ -28,6 +30,14 @@ class TaskListTile extends StatelessWidget {
 
   /// Whether to show the Next Action indicator for pinned tasks.
   final bool showNextActionIndicator;
+
+  /// Optional reason text to display below the task name.
+  /// Used for excluded task alerts (e.g., "Overdue by 2 days").
+  final String? reasonText;
+
+  /// Custom color for the reason text.
+  /// If null, uses onSurfaceVariant.
+  final Color? reasonColor;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || task.completed) return false;
@@ -166,6 +176,18 @@ class TaskListTile extends StatelessWidget {
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+
+                    // Reason text (for excluded task alerts)
+                    if (reasonText != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        reasonText!,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: reasonColor ?? colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ],
 

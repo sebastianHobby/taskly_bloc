@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/presentation/features/screens/view/focus_screen_creator_page.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_creator_page.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 
@@ -63,9 +66,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
           final customScreens = snapshot.data!;
 
           if (customScreens.isEmpty) {
-            return _EmptyView(
-              onCreateTapped: () => _navigateToCreator(context),
-            );
+            return const _EmptyView();
           }
 
           return _ScreenListView(
@@ -79,14 +80,30 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _navigateToCreator(context),
+        onPressed: () => _showScreenTypeChooser(context),
         icon: const Icon(Icons.add),
         label: const Text('New Screen'),
       ),
     );
   }
 
-  Future<void> _navigateToCreator(
+  Future<void> _showScreenTypeChooser(BuildContext context) async {
+    final screenType = await showModalBottomSheet<_ScreenTypeChoice>(
+      context: context,
+      builder: (context) => _ScreenTypeChooserSheet(),
+    );
+
+    if (screenType == null || !mounted) return;
+
+    switch (screenType) {
+      case _ScreenTypeChoice.list:
+        await _navigateToListCreator(context);
+      case _ScreenTypeChoice.focus:
+        await _navigateToFocusCreator(context);
+    }
+  }
+
+  Future<void> _navigateToListCreator(
     BuildContext context, {
     ScreenDefinition? existingScreen,
   }) async {
@@ -112,6 +129,49 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
         ),
       );
     }
+  }
+
+  Future<void> _navigateToFocusCreator(
+    BuildContext context, {
+    ScreenDefinition? existingScreen,
+  }) async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => FocusScreenCreatorPage(
+          screensRepository: _screensRepository,
+          projectRepository: getIt<ProjectRepositoryContract>(),
+          allocationOrchestrator: getIt<AllocationOrchestrator>(),
+          userId: widget.userId,
+          existingScreen: existingScreen,
+        ),
+      ),
+    );
+
+    if ((result ?? false) && mounted) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            existingScreen != null
+                ? 'Focus screen updated successfully'
+                : 'Focus screen created successfully',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _navigateToCreator(
+    BuildContext context, {
+    ScreenDefinition? existingScreen,
+  }) async {
+    // Determine screen type from existing screen
+    if (existingScreen case final DataDrivenScreenDefinition screen) {
+      if (screen.screenType == ScreenType.focus) {
+        return _navigateToFocusCreator(context, existingScreen: existingScreen);
+      }
+    }
+    return _navigateToListCreator(context, existingScreen: existingScreen);
   }
 
   Future<void> _confirmDelete(
@@ -201,9 +261,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
 // =============================================================================
 
 class _EmptyView extends StatelessWidget {
-  const _EmptyView({required this.onCreateTapped});
-
-  final VoidCallback onCreateTapped;
+  const _EmptyView();
 
   @override
   Widget build(BuildContext context) {
@@ -227,18 +285,12 @@ class _EmptyView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Create custom screens to organize your\n'
-              'tasks, projects, and labels your way.',
+              'Tap + to create custom screens and organize\n'
+              'your tasks, projects, and labels your way.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
-            ),
-            const SizedBox(height: 32),
-            FilledButton.icon(
-              onPressed: onCreateTapped,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Screen'),
             ),
           ],
         ),
@@ -567,5 +619,157 @@ class _ScreenMetadata extends StatelessWidget {
       }
     }
     return 'Items';
+  }
+}
+
+// =============================================================================
+// Screen Type Chooser
+// =============================================================================
+
+enum _ScreenTypeChoice { list, focus }
+
+class _ScreenTypeChooserSheet extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Create New Screen',
+              style: theme.textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'What type of screen would you like to create?',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _ScreenTypeOption(
+              icon: Icons.view_list,
+              title: 'List Screen',
+              description:
+                  'Display tasks, projects, labels, or values with '
+                  'custom filtering and sorting.',
+              onTap: () => Navigator.of(context).pop(_ScreenTypeChoice.list),
+            ),
+            const SizedBox(height: 8),
+            _ScreenTypeOption(
+              icon: Icons.wb_sunny,
+              title: 'Focus Screen',
+              description:
+                  'Value-aligned task allocation with urgency modes '
+                  'and smart prioritization.',
+              badge: 'Recommended',
+              onTap: () => Navigator.of(context).pop(_ScreenTypeChoice.focus),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScreenTypeOption extends StatelessWidget {
+  const _ScreenTypeOption({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.onTap,
+    this.badge,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final VoidCallback onTap;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              badge!,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

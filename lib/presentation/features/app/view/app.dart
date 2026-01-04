@@ -10,13 +10,12 @@ import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/core/routing/router.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
@@ -37,32 +36,40 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AuthBloc>(
-      lazy: false, // Immediate creation to check auth state
-      create: (context) {
-        talker.debug('[app] Creating AuthBloc...');
-        try {
-          final bloc = AuthBloc(
-            authRepository: getIt<AuthRepositoryContract>(),
-            userDataSeeder: getIt<UserDataSeederContract>(),
-          )..add(const AuthSubscriptionRequested());
-          talker.debug('[app] AuthBloc created successfully');
-          return bloc;
-        } catch (e, st) {
-          talker.handle(e, st, '[app] AuthBloc creation FAILED');
-          rethrow;
-        }
-      },
-      child: BlocBuilder<AuthBloc, AppAuthState>(
-        builder: (context, authState) {
-          return switch (authState.status) {
-            AuthStatus.initial || AuthStatus.loading => const _ThemedApp(
-              child: SplashScreen(),
-            ),
-            AuthStatus.authenticated => const _AuthenticatedApp(),
-            AuthStatus.unauthenticated => const _UnauthenticatedApp(),
-          };
+    // GlobalSettingsBloc is provided at the root level, before AuthBloc,
+    // so that theme/locale settings are available on all screens.
+    return BlocProvider<GlobalSettingsBloc>(
+      lazy: false, // Start immediately to load settings
+      create: (_) => GlobalSettingsBloc(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+      )..add(const GlobalSettingsEvent.started()),
+      child: BlocProvider<AuthBloc>(
+        lazy: false, // Immediate creation to check auth state
+        create: (context) {
+          talker.debug('[app] Creating AuthBloc...');
+          try {
+            final bloc = AuthBloc(
+              authRepository: getIt<AuthRepositoryContract>(),
+              userDataSeeder: getIt<UserDataSeederContract>(),
+            )..add(const AuthSubscriptionRequested());
+            talker.debug('[app] AuthBloc created successfully');
+            return bloc;
+          } catch (e, st) {
+            talker.handle(e, st, '[app] AuthBloc creation FAILED');
+            rethrow;
+          }
         },
+        child: BlocBuilder<AuthBloc, AppAuthState>(
+          builder: (context, authState) {
+            return switch (authState.status) {
+              AuthStatus.initial ||
+              AuthStatus.loading ||
+              AuthStatus.seeding => const _ThemedApp(child: SplashScreen()),
+              AuthStatus.authenticated => const _AuthenticatedApp(),
+              AuthStatus.unauthenticated => const _UnauthenticatedApp(),
+            };
+          },
+        ),
       ),
     );
   }
@@ -76,19 +83,12 @@ class _ThemedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<GlobalSettings>(
-      stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
-      builder: (context, snapshot) {
-        final settings = snapshot.data ?? const GlobalSettings();
-
+    return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+      builder: (context, state) {
         return MaterialApp(
-          theme: AppTheme.lightTheme(
-            seedColor: Color(settings.colorSchemeSeedArgb),
-          ),
-          darkTheme: AppTheme.darkTheme(
-            seedColor: Color(settings.colorSchemeSeedArgb),
-          ),
-          themeMode: _toFlutterThemeMode(settings.themeMode),
+          theme: AppTheme.lightTheme(seedColor: state.seedColor),
+          darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
+          themeMode: state.flutterThemeMode,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
@@ -108,19 +108,12 @@ class _UnauthenticatedApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<GlobalSettings>(
-      stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
-      builder: (context, snapshot) {
-        final settings = snapshot.data ?? const GlobalSettings();
-
+    return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+      builder: (context, state) {
         return MaterialApp(
-          theme: AppTheme.lightTheme(
-            seedColor: Color(settings.colorSchemeSeedArgb),
-          ),
-          darkTheme: AppTheme.darkTheme(
-            seedColor: Color(settings.colorSchemeSeedArgb),
-          ),
-          themeMode: _toFlutterThemeMode(settings.themeMode),
+          theme: AppTheme.lightTheme(seedColor: state.seedColor),
+          darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
+          themeMode: state.flutterThemeMode,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           debugShowCheckedModeBanner: false,
@@ -169,19 +162,14 @@ class _AuthenticatedApp extends StatelessWidget {
           ),
         ),
       ],
-      child: StreamBuilder<GlobalSettings>(
-        stream: getIt<SettingsRepositoryContract>().watch(SettingsKey.global),
-        builder: (context, snapshot) {
-          final settings = snapshot.data ?? const GlobalSettings();
+      child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+        builder: (context, state) {
+          final settings = state.settings;
 
           return MaterialApp.router(
-            theme: AppTheme.lightTheme(
-              seedColor: Color(settings.colorSchemeSeedArgb),
-            ),
-            darkTheme: AppTheme.darkTheme(
-              seedColor: Color(settings.colorSchemeSeedArgb),
-            ),
-            themeMode: _toFlutterThemeMode(settings.themeMode),
+            theme: AppTheme.lightTheme(seedColor: state.seedColor),
+            darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
+            themeMode: state.flutterThemeMode,
             locale: settings.localeCode == null
                 ? null
                 : Locale(settings.localeCode!),
@@ -202,14 +190,6 @@ class _AuthenticatedApp extends StatelessWidget {
       ),
     );
   }
-}
-
-ThemeMode _toFlutterThemeMode(AppThemeMode mode) {
-  return switch (mode) {
-    AppThemeMode.system => ThemeMode.system,
-    AppThemeMode.light => ThemeMode.light,
-    AppThemeMode.dark => ThemeMode.dark,
-  };
 }
 
 class _NotificationsBootstrapper extends StatefulWidget {

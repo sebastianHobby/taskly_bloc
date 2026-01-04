@@ -49,9 +49,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/data/features/screens/default_system_screen_provider.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
@@ -139,6 +143,7 @@ class IntegrationTestContext {
   IntegrationTestContext._({
     required this.db,
     required this.screensRepository,
+    required this.settingsRepository,
   });
 
   /// Creates a new integration test context with fresh database.
@@ -146,27 +151,42 @@ class IntegrationTestContext {
     initializeTalkerForTest();
     final db = createTestDb();
 
-    final screensRepository = ScreenDefinitionsRepository(db);
+    final idGenerator = IdGenerator.withUserId('test-user');
+    final systemScreenProvider = DefaultSystemScreenProvider(idGenerator);
+    final settingsRepository = SettingsRepository(driftDb: db);
+
+    final screensRepository = ScreenDefinitionsRepository(
+      databaseRepository: ScreenDefinitionsRepositoryImpl(
+        db,
+        idGenerator,
+        systemScreenProvider,
+        settingsRepository,
+      ),
+    );
 
     return IntegrationTestContext._(
       db: db,
       screensRepository: screensRepository,
+      settingsRepository: settingsRepository,
     );
   }
 
   final AppDatabase db;
   final ScreenDefinitionsRepositoryContract screensRepository;
+  final SettingsRepositoryContract settingsRepository;
 
   final List<BlocBase<dynamic>> _createdBlocs = [];
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
-  /// Seeds all system screens into the database.
+  /// Sets up preferences for all system screens.
+  ///
+  /// System screens are code-based and don't need to be seeded into the
+  /// database. This method sets up their preferences (isActive, sortOrder).
   Future<void> seedSystemScreens({String userId = 'test-user'}) async {
     for (final screen in SystemScreenDefinitions.all) {
-      await screensRepository.upsert(
-        userId: userId,
-        screen: screen,
-        preferences: ScreenPreferences(
+      await screensRepository.updateScreenPreferences(
+        screen.screenKey,
+        ScreenPreferences(
           isActive: true,
           sortOrder: SystemScreenDefinitions.getDefaultSortOrder(
             screen.screenKey,
@@ -176,17 +196,22 @@ class IntegrationTestContext {
     }
   }
 
-  /// Seeds a single screen definition into the database.
+  /// Seeds a single custom screen definition into the database.
+  ///
+  /// For system screens, use [seedSystemScreens] or update preferences
+  /// directly via [screensRepository.updateScreenPreferences].
   Future<void> seedScreen({
     required ScreenDefinition screen,
     String userId = 'test-user',
     bool isActive = true,
     int sortOrder = 0,
   }) async {
-    await screensRepository.upsert(
-      userId: userId,
-      screen: screen,
-      preferences: ScreenPreferences(
+    // Create the custom screen first
+    await screensRepository.createCustomScreen(screen);
+    // Then set its preferences
+    await screensRepository.updateScreenPreferences(
+      screen.screenKey,
+      ScreenPreferences(
         isActive: isActive,
         sortOrder: sortOrder,
       ),
@@ -336,7 +361,7 @@ Future<void> expectBlocNeverEmits<T>(
   try {
     await Future.any([
       completer.future,
-      Future.delayed(duration),
+      Future<void>.delayed(duration),
     ]);
   } finally {
     await subscription.cancel();

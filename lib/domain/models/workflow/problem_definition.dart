@@ -62,22 +62,6 @@ abstract class ProblemDefinition with _$ProblemDefinition {
 
   /// All predefined problem definitions
   static final Map<ProblemType, ProblemDefinition> _definitions = {
-    ProblemType.taskUrgentExcluded: const ProblemDefinition(
-      type: ProblemType.taskUrgentExcluded,
-      title: 'Urgent Task Excluded',
-      description:
-          'This task has an approaching deadline but is not in your current allocation.',
-      severity: ProblemSeverity.high,
-      applicableEntityTypes: [EntityType.task],
-      availableActions: [
-        ProblemAction.rescheduleToday(),
-        ProblemAction.rescheduleTomorrow(),
-        ProblemAction.rescheduleInDays(days: 3),
-        ProblemAction.pickDate(),
-        ProblemAction.clearDeadline(),
-      ],
-      iconName: 'warning_amber',
-    ),
     ProblemType.taskOverdue: const ProblemDefinition(
       type: ProblemType.taskOverdue,
       title: 'Overdue Task',

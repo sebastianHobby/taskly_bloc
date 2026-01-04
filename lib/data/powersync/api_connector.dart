@@ -100,6 +100,20 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       for (final op in transaction.crud) {
         lastOp = op;
 
+        // Enhanced logging for user_profiles to trace sync sequence
+        final isUserProfiles = op.table == 'user_profiles';
+        final uploadStartTime = DateTime.now();
+
+        if (isUserProfiles) {
+          talker.debug(
+            '[POWERSYNC UPLOAD] user_profiles operation START at $uploadStartTime\n'
+            '  op.type=${op.op}\n'
+            '  op.id=${op.id}\n'
+            '  op.opData keys: ${op.opData?.keys.toList()}\n'
+            '  updated_at in opData: ${op.opData?['updated_at']}',
+          );
+        }
+
         final table = rest.from(op.table);
         if (op.op == UpdateType.put) {
           final data = Map<String, dynamic>.of(op.opData!);
@@ -110,10 +124,25 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         } else if (op.op == UpdateType.delete) {
           await table.delete().eq('id', op.id);
         }
+
+        if (isUserProfiles) {
+          final uploadEndTime = DateTime.now();
+          talker.debug(
+            '[POWERSYNC UPLOAD] user_profiles operation COMPLETE at $uploadEndTime\n'
+            '  Duration: ${uploadEndTime.difference(uploadStartTime).inMilliseconds}ms\n'
+            '  Supabase REST returned SUCCESS\n'
+            '  NOTE: CDC may not have captured this yet!',
+          );
+        }
       }
 
       // All operations successful.
       await transaction.complete();
+      talker.debug(
+        '[POWERSYNC UPLOAD] transaction.complete() called at ${DateTime.now()}\n'
+        '  All ${transaction.crud.length} operations uploaded to Supabase\n'
+        '  PowerSync will now wait for CDC to sync back',
+      );
     } on PostgrestException catch (e) {
       if (e.code == '23505') {
         // Unique constraint violation - handle based on table ID strategy
@@ -278,6 +307,49 @@ Future<PowerSyncDatabase> openDatabase() async {
     logger: attachedLogger,
   );
   await db.initialize();
+
+  // Helper to log user_profiles state after sync checkpoint
+  Future<void> logUserProfilesAfterSync(
+    PowerSyncDatabase database,
+    DateTime syncTime,
+  ) async {
+    try {
+      final results = await database.execute(
+        'SELECT id, updated_at, '
+        'substr(global_settings, 1, 80) as global_preview '
+        'FROM user_profiles LIMIT 1',
+      );
+      if (results.rows.isNotEmpty) {
+        final row = results.rows.first;
+        talker.debug(
+          '[POWERSYNC CHECKPOINT] user_profiles state AFTER sync at $syncTime\n'
+          '  id=${row[0]}\n'
+          '  updated_at=${row[1]}\n'
+          '  global_settings preview: ${row[2]}...',
+        );
+      }
+    } catch (e) {
+      // Ignore errors - this is just debug logging
+    }
+  }
+
+  // Log sync status changes for debugging with enhanced checkpoint tracking
+  db.statusStream.listen((status) {
+    final now = DateTime.now();
+    talker.debug(
+      '[POWERSYNC SYNC STATUS] at $now\n'
+      '  connected=${status.connected}\n'
+      '  downloading=${status.downloading}\n'
+      '  uploading=${status.uploading}\n'
+      '  lastSyncedAt=${status.lastSyncedAt}\n'
+      '  hasSynced=${status.hasSynced}',
+    );
+
+    // When downloading completes, query user_profiles to see what was synced
+    if (!status.downloading && (status.hasSynced ?? false)) {
+      logUserProfilesAfterSync(db, now);
+    }
+  });
 
   SupabaseConnector? currentConnector;
 

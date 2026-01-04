@@ -161,10 +161,10 @@ return navigationOnly(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations)?  dataDriven,TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)?  navigationOnly,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations,  List<AppBarAction> appBarActions,  String? settingsRoute)?  dataDriven,TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)?  navigationOnly,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DataDrivenScreenDefinition() when dataDriven != null:
-return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations);case NavigationOnlyScreenDefinition() when navigationOnly != null:
+return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations,_that.appBarActions,_that.settingsRoute);case NavigationOnlyScreenDefinition() when navigationOnly != null:
 return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.iconName,_that.screenSource,_that.category);case _:
   return orElse();
 
@@ -183,10 +183,10 @@ return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations)  dataDriven,required TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)  navigationOnly,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations,  List<AppBarAction> appBarActions,  String? settingsRoute)  dataDriven,required TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)  navigationOnly,}) {final _that = this;
 switch (_that) {
 case DataDrivenScreenDefinition():
-return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations);case NavigationOnlyScreenDefinition():
+return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations,_that.appBarActions,_that.settingsRoute);case NavigationOnlyScreenDefinition():
 return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.iconName,_that.screenSource,_that.category);}
 }
 /// A variant of `when` that fallback to returning `null`
@@ -201,10 +201,10 @@ return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations)?  dataDriven,TResult? Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)?  navigationOnly,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String screenKey,  String name,  ScreenType screenType,  DateTime createdAt,  DateTime updatedAt,  List<Section> sections,  List<SupportBlock> supportBlocks,  String? iconName,  ScreenSource screenSource,  ScreenCategory category,  TriggerConfig? triggerConfig,  List<FabOperation> fabOperations,  List<AppBarAction> appBarActions,  String? settingsRoute)?  dataDriven,TResult? Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  String? iconName,  ScreenSource screenSource,  ScreenCategory category)?  navigationOnly,}) {final _that = this;
 switch (_that) {
 case DataDrivenScreenDefinition() when dataDriven != null:
-return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations);case NavigationOnlyScreenDefinition() when navigationOnly != null:
+return dataDriven(_that.id,_that.screenKey,_that.name,_that.screenType,_that.createdAt,_that.updatedAt,_that.sections,_that.supportBlocks,_that.iconName,_that.screenSource,_that.category,_that.triggerConfig,_that.fabOperations,_that.appBarActions,_that.settingsRoute);case NavigationOnlyScreenDefinition() when navigationOnly != null:
 return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.iconName,_that.screenSource,_that.category);case _:
   return null;
 
@@ -217,7 +217,7 @@ return navigationOnly(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.
 
 
 class DataDrivenScreenDefinition extends ScreenDefinition {
-  const DataDrivenScreenDefinition({required this.id, required this.screenKey, required this.name, required this.screenType, required this.createdAt, required this.updatedAt, final  List<Section> sections = const [], final  List<SupportBlock> supportBlocks = const [], this.iconName, this.screenSource = ScreenSource.userDefined, this.category = ScreenCategory.workspace, this.triggerConfig, final  List<FabOperation> fabOperations = const []}): _sections = sections,_supportBlocks = supportBlocks,_fabOperations = fabOperations,super._();
+  const DataDrivenScreenDefinition({required this.id, required this.screenKey, required this.name, required this.screenType, required this.createdAt, required this.updatedAt, final  List<Section> sections = const [], final  List<SupportBlock> supportBlocks = const [], this.iconName, this.screenSource = ScreenSource.userDefined, this.category = ScreenCategory.workspace, this.triggerConfig, final  List<FabOperation> fabOperations = const [], final  List<AppBarAction> appBarActions = const [], this.settingsRoute}): _sections = sections,_supportBlocks = supportBlocks,_fabOperations = fabOperations,_appBarActions = appBarActions,super._();
   
 
 @override final  String id;
@@ -262,6 +262,17 @@ class DataDrivenScreenDefinition extends ScreenDefinition {
   return EqualUnmodifiableListView(_fabOperations);
 }
 
+/// AppBar actions available on this screen.
+ final  List<AppBarAction> _appBarActions;
+/// AppBar actions available on this screen.
+@JsonKey() List<AppBarAction> get appBarActions {
+  if (_appBarActions is EqualUnmodifiableListView) return _appBarActions;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_appBarActions);
+}
+
+/// Route for settings link action (when appBarActions contains settingsLink).
+ final  String? settingsRoute;
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
@@ -273,16 +284,16 @@ $DataDrivenScreenDefinitionCopyWith<DataDrivenScreenDefinition> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DataDrivenScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.screenType, screenType) || other.screenType == screenType)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._sections, _sections)&&const DeepCollectionEquality().equals(other._supportBlocks, _supportBlocks)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.category, category) || other.category == category)&&(identical(other.triggerConfig, triggerConfig) || other.triggerConfig == triggerConfig)&&const DeepCollectionEquality().equals(other._fabOperations, _fabOperations));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DataDrivenScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.screenType, screenType) || other.screenType == screenType)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._sections, _sections)&&const DeepCollectionEquality().equals(other._supportBlocks, _supportBlocks)&&(identical(other.iconName, iconName) || other.iconName == iconName)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.category, category) || other.category == category)&&(identical(other.triggerConfig, triggerConfig) || other.triggerConfig == triggerConfig)&&const DeepCollectionEquality().equals(other._fabOperations, _fabOperations)&&const DeepCollectionEquality().equals(other._appBarActions, _appBarActions)&&(identical(other.settingsRoute, settingsRoute) || other.settingsRoute == settingsRoute));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,screenKey,name,screenType,createdAt,updatedAt,const DeepCollectionEquality().hash(_sections),const DeepCollectionEquality().hash(_supportBlocks),iconName,screenSource,category,triggerConfig,const DeepCollectionEquality().hash(_fabOperations));
+int get hashCode => Object.hash(runtimeType,id,screenKey,name,screenType,createdAt,updatedAt,const DeepCollectionEquality().hash(_sections),const DeepCollectionEquality().hash(_supportBlocks),iconName,screenSource,category,triggerConfig,const DeepCollectionEquality().hash(_fabOperations),const DeepCollectionEquality().hash(_appBarActions),settingsRoute);
 
 @override
 String toString() {
-  return 'ScreenDefinition.dataDriven(id: $id, screenKey: $screenKey, name: $name, screenType: $screenType, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, supportBlocks: $supportBlocks, iconName: $iconName, screenSource: $screenSource, category: $category, triggerConfig: $triggerConfig, fabOperations: $fabOperations)';
+  return 'ScreenDefinition.dataDriven(id: $id, screenKey: $screenKey, name: $name, screenType: $screenType, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, supportBlocks: $supportBlocks, iconName: $iconName, screenSource: $screenSource, category: $category, triggerConfig: $triggerConfig, fabOperations: $fabOperations, appBarActions: $appBarActions, settingsRoute: $settingsRoute)';
 }
 
 
@@ -293,7 +304,7 @@ abstract mixin class $DataDrivenScreenDefinitionCopyWith<$Res> implements $Scree
   factory $DataDrivenScreenDefinitionCopyWith(DataDrivenScreenDefinition value, $Res Function(DataDrivenScreenDefinition) _then) = _$DataDrivenScreenDefinitionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String screenKey, String name, ScreenType screenType, DateTime createdAt, DateTime updatedAt, List<Section> sections, List<SupportBlock> supportBlocks, String? iconName, ScreenSource screenSource, ScreenCategory category, TriggerConfig? triggerConfig, List<FabOperation> fabOperations
+ String id, String screenKey, String name, ScreenType screenType, DateTime createdAt, DateTime updatedAt, List<Section> sections, List<SupportBlock> supportBlocks, String? iconName, ScreenSource screenSource, ScreenCategory category, TriggerConfig? triggerConfig, List<FabOperation> fabOperations, List<AppBarAction> appBarActions, String? settingsRoute
 });
 
 
@@ -310,7 +321,7 @@ class _$DataDrivenScreenDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? screenType = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? supportBlocks = null,Object? iconName = freezed,Object? screenSource = null,Object? category = null,Object? triggerConfig = freezed,Object? fabOperations = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? screenType = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? supportBlocks = null,Object? iconName = freezed,Object? screenSource = null,Object? category = null,Object? triggerConfig = freezed,Object? fabOperations = null,Object? appBarActions = null,Object? settingsRoute = freezed,}) {
   return _then(DataDrivenScreenDefinition(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
@@ -325,7 +336,9 @@ as String?,screenSource: null == screenSource ? _self.screenSource : screenSourc
 as ScreenSource,category: null == category ? _self.category : category // ignore: cast_nullable_to_non_nullable
 as ScreenCategory,triggerConfig: freezed == triggerConfig ? _self.triggerConfig : triggerConfig // ignore: cast_nullable_to_non_nullable
 as TriggerConfig?,fabOperations: null == fabOperations ? _self._fabOperations : fabOperations // ignore: cast_nullable_to_non_nullable
-as List<FabOperation>,
+as List<FabOperation>,appBarActions: null == appBarActions ? _self._appBarActions : appBarActions // ignore: cast_nullable_to_non_nullable
+as List<AppBarAction>,settingsRoute: freezed == settingsRoute ? _self.settingsRoute : settingsRoute // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

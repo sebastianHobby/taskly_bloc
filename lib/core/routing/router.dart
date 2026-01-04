@@ -6,67 +6,27 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/routing/widgets/scaffold_with_nested_navigation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
-import 'package:taskly_bloc/presentation/features/labels/view/label_detail_unified_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
-import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
-import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
-import 'package:taskly_bloc/presentation/features/workflow/view/workflow_list_page.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/screen_management_page.dart';
-import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/next_action/view/allocation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 
 /// Router for authenticated app shell.
 ///
-/// Note: Auth routes are handled by the unauthenticated Navigator in app.dart.
-/// This router only contains protected routes since it's only mounted when
-/// the user is authenticated.
+/// Uses convention-based routing with only two patterns:
+/// - **Screens**: `/:segment` → handled by [Routing.buildScreen]
+/// - **Entities**: `/:entityType/:id` → handled by [Routing.buildEntityDetail]
+///
+/// All screen/entity builders are registered in [Routing] at bootstrap.
+/// No legacy redirects - all paths are canonical.
 final router = GoRouter(
-  initialLocation: '/inbox',
+  initialLocation: Routing.screenPath('my_day'),
   observers: [TalkerRouteObserver(talker)],
   routes: [
-    // Legacy aliases redirect to unified screen routes
-    GoRoute(
-      path: '/tasks/today',
-      redirect: (_, __) => '/today',
-    ),
-    GoRoute(
-      path: '/tasks/upcoming',
-      redirect: (_, __) => '/upcoming',
-    ),
-    GoRoute(
-      path: '/tasks/next-actions',
-      redirect: (_, __) => '/next-actions',
-    ),
-    // Legacy /s/ prefix redirects
-    GoRoute(
-      path: '/s/:screenId',
-      redirect: (_, state) {
-        final screenId = state.pathParameters['screenId']!;
-        return Routing.screenPath(screenId);
-      },
-    ),
     ShellRoute(
       builder: (context, state, child) {
         // Derive activeScreenId from URL segment
@@ -97,61 +57,37 @@ final router = GoRouter(
       },
       routes: [
         // === ENTITY DETAIL ROUTES ===
+        // These are parameterized routes that need IDs
         GoRoute(
           path: '/task/:id',
-          builder: (context, state) => BlocProvider(
-            create: (_) => TaskDetailBloc(
-              taskId: state.pathParameters['id'],
-              taskRepository: getIt<TaskRepositoryContract>(),
-              projectRepository: getIt<ProjectRepositoryContract>(),
-              labelRepository: getIt<LabelRepositoryContract>(),
-            ),
-            child: const TaskDetailSheet(),
+          builder: (_, state) => Routing.buildEntityDetail(
+            'task',
+            state.pathParameters['id']!,
           ),
         ),
         GoRoute(
           path: '/project/:id',
-          builder: (context, state) => ProjectDetailUnifiedPage(
-            projectId: state.pathParameters['id']!,
+          builder: (_, state) => Routing.buildEntityDetail(
+            'project',
+            state.pathParameters['id']!,
           ),
         ),
         GoRoute(
           path: '/label/:id',
-          builder: (context, state) => LabelDetailUnifiedPage(
-            labelId: state.pathParameters['id']!,
+          builder: (_, state) => Routing.buildEntityDetail(
+            'label',
+            state.pathParameters['id']!,
           ),
         ),
         GoRoute(
           path: '/value/:id',
-          builder: (context, state) => LabelDetailUnifiedPage(
-            labelId: state.pathParameters['id']!,
+          builder: (_, state) => Routing.buildEntityDetail(
+            'value',
+            state.pathParameters['id']!,
           ),
         ),
 
-        // === SPECIAL ROUTES (with custom Bloc providers) ===
-        GoRoute(
-          path: '/wellbeing',
-          builder: (context, state) => BlocProvider(
-            create: (_) => WellbeingDashboardBloc(getIt<AnalyticsService>()),
-            child: const WellbeingDashboardScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/journal',
-          builder: (context, state) => BlocProvider(
-            create: (_) =>
-                JournalEntryBloc(getIt<WellbeingRepositoryContract>()),
-            child: const JournalScreen(),
-          ),
-        ),
-        GoRoute(
-          path: '/trackers',
-          builder: (context, state) => BlocProvider(
-            create: (_) =>
-                TrackerManagementBloc(getIt<WellbeingRepositoryContract>()),
-            child: const TrackerManagementScreen(),
-          ),
-        ),
+        // === WORKFLOW RUN (transient state, not a screen) ===
         GoRoute(
           path: '/workflow-run',
           builder: (context, state) {
@@ -160,62 +96,16 @@ final router = GoRouter(
           },
         ),
 
-        // === SETTINGS SUB-ROUTES ===
-        GoRoute(
-          path: '/settings',
-          builder: (context, state) => SettingsScreen(
-            settingsRepository: getIt<SettingsRepositoryContract>(),
-          ),
-        ),
-        GoRoute(
-          path: '/allocation-settings',
-          builder: (context, state) => AllocationSettingsPage(
-            settingsRepository: getIt<SettingsRepositoryContract>(),
-            labelRepository: getIt<LabelRepositoryContract>(),
-          ),
-        ),
-        GoRoute(
-          path: '/navigation-settings',
-          builder: (context, state) => NavigationSettingsPage(
-            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
-          ),
-        ),
-        GoRoute(
-          path: '/screen-management',
-          builder: (context, state) => ScreenManagementPage(
-            userId: getIt<AuthRepositoryContract>().currentUser!.id,
-          ),
-        ),
-        GoRoute(
-          path: '/workflows',
-          builder: (context, state) => WorkflowListPage(
-            userId: getIt<AuthRepositoryContract>().currentUser!.id,
-          ),
-        ),
-
-        // === UNIFIED SCREEN ROUTE (catch-all) ===
-        // ALL other screens: inbox, today, projects, settings, workflows, etc.
+        // === UNIFIED SCREEN ROUTE (convention-based catch-all) ===
+        // ALL screens: inbox, my_day, settings, journal, etc.
+        // Builders are registered in Routing at bootstrap.
         GoRoute(
           path: '/:segment',
-          builder: (context, state) {
+          builder: (_, state) {
             final screenKey = Routing.parseScreenKey(
               state.pathParameters['segment']!,
             );
-
-            // Check system screens first
-            final systemScreen = SystemScreenDefinitions.getById(screenKey);
-            if (systemScreen != null) {
-              return UnifiedScreenPage(
-                key: ValueKey('screen_$screenKey'),
-                definition: systemScreen,
-              );
-            }
-
-            // Load user-defined screen from repository
-            return UnifiedScreenPageById(
-              key: ValueKey('screen_$screenKey'),
-              screenId: screenKey,
-            );
+            return Routing.buildScreen(screenKey);
           },
         ),
       ],

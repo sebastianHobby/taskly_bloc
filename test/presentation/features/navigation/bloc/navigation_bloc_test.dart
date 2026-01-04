@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/bloc_test_patterns.dart';
 import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
@@ -30,7 +31,7 @@ void main() {
     late MockScreenDefinitionsRepositoryContract mockScreensRepository;
     late MockNavigationBadgeService mockBadgeService;
     late NavigationIconResolver iconResolver;
-    late StreamController<List<ScreenWithPreferences>> screensController;
+    late TestStreamController<List<ScreenWithPreferences>> screensController;
 
     setUpAll(() {
       initializeTalkerForTest();
@@ -57,8 +58,7 @@ void main() {
       mockScreensRepository = MockScreenDefinitionsRepositoryContract();
       mockBadgeService = MockNavigationBadgeService();
       iconResolver = const NavigationIconResolver();
-      screensController =
-          StreamController<List<ScreenWithPreferences>>.broadcast();
+      screensController = TestStreamController<List<ScreenWithPreferences>>();
 
       when(
         () => mockScreensRepository.watchAllScreens(),
@@ -145,7 +145,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(id: '1', screenKey: 'inbox', name: 'Inbox'),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -168,7 +168,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(
             id: '3',
             screenKey: 'upcoming',
@@ -200,7 +200,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(
             id: '1',
             screenKey: 'inbox',
@@ -223,7 +223,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(
             id: '1',
             screenKey: 'wellbeing',
@@ -247,7 +247,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(
             id: '1',
             screenKey: 'journal',
@@ -271,7 +271,7 @@ void main() {
         bloc.add(const NavigationStarted());
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        screensController.add([
+        screensController.emit([
           createScreen(
             id: '1',
             screenKey: 'settings',
@@ -317,7 +317,7 @@ void main() {
           bloc.add(const NavigationStarted());
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          screensController.addError(Exception('Database error'));
+          screensController.emitError(Exception('Database error'));
 
           await future;
           await bloc.close();
@@ -361,14 +361,21 @@ void main() {
       expect(result.selectedIcon, Icons.inbox);
     });
 
-    test('resolves today icon by screenId', () {
+    test('resolves today icon by screenId (legacy, maps to my_day icon)', () {
       final result = resolver.resolve(screenId: 'today', iconName: null);
-      expect(result.icon, Icons.calendar_today_outlined);
-      expect(result.selectedIcon, Icons.calendar_today);
+      // Legacy 'today' now maps to my_day icon (wb_sunny)
+      expect(result.icon, Icons.wb_sunny_outlined);
+      expect(result.selectedIcon, Icons.wb_sunny);
     });
 
     test('resolves upcoming icon by screenId', () {
       final result = resolver.resolve(screenId: 'upcoming', iconName: null);
+      expect(result.icon, Icons.event_outlined);
+      expect(result.selectedIcon, Icons.event);
+    });
+
+    test('resolves planned icon by screenId', () {
+      final result = resolver.resolve(screenId: 'planned', iconName: null);
       expect(result.icon, Icons.event_outlined);
       expect(result.selectedIcon, Icons.event);
     });
@@ -379,10 +386,11 @@ void main() {
       expect(result.selectedIcon, Icons.done_all);
     });
 
-    test('resolves next_actions icon by screenId', () {
+    test('resolves next_actions icon by screenId (legacy, maps to my_day)', () {
       final result = resolver.resolve(screenId: 'next_actions', iconName: null);
-      expect(result.icon, Icons.bolt_outlined);
-      expect(result.selectedIcon, Icons.bolt);
+      // Legacy 'next_actions' now maps to my_day icon (wb_sunny)
+      expect(result.icon, Icons.wb_sunny_outlined);
+      expect(result.selectedIcon, Icons.wb_sunny);
     });
 
     test('resolves projects icon by screenId', () {
@@ -407,6 +415,13 @@ void main() {
       final result = resolver.resolve(screenId: 'wellbeing', iconName: null);
       expect(result.icon, Icons.self_improvement_outlined);
       expect(result.selectedIcon, Icons.self_improvement);
+    });
+
+    test('resolves journal icon by screenId', () {
+      final result = resolver.resolve(screenId: 'journal', iconName: null);
+      // Journal uses book icon
+      expect(result.icon, Icons.book_outlined);
+      expect(result.selectedIcon, Icons.book);
     });
 
     test('resolves workflows icon by screenId', () {

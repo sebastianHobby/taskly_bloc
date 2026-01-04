@@ -137,6 +137,39 @@ jobs:
             exit 1
           fi
           echo "✓ No unsafe async test patterns found."
+
+      - name: Check for raw StreamController usage in tests
+        run: |
+          # Find raw StreamController usage in test files (should use TestStreamController)
+          # Exclude allowed files: bloc_test_patterns.dart, widget_test_helpers.dart, fake_repositories.dart
+          VIOLATIONS=$(grep -rn "StreamController\s*<" test/ --include="*_test.dart" \
+            | grep -v "TestStreamController" \
+            | grep -v "// ignore-stream-controller" \
+            || true)
+          
+          if [ -n "$VIOLATIONS" ]; then
+            echo "❌ Found raw StreamController usage in test files:"
+            echo ""
+            echo "$VIOLATIONS" | head -20
+            TOTAL=$(echo "$VIOLATIONS" | wc -l)
+            if [ "$TOTAL" -gt 20 ]; then
+              echo "... and $((TOTAL - 20)) more"
+            fi
+            echo ""
+            echo "Raw StreamController can cause tests to hang indefinitely."
+            echo "Use TestStreamController from bloc_test_patterns.dart instead:"
+            echo ""
+            echo "  // Before (can hang):"
+            echo "  final controller = StreamController<List<Task>>();"
+            echo ""
+            echo "  // After (safe):"
+            echo "  final controller = TestStreamController<List<Task>>();"
+            echo "  controller.emit([task]);  // Safe - replays to late subscribers"
+            echo ""
+            echo "Add '// ignore-stream-controller' to line if intentional."
+            exit 1
+          fi
+          echo "✓ No raw StreamController usage found in tests."
       
       - name: Validate IdGenerator table registration
         run: |

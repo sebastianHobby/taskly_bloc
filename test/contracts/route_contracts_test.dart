@@ -132,17 +132,14 @@ void main() {
       });
 
       test('no system screen paths conflict with special routes', () {
-        // These are explicitly routed in router.dart
+        // Only entity routes and workflow-run are special (not convention-based)
+        // All other routes use the /:segment pattern via Routing.buildScreen()
         const specialRoutes = <String>{
           '/task',
           '/project',
           '/label',
           '/value',
-          '/journal',
-          '/trackers',
           '/workflow-run',
-          '/allocation-settings',
-          '/navigation-settings',
         };
 
         for (final screen in SystemScreenDefinitions.all) {

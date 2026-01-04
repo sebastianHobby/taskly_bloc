@@ -59,6 +59,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -201,7 +202,118 @@ Stream<T> delayedStream<T>(List<(Duration, T)> emissions) async* {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Test Stream Controller
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Standard stream controller for bloc tests.
+///
+/// Uses [BehaviorSubject] internally so late subscribers receive the last
+/// emitted value - eliminating race condition hangs that occur when a bloc
+/// subscribes after data has been emitted.
+///
+/// ## Why use this instead of StreamController?
+///
+/// Raw `StreamController` causes test hangs because:
+/// 1. `act()` fires event AND emits data simultaneously
+/// 2. Bloc's event handler subscribes to stream AFTER emit
+/// 3. Data is lost - test waits forever for states that never arrive
+///
+/// `TestStreamController` uses `BehaviorSubject` which replays the last
+/// value to new subscribers, eliminating timing issues.
+///
+/// ## Usage
+///
+/// ```dart
+/// late TestStreamController<List<Task>> tasksController;
+///
+/// setUp(() {
+///   tasksController = TestStreamController();
+///   when(() => repo.watchAll()).thenAnswer((_) => tasksController.stream);
+/// });
+///
+/// tearDown(() async {
+///   await tasksController.close();
+/// });
+///
+/// blocTestSafe<MyBloc, MyState>(
+///   'loads tasks',
+///   build: buildBloc,
+///   act: (bloc) {
+///     bloc.add(LoadTasks());
+///     tasksController.emit([task1, task2]); // Safe - replays to late subscribers
+///   },
+///   expect: () => [/* states */],
+/// );
+/// ```
+///
+/// ## Seeded variant
+///
+/// Use [TestStreamController.seeded] when subscribers should immediately
+/// receive an initial value:
+///
+/// ```dart
+/// tasksController = TestStreamController.seeded([]); // Starts with empty list
+/// ```
+class TestStreamController<T> {
+  /// Create a test stream controller.
+  ///
+  /// Subscribers will receive the last emitted value when they subscribe.
+  /// If no value has been emitted, they wait for the first emission.
+  TestStreamController() : _subject = BehaviorSubject<T>();
+
+  /// Create a test stream controller with an initial value.
+  ///
+  /// Subscribers immediately receive [initialValue] when they subscribe.
+  TestStreamController.seeded(T initialValue)
+    : _subject = BehaviorSubject<T>.seeded(initialValue);
+
+  final BehaviorSubject<T> _subject;
+
+  /// The stream to pass to mocks.
+  ///
+  /// ```dart
+  /// when(() => repo.watchAll()).thenAnswer((_) => controller.stream);
+  /// ```
+  Stream<T> get stream => _subject.stream;
+
+  /// Emit data to the stream.
+  ///
+  /// Safe to call before bloc subscribes - [BehaviorSubject] replays
+  /// the last value to new subscribers.
+  void emit(T data) => _subject.add(data);
+
+  /// Emit an error to the stream.
+  void emitError(Object error, [StackTrace? stackTrace]) {
+    _subject.addError(error, stackTrace);
+  }
+
+  /// The last emitted value, or null if none.
+  T? get value => _subject.valueOrNull;
+
+  /// Whether a value has been emitted.
+  bool get hasValue => _subject.hasValue;
+
+  /// Close the controller.
+  ///
+  /// Always call in `tearDown()`:
+  /// ```dart
+  /// tearDown(() async {
+  ///   await controller.close();
+  /// });
+  /// ```
+  Future<void> close() => _subject.close();
+
+  /// Whether the controller is closed.
+  bool get isClosed => _subject.isClosed;
+
+  /// Whether the stream has any listeners.
+  bool get hasListener => _subject.hasListener;
+}
+
 /// Creates a broadcast stream controller for testing.
+///
+/// @Deprecated('Use TestStreamController instead - prevents race condition hangs')
 ///
 /// Useful when multiple listeners need the same stream.
 ///
@@ -212,6 +324,7 @@ Stream<T> delayedStream<T>(List<(Duration, T)> emissions) async* {
 /// // Emit values during test
 /// controller.add([task1]);
 /// ```
+@Deprecated('Use TestStreamController instead - prevents race condition hangs')
 StreamController<T> createBroadcastController<T>() {
   return StreamController<T>.broadcast();
 }
