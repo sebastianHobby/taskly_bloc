@@ -1180,5 +1180,78 @@
     "setUpMyValues": "Set Up My Values",
     "@setUpMyValues": {
         "description": "Button to set up values"
+    },
+    "myDayTitle": "My Day",
+    "@myDayTitle": {
+        "description": "Title for the My Day screen"
+    },
+    "myDayAlertBannerSingular": "1 item outside Focus",
+    "@myDayAlertBannerSingular": {
+        "description": "Alert banner text for single item outside focus"
+    },
+    "myDayAlertBannerPlural": "{count} items outside Focus",
+    "@myDayAlertBannerPlural": {
+        "description": "Alert banner text for multiple items outside focus",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "myDayAlertBannerReview": "Review",
+    "@myDayAlertBannerReview": {
+        "description": "Button text to review excluded items"
+    },
+    "excludedSectionNeedsAlignment": "Needs Alignment",
+    "@excludedSectionNeedsAlignment": {
+        "description": "Excluded section title for Idealist persona"
+    },
+    "excludedSectionWorthConsidering": "Worth Considering",
+    "@excludedSectionWorthConsidering": {
+        "description": "Excluded section title for Reflector persona"
+    },
+    "excludedSectionOverdueAttention": "Overdue Attention",
+    "@excludedSectionOverdueAttention": {
+        "description": "Excluded section title for Realist persona"
+    },
+    "excludedSectionActiveFires": "Active Fires",
+    "@excludedSectionActiveFires": {
+        "description": "Excluded section title for Firefighter persona"
+    },
+    "excludedSectionOutsideFocus": "Outside Focus",
+    "@excludedSectionOutsideFocus": {
+        "description": "Excluded section title for Custom persona"
+    },
+    "alertTypeUrgent": "Urgent tasks",
+    "@alertTypeUrgent": {
+        "description": "Display name for urgent alert type"
+    },
+    "alertTypeOverdue": "Overdue tasks",
+    "@alertTypeOverdue": {
+        "description": "Display name for overdue alert type"
+    },
+    "alertTypeNoValue": "Tasks without values",
+    "@alertTypeNoValue": {
+        "description": "Display name for no value alert type"
+    },
+    "alertTypeLowPriority": "Low priority tasks",
+    "@alertTypeLowPriority": {
+        "description": "Display name for low priority alert type"
+    },
+    "alertTypeQuotaFull": "Quota exceeded tasks",
+    "@alertTypeQuotaFull": {
+        "description": "Display name for quota full alert type"
+    },
+    "alertSeverityCritical": "Critical",
+    "@alertSeverityCritical": {
+        "description": "Display name for critical severity"
+    },
+    "alertSeverityWarning": "Warning",
+    "@alertSeverityWarning": {
+        "description": "Display name for warning severity"
+    },
+    "alertSeverityNotice": "Notice",
+    "@alertSeverityNotice": {
+        "description": "Display name for notice severity"
     }
 }

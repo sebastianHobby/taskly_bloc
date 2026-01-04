@@ -10,6 +10,7 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart'
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
@@ -486,7 +487,7 @@ class TestData {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? iconName,
-    bool isSystem = false,
+    ScreenSource screenSource = ScreenSource.userDefined,
     ScreenCategory category = ScreenCategory.workspace,
   }) {
     final now = DateTime.now();
@@ -507,7 +508,7 @@ class TestData {
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
       iconName: iconName,
-      isSystem: isSystem,
+      screenSource: screenSource,
       category: category,
     );
   }
@@ -520,7 +521,7 @@ class TestData {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? iconName,
-    bool isSystem = false,
+    ScreenSource screenSource = ScreenSource.userDefined,
     ScreenCategory category = ScreenCategory.settings,
   }) {
     final now = DateTime.now();
@@ -531,7 +532,7 @@ class TestData {
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
       iconName: iconName,
-      isSystem: isSystem,
+      screenSource: screenSource,
       category: category,
     );
   }

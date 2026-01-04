@@ -26,8 +26,16 @@ void main() {
       expect(EntityType.goal.name, 'goal');
     });
 
-    test('enum has 4 values', () {
-      expect(EntityType.values, hasLength(4));
+    test('journal type exists', () {
+      expect(EntityType.journal.name, 'journal');
+    });
+
+    test('tracker type exists', () {
+      expect(EntityType.tracker.name, 'tracker');
+    });
+
+    test('enum has 6 values', () {
+      expect(EntityType.values, hasLength(6));
     });
   });
 

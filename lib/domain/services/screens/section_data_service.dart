@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -509,8 +511,20 @@ class SectionDataService {
     AgendaGrouping grouping,
     TaskQuery? additionalFilter,
   ) async* {
+    developer.log(
+      'AGENDA: _watchAgendaSection called with dateField=$dateField, grouping=$grouping, filter=$additionalFilter',
+      name: 'SectionDataService',
+    );
     await for (final tasks in _taskRepository.watchAll(additionalFilter)) {
+      developer.log(
+        'AGENDA: Got ${tasks.length} tasks from watchAll: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate}, completed=${t.completed})").join(", ")}',
+        name: 'SectionDataService',
+      );
       final (grouped, order) = _groupTasksByDate(tasks, dateField, grouping);
+      developer.log(
+        'AGENDA: After grouping: groups=${grouped.length}, order=$order',
+        name: 'SectionDataService',
+      );
 
       yield SectionDataResult.agenda(
         groupedTasks: grouped,

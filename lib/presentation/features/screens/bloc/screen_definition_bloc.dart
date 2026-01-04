@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -32,6 +30,21 @@ sealed class ScreenDefinitionState with _$ScreenDefinitionState {
   }) = _Error;
 }
 
+/// BLoC that manages loading and watching a single screen definition.
+///
+/// ## Race Condition Prevention
+///
+/// This bloc assumes that it will only be created/used AFTER the user is
+/// fully authenticated and system data has been seeded. The [AuthBloc]
+/// ensures this by:
+/// 1. Emitting [AuthStatus.seeding] while `UserDataSeeder.seedAll()` runs
+/// 2. Only emitting [AuthStatus.authenticated] after seeding completes
+///
+/// UI components should only render screens (and thus create this bloc)
+/// when auth status is [AuthStatus.authenticated], not during [seeding].
+///
+/// This eliminates the need for grace periods or timing-based workarounds
+/// to handle the race between screen queries and data seeding.
 class ScreenDefinitionBloc
     extends Bloc<ScreenDefinitionEvent, ScreenDefinitionState> {
   ScreenDefinitionBloc({
@@ -56,10 +69,6 @@ class ScreenDefinitionBloc
     return super.close();
   }
 
-  /// Grace period to wait before showing "not found" state.
-  /// This allows time for system screen seeding to complete after auth.
-  static const _gracePeriod = Duration(seconds: 3);
-
   Future<void> _onSubscriptionRequested(
     _SubscriptionRequested event,
     Emitter<ScreenDefinitionState> emit,
@@ -70,83 +79,37 @@ class ScreenDefinitionBloc
       '_onSubscriptionRequested START for screenKey="${event.screenKey}"',
     );
     emit(const ScreenDefinitionState.loading());
-    talker.blocLog('ScreenDefinition', 'Emitted loading state');
 
-    // Track whether we've received a valid screen within the grace period
+    // Track whether we've received a valid screen (for deletion detection)
     var receivedScreen = false;
-    final graceDeadline = DateTime.now().add(_gracePeriod);
-    var emissionCount = 0;
 
-    // Start a timer to force state update after grace period if still loading
-    Timer? graceTimer;
-    // ignore: unused_local_variable, Flag checked in timer callback
-    var needsGraceCheck = false;
-
-    graceTimer = Timer(_gracePeriod + const Duration(milliseconds: 100), () {
-      talker.blocLog(
-        'ScreenDefinition',
-        'Grace timer fired! needsGraceCheck=true, emissionCount=$emissionCount',
-      );
-      // If we're still waiting and haven't received a screen, this flag
-      // will be checked on next emission. But if there's no emission,
-      // we need to handle it differently.
-      needsGraceCheck = true;
-    });
-
-    talker.blocLog(
-      'ScreenDefinition',
-      'Starting emit.forEach on watchScreen stream...',
-    );
     try {
       await emit.forEach<ScreenWithPreferences?>(
         _repository.watchScreen(event.screenKey),
         onData: (screenWithPrefs) {
-          emissionCount++;
           final screen = screenWithPrefs?.screen;
           talker.blocLog(
             'ScreenDefinition',
-            'onData #$emissionCount: screen=${screen == null ? "null" : "ScreenDefinition(screenKey=${screen.screenKey}, name=${screen.name})"}',
+            'onData: screen=${screen == null ? "null" : "ScreenDefinition(screenKey=${screen.screenKey})"}',
           );
 
           if (screen != null) {
             receivedScreen = true;
-            graceTimer?.cancel();
-            talker.blocLog('ScreenDefinition', 'Returning loaded state');
             return ScreenDefinitionState.loaded(screen: screen);
           }
 
-          // If we already received a screen and now it's null, it was deleted
+          // If we previously had a screen and now it's null, it was deleted
           if (receivedScreen) {
-            graceTimer?.cancel();
             talker.blocLog(
               'ScreenDefinition',
-              'Previously had screen, now null -> returning notFound',
+              'Previously had screen, now null -> notFound (deleted)',
             );
             return const ScreenDefinitionState.notFound();
           }
 
-          // During grace period, stay in loading state to allow seeding
-          final now = DateTime.now();
-          final isBeforeDeadline = now.isBefore(graceDeadline);
-          talker.blocLog(
-            'ScreenDefinition',
-            'Grace check: now=$now, deadline=$graceDeadline, isBeforeDeadline=$isBeforeDeadline',
-          );
-
-          if (isBeforeDeadline) {
-            talker.blocLog(
-              'ScreenDefinition',
-              'Still in grace period -> returning loading',
-            );
-            return const ScreenDefinitionState.loading();
-          }
-
-          // Grace period expired, screen truly not found
-          graceTimer?.cancel();
-          talker.blocLog(
-            'ScreenDefinition',
-            'Grace period expired -> returning notFound',
-          );
+          // Screen doesn't exist - no grace period needed since AuthBloc
+          // guarantees seeding is complete before authenticated status
+          talker.blocLog('ScreenDefinition', 'Screen not found');
           return const ScreenDefinitionState.notFound();
         },
         onError: (error, stackTrace) {
@@ -155,7 +118,6 @@ class ScreenDefinitionBloc
             stackTrace,
             '[ScreenDefinitionBloc] Stream error',
           );
-          graceTimer?.cancel();
           return ScreenDefinitionState.error(
             error: error,
             stackTrace: stackTrace,
@@ -171,7 +133,6 @@ class ScreenDefinitionBloc
       );
       rethrow;
     } finally {
-      graceTimer.cancel();
       talker.blocLog(
         'ScreenDefinition',
         '_onSubscriptionRequested END for screenKey="${event.screenKey}"',

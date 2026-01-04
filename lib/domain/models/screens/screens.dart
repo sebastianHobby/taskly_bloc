@@ -5,6 +5,7 @@ export 'fab_operation.dart';
 export 'related_data_config.dart';
 export 'screen_category.dart';
 export 'screen_definition.dart';
+export 'screen_source.dart';
 export 'section.dart';
 export 'support_block.dart';
 export 'trigger_config.dart';

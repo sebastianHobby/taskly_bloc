@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 
 /// View model for a navigation destination built from a ScreenDefinition.
 class NavigationDestinationVm {
@@ -10,7 +11,7 @@ class NavigationDestinationVm {
     required this.icon,
     required this.selectedIcon,
     required this.route,
-    required this.isSystem,
+    required this.screenSource,
     this.badgeStream,
     this.sortOrder = 0,
     this.category = ScreenCategory.workspace,
@@ -22,8 +23,11 @@ class NavigationDestinationVm {
   final IconData icon;
   final IconData selectedIcon;
   final String route;
-  final bool isSystem;
+  final ScreenSource screenSource;
   final Stream<int>? badgeStream;
   final int sortOrder;
   final ScreenCategory category;
+
+  /// Convenience getter for system screen check.
+  bool get isSystemScreen => screenSource == ScreenSource.systemTemplate;
 }

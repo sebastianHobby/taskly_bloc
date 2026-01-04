@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 
 /// Mixin providing consistent entity tap handling for widgets.
 /// Use this when building entity list items or cards.
@@ -12,10 +13,10 @@ mixin EntityTapHandler {
     VoidCallback? customOnTap,
   }) {
     return customOnTap ??
-        EntityNavigator.getDefaultOnTap(
+        Routing.onTapEntity(
           context,
-          entityId: entityId,
-          entityType: entityType,
+          EntityType.fromString(entityType),
+          entityId,
         );
   }
 }

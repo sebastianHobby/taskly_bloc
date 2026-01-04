@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/queries/label_query.dart';
@@ -11,6 +12,7 @@ import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 
 /// System screen definitions for built-in screens.
 ///
@@ -28,8 +30,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'inbox',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     fabOperations: [FabOperation.createTask],
     sections: [
@@ -39,23 +40,24 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Today screen - tasks due/starting today
-  static final today = ScreenDefinition.dataDriven(
-    id: 'today',
-    screenKey: 'today',
-    name: 'Today',
-    screenType: ScreenType.list,
+  /// My Day screen - unified Focus view with allocation alerts
+  ///
+  /// Replaces both Today and Next Actions screens.
+  /// Shows persona-driven allocation with alert banners for excluded tasks.
+  static final myDay = ScreenDefinition.dataDriven(
+    id: 'my_day',
+    screenKey: 'my_day',
+    name: 'My Day',
+    screenType: ScreenType.focus,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'today',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createTask],
     sections: [
-      Section.agenda(
-        dateField: AgendaDateField.deadlineDate,
-        grouping: AgendaGrouping.overdueFirst,
-        title: 'Due',
+      const Section.allocation(
+        displayMode: AllocationDisplayMode.pinnedFirst,
+        showExcludedWarnings: true,
+        showExcludedSection: true,
       ),
     ],
   );
@@ -68,8 +70,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'upcoming',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     fabOperations: [FabOperation.createTask],
     sections: [
@@ -88,8 +89,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'done_all',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     sections: [
       Section.data(
@@ -118,8 +118,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'folder',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     fabOperations: [FabOperation.createProject],
     sections: [
@@ -137,8 +136,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'label',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     fabOperations: [FabOperation.createLabel],
     sections: [
@@ -156,37 +154,12 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'star',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     fabOperations: [FabOperation.createValue],
     sections: [
       Section.data(
         config: DataConfig.value(query: const LabelQuery()),
-      ),
-    ],
-  );
-
-  /// Next Actions / Focus screen - allocated tasks
-  static final nextActions = ScreenDefinition.dataDriven(
-    id: 'next_actions',
-    screenKey: 'next_actions',
-    name: 'Next Actions',
-    screenType: ScreenType.focus,
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'bolt',
-    category: ScreenCategory.workspace,
-    sections: [
-      const Section.allocation(),
-    ],
-    supportBlocks: [
-      SupportBlock.problemSummary(
-        problemTypes: ['task_urgent_excluded', 'task_orphan'],
-        showCount: true,
-        showList: false,
-        title: 'Attention needed',
       ),
     ],
   );
@@ -199,8 +172,7 @@ abstract class SystemScreenDefinitions {
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'label_off',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.workspace,
     sections: [
       Section.data(
@@ -242,8 +214,7 @@ abstract class SystemScreenDefinitions {
     name: 'Settings',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'settings',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.settings,
   );
 
@@ -254,8 +225,7 @@ abstract class SystemScreenDefinitions {
     name: 'Wellbeing',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'self_improvement',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.wellbeing,
   );
 
@@ -266,8 +236,7 @@ abstract class SystemScreenDefinitions {
     name: 'Workflows',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'account_tree',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.settings,
   );
 
@@ -278,21 +247,19 @@ abstract class SystemScreenDefinitions {
     name: 'Screens',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
-    isSystem: true,
-    iconName: 'dashboard_customize',
+    screenSource: ScreenSource.systemTemplate,
     category: ScreenCategory.settings,
   );
 
   /// Get all system screens
   static List<ScreenDefinition> get all => [
     inbox,
-    today,
+    myDay,
     upcoming,
     logbook,
     projects,
     labels,
     values,
-    nextActions,
     // Navigation-only screens
     settings,
     wellbeing,
@@ -304,13 +271,12 @@ abstract class SystemScreenDefinitions {
   static ScreenDefinition? getByKey(String screenKey) {
     return switch (screenKey) {
       'inbox' => inbox,
-      'today' => today,
+      'my_day' => myDay,
       'upcoming' => upcoming,
       'logbook' => logbook,
       'projects' => projects,
       'labels' => labels,
       'values' => values,
-      'next_actions' => nextActions,
       'orphan_tasks' => orphanTasks,
       'settings' => settings,
       'wellbeing' => wellbeing,
@@ -334,14 +300,13 @@ abstract class SystemScreenDefinitions {
   /// These are used when user has not customized the sort order.
   static const Map<String, int> defaultSortOrders = {
     'inbox': 0,
-    'today': 1,
+    'my_day': 1,
     'upcoming': 2,
     'logbook': 3,
-    'next_actions': 4,
-    'projects': 5,
-    'labels': 6,
-    'values': 7,
-    'orphan_tasks': 8,
+    'projects': 4,
+    'labels': 5,
+    'values': 6,
+    'orphan_tasks': 7,
     'settings': 100,
     'wellbeing': 101,
     'workflows': 102,
@@ -368,7 +333,7 @@ abstract class SystemScreenDefinitions {
       screenType: ScreenType.list,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      isSystem: false,
+      screenSource: ScreenSource.userDefined,
       iconName: 'folder',
       category: ScreenCategory.workspace,
       supportBlocks: [
@@ -409,7 +374,7 @@ abstract class SystemScreenDefinitions {
       screenType: ScreenType.list,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
-      isSystem: false,
+      screenSource: ScreenSource.userDefined,
       iconName: 'label',
       category: ScreenCategory.workspace,
       supportBlocks: [

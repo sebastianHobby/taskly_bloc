@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -40,7 +41,7 @@ void main() {
         expect(screen.sections, isEmpty);
         expect(screen.supportBlocks, isEmpty);
         expect(screen.iconName, isNull);
-        expect(screen.isSystem, isFalse);
+        expect(screen.screenSource, ScreenSource.userDefined);
         expect(screen.category, ScreenCategory.workspace);
         expect(screen.triggerConfig, isNull);
       });
@@ -106,7 +107,7 @@ void main() {
         );
 
         expect(screen.iconName, isNull);
-        expect(screen.isSystem, isFalse);
+        expect(screen.screenSource, ScreenSource.userDefined);
         expect(screen.category, ScreenCategory.workspace);
       });
     });
@@ -196,6 +197,8 @@ void main() {
 
     group('serialization', () {
       test('DataDrivenScreenDefinition round-trips through JSON', () {
+        // DataDrivenScreenDefinition WITH sections round-trips correctly.
+        // Empty sections results in NavigationOnlyScreenDefinition by design.
         final original = DataDrivenScreenDefinition(
           id: 'screen-123',
           screenKey: 'inbox',
@@ -204,8 +207,14 @@ void main() {
           createdAt: now,
           updatedAt: now,
           iconName: 'inbox',
-          isSystem: true,
+          screenSource: ScreenSource.systemTemplate,
           category: ScreenCategory.workspace,
+          sections: [
+            DataSection(
+              config: DataConfig.task(query: TaskQuery.inbox()),
+              title: 'Tasks',
+            ),
+          ],
         );
 
         final json = original.toJson();
@@ -216,12 +225,11 @@ void main() {
         expect(restored.screenKey, original.screenKey);
         expect(restored.name, original.name);
         expect(restored.iconName, original.iconName);
-        expect(restored.isSystem, original.isSystem);
+        expect(restored.screenSource, original.screenSource);
         expect(restored.category, original.category);
-        expect(
-          (restored as DataDrivenScreenDefinition).screenType,
-          original.screenType,
-        );
+        final restoredDataDriven = restored as DataDrivenScreenDefinition;
+        expect(restoredDataDriven.screenType, original.screenType);
+        expect(restoredDataDriven.sections, hasLength(1));
       });
 
       test('NavigationOnlyScreenDefinition round-trips through JSON', () {
@@ -232,7 +240,7 @@ void main() {
           createdAt: now,
           updatedAt: now,
           iconName: 'settings',
-          isSystem: true,
+          screenSource: ScreenSource.systemTemplate,
           category: ScreenCategory.settings,
         );
 
@@ -244,11 +252,18 @@ void main() {
         expect(restored.screenKey, original.screenKey);
         expect(restored.name, original.name);
         expect(restored.iconName, original.iconName);
-        expect(restored.isSystem, original.isSystem);
+        expect(restored.screenSource, original.screenSource);
         expect(restored.category, original.category);
       });
 
       test('fromJson with sections creates DataDrivenScreenDefinition', () {
+        // Create a real section then serialize it to get valid JSON
+        final section = DataSection(
+          config: DataConfig.task(query: TaskQuery.inbox()),
+          title: 'Tasks',
+        );
+        final sectionJson = section.toJson();
+
         final json = {
           'id': 'screen-1',
           'screenKey': 'inbox',
@@ -256,18 +271,7 @@ void main() {
           'screenType': 'list',
           'createdAt': now.toIso8601String(),
           'updatedAt': now.toIso8601String(),
-          'sections': [
-            {
-              'runtimeType': 'DataSection',
-              'config': {
-                'runtimeType': 'task',
-                'query': {
-                  'runtimeType': 'default',
-                },
-              },
-              'title': 'Tasks',
-            },
-          ],
+          'sections': [sectionJson],
         };
 
         final screen = ScreenDefinition.fromJson(json);

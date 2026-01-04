@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -111,7 +112,7 @@ class ProjectListTile extends StatelessWidget {
       child: InkWell(
         onTap: () => onTap != null
             ? onTap!(project)
-            : EntityNavigator.toProject(context, project.id),
+            : Routing.toEntity(context, EntityType.project, project.id),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(12),

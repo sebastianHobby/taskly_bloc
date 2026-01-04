@@ -45,8 +45,13 @@ sealed class Section with _$Section {
     @Default(AllocationDisplayMode.pinnedFirst)
     AllocationDisplayMode displayMode,
 
-    /// Whether to show excluded task warnings
+    /// Whether to show excluded task warnings (legacy - use showExcludedSection)
     @Default(true) bool showExcludedWarnings,
+
+    /// Whether to show the "Outside Focus" section at bottom.
+    /// When true, excluded tasks matching alert config are shown
+    /// in a scrollable section below the Focus tasks.
+    @Default(false) bool showExcludedSection,
 
     /// Optional section title
     String? title,

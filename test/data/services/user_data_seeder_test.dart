@@ -1,12 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/services/user_data_seeder.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
-
-import '../../helpers/test_db.dart';
 
 class MockLabelRepositoryContract extends Mock
     implements LabelRepositoryContract {}
@@ -14,7 +11,6 @@ class MockLabelRepositoryContract extends Mock
 void main() {
   group('UserDataSeeder', () {
     late MockLabelRepositoryContract mockLabelRepository;
-    late AppDatabase database;
     late UserDataSeeder seeder;
     late Label pinnedLabel;
 
@@ -25,10 +21,8 @@ void main() {
 
     setUp(() {
       mockLabelRepository = MockLabelRepositoryContract();
-      database = createTestDb();
       seeder = UserDataSeeder(
         labelRepository: mockLabelRepository,
-        database: database,
       );
 
       final now = DateTime.now();
@@ -41,10 +35,6 @@ void main() {
         createdAt: now,
         updatedAt: now,
       );
-    });
-
-    tearDown(() async {
-      await closeTestDb(database);
     });
 
     group('seedAll', () {

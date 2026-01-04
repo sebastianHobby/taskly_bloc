@@ -3,6 +3,7 @@ import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 
 part 'screen_definition.freezed.dart';
@@ -33,8 +34,6 @@ enum ScreenType {
 /// - Non-empty sections → DataDrivenScreenDefinition
 @Freezed(unionKey: 'runtimeType')
 sealed class ScreenDefinition with _$ScreenDefinition {
-  const ScreenDefinition._();
-
   /// Data-driven screen with sections for unified rendering.
   ///
   /// Used for: Inbox, Today, Upcoming, Projects, Labels, Values, Next Actions
@@ -57,8 +56,8 @@ sealed class ScreenDefinition with _$ScreenDefinition {
     /// Icon for display in navigation
     String? iconName,
 
-    /// Whether this is a system-provided screen
-    @Default(false) bool isSystem,
+    /// Source of this screen definition (system template vs user-defined)
+    @Default(ScreenSource.userDefined) ScreenSource screenSource,
 
     /// Screen category
     @Default(ScreenCategory.workspace) ScreenCategory category,
@@ -86,8 +85,8 @@ sealed class ScreenDefinition with _$ScreenDefinition {
     /// Icon for display in navigation
     String? iconName,
 
-    /// Whether this is a system-provided screen
-    @Default(false) bool isSystem,
+    /// Source of this screen definition (system template vs user-defined)
+    @Default(ScreenSource.userDefined) ScreenSource screenSource,
 
     /// Screen category
     @Default(ScreenCategory.workspace) ScreenCategory category,
@@ -124,8 +123,12 @@ sealed class ScreenDefinition with _$ScreenDefinition {
                 .map((e) => SupportBlock.fromJson(e as Map<String, dynamic>))
                 .toList(),
         iconName: json['iconName'] as String? ?? json['icon_name'] as String?,
-        isSystem:
-            json['isSystem'] as bool? ?? json['is_system'] as bool? ?? false,
+        screenSource: _parseScreenSource(
+          json['screenSource'] ??
+              json['screen_source'] ??
+              json['isSystem'] ??
+              json['is_system'],
+        ),
         category: _parseCategory(json['category']),
         triggerConfig: json['triggerConfig'] != null
             ? TriggerConfig.fromJson(
@@ -161,11 +164,19 @@ sealed class ScreenDefinition with _$ScreenDefinition {
         json['updatedAt'] as String? ?? json['updated_at'] as String,
       ),
       iconName: json['iconName'] as String? ?? json['icon_name'] as String?,
-      isSystem:
-          json['isSystem'] as bool? ?? json['is_system'] as bool? ?? false,
+      screenSource: _parseScreenSource(
+        json['screenSource'] ??
+            json['screen_source'] ??
+            json['isSystem'] ??
+            json['is_system'],
+      ),
       category: _parseCategory(json['category']),
     );
   }
+  const ScreenDefinition._();
+
+  /// Whether this is a system-provided screen (convenience getter).
+  bool get isSystemScreen => screenSource == ScreenSource.systemTemplate;
 
   static ScreenType _parseScreenType(dynamic value) {
     if (value == null) return ScreenType.list;
@@ -189,6 +200,21 @@ sealed class ScreenDefinition with _$ScreenDefinition {
     };
   }
 
+  /// Parse screenSource from JSON, with backward compatibility for isSystem boolean.
+  static ScreenSource _parseScreenSource(dynamic value) {
+    if (value == null) return ScreenSource.userDefined;
+    if (value is ScreenSource) return value;
+    // Backward compatibility: boolean isSystem maps to enum
+    if (value is bool) {
+      return value ? ScreenSource.systemTemplate : ScreenSource.userDefined;
+    }
+    final str = value.toString().toLowerCase().replaceAll('_', '');
+    return switch (str) {
+      'systemtemplate' || 'system' => ScreenSource.systemTemplate,
+      _ => ScreenSource.userDefined,
+    };
+  }
+
   /// Serialize to JSON map.
   Map<String, dynamic> toJson() => switch (this) {
     final DataDrivenScreenDefinition d => {
@@ -201,7 +227,7 @@ sealed class ScreenDefinition with _$ScreenDefinition {
       'sections': d.sections.map((s) => s.toJson()).toList(),
       'supportBlocks': d.supportBlocks.map((s) => s.toJson()).toList(),
       'iconName': d.iconName,
-      'isSystem': d.isSystem,
+      'screenSource': d.screenSource.name,
       'category': d.category.name,
       'triggerConfig': d.triggerConfig?.toJson(),
       'fabOperations': d.fabOperations.map((f) => f.name).toList(),
@@ -213,7 +239,7 @@ sealed class ScreenDefinition with _$ScreenDefinition {
       'createdAt': n.createdAt.toIso8601String(),
       'updatedAt': n.updatedAt.toIso8601String(),
       'iconName': n.iconName,
-      'isSystem': n.isSystem,
+      'screenSource': n.screenSource.name,
       'category': n.category.name,
       'sections': <dynamic>[],
     },

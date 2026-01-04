@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/correlation_card.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/trend_chart.dart';
@@ -56,7 +55,7 @@ class WellbeingDashboardScreen extends StatelessWidget {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () =>
-                                context.goNamed(AppRouteName.journal),
+                                Routing.toScreenKey(context, 'journal'),
                             child: const Text('Journal'),
                           ),
                         ),
@@ -64,7 +63,7 @@ class WellbeingDashboardScreen extends StatelessWidget {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () =>
-                                context.goNamed(AppRouteName.trackerManagement),
+                                Routing.toScreenKey(context, 'trackers'),
                             child: const Text('Manage Trackers'),
                           ),
                         ),

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/core/routing/routes.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/value_stats.dart'
@@ -13,7 +13,6 @@ import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_list_tile.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/label_list_tile.dart';
@@ -416,7 +415,7 @@ class SectionWidget extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => context.push(AppRoutePath.values),
+                onPressed: () => Routing.toScreenKey(context, 'values'),
                 icon: const Icon(Icons.star_outline),
                 label: Text(l10n.setUpMyValues),
                 style: FilledButton.styleFrom(
@@ -763,7 +762,7 @@ class SectionWidget extends StatelessWidget {
           stats: stats,
           onTap: onEntityTap != null
               ? () => onEntityTap!(value.id, 'value')
-              : () => EntityNavigator.toValue(context, value.id),
+              : () => Routing.toEntity(context, EntityType.value, value.id),
         );
       },
     );

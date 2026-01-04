@@ -144,11 +144,10 @@ Future<void> setupDependencies() async {
         ),
       ),
     )
-    // User data seeding service (also runs DataRepairService)
+    // User data seeding service
     ..registerLazySingleton<UserDataSeederContract>(
       () => UserDataSeeder(
         labelRepository: getIt<LabelRepositoryContract>(),
-        database: getIt<AppDatabase>(),
       ),
     )
     ..registerLazySingleton<AllocationOrchestrator>(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/navigation/entity_navigator.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -130,9 +131,9 @@ class LabelListTile extends StatelessWidget {
 
   void _defaultNavigation(BuildContext context) {
     if (label.type == LabelType.value) {
-      EntityNavigator.toValue(context, label.id);
+      Routing.toEntity(context, EntityType.value, label.id);
     } else {
-      EntityNavigator.toLabel(context, label.id);
+      Routing.toEntity(context, EntityType.label, label.id);
     }
   }
 }

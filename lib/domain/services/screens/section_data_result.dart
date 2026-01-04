@@ -5,6 +5,8 @@ import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 
+import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
+
 part 'section_data_result.freezed.dart';
 
 /// Display mode for allocation section (DR-021)
@@ -76,9 +78,18 @@ sealed class SectionDataResult with _$SectionDataResult {
     /// were excluded (e.g., due to UrgentTaskBehavior.warnOnly setting).
     @Default([]) List<ExcludedTask> excludedUrgentTasks,
 
+    /// Full list of excluded tasks (for Outside Focus section)
+    @Default([]) List<ExcludedTask> excludedTasks,
+
+    /// Evaluated alerts based on user's alert config
+    AlertEvaluationResult? alertEvaluationResult,
+
     /// Display mode for this allocation section
     @Default(AllocationDisplayMode.pinnedFirst)
     AllocationDisplayMode displayMode,
+
+    /// Whether to show excluded section
+    @Default(false) bool showExcludedSection,
 
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.

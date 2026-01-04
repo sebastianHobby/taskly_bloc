@@ -83,8 +83,10 @@ void main() {
       },
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
-        // First emits loading while seeding
-        const AppAuthState(status: AuthStatus.loading),
+        // First emits seeding while preparing user data (includes user)
+        isA<AppAuthState>()
+            .having((s) => s.status, 'status', AuthStatus.seeding)
+            .having((s) => s.user, 'user', isNotNull),
         // Then emits authenticated after seeding completes
         isA<AppAuthState>().having(
           (s) => s.status,
@@ -108,7 +110,9 @@ void main() {
       },
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
-        const AppAuthState(status: AuthStatus.loading),
+        isA<AppAuthState>()
+            .having((s) => s.status, 'status', AuthStatus.seeding)
+            .having((s) => s.user, 'user', isNotNull),
         isA<AppAuthState>().having(
           (s) => s.status,
           'status',
@@ -484,6 +488,16 @@ void main() {
     test('isLoading returns true when loading', () {
       const state = AppAuthState(status: AuthStatus.loading);
       expect(state.isLoading, isTrue);
+    });
+
+    test('isSeeding returns true when seeding', () {
+      const state = AppAuthState(status: AuthStatus.seeding);
+      expect(state.isSeeding, isTrue);
+    });
+
+    test('isSeeding returns false when authenticated', () {
+      const state = AppAuthState(status: AuthStatus.authenticated);
+      expect(state.isSeeding, isFalse);
     });
 
     test('copyWith creates new state with updated fields', () {

@@ -77,3 +77,19 @@ export 'pump_app.dart';
 export 'custom_matchers.dart';
 export 'fallback_values.dart';
 export 'bloc_test_helpers.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Specialized Test Helpers
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Contract test utilities (verify component agreements).
+export 'contract_test_helpers.dart';
+
+/// Integration test utilities (real database, real components).
+export 'integration_test_helpers.dart';
+
+/// Widget test utilities (BLoC-aware widget testing).
+export 'widget_test_helpers.dart';
+
+/// BLoC test patterns and utilities.
+export 'bloc_test_patterns.dart';

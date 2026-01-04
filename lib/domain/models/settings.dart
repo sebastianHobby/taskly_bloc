@@ -4,9 +4,16 @@
 /// Import this file to access all settings types.
 library;
 
+export 'settings/alert_severity.dart';
+export 'settings/allocation_alert_config.dart';
+export 'settings/allocation_alert_rule.dart';
+export 'settings/allocation_alert_settings.dart';
+export 'settings/allocation_alert_templates.dart';
+export 'settings/allocation_alert_type.dart';
 export 'settings/allocation_config.dart';
 export 'settings/app_theme_mode.dart';
 export 'settings/date_format_patterns.dart';
+export 'settings/evaluated_alert.dart';
 export 'settings/global_settings.dart';
 export 'settings/next_actions_settings.dart';
 export 'settings/page_display_settings.dart';
