@@ -24,6 +24,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     List<Label>? labels,
   }) = _TaskDetailUpdate;
@@ -38,6 +39,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     List<Label>? labels,
   }) = _TaskDetailCreate;
@@ -204,6 +206,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         startDate: event.startDate,
         deadlineDate: event.deadlineDate,
         projectId: event.projectId,
+        priority: event.priority,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       ),
@@ -223,6 +226,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
           description: event.description,
           completed: event.completed,
           projectId: event.projectId,
+          priority: event.priority,
           startDate: event.startDate,
           deadlineDate: event.deadlineDate,
           repeatIcalRrule: event.repeatIcalRrule,

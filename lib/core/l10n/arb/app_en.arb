@@ -48,6 +48,14 @@
     "@createTaskTooltip": {
         "description": "Tooltip for the create task floating action button"
     },
+    "deleteValue": "Delete value",
+    "@deleteValue": {
+        "description": "Label for deleting a value"
+    },
+    "editValue": "Edit value",
+    "@editValue": {
+        "description": "Label for editing a value"
+    },
     "createLabelTooltip": "Create label",
     "@createLabelTooltip": {
         "description": "Tooltip for the create label floating action button"

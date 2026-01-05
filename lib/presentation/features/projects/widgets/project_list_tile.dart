@@ -200,8 +200,8 @@ class ProjectListTile extends StatelessWidget {
                       ),
                     ],
 
-                    // Labels section
-                    LabelsSection(labels: project.labels),
+                    // Values section
+                    ValuesSection(values: project.values),
 
                     // Dates row
                     DatesRow(

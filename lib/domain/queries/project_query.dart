@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/queries/label_match_mode.dart';
+import 'package:taskly_bloc/domain/queries/value_match_mode.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator;
+    show BoolOperator, DateOperator, ValueOperator;
 
 /// Unified query configuration for fetching projects.
 ///
@@ -14,7 +14,7 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart'
 /// filtering rules, sorting, and optional occurrence expansion.
 ///
 /// Note: This currently reuses the existing rule types from `task_rules.dart`
-/// (for example `BooleanRule`, `DateRule`, `LabelRule`) because the fields
+/// (for example `BooleanRule`, `DateRule`, `ValueRule`) because the fields
 /// map cleanly to the `Project` schema.
 @immutable
 class ProjectQuery {
@@ -97,25 +97,23 @@ class ProjectQuery {
     );
   }
 
-  /// Factory: Projects with specific labels/values.
-  factory ProjectQuery.byLabels(
-    List<String> labelIds, {
-    LabelMatchMode mode = LabelMatchMode.any,
-    LabelType labelType = LabelType.label,
+  /// Factory: Projects with specific values.
+  factory ProjectQuery.byValues(
+    List<String> valueIds, {
+    ValueMatchMode mode = ValueMatchMode.any,
     List<SortCriterion>? sortCriteria,
   }) {
-    final labelOp = switch (mode) {
-      LabelMatchMode.any => LabelOperator.hasAny,
-      LabelMatchMode.all => LabelOperator.hasAll,
-      LabelMatchMode.none => LabelOperator.isNull,
+    final valueOp = switch (mode) {
+      ValueMatchMode.any => ValueOperator.hasAny,
+      ValueMatchMode.all => ValueOperator.hasAll,
+      ValueMatchMode.none => ValueOperator.isNull,
     };
     return ProjectQuery(
       filter: QueryFilter<ProjectPredicate>(
         shared: [
-          ProjectLabelPredicate(
-            operator: labelOp,
-            labelIds: labelIds,
-            labelType: labelType,
+          ProjectValuePredicate(
+            operator: valueOp,
+            valueIds: valueIds,
           ),
         ],
       ),

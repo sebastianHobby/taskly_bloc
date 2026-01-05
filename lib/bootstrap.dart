@@ -12,7 +12,6 @@ import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -20,7 +19,6 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
-import 'package:taskly_bloc/presentation/features/labels/view/label_detail_unified_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/next_action/view/allocation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
@@ -188,7 +186,6 @@ void _registerRoutingBuilders() {
   final wellbeingRepo = getIt<WellbeingRepositoryContract>();
   final analyticsService = getIt<AnalyticsService>();
   final settingsRepo = getIt<SettingsRepositoryContract>();
-  final labelRepo = getIt<LabelRepositoryContract>();
   final screensRepo = getIt<ScreenDefinitionsRepositoryContract>();
   final authRepo = getIt<AuthRepositoryContract>();
   final taskRepo = getIt<TaskRepositoryContract>();
@@ -216,7 +213,6 @@ void _registerRoutingBuilders() {
     SystemScreenDefinitions.allocationSettings.screenKey: () =>
         AllocationSettingsPage(
           settingsRepository: settingsRepo,
-          labelRepository: labelRepo,
         ),
     SystemScreenDefinitions.navigationSettings.screenKey: () =>
         NavigationSettingsPage(screensRepository: screensRepo),
@@ -233,12 +229,10 @@ void _registerRoutingBuilders() {
         taskId: id,
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        labelRepository: labelRepo,
       ),
       child: const TaskDetailSheet(),
     ),
     projectBuilder: (id) => ProjectDetailUnifiedPage(projectId: id),
-    labelBuilder: (id) => LabelDetailUnifiedPage(labelId: id),
   );
 }
 

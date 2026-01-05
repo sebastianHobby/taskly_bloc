@@ -6,6 +6,8 @@ import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/workflow_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 // Domain models needed by TypeConverters in generated code
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
@@ -13,8 +15,6 @@ import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
 part 'drift_database.g.dart';
-
-enum LabelType { label, value }
 
 /// Exception types for recurrence modifications
 enum ExceptionType { skip, reschedule }
@@ -54,6 +54,10 @@ class ProjectTable extends Table {
 
   /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
   IntColumn get priority => integer().nullable().named('priority')();
+
+  /// Whether this project is pinned to the top of lists
+  BoolColumn get isPinned =>
+      boolean().clientDefault(() => false).named('pinned')();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -104,36 +108,31 @@ class TaskTable extends Table {
   /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
   IntColumn get priority => integer().nullable().named('priority')();
 
+  /// Whether this task is pinned to the top of lists
+  BoolColumn get isPinned =>
+      boolean().clientDefault(() => false).named('pinned')();
+
   @override
   Set<Column> get primaryKey => {id};
 }
 
-class LabelTable extends Table {
+class ValueTable extends Table {
   @override
-  String get tableName => 'labels';
+  String get tableName => 'values';
 
   TextColumn get id => text().named('id')();
   TextColumn get name => text().withLength(min: 1, max: 100).named('name')();
   TextColumn get color => text().named('color')();
-  TextColumn get type => textEnum<LabelType>()
-      .named('type')
-      .withDefault(const Constant('label'))();
+  TextColumn get iconName => text().nullable().named('icon_name')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
       dateTime().clientDefault(DateTime.now).named('updated_at')();
   TextColumn get userId => text().nullable().named('user_id')();
-  TextColumn get iconName => text().nullable().named('icon_name')();
 
-  /// Whether this is a system-managed label
-  BoolColumn get isSystemLabel => boolean()
-      .nullable()
-      .withDefault(const Constant(false))
-      .named('is_system_label')();
-
-  /// Type of system label (if isSystemLabel is true)
-  TextColumn get systemLabelType =>
-      text().nullable().named('system_label_type')();
+  /// Priority level (low, medium, high)
+  TextColumn get priority =>
+      textEnum<ValuePriority>().nullable().named('priority')();
 
   /// Timestamp of last per-item review (standardized field)
   DateTimeColumn get lastReviewedAt =>
@@ -148,17 +147,17 @@ class LabelTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-class ProjectLabelsTable extends Table {
+class ProjectValuesTable extends Table {
   @override
-  String get tableName => 'project_labels';
+  String get tableName => 'project_values';
 
   TextColumn get id => text().named('id')();
   TextColumn get projectId => text()
       .named('project_id')
       .references(ProjectTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get labelId => text()
-      .named('label_id')
-      .references(LabelTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get valueId => text()
+      .named('value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -167,24 +166,24 @@ class ProjectLabelsTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {projectId, labelId},
+    {projectId, valueId},
   ];
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-class TaskLabelsTable extends Table {
+class TaskValuesTable extends Table {
   @override
-  String get tableName => 'task_labels';
+  String get tableName => 'task_values';
 
   TextColumn get id => text().named('id')();
   TextColumn get taskId => text()
       .named('task_id')
       .references(TaskTable, #id, onDelete: KeyAction.cascade)();
-  TextColumn get labelId => text()
-      .named('label_id')
-      .references(LabelTable, #id, onDelete: KeyAction.cascade)();
+  TextColumn get valueId => text()
+      .named('value_id')
+      .references(ValueTable, #id, onDelete: KeyAction.cascade)();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -193,7 +192,7 @@ class TaskLabelsTable extends Table {
 
   @override
   List<Set<Column>> get uniqueKeys => [
-    {taskId, labelId},
+    {taskId, valueId},
   ];
 
   @override
@@ -403,9 +402,9 @@ class ProjectRecurrenceExceptionsTable extends Table {
   tables: [
     ProjectTable,
     TaskTable,
-    LabelTable,
-    ProjectLabelsTable,
-    TaskLabelsTable,
+    ValueTable,
+    ProjectValuesTable,
+    TaskValuesTable,
     UserProfileTable,
     TaskCompletionHistoryTable,
     ProjectCompletionHistoryTable,

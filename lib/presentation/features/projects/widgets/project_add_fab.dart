@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 
@@ -12,12 +12,12 @@ import 'package:taskly_bloc/presentation/features/projects/view/project_create_e
 class AddProjectFab extends StatelessWidget {
   const AddProjectFab({
     required this.projectRepository,
-    required this.labelRepository,
+    required this.valueRepository,
     super.key,
   });
 
   final ProjectRepositoryContract projectRepository;
-  final LabelRepositoryContract labelRepository;
+  final ValueRepositoryContract valueRepository;
 
   @override
   Widget build(BuildContext fabContext) {
@@ -28,7 +28,7 @@ class AddProjectFab extends StatelessWidget {
           context: fabContext,
           childBuilder: (modalSheetContext) => ProjectEditSheetPage(
             projectRepository: projectRepository,
-            labelRepository: labelRepository,
+            valueRepository: valueRepository,
           ),
         );
       },

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priority_picker.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_value_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
@@ -77,7 +80,13 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       'completed': widget.initialData?.completed ?? false,
       'startDate': widget.initialData?.startDate,
       'deadlineDate': widget.initialData?.deadlineDate,
-      'labelIds': (widget.initialData?.labels ?? <Label>[])
+      'priority': widget.initialData?.priority,
+      'valueIds': (widget.initialData?.labels ?? <Label>[])
+          .where((l) => l.type == LabelType.value)
+          .map((Label e) => e.id)
+          .toList(growable: false),
+      'tagIds': (widget.initialData?.labels ?? <Label>[])
+          .where((l) => l.type == LabelType.label)
           .map((Label e) => e.id)
           .toList(growable: false),
       'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
@@ -274,9 +283,27 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
 
                     const SizedBox(height: 16),
 
-                    // Labels and Values Section
-                    FormBuilderLabelPickerModern(
-                      name: 'labelIds',
+                    // Priority
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FormBuilderPriorityPicker(
+                        name: 'priority',
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Values
+                    FormBuilderValuePicker(
+                      name: 'valueIds',
+                      availableLabels: widget.availableLabels,
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Tags
+                    FormBuilderTagPicker(
+                      name: 'tagIds',
                       availableLabels: widget.availableLabels,
                     ),
                   ],

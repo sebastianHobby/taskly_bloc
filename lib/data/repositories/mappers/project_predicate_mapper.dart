@@ -23,7 +23,7 @@ class ProjectPredicateMapper with QueryBuilderMixin {
       ProjectIdPredicate() => _idPredicateToExpression(predicate, p),
       ProjectBoolPredicate() => _boolPredicateToExpression(predicate, p),
       ProjectDatePredicate() => _datePredicateToExpression(predicate, p),
-      ProjectLabelPredicate() => _labelPredicateToExpression(predicate, p),
+      ProjectValuePredicate() => _valuePredicateToExpression(predicate, p),
     };
   }
 
@@ -197,37 +197,37 @@ class ProjectPredicateMapper with QueryBuilderMixin {
     );
   }
 
-  Expression<bool> _labelPredicateToExpression(
-    ProjectLabelPredicate predicate,
+  Expression<bool> _valuePredicateToExpression(
+    ProjectValuePredicate predicate,
     $ProjectTableTable p,
   ) {
     return switch (predicate.operator) {
-      LabelOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
+      ValueOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(p.id))
           ..where(
-            driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds),
+            driftDb.projectValuesTable.valueId.isIn(predicate.valueIds),
           ),
       ),
-      LabelOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id))
+      ValueOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(p.id))
           ..where(
-            driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds),
+            driftDb.projectValuesTable.valueId.isIn(predicate.valueIds),
           )
-          ..groupBy([driftDb.projectLabelsTable.projectId]),
+          ..groupBy([driftDb.projectValuesTable.projectId]),
       ),
-      LabelOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
+      ValueOperator.isNull => notExistsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(p.id)),
       ),
-      LabelOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(p.id)),
+      ValueOperator.isNotNull => existsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(p.id)),
       ),
     };
   }

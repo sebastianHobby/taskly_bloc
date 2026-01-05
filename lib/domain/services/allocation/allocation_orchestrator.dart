@@ -1,14 +1,15 @@
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_alert_evaluator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/allocation/neglect_based_allocator.dart';
 import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.dart';
@@ -25,22 +26,24 @@ import 'package:rxdart/rxdart.dart';
 class AllocationOrchestrator {
   AllocationOrchestrator({
     required TaskRepositoryContract taskRepository,
-    required LabelRepositoryContract labelRepository,
+    required ValueRepositoryContract valueRepository,
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
-    ProjectRepositoryContract? projectRepository, // Reserved for future use
+    required ProjectRepositoryContract projectRepository,
+    AllocationAlertEvaluator? alertEvaluator,
   }) : _taskRepository = taskRepository,
-       _labelRepository = labelRepository,
+       _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
-       _projectRepository = projectRepository;
+       _projectRepository = projectRepository,
+       _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator();
 
   final TaskRepositoryContract _taskRepository;
-  final LabelRepositoryContract _labelRepository;
+  final ValueRepositoryContract _valueRepository;
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
-  // ignore: unused_field
-  final ProjectRepositoryContract? _projectRepository;
+  final ProjectRepositoryContract _projectRepository;
+  final AllocationAlertEvaluator _alertEvaluator;
 
   /// Watch the full allocation result (pinned + allocated tasks)
   Stream<AllocationResult> watchAllocation() async* {
@@ -48,33 +51,31 @@ class AllocationOrchestrator {
 
     await for (final combined in _combineStreams()) {
       final tasks = combined.$1;
-      final pinnedLabel = combined.$2;
+      final projects = combined.$2;
       final allocationConfig = combined.$3;
-      final valueRanking = combined.$4;
+      final alertSettings = combined.$4;
 
       talker.debug(
         '[AllocationOrchestrator] Stream update: '
-        '${tasks.length} tasks, dailyLimit=${allocationConfig.dailyLimit}',
+        '${tasks.length} tasks, ${projects.length} projects, dailyLimit=${allocationConfig.dailyLimit}',
       );
 
-      // DEBUG: Log each task's labels
+      // DEBUG: Log each task's values
       for (final task in tasks) {
-        final labelInfo = task.labels
-            .map((l) => '${l.name}(${l.type.name})')
-            .join(', ');
+        final valueInfo = task.values.map((v) => v.name).join(', ');
         talker.debug(
           '[AllocationOrchestrator] Task "${task.name}" (${task.id.substring(0, 8)}): '
-          '${task.labels.length} labels [${labelInfo.isEmpty ? 'none' : labelInfo}]',
+          '${task.values.length} values [${valueInfo.isEmpty ? 'none' : valueInfo}]',
         );
       }
 
       // Check if user has any values defined
-      final valueLabels = await _labelRepository.getAllByType(LabelType.value);
+      final values = await _valueRepository.getAll();
       talker.debug(
-        '[AllocationOrchestrator] Found ${valueLabels.length} value labels in DB: '
-        '${valueLabels.map((l) => '${l.name}(${l.id.substring(0, 8)})').join(', ')}',
+        '[AllocationOrchestrator] Found ${values.length} values in DB: '
+        '${values.map((v) => '${v.name}(${v.id.substring(0, 8)})').join(', ')}',
       );
-      if (valueLabels.isEmpty) {
+      if (values.isEmpty) {
         talker.debug(
           '[AllocationOrchestrator] No values defined - setup required',
         );
@@ -111,13 +112,29 @@ class AllocationOrchestrator {
         continue;
       }
 
+      // Identify pinned projects
+      final pinnedProjectIds = projects
+          .where((p) => p.isPinned)
+          .map((p) => p.id)
+          .toSet();
+
       // Partition tasks into pinned vs regular
+      // A task is pinned if it is explicitly pinned OR its project is pinned
       final pinnedTasks = tasks
-          .where((t) => t.labels.any((l) => l.id == pinnedLabel?.id))
+          .where(
+            (t) =>
+                t.isPinned ||
+                (t.projectId != null && pinnedProjectIds.contains(t.projectId)),
+          )
           .toList();
 
       final regularTasks = tasks
-          .where((t) => !t.labels.any((l) => l.id == pinnedLabel?.id))
+          .where(
+            (t) =>
+                !t.isPinned &&
+                (t.projectId == null ||
+                    !pinnedProjectIds.contains(t.projectId)),
+          )
           .toList();
 
       talker.debug(
@@ -135,14 +152,12 @@ class AllocationOrchestrator {
 
       // Convert pinned tasks to AllocatedTask format
       final allocatedPinnedTasks = pinnedTasks.asMap().entries.map((entry) {
-        final valueLabels = entry.value.labels
-            .where((l) => l.type == LabelType.value)
-            .toList();
+        final taskValues = entry.value.values;
 
         return AllocatedTask(
           task: entry.value,
-          qualifyingValueId: valueLabels.isNotEmpty
-              ? valueLabels.first.id
+          qualifyingValueId: taskValues.isNotEmpty
+              ? taskValues.first.id
               : 'pinned',
           allocationScore: 10, // Max score for pinned
         );
@@ -151,7 +166,6 @@ class AllocationOrchestrator {
       // Allocate regular tasks
       final allocatedRegularTasks = await _allocateRegularTasks(
         regularTasks,
-        valueRanking,
         allocationConfig,
       );
 
@@ -212,10 +226,18 @@ class AllocationOrchestrator {
         '${allocatedRegularTasks.excludedTasks.length} excluded',
       );
 
+      // Evaluate alerts on excluded tasks
+      final alertResult = _alertEvaluator.evaluate(
+        excludedTasks: allocatedRegularTasks.excludedTasks,
+        config: alertSettings.config,
+      );
+
       yield AllocationResult(
         allocatedTasks: allAllocatedTasks,
         reasoning: allocatedRegularTasks.reasoning,
         excludedTasks: allocatedRegularTasks.excludedTasks,
+        alertResult: alertResult,
+        activePersona: allocationConfig.persona,
       );
     }
   }
@@ -226,38 +248,23 @@ class AllocationOrchestrator {
   /// Future phases will implement persona-specific logic.
   Future<AllocationResult> _allocateRegularTasks(
     List<Task> tasks,
-    ValueRanking valueRanking,
     AllocationConfig config,
   ) async {
-    // Get all value labels first - needed for both ranking check and allocation
-    final valueLabels = await _labelRepository.getAllByType(LabelType.value);
-    final valueLabelMap = {for (final l in valueLabels) l.id: l};
+    // Get all values first - needed for both ranking check and allocation
+    final values = await _valueRepository.getAll();
 
     talker.debug(
       '[AllocationOrchestrator] _allocateRegularTasks: '
-      '${valueRanking.items.length} ranking items, '
-      '${valueLabels.length} value labels',
+      '${values.length} values',
     );
 
-    // Build category map - use ranking if available, otherwise use all values
-    // with equal weight
+    // Build category map - use value priority
     final categories = <String, double>{};
 
-    if (valueRanking.items.isNotEmpty) {
-      // Use explicit ranking
-      for (final item in valueRanking.items) {
-        if (valueLabelMap.containsKey(item.labelId)) {
-          categories[item.labelId] = item.weight.toDouble();
-        }
-      }
-    } else if (valueLabels.isNotEmpty) {
-      // No ranking configured - use all values with equal weight (default: 5)
-      talker.debug(
-        '[AllocationOrchestrator] No ranking configured, using all '
-        '${valueLabels.length} values with equal weight',
-      );
-      for (final label in valueLabels) {
-        categories[label.id] = 5.0; // Default weight
+    if (values.isNotEmpty) {
+      // Use priority from value
+      for (final value in values) {
+        categories[value.id] = value.priority.weight.toDouble();
       }
     }
 
@@ -270,13 +277,13 @@ class AllocationOrchestrator {
           strategyUsed: 'none',
           categoryAllocations: const {},
           categoryWeights: const {},
-          explanation: 'No value labels or rankings configured',
+          explanation: 'No values or rankings configured',
         ),
         excludedTasks: tasks
             .map(
               (t) => ExcludedTask(
                 task: t,
-                reason: 'No value labels or rankings configured',
+                reason: 'No values or rankings configured',
                 exclusionType: ExclusionType.noCategory,
               ),
             )
@@ -285,24 +292,19 @@ class AllocationOrchestrator {
     }
 
     // Filter tasks to only those with values
-    final tasksWithValues = tasks
-        .where((t) => t.labels.any((l) => l.type == LabelType.value))
-        .toList();
+    final tasksWithValues = tasks.where((t) => t.values.isNotEmpty).toList();
 
     // DEBUG: Log filtering results
     talker.debug(
-      '[AllocationOrchestrator] Filtering for value labels: '
-      '${tasksWithValues.length}/${tasks.length} tasks have value labels',
+      '[AllocationOrchestrator] Filtering for values: '
+      '${tasksWithValues.length}/${tasks.length} tasks have values',
     );
     for (final task in tasks) {
-      final hasValue = task.labels.any((l) => l.type == LabelType.value);
-      final valueLabelsOnTask = task.labels
-          .where((l) => l.type == LabelType.value)
-          .toList();
+      final hasValue = task.values.isNotEmpty;
       talker.debug(
         '[AllocationOrchestrator]   - "${task.name}": hasValue=$hasValue, '
-        'labelCount=${task.labels.length}, '
-        'valueLabels=${valueLabelsOnTask.map((l) => l.name).join(", ")}',
+        'valueCount=${task.values.length}, '
+        'values=${task.values.map((v) => v.name).join(", ")}',
       );
     }
 
@@ -365,68 +367,73 @@ class AllocationOrchestrator {
   }
 
   /// Combine all necessary streams
-  Stream<(List<Task>, Label?, AllocationConfig, ValueRanking)>
+  Stream<
+    (
+      List<Task>,
+      List<Project>,
+      AllocationConfig,
+      AllocationAlertSettings,
+    )
+  >
   _combineStreams() {
     // Watch incomplete tasks
     final tasksStream = _taskRepository.watchAll(TaskQuery.incomplete());
+
+    // Watch projects (if repository available)
+    final projectsStream = _projectRepository.watchAll();
 
     // Watch settings
     final allocationConfigStream = _settingsRepository.watch(
       SettingsKey.allocation,
     );
-    final valueRankingStream = _settingsRepository.watch(
-      SettingsKey.valueRanking,
+    final alertSettingsStream = _settingsRepository.watch(
+      SettingsKey.allocationAlerts,
     );
 
     // Combine all streams
-    return Rx.combineLatest3(
+    return Rx.combineLatest4(
       tasksStream,
+      projectsStream,
       allocationConfigStream,
-      valueRankingStream,
-      (tasks, allocationConfig, valueRanking) async {
-        final pinnedLabel = await _labelRepository.getSystemLabel(
-          SystemLabelType.pinned,
-        );
-
-        final rankingStr = valueRanking.items
-            .map((i) => '${i.labelId.substring(0, 8)}:w${i.weight}')
-            .join(', ');
+      alertSettingsStream,
+      (tasks, projects, allocationConfig, alertSettings) {
         talker.debug(
           '[AllocationOrchestrator] _combineStreams loaded:\n'
-          '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}\n'
-          '  valueRanking.items.length=${valueRanking.items.length}\n'
-          '  valueRanking.items=[$rankingStr]',
+          '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}',
         );
 
-        return (tasks, pinnedLabel, allocationConfig, valueRanking);
+        return (
+          tasks,
+          projects,
+          allocationConfig,
+          alertSettings,
+        );
       },
-    ).asyncMap((event) => event);
+    );
   }
 
   /// Pin a task
   Future<void> pinTask(String taskId) async {
     talker.debug('[AllocationOrchestrator] Pinning task: $taskId');
-    final pinnedLabel = await _labelRepository.getOrCreateSystemLabel(
-      SystemLabelType.pinned,
-    );
-    await _labelRepository.addLabelToTask(
-      taskId: taskId,
-      labelId: pinnedLabel.id,
-    );
+    await _taskRepository.setPinned(id: taskId, isPinned: true);
   }
 
   /// Unpin a task
   Future<void> unpinTask(String taskId) async {
     talker.debug('[AllocationOrchestrator] Unpinning task: $taskId');
-    final pinnedLabel = await _labelRepository.getSystemLabel(
-      SystemLabelType.pinned,
-    );
-    if (pinnedLabel == null) return;
+    await _taskRepository.setPinned(id: taskId, isPinned: false);
+  }
 
-    await _labelRepository.removeLabelFromTask(
-      taskId: taskId,
-      labelId: pinnedLabel.id,
-    );
+  /// Pin a project
+  Future<void> pinProject(String projectId) async {
+    talker.debug('[AllocationOrchestrator] Pinning project: $projectId');
+    await _projectRepository.setPinned(id: projectId, isPinned: true);
+  }
+
+  /// Unpin a project
+  Future<void> unpinProject(String projectId) async {
+    talker.debug('[AllocationOrchestrator] Unpinning project: $projectId');
+    await _projectRepository.setPinned(id: projectId, isPinned: false);
   }
 
   /// Toggle task completion state

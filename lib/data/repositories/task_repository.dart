@@ -140,12 +140,12 @@ class TaskRepository implements TaskRepositoryContract {
               driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
             ),
             leftOuterJoin(
-              driftDb.taskLabelsTable,
-              driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+              driftDb.taskValuesTable,
+              driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
             ),
             leftOuterJoin(
-              driftDb.labelTable,
-              driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+              driftDb.valueTable,
+              driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
             ),
           ],
         );
@@ -169,12 +169,12 @@ class TaskRepository implements TaskRepositoryContract {
             driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
           ),
           leftOuterJoin(
-            driftDb.taskLabelsTable,
-            driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+            driftDb.taskValuesTable,
+            driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
           ),
           leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+            driftDb.valueTable,
+            driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
         ]);
 
@@ -198,12 +198,6 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Future<List<Task>> getTasksByLabel(String labelId) async {
-    final query = TaskQuery.forLabel(labelId: labelId);
-    return queryTasks(query);
-  }
-
-  @override
   Future<List<Task>> getTasksByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
     final joined =
@@ -214,12 +208,12 @@ class TaskRepository implements TaskRepositoryContract {
               driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
             ),
             leftOuterJoin(
-              driftDb.taskLabelsTable,
-              driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+              driftDb.taskValuesTable,
+              driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
             ),
             leftOuterJoin(
-              driftDb.labelTable,
-              driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+              driftDb.valueTable,
+              driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
             ),
           ],
         );
@@ -235,9 +229,9 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
   }) async {
     talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
     final now = DateTime.now();
@@ -245,8 +239,6 @@ class TaskRepository implements TaskRepositoryContract {
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
-
-    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
     await driftDb.transaction(() async {
       await driftDb
@@ -260,6 +252,7 @@ class TaskRepository implements TaskRepositoryContract {
               startDate: Value(normalizedStartDate),
               deadlineDate: Value(normalizedDeadlineDate),
               projectId: Value(projectId),
+              priority: Value(priority),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const Value.absent()
                   : Value(repeatIcalRrule),
@@ -268,26 +261,6 @@ class TaskRepository implements TaskRepositoryContract {
               updatedAt: Value(now),
             ),
           );
-
-      if (uniqueLabelIds != null) {
-        for (final labelId in uniqueLabelIds) {
-          // Generate deterministic v5 ID for junction
-          final junctionId = idGenerator.taskLabelId(
-            taskId: id,
-            labelId: labelId,
-          );
-          await driftDb
-              .into(driftDb.taskLabelsTable)
-              .insert(
-                TaskLabelsTableCompanion(
-                  id: Value(junctionId),
-                  taskId: Value(id),
-                  labelId: Value(labelId),
-                ),
-                mode: InsertMode.insertOrIgnore,
-              );
-        }
-      }
     });
   }
 
@@ -303,7 +276,7 @@ class TaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
+    bool? isPinned,
   }) async {
     talker.debug('[TaskRepository] update: id=$id, name="$name"');
     final existing = await (driftDb.select(
@@ -319,8 +292,6 @@ class TaskRepository implements TaskRepositoryContract {
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
-
     await driftDb.transaction(() async {
       await driftDb
           .update(driftDb.taskTable)
@@ -333,9 +304,10 @@ class TaskRepository implements TaskRepositoryContract {
               startDate: Value(normalizedStartDate),
               deadlineDate: Value(normalizedDeadlineDate),
               projectId: Value(projectId),
-              priority: priority == null
-                  ? Value(existing.priority)
-                  : Value(priority),
+              priority: Value(priority),
+              isPinned: isPinned == null
+                  ? Value(existing.isPinned)
+                  : Value(isPinned),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const Value.absent()
                   : Value(repeatIcalRrule),
@@ -348,36 +320,23 @@ class TaskRepository implements TaskRepositoryContract {
               updatedAt: Value(now),
             ),
           );
-
-      if (uniqueLabelIds != null) {
-        final requested = uniqueLabelIds.toSet();
-        final existing =
-            (await (driftDb.select(
-                  driftDb.taskLabelsTable,
-                )..where((t) => t.taskId.equals(id))).get())
-                .map((r) => r.labelId)
-                .toSet();
-
-        if (requested.length != existing.length ||
-            !existing.containsAll(requested)) {
-          await (driftDb.delete(
-            driftDb.taskLabelsTable,
-          )..where((t) => t.taskId.equals(id))).go();
-
-          for (final labelId in uniqueLabelIds) {
-            await driftDb
-                .into(driftDb.taskLabelsTable)
-                .insert(
-                  TaskLabelsTableCompanion(
-                    taskId: Value(id),
-                    labelId: Value(labelId),
-                  ),
-                  mode: InsertMode.insertOrIgnore,
-                );
-          }
-        }
-      }
     });
+  }
+
+  @override
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
+  }) async {
+    talker.debug('[TaskRepository] setPinned: id=$id, isPinned=$isPinned');
+    await (driftDb.update(
+      driftDb.taskTable,
+    )..where((t) => t.id.equals(id))).write(
+      TaskTableCompanion(
+        isPinned: Value(isPinned),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   @override
@@ -691,19 +650,19 @@ class TaskRepository implements TaskRepositoryContract {
       select.orderBy(orderingFuncs);
     }
 
-    // Build the join query - always include labels for complete domain model
+    // Build the join query - always include values for complete domain model
     final joinQuery = select.join([
       leftOuterJoin(
         driftDb.projectTable,
         driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
       ),
       leftOuterJoin(
-        driftDb.taskLabelsTable,
-        driftDb.taskTable.id.equalsExp(driftDb.taskLabelsTable.taskId),
+        driftDb.taskValuesTable,
+        driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
       ),
       leftOuterJoin(
-        driftDb.labelTable,
-        driftDb.taskLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+        driftDb.valueTable,
+        driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
       ),
     ]);
 

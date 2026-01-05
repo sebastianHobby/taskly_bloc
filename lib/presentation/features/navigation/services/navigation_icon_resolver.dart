@@ -43,6 +43,15 @@ class NavigationIconResolver {
       'upcoming' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       // Planned screen (renamed from upcoming)
       'planned' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
+      'scheduled' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
+      'someday' => (
+        icon: Icons.weekend_outlined,
+        selectedIcon: Icons.weekend,
+      ),
+      'statistics' => (
+        icon: Icons.bar_chart_outlined,
+        selectedIcon: Icons.bar_chart,
+      ),
       'logbook' => (
         icon: Icons.done_all_outlined,
         selectedIcon: Icons.done_all,

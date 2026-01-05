@@ -14,14 +14,14 @@ import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 /// Use [LabelChip] for regular labels, use this for values.
 class ValueChip extends StatelessWidget {
   const ValueChip({
-    required this.label,
+    required this.value,
     this.rank,
     this.onTap,
     super.key,
   });
 
-  /// The value label to display.
-  final Label label;
+  /// The value to display.
+  final Value value;
 
   /// Optional rank to display (1-based). Shows as "#1", "#2", etc.
   final int? rank;
@@ -33,7 +33,7 @@ class ValueChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final color = ColorUtils.fromHexWithThemeFallback(context, label.color);
+    final color = ColorUtils.fromHexWithThemeFallback(context, value.color);
 
     // Contrasting text color based on background luminance
     final textColor = color.computeLuminance() > 0.5
@@ -41,7 +41,7 @@ class ValueChip extends StatelessWidget {
         : Colors.white;
 
     // Get emoji icon
-    final emoji = label.iconName?.isNotEmpty ?? false ? label.iconName! : '⭐';
+    final emoji = value.iconName?.isNotEmpty ?? false ? value.iconName! : '⭐';
 
     final chip = Container(
       decoration: BoxDecoration(
@@ -91,9 +91,9 @@ class ValueChip extends StatelessWidget {
           // Value name (smaller, less bold)
           Flexible(
             child: Text(
-              label.name,
+              value.name,
               style: theme.textTheme.labelSmall?.copyWith(
-                color: color, // Use value color for readability
+                color: textColor, // Use contrasting color
                 fontWeight: FontWeight.w500, // Less bold
                 fontSize: 11, // Smaller
               ),

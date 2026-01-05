@@ -6,8 +6,9 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/urgent_banner.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/value_balance_chart.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_tile.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
+import 'package:taskly_bloc/presentation/features/screens/widgets/persona_banner.dart';
 
 class AllocationSectionRenderer extends StatelessWidget {
   const AllocationSectionRenderer({
@@ -30,15 +31,8 @@ class AllocationSectionRenderer extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: TasklyHeader(
-            title: 'My Day',
-            subtitle: ' tasks remaining',
-            icon: Icons.wb_sunny_outlined,
-          ),
-        ),
+        // Persona Banner
+        PersonaBanner(persona: persona),
 
         // Banners
         if (criticalAlerts.isNotEmpty) UrgentBanner(alerts: criticalAlerts),
@@ -137,10 +131,9 @@ class AllocationSectionRenderer extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final allocatedTask = group.tasks[index];
-                return TaskTile(
+                return TaskListTile(
                   task: allocatedTask.task,
-                  onToggle: (val) =>
-                      onTaskToggle?.call(allocatedTask.task.id, val),
+                  onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
                 );
               },
             ),
@@ -218,9 +211,9 @@ class AllocationSectionRenderer extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final task = tasks[index];
-            return TaskTile(
+            return TaskListTile(
               task: task,
-              onToggle: (val) => onTaskToggle?.call(task.id, val),
+              onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
             );
           },
         ),
@@ -237,9 +230,9 @@ class AllocationSectionRenderer extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final task = data.allocatedTasks[index];
-        return TaskTile(
+        return TaskListTile(
           task: task,
-          onToggle: (val) => onTaskToggle?.call(task.id, val),
+          onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         );
       },
     );

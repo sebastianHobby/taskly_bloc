@@ -1,5 +1,4 @@
 import 'package:uuid/uuid.dart';
-import 'package:taskly_bloc/domain/models/label.dart' show LabelType;
 
 /// Factory function that returns the current user ID.
 /// Throws [StateError] if no user is authenticated.
@@ -40,10 +39,10 @@ class IdGenerator {
   /// Tables using UUID v5 (deterministic from natural key).
   /// 23505 errors on these tables may indicate expected duplicates.
   static const Set<String> v5Tables = {
-    'labels',
+    'values',
     'trackers',
-    'task_labels',
-    'project_labels',
+    'task_values',
+    'project_values',
     'task_completion_history',
     'project_completion_history',
     'task_recurrence_exceptions',
@@ -111,10 +110,10 @@ class IdGenerator {
   // V5 DETERMINISTIC IDs - Natural Key → Same ID
   // ═══════════════════════════════════════════════════════════════════════════
 
-  /// Generate deterministic ID for a label.
-  /// Natural key: userId + name + type
-  String labelId({required String name, required LabelType type}) {
-    return _v5('labels/$name/${type.name}');
+  /// Generate deterministic ID for a value.
+  /// Natural key: userId + name
+  String valueId({required String name}) {
+    return _v5('values/$name');
   }
 
   /// Generate deterministic ID for a tracker.
@@ -123,17 +122,17 @@ class IdGenerator {
     return _v5('trackers/$name');
   }
 
-  /// Generate deterministic ID for task-label junction.
-  /// Natural key: taskId + labelId
-  String taskLabelId({required String taskId, required String labelId}) {
+  /// Generate deterministic ID for task-value junction.
+  /// Natural key: taskId + valueId
+  String taskValueId({required String taskId, required String valueId}) {
     // Note: No userId in path - taskId already scopes to user
-    return _v5NoUser('task_labels/$taskId/$labelId');
+    return _v5NoUser('task_values/$taskId/$valueId');
   }
 
-  /// Generate deterministic ID for project-label junction.
-  /// Natural key: projectId + labelId
-  String projectLabelId({required String projectId, required String labelId}) {
-    return _v5NoUser('project_labels/$projectId/$labelId');
+  /// Generate deterministic ID for project-value junction.
+  /// Natural key: projectId + valueId
+  String projectValueId({required String projectId, required String valueId}) {
+    return _v5NoUser('project_values/$projectId/$valueId');
   }
 
   /// Generate deterministic ID for task completion history.

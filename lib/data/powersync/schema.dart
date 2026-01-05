@@ -1,6 +1,5 @@
 import 'package:powersync/powersync.dart';
-import 'package:powersync_core/powersync_core.dart'
-    show TrackPreviousValuesOptions;
+import 'package:powersync_core/powersync_core.dart';
 
 //Generated from powersync dashboard --> Client setup
 // Note powersync expects everything as SQLITE types of text,integer or real
@@ -39,70 +38,59 @@ const schema = Schema([
     Column.text('last_reviewed_at'),
     Column.integer('priority'),
   ]),
-  Table('labels', [
+  Table('values', [
     Column.text('name'),
     Column.text('color'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
-    Column.text('type'),
     Column.text('icon_name'),
-    Column.integer('is_system_label'),
-    Column.text('system_label_type'),
     Column.text('last_reviewed_at'),
+    Column.text('priority'),
   ]),
-  Table('project_labels', [
+  Table('project_values', [
     Column.text('project_id'),
-    Column.text('label_id'),
+    Column.text('value_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
   ]),
-  Table('task_labels', [
+  Table('task_values', [
     Column.text('task_id'),
-    Column.text('label_id'),
+    Column.text('value_id'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
   ]),
-  Table(
-    'user_profiles',
-    [
-      // Note: user_id not synced - handled by Supabase auth
-      Column.text('global_settings'),
-      Column.text('allocation_settings'),
-      Column.text('allocation_alerts_settings'),
-      Column.text('soft_gates_settings'),
-      Column.text('next_actions_settings'),
-      Column.text('value_ranking'),
-      Column.text('page_sort_preferences'),
-      Column.text('page_display_settings'),
-      Column.text('screen_preferences'),
-      Column.text('created_at'),
-      Column.text('updated_at'),
-    ],
-    // Advanced schema options for JSON settings columns:
-    // - trackPreviousValues: Enables diffing in uploadData for custom merge logic
-    // - ignoreEmptyUpdates: Skips sync when data hasn't actually changed
-    // These help with the sync bounce issue on single-row settings tables
-    trackPreviousValues: TrackPreviousValuesOptions(),
-    ignoreEmptyUpdates: true,
-  ),
+  Table('user_profiles', [
+    Column.text('user_id'),
+    Column.text('global_settings'),
+    Column.text('allocation_settings'),
+    Column.text('soft_gates_settings'),
+    Column.text('next_actions_settings'),
+    Column.text('value_ranking'),
+    Column.text('page_sort_preferences'),
+    Column.text('page_display_settings'),
+    Column.text('screen_preferences'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('allocation_alerts_settings'),
+  ]),
   Table('screen_definitions', [
     Column.text('user_id'),
     Column.text('screen_type'),
     Column.text('screen_key'),
     Column.text('name'),
     Column.text('icon_name'),
-    Column.text('screen_source'),
+    Column.integer('is_system'),
+    Column.text('trigger_config'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
+    Column.text('trigger_type'),
+    Column.text('next_trigger_at'),
     Column.text('category'),
     Column.text('sections_config'),
     Column.text('support_blocks_config'),
-    Column.text('trigger_config'),
-    Column.text('trigger_type'),
-    Column.text('next_trigger_at'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
   ]),
   Table('workflow_definitions', [
     Column.text('user_id'),
@@ -254,8 +242,8 @@ const schema = Schema([
   ]),
   Table('daily_tracker_responses', [
     Column.text('user_id'),
-    Column.text('response_date'),
     Column.text('tracker_id'),
+    Column.text('response_date'),
     Column.text('response_value'),
     Column.text('created_at'),
     Column.text('updated_at'),

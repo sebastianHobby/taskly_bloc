@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_tile.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 class TaskListRenderer extends StatelessWidget {
@@ -39,11 +39,10 @@ class TaskListRenderer extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final task = tasks[index];
-            return TaskTile(
+            return TaskListTile(
               task: task,
-              isCompact: true,
-              onToggle: (val) {
-                onTaskToggle?.call(task.id, val);
+              onCheckboxChanged: (t, val) {
+                onTaskToggle?.call(t.id, val);
               },
             );
           },

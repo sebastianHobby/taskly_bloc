@@ -31,9 +31,6 @@ abstract class TaskRepositoryContract {
   /// Get tasks by project ID.
   Future<List<Task>> getTasksByProject(String projectId);
 
-  /// Get tasks by label ID.
-  Future<List<Task>> getTasksByLabel(String labelId);
-
   /// Get tasks by IDs.
   Future<List<Task>> getTasksByIds(List<String> ids);
 
@@ -54,9 +51,10 @@ abstract class TaskRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
+    List<String>? valueIds,
   });
 
   Future<void> update({
@@ -70,7 +68,14 @@ abstract class TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
+    List<String>? valueIds,
+    bool? isPinned,
+  });
+
+  /// Set the pinned status of a task.
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
   });
 
   /// Update the lastReviewedAt timestamp for a task.

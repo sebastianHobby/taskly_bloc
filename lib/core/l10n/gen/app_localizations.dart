@@ -169,6 +169,18 @@ abstract class AppLocalizations {
   /// **'Create task'**
   String get createTaskTooltip;
 
+  /// Label for deleting a value
+  ///
+  /// In en, this message translates to:
+  /// **'Delete value'**
+  String get deleteValue;
+
+  /// Label for editing a value
+  ///
+  /// In en, this message translates to:
+  /// **'Edit value'**
+  String get editValue;
+
   /// Tooltip for the create label floating action button
   ///
   /// In en, this message translates to:

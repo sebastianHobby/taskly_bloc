@@ -1,13 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/queries/label_match_mode.dart';
+import 'package:taskly_bloc/domain/queries/value_match_mode.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator;
+    show BoolOperator, DateOperator, ValueOperator;
 
 import '../../helpers/fallback_values.dart';
 
@@ -199,67 +198,55 @@ void main() {
         });
       });
 
-      group('byLabels', () {
-        test('creates query filtering by label IDs with any mode', () {
-          final query = ProjectQuery.byLabels(
-            const ['label-1', 'label-2'],
-            mode: LabelMatchMode.any,
+      group('byValues', () {
+        test('creates query filtering by value IDs with any mode', () {
+          final query = ProjectQuery.byValues(
+            const ['value-1', 'value-2'],
+            mode: ValueMatchMode.any,
           );
 
           expect(query.filter.shared, hasLength(1));
 
-          final labelPred = query.filter.shared
-              .whereType<ProjectLabelPredicate>()
+          final valuePred = query.filter.shared
+              .whereType<ProjectValuePredicate>()
               .first;
-          expect(labelPred.operator, LabelOperator.hasAny);
-          expect(labelPred.labelIds, ['label-1', 'label-2']);
+          expect(valuePred.operator, ValueOperator.hasAny);
+          expect(valuePred.valueIds, ['value-1', 'value-2']);
         });
 
-        test('creates query filtering by label IDs with all mode', () {
-          final query = ProjectQuery.byLabels(
-            const ['label-1', 'label-2'],
-            mode: LabelMatchMode.all,
+        test('creates query filtering by value IDs with all mode', () {
+          final query = ProjectQuery.byValues(
+            const ['value-1', 'value-2'],
+            mode: ValueMatchMode.all,
           );
 
-          final labelPred = query.filter.shared
-              .whereType<ProjectLabelPredicate>()
+          final valuePred = query.filter.shared
+              .whereType<ProjectValuePredicate>()
               .first;
-          expect(labelPred.operator, LabelOperator.hasAll);
+          expect(valuePred.operator, ValueOperator.hasAll);
         });
 
-        test('creates query filtering by label IDs with none mode', () {
-          final query = ProjectQuery.byLabels(
-            const ['label-1'],
-            mode: LabelMatchMode.none,
-          );
-
-          final labelPred = query.filter.shared
-              .whereType<ProjectLabelPredicate>()
-              .first;
-          expect(labelPred.operator, LabelOperator.isNull);
-        });
-
-        test('byLabels can filter by value type', () {
-          final query = ProjectQuery.byLabels(
+        test('creates query filtering by value IDs with none mode', () {
+          final query = ProjectQuery.byValues(
             const ['value-1'],
-            labelType: LabelType.value,
+            mode: ValueMatchMode.none,
           );
 
-          final labelPred = query.filter.shared
-              .whereType<ProjectLabelPredicate>()
+          final valuePred = query.filter.shared
+              .whereType<ProjectValuePredicate>()
               .first;
-          expect(labelPred.labelType, LabelType.value);
+          expect(valuePred.operator, ValueOperator.isNull);
         });
 
-        test('byLabels uses default sort criteria', () {
-          final query = ProjectQuery.byLabels(const ['label-1']);
+        test('byValues uses default sort criteria', () {
+          final query = ProjectQuery.byValues(const ['value-1']);
 
           expect(query.sortCriteria, isNotEmpty);
         });
 
-        test('byLabels accepts custom sort criteria', () {
-          final query = ProjectQuery.byLabels(
-            const ['label-1'],
+        test('byValues accepts custom sort criteria', () {
+          final query = ProjectQuery.byValues(
+            const ['value-1'],
             sortCriteria: const [
               SortCriterion(field: SortField.name),
             ],

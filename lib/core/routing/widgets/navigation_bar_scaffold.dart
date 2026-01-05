@@ -3,7 +3,7 @@ import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
-  const ScaffoldWithNavigationBar({
+  ScaffoldWithNavigationBar({
     required this.body,
     required this.destinations,
     required this.activeScreenId,
@@ -17,6 +17,8 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
   final String? activeScreenId;
   final int bottomVisibleCount;
   final ValueChanged<String> onDestinationSelected;
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +44,33 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
     );
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: NavigationDrawer(
+        selectedIndex: destinations.indexWhere(
+          (d) => d.screenId == activeScreenId,
+        ),
+        onDestinationSelected: (index) {
+          // Close drawer
+          _scaffoldKey.currentState?.closeDrawer();
+          onDestinationSelected(destinations[index].screenId);
+        },
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(28, 16, 16, 10),
+            child: Text(
+              'Taskly',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          ...destinations.map(
+            (dest) => NavigationDrawerDestination(
+              icon: _buildIcon(dest),
+              selectedIcon: _buildIcon(dest, selected: true),
+              label: Text(dest.label),
+            ),
+          ),
+        ],
+      ),
       body: body,
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
@@ -50,17 +79,16 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
           if (hasOverflow)
             const NavigationDestination(
               label: 'Browse',
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view),
+              icon: Icon(Icons.menu),
+              selectedIcon: Icon(Icons.menu),
             ),
         ],
-        onDestinationSelected: (index) async {
+        onDestinationSelected: (index) {
           if (index < visible.length) {
             onDestinationSelected(visible[index].screenId);
             return;
           }
-          if (!hasOverflow) return;
-          await _openOverflowSheet(context, overflow);
+          _scaffoldKey.currentState?.openDrawer();
         },
       ),
     );
@@ -110,69 +138,6 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         final count = snapshot.data ?? 0;
         if (count <= 0) return baseIcon;
         return Badge(label: Text(count.toString()), child: baseIcon);
-      },
-    );
-  }
-
-  Future<void> _openOverflowSheet(
-    BuildContext context,
-    List<NavigationDestinationVm> overflow,
-  ) async {
-    // Group overflow items by category
-    final grouped = <ScreenCategory, List<NavigationDestinationVm>>{};
-    for (final dest in overflow) {
-      grouped.putIfAbsent(dest.category, () => []).add(dest);
-    }
-
-    await showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              for (final category in [
-                ScreenCategory.workspace,
-                ScreenCategory.wellbeing,
-                ScreenCategory.settings,
-              ])
-                if (grouped.containsKey(category)) ...[
-                  if (category != ScreenCategory.workspace)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text(
-                        category.displayName,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ...grouped[category]!.map(
-                    (dest) => ListTile(
-                      leading: Icon(dest.icon),
-                      title: Text(dest.label),
-                      trailing: dest.badgeStream == null
-                          ? null
-                          : StreamBuilder<int>(
-                              stream: dest.badgeStream,
-                              builder: (context, snapshot) {
-                                final count = snapshot.data ?? 0;
-                                if (count <= 0) return const SizedBox.shrink();
-                                return Badge(label: Text(count.toString()));
-                              },
-                            ),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        onDestinationSelected(dest.screenId);
-                      },
-                    ),
-                  ),
-                ],
-            ],
-          ),
-        );
       },
     );
   }

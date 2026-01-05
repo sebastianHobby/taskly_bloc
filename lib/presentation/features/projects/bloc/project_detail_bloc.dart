@@ -22,6 +22,7 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     String? description,
     DateTime? startDate,
     DateTime? deadlineDate,
+    int? priority,
     String? repeatIcalRrule,
     List<Label>? labels,
   }) = _ProjectDetailUpdate;
@@ -35,6 +36,7 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     @Default(false) bool completed,
     DateTime? startDate,
     DateTime? deadlineDate,
+    int? priority,
     String? repeatIcalRrule,
     List<Label>? labels,
   }) = _ProjectDetailCreate;
@@ -163,6 +165,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
         completed: event.completed,
         startDate: event.startDate,
         deadlineDate: event.deadlineDate,
+        priority: event.priority,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       ),
@@ -191,6 +194,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
         completed: event.completed,
         startDate: event.startDate,
         deadlineDate: event.deadlineDate,
+        priority: event.priority,
         repeatIcalRrule: event.repeatIcalRrule,
         labelIds: event.labels?.map((e) => e.id).toList(growable: false),
       ),

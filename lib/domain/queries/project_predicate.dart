@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator, RelativeComparison;
+    show BoolOperator, DateOperator, RelativeComparison, ValueOperator;
 
 /// Project fields that can be queried.
 enum ProjectDateField {
@@ -26,7 +26,7 @@ sealed class ProjectPredicate {
       'id' => ProjectIdPredicate.fromJson(json),
       'bool' => ProjectBoolPredicate.fromJson(json),
       'date' => ProjectDatePredicate.fromJson(json),
-      'label' => ProjectLabelPredicate.fromJson(json),
+      'value' => ProjectValuePredicate.fromJson(json),
       _ => throw ArgumentError('Unknown ProjectPredicate type: $type'),
     };
   }
@@ -183,50 +183,42 @@ final class ProjectDatePredicate extends ProjectPredicate {
 }
 
 @immutable
-final class ProjectLabelPredicate extends ProjectPredicate {
-  const ProjectLabelPredicate({
+final class ProjectValuePredicate extends ProjectPredicate {
+  const ProjectValuePredicate({
     required this.operator,
-    required this.labelType,
-    this.labelIds = const <String>[],
+    this.valueIds = const <String>[],
   });
 
-  factory ProjectLabelPredicate.fromJson(Map<String, dynamic> json) {
-    return ProjectLabelPredicate(
-      operator: LabelOperator.values.byName(
-        json['operator'] as String? ?? LabelOperator.hasAny.name,
+  factory ProjectValuePredicate.fromJson(Map<String, dynamic> json) {
+    return ProjectValuePredicate(
+      operator: ValueOperator.values.byName(
+        json['operator'] as String? ?? ValueOperator.hasAny.name,
       ),
-      labelType: LabelType.values.byName(
-        json['labelType'] as String? ?? LabelType.label.name,
-      ),
-      labelIds: (json['labelIds'] as List<dynamic>? ?? const <dynamic>[])
+      valueIds: (json['valueIds'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .toList(growable: false),
     );
   }
 
-  final LabelOperator operator;
-  final LabelType labelType;
-  final List<String> labelIds;
+  final ValueOperator operator;
+  final List<String> valueIds;
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'type': 'label',
+    'type': 'value',
     'operator': operator.name,
-    'labelType': labelType.name,
-    'labelIds': labelIds,
+    'valueIds': valueIds,
   };
 
   @override
   bool operator ==(Object other) {
-    return other is ProjectLabelPredicate &&
+    return other is ProjectValuePredicate &&
         other.operator == operator &&
-        other.labelType == labelType &&
-        listEquals(other.labelIds, labelIds);
+        listEquals(other.valueIds, valueIds);
   }
 
   @override
-  int get hashCode =>
-      Object.hash(operator, labelType, Object.hashAll(labelIds));
+  int get hashCode => Object.hash(operator, Object.hashAll(valueIds));
 }
 
 extension _Let<T> on T {

@@ -3,7 +3,6 @@ import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rrule_display_utils.dart';
 
 /// Task list tile for allocated tasks in My Day view
@@ -35,9 +34,7 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
 
     final isOverdue = _isOverdue(task.deadlineDate);
     final isDueToday = _isDueToday(task.deadlineDate);
-    final valueLabels = task.labels
-        .where((l) => l.type == LabelType.value)
-        .toList();
+    final values = task.values;
     final hasMetadata =
         task.deadlineDate != null || task.startDate != null || task.isRepeating;
 
@@ -106,7 +103,7 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                 ),
 
                 // Row 2: Metadata (dates, values, project)
-                if (hasMetadata || valueLabels.isNotEmpty) ...[
+                if (hasMetadata || values.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.only(left: 32),
@@ -203,7 +200,7 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                         ],
 
                         // 3. Value emojis
-                        if (valueLabels.isNotEmpty) ...[
+                        if (values.isNotEmpty) ...[
                           if (task.startDate != null ||
                               task.deadlineDate != null)
                             Text(
@@ -217,13 +214,13 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                             ),
                           Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: valueLabels
+                            children: values
                                 .take(3)
                                 .map(
-                                  (label) => Padding(
+                                  (value) => Padding(
                                     padding: const EdgeInsets.only(right: 2),
                                     child: Text(
-                                      label.iconName ?? '⭐',
+                                      value.iconName ?? '⭐',
                                       style: const TextStyle(fontSize: 14),
                                     ),
                                   ),
@@ -236,7 +233,7 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                         if (task.isRepeating) ...[
                           if (task.startDate != null ||
                               task.deadlineDate != null ||
-                              valueLabels.isNotEmpty)
+                              values.isNotEmpty)
                             Text(
                               '•',
                               style: TextStyle(
@@ -272,7 +269,7 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                         if (task.project != null) ...[
                           if (task.startDate != null ||
                               task.deadlineDate != null ||
-                              valueLabels.isNotEmpty ||
+                              values.isNotEmpty ||
                               task.isRepeating)
                             Text(
                               '•',

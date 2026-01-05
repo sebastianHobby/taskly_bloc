@@ -23,57 +23,92 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final selectedIndex = _selectedIndex();
-
-    // Tablet: Compact rail, Desktop: Extended rail
     final isExtended = screenWidth >= Breakpoints.medium;
+
+    // Split destinations into main and settings
+    final settingsDest = destinations
+        .where((d) => d.screenId == 'settings')
+        .firstOrNull;
+    final mainDestinations = destinations
+        .where((d) => d.screenId != 'settings')
+        .toList();
+
+    final topIndex = _selectedIndex(mainDestinations);
+    final bottomIndex =
+        settingsDest != null && activeScreenId == settingsDest.screenId
+        ? 0
+        : null;
 
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: (index) =>
-                onDestinationSelected(destinations[index].screenId),
-            extended: isExtended,
-            labelType: isExtended
-                ? NavigationRailLabelType.none
-                : NavigationRailLabelType.all,
-            leading: isExtended
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Taskly',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
+          Column(
+            children: [
+              Expanded(
+                child: NavigationRail(
+                  selectedIndex: topIndex,
+                  onDestinationSelected: (index) =>
+                      onDestinationSelected(mainDestinations[index].screenId),
+                  extended: isExtended,
+                  labelType: isExtended
+                      ? NavigationRailLabelType.none
+                      : NavigationRailLabelType.all,
+                  leading: isExtended
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
                                 color: Theme.of(context).colorScheme.primary,
+                                size: 28,
                               ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Taskly',
+                                style: Theme.of(context).textTheme.titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Icon(
+                            Icons.check_circle_outline,
+                            color: Theme.of(context).colorScheme.primary,
+                            size: 32,
+                          ),
                         ),
-                      ],
-                    ),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Icon(
-                      Icons.check_circle_outline,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 32,
-                    ),
-                  ),
-            destinations: destinations.map(_toRailDestination).toList(),
-            useIndicator: true,
-            minWidth: 72,
-            minExtendedWidth: 200,
+                  destinations: mainDestinations
+                      .map(_toRailDestination)
+                      .toList(),
+                  useIndicator: true,
+                  minWidth: 72,
+                  minExtendedWidth: 200,
+                ),
+              ),
+              if (settingsDest != null)
+                NavigationRail(
+                  selectedIndex: bottomIndex,
+                  onDestinationSelected: (_) =>
+                      onDestinationSelected(settingsDest.screenId),
+                  extended: isExtended,
+                  labelType: isExtended
+                      ? NavigationRailLabelType.none
+                      : NavigationRailLabelType.all,
+                  destinations: [_toRailDestination(settingsDest)],
+                  useIndicator: true,
+                  minWidth: 72,
+                  minExtendedWidth: 200,
+                ),
+            ],
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(child: body),
@@ -82,9 +117,9 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     );
   }
 
-  int _selectedIndex() {
-    final idx = destinations.indexWhere((d) => d.screenId == activeScreenId);
-    if (idx == -1) return 0;
+  int? _selectedIndex(List<NavigationDestinationVm> dests) {
+    final idx = dests.indexWhere((d) => d.screenId == activeScreenId);
+    if (idx == -1) return null;
     return idx;
   }
 

@@ -66,11 +66,11 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Planned screen - future tasks
-  static final planned = ScreenDefinition.dataDriven(
-    id: 'planned',
-    screenKey: 'planned',
-    name: 'Planned',
+  /// Scheduled screen - future tasks (formerly Planned)
+  static final scheduled = ScreenDefinition.dataDriven(
+    id: 'scheduled',
+    screenKey: 'scheduled',
+    name: 'Scheduled',
     screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
@@ -81,6 +81,45 @@ abstract class SystemScreenDefinitions {
       Section.agenda(
         dateField: AgendaDateField.deadlineDate,
         grouping: AgendaGrouping.byDate,
+      ),
+    ],
+  );
+
+  /// Someday screen - Inbox and tasks without dates
+  static final someday = ScreenDefinition.dataDriven(
+    id: 'someday',
+    screenKey: 'someday',
+    name: 'Someday',
+    screenType: ScreenType.list,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.workspace,
+    fabOperations: [FabOperation.createTask],
+    sections: [
+      Section.data(
+        title: 'Inbox',
+        config: DataConfig.task(query: TaskQuery.inbox()),
+      ),
+      Section.data(
+        title: 'No Date',
+        config: DataConfig.task(
+          query: const TaskQuery(
+            filter: QueryFilter<TaskPredicate>(
+              shared: [
+                TaskBoolPredicate(
+                  field: TaskBoolField.completed,
+                  operator: BoolOperator.isFalse,
+                ),
+                TaskDatePredicate(
+                  field: TaskDateField.deadlineDate,
+                  operator: DateOperator.isNull,
+                ),
+                TaskProjectPredicate(operator: ProjectOperator.isNotNull),
+              ],
+            ),
+          ),
+        ),
       ),
     ],
   );
@@ -223,6 +262,17 @@ abstract class SystemScreenDefinitions {
     category: ScreenCategory.settings,
   );
 
+  /// Statistics - charts and insights
+  static final statistics = ScreenDefinition.navigationOnly(
+    id: 'statistics',
+    screenKey: 'statistics',
+    name: 'Statistics',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    category: ScreenCategory.workspace,
+  );
+
   /// Journal - mood tracking and reflection
   static final journal = ScreenDefinition.navigationOnly(
     id: 'journal',
@@ -308,17 +358,23 @@ abstract class SystemScreenDefinitions {
   ///
   /// Note: Some screens (logbook, workflows, screenManagement) are accessible
   /// via settings but not shown in the main navigation.
-  /// Order: My Day, Planned, Journal, Values, Inbox, Labels, Settings
+  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics, Settings
   static List<ScreenDefinition> get all => [
     myDay,
-    planned,
+    scheduled,
+    someday,
     journal,
     values,
     projects,
+    statistics,
+    settings,
+    // Hidden/Sub-screens
     inbox,
     labels,
-    // Navigation-only screens
-    settings,
+    orphanTasks,
+    logbook,
+    workflows,
+    screenManagement,
   ];
 
   /// Get a system screen by screenKey.
@@ -330,7 +386,9 @@ abstract class SystemScreenDefinitions {
       // Main navigable screens
       'inbox' => inbox,
       'my_day' => myDay,
-      'planned' => planned,
+      'scheduled' => scheduled,
+      'someday' => someday,
+      'statistics' => statistics,
       'logbook' => logbook,
       'projects' => projects,
       'labels' => labels,
@@ -360,19 +418,23 @@ abstract class SystemScreenDefinitions {
 
   /// Default sort orders for system screens.
   ///
-  /// Order: My Day, Planned, Journal, Values, Inbox, Labels, Settings
+  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics, Settings
   /// Note: logbook, workflows, screen_management not included as they're
   /// accessible via settings, not navigation.
   static const Map<String, int> defaultSortOrders = {
     'my_day': 0,
-    'planned': 1,
-    'journal': 2,
-    'values': 3,
-    'inbox': 4,
-    'labels': 5,
-    'projects': 6,
-    'orphan_tasks': 7,
+    'scheduled': 1,
+    'someday': 2,
+    'journal': 3,
+    'values': 4,
+    'projects': 5,
+    'statistics': 6,
     'settings': 100,
+    // Legacy/Hidden
+    'planned': 99,
+    'inbox': 99,
+    'labels': 99,
+    'orphan_tasks': 99,
   };
 
   /// Returns the default sort order for a screen key.
@@ -423,26 +485,26 @@ abstract class SystemScreenDefinitions {
     );
   }
 
-  /// Create a screen definition for a specific label
-  static DataDrivenScreenDefinition forLabel({
-    required String labelId,
-    required String labelName,
-    String? labelColor,
+  /// Create a screen definition for a specific value
+  static DataDrivenScreenDefinition forValue({
+    required String valueId,
+    required String valueName,
+    String? valueColor,
   }) {
     return DataDrivenScreenDefinition(
-      id: 'label_$labelId',
-      screenKey: 'label_detail',
-      name: labelName,
+      id: 'value_$valueId',
+      screenKey: 'value_detail',
+      name: valueName,
       screenType: ScreenType.list,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       screenSource: ScreenSource.userDefined,
-      iconName: 'label',
+      iconName: 'value',
       category: ScreenCategory.workspace,
       supportBlocks: [
         SupportBlock.entityHeader(
-          entityType: 'label',
-          entityId: labelId,
+          entityType: 'value',
+          entityId: valueId,
           showCheckbox: false,
           showMetadata: true,
         ),
@@ -450,7 +512,7 @@ abstract class SystemScreenDefinitions {
       sections: [
         Section.data(
           config: DataConfig.task(
-            query: TaskQuery.forLabel(labelId: labelId),
+            query: TaskQuery.forValue(valueId: valueId),
           ),
           display: const DisplayConfig(
             groupByCompletion: true,
@@ -462,7 +524,7 @@ abstract class SystemScreenDefinitions {
         ),
         Section.data(
           config: DataConfig.project(
-            query: ProjectQuery.byLabels([labelId]),
+            query: ProjectQuery.byValues([valueId]),
           ),
           display: const DisplayConfig(
             enableSwipeToDelete: false,

@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
-import 'package:taskly_bloc/domain/queries/label_match_mode.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/queries/value_match_mode.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -120,31 +120,6 @@ class TaskQuery {
     );
   }
 
-  /// Factory: Label view (tasks with a specific label).
-  ///
-  /// Set [includeInherited] to true to also match tasks whose parent project
-  /// has the label. Defaults to false for labels.
-  factory TaskQuery.forLabel({
-    required String labelId,
-    LabelType labelType = LabelType.label,
-    bool includeInherited = false,
-    List<SortCriterion>? sortCriteria,
-  }) {
-    return TaskQuery(
-      filter: QueryFilter<TaskPredicate>(
-        shared: [
-          TaskLabelPredicate(
-            operator: LabelOperator.hasAll,
-            labelIds: [labelId],
-            labelType: labelType,
-            includeInherited: includeInherited,
-          ),
-        ],
-      ),
-      sortCriteria: sortCriteria ?? _defaultSortCriteria,
-    );
-  }
-
   /// Factory: Value view (tasks with a specific value, including inherited).
   ///
   /// Unlike [forLabel], this defaults [includeInherited] to true because
@@ -161,10 +136,9 @@ class TaskQuery {
     return TaskQuery(
       filter: QueryFilter<TaskPredicate>(
         shared: [
-          TaskLabelPredicate(
-            operator: LabelOperator.hasAll,
-            labelIds: [valueId],
-            labelType: LabelType.value,
+          TaskValuePredicate(
+            operator: ValueOperator.hasAll,
+            valueIds: [valueId],
             includeInherited: includeInherited,
           ),
         ],
@@ -352,25 +326,23 @@ class TaskQuery {
     );
   }
 
-  /// Tasks with specific labels.
-  factory TaskQuery.byLabels(
-    List<String> labelIds, {
-    LabelMatchMode mode = LabelMatchMode.any,
-    LabelType labelType = LabelType.label,
+  /// Tasks with specific values.
+  factory TaskQuery.byValues(
+    List<String> valueIds, {
+    ValueMatchMode mode = ValueMatchMode.any,
     List<SortCriterion>? sortCriteria,
   }) {
-    final labelOp = switch (mode) {
-      LabelMatchMode.any => LabelOperator.hasAny,
-      LabelMatchMode.all => LabelOperator.hasAll,
-      LabelMatchMode.none => LabelOperator.isNull,
+    final valueOp = switch (mode) {
+      ValueMatchMode.any => ValueOperator.hasAny,
+      ValueMatchMode.all => ValueOperator.hasAll,
+      ValueMatchMode.none => ValueOperator.isNull,
     };
     return TaskQuery(
       filter: QueryFilter<TaskPredicate>(
         shared: [
-          TaskLabelPredicate(
-            operator: labelOp,
-            labelIds: labelIds,
-            labelType: labelType,
+          TaskValuePredicate(
+            operator: valueOp,
+            valueIds: valueIds,
           ),
         ],
       ),

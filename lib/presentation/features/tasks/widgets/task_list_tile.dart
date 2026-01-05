@@ -133,8 +133,7 @@ class TaskListTile extends StatelessWidget {
                     Row(
                       children: [
                         // Next Action indicator (if pinned)
-                        if (showNextActionIndicator &&
-                            task.labels.hasNextActionLabel) ...[
+                        if (showNextActionIndicator && task.isPinned) ...[
                           NextActionIndicator(
                             onUnpin: onNextActionRemoved != null
                                 ? () => onNextActionRemoved!(task)
@@ -191,8 +190,8 @@ class TaskListTile extends StatelessWidget {
                       ),
                     ],
 
-                    // Labels section
-                    LabelsSection(labels: task.labels),
+                    // Values section
+                    ValuesSection(values: task.values),
 
                     // Dates row
                     DatesRow(

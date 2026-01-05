@@ -1,14 +1,14 @@
 import 'dart:developer' as developer;
 
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
@@ -16,12 +16,10 @@ import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/value_stats.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings/value_ranking.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
-import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_alert_evaluator.dart';
@@ -38,7 +36,7 @@ class SectionDataService {
   SectionDataService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required LabelRepositoryContract labelRepository,
+    required ValueRepositoryContract valueRepository,
     required AllocationOrchestrator allocationOrchestrator,
     AllocationAlertEvaluator? alertEvaluator,
     WellbeingRepositoryContract? wellbeingRepository,
@@ -46,7 +44,7 @@ class SectionDataService {
     SettingsRepositoryContract? settingsRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _labelRepository = labelRepository,
+       _valueRepository = valueRepository,
        _wellbeingRepository = wellbeingRepository,
        _allocationOrchestrator = allocationOrchestrator,
        _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator(),
@@ -55,7 +53,7 @@ class SectionDataService {
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final LabelRepositoryContract _labelRepository;
+  final ValueRepositoryContract _valueRepository;
   final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
   final AllocationAlertEvaluator _alertEvaluator;
@@ -209,12 +207,12 @@ class SectionDataService {
         await _projectRepository.watchAll(query).first,
         'project',
       ),
-      LabelDataConfig(:final query) => (
-        await _fetchLabels(query, excludeValues: true),
+      LabelDataConfig() => (
+        const <dynamic>[], // Labels are deprecated
         'label',
       ),
-      ValueDataConfig(:final query) => (
-        await _fetchLabels(query, valuesOnly: true),
+      ValueDataConfig() => (
+        await _valueRepository.getAll(),
         'value',
       ),
       JournalDataConfig(:final query) => (
@@ -222,22 +220,6 @@ class SectionDataService {
         'journal',
       ),
     };
-  }
-
-  Future<List<Label>> _fetchLabels(
-    LabelQuery? query, {
-    bool excludeValues = false,
-    bool valuesOnly = false,
-  }) async {
-    // If a query is provided, use watchByType since LabelRepository doesn't
-    // support arbitrary queries yet
-    if (valuesOnly) {
-      return _labelRepository.watchByType(LabelType.value).first;
-    } else if (excludeValues) {
-      return _labelRepository.watchByType(LabelType.label).first;
-    } else {
-      return _labelRepository.watchAll().first;
-    }
   }
 
   Future<List<JournalEntry>> _fetchJournalEntries(JournalQuery? query) async {
@@ -259,8 +241,8 @@ class SectionDataService {
     return switch (config) {
       TaskDataConfig(:final query) => _taskRepository.watchAll(query),
       ProjectDataConfig(:final query) => _projectRepository.watchAll(query),
-      LabelDataConfig() => _labelRepository.watchByType(LabelType.label),
-      ValueDataConfig() => _labelRepository.watchByType(LabelType.value),
+      LabelDataConfig() => Stream.value(const []),
+      ValueDataConfig() => _valueRepository.watchAll(),
       JournalDataConfig(:final query) => _watchJournalEntries(query),
     };
   }
@@ -338,12 +320,11 @@ class SectionDataService {
           final tasks = await _taskRepository.watchAll(projectQuery).first;
           allTasks.addAll(tasks);
         }
-      case 'label':
       case 'value':
-        for (final label in entities.cast<Label>()) {
-          // Get tasks with this label using TaskQuery
-          final labelQuery = TaskQuery.forLabel(labelId: label.id);
-          final tasks = await _taskRepository.watchAll(labelQuery).first;
+        for (final value in entities.cast<Value>()) {
+          // Get tasks with this value using TaskQuery
+          final valueQuery = TaskQuery.forValue(valueId: value.id);
+          final tasks = await _taskRepository.watchAll(valueQuery).first;
           allTasks.addAll(tasks);
         }
     }
@@ -513,17 +494,8 @@ class SectionDataService {
           .where((e) => e.isUrgent ?? false)
           .toList();
 
-      // Evaluate alerts if section wants excluded section
-      AlertEvaluationResult? alertResult;
-      if (showExcludedSection && _settingsRepository != null) {
-        final alertSettings = await _settingsRepository.load(
-          SettingsKey.allocationAlerts,
-        );
-        alertResult = _alertEvaluator.evaluate(
-          excludedTasks: allocation.excludedTasks,
-          config: alertSettings.config,
-        );
-      }
+      // Use pre-calculated alert result from orchestrator
+      final alertResult = allocation.alertResult;
 
       yield SectionDataResult.allocation(
         allocatedTasks: tasks,
@@ -589,11 +561,11 @@ class SectionDataService {
       final valueId = entry.key;
       final tasks = entry.value;
 
-      // Look up value label for name, color, and icon
-      final valueLabel = await _labelRepository.getById(valueId);
-      final valueName = valueLabel?.name ?? 'Unknown Value';
-      final color = valueLabel?.color;
-      final iconName = valueLabel?.iconName;
+      // Look up value for name, color, and icon
+      final value = await _valueRepository.getById(valueId);
+      final valueName = value?.name ?? 'Unknown Value';
+      final color = value?.color;
+      final iconName = value?.iconName;
 
       tasksByValue[valueId] = AllocationValueGroup(
         valueId: valueId,
@@ -832,7 +804,6 @@ class SectionDataService {
         ),
         _analyticsService.getTotalRecentCompletions(days: sparklineWeeks * 7),
         _analyticsService.getOrphanTaskCount(),
-        _settingsRepository.load(SettingsKey.valueRanking),
       ]);
 
       final weeklyTrends = results[0] as Map<String, List<double>>;
@@ -840,28 +811,22 @@ class SectionDataService {
       final recentCompletions = results[2] as Map<String, int>;
       final totalRecentCompletions = results[3] as int;
       final unassignedTaskCount = results[4] as int;
-      final valueRanking = results[5] as ValueRanking;
+
+      final values = entities.cast<Value>();
 
       // Calculate total weight for percentage calculation
-      final totalWeight = valueRanking.items.fold<int>(
+      final totalWeight = values.fold<int>(
         0,
-        (sum, item) => sum + item.weight,
+        (sum, value) => sum + value.priority.weight,
       );
 
       // Build stats map for each value
       final statsByValueId = <String, ValueStats>{};
-      final values = entities.cast<Label>();
 
       for (final value in values) {
-        // Find ranking item for this value
-        final rankItem = valueRanking.items.firstWhere(
-          (item) => item.labelId == value.id,
-          orElse: () => ValueRankItem(labelId: value.id, weight: 5),
-        );
-
-        // Calculate target percent from ranking weight
+        // Calculate target percent from priority weight
         final targetPercent = totalWeight > 0
-            ? (rankItem.weight / totalWeight) * 100
+            ? (value.priority.weight / totalWeight) * 100
             : 0.0;
 
         // Calculate actual percent from recent completions

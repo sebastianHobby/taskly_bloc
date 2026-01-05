@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:taskly_bloc/domain/models/settings/allocation_exception_rule.dart';
+
 part 'allocation_config.freezed.dart';
 part 'allocation_config.g.dart';
 
@@ -63,6 +65,7 @@ abstract class AllocationConfig with _$AllocationConfig {
     @Default(AllocationPersona.realist) AllocationPersona persona,
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
+    @Default([]) List<AllocationExceptionRule> exceptionRules,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
@@ -98,6 +101,21 @@ abstract class StrategySettings with _$StrategySettings {
     /// Weight of neglect score vs base weight (0.0-1.0).
     /// Default 0.7 matches Reflector persona preset.
     @Default(0.7) double neglectInfluence,
+
+    /// Weight given to value priority.
+    @Default(1.0) double valuePriorityWeight,
+
+    /// Boost given to task priority.
+    @Default(1.0) double taskPriorityBoost,
+
+    /// Penalty for recency.
+    @Default(0.0) double recencyPenalty,
+
+    /// Weight for start date proximity.
+    @Default(0.0) double startDateProximity,
+
+    /// Multiplier for overdue emergency tasks.
+    @Default(1.0) double overdueEmergencyMultiplier,
   }) = _StrategySettings;
   const StrategySettings._();
 
@@ -112,6 +130,11 @@ abstract class StrategySettings with _$StrategySettings {
           urgentTaskBehavior: UrgentTaskBehavior.ignore,
           urgencyBoostMultiplier: 1,
           enableNeglectWeighting: false,
+          valuePriorityWeight: 2,
+          taskPriorityBoost: 0.5,
+          recencyPenalty: 0,
+          startDateProximity: 0,
+          overdueEmergencyMultiplier: 1,
         );
       case AllocationPersona.reflector:
         return const StrategySettings(
@@ -120,18 +143,33 @@ abstract class StrategySettings with _$StrategySettings {
           enableNeglectWeighting: true,
           neglectLookbackDays: 7,
           neglectInfluence: 0.7,
+          valuePriorityWeight: 1,
+          taskPriorityBoost: 0.5,
+          recencyPenalty: 0.2,
+          startDateProximity: 0,
+          overdueEmergencyMultiplier: 1,
         );
       case AllocationPersona.realist:
         return const StrategySettings(
           urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
           urgencyBoostMultiplier: 1.5,
           enableNeglectWeighting: false,
+          valuePriorityWeight: 1.5,
+          taskPriorityBoost: 1,
+          recencyPenalty: 0.1,
+          startDateProximity: 0.5,
+          overdueEmergencyMultiplier: 1.5,
         );
       case AllocationPersona.firefighter:
         return const StrategySettings(
           urgentTaskBehavior: UrgentTaskBehavior.includeAll,
           urgencyBoostMultiplier: 2,
           enableNeglectWeighting: false,
+          valuePriorityWeight: 0.5,
+          taskPriorityBoost: 2,
+          recencyPenalty: 0,
+          startDateProximity: 1,
+          overdueEmergencyMultiplier: 3,
         );
       case AllocationPersona.custom:
         // Custom returns defaults - user configures individually

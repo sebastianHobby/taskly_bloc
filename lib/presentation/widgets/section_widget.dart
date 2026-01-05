@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 
 import 'package:taskly_bloc/presentation/features/screens/renderers/allocation_section_renderer.dart';
+import 'package:taskly_bloc/presentation/features/screens/renderers/agenda_section_renderer.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/task_list_renderer.dart';
 
 /// Widget that renders a section from ScreenBloc state.
@@ -85,6 +86,16 @@ class _SectionWidgetState extends State<SectionWidget> {
               widget.onTaskCheckboxChanged?.call(task, val);
             },
           ),
+        final AgendaSectionResult d => AgendaSectionRenderer(
+          data: d,
+          onTaskToggle: (taskId, val) {
+            final task = d.groupedTasks.values
+                .expand((l) => l)
+                .firstWhere((t) => t.id == taskId);
+            widget.onTaskCheckboxChanged?.call(task, val);
+          },
+          onTaskTap: (task) => widget.onEntityTap?.call(task),
+        ),
         // Fallback for other types (Project lists, Agenda, etc.) - Keep existing logic or placeholder
         _ => _buildLegacySection(result),
       },

@@ -5,18 +5,16 @@ import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 /// Small emoji icon badges showing task's values
 class ValueEmojiIcons extends StatelessWidget {
   const ValueEmojiIcons({
-    required this.labels,
+    required this.values,
     this.maxVisible = 3,
     super.key,
   });
 
-  final List<Label> labels;
+  final List<Value> values;
   final int maxVisible;
 
   @override
   Widget build(BuildContext context) {
-    final values = labels.where((l) => l.type == LabelType.value).toList();
-
     if (values.isEmpty) return const SizedBox.shrink();
 
     final visibleValues = values.take(maxVisible).toList();

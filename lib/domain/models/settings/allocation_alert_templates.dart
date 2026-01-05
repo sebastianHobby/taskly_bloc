@@ -1,8 +1,9 @@
 import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_alert_config.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_alert_rule.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_alert_type.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
 /// Predefined alert configurations for each persona.
 ///
@@ -16,10 +17,20 @@ abstract class AllocationAlertTemplates {
   static const idealist = AllocationAlertConfig(
     rules: [
       AllocationAlertRule(
-        type: AllocationAlertType.overdueExcluded,
+        id: 'idealist_overdue',
+        name: 'Overdue Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.before,
+              relativeDays: 0,
+            ),
+          ],
+        ),
         severity: AlertSeverity.notice,
       ),
-      // Other types disabled - trust allocation
     ],
   );
 
@@ -28,15 +39,45 @@ abstract class AllocationAlertTemplates {
   static const reflector = AllocationAlertConfig(
     rules: [
       AllocationAlertRule(
-        type: AllocationAlertType.overdueExcluded,
+        id: 'reflector_overdue',
+        name: 'Overdue Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.before,
+              relativeDays: 0,
+            ),
+          ],
+        ),
         severity: AlertSeverity.warning,
       ),
       AllocationAlertRule(
-        type: AllocationAlertType.urgentExcluded,
+        id: 'reflector_urgent',
+        name: 'Urgent Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.onOrBefore,
+              relativeDays: 3,
+            ),
+          ],
+        ),
         severity: AlertSeverity.notice,
       ),
       AllocationAlertRule(
-        type: AllocationAlertType.noValueExcluded,
+        id: 'reflector_no_value',
+        name: 'Uncategorized Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskValuePredicate(
+              operator: ValueOperator.isNull,
+            ),
+          ],
+        ),
         severity: AlertSeverity.notice,
       ),
     ],
@@ -47,15 +88,45 @@ abstract class AllocationAlertTemplates {
   static const realist = AllocationAlertConfig(
     rules: [
       AllocationAlertRule(
-        type: AllocationAlertType.overdueExcluded,
+        id: 'realist_overdue',
+        name: 'Overdue Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.before,
+              relativeDays: 0,
+            ),
+          ],
+        ),
         severity: AlertSeverity.critical,
       ),
       AllocationAlertRule(
-        type: AllocationAlertType.urgentExcluded,
+        id: 'realist_urgent',
+        name: 'Urgent Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.onOrBefore,
+              relativeDays: 3,
+            ),
+          ],
+        ),
         severity: AlertSeverity.warning,
       ),
       AllocationAlertRule(
-        type: AllocationAlertType.quotaFullExcluded,
+        id: 'realist_no_value',
+        name: 'Uncategorized Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskValuePredicate(
+              operator: ValueOperator.isNull,
+            ),
+          ],
+        ),
         severity: AlertSeverity.notice,
       ),
     ],
@@ -66,24 +137,34 @@ abstract class AllocationAlertTemplates {
   static const firefighter = AllocationAlertConfig(
     rules: [
       AllocationAlertRule(
-        type: AllocationAlertType.overdueExcluded,
+        id: 'firefighter_overdue',
+        name: 'Overdue Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.before,
+              relativeDays: 0,
+            ),
+          ],
+        ),
         severity: AlertSeverity.critical,
       ),
       AllocationAlertRule(
-        type: AllocationAlertType.urgentExcluded,
+        id: 'firefighter_urgent',
+        name: 'Urgent Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.relative,
+              relativeComparison: RelativeComparison.onOrBefore,
+              relativeDays: 3,
+            ),
+          ],
+        ),
         severity: AlertSeverity.critical,
-      ),
-      AllocationAlertRule(
-        type: AllocationAlertType.noValueExcluded,
-        severity: AlertSeverity.warning,
-      ),
-      AllocationAlertRule(
-        type: AllocationAlertType.lowPriorityExcluded,
-        severity: AlertSeverity.notice,
-      ),
-      AllocationAlertRule(
-        type: AllocationAlertType.quotaFullExcluded,
-        severity: AlertSeverity.warning,
       ),
     ],
   );

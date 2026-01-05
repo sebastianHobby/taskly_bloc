@@ -57,9 +57,9 @@ void main() {
         expect(task.lastReviewedAt, now);
       });
 
-      test('defaults labels to empty list', () {
+      test('defaults values to empty list', () {
         final task = TestData.task();
-        expect(task.labels, isEmpty);
+        expect(task.values, isEmpty);
       });
 
       test('defaults repeatFromCompletion to false', () {
@@ -169,13 +169,13 @@ void main() {
         expect(copied.priority, 2);
       });
 
-      test('copies with new labels list', () {
+      test('copies with new values list', () {
         final task = TestData.task();
-        final newLabels = [TestData.label(name: 'New Label')];
-        final copied = task.copyWith(labels: newLabels);
+        final newValues = [TestData.value(name: 'New Value')];
+        final copied = task.copyWith(values: newValues);
 
-        expect(copied.labels, hasLength(1));
-        expect(copied.labels.first.name, 'New Label');
+        expect(copied.values, hasLength(1));
+        expect(copied.values.first.name, 'New Value');
       });
 
       test('preserves unchanged fields', () {

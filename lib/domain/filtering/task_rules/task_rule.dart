@@ -1,7 +1,6 @@
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules/rule_types.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Base class for all task filtering rules.
@@ -36,8 +35,6 @@ abstract class TaskRule {
         return DateRule.fromJson(json);
       case RuleType.boolean:
         return BooleanRule.fromJson(json);
-      case RuleType.labels:
-        return LabelRule.fromJson(json);
       case RuleType.value:
         return ValueRule.fromJson(json);
       case RuleType.project:
@@ -308,120 +305,11 @@ class BooleanRule extends TaskRule {
   int get hashCode => Object.hash(field, operator);
 }
 
-/// Rule for filtering tasks by labels.
-class LabelRule extends TaskRule {
-  const LabelRule({
-    required this.operator,
-    this.labelIds = const <String>[],
-    this.labelType = LabelType.label,
-  });
-
-  factory LabelRule.fromJson(Map<String, dynamic> json) {
-    return LabelRule(
-      operator: LabelRuleOperator.values.byName(
-        json['operator'] as String? ?? LabelRuleOperator.hasAll.name,
-      ),
-      labelIds: (json['labelIds'] as List<dynamic>? ?? const <dynamic>[])
-          .whereType<String>()
-          .toList(growable: false),
-      labelType: json['labelType'] == null
-          ? LabelType.label
-          : LabelType.values.byName(json['labelType'] as String),
-    );
-  }
-
-  final LabelRuleOperator operator;
-  final List<String> labelIds;
-  final LabelType labelType;
-
-  @override
-  RuleType get type => RuleType.labels;
-
-  @override
-  bool evaluate(Task task, EvaluationContext context) {
-    return applies(task, context.today);
-  }
-
-  @override
-  List<String> validate() {
-    final errors = <String>[];
-
-    switch (operator) {
-      case LabelRuleOperator.hasAll:
-      case LabelRuleOperator.hasAny:
-        if (labelIds.isEmpty) {
-          errors.add(
-            '${operator.name} operator requires at least one label ID',
-          );
-        } else {
-          final nonEmptyIds = labelIds.where((id) => id.trim().isNotEmpty);
-          if (nonEmptyIds.isEmpty) {
-            errors.add('All label IDs are empty');
-          }
-        }
-      case LabelRuleOperator.isNull:
-      case LabelRuleOperator.isNotNull:
-        // No additional validation needed
-        break;
-    }
-
-    return errors;
-  }
-
-  @override
-  bool applies(Task task, DateTime today) {
-    final labels = task.labels.where((label) => label.type == labelType);
-
-    if (operator == LabelRuleOperator.isNull) {
-      return labels.isEmpty;
-    }
-    if (operator == LabelRuleOperator.isNotNull) {
-      return labels.isNotEmpty;
-    }
-
-    if (labelIds.isEmpty) return false;
-    final ids = labelIds.where((id) => id.isNotEmpty).toSet();
-    if (ids.isEmpty) return false;
-
-    final taskLabelIds = labels.map((label) => label.id).toSet();
-
-    if (operator == LabelRuleOperator.hasAll) {
-      return ids.every(taskLabelIds.contains);
-    }
-
-    return ids.any(taskLabelIds.contains);
-  }
-
-  @override
-  Map<String, dynamic> toJson() => <String, dynamic>{
-    'type': type.name,
-    'operator': operator.name,
-    'labelIds': labelIds,
-    'labelType': labelType.name,
-  };
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is LabelRule &&
-        other.operator == operator &&
-        other.labelType == labelType &&
-        _listEquals(other.labelIds, labelIds);
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    operator,
-    labelType,
-    Object.hashAll(labelIds),
-  );
-}
-
-/// Rule for filtering tasks by value labels.
+/// Rule for filtering tasks by values.
 class ValueRule extends TaskRule {
   const ValueRule({
     required this.operator,
-    this.labelIds = const <String>[],
+    this.valueIds = const <String>[],
   });
 
   factory ValueRule.fromJson(Map<String, dynamic> json) {
@@ -429,14 +317,14 @@ class ValueRule extends TaskRule {
       operator: ValueRuleOperator.values.byName(
         json['operator'] as String? ?? ValueRuleOperator.hasAll.name,
       ),
-      labelIds: (json['labelIds'] as List<dynamic>? ?? const <dynamic>[])
+      valueIds: (json['valueIds'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .toList(growable: false),
     );
   }
 
   final ValueRuleOperator operator;
-  final List<String> labelIds;
+  final List<String> valueIds;
 
   @override
   RuleType get type => RuleType.value;
@@ -453,12 +341,12 @@ class ValueRule extends TaskRule {
     switch (operator) {
       case ValueRuleOperator.hasAll:
       case ValueRuleOperator.hasAny:
-        if (labelIds.isEmpty) {
+        if (valueIds.isEmpty) {
           errors.add(
             '${operator.name} operator requires at least one value ID',
           );
         } else {
-          final nonEmptyIds = labelIds.where((id) => id.trim().isNotEmpty);
+          final nonEmptyIds = valueIds.where((id) => id.trim().isNotEmpty);
           if (nonEmptyIds.isEmpty) {
             errors.add('All value IDs are empty');
           }
@@ -474,7 +362,7 @@ class ValueRule extends TaskRule {
 
   @override
   bool applies(Task task, DateTime today) {
-    final values = task.labels.where((label) => label.type == LabelType.value);
+    final values = task.values;
 
     if (operator == ValueRuleOperator.isNull) {
       return values.isEmpty;
@@ -483,8 +371,8 @@ class ValueRule extends TaskRule {
       return values.isNotEmpty;
     }
 
-    if (labelIds.isEmpty) return false;
-    final ids = labelIds.where((id) => id.isNotEmpty).toSet();
+    if (valueIds.isEmpty) return false;
+    final ids = valueIds.where((id) => id.isNotEmpty).toSet();
     if (ids.isEmpty) return false;
 
     final taskValueIds = values.map((value) => value.id).toSet();
@@ -500,7 +388,7 @@ class ValueRule extends TaskRule {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'type': type.name,
     'operator': operator.name,
-    'labelIds': labelIds,
+    'valueIds': valueIds,
   };
 
   @override

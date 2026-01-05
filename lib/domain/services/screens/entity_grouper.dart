@@ -42,31 +42,16 @@ class EntityGrouper {
   }
 
   Map<String, List<Task>> _groupTasksByLabel(List<Task> tasks) {
-    final grouped = <String, List<Task>>{};
-    for (final task in tasks) {
-      if (task.labels.isEmpty) {
-        grouped.putIfAbsent('No Labels', () => []).add(task);
-      } else {
-        for (final label in task.labels) {
-          if (label.type == LabelType.label) {
-            grouped.putIfAbsent(label.name, () => []).add(task);
-          }
-        }
-      }
-    }
-    return _sortMapByKey(grouped);
+    return {'No Labels': tasks};
   }
 
   Map<String, List<Task>> _groupTasksByValue(List<Task> tasks) {
     final grouped = <String, List<Task>>{};
     for (final task in tasks) {
-      final values = task.labels
-          .where((l) => l.type == LabelType.value)
-          .toList();
-      if (values.isEmpty) {
+      if (task.values.isEmpty) {
         grouped.putIfAbsent('No Values', () => []).add(task);
       } else {
-        for (final value in values) {
+        for (final value in task.values) {
           grouped.putIfAbsent(value.name, () => []).add(task);
         }
       }
@@ -133,31 +118,16 @@ class EntityGrouper {
   }
 
   Map<String, List<Project>> _groupProjectsByLabel(List<Project> projects) {
-    final grouped = <String, List<Project>>{};
-    for (final project in projects) {
-      if (project.labels.isEmpty) {
-        grouped.putIfAbsent('No Labels', () => []).add(project);
-      } else {
-        for (final label in project.labels) {
-          if (label.type == LabelType.label) {
-            grouped.putIfAbsent(label.name, () => []).add(project);
-          }
-        }
-      }
-    }
-    return _sortMapByKey(grouped);
+    return {'No Labels': projects};
   }
 
   Map<String, List<Project>> _groupProjectsByValue(List<Project> projects) {
     final grouped = <String, List<Project>>{};
     for (final project in projects) {
-      final values = project.labels
-          .where((l) => l.type == LabelType.value)
-          .toList();
-      if (values.isEmpty) {
+      if (project.values.isEmpty) {
         grouped.putIfAbsent('No Values', () => []).add(project);
       } else {
-        for (final value in values) {
+        for (final value in project.values) {
           grouped.putIfAbsent(value.name, () => []).add(project);
         }
       }

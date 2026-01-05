@@ -25,7 +25,7 @@ class TaskPredicateMapper with QueryBuilderMixin {
     return switch (predicate) {
       TaskBoolPredicate() => _boolPredicateToExpression(predicate, t),
       TaskProjectPredicate() => _projectPredicateToExpression(predicate, t),
-      TaskLabelPredicate() => _labelPredicateToExpression(predicate, t),
+      TaskValuePredicate() => _valuePredicateToExpression(predicate, t),
       TaskDatePredicate() => _datePredicateToExpression(predicate, t),
     };
   }
@@ -61,33 +61,33 @@ class TaskPredicateMapper with QueryBuilderMixin {
     };
   }
 
-  Expression<bool> _labelPredicateToExpression(
-    TaskLabelPredicate predicate,
+  Expression<bool> _valuePredicateToExpression(
+    TaskValuePredicate predicate,
     $TaskTableTable t,
   ) {
     final directMatch = switch (predicate.operator) {
-      LabelOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds)),
+      ValueOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.taskValuesTable)
+          ..addColumns([driftDb.taskValuesTable.taskId])
+          ..where(driftDb.taskValuesTable.taskId.equalsExp(t.id))
+          ..where(driftDb.taskValuesTable.valueId.isIn(predicate.valueIds)),
       ),
-      LabelOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id))
-          ..where(driftDb.taskLabelsTable.labelId.isIn(predicate.labelIds))
-          ..groupBy([driftDb.taskLabelsTable.taskId]),
+      ValueOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.taskValuesTable)
+          ..addColumns([driftDb.taskValuesTable.taskId])
+          ..where(driftDb.taskValuesTable.taskId.equalsExp(t.id))
+          ..where(driftDb.taskValuesTable.valueId.isIn(predicate.valueIds))
+          ..groupBy([driftDb.taskValuesTable.taskId]),
       ),
-      LabelOperator.isNull => notExistsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
+      ValueOperator.isNull => notExistsQuery(
+        driftDb.selectOnly(driftDb.taskValuesTable)
+          ..addColumns([driftDb.taskValuesTable.taskId])
+          ..where(driftDb.taskValuesTable.taskId.equalsExp(t.id)),
       ),
-      LabelOperator.isNotNull => existsQuery(
-        driftDb.selectOnly(driftDb.taskLabelsTable)
-          ..addColumns([driftDb.taskLabelsTable.taskId])
-          ..where(driftDb.taskLabelsTable.taskId.equalsExp(t.id)),
+      ValueOperator.isNotNull => existsQuery(
+        driftDb.selectOnly(driftDb.taskValuesTable)
+          ..addColumns([driftDb.taskValuesTable.taskId])
+          ..where(driftDb.taskValuesTable.taskId.equalsExp(t.id)),
       ),
     };
 
@@ -96,29 +96,29 @@ class TaskPredicateMapper with QueryBuilderMixin {
       return directMatch;
     }
 
-    // Include inherited: also check project_labels table
-    // Task matches if it has the label directly OR its project has the label
+    // Include inherited: also check project_values table
+    // Task matches if it has the value directly OR its project has the value
     final inheritedMatch = switch (predicate.operator) {
-      LabelOperator.hasAny => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(t.projectId))
-          ..where(driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds)),
+      ValueOperator.hasAny => existsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(t.projectId))
+          ..where(driftDb.projectValuesTable.valueId.isIn(predicate.valueIds)),
       ),
-      LabelOperator.hasAll => existsQuery(
-        driftDb.selectOnly(driftDb.projectLabelsTable)
-          ..addColumns([driftDb.projectLabelsTable.projectId])
-          ..where(driftDb.projectLabelsTable.projectId.equalsExp(t.projectId))
-          ..where(driftDb.projectLabelsTable.labelId.isIn(predicate.labelIds))
-          ..groupBy([driftDb.projectLabelsTable.projectId]),
+      ValueOperator.hasAll => existsQuery(
+        driftDb.selectOnly(driftDb.projectValuesTable)
+          ..addColumns([driftDb.projectValuesTable.projectId])
+          ..where(driftDb.projectValuesTable.projectId.equalsExp(t.projectId))
+          ..where(driftDb.projectValuesTable.valueId.isIn(predicate.valueIds))
+          ..groupBy([driftDb.projectValuesTable.projectId]),
       ),
       // For isNull/isNotNull, inheritance doesn't apply - return direct only
-      LabelOperator.isNull || LabelOperator.isNotNull => directMatch,
+      ValueOperator.isNull || ValueOperator.isNotNull => directMatch,
     };
 
     // For isNull/isNotNull operators, we already returned directMatch above
-    if (predicate.operator == LabelOperator.isNull ||
-        predicate.operator == LabelOperator.isNotNull) {
+    if (predicate.operator == ValueOperator.isNull ||
+        predicate.operator == ValueOperator.isNotNull) {
       return directMatch;
     }
 

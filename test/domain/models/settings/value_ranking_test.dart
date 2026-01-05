@@ -5,21 +5,21 @@ void main() {
   group('ValueRankItem', () {
     group('constructor', () {
       test('creates with required fields', () {
-        const item = ValueRankItem(labelId: 'label1', weight: 5);
+        const item = ValueRankItem(valueId: 'value1', weight: 5);
 
-        expect(item.labelId, 'label1');
+        expect(item.valueId, 'value1');
         expect(item.weight, 5);
         expect(item.sortOrder, 0);
       });
 
       test('creates with all fields', () {
         const item = ValueRankItem(
-          labelId: 'label2',
+          valueId: 'value2',
           weight: 8,
           sortOrder: 3,
         );
 
-        expect(item.labelId, 'label2');
+        expect(item.valueId, 'value2');
         expect(item.weight, 8);
         expect(item.sortOrder, 3);
       });
@@ -28,33 +28,33 @@ void main() {
     group('fromJson', () {
       test('parses complete JSON', () {
         final json = {
-          'labelId': 'testLabel',
+          'valueId': 'testValue',
           'weight': 7,
           'sortOrder': 2,
         };
 
         final item = ValueRankItem.fromJson(json);
 
-        expect(item.labelId, 'testLabel');
+        expect(item.valueId, 'testValue');
         expect(item.weight, 7);
         expect(item.sortOrder, 2);
       });
 
       test('parses with default weight', () {
         final json = {
-          'labelId': 'testLabel',
+          'valueId': 'testValue',
         };
 
         final item = ValueRankItem.fromJson(json);
 
-        expect(item.labelId, 'testLabel');
+        expect(item.valueId, 'testValue');
         expect(item.weight, 5);
         expect(item.sortOrder, 0);
       });
 
       test('parses with null weight', () {
         final json = {
-          'labelId': 'testLabel',
+          'valueId': 'testValue',
           'weight': null,
         };
 
@@ -65,7 +65,7 @@ void main() {
 
       test('parses with null sortOrder', () {
         final json = {
-          'labelId': 'testLabel',
+          'valueId': 'testValue',
           'weight': 3,
           'sortOrder': null,
         };
@@ -79,21 +79,21 @@ void main() {
     group('toJson', () {
       test('serializes all fields', () {
         const item = ValueRankItem(
-          labelId: 'myLabel',
+          valueId: 'myValue',
           weight: 9,
           sortOrder: 5,
         );
 
         final json = item.toJson();
 
-        expect(json['labelId'], 'myLabel');
+        expect(json['valueId'], 'myValue');
         expect(json['weight'], 9);
         expect(json['sortOrder'], 5);
       });
 
       test('round-trips through JSON', () {
         const original = ValueRankItem(
-          labelId: 'roundTrip',
+          valueId: 'roundTrip',
           weight: 6,
           sortOrder: 1,
         );
@@ -107,34 +107,34 @@ void main() {
 
     group('copyWith', () {
       test('copies with no changes', () {
-        const item = ValueRankItem(labelId: 'test', weight: 5, sortOrder: 2);
+        const item = ValueRankItem(valueId: 'test', weight: 5, sortOrder: 2);
 
         final copied = item.copyWith();
 
         expect(copied, item);
       });
 
-      test('copies with labelId change', () {
-        const item = ValueRankItem(labelId: 'old', weight: 5);
+      test('copies with valueId change', () {
+        const item = ValueRankItem(valueId: 'old', weight: 5);
 
-        final copied = item.copyWith(labelId: 'new');
+        final copied = item.copyWith(valueId: 'new');
 
-        expect(copied.labelId, 'new');
+        expect(copied.valueId, 'new');
         expect(copied.weight, item.weight);
         expect(copied.sortOrder, item.sortOrder);
       });
 
       test('copies with weight change', () {
-        const item = ValueRankItem(labelId: 'test', weight: 5);
+        const item = ValueRankItem(valueId: 'test', weight: 5);
 
         final copied = item.copyWith(weight: 10);
 
         expect(copied.weight, 10);
-        expect(copied.labelId, item.labelId);
+        expect(copied.valueId, item.valueId);
       });
 
       test('copies with sortOrder change', () {
-        const item = ValueRankItem(labelId: 'test', weight: 5, sortOrder: 0);
+        const item = ValueRankItem(valueId: 'test', weight: 5, sortOrder: 0);
 
         final copied = item.copyWith(sortOrder: 99);
 
@@ -144,36 +144,36 @@ void main() {
 
     group('equality', () {
       test('equal items are equal', () {
-        const item1 = ValueRankItem(labelId: 'a', weight: 5, sortOrder: 1);
-        const item2 = ValueRankItem(labelId: 'a', weight: 5, sortOrder: 1);
+        const item1 = ValueRankItem(valueId: 'a', weight: 5, sortOrder: 1);
+        const item2 = ValueRankItem(valueId: 'a', weight: 5, sortOrder: 1);
 
         expect(item1, item2);
         expect(item1.hashCode, item2.hashCode);
       });
 
-      test('different labelId are not equal', () {
-        const item1 = ValueRankItem(labelId: 'a', weight: 5);
-        const item2 = ValueRankItem(labelId: 'b', weight: 5);
+      test('different valueId are not equal', () {
+        const item1 = ValueRankItem(valueId: 'a', weight: 5);
+        const item2 = ValueRankItem(valueId: 'b', weight: 5);
 
         expect(item1, isNot(item2));
       });
 
       test('different weight are not equal', () {
-        const item1 = ValueRankItem(labelId: 'a', weight: 5);
-        const item2 = ValueRankItem(labelId: 'a', weight: 6);
+        const item1 = ValueRankItem(valueId: 'a', weight: 5);
+        const item2 = ValueRankItem(valueId: 'a', weight: 6);
 
         expect(item1, isNot(item2));
       });
 
       test('different sortOrder are not equal', () {
-        const item1 = ValueRankItem(labelId: 'a', weight: 5, sortOrder: 1);
-        const item2 = ValueRankItem(labelId: 'a', weight: 5, sortOrder: 2);
+        const item1 = ValueRankItem(valueId: 'a', weight: 5, sortOrder: 1);
+        const item2 = ValueRankItem(valueId: 'a', weight: 5, sortOrder: 2);
 
         expect(item1, isNot(item2));
       });
 
       test('identical returns true for same instance', () {
-        const item = ValueRankItem(labelId: 'a', weight: 5);
+        const item = ValueRankItem(valueId: 'a', weight: 5);
 
         expect(item == item, true);
       });
@@ -190,8 +190,8 @@ void main() {
 
       test('creates with provided items', () {
         const items = [
-          ValueRankItem(labelId: 'a', weight: 5),
-          ValueRankItem(labelId: 'b', weight: 8),
+          ValueRankItem(valueId: 'a', weight: 5),
+          ValueRankItem(valueId: 'b', weight: 8),
         ];
         const ranking = ValueRanking(items: items);
 
@@ -204,16 +204,16 @@ void main() {
       test('parses complete JSON', () {
         final json = {
           'items': [
-            {'labelId': 'label1', 'weight': 5, 'sortOrder': 0},
-            {'labelId': 'label2', 'weight': 8, 'sortOrder': 1},
+            {'valueId': 'value1', 'weight': 5, 'sortOrder': 0},
+            {'valueId': 'value2', 'weight': 8, 'sortOrder': 1},
           ],
         };
 
         final ranking = ValueRanking.fromJson(json);
 
         expect(ranking.items.length, 2);
-        expect(ranking.items[0].labelId, 'label1');
-        expect(ranking.items[1].labelId, 'label2');
+        expect(ranking.items[0].valueId, 'value1');
+        expect(ranking.items[1].valueId, 'value2');
       });
 
       test('parses empty items', () {
@@ -243,8 +243,8 @@ void main() {
       test('serializes items', () {
         const ranking = ValueRanking(
           items: [
-            ValueRankItem(labelId: 'x', weight: 3),
-            ValueRankItem(labelId: 'y', weight: 7),
+            ValueRankItem(valueId: 'x', weight: 3),
+            ValueRankItem(valueId: 'y', weight: 7),
           ],
         );
 
@@ -265,8 +265,8 @@ void main() {
       test('round-trips through JSON', () {
         const original = ValueRanking(
           items: [
-            ValueRankItem(labelId: 'a', weight: 2, sortOrder: 0),
-            ValueRankItem(labelId: 'b', weight: 9, sortOrder: 1),
+            ValueRankItem(valueId: 'a', weight: 2, sortOrder: 0),
+            ValueRankItem(valueId: 'b', weight: 9, sortOrder: 1),
           ],
         );
 
@@ -280,7 +280,7 @@ void main() {
     group('copyWith', () {
       test('copies with no changes', () {
         const ranking = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
 
         final copied = ranking.copyWith();
@@ -290,9 +290,9 @@ void main() {
 
       test('copies with new items', () {
         const ranking = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
-        const newItems = [ValueRankItem(labelId: 'b', weight: 8)];
+        const newItems = [ValueRankItem(valueId: 'b', weight: 8)];
 
         final copied = ranking.copyWith(items: newItems);
 
@@ -303,10 +303,10 @@ void main() {
     group('equality', () {
       test('equal rankings are equal', () {
         const ranking1 = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
         const ranking2 = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
 
         expect(ranking1, ranking2);
@@ -322,10 +322,10 @@ void main() {
 
       test('different items are not equal', () {
         const ranking1 = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
         const ranking2 = ValueRanking(
-          items: [ValueRankItem(labelId: 'b', weight: 5)],
+          items: [ValueRankItem(valueId: 'b', weight: 5)],
         );
 
         expect(ranking1, isNot(ranking2));
@@ -333,12 +333,12 @@ void main() {
 
       test('different item count are not equal', () {
         const ranking1 = ValueRanking(
-          items: [ValueRankItem(labelId: 'a', weight: 5)],
+          items: [ValueRankItem(valueId: 'a', weight: 5)],
         );
         const ranking2 = ValueRanking(
           items: [
-            ValueRankItem(labelId: 'a', weight: 5),
-            ValueRankItem(labelId: 'b', weight: 8),
+            ValueRankItem(valueId: 'a', weight: 5),
+            ValueRankItem(valueId: 'b', weight: 8),
           ],
         );
 
@@ -356,8 +356,8 @@ void main() {
       test('returns formatted string', () {
         const ranking = ValueRanking(
           items: [
-            ValueRankItem(labelId: 'a', weight: 5),
-            ValueRankItem(labelId: 'b', weight: 8),
+            ValueRankItem(valueId: 'a', weight: 5),
+            ValueRankItem(valueId: 'b', weight: 8),
           ],
         );
 

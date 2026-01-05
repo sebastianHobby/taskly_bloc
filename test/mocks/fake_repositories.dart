@@ -1,18 +1,18 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/queries/value_query.dart';
 
 /// Shared fake implementations for integration tests.
 ///
@@ -65,7 +65,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
+    List<String>? valueIds,
+    bool? isPinned,
   }) async {
     final idx = _last.indexWhere((t) => t.id == id);
     if (idx == -1) return;
@@ -84,12 +85,25 @@ class FakeTaskRepository implements TaskRepositoryContract {
       projectId: projectId,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
-      labels: old.labels,
+      values: old.values,
     );
 
     _last = updated;
     _controller.add(_last);
     updateCalled?.complete();
+  }
+
+  @override
+  Future<void> setPinned({required String id, required bool isPinned}) async {
+    final idx = _last.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    final updated = [..._last];
+    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: DateTime.now());
+
+    _last = updated;
+    _controller.add(_last);
   }
 
   @override
@@ -119,9 +133,10 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
+    int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
+    List<String>? valueIds,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -135,6 +150,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
       startDate: startDate,
       deadlineDate: deadlineDate,
       projectId: projectId,
+      priority: priority,
       repeatIcalRrule: repeatIcalRrule,
     );
     _last = [..._last, newTask];
@@ -249,10 +265,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
   @override
   Future<List<Task>> getTasksByProject(String projectId) async =>
       _last.where((t) => t.projectId == projectId).toList();
-
-  @override
-  Future<List<Task>> getTasksByLabel(String labelId) async =>
-      _last.where((t) => t.labels.any((l) => l.id == labelId)).toList();
 
   void dispose() {
     _controller.close();
@@ -395,6 +407,19 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Future<void> setPinned({required String id, required bool isPinned}) async {
+    final idx = _last.indexWhere((p) => p.id == id);
+    if (idx == -1) return;
+
+    final old = _last[idx];
+    final updated = [..._last];
+    updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: DateTime.now());
+
+    _last = updated;
+    _controller.add(_last);
+  }
+
+  @override
   Future<int> count([ProjectQuery? query]) async => _last.length;
 
   @override
@@ -411,7 +436,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
+    List<String>? valueIds,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -442,7 +467,8 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
+    List<String>? valueIds,
+    bool? isPinned,
   }) async {
     final idx = _last.indexWhere((p) => p.id == id);
     if (idx == -1) return;
@@ -460,6 +486,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       deadlineDate: deadlineDate,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
+      values: old.values,
     );
 
     _last = updated;
@@ -491,7 +518,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       repeatIcalRrule: old.repeatIcalRrule,
       repeatFromCompletion: old.repeatFromCompletion,
       seriesEnded: old.seriesEnded,
-      labels: old.labels,
+      values: old.values,
       occurrence: old.occurrence,
     );
 
@@ -551,109 +578,69 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       _last.where((p) => ids.contains(p.id)).toList();
 
   @override
-  Future<List<Project>> getProjectsByLabel(String labelId) async =>
-      _last.where((p) => p.labels.any((l) => l.id == labelId)).toList();
+  Future<List<Project>> getProjectsByValue(String valueId) async =>
+      _last.where((p) => p.values.any((v) => v.id == valueId)).toList();
 
   void dispose() {
     _controller.close();
   }
 }
 
-/// Minimal in-memory fake repository for label operations.
-class FakeLabelRepository implements LabelRepositoryContract {
-  FakeLabelRepository();
+/// Minimal in-memory fake repository for value operations.
+class FakeValueRepository implements ValueRepositoryContract {
+  FakeValueRepository();
 
-  final _controller = BehaviorSubject<List<Label>>.seeded([]);
-  List<Label> get _last => _controller.value;
-  set _last(List<Label> value) => _controller.add(value);
+  final _controller = BehaviorSubject<List<Value>>.seeded([]);
+  List<Value> get _last => _controller.value;
+  set _last(List<Value> value) => _controller.add(value);
 
-  void pushLabels(List<Label> labels) {
-    _controller.add(labels);
+  void pushValues(List<Value> values) {
+    _controller.add(values);
   }
 
   @override
-  Stream<List<Label>> watchAll([LabelQuery? query]) => _controller.stream;
+  Stream<List<Value>> watchAll([ValueQuery? query]) => _controller.stream;
 
   @override
-  Future<List<Label>> getAll([LabelQuery? query]) async => _last;
+  Future<List<Value>> getAll([ValueQuery? query]) async => _last;
 
   @override
-  Stream<List<Label>> watchByType(LabelType type) => _controller.stream.map(
-    (labels) => labels.where((l) => l.type == type).toList(),
-  );
-
-  @override
-  Future<List<Label>> getAllByType(
-    LabelType type,
-  ) async => _last.where((l) => l.type == type).toList();
-
-  @override
-  Stream<Label?> watchById(String id) => _controller.stream.map((labels) {
+  Stream<Value?> watchById(String id) => _controller.stream.map((values) {
     try {
-      return labels.firstWhere((l) => l.id == id);
+      return values.firstWhere((v) => v.id == id);
     } catch (_) {
       return null;
     }
   });
 
   @override
-  Future<Label?> getById(String id) async {
+  Future<Value?> getById(String id) async {
     try {
-      return _last.firstWhere((l) => l.id == id);
+      return _last.firstWhere((v) => v.id == id);
     } catch (_) {
       return null;
     }
-  }
-
-  @override
-  Future<Label?> getSystemLabel(SystemLabelType type) async {
-    try {
-      return _last.firstWhere(
-        (l) => l.isSystemLabel && l.systemLabelType == type,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Future<Label> getOrCreateSystemLabel(SystemLabelType type) async {
-    final existing = await getSystemLabel(type);
-    if (existing != null) return existing;
-
-    final now = DateTime.now();
-    final label = Label(
-      id: 'system-${type.name}',
-      createdAt: now,
-      updatedAt: now,
-      name: type.name,
-      isSystemLabel: true,
-      systemLabelType: type,
-    );
-    _last = [..._last, label];
-    _controller.add(_last);
-    return label;
   }
 
   @override
   Future<void> create({
     required String name,
     required String color,
-    required LabelType type,
     String? iconName,
+    ValuePriority priority = ValuePriority.medium,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
-    final newLabel = Label(
+    final newValue = Value(
       id: id,
       createdAt: now,
       updatedAt: now,
       name: name,
       color: color,
-      type: type,
       iconName: iconName,
+      priority: priority,
     );
-    _last = [..._last, newLabel];
+    _last = [..._last, newValue];
     _controller.add(_last);
   }
 
@@ -662,24 +649,23 @@ class FakeLabelRepository implements LabelRepositoryContract {
     required String id,
     required String name,
     required String color,
-    required LabelType type,
     String? iconName,
+    ValuePriority? priority,
   }) async {
-    final idx = _last.indexWhere((l) => l.id == id);
+    final idx = _last.indexWhere((v) => v.id == id);
     if (idx == -1) return;
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = Label(
+    updated[idx] = Value(
       id: old.id,
       createdAt: old.createdAt,
       updatedAt: DateTime.now(),
       name: name,
       color: color,
-      type: type,
       iconName: iconName,
-      isSystemLabel: old.isSystemLabel,
-      systemLabelType: old.systemLabelType,
+      priority: priority ?? old.priority,
+      lastReviewedAt: old.lastReviewedAt,
     );
 
     _last = updated;
@@ -691,7 +677,7 @@ class FakeLabelRepository implements LabelRepositoryContract {
     required String id,
     required DateTime reviewedAt,
   }) async {
-    final idx = _last.indexWhere((l) => l.id == id);
+    final idx = _last.indexWhere((v) => v.id == id);
     if (idx == -1) return;
 
     final old = _last[idx];
@@ -707,25 +693,25 @@ class FakeLabelRepository implements LabelRepositoryContract {
 
   @override
   Future<void> delete(String id) async {
-    _last = _last.where((l) => l.id != id).toList();
+    _last = _last.where((v) => v.id != id).toList();
     _controller.add(_last);
   }
 
   @override
-  Future<void> addLabelToTask({
+  Future<void> addValueToTask({
     required String taskId,
-    required String labelId,
+    required String valueId,
   }) async {}
 
   @override
-  Future<void> removeLabelFromTask({
+  Future<void> removeValueFromTask({
     required String taskId,
-    required String labelId,
+    required String valueId,
   }) async {}
 
   @override
-  Future<List<Label>> getLabelsByIds(List<String> ids) async =>
-      _last.where((l) => ids.contains(l.id)).toList();
+  Future<List<Value>> getValuesByIds(List<String> ids) async =>
+      _last.where((v) => ids.contains(v.id)).toList();
 
   void dispose() {
     _controller.close();

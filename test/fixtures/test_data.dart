@@ -78,7 +78,7 @@ class TestData {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
-    List<Label>? labels,
+    List<Value>? values,
     OccurrenceData? occurrence,
   }) {
     final now = DateTime.now();
@@ -97,7 +97,7 @@ class TestData {
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
-      labels: labels ?? [],
+      values: values ?? [],
       occurrence: occurrence,
     );
   }
@@ -115,7 +115,7 @@ class TestData {
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
-    List<Label>? labels,
+    List<Value>? values,
     OccurrenceData? occurrence,
   }) {
     final now = DateTime.now();
@@ -132,29 +132,31 @@ class TestData {
       repeatIcalRrule: repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion,
       seriesEnded: seriesEnded,
-      labels: labels ?? [],
+      values: values ?? [],
       occurrence: occurrence,
     );
   }
 
-  static Label label({
+  static Value value({
     String? id,
-    String name = 'Test Label',
-    LabelType type = LabelType.label,
+    String name = 'Test Value',
     String? color,
     String? iconName,
+    ValuePriority priority = ValuePriority.medium,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastReviewedAt,
   }) {
     final now = DateTime.now();
-    return Label(
-      id: id ?? _nextId('label'),
+    return Value(
+      id: id ?? _nextId('value'),
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
       name: name,
-      type: type,
       color: color,
       iconName: iconName,
+      priority: priority,
+      lastReviewedAt: lastReviewedAt,
     );
   }
 
@@ -377,9 +379,6 @@ class TestData {
 
   // === Enums and Simple Types ===
 
-  /// Returns a default LabelType for fallback registration
-  static LabelType labelType() => LabelType.label;
-
   // === Workflows ===
 
   /// Creates a workflow definition for testing
@@ -555,9 +554,9 @@ class TestData {
     updatedAt: TestConstants.referenceDate,
   );
 
-  static Label sampleLabel() => label(
-    id: 'sample-label-1',
-    name: 'Sample Label',
+  static Value sampleValue() => value(
+    id: 'sample-value-1',
+    name: 'Sample Value',
     createdAt: TestConstants.referenceDate,
     updatedAt: TestConstants.referenceDate,
   );
@@ -580,11 +579,11 @@ class TestData {
     );
   }
 
-  /// Creates multiple labels with sequential IDs
-  static List<Label> labels(int count) {
+  /// Creates multiple values with sequential IDs
+  static List<Value> values(int count) {
     return List.generate(
       count,
-      (i) => label(id: 'label-$i', name: 'Label $i'),
+      (i) => value(id: 'value-$i', name: 'Value $i'),
     );
   }
 
@@ -641,31 +640,31 @@ class TestData {
     );
   }
 
-  /// Creates a task with project and labels
+  /// Creates a task with project and values
   static Task taskWithRelations({
     String? id,
     String name = 'Task with Relations',
     String? projectId,
-    List<Label>? labels,
+    List<Value>? values,
   }) {
     return task(
       id: id,
       name: name,
       projectId: projectId ?? 'project-1',
-      labels: labels ?? [label(name: 'Label 1'), label(name: 'Label 2')],
+      values: values ?? [value(name: 'Value 1'), value(name: 'Value 2')],
     );
   }
 
-  /// Creates a project with labels
-  static Project projectWithLabels({
+  /// Creates a project with values
+  static Project projectWithValues({
     String? id,
-    String name = 'Project with Labels',
-    List<Label>? labels,
+    String name = 'Project with Values',
+    List<Value>? values,
   }) {
     return project(
       id: id,
       name: name,
-      labels: labels ?? [label(name: 'Label 1'), label(name: 'Label 2')],
+      values: values ?? [value(name: 'Value 1'), value(name: 'Value 2')],
     );
   }
 
@@ -693,36 +692,38 @@ class TestData {
     );
   }
 
-  /// Creates an urgent label
-  static Label urgentLabel() {
-    return label(
+  /// Creates an urgent value
+  static Value urgentValue() {
+    return value(
       id: 'urgent',
       name: 'Urgent',
       color: '#FF0000',
+      priority: ValuePriority.high,
     );
   }
 
-  /// Creates a high priority label
-  static Label highPriorityLabel() {
-    return label(
+  /// Creates a high priority value
+  static Value highPriorityValue() {
+    return value(
       id: 'high-priority',
       name: 'High Priority',
       color: '#FF9900',
+      priority: ValuePriority.high,
     );
   }
 
-  /// Creates a work label
-  static Label workLabel() {
-    return label(
+  /// Creates a work value
+  static Value workValue() {
+    return value(
       id: 'work',
       name: 'Work',
       color: '#0066CC',
     );
   }
 
-  /// Creates a personal label
-  static Label personalLabel() {
-    return label(
+  /// Creates a personal value
+  static Value personalValue() {
+    return value(
       id: 'personal',
       name: 'Personal',
       color: '#00CC66',
@@ -758,19 +759,6 @@ class TestData {
     BooleanRuleOperator operator = BooleanRuleOperator.isFalse,
   }) {
     return BooleanRule(field: field, operator: operator);
-  }
-
-  /// Creates a LabelRule for filtering tasks by labels.
-  static LabelRule labelRule({
-    LabelRuleOperator operator = LabelRuleOperator.hasAny,
-    List<String> labelIds = const [],
-    LabelType labelType = LabelType.label,
-  }) {
-    return LabelRule(
-      operator: operator,
-      labelIds: labelIds,
-      labelType: labelType,
-    );
   }
 
   /// Creates a ValueRule for filtering tasks by value labels.
@@ -906,16 +894,16 @@ class TestData {
     );
   }
 
-  /// Creates a TaskLabelPredicate for label filtering.
-  static predicates.TaskLabelPredicate taskLabelPredicate({
-    predicates.LabelOperator operator = predicates.LabelOperator.hasAny,
-    List<String> labelIds = const [],
-    LabelType labelType = LabelType.label,
+  /// Creates a TaskValuePredicate for value filtering.
+  static predicates.TaskValuePredicate taskValuePredicate({
+    predicates.ValueOperator operator = predicates.ValueOperator.hasAny,
+    List<String> valueIds = const [],
+    bool includeInherited = false,
   }) {
-    return predicates.TaskLabelPredicate(
+    return predicates.TaskValuePredicate(
       operator: operator,
-      labelIds: labelIds,
-      labelType: labelType,
+      valueIds: valueIds,
+      includeInherited: includeInherited,
     );
   }
 }

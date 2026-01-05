@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
@@ -125,12 +125,10 @@ sealed class SectionDataResult with _$SectionDataResult {
     _ => [],
   };
 
-  /// Get all labels from any result type
-  List<Label> get allLabels => switch (this) {
+  /// Get all values from any result type
+  List<Value> get allValues => switch (this) {
     DataSectionResult(:final primaryEntities, :final primaryEntityType) =>
-      primaryEntityType == 'label' || primaryEntityType == 'value'
-          ? primaryEntities.cast<Label>()
-          : [],
+      primaryEntityType == 'value' ? primaryEntities.cast<Value>() : [],
     _ => [],
   };
 
