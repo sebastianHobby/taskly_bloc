@@ -48,6 +48,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createTaskTooltip => 'Create task';
 
   @override
+  String get deleteValue => 'Delete value';
+
+  @override
+  String get editValue => 'Edit value';
+
+  @override
   String get createLabelTooltip => 'Create label';
 
   @override

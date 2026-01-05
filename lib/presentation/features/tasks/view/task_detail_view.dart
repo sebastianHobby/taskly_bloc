@@ -111,12 +111,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'deadlineDate',
                   );
-                  final labelIds = extractStringListValue(
+                  final priority = formValues['priority'] as int?;
+                  final valueIds = extractStringListValue(
                     formValues,
-                    'labelIds',
+                    'valueIds',
                   );
+                  final tagIds = extractStringListValue(
+                    formValues,
+                    'tagIds',
+                  );
+                  final allLabelIds = [...valueIds, ...tagIds];
                   final selectedLabels = availableLabels
-                      .where((l) => labelIds.contains(l.id))
+                      .where((l) => allLabelIds.contains(l.id))
                       .toList();
 
                   context.read<TaskDetailBloc>().add(
@@ -127,6 +133,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       startDate: startDate,
                       deadlineDate: deadlineDate,
                       projectId: projectId,
+                      priority: priority,
                       repeatIcalRrule: repeatIcalRrule,
                       labels: selectedLabels,
                     ),
@@ -178,13 +185,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'deadlineDate',
                   );
-
-                  final labelIds = extractStringListValue(
+                  final priority = formValues['priority'] as int?;
+                  final valueIds = extractStringListValue(
                     formValues,
-                    'labelIds',
+                    'valueIds',
                   );
+                  final tagIds = extractStringListValue(
+                    formValues,
+                    'tagIds',
+                  );
+                  final allLabelIds = [...valueIds, ...tagIds];
                   final selectedLabels = availableLabels
-                      .where((l) => labelIds.contains(l.id))
+                      .where((l) => allLabelIds.contains(l.id))
                       .toList();
 
                   context.read<TaskDetailBloc>().add(
@@ -196,6 +208,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       startDate: startDate,
                       deadlineDate: deadlineDate,
                       projectId: projectId,
+                      priority: priority,
                       repeatIcalRrule: repeatIcalRrule,
                       labels: selectedLabels,
                     ),

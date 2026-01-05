@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 
 /// Operators for boolean predicates.
 enum BoolOperator { isTrue, isFalse }
@@ -31,8 +30,8 @@ enum RelativeComparison {
 /// Operators for project predicates.
 enum ProjectOperator { matches, matchesAny, isNull, isNotNull }
 
-/// Operators for label/value predicates.
-enum LabelOperator { hasAny, hasAll, isNull, isNotNull }
+/// Operators for value predicates.
+enum ValueOperator { hasAny, hasAll, isNull, isNotNull }
 
 /// Task fields that can be queried.
 enum TaskDateField {
@@ -58,7 +57,7 @@ sealed class TaskPredicate {
       'bool' => TaskBoolPredicate.fromJson(json),
       'date' => TaskDatePredicate.fromJson(json),
       'project' => TaskProjectPredicate.fromJson(json),
-      'label' => TaskLabelPredicate.fromJson(json),
+      'value' => TaskValuePredicate.fromJson(json),
       _ => throw ArgumentError('Unknown TaskPredicate type: $type'),
     };
   }
@@ -242,66 +241,58 @@ final class TaskProjectPredicate extends TaskPredicate {
 }
 
 @immutable
-final class TaskLabelPredicate extends TaskPredicate {
-  const TaskLabelPredicate({
+final class TaskValuePredicate extends TaskPredicate {
+  const TaskValuePredicate({
     required this.operator,
-    required this.labelType,
-    this.labelIds = const <String>[],
+    this.valueIds = const <String>[],
     this.includeInherited = false,
   });
 
-  factory TaskLabelPredicate.fromJson(Map<String, dynamic> json) {
-    return TaskLabelPredicate(
-      operator: LabelOperator.values.byName(
-        json['operator'] as String? ?? LabelOperator.hasAny.name,
+  factory TaskValuePredicate.fromJson(Map<String, dynamic> json) {
+    return TaskValuePredicate(
+      operator: ValueOperator.values.byName(
+        json['operator'] as String? ?? ValueOperator.hasAny.name,
       ),
-      labelType: LabelType.values.byName(
-        json['labelType'] as String? ?? LabelType.label.name,
-      ),
-      labelIds: (json['labelIds'] as List<dynamic>? ?? const <dynamic>[])
+      valueIds: (json['valueIds'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .toList(growable: false),
       includeInherited: json['includeInherited'] as bool? ?? false,
     );
   }
 
-  final LabelOperator operator;
-  final LabelType labelType;
-  final List<String> labelIds;
+  final ValueOperator operator;
+  final List<String> valueIds;
 
-  /// Whether to include labels/values inherited from the task's project.
+  /// Whether to include values inherited from the task's project.
   ///
-  /// When true, a task matches if it has the label directly OR its parent
-  /// project has the label. This is particularly useful for values where
+  /// When true, a task matches if it has the value directly OR its parent
+  /// project has the value. This is particularly useful for values where
   /// a project's value (e.g., "Health") should apply to all its tasks.
   ///
-  /// Defaults to false for labels, but [TaskQuery.forValue] defaults to true.
+  /// Defaults to true.
   final bool includeInherited;
 
   @override
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'type': 'label',
+    'type': 'value',
     'operator': operator.name,
-    'labelType': labelType.name,
-    'labelIds': labelIds,
+    'valueIds': valueIds,
     'includeInherited': includeInherited,
   };
 
   @override
   bool operator ==(Object other) {
-    return other is TaskLabelPredicate &&
+    return other is TaskValuePredicate &&
         other.operator == operator &&
-        other.labelType == labelType &&
         other.includeInherited == includeInherited &&
-        listEquals(other.labelIds, labelIds);
+        listEquals(other.valueIds, valueIds);
   }
 
   @override
   int get hashCode => Object.hash(
     operator,
-    labelType,
     includeInherited,
-    Object.hashAll(labelIds),
+    Object.hashAll(valueIds),
   );
 }
 

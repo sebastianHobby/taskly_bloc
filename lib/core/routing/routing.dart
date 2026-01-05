@@ -1,11 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
@@ -40,7 +40,7 @@ abstract final class Routing {
   static String parseScreenKey(String segment) => segment.replaceAll('-', '_');
 
   /// Entity types that have detail pages.
-  static const entityTypes = {'task', 'project', 'label', 'value'};
+  static const entityTypes = {'task', 'project', 'value'};
 
   /// Check if a path segment is an entity type (not a screen).
   static bool isEntityType(String segment) => entityTypes.contains(segment);
@@ -65,12 +65,8 @@ abstract final class Routing {
   static void toProject(BuildContext context, Project project) =>
       GoRouter.of(context).push('/project/${project.id}');
 
-  /// Navigate to label detail (pushes onto nav stack).
-  static void toLabel(BuildContext context, Label label) =>
-      GoRouter.of(context).push('/label/${label.id}');
-
   /// Navigate to value detail (pushes onto nav stack).
-  static void toValue(BuildContext context, Label value) =>
+  static void toValue(BuildContext context, Value value) =>
       GoRouter.of(context).push('/value/${value.id}');
 
   // === ENTITY NAVIGATION (generic) ===

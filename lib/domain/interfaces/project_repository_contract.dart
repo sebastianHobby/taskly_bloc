@@ -37,8 +37,8 @@ abstract class ProjectRepositoryContract {
   /// Get projects by IDs.
   Future<List<Project>> getProjectsByIds(List<String> ids);
 
-  /// Get projects by label ID.
-  Future<List<Project>> getProjectsByLabel(String labelId);
+  /// Get projects by value ID.
+  Future<List<Project>> getProjectsByValue(String valueId);
 
   Future<void> create({
     required String name,
@@ -48,7 +48,7 @@ abstract class ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
+    List<String>? valueIds,
     int? priority,
   });
 
@@ -61,8 +61,15 @@ abstract class ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
+    List<String>? valueIds,
     int? priority,
+    bool? isPinned,
+  });
+
+  /// Set the pinned status of a project.
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
   });
 
   Future<void> delete(String id);

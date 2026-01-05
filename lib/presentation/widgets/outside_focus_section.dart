@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_alert_type.dart';
 import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
@@ -50,10 +49,12 @@ class OutsideFocusSection extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
         ),
 
-        // Groups by alert type
-        ...alertResult.byType.entries.map((entry) {
-          return _AlertTypeGroup(
-            alertType: entry.key,
+        // Groups by alert rule
+        ...alertResult.byRuleId.entries.map((entry) {
+          // Get rule name from the first alert in the group
+          final ruleName = entry.value.first.ruleName;
+          return _AlertGroup(
+            ruleName: ruleName,
             alerts: entry.value,
             onTaskTap: onTaskTap,
             onTaskComplete: onTaskComplete,
@@ -64,16 +65,16 @@ class OutsideFocusSection extends StatelessWidget {
   }
 }
 
-/// A group of tasks with the same alert type.
-class _AlertTypeGroup extends StatelessWidget {
-  const _AlertTypeGroup({
-    required this.alertType,
+/// A group of tasks with the same alert rule.
+class _AlertGroup extends StatelessWidget {
+  const _AlertGroup({
+    required this.ruleName,
     required this.alerts,
     required this.onTaskTap,
     required this.onTaskComplete,
   });
 
-  final AllocationAlertType alertType;
+  final String ruleName;
   final List<EvaluatedAlert> alerts;
   final void Function(ExcludedTask) onTaskTap;
   final void Function(ExcludedTask, bool) onTaskComplete;
@@ -101,7 +102,7 @@ class _AlertTypeGroup extends StatelessWidget {
                 _SeverityIndicator(severity: severity),
                 const SizedBox(width: 8),
                 Text(
-                  alertType.displayName,
+                  ruleName,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,

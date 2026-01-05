@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 
 /// Extension methods for navigation on entity models
 extension TaskNavigation on Task {
@@ -30,14 +30,14 @@ extension ProjectNavigation on Project {
   }
 }
 
-/// Extension methods for navigation on Label model
-extension LabelNavigation on Label {
-  /// Navigate to this label's detail screen
+/// Extension methods for navigation on Value model
+extension ValueNavigation on Value {
+  /// Navigate to this value's detail screen
   void navigateTo(BuildContext context) {
-    Routing.toLabel(context, this);
+    Routing.toValue(context, this);
   }
 
-  /// Get onTap callback for this label
+  /// Get onTap callback for this value
   VoidCallback onTap(BuildContext context) {
     return () => navigateTo(context);
   }

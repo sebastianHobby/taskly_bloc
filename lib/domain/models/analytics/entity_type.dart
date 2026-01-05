@@ -2,7 +2,6 @@
 enum EntityType {
   task,
   project,
-  label,
   value;
 
   /// URL segment for routing (e.g., 'task' → '/task/:id').

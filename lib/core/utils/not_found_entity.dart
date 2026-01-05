@@ -4,5 +4,5 @@
 enum NotFoundEntity {
   task,
   project,
-  label,
+  value,
 }

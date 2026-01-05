@@ -34,24 +34,11 @@ void main() {
       expect((rule as BooleanRule).operator, BooleanRuleOperator.isFalse);
     });
 
-    test('parses LabelRule from JSON', () {
-      final json = <String, dynamic>{
-        'type': 'labels',
-        'operator': 'hasAll',
-        'labelIds': ['label-1', 'label-2'],
-      };
-
-      final rule = TaskRule.fromJson(json);
-
-      expect(rule, isA<LabelRule>());
-      expect((rule as LabelRule).labelIds, ['label-1', 'label-2']);
-    });
-
     test('parses ValueRule from JSON', () {
       final json = <String, dynamic>{
         'type': 'value',
         'operator': 'hasAny',
-        'labelIds': ['value-1'],
+        'valueIds': ['value-1'],
       };
 
       final rule = TaskRule.fromJson(json);

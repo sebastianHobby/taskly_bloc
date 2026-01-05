@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 
 import '../../../fixtures/test_data.dart';
 import '../../../helpers/fallback_values.dart';
@@ -13,32 +13,27 @@ void main() {
     final today = DateTime(2025, 6, 15);
     final context = EvaluationContext(today: today);
 
-    // Helper to create value labels
-    Label createValue(String id) {
-      return TestData.label(id: id, name: 'Value $id', type: LabelType.value);
-    }
-
-    // Helper to create regular labels
-    Label createLabel(String id) {
-      return TestData.label(id: id, name: 'Label $id', type: LabelType.label);
+    // Helper to create values
+    Value createValue(String id) {
+      return TestData.value(id: id, name: 'Value $id');
     }
 
     group('construction', () {
       test('creates with required fields', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
 
         expect(rule.operator, ValueRuleOperator.hasAny);
-        expect(rule.labelIds, ['value-1', 'value-2']);
+        expect(rule.valueIds, ['value-1', 'value-2']);
         expect(rule.type, RuleType.value);
       });
 
-      test('defaults labelIds to empty list', () {
+      test('defaults valueIds to empty list', () {
         final rule = TestData.valueRule();
 
-        expect(rule.labelIds, isEmpty);
+        expect(rule.valueIds, isEmpty);
       });
     });
 
@@ -46,10 +41,10 @@ void main() {
       test('matches task with any of the specified values', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
         final task = TestData.task(
-          labels: [createValue('value-1'), createValue('value-3')],
+          values: [createValue('value-1'), createValue('value-3')],
         );
 
         expect(rule.evaluate(task, context), isTrue);
@@ -58,42 +53,31 @@ void main() {
       test('does not match task without any of the values', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
         final task = TestData.task(
-          labels: [createValue('value-3'), createValue('value-4')],
+          values: [createValue('value-3'), createValue('value-4')],
         );
 
         expect(rule.evaluate(task, context), isFalse);
       });
 
-      test('ignores regular labels', () {
+      test('returns false when valueIds is empty', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1'],
+          valueIds: [],
         );
-        // Task has the ID but as a regular label
-        final task = TestData.task(labels: [createLabel('value-1')]);
+        final task = TestData.task(values: [createValue('value-1')]);
 
         expect(rule.evaluate(task, context), isFalse);
       });
 
-      test('returns false when labelIds is empty', () {
+      test('ignores empty string valueIds', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: [],
+          valueIds: ['', '  ', 'value-1'],
         );
-        final task = TestData.task(labels: [createValue('value-1')]);
-
-        expect(rule.evaluate(task, context), isFalse);
-      });
-
-      test('ignores empty string labelIds', () {
-        final rule = TestData.valueRule(
-          operator: ValueRuleOperator.hasAny,
-          labelIds: ['', '  ', 'value-1'],
-        );
-        final task = TestData.task(labels: [createValue('value-1')]);
+        final task = TestData.task(values: [createValue('value-1')]);
 
         expect(rule.evaluate(task, context), isTrue);
       });
@@ -119,55 +103,41 @@ void main() {
       test('does not match task missing one value', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
-        final task = TestData.task(labels: [createValue('value-1')]);
+        final task = TestData.task(values: [createValue('value-1')]);
 
         expect(rule.evaluate(task, context), isFalse);
       });
     });
 
     group('evaluate - isNull operator', () {
-      test('matches task with no value labels', () {
+      test('matches task with no values', () {
         final rule = TestData.valueRule(operator: ValueRuleOperator.isNull);
-        final task = TestData.task(labels: []);
+        final task = TestData.task(values: []);
 
         expect(rule.evaluate(task, context), isTrue);
       });
 
-      test('matches task with only regular labels', () {
+      test('does not match task with values', () {
         final rule = TestData.valueRule(operator: ValueRuleOperator.isNull);
-        final task = TestData.task(labels: [createLabel('label-1')]);
-
-        expect(rule.evaluate(task, context), isTrue);
-      });
-
-      test('does not match task with value labels', () {
-        final rule = TestData.valueRule(operator: ValueRuleOperator.isNull);
-        final task = TestData.task(labels: [createValue('value-1')]);
+        final task = TestData.task(values: [createValue('value-1')]);
 
         expect(rule.evaluate(task, context), isFalse);
       });
     });
 
     group('evaluate - isNotNull operator', () {
-      test('matches task with value labels', () {
+      test('matches task with values', () {
         final rule = TestData.valueRule(operator: ValueRuleOperator.isNotNull);
-        final task = TestData.task(labels: [createValue('value-1')]);
+        final task = TestData.task(values: [createValue('value-1')]);
 
         expect(rule.evaluate(task, context), isTrue);
       });
 
-      test('does not match task with no labels', () {
+      test('does not match task with no values', () {
         final rule = TestData.valueRule(operator: ValueRuleOperator.isNotNull);
-        final task = TestData.task(labels: []);
-
-        expect(rule.evaluate(task, context), isFalse);
-      });
-
-      test('does not match task with only regular labels', () {
-        final rule = TestData.valueRule(operator: ValueRuleOperator.isNotNull);
-        final task = TestData.task(labels: [createLabel('label-1')]);
+        final task = TestData.task(values: []);
 
         expect(rule.evaluate(task, context), isFalse);
       });
@@ -177,34 +147,34 @@ void main() {
       test('returns empty for valid hasAny rule', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1'],
+          valueIds: ['value-1'],
         );
 
         expect(rule.validate(), isEmpty);
       });
 
-      test('returns error when hasAny has no labelIds', () {
+      test('returns error when hasAny has no valueIds', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: [],
+          valueIds: [],
         );
 
         expect(rule.validate(), contains(contains('requires at least one')));
       });
 
-      test('returns error when hasAll has no labelIds', () {
+      test('returns error when hasAll has no valueIds', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: [],
+          valueIds: [],
         );
 
         expect(rule.validate(), contains(contains('requires at least one')));
       });
 
-      test('returns error when all labelIds are empty strings', () {
+      test('returns error when all valueIds are empty strings', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['', '  '],
+          valueIds: ['', '  '],
         );
 
         expect(rule.validate(), contains(contains('All value IDs are empty')));
@@ -227,14 +197,14 @@ void main() {
       test('serializes all fields', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
 
         final json = rule.toJson();
 
         expect(json['type'], 'value');
         expect(json['operator'], 'hasAll');
-        expect(json['labelIds'], ['value-1', 'value-2']);
+        expect(json['valueIds'], ['value-1', 'value-2']);
       });
     });
 
@@ -243,13 +213,13 @@ void main() {
         final json = <String, dynamic>{
           'type': 'value',
           'operator': 'hasAll',
-          'labelIds': ['value-1', 'value-2'],
+          'valueIds': ['value-1', 'value-2'],
         };
 
         final rule = ValueRule.fromJson(json);
 
         expect(rule.operator, ValueRuleOperator.hasAll);
-        expect(rule.labelIds, ['value-1', 'value-2']);
+        expect(rule.valueIds, ['value-1', 'value-2']);
       });
 
       test('uses defaults for missing fields', () {
@@ -258,7 +228,7 @@ void main() {
         final rule = ValueRule.fromJson(json);
 
         expect(rule.operator, ValueRuleOperator.hasAll);
-        expect(rule.labelIds, isEmpty);
+        expect(rule.valueIds, isEmpty);
       });
     });
 
@@ -266,11 +236,11 @@ void main() {
       test('equal when all fields match', () {
         final rule1 = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
         final rule2 = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
 
         expect(rule1, equals(rule2));
@@ -280,24 +250,24 @@ void main() {
       test('not equal when operator differs', () {
         final rule1 = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1'],
+          valueIds: ['value-1'],
         );
         final rule2 = TestData.valueRule(
           operator: ValueRuleOperator.hasAny,
-          labelIds: ['value-1'],
+          valueIds: ['value-1'],
         );
 
         expect(rule1, isNot(equals(rule2)));
       });
 
-      test('not equal when labelIds differ', () {
+      test('not equal when valueIds differ', () {
         final rule1 = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1'],
+          valueIds: ['value-1'],
         );
         final rule2 = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-2'],
+          valueIds: ['value-2'],
         );
 
         expect(rule1, isNot(equals(rule2)));
@@ -308,7 +278,7 @@ void main() {
       test('round-trips through JSON', () {
         final original = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
 
         final json = original.toJson();

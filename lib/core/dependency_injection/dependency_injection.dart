@@ -11,13 +11,13 @@ import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
 import 'package:taskly_bloc/data/repositories/auth_repository.dart';
-import 'package:taskly_bloc/data/repositories/label_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/supabase/supabase.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -30,7 +30,6 @@ import 'package:taskly_bloc/data/features/screens/default_system_screen_provider
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/features/workflow/repositories/workflow_repository_impl.dart';
-import 'package:taskly_bloc/data/services/user_data_seeder.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -39,7 +38,6 @@ import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
@@ -120,8 +118,8 @@ Future<void> setupDependencies() async {
         idGenerator: getIt<IdGenerator>(),
       ),
     )
-    ..registerLazySingleton<LabelRepositoryContract>(
-      () => LabelRepository(
+    ..registerLazySingleton<ValueRepositoryContract>(
+      () => ValueRepository(
         driftDb: getIt<AppDatabase>(),
         idGenerator: getIt<IdGenerator>(),
       ),
@@ -144,18 +142,13 @@ Future<void> setupDependencies() async {
         ),
       ),
     )
-    // User data seeding service
-    ..registerLazySingleton<UserDataSeederContract>(
-      () => UserDataSeeder(
-        labelRepository: getIt<LabelRepositoryContract>(),
-      ),
-    )
     ..registerLazySingleton<AllocationOrchestrator>(
       () => AllocationOrchestrator(
         taskRepository: getIt<TaskRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
       ),
     )
     // Entity action service for unified screen model
@@ -170,7 +163,6 @@ Future<void> setupDependencies() async {
       () => SectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         analyticsService: getIt<AnalyticsService>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
@@ -187,7 +179,7 @@ Future<void> setupDependencies() async {
       () => AnalyticsServiceImpl(
         taskRepo: getIt<TaskRepositoryContract>(),
         projectRepo: getIt<ProjectRepositoryContract>(),
-        labelRepo: getIt<LabelRepositoryContract>(),
+        valueRepo: getIt<ValueRepositoryContract>(),
         wellbeingRepo: getIt<WellbeingRepositoryContract>(),
         analyticsRepo: getIt<AnalyticsRepositoryContract>(),
       ),

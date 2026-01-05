@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priority_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
@@ -22,7 +23,7 @@ class TaskForm extends StatefulWidget {
     required this.submitTooltip,
     this.initialData,
     this.availableProjects = const [],
-    this.availableLabels = const [],
+    this.availableValues = const [],
     this.defaultProjectId,
     this.onDelete,
     this.onClose,
@@ -34,7 +35,7 @@ class TaskForm extends StatefulWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final List<Project> availableProjects;
-  final List<Label> availableLabels;
+  final List<Value> availableValues;
   final String? defaultProjectId;
   final VoidCallback? onDelete;
 
@@ -88,9 +89,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       'deadlineDate': widget.initialData?.deadlineDate,
       'projectId':
           widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
-      'labelIds': (widget.initialData?.labels ?? <Label>[])
-          .map((Label e) => e.id)
-          .toList(),
+      'priority': widget.initialData?.priority,
+      'valueIds': widget.initialData?.values.map((e) => e.id).toList() ?? [],
       'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
     };
 
@@ -369,11 +369,22 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
                     const SizedBox(height: 16),
 
-                    // Labels and Values Section
-                    FormBuilderLabelPickerModern(
-                      name: 'labelIds',
-                      availableLabels: widget.availableLabels,
+                    // Priority
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: FormBuilderPriorityPicker(
+                        name: 'priority',
+                      ),
                     ),
+
+                    const SizedBox(height: 16),
+
+                    // Values
+                    // TODO: Implement Value Picker
+                    // FormBuilderValuePicker(
+                    //   name: 'valueIds',
+                    //   availableLabels: widget.availableValues,
+                    // ),
                   ],
                 ),
               ),

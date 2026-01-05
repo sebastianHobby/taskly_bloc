@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart' show LabelType;
 
 import '../../mocks/fake_id_generator.dart';
 
@@ -55,20 +54,11 @@ void main() {
     });
 
     group('v5 deterministic IDs', () {
-      test('labelId generates based on name and type', () {
-        final id = idGenerator.labelId(
-          name: 'My Label',
-          type: LabelType.label,
+      test('valueId generates based on name', () {
+        final id = idGenerator.valueId(
+          name: 'My Value',
         );
-        expect(id, 'label-my-label-label');
-      });
-
-      test('labelId with value type', () {
-        final id = idGenerator.labelId(
-          name: 'Priority',
-          type: LabelType.value,
-        );
-        expect(id, 'label-priority-value');
+        expect(id, 'value-my-value');
       });
 
       test('trackerId generates based on name', () {
@@ -92,12 +82,20 @@ void main() {
         expect(id, 'project-label-project-1-label-1');
       });
 
-      test('taskCompletionId generates based on task and date', () {
-        final id = idGenerator.taskCompletionId(
+      test('taskValueId generates based on task and value', () {
+        final id = idGenerator.taskValueId(
           taskId: 'task-1',
-          occurrenceDate: DateTime(2025, 6, 15),
+          valueId: 'value-1',
         );
-        expect(id, 'task-completion-task-1-2025-06-15');
+        expect(id, 'task-value-task-1-value-1');
+      });
+
+      test('projectValueId generates based on project and value', () {
+        final id = idGenerator.projectValueId(
+          projectId: 'project-1',
+          valueId: 'value-1',
+        );
+        expect(id, 'project-value-project-1-value-1');
       });
 
       test('taskCompletionId with null date', () {

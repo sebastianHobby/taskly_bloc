@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_alert_type.dart';
 
 part 'evaluated_alert.freezed.dart';
 
@@ -12,8 +11,11 @@ part 'evaluated_alert.freezed.dart';
 @freezed
 abstract class EvaluatedAlert with _$EvaluatedAlert {
   const factory EvaluatedAlert({
-    /// The alert type that was triggered
-    required AllocationAlertType type,
+    /// The ID of the rule that was triggered
+    required String ruleId,
+
+    /// The name of the rule that was triggered
+    required String ruleName,
 
     /// Severity from user's config
     required AlertSeverity severity,
@@ -26,19 +28,19 @@ abstract class EvaluatedAlert with _$EvaluatedAlert {
   }) = _EvaluatedAlert;
   const EvaluatedAlert._();
 
-  /// Sort key: severity first, then type
-  int get sortKey => severity.sortOrder * 100 + type.index;
+  /// Sort key: severity first, then rule name
+  int get sortKey => severity.sortOrder * 100 + ruleName.hashCode;
 }
 
 /// Result of alert evaluation - grouped and sorted alerts.
 @freezed
 abstract class AlertEvaluationResult with _$AlertEvaluationResult {
   const factory AlertEvaluationResult({
-    /// All alerts, sorted by severity then type
+    /// All alerts, sorted by severity then rule
     required List<EvaluatedAlert> alerts,
 
-    /// Alerts grouped by type (for section rendering)
-    required Map<AllocationAlertType, List<EvaluatedAlert>> byType,
+    /// Alerts grouped by rule ID (for section rendering)
+    required Map<String, List<EvaluatedAlert>> byRuleId,
 
     /// Alerts grouped by severity (for banner styling)
     required Map<AlertSeverity, List<EvaluatedAlert>> bySeverity,
@@ -64,7 +66,7 @@ abstract class AlertEvaluationResult with _$AlertEvaluationResult {
   /// Empty result
   static const empty = AlertEvaluationResult(
     alerts: [],
-    byType: {},
+    byRuleId: {},
     bySeverity: {},
   );
 }

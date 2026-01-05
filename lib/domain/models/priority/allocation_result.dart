@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 part 'allocation_result.freezed.dart';
@@ -11,6 +12,9 @@ abstract class AllocationResult with _$AllocationResult {
     required List<AllocatedTask> allocatedTasks,
     required AllocationReasoning reasoning,
     required List<ExcludedTask> excludedTasks,
+
+    /// Evaluated alerts for excluded tasks
+    AlertEvaluationResult? alertResult,
 
     /// The persona used for this allocation
     AllocationPersona? activePersona,

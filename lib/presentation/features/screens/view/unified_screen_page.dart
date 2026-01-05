@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -18,7 +18,8 @@ import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/presentation/features/labels/widgets/add_label_fab.dart';
+import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
+import 'package:taskly_bloc/presentation/features/persona_wizard/view/persona_selection_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
@@ -200,24 +201,15 @@ class _LoadedView extends StatelessWidget {
       FabOperation.createTask => AddTaskFab(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       ),
       FabOperation.createProject => AddProjectFab(
         projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       ),
-      FabOperation.createLabel => AddLabelFab(
-        labelRepository: getIt<LabelRepositoryContract>(),
-        initialType: LabelType.label,
-        lockType: false,
-        tooltip: context.l10n.createLabelTooltip,
-        heroTag: 'create_label_fab',
-      ),
-      FabOperation.createValue => AddLabelFab(
-        labelRepository: getIt<LabelRepositoryContract>(),
-        initialType: LabelType.value,
-        lockType: true,
-        tooltip: context.l10n.createValueTooltip,
+      FabOperation.createValue => AddValueFab(
+        valueRepository: getIt<ValueRepositoryContract>(),
+        tooltip: context.l10n.createLabelTooltip, // TODO: Update l10n
         heroTag: 'create_value_fab',
       ),
     };
@@ -260,21 +252,40 @@ class _ScreenContent extends StatelessWidget {
               }
             }
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: PersonaSelector(
-                currentPersona: activePersona ?? AllocationPersona.realist,
-                onPersonaSelected: (p) async {
-                  final settingsRepo = getIt<SettingsRepositoryContract>();
-                  final currentConfig = await settingsRepo.load(
-                    SettingsKey.allocation,
-                  );
-                  await settingsRepo.save(
-                    SettingsKey.allocation,
-                    currentConfig.copyWith(persona: p),
-                  );
-                },
-              ),
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: PersonaSelector(
+                    currentPersona: activePersona ?? AllocationPersona.realist,
+                    onPersonaSelected: (p) async {
+                      final settingsRepo = getIt<SettingsRepositoryContract>();
+                      final currentConfig = await settingsRepo.load(
+                        SettingsKey.allocation,
+                      );
+                      await settingsRepo.save(
+                        SettingsKey.allocation,
+                        currentConfig.copyWith(persona: p),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => const PersonaSelectionPage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text('Configure Focus Style'),
+                  ),
+                ),
+              ],
             );
           }
           // Adjust index for sections

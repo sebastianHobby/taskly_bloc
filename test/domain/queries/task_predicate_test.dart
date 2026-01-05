@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
 import '../../helpers/fallback_values.dart';
@@ -56,21 +55,21 @@ void main() {
         expect(projPred.projectId, 'project-1');
       });
 
-      test('parses label predicate', () {
+      test('parses value predicate', () {
         final json = <String, dynamic>{
-          'type': 'label',
+          'type': 'value',
           'operator': 'hasAny',
-          'labelType': 'label',
-          'labelIds': ['label-1', 'label-2'],
+          'valueIds': ['value-1', 'value-2'],
+          'includeInherited': true,
         };
 
         final predicate = TaskPredicate.fromJson(json);
 
-        expect(predicate, isA<TaskLabelPredicate>());
-        final labelPred = predicate as TaskLabelPredicate;
-        expect(labelPred.operator, LabelOperator.hasAny);
-        expect(labelPred.labelType, LabelType.label);
-        expect(labelPred.labelIds, ['label-1', 'label-2']);
+        expect(predicate, isA<TaskValuePredicate>());
+        final valuePred = predicate as TaskValuePredicate;
+        expect(valuePred.operator, ValueOperator.hasAny);
+        expect(valuePred.valueIds, ['value-1', 'value-2']);
+        expect(valuePred.includeInherited, isTrue);
       });
 
       test('throws for unknown type', () {
@@ -722,122 +721,119 @@ void main() {
     });
   });
 
-  group('TaskLabelPredicate', () {
+  group('TaskValuePredicate', () {
     group('construction', () {
       test('creates with required fields', () {
-        const predicate = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
+        const predicate = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
         );
 
-        expect(predicate.operator, LabelOperator.hasAny);
-        expect(predicate.labelType, LabelType.label);
-        expect(predicate.labelIds, isEmpty);
+        expect(predicate.operator, ValueOperator.hasAny);
+        expect(predicate.valueIds, isEmpty);
+        expect(predicate.includeInherited, isFalse);
       });
 
-      test('creates with labelIds', () {
-        const predicate = TaskLabelPredicate(
-          operator: LabelOperator.hasAll,
-          labelType: LabelType.value,
-          labelIds: ['label-1', 'label-2'],
+      test('creates with valueIds', () {
+        const predicate = TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: ['value-1', 'value-2'],
+          includeInherited: true,
         );
 
-        expect(predicate.labelIds, ['label-1', 'label-2']);
+        expect(predicate.valueIds, ['value-1', 'value-2']);
+        expect(predicate.includeInherited, isTrue);
       });
     });
 
     group('fromJson', () {
       test('parses valid JSON', () {
         final json = <String, dynamic>{
-          'type': 'label',
+          'type': 'value',
           'operator': 'hasAny',
-          'labelType': 'value',
-          'labelIds': ['label-1', 'label-2'],
+          'valueIds': ['value-1', 'value-2'],
+          'includeInherited': true,
         };
 
-        final predicate = TaskLabelPredicate.fromJson(json);
+        final predicate = TaskValuePredicate.fromJson(json);
 
-        expect(predicate.operator, LabelOperator.hasAny);
-        expect(predicate.labelType, LabelType.value);
-        expect(predicate.labelIds, ['label-1', 'label-2']);
+        expect(predicate.operator, ValueOperator.hasAny);
+        expect(predicate.valueIds, ['value-1', 'value-2']);
+        expect(predicate.includeInherited, isTrue);
       });
 
       test('uses defaults for missing fields', () {
-        final json = <String, dynamic>{'type': 'label'};
+        final json = <String, dynamic>{'type': 'value'};
 
-        final predicate = TaskLabelPredicate.fromJson(json);
+        final predicate = TaskValuePredicate.fromJson(json);
 
-        expect(predicate.operator, LabelOperator.hasAny);
-        expect(predicate.labelType, LabelType.label);
-        expect(predicate.labelIds, isEmpty);
+        expect(predicate.operator, ValueOperator.hasAny);
+        expect(predicate.valueIds, isEmpty);
+        expect(predicate.includeInherited, isFalse);
       });
 
-      test('filters non-string items from labelIds', () {
+      test('filters non-string items from valueIds', () {
         final json = <String, dynamic>{
-          'type': 'label',
+          'type': 'value',
           'operator': 'hasAny',
-          'labelType': 'label',
-          'labelIds': ['label-1', 42, null, 'label-2'],
+          'valueIds': ['value-1', 42, null, 'value-2'],
         };
 
-        final predicate = TaskLabelPredicate.fromJson(json);
+        final predicate = TaskValuePredicate.fromJson(json);
 
-        expect(predicate.labelIds, ['label-1', 'label-2']);
+        expect(predicate.valueIds, ['value-1', 'value-2']);
       });
 
-      test('handles null labelIds', () {
+      test('handles null valueIds', () {
         final json = <String, dynamic>{
-          'type': 'label',
+          'type': 'value',
           'operator': 'isNull',
-          'labelType': 'label',
-          'labelIds': null,
+          'valueIds': null,
         };
 
-        final predicate = TaskLabelPredicate.fromJson(json);
+        final predicate = TaskValuePredicate.fromJson(json);
 
-        expect(predicate.labelIds, isEmpty);
+        expect(predicate.valueIds, isEmpty);
       });
     });
 
     group('toJson', () {
       test('serializes all fields', () {
-        const predicate = TaskLabelPredicate(
-          operator: LabelOperator.hasAll,
-          labelType: LabelType.value,
-          labelIds: ['val-1', 'val-2'],
+        const predicate = TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: ['val-1', 'val-2'],
+          includeInherited: true,
         );
 
         final json = predicate.toJson();
 
-        expect(json['type'], 'label');
+        expect(json['type'], 'value');
         expect(json['operator'], 'hasAll');
-        expect(json['labelType'], 'value');
-        expect(json['labelIds'], ['val-1', 'val-2']);
+        expect(json['valueIds'], ['val-1', 'val-2']);
+        expect(json['includeInherited'], true);
       });
 
-      test('serializes empty labelIds', () {
-        const predicate = TaskLabelPredicate(
-          operator: LabelOperator.isNull,
-          labelType: LabelType.label,
+      test('serializes empty valueIds', () {
+        const predicate = TaskValuePredicate(
+          operator: ValueOperator.isNull,
         );
 
         final json = predicate.toJson();
 
-        expect(json['labelIds'], isEmpty);
+        expect(json['valueIds'], isEmpty);
       });
     });
 
     group('equality', () {
       test('equal when all fields match', () {
-        const pred1 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['a', 'b'],
+        const pred1 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          valueIds: ['a', 'b'],
+          includeInherited: true,
         );
-        const pred2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['a', 'b'],
+        const pred2 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          valueIds: ['a', 'b'],
+          includeInherited: true,
         );
 
         expect(pred1, equals(pred2));
@@ -845,41 +841,37 @@ void main() {
       });
 
       test('not equal when operator differs', () {
-        const pred1 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
+        const pred1 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
         );
-        const pred2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAll,
-          labelType: LabelType.label,
+        const pred2 = TaskValuePredicate(
+          operator: ValueOperator.hasAll,
         );
 
         expect(pred1, isNot(equals(pred2)));
       });
 
-      test('not equal when labelType differs', () {
-        const pred1 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
+      test('not equal when includeInherited differs', () {
+        const pred1 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          includeInherited: false,
         );
-        const pred2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.value,
+        const pred2 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          includeInherited: true,
         );
 
         expect(pred1, isNot(equals(pred2)));
       });
 
-      test('not equal when labelIds differ', () {
-        const pred1 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['a', 'b'],
+      test('not equal when valueIds differ', () {
+        const pred1 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          valueIds: ['a', 'b'],
         );
-        const pred2 = TaskLabelPredicate(
-          operator: LabelOperator.hasAny,
-          labelType: LabelType.label,
-          labelIds: ['a', 'c'],
+        const pred2 = TaskValuePredicate(
+          operator: ValueOperator.hasAny,
+          valueIds: ['a', 'c'],
         );
 
         expect(pred1, isNot(equals(pred2)));
@@ -888,14 +880,14 @@ void main() {
 
     group('round-trip serialization', () {
       test('round-trips through JSON', () {
-        const original = TaskLabelPredicate(
-          operator: LabelOperator.hasAll,
-          labelType: LabelType.value,
-          labelIds: ['value-1', 'value-2'],
+        const original = TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: ['value-1', 'value-2'],
+          includeInherited: true,
         );
 
         final json = original.toJson();
-        final restored = TaskLabelPredicate.fromJson(json);
+        final restored = TaskValuePredicate.fromJson(json);
 
         expect(restored, equals(original));
       });
@@ -951,18 +943,6 @@ void main() {
           ProjectOperator.matchesAny,
           ProjectOperator.isNull,
           ProjectOperator.isNotNull,
-        ]),
-      );
-    });
-
-    test('LabelOperator has expected values', () {
-      expect(
-        LabelOperator.values,
-        containsAll([
-          LabelOperator.hasAny,
-          LabelOperator.hasAll,
-          LabelOperator.isNull,
-          LabelOperator.isNotNull,
         ]),
       );
     });

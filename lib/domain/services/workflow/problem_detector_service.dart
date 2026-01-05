@@ -1,5 +1,5 @@
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -128,12 +128,8 @@ class ProblemDetectorService {
       case ProblemType.taskOrphan:
         // Check if task has no value assigned (direct or inherited via project)
         if (!task.completed) {
-          final hasDirectValue = task.labels.any(
-            (l) => l.type == LabelType.value,
-          );
-          final hasInheritedValue =
-              task.project?.labels.any((l) => l.type == LabelType.value) ??
-              false;
+          final hasDirectValue = task.values.isNotEmpty;
+          final hasInheritedValue = task.project?.values.isNotEmpty ?? false;
           if (!hasDirectValue && !hasInheritedValue) {
             return DetectedProblem(
               type: ProblemType.taskOrphan,

@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Extension for Task to support value inheritance from parent projects
@@ -8,7 +8,7 @@ extension TaskValueInheritance on Task {
   /// Implementation: Always-on, additive inheritance.
   /// - Task values are included directly
   /// - Project values are added if not already present on the task
-  /// - Duplicates are filtered by label ID
+  /// - Duplicates are filtered by value ID
   ///
   /// This provides a simple, predictable inheritance model:
   /// - Child tasks can add more values beyond their project
@@ -22,17 +22,15 @@ extension TaskValueInheritance on Task {
   /// final effectiveValues = task.getEffectiveValues();
   /// // Result: [Work, Health, Family] - all values combined
   /// ```
-  List<Label> getEffectiveValues() {
+  List<Value> getEffectiveValues() {
     // Get task's direct values
-    final taskValues = labels.where((l) => l.type == LabelType.value).toList();
+    final taskValues = values;
 
     // Get project's values (if project exists)
-    final projectValues =
-        project?.labels.where((l) => l.type == LabelType.value).toList() ??
-        <Label>[];
+    final projectValues = project?.values ?? <Value>[];
 
     // Combine: start with task values, then add project values not already present
-    final combined = <Label>[...taskValues];
+    final combined = <Value>[...taskValues];
 
     for (final projectValue in projectValues) {
       // Only add project value if not already in task values
@@ -45,22 +43,20 @@ extension TaskValueInheritance on Task {
   }
 
   /// Returns only the values directly assigned to this task (not inherited).
-  List<Label> getDirectValues() {
-    return labels.where((l) => l.type == LabelType.value).toList();
+  List<Value> getDirectValues() {
+    return values;
   }
 
   /// Returns only the values inherited from the parent project.
-  List<Label> getInheritedValues() {
-    final taskValueIds = getDirectValues().map((l) => l.id).toSet();
-    final projectValues =
-        project?.labels.where((l) => l.type == LabelType.value).toList() ??
-        <Label>[];
+  List<Value> getInheritedValues() {
+    final taskValueIds = getDirectValues().map((v) => v.id).toSet();
+    final projectValues = project?.values ?? <Value>[];
 
     return projectValues.where((pv) => !taskValueIds.contains(pv.id)).toList();
   }
 
   /// Checks if a specific value is inherited from the project.
-  bool isValueInherited(String labelId) {
-    return getInheritedValues().any((l) => l.id == labelId);
+  bool isValueInherited(String valueId) {
+    return getInheritedValues().any((v) => v.id == valueId);
   }
 }

@@ -1,5 +1,4 @@
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/models/label.dart' show LabelType;
 
 /// Fake IdGenerator for predictable ID generation in tests.
 ///
@@ -77,20 +76,20 @@ class FakeIdGenerator implements IdGenerator {
   // ═══════════════════════════════════════════════════════════════════════════
 
   @override
-  String labelId({required String name, required LabelType type}) =>
-      'label-${name.toLowerCase().replaceAll(' ', '-')}-${type.name}';
+  String valueId({required String name}) =>
+      'value-${name.toLowerCase().replaceAll(' ', '-')}';
 
   @override
   String trackerId({required String name}) =>
       'tracker-${name.toLowerCase().replaceAll(' ', '-')}';
 
   @override
-  String taskLabelId({required String taskId, required String labelId}) =>
-      'task-label-$taskId-$labelId';
+  String taskValueId({required String taskId, required String valueId}) =>
+      'task-value-$taskId-$valueId';
 
   @override
-  String projectLabelId({required String projectId, required String labelId}) =>
-      'project-label-$projectId-$labelId';
+  String projectValueId({required String projectId, required String valueId}) =>
+      'project-value-$projectId-$valueId';
 
   @override
   String taskCompletionId({

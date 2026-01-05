@@ -1,6 +1,6 @@
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
 import 'package:taskly_bloc/domain/models/analytics/correlation_request.dart';
@@ -29,12 +29,12 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required AnalyticsRepositoryContract analyticsRepo,
     required TaskRepositoryContract taskRepo,
     required ProjectRepositoryContract projectRepo,
-    required LabelRepositoryContract labelRepo,
+    required ValueRepositoryContract valueRepo,
     required WellbeingRepositoryContract wellbeingRepo,
   }) : _analyticsRepo = analyticsRepo,
        _taskRepo = taskRepo,
        _projectRepo = projectRepo,
-       _labelRepo = labelRepo,
+       _valueRepo = valueRepo,
        _wellbeingRepo = wellbeingRepo,
        _taskStatsCalculator = TaskStatsCalculator(),
        _trendCalculator = TrendCalculator(),
@@ -43,7 +43,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   final AnalyticsRepositoryContract _analyticsRepo;
   final TaskRepositoryContract _taskRepo;
   final ProjectRepositoryContract _projectRepo;
-  final LabelRepositoryContract _labelRepo;
+  final ValueRepositoryContract _valueRepo;
   final WellbeingRepositoryContract _wellbeingRepo;
   final TaskStatsCalculator _taskStatsCalculator;
   final CorrelationCalculator _correlationCalculator;
@@ -312,7 +312,6 @@ class AnalyticsServiceImpl implements AnalyticsService {
     return switch (entityType) {
       EntityType.task => await _getTaskLabel(entityId),
       EntityType.project => await _getProjectLabel(entityId),
-      EntityType.label => await _getLabelLabel(entityId),
       EntityType.value => await _getValueLabel(entityId),
     };
   }
@@ -327,15 +326,9 @@ class AnalyticsServiceImpl implements AnalyticsService {
     return project?.name ?? 'Unknown Project';
   }
 
-  Future<String> _getLabelLabel(String labelId) async {
-    final label = await _labelRepo.getById(labelId);
-    return label?.name ?? 'Unknown Label';
-  }
-
   Future<String> _getValueLabel(String valueId) async {
-    // Values are typically labels with type=value
-    final label = await _labelRepo.getById(valueId);
-    return label?.name ?? 'Unknown Value';
+    final value = await _valueRepo.getById(valueId);
+    return value?.name ?? 'Unknown Value';
   }
 
   @override
@@ -348,7 +341,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
       if (task.completed) return false;
 
       // Check if task has no values
-      final hasNoValue = !task.labels.any((l) => l.type == LabelType.value);
+      final hasNoValue = task.values.isEmpty;
       if (!hasNoValue) return false;
 
       // Optionally exclude tasks with deadlines
@@ -387,10 +380,9 @@ class AnalyticsServiceImpl implements AnalyticsService {
     // Count by value
     final counts = <String, int>{};
     for (final task in completedTasks) {
-      // Get value labels for this task
-      final valueLabels = task.labels.where((l) => l.type == LabelType.value);
-      for (final valueLabel in valueLabels) {
-        counts[valueLabel.id] = (counts[valueLabel.id] ?? 0) + 1;
+      // Get values for this task
+      for (final value in task.values) {
+        counts[value.id] = (counts[value.id] ?? 0) + 1;
       }
     }
 
@@ -411,8 +403,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
     final now = DateTime.now();
 
     // Initialize trends map for all values
-    final valueLabels = await _labelRepo.getAllByType(LabelType.value);
-    for (final value in valueLabels) {
+    final values = await _valueRepo.getAll();
+    for (final value in values) {
       trends[value.id] = List.filled(weeks, 0);
     }
 
@@ -446,11 +438,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       // Count per value and calculate percentage
       final valueCounts = <String, int>{};
       for (final task in completions) {
-        final taskValueLabels = task.labels.where(
-          (l) => l.type == LabelType.value,
-        );
-        for (final valueLabel in taskValueLabels) {
-          valueCounts[valueLabel.id] = (valueCounts[valueLabel.id] ?? 0) + 1;
+        for (final value in task.values) {
+          valueCounts[value.id] = (valueCounts[value.id] ?? 0) + 1;
         }
       }
 
@@ -484,9 +473,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
 
     final taskCounts = <String, int>{};
     for (final task in tasks) {
-      final valueLabels = task.labels.where((l) => l.type == LabelType.value);
-      for (final valueLabel in valueLabels) {
-        taskCounts[valueLabel.id] = (taskCounts[valueLabel.id] ?? 0) + 1;
+      for (final value in task.values) {
+        taskCounts[value.id] = (taskCounts[value.id] ?? 0) + 1;
       }
     }
 
@@ -505,11 +493,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
 
     final projectCounts = <String, int>{};
     for (final project in projects) {
-      final valueLabels = project.labels.where(
-        (l) => l.type == LabelType.value,
-      );
-      for (final valueLabel in valueLabels) {
-        projectCounts[valueLabel.id] = (projectCounts[valueLabel.id] ?? 0) + 1;
+      for (final value in project.values) {
+        projectCounts[value.id] = (projectCounts[value.id] ?? 0) + 1;
       }
     }
 

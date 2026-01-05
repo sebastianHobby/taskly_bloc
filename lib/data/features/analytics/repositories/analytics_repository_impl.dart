@@ -347,16 +347,6 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
       }
     }
 
-    final labelIds = idsByType['label'];
-    if (labelIds != null && labelIds.isNotEmpty) {
-      final rows = await (_database.select(
-        _database.labelTable,
-      )..where((l) => l.id.isIn(labelIds))).get();
-      for (final row in rows) {
-        labels[row.id] = row.name;
-      }
-    }
-
     return labels;
   }
 

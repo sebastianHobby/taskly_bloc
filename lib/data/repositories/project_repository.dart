@@ -234,12 +234,12 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     return query.join([
       leftOuterJoin(
-        driftDb.projectLabelsTable,
-        driftDb.projectLabelsTable.projectId.equalsExp(driftDb.projectTable.id),
+        driftDb.projectValuesTable,
+        driftDb.projectValuesTable.projectId.equalsExp(driftDb.projectTable.id),
       ),
       leftOuterJoin(
-        driftDb.labelTable,
-        driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+        driftDb.valueTable,
+        driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
       ),
     ]);
   }
@@ -251,14 +251,14 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
           leftOuterJoin(
-            driftDb.projectLabelsTable,
-            driftDb.projectLabelsTable.projectId.equalsExp(
+            driftDb.projectValuesTable,
+            driftDb.projectValuesTable.projectId.equalsExp(
               driftDb.projectTable.id,
             ),
           ),
           leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+            driftDb.valueTable,
+            driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
         ]);
 
@@ -277,14 +277,14 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
           leftOuterJoin(
-            driftDb.projectLabelsTable,
-            driftDb.projectLabelsTable.projectId.equalsExp(
+            driftDb.projectValuesTable,
+            driftDb.projectValuesTable.projectId.equalsExp(
               driftDb.projectTable.id,
             ),
           ),
           leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.projectLabelsTable.labelId.equalsExp(driftDb.labelTable.id),
+            driftDb.valueTable,
+            driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
         ]);
 
@@ -337,12 +337,6 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<List<Project>> getProjectsByLabel(String labelId) async {
-    final query = ProjectQuery.byLabels([labelId]);
-    return getAll(query);
-  }
-
-  @override
   Future<void> create({
     required String name,
     String? description,
@@ -351,7 +345,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
-    List<String>? labelIds,
     int? priority,
   }) async {
     talker.debug('[ProjectRepository] create: name="$name"');
@@ -360,8 +353,6 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
-
-    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
     await driftDb.transaction(() async {
       await _createProject(
@@ -379,26 +370,6 @@ class ProjectRepository implements ProjectRepositoryContract {
           updatedAt: Value(now),
         ),
       );
-
-      if (uniqueLabelIds != null) {
-        for (final labelId in uniqueLabelIds) {
-          // Generate deterministic v5 ID for junction
-          final junctionId = idGenerator.projectLabelId(
-            projectId: id,
-            labelId: labelId,
-          );
-          await driftDb
-              .into(driftDb.projectLabelsTable)
-              .insert(
-                ProjectLabelsTableCompanion(
-                  id: Value(junctionId),
-                  projectId: Value(id),
-                  labelId: Value(labelId),
-                ),
-                mode: InsertMode.insertOrIgnore,
-              );
-        }
-      }
     });
   }
 
@@ -412,8 +383,8 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
-    List<String>? labelIds,
     int? priority,
+    bool? isPinned,
   }) async {
     talker.debug('[ProjectRepository] update: id=$id, name="$name"');
     final existing = await _getProjectById(id);
@@ -428,8 +399,6 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     final normalizedStartDate = dateOnlyOrNull(startDate);
     final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
-
-    final uniqueLabelIds = labelIds?.toSet().toList(growable: false);
 
     await driftDb.transaction(() async {
       await _updateProject(
@@ -447,41 +416,31 @@ class ProjectRepository implements ProjectRepositoryContract {
               ? Value.absent()
               : Value(repeatFromCompletion),
           priority: Value(priority),
+          isPinned: isPinned == null
+              ? Value(existing.isPinned)
+              : Value(isPinned),
           // Preserve seriesEnded - only modified via dedicated methods
           seriesEnded: Value.absent(),
           updatedAt: Value(now),
         ),
       );
-
-      if (uniqueLabelIds != null) {
-        final requested = uniqueLabelIds.toSet();
-        final existing =
-            (await (driftDb.select(
-                  driftDb.projectLabelsTable,
-                )..where((t) => t.projectId.equals(id))).get())
-                .map((r) => r.labelId)
-                .toSet();
-
-        if (requested.length != existing.length ||
-            !existing.containsAll(requested)) {
-          await (driftDb.delete(
-            driftDb.projectLabelsTable,
-          )..where((t) => t.projectId.equals(id))).go();
-
-          for (final labelId in uniqueLabelIds) {
-            await driftDb
-                .into(driftDb.projectLabelsTable)
-                .insert(
-                  ProjectLabelsTableCompanion(
-                    projectId: Value(id),
-                    labelId: Value(labelId),
-                  ),
-                  mode: InsertMode.insertOrIgnore,
-                );
-          }
-        }
-      }
     });
+  }
+
+  @override
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
+  }) async {
+    talker.debug('[ProjectRepository] setPinned: id=$id, isPinned=$isPinned');
+    await (driftDb.update(
+      driftDb.projectTable,
+    )..where((t) => t.id.equals(id))).write(
+      ProjectTableCompanion(
+        isPinned: Value(isPinned),
+        updatedAt: Value(DateTime.now()),
+      ),
+    );
   }
 
   @override

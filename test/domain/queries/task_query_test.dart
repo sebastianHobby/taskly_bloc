@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -149,33 +148,6 @@ void main() {
         });
       });
 
-      group('forLabel', () {
-        test('creates label query with label filter', () {
-          final query = TaskQuery.forLabel(labelId: 'label-456');
-
-          expect(query.filter.shared, hasLength(1));
-
-          final labelPred = query.filter.shared
-              .whereType<TaskLabelPredicate>()
-              .first;
-          expect(labelPred.operator, LabelOperator.hasAll);
-          expect(labelPred.labelIds, ['label-456']);
-          expect(labelPred.labelType, LabelType.label);
-        });
-
-        test('creates label query with custom label type', () {
-          final query = TaskQuery.forLabel(
-            labelId: 'value-789',
-            labelType: LabelType.value,
-          );
-
-          final labelPred = query.filter.shared
-              .whereType<TaskLabelPredicate>()
-              .first;
-          expect(labelPred.labelType, LabelType.value);
-        });
-      });
-
       group('schedule', () {
         test('creates schedule query with date range', () {
           final rangeStart = DateTime.utc(2025, 6, 1);
@@ -223,12 +195,12 @@ void main() {
 
           expect(query.filter.shared, hasLength(1));
 
-          final labelPred = query.filter.shared
-              .whereType<TaskLabelPredicate>()
+          final valuePred = query.filter.shared
+              .whereType<TaskValuePredicate>()
               .first;
-          expect(labelPred.operator, LabelOperator.hasAll);
-          expect(labelPred.labelIds, ['value-123']);
-          expect(labelPred.labelType, LabelType.value);
+          expect(valuePred.operator, ValueOperator.hasAll);
+          expect(valuePred.valueIds, ['value-123']);
+          expect(valuePred.includeInherited, isTrue);
         });
       });
 
@@ -336,42 +308,6 @@ void main() {
 
           expect(query.sortCriteria, hasLength(1));
           expect(query.sortCriteria[0].field, SortField.name);
-        });
-      });
-
-      group('byLabels', () {
-        test('creates query filtering by multiple label IDs', () {
-          final query = TaskQuery.byLabels(
-            const ['label-1', 'label-2'],
-          );
-
-          final labelPred = query.filter.shared
-              .whereType<TaskLabelPredicate>()
-              .first;
-          expect(labelPred.labelIds, ['label-1', 'label-2']);
-        });
-
-        test('byLabels accepts custom label type', () {
-          final query = TaskQuery.byLabels(
-            const ['value-1'],
-            labelType: LabelType.value,
-          );
-
-          final labelPred = query.filter.shared
-              .whereType<TaskLabelPredicate>()
-              .first;
-          expect(labelPred.labelType, LabelType.value);
-        });
-
-        test('byLabels accepts custom sort criteria', () {
-          final query = TaskQuery.byLabels(
-            const ['label-1'],
-            sortCriteria: const [
-              SortCriterion(field: SortField.deadlineDate),
-            ],
-          );
-
-          expect(query.sortCriteria, hasLength(1));
         });
       });
     });

@@ -3,7 +3,7 @@ import 'package:taskly_bloc/core/theme/app_colors.dart';
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
-class UrgentBanner extends StatelessWidget {
+class UrgentBanner extends StatefulWidget {
   const UrgentBanner({
     required this.alerts,
     super.key,
@@ -14,59 +14,101 @@ class UrgentBanner extends StatelessWidget {
   final VoidCallback? onReviewTap;
 
   @override
+  State<UrgentBanner> createState() => _UrgentBannerState();
+}
+
+class _UrgentBannerState extends State<UrgentBanner> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    if (alerts.isEmpty) return const SizedBox.shrink();
+    if (widget.alerts.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final color = colorScheme.error;
 
-    final count = alerts.length;
+    final count = widget.alerts.length;
     final message = count == 1
         ? '1 urgent item needs attention'
         : '$count urgent items need attention';
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: TasklyCard(
-        isUrgent: true,
-        onTap: onReviewTap,
-        child: Row(
-          children: [
-            Icon(
-              Icons.warning_amber_rounded,
-              color: colorScheme.error,
-              size: 24,
+      child: Column(
+        children: [
+          TasklyCard(
+            isUrgent: true,
+            onTap: () => setState(() => _isExpanded = !_isExpanded),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: color,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Urgent Attention',
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        message,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
+          ),
+          if (_isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Urgent Attention',
-                    style: TextStyle(
-                      color: colorScheme.error,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                children: widget.alerts.map((alert) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.circle,
+                          size: 6,
+                          color: color,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${alert.excludedTask.task.title} - ${alert.reason}',
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      color: colorScheme.onSurface,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -152,7 +194,7 @@ class _WarningBannerState extends State<WarningBanner> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            alert.reason,
+                            '${alert.excludedTask.task.title} - ${alert.reason}',
                             style: TextStyle(
                               color: Theme.of(
                                 context,

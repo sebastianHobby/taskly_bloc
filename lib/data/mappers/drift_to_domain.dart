@@ -1,27 +1,24 @@
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 
-Label labelFromTable(drift.LabelTableData t) {
-  return Label(
+Value valueFromTable(drift.ValueTableData t) {
+  return Value(
     id: t.id,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     name: t.name,
     color: t.color,
-    type: LabelType.values.byName(t.type.name),
+    priority: t.priority ?? ValuePriority.medium,
     iconName: t.iconName,
-    isSystemLabel: t.isSystemLabel ?? false,
-    systemLabelType: t.systemLabelType != null
-        ? SystemLabelType.values.byName(t.systemLabelType!)
-        : null,
     lastReviewedAt: t.lastReviewedAt,
   );
 }
 
 Project projectFromTable(
   drift.ProjectTableData t, {
-  List<Label>? labels,
+  List<Value>? values,
 }) {
   return Project(
     id: t.id,
@@ -37,14 +34,15 @@ Project projectFromTable(
     seriesEnded: t.seriesEnded,
     lastReviewedAt: t.lastReviewedAt,
     priority: t.priority,
-    labels: labels ?? const <Label>[],
+    isPinned: t.isPinned,
+    values: values ?? const <Value>[],
   );
 }
 
 Task taskFromTable(
   drift.TaskTableData t, {
   Project? project,
-  List<Label>? labels,
+  List<Value>? values,
 }) {
   return Task(
     id: t.id,
@@ -52,16 +50,16 @@ Task taskFromTable(
     updatedAt: t.updatedAt,
     name: t.name,
     completed: t.completed,
+    description: t.description,
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
-    description: t.description,
-    projectId: t.projectId,
-    priority: t.priority,
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
     lastReviewedAt: t.lastReviewedAt,
+    priority: t.priority,
+    isPinned: t.isPinned,
     project: project,
-    labels: labels ?? const <Label>[],
+    values: values ?? const <Value>[],
   );
 }

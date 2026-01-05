@@ -13,11 +13,7 @@ enum FabOperation {
   @JsonValue('create_project')
   createProject,
 
-  /// Create a new label
-  @JsonValue('create_label')
-  createLabel,
-
-  /// Create a new value (label with type=value)
+  /// Create a new value
   @JsonValue('create_value')
   createValue,
 }

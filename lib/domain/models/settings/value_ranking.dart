@@ -1,65 +1,95 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter/foundation.dart';
 
-part 'value_ranking.freezed.dart';
-
-/// A single ranked item in a value ranking.
-@freezed
-abstract class ValueRankItem with _$ValueRankItem {
-  const factory ValueRankItem({
-    /// The ID of the value label being ranked.
-    required String labelId,
-
-    /// Weight from 1-10 indicating importance.
-    @Default(5) int weight,
-
-    /// Display order within the ranking.
-    @Default(0) int sortOrder,
-  }) = _ValueRankItem;
+/// Represents a single item in the value ranking configuration.
+@immutable
+class ValueRankItem {
+  const ValueRankItem({
+    required this.valueId,
+    this.weight = 1,
+    this.sortOrder = 0,
+  });
 
   factory ValueRankItem.fromJson(Map<String, dynamic> json) {
     return ValueRankItem(
-      labelId: json['labelId'] as String,
-      weight: json['weight'] as int? ?? 5,
+      valueId: json['valueId'] as String,
+      weight: json['weight'] as int? ?? 1,
       sortOrder: json['sortOrder'] as int? ?? 0,
     );
   }
-}
 
-/// Extension for JSON serialization.
-extension ValueRankItemJson on ValueRankItem {
+  final String valueId;
+  final int weight;
+  final int sortOrder;
+
   Map<String, dynamic> toJson() => {
-    'labelId': labelId,
+    'valueId': valueId,
     'weight': weight,
     'sortOrder': sortOrder,
   };
-}
 
-/// User's value ranking for allocation.
-@freezed
-abstract class ValueRanking with _$ValueRanking {
-  const factory ValueRanking({
-    /// Ranked value labels with weights.
-    @Default([]) List<ValueRankItem> items,
-  }) = _ValueRanking;
-  const ValueRanking._();
-
-  factory ValueRanking.fromJson(Map<String, dynamic> json) {
-    final rawItems = json['items'] as List<dynamic>?;
-    final items =
-        rawItems
-            ?.map((e) => ValueRankItem.fromJson(e as Map<String, dynamic>))
-            .toList() ??
-        [];
-    return ValueRanking(items: items);
+  ValueRankItem copyWith({
+    String? valueId,
+    int? weight,
+    int? sortOrder,
+  }) {
+    return ValueRankItem(
+      valueId: valueId ?? this.valueId,
+      weight: weight ?? this.weight,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
   }
 
   @override
-  String toString() => 'ValueRanking(${items.length} items)';
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ValueRankItem &&
+          runtimeType == other.runtimeType &&
+          valueId == other.valueId &&
+          weight == other.weight &&
+          sortOrder == other.sortOrder;
+
+  @override
+  int get hashCode => valueId.hashCode ^ weight.hashCode ^ sortOrder.hashCode;
 }
 
-/// Extension for JSON serialization.
-extension ValueRankingJson on ValueRanking {
+/// Configuration for value ranking.
+@immutable
+class ValueRanking {
+  const ValueRanking({
+    this.items = const [],
+  });
+
+  factory ValueRanking.fromJson(Map<String, dynamic> json) {
+    final itemsJson = json['items'] as List<dynamic>?;
+    final items =
+        itemsJson
+            ?.map((e) => ValueRankItem.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [];
+    return ValueRanking(items: items);
+  }
+
+  final List<ValueRankItem> items;
+
   Map<String, dynamic> toJson() => {
     'items': items.map((e) => e.toJson()).toList(),
   };
+
+  ValueRanking copyWith({
+    List<ValueRankItem>? items,
+  }) {
+    return ValueRanking(
+      items: items ?? this.items,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ValueRanking &&
+          runtimeType == other.runtimeType &&
+          listEquals(items, other.items);
+
+  @override
+  int get hashCode => items.hashCode;
 }
