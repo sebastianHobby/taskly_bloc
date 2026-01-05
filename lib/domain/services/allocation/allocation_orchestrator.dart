@@ -15,6 +15,7 @@ import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.da
 import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocator.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
 ///
@@ -365,34 +366,41 @@ class AllocationOrchestrator {
 
   /// Combine all necessary streams
   Stream<(List<Task>, Label?, AllocationConfig, ValueRanking)>
-  _combineStreams() async* {
+  _combineStreams() {
     // Watch incomplete tasks
     final tasksStream = _taskRepository.watchAll(TaskQuery.incomplete());
 
+    // Watch settings
+    final allocationConfigStream = _settingsRepository.watch(
+      SettingsKey.allocation,
+    );
+    final valueRankingStream = _settingsRepository.watch(
+      SettingsKey.valueRanking,
+    );
+
     // Combine all streams
-    await for (final tasks in tasksStream) {
-      final pinnedLabel = await _labelRepository.getSystemLabel(
-        SystemLabelType.pinned,
-      );
-      final allocationConfig = await _settingsRepository.load(
-        SettingsKey.allocation,
-      );
-      final valueRanking = await _settingsRepository.load(
-        SettingsKey.valueRanking,
-      );
+    return Rx.combineLatest3(
+      tasksStream,
+      allocationConfigStream,
+      valueRankingStream,
+      (tasks, allocationConfig, valueRanking) async {
+        final pinnedLabel = await _labelRepository.getSystemLabel(
+          SystemLabelType.pinned,
+        );
 
-      final rankingStr = valueRanking.items
-          .map((i) => '${i.labelId.substring(0, 8)}:w${i.weight}')
-          .join(', ');
-      talker.debug(
-        '[AllocationOrchestrator] _combineStreams loaded:\n'
-        '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}\n'
-        '  valueRanking.items.length=${valueRanking.items.length}\n'
-        '  valueRanking.items=[$rankingStr]',
-      );
+        final rankingStr = valueRanking.items
+            .map((i) => '${i.labelId.substring(0, 8)}:w${i.weight}')
+            .join(', ');
+        talker.debug(
+          '[AllocationOrchestrator] _combineStreams loaded:\n'
+          '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}\n'
+          '  valueRanking.items.length=${valueRanking.items.length}\n'
+          '  valueRanking.items=[$rankingStr]',
+        );
 
-      yield (tasks, pinnedLabel, allocationConfig, valueRanking);
-    }
+        return (tasks, pinnedLabel, allocationConfig, valueRanking);
+      },
+    ).asyncMap((event) => event);
   }
 
   /// Pin a task

@@ -48,6 +48,15 @@ class AppColors {
   static const rambutan60 = Color(0xFFF06F8D);
   static const rambutan70 = Color(0xFFED577A);
   static const rambutan80 = Color(0xFFEB3F67);
+
+  // Taskly / Stitch Palette
+  static const tasklyNeonGreen = Color(0xFF13EC5B);
+  static const tasklyDarkBg = Color(0xFF102216);
+  static const tasklySurface = Color(0xFF1A2E22);
+  static const tasklySurfaceLight = Color(0xFF23482F); // For inputs/chips
+  static const tasklyTextSecondary = Color(0xFF92C9A4);
+  static const tasklyError = Color(0xFFFF4C4C); // Neon Red
+  static const tasklyWarning = Color(0xFFFFD700); // Neon Gold
   static const rambutan90 = Color(0xFFE82754);
   static const rambutan100 = Color(0xFFE60F41);
 

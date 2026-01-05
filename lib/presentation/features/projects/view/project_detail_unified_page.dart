@@ -373,12 +373,20 @@ class _ProjectScreenView extends StatelessWidget {
                 return SectionWidget(
                   section: section,
                   displayConfig: section.displayConfig,
-                  onEntityTap: (entityId, entityType) {
-                    Routing.toEntity(
-                      context,
-                      EntityType.fromString(entityType),
-                      entityId,
-                    );
+                  onEntityTap: (entity) {
+                    if (entity is Task) {
+                      Routing.toEntity(
+                        context,
+                        EntityType.task,
+                        entity.id,
+                      );
+                    } else if (entity is Project) {
+                      Routing.toEntity(
+                        context,
+                        EntityType.project,
+                        entity.id,
+                      );
+                    }
                   },
                   onTaskCheckboxChanged: (task, value) async {
                     if (value ?? false) {

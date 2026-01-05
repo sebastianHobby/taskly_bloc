@@ -378,7 +378,7 @@ Future<void> _pumpSectionWidget(
   required SectionDataWithMeta section,
   void Function(Task, bool?)? onTaskCheckboxChanged,
   void Function(Project, bool?)? onProjectCheckboxChanged,
-  void Function(String, String)? onEntityTap,
+  void Function(dynamic)? onEntityTap,
 }) async {
   await tester.pumpWidget(
     MaterialApp(

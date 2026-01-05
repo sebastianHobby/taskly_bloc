@@ -879,7 +879,7 @@
     "@personaIdealist": {
         "description": "Name of the Idealist allocation persona"
     },
-    "personaIdealistDescription": "Pure value alignment. Ignores urgency entirely.",
+    "personaIdealistDescription": "Show me what matters most, not what's most urgent.",
     "@personaIdealistDescription": {
         "description": "Short description of the Idealist persona"
     },
@@ -891,7 +891,7 @@
     "@personaReflector": {
         "description": "Name of the Reflector allocation persona"
     },
-    "personaReflectorDescription": "Prioritizes values you've been neglecting.",
+    "personaReflectorDescription": "Show me values I've been neglecting.",
     "@personaReflectorDescription": {
         "description": "Short description of the Reflector persona"
     },
@@ -903,7 +903,7 @@
     "@personaRealist": {
         "description": "Name of the Realist allocation persona"
     },
-    "personaRealistDescription": "Balanced approach with urgency awareness.",
+    "personaRealistDescription": "Show me what matters most, but warn me about urgent tasks.",
     "@personaRealistDescription": {
         "description": "Short description of the Realist persona"
     },
@@ -915,7 +915,7 @@
     "@personaFirefighter": {
         "description": "Name of the Firefighter allocation persona"
     },
-    "personaFirefighterDescription": "Urgency-first. All urgent tasks included.",
+    "personaFirefighterDescription": "Show me what's urgent right now.",
     "@personaFirefighterDescription": {
         "description": "Short description of the Firefighter persona"
     },
@@ -927,7 +927,7 @@
     "@personaCustom": {
         "description": "Name of the Custom allocation persona"
     },
-    "personaCustomDescription": "Configure all settings manually.",
+    "personaCustomDescription": "Let me decide what you show me.",
     "@personaCustomDescription": {
         "description": "Short description of the Custom persona"
     },

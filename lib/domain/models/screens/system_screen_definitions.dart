@@ -314,6 +314,7 @@ abstract class SystemScreenDefinitions {
     planned,
     journal,
     values,
+    projects,
     inbox,
     labels,
     // Navigation-only screens

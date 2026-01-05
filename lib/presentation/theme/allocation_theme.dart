@@ -12,6 +12,58 @@ class AllocationTheme extends ThemeExtension<AllocationTheme> {
     required this.glassBackground,
   });
 
+  /// Dark theme defaults
+  factory AllocationTheme.dark(ColorScheme colorScheme) {
+    return AllocationTheme(
+      focusBlue: colorScheme.primary,
+      completionGreen: Colors.green.shade400,
+      overdueRed: colorScheme.error,
+      pinnedGradient: LinearGradient(
+        colors: [
+          colorScheme.primary.withValues(alpha: 0.8),
+          colorScheme.primaryContainer,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      cardGradient: LinearGradient(
+        colors: [
+          colorScheme.surfaceContainerHighest,
+          colorScheme.surfaceContainer,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      glassBackground: colorScheme.surface.withValues(alpha: 0.5),
+    );
+  }
+
+  /// Light theme defaults
+  factory AllocationTheme.light(ColorScheme colorScheme) {
+    return AllocationTheme(
+      focusBlue: colorScheme.primary,
+      completionGreen: Colors.green.shade600,
+      overdueRed: colorScheme.error,
+      pinnedGradient: LinearGradient(
+        colors: [
+          colorScheme.primary,
+          colorScheme.primaryContainer,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      cardGradient: LinearGradient(
+        colors: [
+          colorScheme.surfaceContainerHighest,
+          colorScheme.surfaceContainer,
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      glassBackground: colorScheme.surface.withValues(alpha: 0.7),
+    );
+  }
+
   final Color focusBlue;
   final Color completionGreen;
   final Color overdueRed;
@@ -55,58 +107,6 @@ class AllocationTheme extends ThemeExtension<AllocationTheme> {
       )!,
       cardGradient: LinearGradient.lerp(cardGradient, other.cardGradient, t)!,
       glassBackground: Color.lerp(glassBackground, other.glassBackground, t)!,
-    );
-  }
-
-  /// Light theme defaults
-  static AllocationTheme light(ColorScheme colorScheme) {
-    return AllocationTheme(
-      focusBlue: colorScheme.primary,
-      completionGreen: Colors.green.shade600,
-      overdueRed: colorScheme.error,
-      pinnedGradient: LinearGradient(
-        colors: [
-          colorScheme.primary,
-          colorScheme.primaryContainer,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      cardGradient: LinearGradient(
-        colors: [
-          colorScheme.surfaceContainerHighest,
-          colorScheme.surfaceContainer,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      glassBackground: colorScheme.surface.withValues(alpha: 0.7),
-    );
-  }
-
-  /// Dark theme defaults
-  static AllocationTheme dark(ColorScheme colorScheme) {
-    return AllocationTheme(
-      focusBlue: colorScheme.primary,
-      completionGreen: Colors.green.shade400,
-      overdueRed: colorScheme.error,
-      pinnedGradient: LinearGradient(
-        colors: [
-          colorScheme.primary.withValues(alpha: 0.8),
-          colorScheme.primaryContainer,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      cardGradient: LinearGradient(
-        colors: [
-          colorScheme.surfaceContainerHighest,
-          colorScheme.surfaceContainer,
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      glassBackground: colorScheme.surface.withValues(alpha: 0.5),
     );
   }
 }
