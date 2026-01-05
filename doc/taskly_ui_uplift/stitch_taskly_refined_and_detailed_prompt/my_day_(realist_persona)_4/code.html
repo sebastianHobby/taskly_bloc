@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>My Day (Firefighter) - Final Refined</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#16a34a", // Updated to green for consistent theme
+                "background-light": "#fbf7ff",
+                "background-dark": "#13111c",
+              },
+              fontFamily: {
+                "display": ["Inter", "sans-serif"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        body { min-height: max(884px, 100dvh); }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#111418] dark:text-white">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-32">
+<div class="px-4 pt-6 pb-2">
+<div class="relative overflow-hidden rounded-xl bg-white dark:bg-[#1f1b2e] border border-gray-200 dark:border-[#3f355e] shadow-sm p-5">
+<div class="absolute right-0 top-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-red-500/20 blur-2xl pointer-events-none"></div>
+<div class="relative z-10 flex flex-col gap-2">
+<div class="flex items-center gap-2 text-red-600 dark:text-red-500 mb-1">
+<span class="material-symbols-outlined text-[20px] filled">local_fire_department</span>
+<span class="text-xs font-bold uppercase tracking-widest">Firefighter Persona Active</span>
+</div>
+<h1 class="text-[#111418] dark:text-white text-xl font-bold leading-tight">Show me what's urgent right now.</h1>
+</div>
+</div>
+</div>
+<div class="px-4 py-2 flex flex-col gap-3">
+<div class="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800/50 p-3 shadow-sm">
+<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400">
+<span class="material-symbols-outlined text-[20px] filled">error</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Urgent Attention</span>
+<span class="text-sm font-semibold text-red-950 dark:text-red-50 truncate">Server Downtime - 1 Critical</span>
+</div>
+<button class="flex items-center justify-center text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+<details class="group/warning overflow-hidden rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/10 dark:border-amber-800/50 shadow-sm transition-all duration-300">
+<summary class="flex cursor-pointer items-center gap-3 p-3 select-none">
+<div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400">
+<span class="material-symbols-outlined text-[20px] filled">warning</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-500">Warning</span>
+<span class="text-sm font-semibold text-amber-950 dark:text-amber-50 truncate">2 Critical tasks without deadlines</span>
+</div>
+<span class="material-symbols-outlined text-amber-500 transition-transform duration-300 group-open/warning:rotate-180">expand_more</span>
+</summary>
+<div class="border-t border-amber-200 dark:border-amber-800/50 p-3 pt-2 bg-white/40 dark:bg-white/5">
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between text-xs text-amber-900 dark:text-amber-100">
+<span class="font-medium flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>Security Patch (Pending)</span>
+<button class="text-amber-700 dark:text-amber-400 font-bold hover:underline">Review</button>
+</div>
+<div class="flex items-center justify-between text-xs text-amber-900 dark:text-amber-100">
+<span class="font-medium flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>DB Backup (Failed)</span>
+<button class="text-amber-700 dark:text-amber-400 font-bold hover:underline">Retry</button>
+</div>
+</div>
+</div>
+</details>
+</div>
+<div class="flex flex-col gap-6 px-4 mt-2">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-2 select-none">
+<span class="material-symbols-outlined text-red-600 text-sm filled">event_busy</span>
+<h3 class="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider">Overdue</h3>
+<div class="size-4 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center text-[10px] font-bold">1</div>
+</div>
+<div class="group flex flex-col gap-3 rounded-xl p-4 bg-white dark:bg-[#1f1b2e] shadow-sm border border-l-4 border-l-red-500 border-gray-100 dark:border-[#3f355e] hover:border-red-500/50 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 w-full">
+<div class="mt-1 flex items-center justify-center rounded-full border-2 border-[#d0dbe7] dark:border-[#588c6c] size-5 cursor-pointer hover:border-red-500 dark:hover:border-red-500 shrink-0"></div>
+<div class="flex flex-col w-full">
+<h3 class="text-[#111418] dark:text-white text-base font-semibold leading-tight">Resolve API Outage</h3>
+<div class="flex items-center gap-1.5 mt-1 mb-1">
+<span class="material-symbols-outlined text-[14px] text-[#637588] dark:text-[#c4b5fd]">dns</span>
+<span class="text-xs text-[#637588] dark:text-[#c4b5fd]">Project: <span class="font-medium text-[#111418] dark:text-gray-200">Backend Infrastructure</span></span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
+<span class="text-red-600 dark:text-red-400 text-xs font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_busy</span> Due: Yesterday
+                                    </span>
+<span class="text-red-600 dark:text-red-400 text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">priority_high</span> Critical Priority
+                                    </span>
+</div>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-[#637588] dark:text-[#c4b5fd] shrink-0">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-2 select-none">
+<span class="material-symbols-outlined text-amber-600 text-sm filled">notification_important</span>
+<h3 class="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider">High Priority, No Deadline</h3>
+<div class="size-4 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-[10px] font-bold">2</div>
+</div>
+<div class="group flex flex-col gap-3 rounded-xl p-4 bg-white dark:bg-[#1f1b2e] shadow-sm border border-l-4 border-l-amber-500 border-gray-100 dark:border-[#3f355e] hover:border-amber-500/50 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 w-full">
+<div class="mt-1 flex items-center justify-center rounded-full border-2 border-[#d0dbe7] dark:border-[#588c6c] size-5 cursor-pointer hover:border-amber-500 dark:hover:border-amber-500 shrink-0"></div>
+<div class="flex flex-col w-full">
+<h3 class="text-[#111418] dark:text-white text-base font-semibold leading-tight">Data Breach Investigation</h3>
+<div class="flex items-center gap-1.5 mt-1 mb-1">
+<span class="material-symbols-outlined text-[14px] text-[#637588] dark:text-[#c4b5fd]">security</span>
+<span class="text-xs text-[#637588] dark:text-[#c4b5fd]">Project: <span class="font-medium text-[#111418] dark:text-gray-200">Security</span></span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
+<span class="text-[#637588] dark:text-[#c4b5fd] text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_busy</span> Deadline Missing
+                                    </span>
+<span class="text-amber-600 dark:text-amber-400 text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">flag</span> High Priority
+                                    </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="group flex flex-col gap-3 rounded-xl p-4 bg-white dark:bg-[#1f1b2e] shadow-sm border border-l-4 border-l-amber-500 border-gray-100 dark:border-[#3f355e] hover:border-amber-500/50 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 w-full">
+<div class="mt-1 flex items-center justify-center rounded-full border-2 border-[#d0dbe7] dark:border-[#588c6c] size-5 cursor-pointer hover:border-amber-500 dark:hover:border-amber-500 shrink-0"></div>
+<div class="flex flex-col w-full">
+<h3 class="text-[#111418] dark:text-white text-base font-semibold leading-tight">Approve Legal Contracts</h3>
+<div class="flex items-center gap-1.5 mt-1 mb-1">
+<span class="material-symbols-outlined text-[14px] text-[#637588] dark:text-[#c4b5fd]">gavel</span>
+<span class="text-xs text-[#637588] dark:text-[#c4b5fd]">Project: <span class="font-medium text-[#111418] dark:text-gray-200">Legal</span></span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
+<span class="text-[#637588] dark:text-[#c4b5fd] text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event_busy</span> Deadline Missing
+                                    </span>
+<span class="text-amber-600 dark:text-amber-400 text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">flag</span> High Priority
+                                    </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-2 select-none">
+<span class="material-symbols-outlined text-[#111418] dark:text-white text-sm filled">today</span>
+<h3 class="text-xs font-bold text-[#637588] dark:text-[#c4b5fd] uppercase tracking-wider">Due Today</h3>
+</div>
+<div class="group flex flex-col gap-3 rounded-xl p-4 bg-white dark:bg-[#1f1b2e] shadow-sm border border-gray-100 dark:border-[#3f355e] hover:border-primary/50 transition-all">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 w-full">
+<div class="mt-1 flex items-center justify-center rounded-full border-2 border-[#d0dbe7] dark:border-[#588c6c] size-5 cursor-pointer hover:border-primary dark:hover:border-primary shrink-0"></div>
+<div class="flex flex-col w-full">
+<h3 class="text-[#111418] dark:text-white text-base font-semibold leading-tight">Deploy Hotfix v2.1</h3>
+<div class="flex items-center gap-1.5 mt-1 mb-1">
+<span class="material-symbols-outlined text-[14px] text-[#637588] dark:text-[#c4b5fd]">rocket_launch</span>
+<span class="text-xs text-[#637588] dark:text-[#c4b5fd]">Project: <span class="font-medium text-[#111418] dark:text-gray-200">Release Mgmt</span></span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
+<span class="text-[#111418] dark:text-white text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Due: 4:00 PM
+                                    </span>
+<span class="text-fuchsia-500 text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">flag</span> Medium Priority
+                                    </span>
+</div>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-[#637588] dark:text-[#c4b5fd] shrink-0">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 mb-2 select-none">
+<span class="material-symbols-outlined text-[#637588] dark:text-[#c4b5fd] text-sm filled">calendar_month</span>
+<h3 class="text-xs font-bold text-[#637588] dark:text-[#c4b5fd] uppercase tracking-wider">Upcoming (Next 7 Days)</h3>
+</div>
+<div class="group flex flex-col gap-3 rounded-xl p-4 bg-white dark:bg-[#1f1b2e] shadow-sm border border-gray-100 dark:border-[#3f355e] hover:border-primary/50 transition-all opacity-80">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-start gap-3 w-full">
+<div class="mt-1 flex items-center justify-center rounded-full border-2 border-[#d0dbe7] dark:border-[#588c6c] size-5 cursor-pointer hover:border-primary dark:hover:border-primary shrink-0"></div>
+<div class="flex flex-col w-full">
+<h3 class="text-[#111418] dark:text-white text-base font-semibold leading-tight">Q4 Planning Session</h3>
+<div class="flex items-center gap-1.5 mt-1 mb-1">
+<span class="material-symbols-outlined text-[14px] text-[#637588] dark:text-[#c4b5fd]">group</span>
+<span class="text-xs text-[#637588] dark:text-[#c4b5fd]">Project: <span class="font-medium text-[#111418] dark:text-gray-200">Strategy</span></span>
+</div>
+<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-1.5 pt-2 border-t border-gray-100 dark:border-white/5">
+<span class="text-[#637588] dark:text-[#c4b5fd] text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">event</span> Due: Friday
+                                    </span>
+<span class="text-gray-400 dark:text-gray-500 text-xs font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">flag</span> Low Priority
+                                    </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="rounded-xl p-6 bg-gray-50 dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/10 flex flex-col items-center justify-center text-center gap-3 mt-2">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-[28px]">filter_list_off</span>
+<p class="text-sm text-[#637588] dark:text-[#c4b5fd] max-w-xs leading-relaxed">
+                    14 tasks and projects that are not urgent have been deprioritized to help you focus on critical items.
+                </p>
+<button class="text-xs font-bold text-primary hover:underline">View All Tasks</button>
+</div>
+</div>
+<button class="fixed bottom-24 right-4 z-50 flex size-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[28px] font-bold">add</span>
+</button>
+<div class="fixed bottom-0 left-0 right-0 z-40 flex h-20 items-start justify-around border-t border-gray-200 dark:border-[#2e2542] bg-white dark:bg-[#13111c] pt-3 backdrop-blur-lg">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined filled">calendar_today</span>
+<span class="text-[10px] font-medium">My Day</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#637588] dark:text-[#c4b5fd] hover:text-[#111418] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_month</span>
+<span class="text-[10px] font-medium">Scheduled</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#637588] dark:text-[#c4b5fd] hover:text-[#111418] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-medium">Someday</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#637588] dark:text-[#c4b5fd] hover:text-[#111418] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium">Journal</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#637588] dark:text-[#c4b5fd] hover:text-[#111418] dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">folder_open</span>
+<span class="text-[10px] font-medium">Browse</span>
+</a>
+</div>
+</div>
+
+</body></html>

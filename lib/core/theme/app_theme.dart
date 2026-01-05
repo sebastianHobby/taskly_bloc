@@ -26,6 +26,47 @@ class AppTheme {
     return _buildTheme(colorScheme);
   }
 
+  /// Taskly (Stitch) theme configuration.
+  static ThemeData tasklyTheme() {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      scaffoldBackgroundColor: AppColors.tasklyDarkBg,
+      cardColor: AppColors.tasklySurface,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: AppColors.tasklyNeonGreen,
+        brightness: Brightness.dark,
+        surface: AppColors.tasklyDarkBg,
+        primary: AppColors.tasklyNeonGreen,
+        secondary: AppColors.tasklySurfaceLight,
+      ),
+      extensions: <ThemeExtension<dynamic>>[
+        TasklyDesignExtension(
+          urgentSurface: AppColors.tasklyError.withOpacity(0.1),
+          warningSurface: AppColors.tasklyWarning.withOpacity(0.1),
+          safeSurface: AppColors.tasklyNeonGreen.withOpacity(0.05),
+          neonAccent: AppColors.tasklyNeonGreen,
+          glassBorder: Colors.white.withOpacity(0.1),
+        ),
+      ],
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: AppColors.tasklySurfaceLight,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppColors.tasklyNeonGreen,
+            width: 1,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Builds the theme data from a color scheme.
   static ThemeData _buildTheme(ColorScheme colorScheme) {
     final textTheme = _buildTextTheme(colorScheme);
@@ -368,4 +409,53 @@ class AppRadius {
   static const double lg = 16;
   static const double xl = 24;
   static const double xxl = 28;
+}
+
+@immutable
+class TasklyDesignExtension extends ThemeExtension<TasklyDesignExtension> {
+  const TasklyDesignExtension({
+    required this.urgentSurface,
+    required this.warningSurface,
+    required this.safeSurface,
+    required this.neonAccent,
+    required this.glassBorder,
+  });
+
+  final Color urgentSurface;
+  final Color warningSurface;
+  final Color safeSurface;
+  final Color neonAccent;
+  final Color glassBorder;
+
+  @override
+  TasklyDesignExtension copyWith({
+    Color? urgentSurface,
+    Color? warningSurface,
+    Color? safeSurface,
+    Color? neonAccent,
+    Color? glassBorder,
+  }) {
+    return TasklyDesignExtension(
+      urgentSurface: urgentSurface ?? this.urgentSurface,
+      warningSurface: warningSurface ?? this.warningSurface,
+      safeSurface: safeSurface ?? this.safeSurface,
+      neonAccent: neonAccent ?? this.neonAccent,
+      glassBorder: glassBorder ?? this.glassBorder,
+    );
+  }
+
+  @override
+  TasklyDesignExtension lerp(
+    ThemeExtension<TasklyDesignExtension>? other,
+    double t,
+  ) {
+    if (other is! TasklyDesignExtension) return this;
+    return TasklyDesignExtension(
+      urgentSurface: Color.lerp(urgentSurface, other.urgentSurface, t)!,
+      warningSurface: Color.lerp(warningSurface, other.warningSurface, t)!,
+      safeSurface: Color.lerp(safeSurface, other.safeSurface, t)!,
+      neonAccent: Color.lerp(neonAccent, other.neonAccent, t)!,
+      glassBorder: Color.lerp(glassBorder, other.glassBorder, t)!,
+    );
+  }
 }

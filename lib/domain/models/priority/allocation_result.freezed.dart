@@ -14,7 +14,8 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AllocationResult {
 
- List<AllocatedTask> get allocatedTasks; AllocationReasoning get reasoning; List<ExcludedTask> get excludedTasks;/// True if allocation cannot proceed because user has no values defined.
+ List<AllocatedTask> get allocatedTasks; AllocationReasoning get reasoning; List<ExcludedTask> get excludedTasks;/// The persona used for this allocation
+ AllocationPersona? get activePersona;/// True if allocation cannot proceed because user has no values defined.
 /// When true, the UI should show a gateway prompting value setup.
  bool get requiresValueSetup;
 /// Create a copy of AllocationResult
@@ -27,16 +28,16 @@ $AllocationResultCopyWith<AllocationResult> get copyWith => _$AllocationResultCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationResult&&const DeepCollectionEquality().equals(other.allocatedTasks, allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other.excludedTasks, excludedTasks)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationResult&&const DeepCollectionEquality().equals(other.allocatedTasks, allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other.excludedTasks, excludedTasks)&&(identical(other.activePersona, activePersona) || other.activePersona == activePersona)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(allocatedTasks),reasoning,const DeepCollectionEquality().hash(excludedTasks),requiresValueSetup);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(allocatedTasks),reasoning,const DeepCollectionEquality().hash(excludedTasks),activePersona,requiresValueSetup);
 
 @override
 String toString() {
-  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, requiresValueSetup: $requiresValueSetup)';
+  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, activePersona: $activePersona, requiresValueSetup: $requiresValueSetup)';
 }
 
 
@@ -47,7 +48,7 @@ abstract mixin class $AllocationResultCopyWith<$Res>  {
   factory $AllocationResultCopyWith(AllocationResult value, $Res Function(AllocationResult) _then) = _$AllocationResultCopyWithImpl;
 @useResult
 $Res call({
- List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, bool requiresValueSetup
+ List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, AllocationPersona? activePersona, bool requiresValueSetup
 });
 
 
@@ -64,12 +65,13 @@ class _$AllocationResultCopyWithImpl<$Res>
 
 /// Create a copy of AllocationResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? requiresValueSetup = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? activePersona = freezed,Object? requiresValueSetup = null,}) {
   return _then(_self.copyWith(
 allocatedTasks: null == allocatedTasks ? _self.allocatedTasks : allocatedTasks // ignore: cast_nullable_to_non_nullable
 as List<AllocatedTask>,reasoning: null == reasoning ? _self.reasoning : reasoning // ignore: cast_nullable_to_non_nullable
 as AllocationReasoning,excludedTasks: null == excludedTasks ? _self.excludedTasks : excludedTasks // ignore: cast_nullable_to_non_nullable
-as List<ExcludedTask>,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
+as List<ExcludedTask>,activePersona: freezed == activePersona ? _self.activePersona : activePersona // ignore: cast_nullable_to_non_nullable
+as AllocationPersona?,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -164,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  bool requiresValueSetup)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AllocationPersona? activePersona,  bool requiresValueSetup)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AllocationResult() when $default != null:
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activePersona,_that.requiresValueSetup);case _:
   return orElse();
 
 }
@@ -185,10 +187,10 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  bool requiresValueSetup)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AllocationPersona? activePersona,  bool requiresValueSetup)  $default,) {final _that = this;
 switch (_that) {
 case _AllocationResult():
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activePersona,_that.requiresValueSetup);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -205,10 +207,10 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.r
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  bool requiresValueSetup)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AllocationPersona? activePersona,  bool requiresValueSetup)?  $default,) {final _that = this;
 switch (_that) {
 case _AllocationResult() when $default != null:
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activePersona,_that.requiresValueSetup);case _:
   return null;
 
 }
@@ -220,7 +222,7 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.r
 
 
 class _AllocationResult implements AllocationResult {
-  const _AllocationResult({required final  List<AllocatedTask> allocatedTasks, required this.reasoning, required final  List<ExcludedTask> excludedTasks, this.requiresValueSetup = false}): _allocatedTasks = allocatedTasks,_excludedTasks = excludedTasks;
+  const _AllocationResult({required final  List<AllocatedTask> allocatedTasks, required this.reasoning, required final  List<ExcludedTask> excludedTasks, this.activePersona, this.requiresValueSetup = false}): _allocatedTasks = allocatedTasks,_excludedTasks = excludedTasks;
   
 
  final  List<AllocatedTask> _allocatedTasks;
@@ -238,6 +240,8 @@ class _AllocationResult implements AllocationResult {
   return EqualUnmodifiableListView(_excludedTasks);
 }
 
+/// The persona used for this allocation
+@override final  AllocationPersona? activePersona;
 /// True if allocation cannot proceed because user has no values defined.
 /// When true, the UI should show a gateway prompting value setup.
 @override@JsonKey() final  bool requiresValueSetup;
@@ -252,16 +256,16 @@ _$AllocationResultCopyWith<_AllocationResult> get copyWith => __$AllocationResul
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationResult&&const DeepCollectionEquality().equals(other._allocatedTasks, _allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other._excludedTasks, _excludedTasks)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationResult&&const DeepCollectionEquality().equals(other._allocatedTasks, _allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other._excludedTasks, _excludedTasks)&&(identical(other.activePersona, activePersona) || other.activePersona == activePersona)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allocatedTasks),reasoning,const DeepCollectionEquality().hash(_excludedTasks),requiresValueSetup);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allocatedTasks),reasoning,const DeepCollectionEquality().hash(_excludedTasks),activePersona,requiresValueSetup);
 
 @override
 String toString() {
-  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, requiresValueSetup: $requiresValueSetup)';
+  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, activePersona: $activePersona, requiresValueSetup: $requiresValueSetup)';
 }
 
 
@@ -272,7 +276,7 @@ abstract mixin class _$AllocationResultCopyWith<$Res> implements $AllocationResu
   factory _$AllocationResultCopyWith(_AllocationResult value, $Res Function(_AllocationResult) _then) = __$AllocationResultCopyWithImpl;
 @override @useResult
 $Res call({
- List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, bool requiresValueSetup
+ List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, AllocationPersona? activePersona, bool requiresValueSetup
 });
 
 
@@ -289,12 +293,13 @@ class __$AllocationResultCopyWithImpl<$Res>
 
 /// Create a copy of AllocationResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? requiresValueSetup = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? activePersona = freezed,Object? requiresValueSetup = null,}) {
   return _then(_AllocationResult(
 allocatedTasks: null == allocatedTasks ? _self._allocatedTasks : allocatedTasks // ignore: cast_nullable_to_non_nullable
 as List<AllocatedTask>,reasoning: null == reasoning ? _self.reasoning : reasoning // ignore: cast_nullable_to_non_nullable
 as AllocationReasoning,excludedTasks: null == excludedTasks ? _self._excludedTasks : excludedTasks // ignore: cast_nullable_to_non_nullable
-as List<ExcludedTask>,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
+as List<ExcludedTask>,activePersona: freezed == activePersona ? _self.activePersona : activePersona // ignore: cast_nullable_to_non_nullable
+as AllocationPersona?,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

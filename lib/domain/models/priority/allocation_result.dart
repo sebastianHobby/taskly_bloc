@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 part 'allocation_result.freezed.dart';
@@ -10,6 +11,9 @@ abstract class AllocationResult with _$AllocationResult {
     required List<AllocatedTask> allocatedTasks,
     required AllocationReasoning reasoning,
     required List<ExcludedTask> excludedTasks,
+
+    /// The persona used for this allocation
+    AllocationPersona? activePersona,
 
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.

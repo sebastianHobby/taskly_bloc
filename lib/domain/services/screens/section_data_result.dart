@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 
@@ -84,6 +85,9 @@ sealed class SectionDataResult with _$SectionDataResult {
 
     /// Evaluated alerts based on user's alert config
     AlertEvaluationResult? alertEvaluationResult,
+
+    /// The persona used for this allocation
+    AllocationPersona? activePersona,
 
     /// Display mode for this allocation section
     @Default(AllocationDisplayMode.pinnedFirst)

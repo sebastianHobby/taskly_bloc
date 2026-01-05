@@ -8,12 +8,16 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/labels/widgets/add_label_fab.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
@@ -23,6 +27,7 @@ import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dar
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
+import 'package:taskly_bloc/presentation/features/screens/widgets/persona_selector.dart';
 
 /// Unified page for rendering all screen types.
 ///
@@ -121,11 +126,15 @@ class _LoadedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entityActionService = getIt<EntityActionService>();
+    final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(data.definition.name),
         actions: _buildAppBarActions(context),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
       ),
       body: _ScreenContent(
         data: data,
@@ -226,7 +235,10 @@ class _ScreenContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (data.sections.isEmpty) {
+    final sections = data.sections;
+    final isFocusScreen = data.definition.screenType == ScreenType.focus;
+
+    if (sections.isEmpty && !isFocusScreen) {
       return const Center(
         child: Text('No sections configured'),
       );
@@ -234,17 +246,90 @@ class _ScreenContent extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
-      itemCount: data.sections.length,
+      itemCount: sections.length + (isFocusScreen ? 1 : 0),
       itemBuilder: (context, index) {
-        final section = data.sections[index];
+        if (isFocusScreen) {
+          if (index == 0) {
+            // Find active persona from allocation section
+            AllocationPersona? activePersona;
+            for (final section in sections) {
+              if (section.result is AllocationSectionResult) {
+                activePersona =
+                    (section.result as AllocationSectionResult).activePersona;
+                break;
+              }
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: PersonaSelector(
+                currentPersona: activePersona ?? AllocationPersona.realist,
+                onPersonaSelected: (p) async {
+                  final settingsRepo = getIt<SettingsRepositoryContract>();
+                  final currentConfig = await settingsRepo.load(
+                    SettingsKey.allocation,
+                  );
+                  await settingsRepo.save(
+                    SettingsKey.allocation,
+                    currentConfig.copyWith(persona: p),
+                  );
+                },
+              ),
+            );
+          }
+          // Adjust index for sections
+          final section = sections[index - 1];
+          return SectionWidget(
+            section: section,
+            onEntityTap: (entity) {
+              if (entity is Task) {
+                Routing.toEntity(
+                  context,
+                  EntityType.task,
+                  entity.id,
+                );
+              } else if (entity is Project) {
+                Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  entity.id,
+                );
+              }
+            },
+            onTaskCheckboxChanged: (task, value) async {
+              developer.log(
+                'Task checkbox changed: ${task.id} -> $value',
+                name: 'UnifiedScreenPage',
+              );
+              if (value ?? false) {
+                await entityActionService.completeTask(task.id);
+              } else {
+                await entityActionService.uncompleteTask(task.id);
+              }
+              if (context.mounted) {
+                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
+              }
+            },
+          );
+        }
+
+        final section = sections[index];
         return SectionWidget(
           section: section,
-          onEntityTap: (entityId, entityType) {
-            Routing.toEntity(
-              context,
-              EntityType.fromString(entityType),
-              entityId,
-            );
+          onEntityTap: (entity) {
+            if (entity is Task) {
+              Routing.toEntity(
+                context,
+                EntityType.task,
+                entity.id,
+              );
+            } else if (entity is Project) {
+              Routing.toEntity(
+                context,
+                EntityType.project,
+                entity.id,
+              );
+            }
           },
           onTaskCheckboxChanged: (task, value) async {
             developer.log(

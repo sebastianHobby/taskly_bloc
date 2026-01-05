@@ -8,6 +8,8 @@ import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -423,12 +425,20 @@ class _LabelScreenViewState extends State<_LabelScreenView> {
           return SectionWidget(
             section: section,
             displayConfig: section.displayConfig,
-            onEntityTap: (entityId, entityType) {
-              Routing.toEntity(
-                context,
-                EntityType.fromString(entityType),
-                entityId,
-              );
+            onEntityTap: (entity) {
+              if (entity is Task) {
+                Routing.toEntity(
+                  context,
+                  EntityType.task,
+                  entity.id,
+                );
+              } else if (entity is Project) {
+                Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  entity.id,
+                );
+              }
             },
             onTaskCheckboxChanged: (task, value) async {
               if (value ?? false) {

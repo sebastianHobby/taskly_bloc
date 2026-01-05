@@ -658,7 +658,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaIdealist => 'Idealist';
 
   @override
-  String get personaIdealistDescription => 'Pure value alignment. Ignores urgency entirely.';
+  String get personaIdealistDescription => 'Show me what matters most, not what\'s most urgent.';
 
   @override
   String get personaIdealistHowItWorks => 'Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.';
@@ -667,7 +667,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaReflector => 'Reflector';
 
   @override
-  String get personaReflectorDescription => 'Prioritizes values you\'ve been neglecting.';
+  String get personaReflectorDescription => 'Show me values I\'ve been neglecting.';
 
   @override
   String get personaReflectorHowItWorks => 'Analyzes your recent completions and prioritizes values you\'ve been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.';
@@ -676,7 +676,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaRealist => 'Realist';
 
   @override
-  String get personaRealistDescription => 'Balanced approach with urgency awareness.';
+  String get personaRealistDescription => 'Show me what matters most, but warn me about urgent tasks.';
 
   @override
   String get personaRealistHowItWorks => 'Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.';
@@ -685,7 +685,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaFirefighter => 'Firefighter';
 
   @override
-  String get personaFirefighterDescription => 'Urgency-first. All urgent tasks included.';
+  String get personaFirefighterDescription => 'Show me what\'s urgent right now.';
 
   @override
   String get personaFirefighterHowItWorks => 'Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.';
@@ -694,7 +694,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get personaCustom => 'Custom';
 
   @override
-  String get personaCustomDescription => 'Configure all settings manually.';
+  String get personaCustomDescription => 'Let me decide what you show me.';
 
   @override
   String get personaCustomHowItWorks => 'Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.';

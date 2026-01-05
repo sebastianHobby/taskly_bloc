@@ -1306,7 +1306,7 @@ abstract class AppLocalizations {
   /// Short description of the Idealist persona
   ///
   /// In en, this message translates to:
-  /// **'Pure value alignment. Ignores urgency entirely.'**
+  /// **'Show me what matters most, not what\'s most urgent.'**
   String get personaIdealistDescription;
 
   /// Detailed explanation of how Idealist persona works
@@ -1324,7 +1324,7 @@ abstract class AppLocalizations {
   /// Short description of the Reflector persona
   ///
   /// In en, this message translates to:
-  /// **'Prioritizes values you\'ve been neglecting.'**
+  /// **'Show me values I\'ve been neglecting.'**
   String get personaReflectorDescription;
 
   /// Detailed explanation of how Reflector persona works
@@ -1342,7 +1342,7 @@ abstract class AppLocalizations {
   /// Short description of the Realist persona
   ///
   /// In en, this message translates to:
-  /// **'Balanced approach with urgency awareness.'**
+  /// **'Show me what matters most, but warn me about urgent tasks.'**
   String get personaRealistDescription;
 
   /// Detailed explanation of how Realist persona works
@@ -1360,7 +1360,7 @@ abstract class AppLocalizations {
   /// Short description of the Firefighter persona
   ///
   /// In en, this message translates to:
-  /// **'Urgency-first. All urgent tasks included.'**
+  /// **'Show me what\'s urgent right now.'**
   String get personaFirefighterDescription;
 
   /// Detailed explanation of how Firefighter persona works
@@ -1378,7 +1378,7 @@ abstract class AppLocalizations {
   /// Short description of the Custom persona
   ///
   /// In en, this message translates to:
-  /// **'Configure all settings manually.'**
+  /// **'Let me decide what you show me.'**
   String get personaCustomDescription;
 
   /// Detailed explanation of how Custom persona works
