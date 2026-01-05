@@ -761,10 +761,10 @@ packages:
     dependency: "direct main"
     description:
       name: ml_linalg
-      sha256: abbbd506dc894f8b0394cf5c5d45aab45b7e2a89b86bba9c9b5b8a412b4bec5d
+      sha256: beaebe2b85e9f1f6233a19098883f1f1596ce6ed05a03bc51ac552420507265e
       url: "https://pub.dev"
     source: hosted
-    version: "13.12.6"
+    version: "13.12.7"
   mocktail:
     dependency: "direct dev"
     description:
@@ -1532,4 +1532,4 @@ packages:
     version: "2.1.0"
 sdks:
   dart: ">=3.9.0 <4.0.0"
-  flutter: ">=3.38.0 <4.0.0"
+  flutter: ">=3.38.0"
