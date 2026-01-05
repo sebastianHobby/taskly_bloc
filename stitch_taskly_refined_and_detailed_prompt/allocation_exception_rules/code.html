@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Allocation Exception Rules</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#1c3024",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display min-h-screen flex flex-col antialiased selection:bg-primary/30 selection:text-primary">
+<!-- Top App Bar -->
+<header class="sticky top-0 z-50 bg-background-light dark:bg-background-dark border-b border-gray-200 dark:border-white/5 backdrop-blur-md bg-opacity-90 dark:bg-opacity-90 px-4 py-3 flex items-center justify-between transition-colors duration-200">
+<button class="flex size-10 items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all text-gray-900 dark:text-white">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="text-lg font-bold leading-tight tracking-tight text-gray-900 dark:text-white flex-1 text-center pr-2">
+            Exception Rules
+        </h1>
+<button class="flex items-center justify-center rounded-full px-3 py-1.5 hover:bg-primary/10 transition-all">
+<p class="text-primary text-sm font-semibold tracking-wide">Help</p>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-md mx-auto flex flex-col px-4 pt-6 pb-24 space-y-8">
+<!-- Intro Section -->
+<section class="space-y-2">
+<h2 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Safety Nets</h2>
+<p class="text-gray-600 dark:text-gray-400 text-base leading-relaxed">
+                Define criteria to catch unallocated tasks. These rules automatically force tasks onto your 'My Day' view to prevent them from slipping through the cracks.
+            </p>
+</section>
+<!-- Active Rules List -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-500">Active Rules</h3>
+<span class="text-xs font-medium px-2 py-1 rounded bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400">2 Active</span>
+</div>
+<!-- Card 1: Urgent -->
+<div class="group relative overflow-hidden rounded-2xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary"></div>
+<div class="p-4 flex items-start gap-4">
+<div class="shrink-0">
+<div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+<span class="material-symbols-outlined icon-filled">notifications_active</span>
+</div>
+</div>
+<div class="flex-1 min-w-0 space-y-1">
+<div class="flex items-center justify-between">
+<h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">Immediate Deadlines</h4>
+<span class="inline-flex items-center rounded-full bg-primary/20 px-2.5 py-0.5 text-xs font-bold text-primary dark:text-[#5ffda0]">
+                                URGENT
+                            </span>
+</div>
+<p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+<span class="font-medium text-gray-700 dark:text-gray-300">IF</span> Deadline &lt; 2 days 
+                            <span class="font-medium text-gray-700 dark:text-gray-300">THEN</span> Alert user
+                        </p>
+</div>
+<button class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Card 2: Warning -->
+<div class="group relative overflow-hidden rounded-2xl bg-white dark:bg-surface-dark border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all duration-300">
+<div class="absolute top-0 left-0 w-1 h-full bg-yellow-500"></div>
+<div class="p-4 flex items-start gap-4">
+<div class="shrink-0">
+<div class="flex size-12 items-center justify-center rounded-xl bg-yellow-500/10 text-yellow-500">
+<span class="material-symbols-outlined icon-filled">favorite</span>
+</div>
+</div>
+<div class="flex-1 min-w-0 space-y-1">
+<div class="flex items-center justify-between">
+<h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">High Value Health</h4>
+<span class="inline-flex items-center rounded-full bg-yellow-500/20 px-2.5 py-0.5 text-xs font-bold text-yellow-600 dark:text-yellow-400">
+                                WARNING
+                            </span>
+</div>
+<p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+<span class="font-medium text-gray-700 dark:text-gray-300">IF</span> Value is 'Health' AND Unscheduled
+                        </p>
+</div>
+<button class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Suggested / Builder Prompt -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-500">Suggestions</h3>
+</div>
+<!-- Suggestion Card -->
+<div class="rounded-2xl border border-dashed border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 p-4 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-white/10 cursor-pointer transition-colors">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-xl">history</span>
+</div>
+<div>
+<p class="text-sm font-medium text-gray-900 dark:text-white">Stagnant Tasks</p>
+<p class="text-xs text-gray-500 dark:text-gray-400">Tasks created &gt; 30 days ago</p>
+</div>
+</div>
+<div class="size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-lg">add</span>
+</div>
+</div>
+<!-- Create New (Inline visual cue) -->
+<div class="rounded-2xl border border-dashed border-gray-300 dark:border-white/10 bg-transparent p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors group">
+<div class="size-12 rounded-full bg-primary flex items-center justify-center text-background-dark shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-2xl font-bold">add</span>
+</div>
+<span class="text-sm font-semibold text-gray-900 dark:text-white mt-1">Create Custom Rule</span>
+<span class="text-xs text-gray-500 dark:text-gray-400 max-w-[200px]">Build complex logic using "If This Then That" style blocks.</span>
+</div>
+</section>
+</main>
+<!-- FAB (Fixed Position) -->
+<div class="fixed bottom-6 right-6 z-40">
+<button class="flex items-center gap-2 h-14 pl-5 pr-6 bg-primary hover:bg-[#0fd650] active:bg-[#0cc248] text-background-dark rounded-2xl shadow-xl shadow-primary/20 transition-all hover:-translate-y-1 active:translate-y-0">
+<span class="material-symbols-outlined text-2xl">add</span>
+<span class="font-bold text-base tracking-wide">New Rule</span>
+</button>
+</div>
+<!-- Bottom Sheet Gradient Overlay (To simulate depth) -->
+<div class="fixed bottom-0 left-0 w-full h-12 bg-gradient-to-t from-background-light dark:from-background-dark to-transparent pointer-events-none z-30"></div>
+</body></html>
