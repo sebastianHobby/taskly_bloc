@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Taskly - Welcome</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                        "surface-dark": "#162e1e",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hide for cleaner UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-white transition-colors duration-300">
+<!-- Main Container -->
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark">
+<!-- Top Section: Hero Image -->
+<!-- Using a flex-grow approach to push content to bottom but keep image prominent -->
+<div class="relative flex-1 w-full p-4 flex flex-col justify-end">
+<div class="absolute inset-0 w-full h-full bg-gradient-to-b from-transparent to-background-light dark:to-background-dark z-10 pointer-events-none h-1/2 bottom-0 top-auto"></div>
+<div class="w-full h-full absolute inset-0 bg-center bg-no-repeat bg-cover" data-alt="Abstract glowing neon green tree representing growth and balance in a dark digital space" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBC7LVEyCmepOyPNv5VHXx_rHMU91PR8tlAM8zL8EZFAR-wWjQs0p5Nihm51hd1pjYey2ET24sJ826Fgg_ATA5A6eWE8iujYCAOzh-hVrr4OaFua7aZ6gMaPrb21EbAMn_dLMQVBChDvJ-ANFfuYmAvuc8YGYoMg71ZL1MYtrGYjBdxWsU0CQ0pm2zKudxA4565hlwmc3tmD5aLblOooQF6iqM2IE8sUXY-CAV4EZlL5LVNJ8yeb0jG2jRnN2coGOwBO19XdpafcRk-");'>
+<!-- Overlay to ensure text legibility and blend with theme -->
+<div class="absolute inset-0 bg-background-dark/30 backdrop-blur-[1px]"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-background-dark/50 to-transparent"></div>
+</div>
+</div>
+<!-- Content Section -->
+<div class="relative z-20 flex flex-col px-6 pb-8 pt-2">
+<!-- Page Indicators -->
+<div class="flex w-full flex-row items-center justify-center gap-3 py-6">
+<div class="h-2 w-8 rounded-full bg-primary shadow-[0_0_10px_rgba(19,236,91,0.5)]"></div>
+<div class="h-2 w-2 rounded-full bg-primary/20 dark:bg-primary/20"></div>
+<div class="h-2 w-2 rounded-full bg-primary/20 dark:bg-primary/20"></div>
+</div>
+<!-- Meta Text -->
+<div class="flex flex-col items-center">
+<p class="text-primary text-xs font-bold tracking-[0.2em] uppercase leading-normal py-2 px-4 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm mb-4">
+                    Welcome to Taskly
+                </p>
+</div>
+<!-- Headline -->
+<h1 class="text-slate-900 dark:text-white tracking-tight text-[32px] font-bold leading-[1.15] text-center pb-4">
+                Plan Your Life Around <span class="text-primary decoration-wavy underline decoration-primary/30 underline-offset-4">What Matters</span>
+</h1>
+<!-- Body Text -->
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-relaxed pb-8 text-center px-2">
+                Stop drowning in to-dos. Taskly helps you align your daily tasks with your personal values and wellbeing, so you can focus on growth.
+            </p>
+<!-- Actions -->
+<div class="flex flex-col gap-4 w-full mt-auto">
+<button class="group relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-6 py-4 transition-all hover:brightness-110 active:scale-[0.98]">
+<span class="text-background-dark text-lg font-bold tracking-tight">Start Prioritizing</span>
+<span class="material-symbols-outlined text-background-dark transition-transform group-hover:translate-x-1 font-bold">arrow_forward</span>
+</button>
+<button class="flex w-full items-center justify-center rounded-xl px-6 py-3 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
+                    I already have an account
+                </button>
+</div>
+<!-- Safe area padding for iOS -->
+<div class="h-6"></div>
+</div>
+</div>
+</body></html>
