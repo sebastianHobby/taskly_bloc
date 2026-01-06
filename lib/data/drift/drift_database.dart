@@ -158,6 +158,8 @@ class ProjectValuesTable extends Table {
   TextColumn get valueId => text()
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+  BoolColumn get isPrimary =>
+      boolean().withDefault(const Constant(false)).named('is_primary')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -184,6 +186,8 @@ class TaskValuesTable extends Table {
   TextColumn get valueId => text()
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
+  BoolColumn get isPrimary =>
+      boolean().withDefault(const Constant(false)).named('is_primary')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -233,6 +237,8 @@ class UserProfileTable extends Table {
       text().withDefault(const Constant('{}')).named('page_display_settings')();
   TextColumn get screenPreferences =>
       text().withDefault(const Constant('{}')).named('screen_preferences')();
+  TextColumn get reviewSettings =>
+      text().withDefault(const Constant('{}')).named('review_settings')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();

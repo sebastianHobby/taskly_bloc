@@ -18,8 +18,8 @@ void main() {
       expect(EntityType.project.name, 'project');
     });
 
-    test('label type exists', () {
-      expect(EntityType.label.name, 'label');
+    test('value type exists', () {
+      expect(EntityType.value.name, 'value');
     });
 
     test('goal type exists', () {
@@ -115,9 +115,9 @@ void main() {
     group('copyWith', () {
       test('copies with new entityType', () {
         final selector = EntitySelector(entityType: EntityType.task);
-        final copied = selector.copyWith(entityType: EntityType.label);
+        final copied = selector.copyWith(entityType: EntityType.value);
 
-        expect(copied.entityType, EntityType.label);
+        expect(copied.entityType, EntityType.value);
       });
 
       test('copies with new specificIds', () {
@@ -133,7 +133,7 @@ void main() {
           entityType: EntityType.project,
           specificIds: ['a', 'b'],
         );
-        final copied = selector.copyWith(entityType: EntityType.label);
+        final copied = selector.copyWith(entityType: EntityType.value);
 
         expect(copied.specificIds, ['a', 'b']);
       });

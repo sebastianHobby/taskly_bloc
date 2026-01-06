@@ -9,7 +9,7 @@ import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dar
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.dart';
@@ -17,14 +17,14 @@ import 'package:taskly_bloc/presentation/features/projects/widgets/project_form.
 class ProjectEditSheetPage extends StatelessWidget {
   const ProjectEditSheetPage({
     required this.projectRepository,
-    required this.labelRepository,
+    required this.valueRepository,
     this.projectId,
     this.onSaved,
     super.key,
   });
 
   final ProjectRepositoryContract projectRepository;
-  final LabelRepositoryContract labelRepository;
+  final ValueRepositoryContract valueRepository;
   final String? projectId;
 
   /// Optional callback when a project is saved (created or updated).
@@ -36,7 +36,7 @@ class ProjectEditSheetPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => ProjectDetailBloc(
         projectRepository: projectRepository,
-        labelRepository: labelRepository,
+        valueRepository: valueRepository,
       ),
       lazy: false,
       child: ProjectEditSheetView(
@@ -105,9 +105,6 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 'startDate': project.startDate,
                 'deadlineDate': project.deadlineDate,
                 'repeatIcalRrule': project.repeatIcalRrule ?? '',
-                'labelIds': project.labels
-                    .map((l) => l.id)
-                    .toList(growable: false),
               });
             });
           case ProjectDetailOperationSuccess(:final operation):
@@ -147,11 +144,11 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          initialDataLoadSuccess: (availableLabels) {
+          initialDataLoadSuccess: (availableValues) {
             return ProjectForm(
               initialData: null,
               formKey: _formKey,
-              availableLabels: availableLabels,
+              availableValues: availableValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;
@@ -176,10 +173,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                   formValues,
                   'deadlineDate',
                 );
-                final labelIds = extractStringListValue(formValues, 'labelIds');
-                final selectedLabels = availableLabels
-                    .where((l) => labelIds.contains(l.id))
-                    .toList(growable: false);
+                final valueIds = extractStringListValue(formValues, 'valueIds');
 
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.create(
@@ -189,7 +183,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                     startDate: startDate,
                     deadlineDate: deadlineDate,
                     repeatIcalRrule: repeatIcalRrule,
-                    labels: selectedLabels,
+                    valueIds: valueIds,
                   ),
                 );
               },
@@ -197,11 +191,11 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               onClose: () => Navigator.of(context).maybePop(),
             );
           },
-          loadSuccess: (availableLabels, project) {
+          loadSuccess: (availableValues, project) {
             return ProjectForm(
               initialData: project,
               formKey: _formKey,
-              availableLabels: availableLabels,
+              availableValues: availableValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;
@@ -226,10 +220,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                   formValues,
                   'deadlineDate',
                 );
-                final labelIds = extractStringListValue(formValues, 'labelIds');
-                final selectedLabels = availableLabels
-                    .where((l) => labelIds.contains(l.id))
-                    .toList(growable: false);
+                final valueIds = extractStringListValue(formValues, 'valueIds');
 
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.update(
@@ -240,7 +231,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                     startDate: startDate,
                     deadlineDate: deadlineDate,
                     repeatIcalRrule: repeatIcalRrule,
-                    labels: selectedLabels,
+                    valueIds: valueIds,
                   ),
                 );
               },

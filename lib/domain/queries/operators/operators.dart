@@ -7,4 +7,4 @@ library;
 
 export 'bool_comparison.dart';
 export 'date_comparison.dart';
-export 'label_comparison.dart';
+export 'value_comparison.dart';

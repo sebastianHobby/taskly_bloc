@@ -8,7 +8,6 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/queries/label_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
@@ -17,7 +16,6 @@ import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_p
 enum EntityTypeOption {
   task('Tasks', Icons.check_box_outlined),
   project('Projects', Icons.folder_outlined),
-  label('Labels', Icons.label_outlined),
   value('Values', Icons.star_outlined);
 
   const EntityTypeOption(this.displayName, this.icon);
@@ -302,7 +300,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
         entityType = switch (firstSection.config) {
           TaskDataConfig() => EntityTypeOption.task,
           ProjectDataConfig() => EntityTypeOption.project,
-          LabelDataConfig() => EntityTypeOption.label,
           ValueDataConfig() => EntityTypeOption.value,
           JournalDataConfig() => null, // Journal editing not yet supported
         };
@@ -395,9 +392,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
         EntityTypeOption.task => DataConfig.task(query: const TaskQuery()),
         EntityTypeOption.project => DataConfig.project(
           query: const ProjectQuery(),
-        ),
-        EntityTypeOption.label => DataConfig.label(
-          query: LabelQuery.labelsOnly(),
         ),
         EntityTypeOption.value => const DataConfig.value(),
       };

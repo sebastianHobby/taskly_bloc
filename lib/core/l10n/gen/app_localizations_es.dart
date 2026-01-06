@@ -90,6 +90,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get labelNotFound => 'No se encontró la etiqueta.';
 
   @override
+  String get valueNotFound => 'Value not found.';
+
+  @override
   String get taskFilterAll => 'Todas las tareas';
 
   @override
@@ -977,5 +980,45 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String daysFormat(int count) {
     return '$count días';
+  }
+
+  @override
+  String get personaTitle => 'Persona';
+
+  @override
+  String get dailyTaskLimitLabel => 'Daily Task Limit';
+
+  @override
+  String get dailyTaskLimitHelper => 'Maximum number of tasks to schedule per day';
+
+  @override
+  String get strategyTitle => 'Strategy';
+
+  @override
+  String get enableNeglectWeightingLabel => 'Enable Neglect Weighting';
+
+  @override
+  String get enableNeglectWeightingHelper => 'Prioritize tasks that have been neglected';
+
+  @override
+  String get displayTitle => 'Display';
+
+  @override
+  String get showOrphanTaskCountLabel => 'Show Orphan Task Count';
+
+  @override
+  String get showProjectNextTaskLabel => 'Show Project Next Task';
+
+  @override
+  String get settingsSaved => 'Settings saved';
+
+  @override
+  String settingsSaveError(Object error) {
+    return 'Error saving settings: $error';
+  }
+
+  @override
+  String settingsLoadError(Object error) {
+    return 'Error loading settings: $error';
   }
 }

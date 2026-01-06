@@ -3,7 +3,7 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/occurrence_data.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 
@@ -597,11 +597,11 @@ void main() {
 
       test('returns completion days for label', () {
         final now = DateTime.now();
-        final targetLabel = TestData.label(id: 'urgent-label');
+        final targetValue = TestData.value(id: 'urgent-label');
         final tasks = [
           TestData.task(
             id: '1',
-            labels: [targetLabel],
+            values: [targetValue],
             completed: true,
             occurrence: OccurrenceData(
               date: now.subtract(const Duration(days: 1)),
@@ -611,7 +611,7 @@ void main() {
           ),
           TestData.task(
             id: '2',
-            labels: [TestData.label(id: 'other-label')],
+            values: [TestData.value(id: 'other-label')],
             completed: true,
             occurrence: OccurrenceData(
               date: now,
@@ -629,7 +629,7 @@ void main() {
         final result = calculator.getTaskDaysForEntity(
           tasks: tasks,
           entityId: 'urgent-label',
-          entityType: EntityType.label,
+          entityType: EntityType.value,
           range: range,
         );
 
@@ -638,14 +638,14 @@ void main() {
 
       test('returns completion days for value (same as label)', () {
         final now = DateTime.now();
-        final valueLabel = TestData.label(
+        final targetValue = TestData.value(
           id: 'high-value',
-          type: LabelType.value,
+          priority: ValuePriority.medium,
         );
         final tasks = [
           TestData.task(
             id: '1',
-            labels: [valueLabel],
+            values: [targetValue],
             completed: true,
             occurrence: OccurrenceData(
               date: now.subtract(const Duration(days: 1)),

@@ -40,7 +40,7 @@ void main() {
       );
 
       testScreen3 = ScreenWithPreferences(
-        screen: SystemScreenDefinitions.planned,
+        screen: SystemScreenDefinitions.scheduled,
         preferences: const ScreenPreferences(sortOrder: 2),
       );
 

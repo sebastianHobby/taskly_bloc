@@ -5,7 +5,6 @@ library;
 enum RuleType {
   date,
   boolean,
-  labels,
   project,
   value,
 }

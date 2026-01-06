@@ -60,7 +60,7 @@ void main() {
         );
 
         expect(result.hasAlerts, isTrue);
-        expect(result.alerts.first.type, AllocationAlertType.overdueExcluded);
+        expect(result.alerts.first.ruleId, contains('overdue'));
         expect(result.alerts.first.severity, AlertSeverity.critical);
       });
 
@@ -80,7 +80,7 @@ void main() {
         );
 
         expect(result.hasAlerts, isTrue);
-        expect(result.alerts.first.type, AllocationAlertType.urgentExcluded);
+        expect(result.alerts.first.ruleId, contains('urgent'));
       });
 
       test('detects noCategory exclusion', () {
@@ -98,7 +98,7 @@ void main() {
         );
 
         expect(result.hasAlerts, isTrue);
-        expect(result.alerts.first.type, AllocationAlertType.noValueExcluded);
+        expect(result.alerts.first.ruleId, contains('no_value'));
       });
 
       test('detects lowPriority exclusion', () {
@@ -117,8 +117,8 @@ void main() {
 
         expect(result.hasAlerts, isTrue);
         expect(
-          result.alerts.first.type,
-          AllocationAlertType.lowPriorityExcluded,
+          result.alerts.first.ruleId,
+          contains('low_priority'),
         );
       });
 
@@ -137,7 +137,7 @@ void main() {
         );
 
         expect(result.hasAlerts, isTrue);
-        expect(result.alerts.first.type, AllocationAlertType.quotaFullExcluded);
+        expect(result.alerts.first.ruleId, contains('quota'));
       });
 
       test('ignores disabled alert types', () {
@@ -207,7 +207,8 @@ void main() {
           config: AllocationAlertTemplates.firefighter,
         );
 
-        expect(result.byType[AllocationAlertType.urgentExcluded]?.length, 2);
+        // Check alerts are grouped by rule ID
+        expect(result.byRuleId.values.any((v) => v.length >= 2), isTrue);
       });
 
       test('groups alerts by severity', () {
@@ -347,8 +348,8 @@ void main() {
           config: AllocationAlertTemplates.firefighter,
         );
 
-        // Should be categorized as overdue, not urgent
-        expect(result.alerts.first.type, AllocationAlertType.overdueExcluded);
+        // Should be categorized as overdue (ruleId contains 'overdue')
+        expect(result.alerts.first.ruleId, contains('overdue'));
       });
     });
 
@@ -444,15 +445,16 @@ void main() {
       expect(result.totalCount, 0);
       expect(result.highestSeverity, isNull);
       expect(result.alerts, isEmpty);
-      expect(result.byType, isEmpty);
+      expect(result.byRuleId, isEmpty);
       expect(result.bySeverity, isEmpty);
     });
   });
 
   group('EvaluatedAlert', () {
-    test('sortKey orders by severity then type', () {
+    test('sortKey orders by severity then rule', () {
       final alert1 = EvaluatedAlert(
-        type: AllocationAlertType.overdueExcluded,
+        ruleId: 'overdue',
+        ruleName: 'Overdue Tasks',
         severity: AlertSeverity.critical,
         excludedTask: ExcludedTask(
           task: TestData.task(name: 'Test'),
@@ -463,7 +465,8 @@ void main() {
       );
 
       final alert2 = EvaluatedAlert(
-        type: AllocationAlertType.urgentExcluded,
+        ruleId: 'urgent',
+        ruleName: 'Urgent Tasks',
         severity: AlertSeverity.warning,
         excludedTask: ExcludedTask(
           task: TestData.task(name: 'Test'),

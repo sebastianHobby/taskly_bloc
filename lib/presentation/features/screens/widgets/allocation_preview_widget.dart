@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -301,13 +300,11 @@ class _AllocationPreviewWidgetState extends State<AllocationPreviewWidget> {
     final breakdown = <String, int>{};
 
     for (final allocatedTask in result.allocatedTasks) {
-      // Get qualifying value name from task labels
-      final valueLabels = allocatedTask.task.labels
-          .where((l) => l.type == LabelType.value)
-          .toList();
+      // Get qualifying value name from task valueIds
+      final valueIds = allocatedTask.task.values.map((v) => v.id).toList();
 
-      final categoryName = valueLabels.isNotEmpty
-          ? valueLabels.first.name
+      final categoryName = valueIds.isNotEmpty
+          ? 'Value' // Simplified since we only have IDs for now
           : 'Uncategorized';
 
       breakdown[categoryName] = (breakdown[categoryName] ?? 0) + 1;

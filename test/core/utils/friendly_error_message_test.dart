@@ -87,13 +87,13 @@ void main() {
       verify(() => mockL10n.projectNotFound).called(1);
     });
 
-    test('returns localized message for NotFoundEntity.label', () {
-      const error = NotFoundEntity.label;
+    test('returns localized message for NotFoundEntity.value', () {
+      const error = NotFoundEntity.value;
 
       final result = friendlyErrorMessageForUi(error, mockL10n);
 
-      expect(result, 'Label not found');
-      verify(() => mockL10n.labelNotFound).called(1);
+      expect(result, 'Value not found');
+      verify(() => mockL10n.valueNotFound).called(1);
     });
 
     test('returns message for RepositoryException', () {

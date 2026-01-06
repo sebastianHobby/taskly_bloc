@@ -8,22 +8,16 @@ import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dar
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
 
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
     this.defaultProjectId,
-    this.labelRepository,
     super.key,
   });
 
   final String? defaultProjectId;
-
-  /// Optional label repository for creating new labels/values inline.
-  /// If null, the "Add label/value" options won't be shown.
-  final LabelRepositoryContract? labelRepository;
 
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
@@ -75,7 +69,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
-          initialDataLoadSuccess: (availableProjects, availableLabels) =>
+          initialDataLoadSuccess: (availableProjects, availableValues) =>
               TaskForm(
                 formKey: _formKey,
                 onSubmit: () {
@@ -116,14 +110,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'valueIds',
                   );
-                  final tagIds = extractStringListValue(
-                    formValues,
-                    'tagIds',
-                  );
-                  final allLabelIds = [...valueIds, ...tagIds];
-                  final selectedLabels = availableLabels
-                      .where((l) => allLabelIds.contains(l.id))
-                      .toList();
 
                   context.read<TaskDetailBloc>().add(
                     TaskDetailEvent.create(
@@ -135,20 +121,20 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       projectId: projectId,
                       priority: priority,
                       repeatIcalRrule: repeatIcalRrule,
-                      labels: selectedLabels,
+                      valueIds: valueIds,
                     ),
                   );
                 },
                 submitTooltip: context.l10n.actionCreate,
                 availableProjects: availableProjects,
-                availableLabels: availableLabels,
+                availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
                 onClose: () => Navigator.of(context).maybePop(),
               ),
           loadSuccess:
               (
                 availableProjects,
-                availableLabels,
+                availableValues,
                 task,
               ) => TaskForm(
                 initialData: task,
@@ -190,14 +176,6 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                     formValues,
                     'valueIds',
                   );
-                  final tagIds = extractStringListValue(
-                    formValues,
-                    'tagIds',
-                  );
-                  final allLabelIds = [...valueIds, ...tagIds];
-                  final selectedLabels = availableLabels
-                      .where((l) => allLabelIds.contains(l.id))
-                      .toList();
 
                   context.read<TaskDetailBloc>().add(
                     TaskDetailEvent.update(
@@ -210,7 +188,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                       projectId: projectId,
                       priority: priority,
                       repeatIcalRrule: repeatIcalRrule,
-                      labels: selectedLabels,
+                      valueIds: valueIds,
                     ),
                   );
                 },
@@ -229,7 +207,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 },
                 submitTooltip: context.l10n.actionUpdate,
                 availableProjects: availableProjects,
-                availableLabels: availableLabels,
+                availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
                 onClose: () => Navigator.of(context).maybePop(),
               ),

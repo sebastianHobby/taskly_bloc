@@ -4,8 +4,24 @@ import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 
+/// Default number of days after which a task is considered stale.
+/// Should match the default in SoftGatesSettings.staleAfterDaysWithoutUpdates.
+const int kDefaultStaleThresholdDays = 30;
+
 /// Calculates task-related statistics
 class TaskStatsCalculator {
+  /// Creates a TaskStatsCalculator.
+  ///
+  /// [staleThresholdDays] controls how many days without activity makes a task
+  /// "stale". Should be set from SoftGatesSettings.staleAfterDaysWithoutUpdates
+  /// for consistency across the app. Defaults to 30 days.
+  TaskStatsCalculator({
+    this.staleThresholdDays = kDefaultStaleThresholdDays,
+  });
+
+  /// Number of days without activity before a task is considered stale.
+  final int staleThresholdDays;
+
   StatResult calculate({
     required List<Task> tasks,
     required TaskStatType statType,
@@ -87,7 +103,7 @@ class TaskStatsCalculator {
 
   StatResult _calculateStaleCount(List<Task> tasks) {
     final now = DateTime.now();
-    final staleThreshold = now.subtract(const Duration(days: 14));
+    final staleThreshold = now.subtract(Duration(days: staleThresholdDays));
 
     final stale = tasks.where((t) {
       if (t.completed) return false;
@@ -99,7 +115,7 @@ class TaskStatsCalculator {
       label: 'Stale Tasks',
       value: stale,
       formattedValue: '$stale',
-      description: 'No activity for 14+ days',
+      description: 'No activity for $staleThresholdDays+ days',
       severity: stale > 0 ? StatSeverity.warning : StatSeverity.normal,
     );
   }
@@ -215,10 +231,7 @@ class TaskStatsCalculator {
       return switch (entityType) {
         EntityType.task => t.id == entityId,
         EntityType.project => t.projectId == entityId,
-        EntityType.label => t.labels.any((l) => l.id == entityId),
-        EntityType.value => t.labels.any(
-          (l) => l.id == entityId,
-        ), // Values are also labels
+        EntityType.value => t.values.any((v) => v.id == entityId),
       };
     }).toList();
 

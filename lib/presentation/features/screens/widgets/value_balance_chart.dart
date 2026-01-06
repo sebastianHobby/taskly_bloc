@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 

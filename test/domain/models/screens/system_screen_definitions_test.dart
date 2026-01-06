@@ -94,8 +94,8 @@ void main() {
           SystemScreenDefinitions.inbox,
         );
         expect(
-          SystemScreenDefinitions.getByKey('planned'),
-          SystemScreenDefinitions.planned,
+          SystemScreenDefinitions.getByKey('scheduled'),
+          SystemScreenDefinitions.scheduled,
         );
       });
 

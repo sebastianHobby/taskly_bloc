@@ -154,7 +154,7 @@ void main() {
           ScreenCategory.workspace,
         );
         expect(
-          SystemScreenDefinitions.planned.category,
+          SystemScreenDefinitions.scheduled.category,
           ScreenCategory.workspace,
         );
         expect(

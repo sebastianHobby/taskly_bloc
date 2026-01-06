@@ -12,8 +12,8 @@ enum EntityType {
   task,
   @JsonValue('project')
   project,
-  @JsonValue('label')
-  label,
+  @JsonValue('value')
+  value,
   @JsonValue('goal')
   goal,
   @JsonValue('journal')

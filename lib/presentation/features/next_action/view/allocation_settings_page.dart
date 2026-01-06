@@ -100,17 +100,21 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       _dailyTaskLimit = settings.dailyLimit;
 
       // Strategy settings
-      _urgentTaskBehavior = settings.urgentTaskBehavior;
-      _taskUrgencyThresholdDays = settings.taskUrgencyThresholdDays;
-      _projectUrgencyThresholdDays = settings.projectUrgencyThresholdDays;
-      _urgencyBoostMultiplier = settings.urgencyBoostMultiplier;
-      _enableNeglectWeighting = settings.enableNeglectWeighting;
-      _neglectLookbackDays = settings.neglectLookbackDays;
-      _neglectInfluence = settings.neglectInfluence;
+      _urgentTaskBehavior = settings.strategySettings.urgentTaskBehavior;
+      _taskUrgencyThresholdDays =
+          settings.strategySettings.taskUrgencyThresholdDays;
+      _projectUrgencyThresholdDays =
+          settings.strategySettings.projectUrgencyThresholdDays;
+      _urgencyBoostMultiplier =
+          settings.strategySettings.urgencyBoostMultiplier;
+      _enableNeglectWeighting =
+          settings.strategySettings.enableNeglectWeighting;
+      _neglectLookbackDays = settings.strategySettings.neglectLookbackDays;
+      _neglectInfluence = settings.strategySettings.neglectInfluence;
 
       // Display settings
-      _showOrphanTaskCount = settings.showOrphanTaskCount;
-      _showProjectNextTask = settings.showProjectNextTask;
+      _showOrphanTaskCount = settings.displaySettings.showOrphanTaskCount;
+      _showProjectNextTask = settings.displaySettings.showProjectNextTask;
 
       _recalculateRankedValues(ranking, values);
     } catch (e, s) {
@@ -166,15 +170,19 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       final newSettings = AllocationConfig(
         persona: _persona,
         dailyLimit: _dailyTaskLimit,
-        urgentTaskBehavior: _urgentTaskBehavior,
-        taskUrgencyThresholdDays: _taskUrgencyThresholdDays,
-        projectUrgencyThresholdDays: _projectUrgencyThresholdDays,
-        urgencyBoostMultiplier: _urgencyBoostMultiplier,
-        enableNeglectWeighting: _enableNeglectWeighting,
-        neglectLookbackDays: _neglectLookbackDays,
-        neglectInfluence: _neglectInfluence,
-        showOrphanTaskCount: _showOrphanTaskCount,
-        showProjectNextTask: _showProjectNextTask,
+        strategySettings: StrategySettings(
+          urgentTaskBehavior: _urgentTaskBehavior,
+          taskUrgencyThresholdDays: _taskUrgencyThresholdDays,
+          projectUrgencyThresholdDays: _projectUrgencyThresholdDays,
+          urgencyBoostMultiplier: _urgencyBoostMultiplier,
+          enableNeglectWeighting: _enableNeglectWeighting,
+          neglectLookbackDays: _neglectLookbackDays,
+          neglectInfluence: _neglectInfluence,
+        ),
+        displaySettings: DisplaySettings(
+          showOrphanTaskCount: _showOrphanTaskCount,
+          showProjectNextTask: _showProjectNextTask,
+        ),
       );
 
       await _settingsRepo.save(SettingsKey.allocation, newSettings);
@@ -196,14 +204,14 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Settings saved')),
+          SnackBar(content: Text(context.l10n.settingsSaved)),
         );
         setState(() => _hasChanges = false);
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving settings: $e')),
+          SnackBar(content: Text(context.l10n.settingsSaveError(e))),
         );
       }
     } finally {
@@ -215,11 +223,9 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
   void _onValueReordered(int oldIndex, int newIndex) {
     setState(() {
-      if (oldIndex < newIndex) {
-        newIndex -= 1;
-      }
+      final adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
       final item = _rankedValues.removeAt(oldIndex);
-      _rankedValues.insert(newIndex, item);
+      _rankedValues.insert(adjustedNewIndex, item);
 
       // Update isRanked status based on position
       // For now, assume all items in the list are ranked if they have weight > 0
@@ -289,14 +295,20 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
               ],
             ),
             const SizedBox(height: 16),
-            PersonaSelectionCard(
-              selectedPersona: _persona,
-              onChanged: (p) {
-                setState(() {
-                  _persona = p;
-                  _hasChanges = true;
-                });
-              },
+            ...AllocationPersona.values.map(
+              (persona) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: PersonaSelectionCard(
+                  persona: persona,
+                  isSelected: _persona == persona,
+                  onTap: () {
+                    setState(() {
+                      _persona = persona;
+                      _hasChanges = true;
+                    });
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextFormField(

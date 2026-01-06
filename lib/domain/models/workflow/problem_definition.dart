@@ -110,7 +110,7 @@ abstract class ProblemDefinition with _$ProblemDefinition {
       title: 'Idle Project',
       description: 'This project has no actionable tasks assigned to it.',
       severity: ProblemSeverity.medium,
-      applicableEntityTypes: [EntityType.project, EntityType.label],
+      applicableEntityTypes: [EntityType.project, EntityType.value],
       availableActions: [
         // Action to add task would be handled at UI level
       ],
@@ -122,7 +122,7 @@ abstract class ProblemDefinition with _$ProblemDefinition {
       description:
           'Your task allocation is weighted heavily toward some values.',
       severity: ProblemSeverity.low,
-      applicableEntityTypes: [EntityType.label],
+      applicableEntityTypes: [EntityType.value],
       availableActions: [
         ProblemAction.pickValue(),
       ],

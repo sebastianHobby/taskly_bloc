@@ -94,6 +94,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     );
 
     if (screenType == null || !mounted) return;
+    if (!context.mounted) return;
 
     switch (screenType) {
       case _ScreenTypeChoice.list:
@@ -107,6 +108,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     BuildContext context, {
     ScreenDefinition? existingScreen,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => ScreenCreatorPage(
@@ -118,8 +120,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     );
 
     if ((result ?? false) && mounted) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             existingScreen != null
@@ -135,6 +136,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     BuildContext context, {
     ScreenDefinition? existingScreen,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => FocusScreenCreatorPage(
@@ -148,8 +150,7 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     );
 
     if ((result ?? false) && mounted) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             existingScreen != null
@@ -608,7 +609,6 @@ class _ScreenMetadata extends StatelessWidget {
         return switch (section.config) {
           TaskDataConfig() => 'Tasks',
           ProjectDataConfig() => 'Projects',
-          LabelDataConfig() => 'Labels',
           ValueDataConfig() => 'Values',
           JournalDataConfig() => 'Journal Entries',
         };

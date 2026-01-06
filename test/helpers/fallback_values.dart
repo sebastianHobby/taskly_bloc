@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_action.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
@@ -83,8 +84,8 @@ void registerAllFallbackValues() {
   // === Core Domain ===
   registerFallbackValue(TestData.task());
   registerFallbackValue(TestData.project());
-  registerFallbackValue(TestData.label());
-  registerFallbackValue(TestData.labelType());
+  registerFallbackValue(TestData.value());
+  registerFallbackValue(ValuePriority.medium);
   registerFallbackValue(TaskQuery.all());
   registerFallbackValue(PageKey.taskOverview);
 

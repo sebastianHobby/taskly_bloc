@@ -159,7 +159,7 @@ class BlocTestContext {
   BlocTestContext() {
     taskRepo = MockTaskRepositoryContract();
     projectRepo = MockProjectRepositoryContract();
-    labelRepo = MockLabelRepositoryContract();
+    valueRepo = MockValueRepositoryContract();
     settingsRepo = MockSettingsRepositoryContract();
     analyticsRepo = MockAnalyticsRepositoryContract();
     wellbeingRepo = MockWellbeingRepositoryContract();
@@ -169,7 +169,7 @@ class BlocTestContext {
   }
   late MockTaskRepositoryContract taskRepo;
   late MockProjectRepositoryContract projectRepo;
-  late MockLabelRepositoryContract labelRepo;
+  late MockValueRepositoryContract valueRepo;
   late MockSettingsRepositoryContract settingsRepo;
   late MockAnalyticsRepositoryContract analyticsRepo;
   late MockWellbeingRepositoryContract wellbeingRepo;
@@ -177,7 +177,7 @@ class BlocTestContext {
   void _stubDefaultBehaviors() {
     // Empty lists for get operations
     when(() => projectRepo.getAll()).thenAnswer((_) async => []);
-    when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+    when(() => valueRepo.getAll()).thenAnswer((_) async => []);
   }
 
   /// Stub common task repository operations with default behaviors
@@ -193,7 +193,7 @@ class BlocTestContext {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          labelIds: any(named: 'labelIds'),
+          valueIds: any(named: 'valueIds'),
         ),
       ).thenThrow(Exception('update failed'));
     } else {
@@ -207,7 +207,7 @@ class BlocTestContext {
           deadlineDate: any(named: 'deadlineDate'),
           projectId: any(named: 'projectId'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          labelIds: any(named: 'labelIds'),
+          valueIds: any(named: 'valueIds'),
         ),
       ).thenAnswer((_) async {});
     }
@@ -217,7 +217,7 @@ class BlocTestContext {
         name: any(named: 'name'),
         description: any(named: 'description'),
         projectId: any(named: 'projectId'),
-        labelIds: any(named: 'labelIds'),
+        valueIds: any(named: 'valueIds'),
       ),
     ).thenAnswer((_) async {});
 
@@ -256,7 +256,7 @@ class BlocTestContext {
           startDate: any(named: 'startDate'),
           deadlineDate: any(named: 'deadlineDate'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          labelIds: any(named: 'labelIds'),
+          valueIds: any(named: 'valueIds'),
         ),
       ).thenThrow(Exception('create failed'));
     } else {
@@ -268,7 +268,7 @@ class BlocTestContext {
           startDate: any(named: 'startDate'),
           deadlineDate: any(named: 'deadlineDate'),
           repeatIcalRrule: any(named: 'repeatIcalRrule'),
-          labelIds: any(named: 'labelIds'),
+          valueIds: any(named: 'valueIds'),
         ),
       ).thenAnswer((_) async {});
     }
@@ -323,7 +323,7 @@ extension BlocTestContextExtensions on BlocTestContext {
     when(() => taskRepo.watchAll()).thenAnswer((_) => Stream.value([]));
     when(() => projectRepo.watchAll()).thenAnswer((_) => Stream.value([]));
     when(() => projectRepo.getAll()).thenAnswer((_) async => []);
-    when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+    when(() => valueRepo.getAll()).thenAnswer((_) async => []);
   }
 
   /// Stub all repositories to throw the specified error.
@@ -333,7 +333,7 @@ extension BlocTestContextExtensions on BlocTestContext {
     when(() => taskRepo.watchAll()).thenThrow(error);
     when(() => projectRepo.watchAll()).thenThrow(error);
     when(() => projectRepo.getAll()).thenThrow(error);
-    when(() => labelRepo.getAll()).thenThrow(error);
+    when(() => valueRepo.getAll()).thenThrow(error);
   }
 
   /// Verify no unexpected repository calls were made.
@@ -343,7 +343,7 @@ extension BlocTestContextExtensions on BlocTestContext {
   void verifyNoMoreRepoInteractions() {
     verifyNoMoreInteractions(taskRepo);
     verifyNoMoreInteractions(projectRepo);
-    verifyNoMoreInteractions(labelRepo);
+    verifyNoMoreInteractions(valueRepo);
   }
 
   /// Stub task repository to return specific tasks.
@@ -359,9 +359,9 @@ extension BlocTestContextExtensions on BlocTestContext {
     when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
   }
 
-  /// Stub label repository to return specific labels.
-  void stubLabelsReturn(List<Label> labels) {
-    when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+  /// Stub value repository to return specific values.
+  void stubValuesReturn(List<Value> values) {
+    when(() => valueRepo.getAll()).thenAnswer((_) async => values);
   }
 
   /// Stub a single task by ID.
@@ -382,7 +382,7 @@ extension BlocTestContextExtensions on BlocTestContext {
         projectId: any(named: 'projectId'),
         repeatIcalRrule: any(named: 'repeatIcalRrule'),
         repeatFromCompletion: any(named: 'repeatFromCompletion'),
-        labelIds: any(named: 'labelIds'),
+        valueIds: any(named: 'valueIds'),
       ),
     ).thenAnswer((_) async {});
   }
@@ -400,7 +400,7 @@ extension BlocTestContextExtensions on BlocTestContext {
         projectId: any(named: 'projectId'),
         repeatIcalRrule: any(named: 'repeatIcalRrule'),
         repeatFromCompletion: any(named: 'repeatFromCompletion'),
-        labelIds: any(named: 'labelIds'),
+        valueIds: any(named: 'valueIds'),
       ),
     ).thenAnswer((_) async {});
   }

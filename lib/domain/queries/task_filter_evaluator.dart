@@ -37,7 +37,7 @@ class TaskFilterEvaluator {
       TaskBoolPredicate() => _evalBool(task, predicate),
       TaskDatePredicate() => _evalDate(task, predicate, ctx),
       TaskProjectPredicate() => _evalProject(task, predicate),
-      TaskLabelPredicate() => _evalLabel(task, predicate),
+      TaskValuePredicate() => _evalValue(task, predicate),
     };
   }
 
@@ -59,14 +59,16 @@ class TaskFilterEvaluator {
     };
   }
 
-  bool _evalLabel(Task task, TaskLabelPredicate p) {
-    final ids = task.labels
-        .where((l) => l.type == p.labelType)
-        .map((l) => l.id)
-        .toSet();
-    return LabelComparison.evaluate(
-      entityLabelIds: ids,
-      predicateLabelIds: p.labelIds,
+  bool _evalValue(Task task, TaskValuePredicate p) {
+    final ids = <String>{...task.values.map((v) => v.id)};
+
+    if (p.includeInherited && task.project != null) {
+      ids.addAll(task.project!.values.map((v) => v.id));
+    }
+
+    return ValueComparison.evaluate(
+      entityValueIds: ids,
+      predicateValueIds: p.valueIds,
       operator: p.operator,
     );
   }

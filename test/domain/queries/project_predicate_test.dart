@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, LabelOperator, RelativeComparison;
+    show BoolOperator, DateOperator, RelativeComparison, ValueOperator;
 
 import '../../helpers/fallback_values.dart';
 
@@ -42,20 +41,19 @@ void main() {
         expect(datePred.operator, DateOperator.onOrBefore);
       });
 
-      test('parses label predicate', () {
+      test('parses value predicate', () {
         final json = <String, dynamic>{
-          'type': 'label',
+          'type': 'value',
           'operator': 'hasAny',
-          'labelType': 'label',
-          'labelIds': ['label-1', 'label-2'],
+          'valueIds': ['value-1', 'value-2'],
         };
 
         final predicate = ProjectPredicate.fromJson(json);
 
-        expect(predicate, isA<ProjectLabelPredicate>());
-        final labelPred = predicate as ProjectLabelPredicate;
-        expect(labelPred.operator, LabelOperator.hasAny);
-        expect(labelPred.labelIds, ['label-1', 'label-2']);
+        expect(predicate, isA<ProjectValuePredicate>());
+        final valuePred = predicate as ProjectValuePredicate;
+        expect(valuePred.operator, ValueOperator.hasAny);
+        expect(valuePred.valueIds, ['value-1', 'value-2']);
       });
 
       test('throws for unknown type', () {

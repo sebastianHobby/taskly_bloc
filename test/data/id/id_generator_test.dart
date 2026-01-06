@@ -270,15 +270,15 @@ void main() {
         });
       });
 
-      group('taskLabelId', () {
-        test('generates deterministic ID from task and label', () {
-          final id1 = idGenerator.taskLabelId(
+      group('taskValueId', () {
+        test('generates deterministic ID from task and value', () {
+          final id1 = idGenerator.taskValueId(
             taskId: 'task-1',
-            labelId: 'label-1',
+            valueId: 'value-1',
           );
-          final id2 = idGenerator.taskLabelId(
+          final id2 = idGenerator.taskValueId(
             taskId: 'task-1',
-            labelId: 'label-1',
+            valueId: 'value-1',
           );
 
           expect(id1, equals(id2));
@@ -286,13 +286,13 @@ void main() {
         });
 
         test('different tasks produce different IDs', () {
-          final id1 = idGenerator.taskLabelId(
+          final id1 = idGenerator.taskValueId(
             taskId: 'task-1',
-            labelId: 'label-1',
+            valueId: 'value-1',
           );
-          final id2 = idGenerator.taskLabelId(
+          final id2 = idGenerator.taskValueId(
             taskId: 'task-2',
-            labelId: 'label-1',
+            valueId: 'value-1',
           );
           expect(id1, isNot(equals(id2)));
         });

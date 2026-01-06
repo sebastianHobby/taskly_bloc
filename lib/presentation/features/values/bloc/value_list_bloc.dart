@@ -100,7 +100,7 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
       }
     }
 
-    final stream = _valueRepository.watchAllValues();
+    final stream = _valueRepository.watchAll();
 
     await subscribeToStream(emit, stream: stream, onData: _sortValues);
   }

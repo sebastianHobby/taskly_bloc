@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -95,7 +94,7 @@ class _UrgentBannerState extends State<UrgentBanner> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '${alert.excludedTask.task.title} - ${alert.reason}',
+                            '${alert.excludedTask.task.name} - ${alert.reason}',
                             style: TextStyle(
                               color: colorScheme.onSurfaceVariant,
                               fontSize: 13,
@@ -194,7 +193,7 @@ class _WarningBannerState extends State<WarningBanner> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '${alert.excludedTask.task.title} - ${alert.reason}',
+                            '${alert.excludedTask.task.name} - ${alert.reason}',
                             style: TextStyle(
                               color: Theme.of(
                                 context,

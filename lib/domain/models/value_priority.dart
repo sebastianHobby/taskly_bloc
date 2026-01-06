@@ -3,6 +3,7 @@ enum ValuePriority {
   medium(3),
   high(5);
 
-  final int weight;
   const ValuePriority(this.weight);
+
+  final int weight;
 }

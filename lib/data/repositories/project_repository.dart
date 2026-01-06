@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
@@ -207,7 +207,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     );
   }
 
-  Expression<bool>? _whereExpressionFromFilter(
+  drift_pkg.Expression<bool>? _whereExpressionFromFilter(
     QueryFilter<ProjectPredicate> filter,
     $ProjectTableTable p,
   ) {
@@ -219,25 +219,26 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   /// Creates the standard join query for projects with labels.
-  JoinedSelectStatement<HasResultSet, dynamic> _projectWithRelatedJoin({
+  drift_pkg.JoinedSelectStatement<drift_pkg.HasResultSet, dynamic>
+  _projectWithRelatedJoin({
     QueryFilter<ProjectPredicate>? filter,
   }) {
     final query = driftDb.select(driftDb.projectTable)
-      ..orderBy([(p) => OrderingTerm(expression: p.name)]);
+      ..orderBy([(p) => drift_pkg.OrderingTerm(expression: p.name)]);
 
     if (filter != null) {
       query.where((p) {
         final where = _whereExpressionFromFilter(filter, p);
-        return where ?? const Constant(true);
+        return where ?? const drift_pkg.Constant(true);
       });
     }
 
     return query.join([
-      leftOuterJoin(
+      drift_pkg.leftOuterJoin(
         driftDb.projectValuesTable,
         driftDb.projectValuesTable.projectId.equalsExp(driftDb.projectTable.id),
       ),
-      leftOuterJoin(
+      drift_pkg.leftOuterJoin(
         driftDb.valueTable,
         driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
       ),
@@ -250,13 +251,13 @@ class ProjectRepository implements ProjectRepositoryContract {
         (driftDb.select(
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.projectValuesTable,
             driftDb.projectValuesTable.projectId.equalsExp(
               driftDb.projectTable.id,
             ),
           ),
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.valueTable,
             driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
@@ -276,13 +277,13 @@ class ProjectRepository implements ProjectRepositoryContract {
         (driftDb.select(
           driftDb.projectTable,
         )..where((p) => p.id.equals(id))).join([
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.projectValuesTable,
             driftDb.projectValuesTable.projectId.equalsExp(
               driftDb.projectTable.id,
             ),
           ),
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.valueTable,
             driftDb.projectValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
@@ -316,16 +317,16 @@ class ProjectRepository implements ProjectRepositoryContract {
         (driftDb.select(
           driftDb.projectTable,
         )..where((p) => p.id.isIn(ids))).join([
-          leftOuterJoin(
-            driftDb.projectLabelsTable,
-            driftDb.projectLabelsTable.projectId.equalsExp(
+          drift_pkg.leftOuterJoin(
+            driftDb.projectValuesTable,
+            driftDb.projectValuesTable.projectId.equalsExp(
               driftDb.projectTable.id,
             ),
           ),
-          leftOuterJoin(
-            driftDb.labelTable,
-            driftDb.projectLabelsTable.labelId.equalsExp(
-              driftDb.labelTable.id,
+          drift_pkg.leftOuterJoin(
+            driftDb.valueTable,
+            driftDb.projectValuesTable.valueId.equalsExp(
+              driftDb.valueTable.id,
             ),
           ),
         ]);
@@ -337,6 +338,24 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
+  Future<List<Project>> getProjectsByValue(String valueId) async {
+    final joined = (driftDb.select(driftDb.projectTable).join([
+      drift_pkg.innerJoin(
+        driftDb.projectValuesTable,
+        driftDb.projectValuesTable.projectId.equalsExp(driftDb.projectTable.id),
+      ),
+    ])..where(driftDb.projectValuesTable.valueId.equals(valueId)));
+
+    final rows = await joined.get();
+    final projectIds = rows
+        .map((row) => row.readTable(driftDb.projectTable).id)
+        .toSet()
+        .toList();
+
+    return getProjectsByIds(projectIds);
+  }
+
+  @override
   Future<void> create({
     required String name,
     String? description,
@@ -345,6 +364,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    List<String>? valueIds,
     int? priority,
   }) async {
     talker.debug('[ProjectRepository] create: name="$name"');
@@ -357,19 +377,32 @@ class ProjectRepository implements ProjectRepositoryContract {
     await driftDb.transaction(() async {
       await _createProject(
         ProjectTableCompanion(
-          id: Value(id),
-          name: Value(name),
-          description: Value(description),
-          completed: Value(completed),
-          startDate: Value(normalizedStartDate),
-          deadlineDate: Value(normalizedDeadlineDate),
-          repeatIcalRrule: Value(repeatIcalRrule ?? ''),
-          repeatFromCompletion: Value(repeatFromCompletion),
-          priority: Value(priority),
-          createdAt: Value(now),
-          updatedAt: Value(now),
+          id: drift_pkg.Value(id),
+          name: drift_pkg.Value(name),
+          description: drift_pkg.Value(description),
+          completed: drift_pkg.Value(completed),
+          startDate: drift_pkg.Value(normalizedStartDate),
+          deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+          repeatIcalRrule: drift_pkg.Value(repeatIcalRrule ?? ''),
+          repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+          priority: drift_pkg.Value(priority),
+          createdAt: drift_pkg.Value(now),
+          updatedAt: drift_pkg.Value(now),
         ),
       );
+
+      if (valueIds != null && valueIds.isNotEmpty) {
+        for (final valueId in valueIds) {
+          await driftDb
+              .into(driftDb.projectValuesTable)
+              .insert(
+                ProjectValuesTableCompanion(
+                  projectId: drift_pkg.Value(id),
+                  valueId: drift_pkg.Value(valueId),
+                ),
+              );
+        }
+      }
     });
   }
 
@@ -383,6 +416,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    List<String>? valueIds,
     int? priority,
     bool? isPinned,
   }) async {
@@ -403,27 +437,44 @@ class ProjectRepository implements ProjectRepositoryContract {
     await driftDb.transaction(() async {
       await _updateProject(
         ProjectTableCompanion(
-          id: Value(id),
-          name: Value(name),
-          description: Value(description),
-          completed: Value(completed),
-          startDate: Value(normalizedStartDate),
-          deadlineDate: Value(normalizedDeadlineDate),
+          id: drift_pkg.Value(id),
+          name: drift_pkg.Value(name),
+          description: drift_pkg.Value(description),
+          completed: drift_pkg.Value(completed),
+          startDate: drift_pkg.Value(normalizedStartDate),
+          deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
           repeatIcalRrule: repeatIcalRrule == null
-              ? Value.absent()
-              : Value(repeatIcalRrule),
+              ? const drift_pkg.Value<String>.absent()
+              : drift_pkg.Value(repeatIcalRrule),
           repeatFromCompletion: repeatFromCompletion == null
-              ? Value.absent()
-              : Value(repeatFromCompletion),
-          priority: Value(priority),
+              ? const drift_pkg.Value<bool>.absent()
+              : drift_pkg.Value(repeatFromCompletion),
+          priority: drift_pkg.Value(priority),
           isPinned: isPinned == null
-              ? Value(existing.isPinned)
-              : Value(isPinned),
+              ? drift_pkg.Value(existing.isPinned)
+              : drift_pkg.Value(isPinned),
           // Preserve seriesEnded - only modified via dedicated methods
-          seriesEnded: Value.absent(),
-          updatedAt: Value(now),
+          seriesEnded: const drift_pkg.Value<bool>.absent(),
+          updatedAt: drift_pkg.Value(now),
         ),
       );
+
+      if (valueIds != null) {
+        await (driftDb.delete(
+          driftDb.projectValuesTable,
+        )..where((t) => t.projectId.equals(id))).go();
+
+        for (final valueId in valueIds) {
+          await driftDb
+              .into(driftDb.projectValuesTable)
+              .insert(
+                ProjectValuesTableCompanion(
+                  projectId: drift_pkg.Value(id),
+                  valueId: drift_pkg.Value(valueId),
+                ),
+              );
+        }
+      }
     });
   }
 
@@ -437,8 +488,8 @@ class ProjectRepository implements ProjectRepositoryContract {
       driftDb.projectTable,
     )..where((t) => t.id.equals(id))).write(
       ProjectTableCompanion(
-        isPinned: Value(isPinned),
-        updatedAt: Value(DateTime.now()),
+        isPinned: drift_pkg.Value(isPinned),
+        updatedAt: drift_pkg.Value(DateTime.now()),
       ),
     );
   }
@@ -446,7 +497,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   @override
   Future<void> delete(String id) async {
     talker.debug('[ProjectRepository] delete: id=$id');
-    await _deleteProject(ProjectTableCompanion(id: Value(id)));
+    await _deleteProject(ProjectTableCompanion(id: drift_pkg.Value(id)));
   }
 
   @override
@@ -467,8 +518,8 @@ class ProjectRepository implements ProjectRepositoryContract {
       driftDb.projectTable,
     )..where((p) => p.id.equals(id))).write(
       ProjectTableCompanion(
-        lastReviewedAt: Value(reviewedAt),
-        updatedAt: Value(DateTime.now()),
+        lastReviewedAt: drift_pkg.Value(reviewedAt),
+        updatedAt: drift_pkg.Value(DateTime.now()),
       ),
     );
   }

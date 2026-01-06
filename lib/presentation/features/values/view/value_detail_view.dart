@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
-import 'package:taskly_bloc/presentation/widgets/problem/friendly_error_message.dart';
+import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
@@ -110,15 +109,17 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     }
   }
 
-  void _onDelete(String id) {
-    DeleteConfirmation.show(
+  Future<void> _onDelete(String id) async {
+    final confirmed = await showDeleteConfirmationDialog(
       context: context,
       title: 'Delete Value?',
-      content: 'Are you sure you want to delete this value?',
-      onConfirm: () {
-        context.read<ValueDetailBloc>().add(ValueDetailEvent.delete(id: id));
-      },
+      itemName: 'this value',
+      description: 'Are you sure you want to delete this value?',
     );
+
+    if (confirmed && mounted) {
+      context.read<ValueDetailBloc>().add(ValueDetailEvent.delete(id: id));
+    }
   }
 
   @override
@@ -137,7 +138,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  FriendlyErrorMessage.fromException(
+                  friendlyErrorMessage(
                     failure.errorDetails.error,
                   ),
                 ),

@@ -269,7 +269,7 @@ void main() {
       test('copies with valueRanking change', () {
         const settings = AppSettings();
         const newRanking = ValueRanking(
-          items: [ValueRankItem(labelId: 'test', weight: 5)],
+          items: [ValueRankItem(valueId: 'test', weight: 5)],
         );
 
         final copied = settings.copyWith(valueRanking: newRanking);
@@ -336,7 +336,7 @@ void main() {
       test('updateValueRanking updates value ranking', () {
         const settings = AppSettings();
         const newRanking = ValueRanking(
-          items: [ValueRankItem(labelId: 'x', weight: 8)],
+          items: [ValueRankItem(valueId: 'x', weight: 8)],
         );
 
         final updated = settings.updateValueRanking(newRanking);
@@ -603,7 +603,7 @@ void main() {
         const settings1 = AppSettings();
         const settings2 = AppSettings(
           valueRanking: ValueRanking(
-            items: [ValueRankItem(labelId: 'x', weight: 5)],
+            items: [ValueRankItem(valueId: 'x', weight: 5)],
           ),
         );
 

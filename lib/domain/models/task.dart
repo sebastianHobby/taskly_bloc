@@ -29,6 +29,7 @@ class Task {
     this.lastReviewedAt,
     this.project,
     this.values = const <Value>[],
+    this.primaryValueId,
     this.occurrence,
   });
 
@@ -63,6 +64,12 @@ class Task {
   final Project? project;
   final List<Value> values;
 
+  /// The ID of the primary value for this task.
+  ///
+  /// Only one value can be primary per task. The primary value is used for
+  /// grouping in My Day view and determines the main color/category.
+  final String? primaryValueId;
+
   /// Occurrence-specific data. Only populated when this Task instance
   /// represents an expanded occurrence from `getOccurrences`/`watchOccurrences`.
   /// Null for base tasks retrieved via standard CRUD methods.
@@ -73,6 +80,21 @@ class Task {
 
   /// True if this task has a recurrence rule defined.
   bool get isRepeating => repeatIcalRrule?.isNotEmpty ?? false;
+
+  /// Returns the primary value if set and exists in the values list.
+  Value? get primaryValue {
+    if (primaryValueId == null) return null;
+    return values.cast<Value?>().firstWhere(
+      (v) => v?.id == primaryValueId,
+      orElse: () => null,
+    );
+  }
+
+  /// Returns all secondary (non-primary) values.
+  List<Value> get secondaryValues {
+    if (primaryValueId == null) return values;
+    return values.where((v) => v.id != primaryValueId).toList();
+  }
 
   /// Creates a copy of this Task with the given fields replaced.
   Task copyWith({
@@ -93,6 +115,7 @@ class Task {
     DateTime? lastReviewedAt,
     Project? project,
     List<Value>? values,
+    String? primaryValueId,
     OccurrenceData? occurrence,
   }) {
     return Task(
@@ -113,6 +136,7 @@ class Task {
       lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
       project: project ?? this.project,
       values: values ?? this.values,
+      primaryValueId: primaryValueId ?? this.primaryValueId,
       occurrence: occurrence ?? this.occurrence,
     );
   }
@@ -138,6 +162,7 @@ class Task {
         other.lastReviewedAt == lastReviewedAt &&
         other.project == project &&
         listEquals(other.values, values) &&
+        other.primaryValueId == primaryValueId &&
         other.occurrence == occurrence;
   }
 
@@ -160,6 +185,7 @@ class Task {
     lastReviewedAt,
     project,
     Object.hashAll(values),
+    primaryValueId,
     occurrence,
   );
 
@@ -167,6 +193,6 @@ class Task {
   String toString() {
     return 'Task(id: $id, name: $name, completed: $completed, isPinned: $isPinned, '
         'projectId: $projectId, values: ${values.length} values, '
-        'isOccurrence: $isOccurrenceInstance)';
+        'primaryValueId: $primaryValueId, isOccurrence: $isOccurrenceInstance)';
   }
 }

@@ -764,9 +764,9 @@ class TestData {
   /// Creates a ValueRule for filtering tasks by value labels.
   static ValueRule valueRule({
     ValueRuleOperator operator = ValueRuleOperator.hasAny,
-    List<String> labelIds = const [],
+    List<String> valueIds = const [],
   }) {
-    return ValueRule(operator: operator, labelIds: labelIds);
+    return ValueRule(operator: operator, valueIds: valueIds);
   }
 
   /// Creates a ProjectRule for filtering tasks by project.

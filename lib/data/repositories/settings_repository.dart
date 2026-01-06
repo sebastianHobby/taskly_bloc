@@ -354,7 +354,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     talker.repositoryLog(
       'Settings',
       '[ValueRanking] Deserialized: ${ranking.items.length} items - '
-          '${ranking.items.map((i) => "${i.labelId.substring(0, 8)}:w${i.weight}").join(", ")}',
+          '${ranking.items.map((i) => "${i.valueId.substring(0, 8)}:w${i.weight}").join(", ")}',
     );
     return ranking;
   }
@@ -421,7 +421,7 @@ class SettingsRepository implements SettingsRepositoryContract {
       'Settings',
       '[ValueRanking] _buildValueRankingCompanion:\n'
           '  items.length=${value.items.length}\n'
-          '  items=${value.items.map((i) => "${i.labelId.substring(0, 8)}:w${i.weight}").join(", ")}\n'
+          '  items=${value.items.map((i) => "${i.valueId.substring(0, 8)}:w${i.weight}").join(", ")}\n'
           '  JSON to save: $json',
     );
     return UserProfileTableCompanion(

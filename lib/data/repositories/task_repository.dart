@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
@@ -135,15 +135,15 @@ class TaskRepository implements TaskRepositoryContract {
     final joined =
         (driftDb.select(driftDb.taskTable)..where((t) => t.id.equals(id))).join(
           [
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.projectTable,
               driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
             ),
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.taskValuesTable,
               driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
             ),
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.valueTable,
               driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
             ),
@@ -164,15 +164,15 @@ class TaskRepository implements TaskRepositoryContract {
         (driftDb.select(
           driftDb.taskTable,
         )..where((t) => t.id.equals(taskId))).join([
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.projectTable,
             driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
           ),
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.taskValuesTable,
             driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
           ),
-          leftOuterJoin(
+          drift_pkg.leftOuterJoin(
             driftDb.valueTable,
             driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
           ),
@@ -203,15 +203,15 @@ class TaskRepository implements TaskRepositoryContract {
     final joined =
         (driftDb.select(driftDb.taskTable)..where((t) => t.id.isIn(ids))).join(
           [
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.projectTable,
               driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
             ),
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.taskValuesTable,
               driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
             ),
-            leftOuterJoin(
+            drift_pkg.leftOuterJoin(
               driftDb.valueTable,
               driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
             ),
@@ -232,6 +232,7 @@ class TaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    List<String>? valueIds,
   }) async {
     talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
     final now = DateTime.now();
@@ -245,22 +246,35 @@ class TaskRepository implements TaskRepositoryContract {
           .into(driftDb.taskTable)
           .insert(
             TaskTableCompanion(
-              id: Value(id),
-              name: Value(name),
-              description: Value(description),
-              completed: Value(completed),
-              startDate: Value(normalizedStartDate),
-              deadlineDate: Value(normalizedDeadlineDate),
-              projectId: Value(projectId),
-              priority: Value(priority),
+              id: drift_pkg.Value(id),
+              name: drift_pkg.Value(name),
+              description: drift_pkg.Value(description),
+              completed: drift_pkg.Value(completed),
+              startDate: drift_pkg.Value(normalizedStartDate),
+              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+              projectId: drift_pkg.Value(projectId),
+              priority: drift_pkg.Value(priority),
               repeatIcalRrule: repeatIcalRrule == null
-                  ? const Value.absent()
-                  : Value(repeatIcalRrule),
-              repeatFromCompletion: Value(repeatFromCompletion),
-              createdAt: Value(now),
-              updatedAt: Value(now),
+                  ? const drift_pkg.Value<String>.absent()
+                  : drift_pkg.Value(repeatIcalRrule),
+              repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+              createdAt: drift_pkg.Value(now),
+              updatedAt: drift_pkg.Value(now),
             ),
           );
+
+      if (valueIds != null && valueIds.isNotEmpty) {
+        for (final valueId in valueIds) {
+          await driftDb
+              .into(driftDb.taskValuesTable)
+              .insert(
+                TaskValuesTableCompanion(
+                  taskId: drift_pkg.Value(id),
+                  valueId: drift_pkg.Value(valueId),
+                ),
+              );
+        }
+      }
     });
   }
 
@@ -276,6 +290,7 @@ class TaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    List<String>? valueIds,
     bool? isPinned,
   }) async {
     talker.debug('[TaskRepository] update: id=$id, name="$name"');
@@ -297,29 +312,46 @@ class TaskRepository implements TaskRepositoryContract {
           .update(driftDb.taskTable)
           .replace(
             TaskTableCompanion(
-              id: Value(id),
-              name: Value(name),
-              description: Value(description),
-              completed: Value(completed),
-              startDate: Value(normalizedStartDate),
-              deadlineDate: Value(normalizedDeadlineDate),
-              projectId: Value(projectId),
-              priority: Value(priority),
+              id: drift_pkg.Value(id),
+              name: drift_pkg.Value(name),
+              description: drift_pkg.Value(description),
+              completed: drift_pkg.Value(completed),
+              startDate: drift_pkg.Value(normalizedStartDate),
+              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+              projectId: drift_pkg.Value(projectId),
+              priority: drift_pkg.Value(priority),
               isPinned: isPinned == null
-                  ? Value(existing.isPinned)
-                  : Value(isPinned),
+                  ? drift_pkg.Value(existing.isPinned)
+                  : drift_pkg.Value(isPinned),
               repeatIcalRrule: repeatIcalRrule == null
-                  ? const Value.absent()
-                  : Value(repeatIcalRrule),
+                  ? const drift_pkg.Value<String>.absent()
+                  : drift_pkg.Value(repeatIcalRrule),
               repeatFromCompletion: repeatFromCompletion == null
-                  ? Value(existing.repeatFromCompletion)
-                  : Value(repeatFromCompletion),
-              seriesEnded: Value(existing.seriesEnded),
-              lastReviewedAt: Value(existing.lastReviewedAt),
-              createdAt: Value(existing.createdAt),
-              updatedAt: Value(now),
+                  ? drift_pkg.Value(existing.repeatFromCompletion)
+                  : drift_pkg.Value(repeatFromCompletion),
+              seriesEnded: drift_pkg.Value(existing.seriesEnded),
+              lastReviewedAt: drift_pkg.Value(existing.lastReviewedAt),
+              createdAt: drift_pkg.Value(existing.createdAt),
+              updatedAt: drift_pkg.Value(now),
             ),
           );
+
+      if (valueIds != null) {
+        await (driftDb.delete(
+          driftDb.taskValuesTable,
+        )..where((t) => t.taskId.equals(id))).go();
+
+        for (final valueId in valueIds) {
+          await driftDb
+              .into(driftDb.taskValuesTable)
+              .insert(
+                TaskValuesTableCompanion(
+                  taskId: drift_pkg.Value(id),
+                  valueId: drift_pkg.Value(valueId),
+                ),
+              );
+        }
+      }
     });
   }
 
@@ -333,8 +365,8 @@ class TaskRepository implements TaskRepositoryContract {
       driftDb.taskTable,
     )..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
-        isPinned: Value(isPinned),
-        updatedAt: Value(DateTime.now()),
+        isPinned: drift_pkg.Value(isPinned),
+        updatedAt: drift_pkg.Value(DateTime.now()),
       ),
     );
   }
@@ -344,7 +376,7 @@ class TaskRepository implements TaskRepositoryContract {
     talker.debug('[TaskRepository] delete: id=$id');
     await driftDb
         .delete(driftDb.taskTable)
-        .delete(TaskTableCompanion(id: Value(id)));
+        .delete(TaskTableCompanion(id: drift_pkg.Value(id)));
   }
 
   @override
@@ -357,8 +389,8 @@ class TaskRepository implements TaskRepositoryContract {
       driftDb.taskTable,
     )..where((t) => t.id.equals(id))).write(
       TaskTableCompanion(
-        lastReviewedAt: Value(reviewedAt),
-        updatedAt: Value(DateTime.now()),
+        lastReviewedAt: drift_pkg.Value(reviewedAt),
+        updatedAt: drift_pkg.Value(DateTime.now()),
       ),
     );
   }
@@ -592,57 +624,59 @@ class TaskRepository implements TaskRepositoryContract {
     final select = driftDb.select(driftDb.taskTable);
 
     select.where((t) {
-      return _whereExpressionFromFilter(sqlFilter, t) ?? const Constant(true);
+      return _whereExpressionFromFilter(sqlFilter, t) ??
+          const drift_pkg.Constant(true);
     });
 
     // Apply ordering
     if (query.sortCriteria.isNotEmpty) {
-      final orderingFuncs = <OrderingTerm Function($TaskTableTable)>[];
+      final orderingFuncs =
+          <drift_pkg.OrderingTerm Function($TaskTableTable)>[];
       for (final criterion in query.sortCriteria) {
         switch (criterion.field) {
           case SortField.name:
             orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
+              ($TaskTableTable t) => drift_pkg.OrderingTerm(
                 expression: t.name,
                 mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
+                    ? drift_pkg.OrderingMode.asc
+                    : drift_pkg.OrderingMode.desc,
               ),
             );
           case SortField.startDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
+              ($TaskTableTable t) => drift_pkg.OrderingTerm(
                 expression: t.startDate,
                 mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
+                    ? drift_pkg.OrderingMode.asc
+                    : drift_pkg.OrderingMode.desc,
               ),
             );
           case SortField.deadlineDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
+              ($TaskTableTable t) => drift_pkg.OrderingTerm(
                 expression: t.deadlineDate,
                 mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
+                    ? drift_pkg.OrderingMode.asc
+                    : drift_pkg.OrderingMode.desc,
               ),
             );
           case SortField.createdDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
+              ($TaskTableTable t) => drift_pkg.OrderingTerm(
                 expression: t.createdAt,
                 mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
+                    ? drift_pkg.OrderingMode.asc
+                    : drift_pkg.OrderingMode.desc,
               ),
             );
           case SortField.updatedDate:
             orderingFuncs.add(
-              ($TaskTableTable t) => OrderingTerm(
+              ($TaskTableTable t) => drift_pkg.OrderingTerm(
                 expression: t.updatedAt,
                 mode: criterion.direction == SortDirection.ascending
-                    ? OrderingMode.asc
-                    : OrderingMode.desc,
+                    ? drift_pkg.OrderingMode.asc
+                    : drift_pkg.OrderingMode.desc,
               ),
             );
         }
@@ -652,15 +686,15 @@ class TaskRepository implements TaskRepositoryContract {
 
     // Build the join query - always include values for complete domain model
     final joinQuery = select.join([
-      leftOuterJoin(
+      drift_pkg.leftOuterJoin(
         driftDb.projectTable,
         driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
       ),
-      leftOuterJoin(
+      drift_pkg.leftOuterJoin(
         driftDb.taskValuesTable,
         driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
       ),
-      leftOuterJoin(
+      drift_pkg.leftOuterJoin(
         driftDb.valueTable,
         driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
       ),
@@ -721,7 +755,7 @@ class TaskRepository implements TaskRepositoryContract {
     return QueryFilter<TaskPredicate>(shared: shared, orGroups: orGroups);
   }
 
-  Expression<bool>? _whereExpressionFromFilter(
+  drift_pkg.Expression<bool>? _whereExpressionFromFilter(
     QueryFilter<TaskPredicate> filter,
     $TaskTableTable t,
   ) {

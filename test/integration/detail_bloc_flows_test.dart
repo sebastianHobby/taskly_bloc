@@ -6,7 +6,7 @@
 /// Tests focus on:
 /// - Task lifecycle (create → read → update → delete)
 /// - Project lifecycle (create → read → update → delete)
-/// - Label management flows
+/// - Value management flows
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -14,11 +14,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/presentation/features/labels/bloc/label_detail_bloc.dart';
+import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
@@ -33,7 +33,7 @@ class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Test Setup
@@ -43,18 +43,17 @@ void main() {
   setUpAll(() {
     initializeTalkerForTest();
     registerFallbackValue(const TaskQuery());
-    registerFallbackValue(LabelType.label);
   });
 
   group('Task Detail Bloc Integration', () {
     late MockTaskRepository mockTaskRepo;
     late MockProjectRepository mockProjectRepo;
-    late MockLabelRepository mockLabelRepo;
+    late MockValueRepository mockValueRepo;
 
     setUp(() {
       mockTaskRepo = MockTaskRepository();
       mockProjectRepo = MockProjectRepository();
-      mockLabelRepo = MockLabelRepository();
+      mockValueRepo = MockValueRepository();
     });
 
     blocTestSafe<TaskDetailBloc, TaskDetailState>(
@@ -68,12 +67,12 @@ void main() {
           () => mockTaskRepo.getById('task-1'),
         ).thenAnswer((_) async => task);
         when(() => mockProjectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => mockLabelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => mockValueRepo.getAll()).thenAnswer((_) async => []);
 
         return TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           taskId: 'task-1',
         );
       },
@@ -97,12 +96,12 @@ void main() {
           () => mockTaskRepo.getById('missing'),
         ).thenAnswer((_) async => null);
         when(() => mockProjectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => mockLabelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => mockValueRepo.getAll()).thenAnswer((_) async => []);
 
         return TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           taskId: 'missing',
         );
       },
@@ -116,7 +115,7 @@ void main() {
       'creates task successfully',
       build: () {
         when(() => mockProjectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => mockLabelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => mockValueRepo.getAll()).thenAnswer((_) async => []);
         when(
           () => mockTaskRepo.create(
             name: any(named: 'name'),
@@ -126,14 +125,14 @@ void main() {
             deadlineDate: any(named: 'deadlineDate'),
             projectId: any(named: 'projectId'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
-            labelIds: any(named: 'labelIds'),
+            valueIds: any(named: 'valueIds'),
           ),
         ).thenAnswer((_) async {});
 
         return TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           autoLoad: false,
         );
       },
@@ -172,12 +171,12 @@ void main() {
           () => mockTaskRepo.getById('task-1'),
         ).thenAnswer((_) async => task);
         when(() => mockProjectRepo.getAll()).thenAnswer((_) async => [project]);
-        when(() => mockLabelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => mockValueRepo.getAll()).thenAnswer((_) async => []);
 
         return TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           taskId: 'task-1',
         );
       },
@@ -193,33 +192,33 @@ void main() {
       'loads task with labels',
       build: () {
         final labels = [
-          TestData.label(id: 'label-1', name: 'Urgent'),
-          TestData.label(id: 'label-2', name: 'Important'),
+          TestData.value(id: 'label-1', name: 'Urgent'),
+          TestData.value(id: 'label-2', name: 'Important'),
         ];
         final task = TestData.task(
           id: 'task-1',
           name: 'Labeled Task',
-          labels: labels,
+          values: labels,
         );
 
         when(
           () => mockTaskRepo.getById('task-1'),
         ).thenAnswer((_) async => task);
         when(() => mockProjectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => mockLabelRepo.getAll()).thenAnswer((_) async => labels);
+        when(() => mockValueRepo.getAll()).thenAnswer((_) async => labels);
 
         return TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           taskId: 'task-1',
         );
       },
       expect: () => [
         isA<TaskDetailLoadInProgress>(),
         isA<TaskDetailLoadSuccess>()
-            .having((s) => s.task.labels.length, 'task labels', 2)
-            .having((s) => s.availableLabels.length, 'available labels', 2),
+            .having((s) => s.task.values.length, 'task values', 2)
+            .having((s) => s.availableValues.length, 'available values', 2),
       ],
     );
   });
@@ -229,7 +228,7 @@ void main() {
       'loads project successfully',
       build: () {
         final mockProjectRepo = MockProjectRepository();
-        final mockLabelRepo = MockLabelRepository();
+        final mockValueRepo = MockValueRepository();
         final project = TestData.project(
           id: 'project-1',
           name: 'Integration Test Project',
@@ -238,11 +237,11 @@ void main() {
         when(
           () => mockProjectRepo.getById(any()),
         ).thenAnswer((_) async => project);
-        when(mockLabelRepo.getAll).thenAnswer((_) async => []);
+        when(mockValueRepo.getAll).thenAnswer((_) async => []);
 
         return ProjectDetailBloc(
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
         );
       },
       act: (bloc) =>
@@ -261,16 +260,16 @@ void main() {
       'deletes project successfully',
       build: () {
         final mockProjectRepo = MockProjectRepository();
-        final mockLabelRepo = MockLabelRepository();
+        final mockValueRepo = MockValueRepository();
 
         when(
           () => mockProjectRepo.delete('project-1'),
         ).thenAnswer((_) async {});
-        when(mockLabelRepo.getAll).thenAnswer((_) async => []);
+        when(mockValueRepo.getAll).thenAnswer((_) async => []);
 
         return ProjectDetailBloc(
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
         );
       },
       act: (bloc) => bloc.add(const ProjectDetailEvent.delete(id: 'project-1')),
@@ -284,66 +283,68 @@ void main() {
     );
   });
 
-  group('Label Detail Bloc Integration', () {
-    late MockLabelRepository mockLabelRepo;
+  group('Value Detail Bloc Integration', () {
+    late MockValueRepository mockValueRepo;
 
     setUp(() {
-      mockLabelRepo = MockLabelRepository();
+      mockValueRepo = MockValueRepository();
     });
 
-    blocTestSafe<LabelDetailBloc, LabelDetailState>(
-      'loads label successfully',
+    blocTestSafe<ValueDetailBloc, ValueDetailState>(
+      'loads value successfully',
       build: () {
-        final label = TestData.label(
-          id: 'label-1',
-          name: 'Integration Test Label',
+        final value = TestData.value(
+          id: 'value-1',
+          name: 'Integration Test Value',
           color: '#FF0000',
         );
 
         when(
-          () => mockLabelRepo.getById('label-1'),
-        ).thenAnswer((_) async => label);
+          () => mockValueRepo.getById('value-1'),
+        ).thenAnswer((_) async => value);
 
-        return LabelDetailBloc(
-          labelRepository: mockLabelRepo,
-          labelId: 'label-1',
+        return ValueDetailBloc(
+          valueRepository: mockValueRepo,
+          valueId: 'value-1',
         );
       },
       expect: () => [
-        isA<LabelDetailLoadInProgress>(),
-        isA<LabelDetailLoadSuccess>().having(
-          (s) => s.label.name,
-          'label.name',
-          'Integration Test Label',
+        isA<ValueDetailLoadInProgress>(),
+        isA<ValueDetailLoadSuccess>().having(
+          (s) => s.value.name,
+          'value.name',
+          'Integration Test Value',
         ),
       ],
     );
 
-    blocTestSafe<LabelDetailBloc, LabelDetailState>(
-      'updates label successfully',
+    blocTestSafe<ValueDetailBloc, ValueDetailState>(
+      'updates value successfully',
       build: () {
         when(
-          () => mockLabelRepo.update(
+          () => mockValueRepo.update(
             id: any(named: 'id'),
             name: any(named: 'name'),
             color: any(named: 'color'),
-            type: any(named: 'type'),
+            priority: any(named: 'priority'),
             iconName: any(named: 'iconName'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async {
+          return;
+        });
 
-        return LabelDetailBloc(labelRepository: mockLabelRepo);
+        return ValueDetailBloc(valueRepository: mockValueRepo);
       },
       act: (bloc) => bloc.add(
-        const LabelDetailEvent.update(
-          id: 'label-1',
-          name: 'Updated Label',
+        const ValueDetailEvent.update(
+          id: 'value-1',
+          name: 'Updated Value',
           color: '#00FF00',
-          type: LabelType.label,
+          priority: ValuePriority.medium,
         ),
       ),
       expect: () => [
-        isA<LabelDetailOperationSuccess>().having(
+        isA<ValueDetailOperationSuccess>().having(
           (s) => s.operation,
           'operation',
           EntityOperation.update,
@@ -351,29 +352,31 @@ void main() {
       ],
     );
 
-    blocTestSafe<LabelDetailBloc, LabelDetailState>(
-      'creates label successfully',
+    blocTestSafe<ValueDetailBloc, ValueDetailState>(
+      'creates value successfully',
       build: () {
         when(
-          () => mockLabelRepo.create(
+          () => mockValueRepo.create(
             name: any(named: 'name'),
             color: any(named: 'color'),
-            type: any(named: 'type'),
+            priority: any(named: 'priority'),
             iconName: any(named: 'iconName'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async {
+          return;
+        });
 
-        return LabelDetailBloc(labelRepository: mockLabelRepo);
+        return ValueDetailBloc(valueRepository: mockValueRepo);
       },
       act: (bloc) => bloc.add(
-        const LabelDetailEvent.create(
-          name: 'New Label',
+        const ValueDetailEvent.create(
+          name: 'New Value',
           color: '#0000FF',
-          type: LabelType.value,
+          priority: ValuePriority.high,
         ),
       ),
       expect: () => [
-        isA<LabelDetailOperationSuccess>().having(
+        isA<ValueDetailOperationSuccess>().having(
           (s) => s.operation,
           'operation',
           EntityOperation.create,
@@ -381,16 +384,18 @@ void main() {
       ],
     );
 
-    blocTestSafe<LabelDetailBloc, LabelDetailState>(
-      'deletes label successfully',
+    blocTestSafe<ValueDetailBloc, ValueDetailState>(
+      'deletes value successfully',
       build: () {
-        when(() => mockLabelRepo.delete('label-1')).thenAnswer((_) async {});
+        when(() => mockValueRepo.delete('value-1')).thenAnswer((_) async {
+          return;
+        });
 
-        return LabelDetailBloc(labelRepository: mockLabelRepo);
+        return ValueDetailBloc(valueRepository: mockValueRepo);
       },
-      act: (bloc) => bloc.add(const LabelDetailEvent.delete(id: 'label-1')),
+      act: (bloc) => bloc.add(const ValueDetailEvent.delete(id: 'value-1')),
       expect: () => [
-        isA<LabelDetailOperationSuccess>().having(
+        isA<ValueDetailOperationSuccess>().having(
           (s) => s.operation,
           'operation',
           EntityOperation.delete,

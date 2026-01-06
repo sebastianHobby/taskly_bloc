@@ -55,9 +55,9 @@ void main() {
         expect(project.seriesEnded, true);
       });
 
-      test('defaults labels to empty list', () {
+      test('defaults values to empty list', () {
         final project = TestData.project();
-        expect(project.labels, isEmpty);
+        expect(project.values, isEmpty);
       });
     });
 

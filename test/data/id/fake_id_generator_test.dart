@@ -66,20 +66,20 @@ void main() {
         expect(id, 'tracker-mood');
       });
 
-      test('taskLabelId generates based on task and label', () {
-        final id = idGenerator.taskLabelId(
+      test('taskValueId generates based on task and value', () {
+        final id = idGenerator.taskValueId(
           taskId: 'task-1',
-          labelId: 'label-1',
+          valueId: 'value-1',
         );
-        expect(id, 'task-label-task-1-label-1');
+        expect(id, 'task-value-task-1-value-1');
       });
 
-      test('projectLabelId generates based on project and label', () {
-        final id = idGenerator.projectLabelId(
+      test('projectValueId generates based on project and value', () {
+        final id = idGenerator.projectValueId(
           projectId: 'project-1',
-          labelId: 'label-1',
+          valueId: 'value-1',
         );
-        expect(id, 'project-label-project-1-label-1');
+        expect(id, 'project-value-project-1-value-1');
       });
 
       test('taskValueId generates based on task and value', () {

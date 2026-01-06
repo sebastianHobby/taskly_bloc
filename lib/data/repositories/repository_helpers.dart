@@ -1,27 +1,27 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' as drift_pkg;
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
-/// Converts aggregated label map to sorted domain Label list.
-List<Label> sortedLabelsFromMap(Map<String, LabelTableData>? labelMap) {
-  if (labelMap == null || labelMap.isEmpty) return const [];
+/// Converts aggregated value map to sorted domain Value list.
+List<Value> sortedValuesFromMap(Map<String, ValueTableData>? valueMap) {
+  if (valueMap == null || valueMap.isEmpty) return const [];
 
-  final sorted = labelMap.values.toList()
+  final sorted = valueMap.values.toList()
     ..sort((a, b) => a.name.compareTo(b.name));
 
-  return sorted.map(labelFromTable).toList();
+  return sorted.map(valueFromTable).toList();
 }
 
-/// Aggregated result for project queries with labels.
+/// Aggregated result for project queries with values.
 class ProjectAggregation {
-  /// Process join rows to aggregate projects with their labels.
+  /// Process join rows to aggregate projects with their values.
   factory ProjectAggregation.fromRows({
-    required Iterable<TypedResult> rows,
+    required Iterable<drift_pkg.TypedResult> rows,
     required AppDatabase driftDb,
   }) {
     final Map<String, ProjectTableData> projectsById = {};
-    final Map<String, Map<String, LabelTableData>> labelsByProject = {};
+    final Map<String, Map<String, ValueTableData>> valuesByProject = {};
 
     for (final row in rows) {
       final project = row.readTable(driftDb.projectTable);
@@ -29,32 +29,32 @@ class ProjectAggregation {
 
       projectsById.putIfAbsent(id, () => project);
 
-      final label = row.readTableOrNull(driftDb.labelTable);
-      if (label != null) {
-        labelsByProject
-            .putIfAbsent(id, () => <String, LabelTableData>{})
-            .putIfAbsent(label.id, () => label);
+      final value = row.readTableOrNull(driftDb.valueTable);
+      if (value != null) {
+        valuesByProject
+            .putIfAbsent(id, () => <String, ValueTableData>{})
+            .putIfAbsent(value.id, () => value);
       }
     }
 
     return ProjectAggregation._(
       projectsById: projectsById,
-      labelsByProject: labelsByProject,
+      valuesByProject: valuesByProject,
     );
   }
   ProjectAggregation._({
     required this.projectsById,
-    required this.labelsByProject,
+    required this.valuesByProject,
   });
 
   final Map<String, ProjectTableData> projectsById;
-  final Map<String, Map<String, LabelTableData>> labelsByProject;
+  final Map<String, Map<String, ValueTableData>> valuesByProject;
 
   /// Convert to list of domain Project objects.
   List<Project> toProjects() {
     return projectsById.entries.map((entry) {
-      final labels = sortedLabelsFromMap(labelsByProject[entry.key]);
-      return projectFromTable(entry.value, labels: labels);
+      final values = sortedValuesFromMap(valuesByProject[entry.key]);
+      return projectFromTable(entry.value, values: values);
     }).toList();
   }
 
@@ -64,21 +64,23 @@ class ProjectAggregation {
     if (projectsById.isEmpty) return null;
 
     final entry = projectsById.entries.first;
-    final labels = sortedLabelsFromMap(labelsByProject[entry.key]);
-    return projectFromTable(entry.value, labels: labels);
+    final values = sortedValuesFromMap(valuesByProject[entry.key]);
+    return projectFromTable(entry.value, values: values);
   }
 }
 
-/// Aggregated result for task queries with project and labels.
+/// Aggregated result for task queries with project and values.
+/// Todo - check if this is required anymore given repositories always return
+/// full Task objects with project and values populated.
 class TaskAggregation {
-  /// Process join rows to aggregate tasks with their project and labels.
+  /// Process join rows to aggregate tasks with their project and values.
   factory TaskAggregation.fromRows({
-    required Iterable<TypedResult> rows,
+    required Iterable<drift_pkg.TypedResult> rows,
     required AppDatabase driftDb,
   }) {
     final Map<String, TaskTableData> tasksById = {};
     final Map<String, ProjectTableData?> projectByTask = {};
-    final Map<String, Map<String, LabelTableData>> labelsByTask = {};
+    final Map<String, Map<String, ValueTableData>> valuesByTask = {};
 
     for (final row in rows) {
       final task = row.readTable(driftDb.taskTable);
@@ -91,35 +93,35 @@ class TaskAggregation {
         () => row.readTableOrNull(driftDb.projectTable),
       );
 
-      final label = row.readTableOrNull(driftDb.labelTable);
-      if (label != null) {
-        labelsByTask
-            .putIfAbsent(taskId, () => <String, LabelTableData>{})
-            .putIfAbsent(label.id, () => label);
+      final value = row.readTableOrNull(driftDb.valueTable);
+      if (value != null) {
+        valuesByTask
+            .putIfAbsent(taskId, () => <String, ValueTableData>{})
+            .putIfAbsent(value.id, () => value);
       }
     }
 
     return TaskAggregation._(
       tasksById: tasksById,
       projectByTask: projectByTask,
-      labelsByTask: labelsByTask,
+      valuesByTask: valuesByTask,
     );
   }
   TaskAggregation._({
     required this.tasksById,
     required this.projectByTask,
-    required this.labelsByTask,
+    required this.valuesByTask,
   });
 
   final Map<String, TaskTableData> tasksById;
   final Map<String, ProjectTableData?> projectByTask;
-  final Map<String, Map<String, LabelTableData>> labelsByTask;
+  final Map<String, Map<String, ValueTableData>> valuesByTask;
 
   /// Convert to list of domain Task objects.
   List<Task> toTasks() {
     return tasksById.entries.map((entry) {
       final id = entry.key;
-      final labels = sortedLabelsFromMap(labelsByTask[id]);
+      final values = sortedValuesFromMap(valuesByTask[id]);
       final projectTable = projectByTask[id];
       final project = projectTable == null
           ? null
@@ -128,7 +130,7 @@ class TaskAggregation {
       return taskFromTable(
         entry.value,
         project: project,
-        labels: labels,
+        values: values,
       );
     }).toList();
   }
@@ -140,7 +142,7 @@ class TaskAggregation {
 
     final entry = tasksById.entries.first;
     final id = entry.key;
-    final labels = sortedLabelsFromMap(labelsByTask[id]);
+    final values = sortedValuesFromMap(valuesByTask[id]);
     final projectTable = projectByTask[id];
     final project = projectTable == null
         ? null
@@ -149,7 +151,7 @@ class TaskAggregation {
     return taskFromTable(
       entry.value,
       project: project,
-      labels: labels,
+      values: values,
     );
   }
 }

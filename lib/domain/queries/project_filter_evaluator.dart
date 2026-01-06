@@ -40,7 +40,7 @@ class ProjectFilterEvaluator {
     return switch (p) {
       ProjectBoolPredicate() => _evalBool(project, p),
       ProjectDatePredicate() => _evalDate(project, p, ctx),
-      ProjectLabelPredicate() => _evalLabel(project, p),
+      ProjectValuePredicate() => _evalValue(project, p),
       ProjectIdPredicate() => _evalId(project, p),
     };
   }
@@ -52,14 +52,11 @@ class ProjectFilterEvaluator {
     return BoolComparison.evaluate(fieldValue: value, operator: p.operator);
   }
 
-  bool _evalLabel(Project project, ProjectLabelPredicate p) {
-    final ids = project.labels
-        .where((l) => l.type == p.labelType)
-        .map((l) => l.id)
-        .toSet();
-    return LabelComparison.evaluate(
-      entityLabelIds: ids,
-      predicateLabelIds: p.labelIds,
+  bool _evalValue(Project project, ProjectValuePredicate p) {
+    final ids = project.values.map((v) => v.id).toSet();
+    return ValueComparison.evaluate(
+      entityValueIds: ids,
+      predicateValueIds: p.valueIds,
       operator: p.operator,
     );
   }

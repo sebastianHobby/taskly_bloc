@@ -90,6 +90,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labelNotFound => 'Label not found.';
 
   @override
+  String get valueNotFound => 'Value not found.';
+
+  @override
   String get taskFilterAll => 'All tasks';
 
   @override
@@ -466,7 +469,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectStatusActive => 'Active';
 
   @override
-  String get deleteProjectAction => 'Delete project';
+  String get deleteProjectAction => 'Delete Project';
 
   @override
   String get markCompleteAction => 'Mark complete';
@@ -784,16 +787,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get valueRankingsTitle => 'Value Rankings';
 
   @override
-  String get valueRankingsDescription => 'Drag to reorder. Higher values get more focus tasks.';
+  String get valueRankingsDescription => 'Drag and drop to rank your values. Higher ranked values are prioritized in task allocation.';
 
   @override
-  String get noValuesForRanking => 'No values found. Create values in the Values screen.';
+  String get noValuesForRanking => 'No values available for ranking.';
 
   @override
   String get weightLabel => 'Weight';
 
   @override
-  String get notRankedDragToRank => 'Not ranked - drag to rank';
+  String get notRankedDragToRank => 'Not Ranked (Drag to rank)';
 
   @override
   String get recommendedNextActionLabel => 'Recommended Next Action';
@@ -977,5 +980,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String daysFormat(int count) {
     return '$count days';
+  }
+
+  @override
+  String get personaTitle => 'Persona';
+
+  @override
+  String get dailyTaskLimitLabel => 'Daily Task Limit';
+
+  @override
+  String get dailyTaskLimitHelper => 'Maximum number of tasks to schedule per day';
+
+  @override
+  String get strategyTitle => 'Strategy';
+
+  @override
+  String get enableNeglectWeightingLabel => 'Enable Neglect Weighting';
+
+  @override
+  String get enableNeglectWeightingHelper => 'Prioritize tasks that have been neglected';
+
+  @override
+  String get displayTitle => 'Display';
+
+  @override
+  String get showOrphanTaskCountLabel => 'Show Orphan Task Count';
+
+  @override
+  String get showProjectNextTaskLabel => 'Show Project Next Task';
+
+  @override
+  String get settingsSaved => 'Settings saved';
+
+  @override
+  String settingsSaveError(Object error) {
+    return 'Error saving settings: $error';
+  }
+
+  @override
+  String settingsLoadError(Object error) {
+    return 'Error loading settings: $error';
   }
 }

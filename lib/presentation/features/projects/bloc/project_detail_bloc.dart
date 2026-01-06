@@ -6,7 +6,7 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -24,7 +24,7 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     DateTime? deadlineDate,
     int? priority,
     String? repeatIcalRrule,
-    List<Label>? labels,
+    List<String>? valueIds,
   }) = _ProjectDetailUpdate;
   const factory ProjectDetailEvent.delete({
     required String id,
@@ -38,7 +38,7 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
     DateTime? deadlineDate,
     int? priority,
     String? repeatIcalRrule,
-    List<Label>? labels,
+    List<String>? valueIds,
   }) = _ProjectDetailCreate;
 
   const factory ProjectDetailEvent.loadById({required String projectId}) =
@@ -54,7 +54,7 @@ class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.initial() = ProjectDetailInitial;
 
   const factory ProjectDetailState.initialDataLoadSuccess({
-    required List<Label> availableLabels,
+    required List<Value> availableValues,
   }) = ProjectDetailInitialDataLoadSuccess;
 
   const factory ProjectDetailState.operationSuccess({
@@ -67,7 +67,7 @@ class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.loadInProgress() =
       ProjectDetailLoadInProgress;
   const factory ProjectDetailState.loadSuccess({
-    required List<Label> availableLabels,
+    required List<Value> availableValues,
     required Project project,
   }) = ProjectDetailLoadSuccess;
 }
@@ -76,9 +76,9 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     with DetailBlocMixin<ProjectDetailEvent, ProjectDetailState, Project> {
   ProjectDetailBloc({
     required ProjectRepositoryContract projectRepository,
-    required LabelRepositoryContract labelRepository,
+    required ValueRepositoryContract valueRepository,
   }) : _projectRepository = projectRepository,
-       _labelRepository = labelRepository,
+       _valueRepository = valueRepository,
        super(const ProjectDetailState.initial()) {
     on<_ProjectDetailLoadById>((event, emit) => _onGet(event.projectId, emit));
     on<_ProjectDetailCreate>(_onCreate);
@@ -90,7 +90,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   }
 
   final ProjectRepositoryContract _projectRepository;
-  final LabelRepositoryContract _labelRepository;
+  final ValueRepositoryContract _valueRepository;
 
   @override
   Talker get logger => talker;
@@ -121,7 +121,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   ) async {
     emit(const ProjectDetailState.loadInProgress());
     try {
-      final labels = await _labelRepository.getAll();
+      final values = await _valueRepository.getAll();
       final project = await _projectRepository.getById(projectId);
 
       if (project == null) {
@@ -135,7 +135,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       } else {
         emit(
           ProjectDetailState.loadSuccess(
-            availableLabels: labels,
+            availableValues: values,
             project: project,
           ),
         );
@@ -165,9 +165,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
         completed: event.completed,
         startDate: event.startDate,
         deadlineDate: event.deadlineDate,
-        priority: event.priority,
-        repeatIcalRrule: event.repeatIcalRrule,
-        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+        valueIds: event.valueIds,
       ),
     );
   }
@@ -196,7 +194,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
         deadlineDate: event.deadlineDate,
         priority: event.priority,
         repeatIcalRrule: event.repeatIcalRrule,
-        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+        valueIds: event.valueIds,
       ),
     );
   }
@@ -204,8 +202,8 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   Future<void> _onLoadInitialData(Emitter<ProjectDetailState> emit) async {
     emit(const ProjectDetailState.loadInProgress());
     try {
-      final labels = await _labelRepository.getAll();
-      emit(ProjectDetailState.initialDataLoadSuccess(availableLabels: labels));
+      final values = await _valueRepository.getAll();
+      emit(ProjectDetailState.initialDataLoadSuccess(availableValues: values));
     } catch (error, stackTrace) {
       emit(
         ProjectDetailState.operationFailure(

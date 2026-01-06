@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/queries/value_match_mode.dart';
 import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';

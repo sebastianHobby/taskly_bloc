@@ -26,7 +26,6 @@ import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/entity_header.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';

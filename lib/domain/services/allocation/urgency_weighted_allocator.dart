@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
@@ -68,9 +67,8 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         continue;
       }
 
-      // Get category priority score (0-1)
-      final effectiveValues = task.getEffectiveValues();
-      final categoryIds = effectiveValues.map((v) => v.id).toSet();
+      // Get category priority score (0-1) using task's direct values
+      final categoryIds = task.values.map((v) => v.id).toSet();
 
       final matchedCategories = categories.keys
           .where(categoryIds.contains)
@@ -164,13 +162,17 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
     );
   }
 
-  /// Calculates urgency score (0-1) based on deadline proximity
+  /// Calculates urgency score (0-1) using smooth decay curve.
+  ///
+  /// Uses formula: 1 / (1 + days/7)
+  /// - Day 0 = 1.0
+  /// - Day 7 = 0.5
+  /// - Day 14 = 0.33
+  /// - Day 21 = 0.25
   ///
   /// Returns:
-  /// - 1.0 for overdue tasks
-  /// - 0.9 for tasks due today
-  /// - 0.8 for tasks due tomorrow
-  /// - Decreasing score for tasks due further out
+  /// - 1.0 for overdue tasks (clamped)
+  /// - Smooth decay for future deadlines
   /// - 0.0 for tasks with no deadline
   double _calculateUrgencyScore(Task task) {
     if (task.deadlineDate == null) return 0;
@@ -178,15 +180,13 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
     final now = DateTime.now();
     final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
 
-    if (daysUntilDeadline < 0) return 1; // Overdue
-    if (daysUntilDeadline == 0) return 0.9; // Due today
-    if (daysUntilDeadline == 1) return 0.8; // Due tomorrow
-    if (daysUntilDeadline <= 3) return 0.7; // Due within 3 days
-    if (daysUntilDeadline <= 7) return 0.5; // Due within a week
-    if (daysUntilDeadline <= 14) return 0.3; // Due within 2 weeks
-    if (daysUntilDeadline <= 30) return 0.1; // Due within a month
+    if (daysUntilDeadline < 0) {
+      // Overdue: clamp at 1.0
+      return 1;
+    }
 
-    return 0.05; // Due far in future
+    // Smooth decay: 1 / (1 + days/7)
+    return 1.0 / (1.0 + daysUntilDeadline / 7.0);
   }
 
   bool _isUrgent(Task task, int thresholdDays) {

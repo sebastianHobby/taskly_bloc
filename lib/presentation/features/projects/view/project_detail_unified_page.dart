@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -51,7 +51,7 @@ class ProjectDetailUnifiedPage extends StatelessWidget {
     return BlocProvider<ProjectDetailBloc>(
       create: (_) => ProjectDetailBloc(
         projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       )..add(ProjectDetailEvent.loadById(projectId: projectId)),
       child: _ProjectDetailContent(projectId: projectId),
     );
@@ -155,7 +155,7 @@ class _ProjectScreenView extends StatelessWidget {
         childBuilder: (modalSheetContext) => ProjectEditSheetPage(
           projectId: project.id,
           projectRepository: getIt<ProjectRepositoryContract>(),
-          labelRepository: getIt<LabelRepositoryContract>(),
+          valueRepository: getIt<ValueRepositoryContract>(),
           onSaved: (savedProjectId) {
             // Refresh the project details after edit
             context.read<ProjectDetailBloc>().add(
@@ -304,7 +304,7 @@ class _ProjectScreenView extends StatelessWidget {
       floatingActionButton: AddTaskFab(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
-        labelRepository: getIt<LabelRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
         defaultProjectId: project.id,
       ),
     );

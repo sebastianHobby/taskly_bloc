@@ -253,6 +253,12 @@ abstract class AppLocalizations {
   /// **'Label not found.'**
   String get labelNotFound;
 
+  /// Error shown when a value cannot be found
+  ///
+  /// In en, this message translates to:
+  /// **'Value not found.'**
+  String get valueNotFound;
+
   /// Task overview filter option to show all tasks
   ///
   /// In en, this message translates to:
@@ -943,10 +949,10 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get projectStatusActive;
 
-  /// Menu action to delete a project
+  /// Delete project action label
   ///
   /// In en, this message translates to:
-  /// **'Delete project'**
+  /// **'Delete Project'**
   String get deleteProjectAction;
 
   /// Menu action to mark a project complete
@@ -1549,22 +1555,22 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveLabel;
 
-  /// Title for value rankings section
+  /// Title for Value Rankings section
   ///
   /// In en, this message translates to:
   /// **'Value Rankings'**
   String get valueRankingsTitle;
 
-  /// Description for value rankings section
+  /// Description for Value Rankings section
   ///
   /// In en, this message translates to:
-  /// **'Drag to reorder. Higher values get more focus tasks.'**
+  /// **'Drag and drop to rank your values. Higher ranked values are prioritized in task allocation.'**
   String get valueRankingsDescription;
 
-  /// Empty state for value rankings
+  /// Message shown when no values are available for ranking
   ///
   /// In en, this message translates to:
-  /// **'No values found. Create values in the Values screen.'**
+  /// **'No values available for ranking.'**
   String get noValuesForRanking;
 
   /// Label for weight value
@@ -1573,10 +1579,10 @@ abstract class AppLocalizations {
   /// **'Weight'**
   String get weightLabel;
 
-  /// Subtitle for unranked values
+  /// Message for unranked values
   ///
   /// In en, this message translates to:
-  /// **'Not ranked - drag to rank'**
+  /// **'Not Ranked (Drag to rank)'**
   String get notRankedDragToRank;
 
   /// Title for the recommended next task card in project detail
@@ -1896,6 +1902,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} days'**
   String daysFormat(int count);
+
+  /// Title for the Persona settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Persona'**
+  String get personaTitle;
+
+  /// Label for daily task limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Daily Task Limit'**
+  String get dailyTaskLimitLabel;
+
+  /// Helper text for daily task limit setting
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum number of tasks to schedule per day'**
+  String get dailyTaskLimitHelper;
+
+  /// Title for Strategy settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Strategy'**
+  String get strategyTitle;
+
+  /// Label for neglect weighting toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Neglect Weighting'**
+  String get enableNeglectWeightingLabel;
+
+  /// Helper text for neglect weighting toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize tasks that have been neglected'**
+  String get enableNeglectWeightingHelper;
+
+  /// Title for Display settings section
+  ///
+  /// In en, this message translates to:
+  /// **'Display'**
+  String get displayTitle;
+
+  /// Label for orphan task count toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show Orphan Task Count'**
+  String get showOrphanTaskCountLabel;
+
+  /// Label for project next task toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Show Project Next Task'**
+  String get showProjectNextTaskLabel;
+
+  /// Message shown when settings are saved successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Settings saved'**
+  String get settingsSaved;
+
+  /// Message shown when settings fail to save
+  ///
+  /// In en, this message translates to:
+  /// **'Error saving settings: {error}'**
+  String settingsSaveError(Object error);
+
+  /// Message shown when settings fail to load
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading settings: {error}'**
+  String settingsLoadError(Object error);
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
