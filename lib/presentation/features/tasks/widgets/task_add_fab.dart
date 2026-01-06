@@ -43,7 +43,6 @@ class AddTaskFab extends StatelessWidget {
             ),
             child: TaskDetailSheet(
               defaultProjectId: defaultProjectId,
-              valueRepository: valueRepository,
             ),
           ),
         );

@@ -1,7 +1,7 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
@@ -25,8 +25,8 @@ class MockTaskRepositoryContract extends Mock
 class MockProjectRepositoryContract extends Mock
     implements ProjectRepositoryContract {}
 
-class MockLabelRepositoryContract extends Mock
-    implements LabelRepositoryContract {}
+class MockValueRepositoryContract extends Mock
+    implements ValueRepositoryContract {}
 
 class MockSettingsRepositoryContract extends Mock
     implements SettingsRepositoryContract {}

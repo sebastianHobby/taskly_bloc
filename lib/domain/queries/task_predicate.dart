@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:json_annotation/json_annotation.dart';
 
 /// Operators for boolean predicates.
 enum BoolOperator { isTrue, isFalse }
@@ -294,6 +295,18 @@ final class TaskValuePredicate extends TaskPredicate {
     includeInherited,
     Object.hashAll(valueIds),
   );
+}
+
+class TaskPredicateConverter
+    implements JsonConverter<TaskPredicate, Map<String, dynamic>> {
+  const TaskPredicateConverter();
+
+  @override
+  TaskPredicate fromJson(Map<String, dynamic> json) =>
+      TaskPredicate.fromJson(json);
+
+  @override
+  Map<String, dynamic> toJson(TaskPredicate object) => object.toJson();
 }
 
 extension _Let<T> on T {

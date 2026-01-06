@@ -135,7 +135,7 @@ abstract final class Routing {
 
   static Widget Function(String id)? _taskDetailBuilder;
   static Widget Function(String id)? _projectDetailBuilder;
-  static Widget Function(String id)? _labelDetailBuilder;
+  static Widget Function(String id)? _valueDetailBuilder;
 
   /// Register entity detail builders at app startup.
   ///
@@ -143,11 +143,11 @@ abstract final class Routing {
   static void registerEntityBuilders({
     required Widget Function(String id) taskBuilder,
     required Widget Function(String id) projectBuilder,
-    required Widget Function(String id) labelBuilder,
+    required Widget Function(String id) valueBuilder,
   }) {
     _taskDetailBuilder = taskBuilder;
     _projectDetailBuilder = projectBuilder;
-    _labelDetailBuilder = labelBuilder;
+    _valueDetailBuilder = valueBuilder;
   }
 
   /// Build an entity detail widget by type and ID.
@@ -158,8 +158,7 @@ abstract final class Routing {
       'task' => _taskDetailBuilder?.call(id) ?? _notRegisteredError('task'),
       'project' =>
         _projectDetailBuilder?.call(id) ?? _notRegisteredError('project'),
-      'label' ||
-      'value' => _labelDetailBuilder?.call(id) ?? _notRegisteredError('label'),
+      'value' => _valueDetailBuilder?.call(id) ?? _notRegisteredError('value'),
       _ => Center(child: Text('Unknown entity type: $entityType')),
     };
   }
@@ -179,6 +178,6 @@ abstract final class Routing {
     _screenBuilders.clear();
     _taskDetailBuilder = null;
     _projectDetailBuilder = null;
-    _labelDetailBuilder = null;
+    _valueDetailBuilder = null;
   }
 }

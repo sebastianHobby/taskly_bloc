@@ -11,19 +11,19 @@ import '../../../../mocks/repository_mocks.dart';
 void main() {
   late MockTaskRepositoryContract taskRepo;
   late MockProjectRepositoryContract projectRepo;
-  late MockLabelRepositoryContract labelRepo;
+  late MockValueRepositoryContract valueRepo;
 
   setUpAll(() {
     initializeTalkerForTest();
     registerFallbackValue(TestData.task());
     registerFallbackValue(TestData.project());
-    registerFallbackValue(TestData.label());
+    registerFallbackValue(TestData.value());
   });
 
   setUp(() {
     taskRepo = MockTaskRepositoryContract();
     projectRepo = MockProjectRepositoryContract();
-    labelRepo = MockLabelRepositoryContract();
+    valueRepo = MockValueRepositoryContract();
   });
 
   group('TaskDetailBloc', () {
@@ -34,7 +34,7 @@ void main() {
       return TaskDetailBloc(
         taskRepository: taskRepo,
         projectRepository: projectRepo,
-        labelRepository: labelRepo,
+        valueRepository: valueRepo,
         taskId: taskId,
         autoLoad: autoLoad,
       );
@@ -47,12 +47,12 @@ void main() {
     });
 
     blocTest<TaskDetailBloc, TaskDetailState>(
-      'loadInitialData emits loading then success with projects and labels',
+      'loadInitialData emits loading then success with projects and values',
       build: () {
         final projects = [TestData.project(id: 'p1')];
-        final labels = [TestData.label(id: 'l1')];
+        final values = [TestData.value(id: 'l1')];
         when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
-        when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+        when(() => valueRepo.getAll()).thenAnswer((_) async => values);
         return buildBloc();
       },
       act: (bloc) => bloc.add(const TaskDetailEvent.loadInitialData()),
@@ -60,7 +60,7 @@ void main() {
         const TaskDetailLoadInProgress(),
         isA<TaskDetailInitialDataLoadSuccess>()
             .having((s) => s.availableProjects.length, 'projects', 1)
-            .having((s) => s.availableLabels.length, 'labels', 1),
+            .having((s) => s.availableValues.length, 'values', 1),
       ],
     );
 
@@ -84,10 +84,10 @@ void main() {
       build: () {
         final task = TestData.task(id: 'task-123');
         final projects = [TestData.project(id: 'p1')];
-        final labels = [TestData.label(id: 'l1')];
+        final values = [TestData.value(id: 'l1')];
         when(() => taskRepo.getById('task-123')).thenAnswer((_) async => task);
         when(() => projectRepo.getAll()).thenAnswer((_) async => projects);
-        when(() => labelRepo.getAll()).thenAnswer((_) async => labels);
+        when(() => valueRepo.getAll()).thenAnswer((_) async => values);
         return buildBloc();
       },
       act: (bloc) =>
@@ -105,7 +105,7 @@ void main() {
       build: () {
         when(() => taskRepo.getById(any())).thenAnswer((_) async => null);
         when(() => projectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => valueRepo.getAll()).thenAnswer((_) async => []);
         return buildBloc();
       },
       act: (bloc) =>
@@ -258,11 +258,11 @@ void main() {
           () => taskRepo.getById('auto-load-task'),
         ).thenAnswer((_) async => task);
         when(() => projectRepo.getAll()).thenAnswer((_) async => []);
-        when(() => labelRepo.getAll()).thenAnswer((_) async => []);
+        when(() => valueRepo.getAll()).thenAnswer((_) async => []);
         return TaskDetailBloc(
           taskRepository: taskRepo,
           projectRepository: projectRepo,
-          labelRepository: labelRepo,
+          valueRepository: valueRepo,
           taskId: 'auto-load-task',
         );
       },
@@ -283,12 +283,12 @@ void main() {
           () => projectRepo.getAll(),
         ).thenAnswer((_) async => [TestData.project()]);
         when(
-          () => labelRepo.getAll(),
-        ).thenAnswer((_) async => [TestData.label()]);
+          () => valueRepo.getAll(),
+        ).thenAnswer((_) async => [TestData.value()]);
         return TaskDetailBloc(
           taskRepository: taskRepo,
           projectRepository: projectRepo,
-          labelRepository: labelRepo,
+          valueRepository: valueRepo,
         );
       },
       expect: () => [

@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -72,7 +71,7 @@ class UrgencyDetector {
   /// or get included in `includeAll` mode.
   List<Task> findUrgentValuelessTasks(List<Task> tasks) {
     return tasks.where((task) {
-      final hasNoValue = !task.labels.any((l) => l.type == LabelType.value);
+      final hasNoValue = task.values.isEmpty;
       return hasNoValue && isTaskUrgent(task);
     }).toList();
   }

@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/screens/app_bar_action.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
@@ -9,7 +8,7 @@ import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section.dart';
 import 'package:taskly_bloc/domain/models/screens/support_block.dart';
-import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -171,24 +170,6 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Labels screen - list of labels
-  static final labels = ScreenDefinition.dataDriven(
-    id: 'labels',
-    screenKey: 'labels',
-    name: 'Labels',
-    screenType: ScreenType.list,
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createLabel],
-    sections: [
-      Section.data(
-        config: DataConfig.label(query: const LabelQuery()),
-      ),
-    ],
-  );
-
   /// Values screen - list of values (labels with type=value)
   static final values = ScreenDefinition.dataDriven(
     id: 'values',
@@ -202,7 +183,7 @@ abstract class SystemScreenDefinitions {
     fabOperations: [FabOperation.createValue],
     sections: [
       Section.data(
-        config: DataConfig.value(query: const LabelQuery()),
+        config: DataConfig.value(query: const ValueQuery()),
         enrichment: const EnrichmentConfig.valueStats(),
       ),
     ],
@@ -228,9 +209,9 @@ abstract class SystemScreenDefinitions {
                   field: TaskBoolField.completed,
                   operator: BoolOperator.isFalse,
                 ),
-                TaskLabelPredicate(
-                  operator: LabelOperator.isNull,
-                  labelType: LabelType.value,
+                TaskValuePredicate(
+                  operator: ValueOperator.isNull,
+                  valueIds: [],
                   includeInherited: true,
                 ),
               ],
@@ -370,7 +351,6 @@ abstract class SystemScreenDefinitions {
     settings,
     // Hidden/Sub-screens
     inbox,
-    labels,
     orphanTasks,
     logbook,
     workflows,
@@ -391,7 +371,6 @@ abstract class SystemScreenDefinitions {
       'statistics' => statistics,
       'logbook' => logbook,
       'projects' => projects,
-      'labels' => labels,
       'values' => values,
       'orphan_tasks' => orphanTasks,
       'settings' => settings,

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -77,27 +77,27 @@ void main() {
         });
       });
 
-      group('allLabels', () {
+      group('allValues', () {
         test('returns labels when primaryEntityType is label', () {
-          final labels = [TestData.label(), TestData.label()];
+          final values = [TestData.value(), TestData.value()];
           final result = SectionDataResult.data(
-            primaryEntities: labels,
+            primaryEntities: values,
             primaryEntityType: 'label',
           );
 
-          expect(result.allLabels, hasLength(2));
+          expect(result.allValues, hasLength(2));
         });
 
         test('returns labels when primaryEntityType is value', () {
-          final labels = [
-            TestData.label(type: LabelType.value),
+          final values = [
+            TestData.value(priority: ValuePriority.medium),
           ];
           final result = SectionDataResult.data(
-            primaryEntities: labels,
+            primaryEntities: values,
             primaryEntityType: 'value',
           );
 
-          expect(result.allLabels, hasLength(1));
+          expect(result.allValues, hasLength(1));
         });
 
         test(
@@ -108,7 +108,7 @@ void main() {
               primaryEntityType: 'task',
             );
 
-            expect(result.allLabels, isEmpty);
+            expect(result.allValues, isEmpty);
           },
         );
       });
@@ -221,14 +221,14 @@ void main() {
         });
       });
 
-      group('allLabels', () {
+      group('allValues', () {
         test('returns empty list for allocation results', () {
           final result = SectionDataResult.allocation(
             allocatedTasks: [TestData.task()],
             totalAvailable: 10,
           );
 
-          expect(result.allLabels, isEmpty);
+          expect(result.allValues, isEmpty);
         });
       });
 
@@ -309,7 +309,7 @@ void main() {
         });
       });
 
-      group('allLabels', () {
+      group('allValues', () {
         test('returns empty list for agenda results', () {
           final result = SectionDataResult.agenda(
             groupedTasks: {
@@ -318,7 +318,7 @@ void main() {
             groupOrder: ['today'],
           );
 
-          expect(result.allLabels, isEmpty);
+          expect(result.allValues, isEmpty);
         });
       });
 

@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/queries/operators/operators.dart'
-    show BoolComparison, DateComparison, LabelComparison;
+    show BoolComparison, DateComparison;
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
     show BoolOperator, DateOperator, RelativeComparison;
 

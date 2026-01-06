@@ -13,6 +13,7 @@ import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_trigger_config.dart';
 import 'package:uuid/uuid.dart';
@@ -418,8 +419,7 @@ class WorkflowStepFormData {
         entityType = switch (config) {
           TaskDataConfig() => EntityType.task,
           ProjectDataConfig() => EntityType.project,
-          LabelDataConfig() => EntityType.label,
-          ValueDataConfig() => EntityType.label, // Values are a type of label
+          ValueDataConfig() => EntityType.value,
           JournalDataConfig() => EntityType.journal,
         };
         break;
@@ -452,7 +452,7 @@ class WorkflowStepFormData {
     final dataConfig = switch (entityType) {
       EntityType.task => DataConfig.task(query: const TaskQuery()),
       EntityType.project => DataConfig.project(query: const ProjectQuery()),
-      EntityType.label => const DataConfig.label(),
+      EntityType.value => DataConfig.value(query: const ValueQuery()),
       EntityType.goal => DataConfig.task(query: const TaskQuery()), // Fallback
       EntityType.journal => DataConfig.journal(query: JournalQuery.all()),
       EntityType.tracker => DataConfig.task(
@@ -577,10 +577,6 @@ class _StepCard extends StatelessWidget {
                 DropdownMenuItem(
                   value: EntityType.project,
                   child: Text('Projects'),
-                ),
-                DropdownMenuItem(
-                  value: EntityType.label,
-                  child: Text('Labels'),
                 ),
                 DropdownMenuItem(
                   value: EntityType.goal,

@@ -87,10 +87,10 @@ void main() {
       test('matches task with all specified values', () {
         final rule = TestData.valueRule(
           operator: ValueRuleOperator.hasAll,
-          labelIds: ['value-1', 'value-2'],
+          valueIds: ['value-1', 'value-2'],
         );
         final task = TestData.task(
-          labels: [
+          values: [
             createValue('value-1'),
             createValue('value-2'),
             createValue('value-3'),

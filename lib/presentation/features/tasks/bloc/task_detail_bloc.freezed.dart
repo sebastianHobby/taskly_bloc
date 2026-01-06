@@ -128,12 +128,12 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult Function( String taskId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)?  update,TResult Function( String id)?  delete,TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)?  create,TResult Function( String taskId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailLoadById() when loadById != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return orElse();
@@ -153,12 +153,12 @@ return loadInitialData();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)  create,required TResult Function( String taskId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)  update,required TResult Function( String id)  delete,required TResult Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)  create,required TResult Function( String taskId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete():
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailDelete():
 return delete(_that.id);case _TaskDetailCreate():
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailLoadById():
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailLoadById():
 return loadById(_that.taskId);case _TaskDetailLoadInitialData():
 return loadInitialData();}
 }
@@ -174,12 +174,12 @@ return loadInitialData();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<Label>? labels)?  create,TResult? Function( String taskId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)?  update,TResult? Function( String id)?  delete,TResult? Function( String name,  String? description,  bool completed,  DateTime? startDate,  DateTime? deadlineDate,  String? projectId,  int? priority,  String? repeatIcalRrule,  List<String>? valueIds)?  create,TResult? Function( String taskId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailDelete() when delete != null:
+return update(_that.id,_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
-return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.labels);case _TaskDetailLoadById() when loadById != null:
+return create(_that.name,_that.description,_that.completed,_that.startDate,_that.deadlineDate,_that.projectId,_that.priority,_that.repeatIcalRrule,_that.valueIds);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
 return loadInitialData();case _:
   return null;
@@ -193,7 +193,7 @@ return loadInitialData();case _:
 
 
 class _TaskDetailUpdate implements TaskDetailEvent {
-  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed, this.startDate, this.deadlineDate, this.projectId, this.priority, this.repeatIcalRrule, final  List<Label>? labels}): _labels = labels;
+  const _TaskDetailUpdate({required this.id, required this.name, required this.description, required this.completed, this.startDate, this.deadlineDate, this.projectId, this.priority, this.repeatIcalRrule, final  List<String>? valueIds}): _valueIds = valueIds;
   
 
  final  String id;
@@ -205,11 +205,11 @@ class _TaskDetailUpdate implements TaskDetailEvent {
  final  String? projectId;
  final  int? priority;
  final  String? repeatIcalRrule;
- final  List<Label>? _labels;
- List<Label>? get labels {
-  final value = _labels;
+ final  List<String>? _valueIds;
+ List<String>? get valueIds {
+  final value = _valueIds;
   if (value == null) return null;
-  if (_labels is EqualUnmodifiableListView) return _labels;
+  if (_valueIds is EqualUnmodifiableListView) return _valueIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -225,16 +225,16 @@ _$TaskDetailUpdateCopyWith<_TaskDetailUpdate> get copyWith => __$TaskDetailUpdat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._labels, _labels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailUpdate&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._valueIds, _valueIds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,name,description,completed,startDate,deadlineDate,projectId,priority,repeatIcalRrule,const DeepCollectionEquality().hash(_labels));
+int get hashCode => Object.hash(runtimeType,id,name,description,completed,startDate,deadlineDate,projectId,priority,repeatIcalRrule,const DeepCollectionEquality().hash(_valueIds));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, priority: $priority, repeatIcalRrule: $repeatIcalRrule, labels: $labels)';
+  return 'TaskDetailEvent.update(id: $id, name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, priority: $priority, repeatIcalRrule: $repeatIcalRrule, valueIds: $valueIds)';
 }
 
 
@@ -245,7 +245,7 @@ abstract mixin class _$TaskDetailUpdateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailUpdateCopyWith(_TaskDetailUpdate value, $Res Function(_TaskDetailUpdate) _then) = __$TaskDetailUpdateCopyWithImpl;
 @useResult
 $Res call({
- String id, String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, int? priority, String? repeatIcalRrule, List<Label>? labels
+ String id, String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, int? priority, String? repeatIcalRrule, List<String>? valueIds
 });
 
 
@@ -262,7 +262,7 @@ class __$TaskDetailUpdateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? priority = freezed,Object? repeatIcalRrule = freezed,Object? labels = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? priority = freezed,Object? repeatIcalRrule = freezed,Object? valueIds = freezed,}) {
   return _then(_TaskDetailUpdate(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -273,8 +273,8 @@ as DateTime?,deadlineDate: freezed == deadlineDate ? _self.deadlineDate : deadli
 as DateTime?,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String?,priority: freezed == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as int?,repeatIcalRrule: freezed == repeatIcalRrule ? _self.repeatIcalRrule : repeatIcalRrule // ignore: cast_nullable_to_non_nullable
-as String?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
-as List<Label>?,
+as String?,valueIds: freezed == valueIds ? _self._valueIds : valueIds // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 
@@ -351,7 +351,7 @@ as String,
 
 
 class _TaskDetailCreate implements TaskDetailEvent {
-  const _TaskDetailCreate({required this.name, required this.description, this.completed = false, this.startDate, this.deadlineDate, this.projectId, this.priority, this.repeatIcalRrule, final  List<Label>? labels}): _labels = labels;
+  const _TaskDetailCreate({required this.name, required this.description, this.completed = false, this.startDate, this.deadlineDate, this.projectId, this.priority, this.repeatIcalRrule, final  List<String>? valueIds}): _valueIds = valueIds;
   
 
  final  String name;
@@ -362,11 +362,11 @@ class _TaskDetailCreate implements TaskDetailEvent {
  final  String? projectId;
  final  int? priority;
  final  String? repeatIcalRrule;
- final  List<Label>? _labels;
- List<Label>? get labels {
-  final value = _labels;
+ final  List<String>? _valueIds;
+ List<String>? get valueIds {
+  final value = _valueIds;
   if (value == null) return null;
-  if (_labels is EqualUnmodifiableListView) return _labels;
+  if (_valueIds is EqualUnmodifiableListView) return _valueIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(value);
 }
@@ -382,16 +382,16 @@ _$TaskDetailCreateCopyWith<_TaskDetailCreate> get copyWith => __$TaskDetailCreat
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._labels, _labels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailCreate&&(identical(other.name, name) || other.name == name)&&(identical(other.description, description) || other.description == description)&&(identical(other.completed, completed) || other.completed == completed)&&(identical(other.startDate, startDate) || other.startDate == startDate)&&(identical(other.deadlineDate, deadlineDate) || other.deadlineDate == deadlineDate)&&(identical(other.projectId, projectId) || other.projectId == projectId)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.repeatIcalRrule, repeatIcalRrule) || other.repeatIcalRrule == repeatIcalRrule)&&const DeepCollectionEquality().equals(other._valueIds, _valueIds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,name,description,completed,startDate,deadlineDate,projectId,priority,repeatIcalRrule,const DeepCollectionEquality().hash(_labels));
+int get hashCode => Object.hash(runtimeType,name,description,completed,startDate,deadlineDate,projectId,priority,repeatIcalRrule,const DeepCollectionEquality().hash(_valueIds));
 
 @override
 String toString() {
-  return 'TaskDetailEvent.create(name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, priority: $priority, repeatIcalRrule: $repeatIcalRrule, labels: $labels)';
+  return 'TaskDetailEvent.create(name: $name, description: $description, completed: $completed, startDate: $startDate, deadlineDate: $deadlineDate, projectId: $projectId, priority: $priority, repeatIcalRrule: $repeatIcalRrule, valueIds: $valueIds)';
 }
 
 
@@ -402,7 +402,7 @@ abstract mixin class _$TaskDetailCreateCopyWith<$Res> implements $TaskDetailEven
   factory _$TaskDetailCreateCopyWith(_TaskDetailCreate value, $Res Function(_TaskDetailCreate) _then) = __$TaskDetailCreateCopyWithImpl;
 @useResult
 $Res call({
- String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, int? priority, String? repeatIcalRrule, List<Label>? labels
+ String name, String? description, bool completed, DateTime? startDate, DateTime? deadlineDate, String? projectId, int? priority, String? repeatIcalRrule, List<String>? valueIds
 });
 
 
@@ -419,7 +419,7 @@ class __$TaskDetailCreateCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? priority = freezed,Object? repeatIcalRrule = freezed,Object? labels = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? name = null,Object? description = freezed,Object? completed = null,Object? startDate = freezed,Object? deadlineDate = freezed,Object? projectId = freezed,Object? priority = freezed,Object? repeatIcalRrule = freezed,Object? valueIds = freezed,}) {
   return _then(_TaskDetailCreate(
 name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
@@ -429,8 +429,8 @@ as DateTime?,deadlineDate: freezed == deadlineDate ? _self.deadlineDate : deadli
 as DateTime?,projectId: freezed == projectId ? _self.projectId : projectId // ignore: cast_nullable_to_non_nullable
 as String?,priority: freezed == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as int?,repeatIcalRrule: freezed == repeatIcalRrule ? _self.repeatIcalRrule : repeatIcalRrule // ignore: cast_nullable_to_non_nullable
-as String?,labels: freezed == labels ? _self._labels : labels // ignore: cast_nullable_to_non_nullable
-as List<Label>?,
+as String?,valueIds: freezed == valueIds ? _self._valueIds : valueIds // ignore: cast_nullable_to_non_nullable
+as List<String>?,
   ));
 }
 
@@ -658,15 +658,15 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Project> availableProjects,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<Label> availableLabels,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
 return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
-return initialDataLoadSuccess(_that.availableProjects,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
-return loadSuccess(_that.availableProjects,_that.availableLabels,_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.task);case _:
   return orElse();
 
 }
@@ -684,15 +684,15 @@ return loadSuccess(_that.availableProjects,_that.availableLabels,_that.task);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Project> availableProjects,  List<Label> availableLabels)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Task> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<Label> availableLabels,  Task task)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( List<Project> availableProjects,  List<Value> availableValues)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Task> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial():
 return initial();case TaskDetailInitialDataLoadSuccess():
-return initialDataLoadSuccess(_that.availableProjects,_that.availableLabels);case TaskDetailOperationSuccess():
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess():
 return operationSuccess(_that.operation);case TaskDetailOperationFailure():
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress():
 return loadInProgress();case TaskDetailLoadSuccess():
-return loadSuccess(_that.availableProjects,_that.availableLabels,_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.task);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -709,15 +709,15 @@ return loadSuccess(_that.availableProjects,_that.availableLabels,_that.task);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Project> availableProjects,  List<Label> availableLabels)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<Label> availableLabels,  Task task)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
 return initial();case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
-return initialDataLoadSuccess(_that.availableProjects,_that.availableLabels);case TaskDetailOperationSuccess() when operationSuccess != null:
+return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
 return operationFailure(_that.errorDetails);case TaskDetailLoadInProgress() when loadInProgress != null:
 return loadInProgress();case TaskDetailLoadSuccess() when loadSuccess != null:
-return loadSuccess(_that.availableProjects,_that.availableLabels,_that.task);case _:
+return loadSuccess(_that.availableProjects,_that.availableValues,_that.task);case _:
   return null;
 
 }
@@ -761,7 +761,7 @@ String toString() {
 
 
 class TaskDetailInitialDataLoadSuccess implements TaskDetailState {
-  const TaskDetailInitialDataLoadSuccess({required final  List<Project> availableProjects, required final  List<Label> availableLabels}): _availableProjects = availableProjects,_availableLabels = availableLabels;
+  const TaskDetailInitialDataLoadSuccess({required final  List<Project> availableProjects, required final  List<Value> availableValues}): _availableProjects = availableProjects,_availableValues = availableValues;
   
 
  final  List<Project> _availableProjects;
@@ -771,11 +771,11 @@ class TaskDetailInitialDataLoadSuccess implements TaskDetailState {
   return EqualUnmodifiableListView(_availableProjects);
 }
 
- final  List<Label> _availableLabels;
- List<Label> get availableLabels {
-  if (_availableLabels is EqualUnmodifiableListView) return _availableLabels;
+ final  List<Value> _availableValues;
+ List<Value> get availableValues {
+  if (_availableValues is EqualUnmodifiableListView) return _availableValues;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_availableLabels);
+  return EqualUnmodifiableListView(_availableValues);
 }
 
 
@@ -789,16 +789,16 @@ $TaskDetailInitialDataLoadSuccessCopyWith<TaskDetailInitialDataLoadSuccess> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailInitialDataLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableLabels, _availableLabels));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailInitialDataLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableLabels));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues));
 
 @override
 String toString() {
-  return 'TaskDetailState.initialDataLoadSuccess(availableProjects: $availableProjects, availableLabels: $availableLabels)';
+  return 'TaskDetailState.initialDataLoadSuccess(availableProjects: $availableProjects, availableValues: $availableValues)';
 }
 
 
@@ -809,7 +809,7 @@ abstract mixin class $TaskDetailInitialDataLoadSuccessCopyWith<$Res> implements 
   factory $TaskDetailInitialDataLoadSuccessCopyWith(TaskDetailInitialDataLoadSuccess value, $Res Function(TaskDetailInitialDataLoadSuccess) _then) = _$TaskDetailInitialDataLoadSuccessCopyWithImpl;
 @useResult
 $Res call({
- List<Project> availableProjects, List<Label> availableLabels
+ List<Project> availableProjects, List<Value> availableValues
 });
 
 
@@ -826,11 +826,11 @@ class _$TaskDetailInitialDataLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableLabels = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,}) {
   return _then(TaskDetailInitialDataLoadSuccess(
 availableProjects: null == availableProjects ? _self._availableProjects : availableProjects // ignore: cast_nullable_to_non_nullable
-as List<Project>,availableLabels: null == availableLabels ? _self._availableLabels : availableLabels // ignore: cast_nullable_to_non_nullable
-as List<Label>,
+as List<Project>,availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
+as List<Value>,
   ));
 }
 
@@ -1005,7 +1005,7 @@ String toString() {
 
 
 class TaskDetailLoadSuccess implements TaskDetailState {
-  const TaskDetailLoadSuccess({required final  List<Project> availableProjects, required final  List<Label> availableLabels, required this.task}): _availableProjects = availableProjects,_availableLabels = availableLabels;
+  const TaskDetailLoadSuccess({required final  List<Project> availableProjects, required final  List<Value> availableValues, required this.task}): _availableProjects = availableProjects,_availableValues = availableValues;
   
 
  final  List<Project> _availableProjects;
@@ -1015,11 +1015,11 @@ class TaskDetailLoadSuccess implements TaskDetailState {
   return EqualUnmodifiableListView(_availableProjects);
 }
 
- final  List<Label> _availableLabels;
- List<Label> get availableLabels {
-  if (_availableLabels is EqualUnmodifiableListView) return _availableLabels;
+ final  List<Value> _availableValues;
+ List<Value> get availableValues {
+  if (_availableValues is EqualUnmodifiableListView) return _availableValues;
   // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_availableLabels);
+  return EqualUnmodifiableListView(_availableValues);
 }
 
  final  Task task;
@@ -1034,16 +1034,16 @@ $TaskDetailLoadSuccessCopyWith<TaskDetailLoadSuccess> get copyWith => _$TaskDeta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableLabels, _availableLabels)&&(identical(other.task, task) || other.task == task));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&(identical(other.task, task) || other.task == task));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableLabels),task);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues),task);
 
 @override
 String toString() {
-  return 'TaskDetailState.loadSuccess(availableProjects: $availableProjects, availableLabels: $availableLabels, task: $task)';
+  return 'TaskDetailState.loadSuccess(availableProjects: $availableProjects, availableValues: $availableValues, task: $task)';
 }
 
 
@@ -1054,7 +1054,7 @@ abstract mixin class $TaskDetailLoadSuccessCopyWith<$Res> implements $TaskDetail
   factory $TaskDetailLoadSuccessCopyWith(TaskDetailLoadSuccess value, $Res Function(TaskDetailLoadSuccess) _then) = _$TaskDetailLoadSuccessCopyWithImpl;
 @useResult
 $Res call({
- List<Project> availableProjects, List<Label> availableLabels, Task task
+ List<Project> availableProjects, List<Value> availableValues, Task task
 });
 
 
@@ -1071,11 +1071,11 @@ class _$TaskDetailLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableLabels = null,Object? task = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,Object? task = null,}) {
   return _then(TaskDetailLoadSuccess(
 availableProjects: null == availableProjects ? _self._availableProjects : availableProjects // ignore: cast_nullable_to_non_nullable
-as List<Project>,availableLabels: null == availableLabels ? _self._availableLabels : availableLabels // ignore: cast_nullable_to_non_nullable
-as List<Label>,task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
+as List<Project>,availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
+as List<Value>,task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
 as Task,
   ));
 }

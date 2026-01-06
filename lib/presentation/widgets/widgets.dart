@@ -18,5 +18,3 @@ export 'section_widget.dart';
 export 'settings_section_card.dart';
 export 'sort_bottom_sheet.dart';
 export 'swipe_to_delete.dart';
-export 'truncated_label_chips.dart';
-export 'value_chip.dart';

@@ -396,11 +396,11 @@ class ValueRule extends TaskRule {
     if (identical(this, other)) return true;
     return other is ValueRule &&
         other.operator == operator &&
-        _listEquals(other.labelIds, labelIds);
+        _listEquals(other.valueIds, valueIds);
   }
 
   @override
-  int get hashCode => Object.hash(operator, Object.hashAll(labelIds));
+  int get hashCode => Object.hash(operator, Object.hashAll(valueIds));
 }
 
 /// Rule for filtering tasks by project assignment.

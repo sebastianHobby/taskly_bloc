@@ -3,11 +3,11 @@ library;
 
 export 'journal_predicate.dart';
 export 'journal_query.dart';
-export 'label_match_mode.dart';
-export 'label_predicate.dart';
-export 'label_query.dart';
 export 'occurrence_expansion.dart';
 export 'query_filter.dart';
+export 'value_match_mode.dart';
+export 'value_predicate.dart';
+export 'value_query.dart';
 export 'task_predicate.dart';
 export 'task_filter_evaluator.dart';
 export 'project_predicate.dart';

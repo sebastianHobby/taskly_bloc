@@ -11,10 +11,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/labels/bloc/label_detail_bloc.dart';
+import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
@@ -29,17 +29,14 @@ class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}
 
-class MockLabelRepository extends Mock implements LabelRepositoryContract {}
+class MockValueRepository extends Mock implements ValueRepositoryContract {}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Contract Tests
 // ═══════════════════════════════════════════════════════════════════════════
 
 void main() {
-  setUpAll(() {
-    initializeTalkerForTest();
-    registerFallbackValue(LabelType.label);
-  });
+  setUpAll(initializeTalkerForTest);
 
   group('Detail Bloc State Contracts', () {
     // ═══════════════════════════════════════════════════════════════════════
@@ -74,16 +71,16 @@ void main() {
       },
     );
 
-    testContract('LabelDetailState has all required factory constructors', () {
-      const initial = LabelDetailState.initial();
-      const loading = LabelDetailState.loadInProgress();
-      const success = LabelDetailState.operationSuccess(
+    testContract('ValueDetailState has all required factory constructors', () {
+      const initial = ValueDetailState.initial();
+      const loading = ValueDetailState.loadInProgress();
+      const success = ValueDetailState.operationSuccess(
         operation: EntityOperation.create,
       );
 
-      expect(initial, isA<LabelDetailInitial>());
-      expect(loading, isA<LabelDetailLoadInProgress>());
-      expect(success, isA<LabelDetailOperationSuccess>());
+      expect(initial, isA<ValueDetailInitial>());
+      expect(loading, isA<ValueDetailLoadInProgress>());
+      expect(success, isA<ValueDetailOperationSuccess>());
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -105,7 +102,7 @@ void main() {
       const projectSuccess = ProjectDetailState.operationSuccess(
         operation: EntityOperation.update,
       );
-      const labelSuccess = LabelDetailState.operationSuccess(
+      const valueSuccess = ValueDetailState.operationSuccess(
         operation: EntityOperation.create,
       );
 
@@ -118,7 +115,7 @@ void main() {
         EntityOperation.update,
       );
       expect(
-        (labelSuccess as LabelDetailOperationSuccess).operation,
+        (valueSuccess as ValueDetailOperationSuccess).operation,
         EntityOperation.create,
       );
     });
@@ -163,20 +160,20 @@ void main() {
       expect(loadById, isNotNull);
     });
 
-    testContract('LabelDetailEvent has all CRUD event factories', () {
-      const create = LabelDetailEvent.create(
+    testContract('ValueDetailEvent has all CRUD event factories', () {
+      const create = ValueDetailEvent.create(
         name: 'Test',
         color: '#000000',
-        type: LabelType.label,
+        priority: ValuePriority.medium,
       );
-      const update = LabelDetailEvent.update(
+      const update = ValueDetailEvent.update(
         id: 'id',
         name: 'Test',
         color: '#000000',
-        type: LabelType.label,
+        priority: ValuePriority.medium,
       );
-      const delete = LabelDetailEvent.delete(id: 'id');
-      const loadById = LabelDetailEvent.loadById(labelId: 'id');
+      const delete = ValueDetailEvent.delete(id: 'id');
+      const loadById = ValueDetailEvent.loadById(valueId: 'id');
 
       expect(create, isNotNull);
       expect(update, isNotNull);
@@ -218,14 +215,14 @@ void main() {
       },
     );
 
-    testContract('Label repository returns types that bloc expects', () async {
-      final mockRepo = MockLabelRepository();
-      final label = TestData.label(id: '1', name: 'Test');
+    testContract('Value repository returns types that bloc expects', () async {
+      final mockRepo = MockValueRepository();
+      final value = TestData.value(id: '1', name: 'Test');
 
-      when(() => mockRepo.getById('1')).thenAnswer((_) async => label);
+      when(() => mockRepo.getById('1')).thenAnswer((_) async => value);
       final result = await mockRepo.getById('1');
 
-      expect(result, isA<Label?>());
+      expect(result, isA<Value?>());
       expect(result, isNotNull);
       expect(result!.id, equals('1'));
     });
@@ -243,10 +240,10 @@ void main() {
           completed: false,
           createdAt: now,
           updatedAt: now,
-          labels: const [],
+          values: const [],
         ),
         availableProjects: <Project>[],
-        availableLabels: <Label>[],
+        availableValues: <Value>[],
       );
 
       expect(
@@ -255,7 +252,7 @@ void main() {
       );
     });
 
-    testContract('TaskDetailBloc expects List<Label> from repository', () {
+    testContract('TaskDetailBloc expects List<Value> from repository', () {
       final now = DateTime.now();
       final success = TaskDetailState.loadSuccess(
         task: Task(
@@ -264,19 +261,19 @@ void main() {
           completed: false,
           createdAt: now,
           updatedAt: now,
-          labels: const [],
+          values: const [],
         ),
         availableProjects: <Project>[],
-        availableLabels: <Label>[],
+        availableValues: <Value>[],
       );
 
       expect(
-        (success as TaskDetailLoadSuccess).availableLabels,
-        isA<List<Label>>(),
+        (success as TaskDetailLoadSuccess).availableValues,
+        isA<List<Value>>(),
       );
     });
 
-    testContract('ProjectDetailBloc expects List<Label> from repository', () {
+    testContract('ProjectDetailBloc expects List<Value> from repository', () {
       final now = DateTime.now();
       final success = ProjectDetailState.loadSuccess(
         project: Project(
@@ -285,14 +282,14 @@ void main() {
           completed: false,
           createdAt: now,
           updatedAt: now,
-          labels: const [],
+          values: const [],
         ),
-        availableLabels: <Label>[],
+        availableValues: <Value>[],
       );
 
       expect(
-        (success as ProjectDetailLoadSuccess).availableLabels,
-        isA<List<Label>>(),
+        (success as ProjectDetailLoadSuccess).availableValues,
+        isA<List<Value>>(),
       );
     });
   });
@@ -309,7 +306,7 @@ void main() {
       expect(task.id, isNotEmpty);
       expect(task.name, isNotEmpty);
       expect(task.completed, isNotNull);
-      expect(task.labels, isA<List<Label>>());
+      expect(task.values, isA<List<Value>>());
 
       // Optional fields that may be null
       expect(() => task.description, returnsNormally);
@@ -324,27 +321,29 @@ void main() {
       expect(project.id, isNotEmpty);
       expect(project.name, isNotEmpty);
       expect(project.completed, isNotNull);
-      expect(project.labels, isA<List<Label>>());
+      expect(project.values, isA<List<Value>>());
     });
 
-    testContract('Label model has required fields for bloc operations', () {
-      final label = TestData.label(id: '1', name: 'Test');
+    testContract('Value model has required fields for bloc operations', () {
+      final value = TestData.value(id: '1', name: 'Test');
 
-      expect(label.id, isNotEmpty);
-      expect(label.name, isNotEmpty);
+      expect(value.id, isNotEmpty);
+      expect(value.name, isNotEmpty);
       // color is optional (nullable)
-      expect(() => label.color, returnsNormally);
-      expect(label.type, isA<LabelType>());
+      expect(() => value.color, returnsNormally);
+      expect(value.priority, isA<ValuePriority>());
     });
 
     // ═══════════════════════════════════════════════════════════════════════
     // LabelType Enum Contracts
     // ═══════════════════════════════════════════════════════════════════════
 
-    testContract('LabelType enum has expected values', () {
-      // Blocs use these label types for filtering and display
-      expect(LabelType.values, contains(LabelType.label));
-      expect(LabelType.values, contains(LabelType.value));
+    testContract('ValuePriority enum has expected values', () {
+      // Blocs use these values priorities
+      expect(ValuePriority.values, contains(ValuePriority.high));
+      expect(ValuePriority.values, contains(ValuePriority.medium));
+      expect(ValuePriority.values, contains(ValuePriority.low));
+      // Note: 'none' is not a valid ValuePriority - use low/medium/high
     });
   });
 
@@ -358,12 +357,12 @@ void main() {
       () {
         final mockTaskRepo = MockTaskRepository();
         final mockProjectRepo = MockProjectRepository();
-        final mockLabelRepo = MockLabelRepository();
+        final mockValueRepo = MockValueRepository();
 
         final bloc = TaskDetailBloc(
           taskRepository: mockTaskRepo,
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
           autoLoad: false,
         );
 
@@ -378,11 +377,11 @@ void main() {
       'ProjectDetailBloc can be instantiated with required dependencies',
       () {
         final mockProjectRepo = MockProjectRepository();
-        final mockLabelRepo = MockLabelRepository();
+        final mockValueRepo = MockValueRepository();
 
         final bloc = ProjectDetailBloc(
           projectRepository: mockProjectRepo,
-          labelRepository: mockLabelRepo,
+          valueRepository: mockValueRepo,
         );
 
         expect(bloc, isNotNull);
@@ -393,14 +392,14 @@ void main() {
     );
 
     testContract(
-      'LabelDetailBloc can be instantiated with required dependencies',
+      'ValueDetailBloc can be instantiated with required dependencies',
       () {
-        final mockLabelRepo = MockLabelRepository();
+        final mockValueRepo = MockValueRepository();
 
-        final bloc = LabelDetailBloc(labelRepository: mockLabelRepo);
+        final bloc = ValueDetailBloc(valueRepository: mockValueRepo);
 
         expect(bloc, isNotNull);
-        expect(bloc.state, isA<LabelDetailInitial>());
+        expect(bloc.state, isA<ValueDetailInitial>());
 
         bloc.close();
       },

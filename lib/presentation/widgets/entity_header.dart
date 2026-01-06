@@ -19,7 +19,7 @@ class EntityHeader extends StatelessWidget {
     this.onCheckboxChanged,
     this.showCheckbox = true,
     this.metadata,
-    this.labels,
+    this.values,
   });
 
   /// Creates a header for a project entity.
@@ -37,23 +37,23 @@ class EntityHeader extends StatelessWidget {
       onCheckboxChanged: onCheckboxChanged,
       showCheckbox: showCheckbox,
       metadata: _ProjectMetadata(project: project),
-      labels: project.labels,
+      values: project.values,
     );
   }
 
-  /// Creates a header for a label entity.
-  factory EntityHeader.label({
-    required Label label,
+  /// Creates a header for a value entity.
+  factory EntityHeader.value({
+    required Value value,
     VoidCallback? onTap,
     int? taskCount,
   }) {
     return EntityHeader._(
-      title: label.name,
+      title: value.name,
       completed: false,
-      color: label.color,
+      color: value.color,
       onTap: onTap,
       showCheckbox: false,
-      metadata: _LabelMetadata(label: label, taskCount: taskCount),
+      metadata: _ValueMetadata(value: value, taskCount: taskCount),
     );
   }
 
@@ -65,7 +65,7 @@ class EntityHeader extends StatelessWidget {
   final ValueChanged<bool?>? onCheckboxChanged;
   final bool showCheckbox;
   final Widget? metadata;
-  final List<Label>? labels;
+  final List<Value>? values;
 
   @override
   Widget build(BuildContext context) {
@@ -137,14 +137,27 @@ class EntityHeader extends StatelessWidget {
                 ],
               ),
 
-              // Description
-              if (description != null && description!.trim().isNotEmpty) ...[
+              // Values
+              if (values != null && values!.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
-                  description!.trim(),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: values!.map((value) {
+                    return Chip(
+                      label: Text(value.name),
+                      backgroundColor: ColorUtils.fromHex(
+                        value.color,
+                      ).withValues(alpha: 0.2),
+                      side: BorderSide.none,
+                      labelStyle: TextStyle(
+                        color: ColorUtils.fromHex(value.color),
+                        fontSize: 12,
+                      ),
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
                 ),
               ],
 
@@ -152,36 +165,6 @@ class EntityHeader extends StatelessWidget {
               if (metadata != null) ...[
                 const SizedBox(height: 12),
                 metadata!,
-              ],
-
-              // Labels
-              if (labels != null && labels!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: labels!
-                      .map(
-                        (label) => Chip(
-                          avatar: label.color != null
-                              ? CircleAvatar(
-                                  backgroundColor: ColorUtils.fromHex(
-                                    label.color,
-                                  ),
-                                  radius: 8,
-                                )
-                              : null,
-                          label: Text(
-                            label.name,
-                            style: theme.textTheme.labelSmall,
-                          ),
-                          visualDensity: VisualDensity.compact,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      )
-                      .toList(),
-                ),
               ],
             ],
           ),
@@ -309,13 +292,13 @@ class _ProjectMetadata extends StatelessWidget {
   }
 }
 
-class _LabelMetadata extends StatelessWidget {
-  const _LabelMetadata({
-    required this.label,
+class _ValueMetadata extends StatelessWidget {
+  const _ValueMetadata({
+    required this.value,
     this.taskCount,
   });
 
-  final Label label;
+  final Value value;
   final int? taskCount;
 
   @override
@@ -330,15 +313,13 @@ class _LabelMetadata extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              label.type == LabelType.value ? Icons.star : Icons.label,
+              Icons.star,
               size: 16,
               color: theme.colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 4),
             Text(
-              label.type == LabelType.value
-                  ? l10n.labelTypeValue
-                  : l10n.labelTypeLabel,
+              l10n.valuesTitle,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),

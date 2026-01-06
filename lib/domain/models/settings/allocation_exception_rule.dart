@@ -5,12 +5,24 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 part 'allocation_exception_rule.freezed.dart';
 part 'allocation_exception_rule.g.dart';
 
+class TaskPredicateConverter
+    implements JsonConverter<TaskPredicate, Map<String, dynamic>> {
+  const TaskPredicateConverter();
+
+  @override
+  TaskPredicate fromJson(Map<String, dynamic> json) =>
+      TaskPredicate.fromJson(json);
+
+  @override
+  Map<String, dynamic> toJson(TaskPredicate object) => object.toJson();
+}
+
 /// A user-defined rule that triggers alerts for tasks that match specific conditions.
 ///
 /// Used in the "Safety Net" feature to catch tasks that might be missed by the
 /// active persona (e.g., "If deadline < 2 days, show Critical alert").
 @freezed
-class AllocationExceptionRule with _$AllocationExceptionRule {
+abstract class AllocationExceptionRule with _$AllocationExceptionRule {
   const factory AllocationExceptionRule({
     required String id,
     required String name,
@@ -20,7 +32,7 @@ class AllocationExceptionRule with _$AllocationExceptionRule {
 
     /// The conditions that must be met for this rule to trigger.
     /// All predicates must match (AND logic).
-    required List<TaskPredicate> conditions,
+    @TaskPredicateConverter() required List<TaskPredicate> conditions,
     @Default(true) bool enabled,
 
     /// The severity of the alert to generate when this rule matches.

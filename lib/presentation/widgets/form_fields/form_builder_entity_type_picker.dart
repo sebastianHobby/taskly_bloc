@@ -89,8 +89,8 @@ class _EntityTypeSelector extends StatelessWidget {
         return 'Tasks';
       case EntityType.project:
         return 'Projects';
-      case EntityType.label:
-        return 'Labels';
+      case EntityType.value:
+        return 'Values';
       case EntityType.goal:
         return 'Goals';
       case EntityType.journal:
@@ -106,8 +106,8 @@ class _EntityTypeSelector extends StatelessWidget {
         return Icons.check_circle_outline;
       case EntityType.project:
         return Icons.folder_outlined;
-      case EntityType.label:
-        return Icons.label_outline;
+      case EntityType.value:
+        return Icons.loyalty_outlined;
       case EntityType.goal:
         return Icons.flag_outlined;
       case EntityType.journal:

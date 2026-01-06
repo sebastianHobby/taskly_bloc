@@ -51,6 +51,7 @@ const schema = Schema([
   Table('project_values', [
     Column.text('project_id'),
     Column.text('value_id'),
+    Column.integer('is_primary'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
@@ -58,6 +59,7 @@ const schema = Schema([
   Table('task_values', [
     Column.text('task_id'),
     Column.text('value_id'),
+    Column.integer('is_primary'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('user_id'),
@@ -72,6 +74,7 @@ const schema = Schema([
     Column.text('page_sort_preferences'),
     Column.text('page_display_settings'),
     Column.text('screen_preferences'),
+    Column.text('review_settings'),
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('allocation_alerts_settings'),

@@ -104,6 +104,10 @@
     "@labelNotFound": {
         "description": "Error shown when a label cannot be found"
     },
+    "valueNotFound": "Value not found.",
+    "@valueNotFound": {
+        "description": "Error shown when a value cannot be found"
+    },
     "taskFilterAll": "All tasks",
     "@taskFilterAll": {
         "description": "Task overview filter option to show all tasks"
@@ -1326,5 +1330,83 @@
                 "type": "int"
             }
         }
+    },
+    "personaTitle": "Persona",
+    "@personaTitle": {
+        "description": "Title for the Persona settings section"
+    },
+    "dailyTaskLimitLabel": "Daily Task Limit",
+    "@dailyTaskLimitLabel": {
+        "description": "Label for daily task limit setting"
+    },
+    "dailyTaskLimitHelper": "Maximum number of tasks to schedule per day",
+    "@dailyTaskLimitHelper": {
+        "description": "Helper text for daily task limit setting"
+    },
+    "strategyTitle": "Strategy",
+    "@strategyTitle": {
+        "description": "Title for Strategy settings section"
+    },
+    "enableNeglectWeightingLabel": "Enable Neglect Weighting",
+    "@enableNeglectWeightingLabel": {
+        "description": "Label for neglect weighting toggle"
+    },
+    "enableNeglectWeightingHelper": "Prioritize tasks that have been neglected",
+    "@enableNeglectWeightingHelper": {
+        "description": "Helper text for neglect weighting toggle"
+    },
+    "displayTitle": "Display",
+    "@displayTitle": {
+        "description": "Title for Display settings section"
+    },
+    "showOrphanTaskCountLabel": "Show Orphan Task Count",
+    "@showOrphanTaskCountLabel": {
+        "description": "Label for orphan task count toggle"
+    },
+    "showProjectNextTaskLabel": "Show Project Next Task",
+    "@showProjectNextTaskLabel": {
+        "description": "Label for project next task toggle"
+    },
+    "settingsSaved": "Settings saved",
+    "@settingsSaved": {
+        "description": "Message shown when settings are saved successfully"
+    },
+    "settingsSaveError": "Error saving settings: {error}",
+    "@settingsSaveError": {
+        "description": "Message shown when settings fail to save",
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "settingsLoadError": "Error loading settings: {error}",
+    "@settingsLoadError": {
+        "description": "Message shown when settings fail to load",
+        "placeholders": {
+            "error": {
+                "type": "Object"
+            }
+        }
+    },
+    "deleteProjectAction": "Delete Project",
+    "@deleteProjectAction": {
+        "description": "Delete project action label"
+    },
+    "valueRankingsTitle": "Value Rankings",
+    "@valueRankingsTitle": {
+        "description": "Title for Value Rankings section"
+    },
+    "valueRankingsDescription": "Drag and drop to rank your values. Higher ranked values are prioritized in task allocation.",
+    "@valueRankingsDescription": {
+        "description": "Description for Value Rankings section"
+    },
+    "noValuesForRanking": "No values available for ranking.",
+    "@noValuesForRanking": {
+        "description": "Message shown when no values are available for ranking"
+    },
+    "notRankedDragToRank": "Not Ranked (Drag to rank)",
+    "@notRankedDragToRank": {
+        "description": "Message for unranked values"
     }
 }

@@ -42,10 +42,8 @@ void main() {
       await bloc.close();
     });
 
-    ScreenDefinitionBloc buildBloc() {
-      bloc = ScreenDefinitionBloc(repository: mockRepository);
-      return bloc;
-    }
+    ScreenDefinitionBloc buildBloc() =>
+        bloc = ScreenDefinitionBloc(repository: mockRepository);
 
     // ═══════════════════════════════════════════════════════════════════════
     // Initial State

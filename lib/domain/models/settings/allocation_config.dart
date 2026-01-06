@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'package:taskly_bloc/domain/models/settings/allocation_exception_rule.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 
 part 'allocation_config.freezed.dart';
 part 'allocation_config.g.dart';
@@ -9,8 +10,10 @@ part 'allocation_config.g.dart';
 // ENUMS
 // ============================================================================
 
-/// Defines the allocation behavior personality.
+/// @deprecated Use [FocusMode] instead.
+/// Kept for backwards compatibility during migration.
 ///
+/// Defines the allocation behavior personality.
 /// Each persona represents a different approach to task prioritization:
 /// - [idealist]: Pure value alignment, no urgency consideration
 /// - [reflector]: Prioritizes neglected values based on recent activity
@@ -62,14 +65,39 @@ enum UrgentTaskBehavior {
 abstract class AllocationConfig with _$AllocationConfig {
   const factory AllocationConfig({
     @Default(10) int dailyLimit,
+
+    /// @deprecated Use [focusMode] instead.
     @Default(AllocationPersona.realist) AllocationPersona persona,
+
+    /// The focus mode controlling allocation behavior.
+    /// This is the preferred field over [persona].
+    @Default(FocusMode.sustainable) FocusMode focusMode,
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
     @Default([]) List<AllocationExceptionRule> exceptionRules,
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
-      _$AllocationConfigFromJson(json);
+      _$AllocationConfigFromJson(_migratePersonaToFocusMode(json));
+}
+
+/// Migrates legacy 'persona' field to 'focusMode' if needed.
+Map<String, dynamic> _migratePersonaToFocusMode(Map<String, dynamic> json) {
+  // If focusMode is already set, use it
+  if (json.containsKey('focusMode')) {
+    return json;
+  }
+
+  // If persona is set, migrate it to focusMode
+  if (json.containsKey('persona')) {
+    final persona = json['persona'] as String?;
+    if (persona != null) {
+      final focusMode = FocusModeX.fromLegacyPersona(persona);
+      json['focusMode'] = focusMode.name;
+    }
+  }
+
+  return json;
 }
 
 /// Strategy-related settings controlling allocation behavior.
@@ -122,6 +150,46 @@ abstract class StrategySettings with _$StrategySettings {
   factory StrategySettings.fromJson(Map<String, dynamic> json) =>
       _$StrategySettingsFromJson(json);
 
+  /// Factory: Returns preset settings for the given focus mode.
+  factory StrategySettings.forFocusMode(FocusMode mode) {
+    return switch (mode) {
+      FocusMode.intentional => const StrategySettings(
+        urgentTaskBehavior: UrgentTaskBehavior.ignore,
+        urgencyBoostMultiplier: 1,
+        enableNeglectWeighting: false,
+        valuePriorityWeight: 2,
+        taskPriorityBoost: 0.5,
+        recencyPenalty: 0,
+        startDateProximity: 0,
+        overdueEmergencyMultiplier: 1,
+      ),
+      FocusMode.sustainable => const StrategySettings(
+        urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+        urgencyBoostMultiplier: 1.5,
+        enableNeglectWeighting: true,
+        neglectLookbackDays: 7,
+        neglectInfluence: 0.5,
+        valuePriorityWeight: 1.5,
+        taskPriorityBoost: 1,
+        recencyPenalty: 0.1,
+        startDateProximity: 0.5,
+        overdueEmergencyMultiplier: 1.5,
+      ),
+      FocusMode.responsive => const StrategySettings(
+        urgentTaskBehavior: UrgentTaskBehavior.includeAll,
+        urgencyBoostMultiplier: 2,
+        enableNeglectWeighting: false,
+        valuePriorityWeight: 0.5,
+        taskPriorityBoost: 2,
+        recencyPenalty: 0,
+        startDateProximity: 1,
+        overdueEmergencyMultiplier: 3,
+      ),
+      FocusMode.personalized => const StrategySettings(),
+    };
+  }
+
+  /// @deprecated Use [forFocusMode] instead.
   /// Factory: Returns preset settings for the given persona.
   factory StrategySettings.forPersona(AllocationPersona persona) {
     switch (persona) {

@@ -166,6 +166,7 @@ Future<void> setupDependencies() async {
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
         analyticsService: getIt<AnalyticsService>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       ),
     )
     // Analytics

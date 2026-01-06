@@ -26,6 +26,7 @@ class Project {
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
     this.values = const <Value>[],
+    this.primaryValueId,
     this.occurrence,
   });
 
@@ -58,6 +59,12 @@ class Project {
 
   final List<Value> values;
 
+  /// The ID of the primary value for this project.
+  ///
+  /// Only one value can be primary per project. The primary value is used for
+  /// grouping in My Day view and determines the main color/category.
+  final String? primaryValueId;
+
   /// Occurrence-specific data. Only populated when this Project instance
   /// represents an expanded occurrence from `getOccurrences`/`watchOccurrences`.
   /// Null for base projects retrieved via standard CRUD methods.
@@ -68,6 +75,21 @@ class Project {
 
   /// True if this project has a recurrence rule defined.
   bool get isRepeating => repeatIcalRrule?.isNotEmpty ?? false;
+
+  /// Returns the primary value if set and exists in the values list.
+  Value? get primaryValue {
+    if (primaryValueId == null) return null;
+    return values.cast<Value?>().firstWhere(
+      (v) => v?.id == primaryValueId,
+      orElse: () => null,
+    );
+  }
+
+  /// Returns all secondary (non-primary) values.
+  List<Value> get secondaryValues {
+    if (primaryValueId == null) return values;
+    return values.where((v) => v.id != primaryValueId).toList();
+  }
 
   /// Creates a copy of this Project with the given fields replaced.
   Project copyWith({
@@ -85,6 +107,7 @@ class Project {
     bool? repeatFromCompletion,
     bool? seriesEnded,
     List<Value>? values,
+    String? primaryValueId,
     OccurrenceData? occurrence,
   }) {
     return Project(
@@ -102,6 +125,7 @@ class Project {
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
       values: values ?? this.values,
+      primaryValueId: primaryValueId ?? this.primaryValueId,
       occurrence: occurrence ?? this.occurrence,
     );
   }
@@ -124,6 +148,7 @@ class Project {
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
         listEquals(other.values, values) &&
+        other.primaryValueId == primaryValueId &&
         other.occurrence == occurrence;
   }
 
@@ -143,12 +168,14 @@ class Project {
     repeatFromCompletion,
     seriesEnded,
     Object.hashAll(values),
+    primaryValueId,
     occurrence,
   );
 
   @override
   String toString() {
     return 'Project(id: $id, name: $name, completed: $completed, isPinned: $isPinned, '
-        'values: ${values.length} values, isOccurrence: $isOccurrenceInstance)';
+        'values: ${values.length} values, primaryValueId: $primaryValueId, '
+        'isOccurrence: $isOccurrenceInstance)';
   }
 }

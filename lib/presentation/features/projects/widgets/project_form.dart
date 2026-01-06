@@ -3,8 +3,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priority_picker.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_value_picker.dart';
+// import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tag_picker.dart'; // Removed
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/form_date_chip.dart';
@@ -24,7 +23,7 @@ class ProjectForm extends StatefulWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
-    this.availableLabels = const <Label>[],
+    this.availableValues = const <Value>[],
     this.onDelete,
     this.onClose,
     super.key,
@@ -34,7 +33,7 @@ class ProjectForm extends StatefulWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Project? initialData;
-  final List<Label> availableLabels;
+  final List<Value> availableValues;
   final VoidCallback? onDelete;
 
   /// Called when the user wants to close the form.
@@ -81,14 +80,10 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       'startDate': widget.initialData?.startDate,
       'deadlineDate': widget.initialData?.deadlineDate,
       'priority': widget.initialData?.priority,
-      'valueIds': (widget.initialData?.labels ?? <Label>[])
-          .where((l) => l.type == LabelType.value)
-          .map((Label e) => e.id)
-          .toList(growable: false),
-      'tagIds': (widget.initialData?.labels ?? <Label>[])
-          .where((l) => l.type == LabelType.label)
-          .map((Label e) => e.id)
-          .toList(growable: false),
+      'valueIds':
+          (widget.initialData?.values ?? <Value>[]) // Use values property
+              .map((Value e) => e.id)
+              .toList(growable: false),
       'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
     };
 
@@ -294,18 +289,11 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     const SizedBox(height: 16),
 
                     // Values
-                    FormBuilderValuePicker(
-                      name: 'valueIds',
-                      availableLabels: widget.availableLabels,
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Tags
-                    FormBuilderTagPicker(
-                      name: 'tagIds',
-                      availableLabels: widget.availableLabels,
-                    ),
+                    // TODO: Implement Value Picker
+                    // FormBuilderValuePicker(
+                    //   name: 'valueIds',
+                    //   availableValues: widget.availableValues,
+                    // ),
                   ],
                 ),
               ),

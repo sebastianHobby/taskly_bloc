@@ -7,9 +7,9 @@ import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
 import 'package:taskly_bloc/core/utils/entity_operation.dart';
 import 'package:taskly_bloc/core/utils/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/label_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -26,7 +26,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     String? projectId,
     int? priority,
     String? repeatIcalRrule,
-    List<Label>? labels,
+    List<String>? valueIds,
   }) = _TaskDetailUpdate;
   const factory TaskDetailEvent.delete({
     required String id,
@@ -41,7 +41,7 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
     String? projectId,
     int? priority,
     String? repeatIcalRrule,
-    List<Label>? labels,
+    List<String>? valueIds,
   }) = _TaskDetailCreate;
 
   const factory TaskDetailEvent.loadById({required String taskId}) =
@@ -56,7 +56,7 @@ class TaskDetailState with _$TaskDetailState {
 
   const factory TaskDetailState.initialDataLoadSuccess({
     required List<Project> availableProjects,
-    required List<Label> availableLabels,
+    required List<Value> availableValues,
   }) = TaskDetailInitialDataLoadSuccess;
 
   const factory TaskDetailState.operationSuccess({
@@ -69,7 +69,7 @@ class TaskDetailState with _$TaskDetailState {
   const factory TaskDetailState.loadInProgress() = TaskDetailLoadInProgress;
   const factory TaskDetailState.loadSuccess({
     required List<Project> availableProjects,
-    required List<Label> availableLabels,
+    required List<Value> availableValues,
     required Task task,
   }) = TaskDetailLoadSuccess;
 }
@@ -79,12 +79,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   TaskDetailBloc({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required LabelRepositoryContract labelRepository,
+    required ValueRepositoryContract valueRepository,
     String? taskId,
     bool autoLoad = true,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _labelRepository = labelRepository,
+       _valueRepository = valueRepository,
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(_onLoadInitialData);
     on<_TaskDetailLoadById>(_onGet);
@@ -103,17 +103,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
-  final LabelRepositoryContract _labelRepository;
+  final ValueRepositoryContract _valueRepository;
 
   @override
   Talker get logger => talker;
-
-  @override
-  Future<void> close() {
-    // Defensive cleanup for modal-scoped blocs
-    // Ensures resources are released even if modal disposal is irregular
-    return super.close();
-  }
 
   // DetailBlocMixin implementation
   @override
@@ -135,12 +128,12 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     emit(const TaskDetailState.loadInProgress());
     try {
       final projects = await _projectRepository.getAll();
-      final labels = await _labelRepository.getAll();
+      final values = await _valueRepository.getAll();
 
       emit(
         TaskDetailState.initialDataLoadSuccess(
           availableProjects: projects,
-          availableLabels: labels,
+          availableValues: values,
         ),
       );
     } catch (error, stackTrace) {
@@ -172,13 +165,13 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
       }
 
       final projects = await _projectRepository.getAll();
-      final labels = await _labelRepository.getAll();
+      final values = await _valueRepository.getAll();
 
       emit(
         TaskDetailState.loadSuccess(
           task: task,
           availableProjects: projects,
-          availableLabels: labels,
+          availableValues: values,
         ),
       );
     } catch (error, stackTrace) {
@@ -208,7 +201,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
         projectId: event.projectId,
         priority: event.priority,
         repeatIcalRrule: event.repeatIcalRrule,
-        labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+        valueIds: event.valueIds,
       ),
     );
   }
@@ -230,7 +223,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
           startDate: event.startDate,
           deadlineDate: event.deadlineDate,
           repeatIcalRrule: event.repeatIcalRrule,
-          labelIds: event.labels?.map((e) => e.id).toList(growable: false),
+          valueIds: event.valueIds,
         );
       },
     );

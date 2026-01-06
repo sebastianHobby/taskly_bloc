@@ -189,7 +189,6 @@ class SectionDataService {
     return switch (config) {
       TaskDataConfig() => 'task',
       ProjectDataConfig() => 'project',
-      LabelDataConfig() => 'label',
       ValueDataConfig() => 'value',
       JournalDataConfig() => 'journal',
     };
@@ -206,10 +205,6 @@ class SectionDataService {
       ProjectDataConfig(:final query) => (
         await _projectRepository.watchAll(query).first,
         'project',
-      ),
-      LabelDataConfig() => (
-        const <dynamic>[], // Labels are deprecated
-        'label',
       ),
       ValueDataConfig() => (
         await _valueRepository.getAll(),
@@ -241,7 +236,6 @@ class SectionDataService {
     return switch (config) {
       TaskDataConfig(:final query) => _taskRepository.watchAll(query),
       ProjectDataConfig(:final query) => _projectRepository.watchAll(query),
-      LabelDataConfig() => Stream.value(const []),
       ValueDataConfig() => _valueRepository.watchAll(),
       JournalDataConfig(:final query) => _watchJournalEntries(query),
     };

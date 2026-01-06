@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/models/label.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -46,7 +45,7 @@ class ProjectNextTaskResolver {
 
     // Priority 3: Tasks with values
     final withValues = projectTasks.where(
-      (t) => t.labels.any((l) => l.type == LabelType.value),
+      (t) => t.values.isNotEmpty,
     );
     if (withValues.isNotEmpty) {
       return _selectBest(withValues.toList(), config);

@@ -114,7 +114,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       () => _valueRepository.create(
         name: event.name,
         color: event.color,
-        priority: event.priority.weight,
+        priority: event.priority,
         iconName: event.iconName,
       ),
     );
@@ -131,7 +131,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
         id: event.id,
         name: event.name,
         color: event.color,
-        priority: event.priority.weight,
+        priority: event.priority,
         iconName: event.iconName,
       ),
     );

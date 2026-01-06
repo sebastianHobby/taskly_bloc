@@ -95,8 +95,9 @@ class TaskFilterEvaluator {
                 date.isAtSameMomentAs(p.startDate!)) &&
             (date.isBefore(p.endDate!) || date.isAtSameMomentAs(p.endDate!));
       case DateOperator.relative:
-        if (p.relativeDays == null || p.relativeComparison == null)
+        if (p.relativeDays == null || p.relativeComparison == null) {
           return false;
+        }
         final targetDate = DateTime(
           now.year,
           now.month,
@@ -115,8 +116,9 @@ class TaskFilterEvaluator {
             dateOnly.isBefore(targetDate) ||
                 dateOnly.isAtSameMomentAs(targetDate),
         };
-      default:
-        return false;
+      case DateOperator.isNull:
+      case DateOperator.isNotNull:
+        return false; // Handled before switch
     }
   }
 

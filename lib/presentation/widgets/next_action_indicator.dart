@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/models/label.dart';
 
 /// A visual indicator showing that a task is marked as a "Next Action".
 ///
@@ -174,18 +173,4 @@ class _InfoRow extends StatelessWidget {
       ],
     );
   }
-}
-
-/// Extension to check if a task has the Next Action (pinned) system label
-extension TaskNextActionExtension on List<Label> {
-  /// Returns true if this list contains the Next Action (pinned) system label
-  bool get hasNextActionLabel => any(
-    (label) => label.systemLabelType == SystemLabelType.pinned,
-  );
-
-  /// Returns the Next Action label if present, null otherwise
-  Label? get nextActionLabel => cast<Label?>().firstWhere(
-    (label) => label?.systemLabelType == SystemLabelType.pinned,
-    orElse: () => null,
-  );
 }

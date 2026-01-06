@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/label_query.dart';
+import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 part 'data_config.freezed.dart';
@@ -23,16 +23,10 @@ sealed class DataConfig with _$DataConfig {
     @ProjectQueryConverter() required ProjectQuery query,
   }) = ProjectDataConfig;
 
-  /// Label data configuration (excludes values by default)
-  @FreezedUnionValue('label')
-  const factory DataConfig.label({
-    @LabelQueryConverter() LabelQuery? query,
-  }) = LabelDataConfig;
-
-  /// Value data configuration (DR-003: values are labels with type=value)
+  /// Value data configuration
   @FreezedUnionValue('value')
   const factory DataConfig.value({
-    @LabelQueryConverter() LabelQuery? query,
+    @ValueQueryConverter() ValueQuery? query,
   }) = ValueDataConfig;
 
   /// Journal entry data configuration
@@ -96,17 +90,17 @@ class NullableProjectQueryConverter
   Map<String, dynamic>? toJson(ProjectQuery? object) => object?.toJson();
 }
 
-/// JSON converter for LabelQuery (nullable)
-class LabelQueryConverter
-    implements JsonConverter<LabelQuery?, Map<String, dynamic>?> {
-  const LabelQueryConverter();
+/// JSON converter for ValueQuery (nullable)
+class ValueQueryConverter
+    implements JsonConverter<ValueQuery?, Map<String, dynamic>?> {
+  const ValueQueryConverter();
 
   @override
-  LabelQuery? fromJson(Map<String, dynamic>? json) =>
-      json == null ? null : LabelQuery.fromJson(json);
+  ValueQuery? fromJson(Map<String, dynamic>? json) =>
+      json == null ? null : ValueQuery.fromJson(json);
 
   @override
-  Map<String, dynamic>? toJson(LabelQuery? object) => object?.toJson();
+  Map<String, dynamic>? toJson(ValueQuery? object) => object?.toJson();
 }
 
 /// JSON converter for JournalQuery (nullable)

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
 import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -7,7 +6,6 @@ import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/urgent_banner.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/value_balance_chart.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 import 'package:taskly_bloc/presentation/features/screens/widgets/persona_banner.dart';
 
 class AllocationSectionRenderer extends StatelessWidget {

@@ -91,7 +91,6 @@ void main() {
         containsAll([
           RuleType.date,
           RuleType.boolean,
-          RuleType.labels,
           RuleType.project,
           RuleType.value,
         ]),

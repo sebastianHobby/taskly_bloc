@@ -124,15 +124,15 @@ void main() {
         verify(() => projectRepo.watchCount(projectQuery)).called(1);
       });
 
-      test('returns null for label data section', () {
+      test('returns null for value data section', () {
         final screen = _makeScreen(
-          id: 'labels-1',
-          name: 'Labels',
+          id: 'values-1',
+          name: 'Values',
           category: ScreenCategory.workspace,
           sections: [
             DataSection(
-              config: DataConfig.label(),
-              title: 'Labels',
+              config: DataConfig.value(),
+              title: 'Values',
             ),
           ],
         );

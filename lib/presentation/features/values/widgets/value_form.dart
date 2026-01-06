@@ -5,7 +5,6 @@ import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
-import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priority_picker.dart';
 
 /// A modern form for creating or editing values.
 ///
@@ -187,10 +186,28 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                   Row(
                     children: [
                       Expanded(
-                        child: FormBuilderPriorityPicker(
+                        child: FormBuilderDropdown<ValuePriority>(
                           name: 'priority',
-                          label: 'Priority',
-                          compact: true,
+                          decoration: InputDecoration(
+                            labelText: 'Priority',
+                            filled: true,
+                            fillColor: colorScheme.surfaceContainerLow,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          items: ValuePriority.values
+                              .map(
+                                (priority) => DropdownMenuItem(
+                                  value: priority,
+                                  child: Text(
+                                    priority.name[0].toUpperCase() +
+                                        priority.name.substring(1),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                           validator:
                               FormBuilderValidators.required<ValuePriority>(
                                 errorText: 'Priority is required',

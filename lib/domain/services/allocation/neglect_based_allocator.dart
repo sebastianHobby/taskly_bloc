@@ -1,4 +1,3 @@
-import 'package:taskly_bloc/domain/extensions/task_value_inheritance.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
@@ -84,9 +83,8 @@ class NeglectBasedAllocator implements AllocationStrategy {
         continue;
       }
 
-      // Get task's value(s)
-      final effectiveValues = task.getEffectiveValues();
-      final categoryIds = effectiveValues.map((v) => v.id).toSet();
+      // Get task's direct values (no inheritance)
+      final categoryIds = task.values.map((v) => v.id).toSet();
 
       final matchedCategories = categories.keys
           .where(categoryIds.contains)
