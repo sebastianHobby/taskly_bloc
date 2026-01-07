@@ -31,7 +31,7 @@ dependencies:
   path: ^1.9.1
   path_provider: ^2.1.5
   powersync: ^1.16.2
-  rrule: ^0.2.17
+  rrule: ^0.2.18
   rxdart: ^0.28.0
   statistics: ^1.2.1
   supabase_auth_ui: ^0.5.5
