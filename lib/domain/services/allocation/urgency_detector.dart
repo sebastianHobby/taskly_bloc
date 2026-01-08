@@ -1,6 +1,7 @@
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
 /// Shared urgency detection logic for tasks and projects.
 ///
@@ -71,7 +72,7 @@ class UrgencyDetector {
   /// or get included in `includeAll` mode.
   List<Task> findUrgentValuelessTasks(List<Task> tasks) {
     return tasks.where((task) {
-      final hasNoValue = task.values.isEmpty;
+      final hasNoValue = task.isEffectivelyValueless;
       return hasNoValue && isTaskUrgent(task);
     }).toList();
   }

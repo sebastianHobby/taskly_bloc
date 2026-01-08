@@ -289,11 +289,13 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     const SizedBox(height: 16),
 
                     // Values
-                    // TODO: Implement Value Picker
-                    // FormBuilderValuePicker(
-                    //   name: 'valueIds',
-                    //   availableValues: widget.availableValues,
-                    // ),
+                    FormBuilderValuePicker(
+                      name: 'valueIds',
+                      label: l10n.projectFormValuesLabel,
+                      hint: 'Select values',
+                      availableValues: widget.availableValues,
+                      isRequired: true,
+                    ),
                   ],
                 ),
               ),

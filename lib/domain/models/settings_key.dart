@@ -20,19 +20,11 @@ sealed class SettingsKey<T> {
   /// Allocation algorithm settings.
   static const allocation = _SingletonKey<AllocationConfig>('allocation');
 
-  /// Allocation alert configuration.
-  static const allocationAlerts = _SingletonKey<AllocationAlertSettings>(
-    'allocationAlerts',
-  );
-
   /// Soft gates threshold settings.
   static const softGates = _SingletonKey<SoftGatesSettings>('softGates');
 
   /// Next actions display settings.
   static const nextActions = _SingletonKey<NextActionsSettings>('nextActions');
-
-  /// Value ranking weights for allocation.
-  static const valueRanking = _SingletonKey<ValueRanking>('valueRanking');
 
   // ─────────────────────────────────────────────────────────────────────────
   // Keyed keys (parameterized by identifier)
@@ -46,18 +38,9 @@ sealed class SettingsKey<T> {
   static SettingsKey<PageDisplaySettings> pageDisplay(PageKey page) =>
       _KeyedKey<PageDisplaySettings>('pageDisplay', page.key);
 
-  /// Screen preferences (sortOrder, isActive) for a system screen.
-  static SettingsKey<ScreenPreferences> screenPrefs(String screenKey) =>
-      _KeyedKey<ScreenPreferences>('screenPrefs', screenKey);
-
   // ─────────────────────────────────────────────────────────────────────────
   // Aggregate keys
   // ─────────────────────────────────────────────────────────────────────────
-
-  /// All screen preferences as a map.
-  static const allScreenPrefs = _SingletonKey<Map<String, ScreenPreferences>>(
-    'allScreenPrefs',
-  );
 
   /// Full AppSettings (for migration/debugging).
   static const all = _SingletonKey<AppSettings>('all');

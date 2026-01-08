@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Focus Setup - Choose Mode</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#308ce8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                        "surface-dark": "#1E2936",
+                        "surface-light": "#FFFFFF",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for cleaner mobile look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased selection:bg-primary/30">
+<!-- Phone Container Simulator -->
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto shadow-2xl bg-background-light dark:bg-background-dark border-x border-slate-200 dark:border-slate-800">
+<!-- Header -->
+<header class="flex items-center p-4 pb-2 justify-between sticky top-0 z-30 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-background-light/60 dark:supports-[backdrop-filter]:bg-background-dark/60">
+<button class="text-slate-900 dark:text-white flex size-10 shrink-0 items-center justify-center cursor-pointer rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-xl">arrow_back_ios_new</span>
+</button>
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight flex-1 text-center pr-10 tracking-tight">Select Focus Mode</h1>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 pt-2 pb-32">
+<!-- Context Subtitle -->
+<div class="mb-6 px-1">
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-relaxed">
+                    How do you want to structure your day?
+                </p>
+</div>
+<!-- Cards Stack -->
+<div aria-label="Focus Modes" class="flex flex-col gap-4" role="radiogroup">
+<!-- Card 1: Intentional -->
+<label class="group relative flex cursor-pointer flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark p-4 shadow-sm transition-all duration-200 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-[0_0_0_1px_rgba(48,140,232,1)] active:scale-[0.99]">
+<div class="flex items-start gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 group-has-[:checked]:bg-primary group-has-[:checked]:text-white transition-colors duration-200">
+<span class="material-symbols-outlined text-[28px]">center_focus_strong</span>
+</div>
+<div class="flex flex-1 flex-col pt-0.5">
+<div class="flex justify-between items-center mb-1">
+<span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Intentional</span>
+</div>
+<span class="text-primary text-sm font-medium mb-1.5 uppercase tracking-wide text-xs">Deep Work &amp; Clarity</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Strict limits on distractions. Best for aggressive goals.</span>
+</div>
+<div class="shrink-0 pt-2">
+<input class="h-5 w-5 border-2 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark bg-transparent" name="focus_mode" type="radio" value="intentional"/>
+</div>
+</div>
+</label>
+<!-- Card 2: Sustainable (Recommended) -->
+<label class="group relative flex cursor-pointer flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark p-4 shadow-sm transition-all duration-200 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-[0_0_0_1px_rgba(48,140,232,1)] active:scale-[0.99]">
+<!-- Recommended Badge -->
+<div class="absolute -top-3 right-4 bg-primary text-white text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md z-10 tracking-wide uppercase">
+                        Recommended
+                    </div>
+<div class="flex items-start gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 group-has-[:checked]:bg-primary group-has-[:checked]:text-white transition-colors duration-200">
+<span class="material-symbols-outlined text-[28px]">eco</span>
+</div>
+<div class="flex flex-1 flex-col pt-0.5">
+<div class="flex justify-between items-center mb-1">
+<span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Sustainable</span>
+</div>
+<span class="text-primary text-sm font-medium mb-1.5 uppercase tracking-wide text-xs">Balanced Progress</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">A healthy mix of focus and flexibility. Prevents burnout.</span>
+</div>
+<div class="shrink-0 pt-2">
+<input checked="" class="h-5 w-5 border-2 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark bg-transparent" name="focus_mode" type="radio" value="sustainable"/>
+</div>
+</div>
+</label>
+<!-- Card 3: Responsive -->
+<label class="group relative flex cursor-pointer flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark p-4 shadow-sm transition-all duration-200 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-[0_0_0_1px_rgba(48,140,232,1)] active:scale-[0.99]">
+<div class="flex items-start gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 group-has-[:checked]:bg-primary group-has-[:checked]:text-white transition-colors duration-200">
+<span class="material-symbols-outlined text-[28px]">bolt</span>
+</div>
+<div class="flex flex-1 flex-col pt-0.5">
+<div class="flex justify-between items-center mb-1">
+<span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Responsive</span>
+</div>
+<span class="text-primary text-sm font-medium mb-1.5 uppercase tracking-wide text-xs">Quick adaptation</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Prioritizes incoming requests and quick tasks.</span>
+</div>
+<div class="shrink-0 pt-2">
+<input class="h-5 w-5 border-2 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark bg-transparent" name="focus_mode" type="radio" value="responsive"/>
+</div>
+</div>
+</label>
+<!-- Card 4: Personalized -->
+<label class="group relative flex cursor-pointer flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-surface-light dark:bg-surface-dark p-4 shadow-sm transition-all duration-200 hover:border-primary/40 has-[:checked]:border-primary has-[:checked]:bg-primary/5 has-[:checked]:shadow-[0_0_0_1px_rgba(48,140,232,1)] active:scale-[0.99]">
+<div class="flex items-start gap-4">
+<div class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 group-has-[:checked]:bg-primary group-has-[:checked]:text-white transition-colors duration-200">
+<span class="material-symbols-outlined text-[28px]">tune</span>
+</div>
+<div class="flex flex-1 flex-col pt-0.5">
+<div class="flex justify-between items-center mb-1">
+<span class="text-slate-900 dark:text-white text-lg font-bold tracking-tight">Personalized</span>
+</div>
+<span class="text-primary text-sm font-medium mb-1.5 uppercase tracking-wide text-xs">Custom Setup</span>
+<span class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Manually configure your allocation rules.</span>
+</div>
+<div class="shrink-0 pt-2">
+<input class="h-5 w-5 border-2 border-slate-300 dark:border-slate-600 text-primary focus:ring-primary focus:ring-offset-background-light dark:focus:ring-offset-background-dark bg-transparent" name="focus_mode" type="radio" value="personalized"/>
+</div>
+</div>
+</label>
+</div>
+</main>
+<!-- Sticky Footer Action -->
+<div class="fixed bottom-0 left-0 right-0 z-20 p-4 pt-2 bg-gradient-to-t from-background-light via-background-light to-transparent dark:from-background-dark dark:via-background-dark pointer-events-none flex justify-center w-full">
+<div class="w-full max-w-md pointer-events-auto px-4 pb-4">
+<button class="w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-14 bg-primary text-white text-base font-bold leading-normal tracking-wide hover:bg-blue-600 active:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-[0.98]">
+                    Confirm Selection
+                </button>
+</div>
+</div>
+</div>
+</body></html>

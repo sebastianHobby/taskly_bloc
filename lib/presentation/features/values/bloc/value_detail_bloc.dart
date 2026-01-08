@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
@@ -58,10 +59,10 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     String? valueId,
   }) : _valueRepository = valueRepository,
        super(const ValueDetailState.initial()) {
-    on<_ValueDetailLoadById>(_onGet);
-    on<_ValueDetailCreate>(_onCreate);
-    on<_ValueDetailUpdate>(_onUpdate);
-    on<_ValueDetailDelete>(_onDelete);
+    on<_ValueDetailLoadById>(_onGet, transformer: restartable());
+    on<_ValueDetailCreate>(_onCreate, transformer: droppable());
+    on<_ValueDetailUpdate>(_onUpdate, transformer: droppable());
+    on<_ValueDetailDelete>(_onDelete, transformer: droppable());
 
     if (valueId != null) {
       add(ValueDetailEvent.loadById(valueId: valueId));

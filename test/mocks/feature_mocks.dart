@@ -1,7 +1,6 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
@@ -26,5 +25,3 @@ class MockWellbeingRepositoryContract extends Mock
 
 class MockAuthRepositoryContract extends Mock
     implements AuthRepositoryContract {}
-
-class MockUserDataSeeder extends Mock implements UserDataSeederContract {}

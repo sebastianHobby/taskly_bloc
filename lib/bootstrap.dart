@@ -11,30 +11,13 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
-import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/next_action/view/allocation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/screen_management_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_unified_page.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
-import 'package:taskly_bloc/presentation/features/workflow/view/workflow_list_page.dart';
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   // Initialize Talker logging system first (outside zone so it's always available)
@@ -185,46 +168,9 @@ Future<void> _maybeDevAutoLogin() async {
 /// This centralizes all screen→bloc mappings. Screens not registered here
 /// automatically use [UnifiedScreenPage] for convention-based rendering.
 void _registerRoutingBuilders() {
-  final wellbeingRepo = getIt<WellbeingRepositoryContract>();
-  final analyticsService = getIt<AnalyticsService>();
-  final settingsRepo = getIt<SettingsRepositoryContract>();
-  final screensRepo = getIt<ScreenDefinitionsRepositoryContract>();
-  final authRepo = getIt<AuthRepositoryContract>();
   final taskRepo = getIt<TaskRepositoryContract>();
   final projectRepo = getIt<ProjectRepositoryContract>();
   final valueRepo = getIt<ValueRepositoryContract>();
-
-  // Register custom screen builders (screens that need specific blocs or DI)
-  // Keys reference SystemScreenDefinitions to prevent drift if screenKey changes.
-  Routing.registerScreenBuilders({
-    // Wellbeing screens with custom blocs
-    SystemScreenDefinitions.journal.screenKey: () => BlocProvider(
-      create: (_) => JournalEntryBloc(wellbeingRepo),
-      child: const JournalScreen(),
-    ),
-    SystemScreenDefinitions.trackers.screenKey: () => BlocProvider(
-      create: (_) => TrackerManagementBloc(wellbeingRepo),
-      child: const TrackerManagementScreen(),
-    ),
-    SystemScreenDefinitions.wellbeingDashboard.screenKey: () => BlocProvider(
-      create: (_) => WellbeingDashboardBloc(analyticsService),
-      child: const WellbeingDashboardScreen(),
-    ),
-
-    // Settings-related screens with DI
-    SystemScreenDefinitions.settings.screenKey: () => const SettingsScreen(),
-    SystemScreenDefinitions.allocationSettings.screenKey: () =>
-        AllocationSettingsPage(
-          settingsRepository: settingsRepo,
-          valueRepository: getIt<ValueRepositoryContract>(),
-        ),
-    SystemScreenDefinitions.navigationSettings.screenKey: () =>
-        NavigationSettingsPage(screensRepository: screensRepo),
-    SystemScreenDefinitions.screenManagement.screenKey: () =>
-        ScreenManagementPage(userId: authRepo.currentUser!.id),
-    SystemScreenDefinitions.workflows.screenKey: () =>
-        WorkflowListPage(userId: authRepo.currentUser!.id),
-  });
 
   // Register entity detail builders
   Routing.registerEntityBuilders(

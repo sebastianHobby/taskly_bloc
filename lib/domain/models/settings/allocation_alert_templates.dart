@@ -80,6 +80,18 @@ abstract class AllocationAlertTemplates {
         ),
         severity: AlertSeverity.notice,
       ),
+      AllocationAlertRule(
+        id: 'reflector_quota',
+        name: 'Category Limit Reached',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.notice,
+      ),
+      AllocationAlertRule(
+        id: 'reflector_low_priority',
+        name: 'Low Priority Exclusions',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.notice,
+      ),
     ],
   );
 
@@ -129,6 +141,18 @@ abstract class AllocationAlertTemplates {
         ),
         severity: AlertSeverity.notice,
       ),
+      AllocationAlertRule(
+        id: 'realist_quota',
+        name: 'Category Limit Reached',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.warning,
+      ),
+      AllocationAlertRule(
+        id: 'realist_low_priority',
+        name: 'Low Priority Exclusions',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.notice,
+      ),
     ],
   );
 
@@ -165,6 +189,30 @@ abstract class AllocationAlertTemplates {
           ],
         ),
         severity: AlertSeverity.critical,
+      ),
+      AllocationAlertRule(
+        id: 'firefighter_no_value',
+        name: 'Uncategorized Tasks',
+        condition: QueryFilter(
+          shared: [
+            TaskValuePredicate(
+              operator: ValueOperator.isNull,
+            ),
+          ],
+        ),
+        severity: AlertSeverity.warning,
+      ),
+      AllocationAlertRule(
+        id: 'firefighter_quota',
+        name: 'Category Limit Reached',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.warning,
+      ),
+      AllocationAlertRule(
+        id: 'firefighter_low_priority',
+        name: 'Low Priority Exclusions',
+        condition: QueryFilter(shared: []),
+        severity: AlertSeverity.notice,
       ),
     ],
   );

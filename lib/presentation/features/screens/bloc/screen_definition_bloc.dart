@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
@@ -35,16 +36,18 @@ sealed class ScreenDefinitionState with _$ScreenDefinitionState {
 /// ## Race Condition Prevention
 ///
 /// This bloc assumes that it will only be created/used AFTER the user is
-/// fully authenticated and system data has been seeded. The [AuthBloc]
+/// fully authenticated and system data is available. The [AuthBloc]
 /// ensures this by:
-/// 1. Emitting [AuthStatus.seeding] while `UserDataSeeder.seedAll()` runs
-/// 2. Only emitting [AuthStatus.authenticated] after seeding completes
+/// 1. Waiting for PowerSync sync to establish initial data
+/// 2. Only emitting [AuthStatus.authenticated] after sync completes
+///
+/// System screens are generated from code ([SystemScreenDefinitions]) not
+/// from database, so they're always immediately available without seeding.
+///
+/// Attention rules are seeded via [AttentionSeeder] during initial sync.
 ///
 /// UI components should only render screens (and thus create this bloc)
-/// when auth status is [AuthStatus.authenticated], not during [seeding].
-///
-/// This eliminates the need for grace periods or timing-based workarounds
-/// to handle the race between screen queries and data seeding.
+/// when auth status is [AuthStatus.authenticated].
 class ScreenDefinitionBloc
     extends Bloc<ScreenDefinitionEvent, ScreenDefinitionState> {
   ScreenDefinitionBloc({
@@ -53,7 +56,10 @@ class ScreenDefinitionBloc
        _createdAt = DateTime.now(),
        super(const ScreenDefinitionState.loading()) {
     talker.blocLog('ScreenDefinitionBloc', 'CREATED at $_createdAt');
-    on<_SubscriptionRequested>(_onSubscriptionRequested);
+    on<_SubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: restartable(),
+    );
   }
 
   final ScreenDefinitionsRepositoryContract _repository;

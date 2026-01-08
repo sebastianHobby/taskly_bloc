@@ -9,16 +9,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -34,60 +33,31 @@ class MockScreenDefinitionsRepository extends Mock
 
 class MockScreenDataInterpreter extends Mock implements ScreenDataInterpreter {}
 
-// Fallback for mocktail any() matching
-class FakeDataDrivenScreenDefinition extends Fake
-    implements DataDrivenScreenDefinition {}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // Test Helpers
 // ═══════════════════════════════════════════════════════════════════════════
 
 final _fixedTime = DateTime(2024, 1, 1);
 
-DataDrivenScreenDefinition _createScreenDefinition({
+ScreenDefinition _createScreenDefinition({
   String id = 'test-screen',
   String screenKey = 'test-screen-key',
   String name = 'Test Screen',
 }) {
-  return DataDrivenScreenDefinition(
-    id: id,
-    screenKey: screenKey,
-    name: name,
-    screenType: ScreenType.list,
-    sections: [
-      Section.data(
-        config: DataConfig.task(query: TaskQuery.all()),
-        title: 'Tasks',
-      ),
-    ],
-    createdAt: _fixedTime,
-    updatedAt: _fixedTime,
-    screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-  );
-}
-
-NavigationOnlyScreenDefinition _createNavOnlyScreen({
-  String id = 'nav-screen',
-  String screenKey = 'nav-screen-key',
-  String name = 'Nav Screen',
-}) {
-  return NavigationOnlyScreenDefinition(
+  return ScreenDefinition(
     id: id,
     screenKey: screenKey,
     name: name,
     createdAt: _fixedTime,
     updatedAt: _fixedTime,
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
   );
 }
 
-ScreenData _createScreenData(DataDrivenScreenDefinition definition) {
+ScreenData _createScreenData(ScreenDefinition definition) {
   return ScreenData(
     definition: definition,
     sections: const [],
-    supportBlocks: const [],
   );
 }
 
@@ -98,13 +68,13 @@ ScreenData _createScreenData(DataDrivenScreenDefinition definition) {
 void main() {
   setUpAll(() {
     initializeTalkerForTest();
-    registerFallbackValue(FakeDataDrivenScreenDefinition());
+    registerFallbackValue(_createScreenDefinition());
   });
 
   group('ScreenBloc Integration', () {
     late MockScreenDefinitionsRepository mockScreenRepo;
     late MockScreenDataInterpreter mockInterpreter;
-    late DataDrivenScreenDefinition testDefinition;
+    late ScreenDefinition testDefinition;
     late ScreenData testScreenData;
 
     setUp(() {
@@ -118,7 +88,6 @@ void main() {
       blocTestSafe<ScreenBloc, ScreenState>(
         'emits loading then loaded when load succeeds',
         setUp: () {
-          // Use any() for any DataDrivenScreenDefinition argument
           when(
             () => mockInterpreter.watchScreen(any()),
           ).thenAnswer((_) => Stream.value(testScreenData));
@@ -131,25 +100,6 @@ void main() {
         expect: () => [
           isA<ScreenLoadingState>(),
           isA<ScreenLoadedState>(),
-        ],
-      );
-
-      blocTestSafe<ScreenBloc, ScreenState>(
-        'emits error for navigation-only screen',
-        build: () => ScreenBloc(
-          screenRepository: mockScreenRepo,
-          interpreter: mockInterpreter,
-        ),
-        act: (bloc) {
-          final navScreen = _createNavOnlyScreen();
-          bloc.add(ScreenEvent.load(definition: navScreen));
-        },
-        expect: () => [
-          isA<ScreenErrorState>().having(
-            (s) => s.message,
-            'message',
-            contains('navigation-only'),
-          ),
         ],
       );
 
@@ -230,66 +180,6 @@ void main() {
           ),
         ],
       );
-
-      blocTestSafe<ScreenBloc, ScreenState>(
-        'emits error when loadById returns navigation-only screen',
-        setUp: () {
-          final navScreen = _createNavOnlyScreen(screenKey: 'settings');
-
-          when(() => mockScreenRepo.watchScreen('settings')).thenAnswer(
-            (_) => Stream.value(
-              ScreenWithPreferences(
-                screen: navScreen,
-                preferences: const ScreenPreferences(
-                  isActive: true,
-                  sortOrder: 100,
-                ),
-              ),
-            ),
-          );
-        },
-        build: () => ScreenBloc(
-          screenRepository: mockScreenRepo,
-          interpreter: mockInterpreter,
-        ),
-        act: (bloc) =>
-            bloc.add(const ScreenEvent.loadById(screenId: 'settings')),
-        expect: () => [
-          isA<ScreenLoadingState>(),
-          isA<ScreenErrorState>().having(
-            (s) => s.message,
-            'message',
-            contains('navigation-only'),
-          ),
-        ],
-      );
-    });
-
-    group('refresh event', () {
-      blocTestSafe<ScreenBloc, ScreenState>(
-        'refresh does nothing when no screen loaded',
-        build: () => ScreenBloc(
-          screenRepository: mockScreenRepo,
-          interpreter: mockInterpreter,
-        ),
-        act: (bloc) => bloc.add(const ScreenEvent.refresh()),
-        expect: () => <ScreenState>[],
-      );
-    });
-
-    group('reset event', () {
-      blocTestSafe<ScreenBloc, ScreenState>(
-        'reset returns to initial state',
-        build: () => ScreenBloc(
-          screenRepository: mockScreenRepo,
-          interpreter: mockInterpreter,
-        ),
-        seed: () => ScreenState.loaded(data: testScreenData),
-        act: (bloc) => bloc.add(const ScreenEvent.reset()),
-        expect: () => [
-          isA<ScreenInitialState>(),
-        ],
-      );
     });
 
     group('data flow', () {
@@ -327,15 +217,13 @@ void main() {
           final data2 = ScreenData(
             definition: testDefinition,
             sections: const [
-              SectionDataWithMeta(
+              SectionVm(
                 index: 0,
-                result: SectionDataResult.data(
-                  primaryEntityType: 'task',
-                  primaryEntities: [],
-                ),
+                templateId: SectionTemplateId.taskList,
+                params: <String, dynamic>{},
+                data: SectionDataResult.data(items: <ScreenItem>[]),
               ),
             ],
-            supportBlocks: const [],
           );
 
           when(() => mockInterpreter.watchScreen(any())).thenAnswer(

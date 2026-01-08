@@ -4,9 +4,12 @@ import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
+import 'package:taskly_bloc/domain/models/attention/attention_item.dart';
 
 part 'section_data_result.freezed.dart';
 
@@ -17,6 +20,9 @@ enum AllocationDisplayMode {
 
   /// Tasks grouped by their qualifying value
   groupedByValue,
+
+  /// Tasks grouped by their project
+  groupedByProject,
 
   /// Pinned tasks first, then grouped by value
   pinnedFirst,
@@ -44,9 +50,8 @@ abstract class AllocationValueGroup with _$AllocationValueGroup {
 sealed class SectionDataResult with _$SectionDataResult {
   /// Data section result - generic entity list with optional related data
   const factory SectionDataResult.data({
-    required List<dynamic> primaryEntities,
-    required String primaryEntityType,
-    @Default({}) Map<String, List<dynamic>> relatedEntities,
+    required List<ScreenItem> items,
+    @Default({}) Map<String, List<Object>> relatedEntities,
 
     /// Computed enrichment data (e.g., value statistics).
     /// Present when the section requested enrichment via EnrichmentConfig.
@@ -86,8 +91,8 @@ sealed class SectionDataResult with _$SectionDataResult {
     /// Evaluated alerts based on user's alert config
     AlertEvaluationResult? alertEvaluationResult,
 
-    /// The persona used for this allocation
-    AllocationPersona? activePersona,
+    /// The focus mode used for this allocation
+    FocusMode? activeFocusMode,
 
     /// Display mode for this allocation section
     @Default(AllocationDisplayMode.pinnedFirst)
@@ -101,45 +106,96 @@ sealed class SectionDataResult with _$SectionDataResult {
     @Default(false) bool requiresValueSetup,
   }) = AllocationSectionResult;
 
-  /// Agenda section result - tasks grouped by date
+  /// Agenda section result - timeline with tasks and projects grouped by date
   const factory SectionDataResult.agenda({
-    required Map<String, List<Task>> groupedTasks,
-    required List<String> groupOrder,
+    required AgendaData agendaData,
   }) = AgendaSectionResult;
+
+  /// Issues summary section result - attention issues requiring action.
+  const factory SectionDataResult.issuesSummary({
+    required List<AttentionItem> items,
+    required int criticalCount,
+    required int warningCount,
+  }) = IssuesSummarySectionResult;
+
+  /// Allocation alerts section result - urgent excluded tasks.
+  const factory SectionDataResult.allocationAlerts({
+    required List<AttentionItem> alerts,
+    required int totalExcluded,
+  }) = AllocationAlertsSectionResult;
+
+  /// Check-in summary section result - due reviews.
+  const factory SectionDataResult.checkInSummary({
+    required List<AttentionItem> dueReviews,
+    required bool hasOverdue,
+  }) = CheckInSummarySectionResult;
+
+  /// Entity header for project detail screens.
+  const factory SectionDataResult.entityHeaderProject({
+    required Project project,
+    @Default(true) bool showCheckbox,
+    @Default(true) bool showMetadata,
+  }) = EntityHeaderProjectSectionResult;
+
+  /// Entity header for value detail screens.
+  const factory SectionDataResult.entityHeaderValue({
+    required Value value,
+    int? taskCount,
+    @Default(true) bool showMetadata,
+  }) = EntityHeaderValueSectionResult;
+
+  /// Missing entity header result (entity not found or unsupported type).
+  const factory SectionDataResult.entityHeaderMissing({
+    required String entityType,
+    required String entityId,
+  }) = EntityHeaderMissingSectionResult;
 
   const SectionDataResult._();
 
   /// Get all tasks from any result type
   List<Task> get allTasks => switch (this) {
-    DataSectionResult(:final primaryEntities, :final primaryEntityType) =>
-      primaryEntityType == 'task' ? primaryEntities.cast<Task>() : [],
+    DataSectionResult(:final items) =>
+      items.whereType<ScreenItemTask>().map((i) => i.task).toList(),
     AllocationSectionResult(:final allocatedTasks) => allocatedTasks,
-    AgendaSectionResult(:final groupedTasks) =>
-      groupedTasks.values.expand((list) => list).toList(),
+    AgendaSectionResult(:final agendaData) =>
+      agendaData.groups
+          .expand((g) => g.items)
+          .where((i) => i.isTask)
+          .map((i) => i.task!)
+          .toList(),
+    _ => [],
   };
 
   /// Get all projects from any result type
   List<Project> get allProjects => switch (this) {
-    DataSectionResult(:final primaryEntities, :final primaryEntityType) =>
-      primaryEntityType == 'project' ? primaryEntities.cast<Project>() : [],
+    DataSectionResult(:final items) =>
+      items.whereType<ScreenItemProject>().map((i) => i.project).toList(),
+    AgendaSectionResult(:final agendaData) =>
+      agendaData.groups
+          .expand((g) => g.items)
+          .where((i) => i.isProject)
+          .map((i) => i.project!)
+          .toList(),
+    EntityHeaderProjectSectionResult(:final project) => [project],
     _ => [],
   };
 
   /// Get all values from any result type
   List<Value> get allValues => switch (this) {
-    DataSectionResult(:final primaryEntities, :final primaryEntityType) =>
-      primaryEntityType == 'value' ? primaryEntities.cast<Value>() : [],
+    DataSectionResult(:final items) =>
+      items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
+    EntityHeaderValueSectionResult(:final value) => [value],
     _ => [],
   };
 
   /// Count of primary entities for logging
   int get primaryCount => switch (this) {
-    DataSectionResult(:final primaryEntities) => primaryEntities.length,
+    DataSectionResult(:final items) => items.length,
     AllocationSectionResult(:final allocatedTasks) => allocatedTasks.length,
-    AgendaSectionResult(:final groupedTasks) => groupedTasks.values.fold(
-      0,
-      (sum, list) => sum + list.length,
-    ),
+    AgendaSectionResult(:final agendaData) =>
+      agendaData.groups.fold(0, (sum, g) => sum + g.items.length) +
+          agendaData.overdueItems.length,
+    _ => 0,
   };
 
   /// Get related tasks (if any)

@@ -3,14 +3,16 @@ import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/drift/features/analytics_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/wellbeing_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/screen_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/attention_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/allocation_tables.drift.dart';
 import 'package:taskly_bloc/data/drift/features/workflow_tables.drift.dart';
+import 'package:taskly_bloc/data/drift/features/shared_enums.dart';
 import 'package:taskly_bloc/data/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/drift/converters/json_converters.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
 // Domain models needed by TypeConverters in generated code
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
+import 'package:taskly_bloc/domain/models/screens/actions_config.dart';
+import 'package:taskly_bloc/domain/models/screens/content_config.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
@@ -47,10 +49,6 @@ class ProjectTable extends Table {
   /// "7 days after completion".
   BoolColumn get repeatFromCompletion =>
       boolean().clientDefault(() => false).named('repeat_from_completion')();
-
-  /// Timestamp of last per-item review (standardized field)
-  DateTimeColumn get lastReviewedAt =>
-      dateTime().nullable().named('last_reviewed_at')();
 
   /// Priority level (1=P1/highest, 4=P4/lowest, null=none)
   IntColumn get priority => integer().nullable().named('priority')();
@@ -98,10 +96,6 @@ class TaskTable extends Table {
   BoolColumn get repeatFromCompletion =>
       boolean().clientDefault(() => false).named('repeat_from_completion')();
 
-  /// Timestamp of last per-item review
-  DateTimeColumn get lastReviewedAt =>
-      dateTime().nullable().named('last_reviewed_at')();
-
   /// Optional notes from last review
   TextColumn get reviewNotes => text().nullable().named('review_notes')();
 
@@ -134,10 +128,6 @@ class ValueTable extends Table {
   TextColumn get priority =>
       textEnum<ValuePriority>().nullable().named('priority')();
 
-  /// Timestamp of last per-item review (standardized field)
-  DateTimeColumn get lastReviewedAt =>
-      dateTime().nullable().named('last_reviewed_at')();
-
   @override
   List<String> get customConstraints => [
     "CHECK (color IS NULL OR color GLOB '#[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]')",
@@ -159,7 +149,7 @@ class ProjectValuesTable extends Table {
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
   BoolColumn get isPrimary =>
-      boolean().withDefault(const Constant(false)).named('is_primary')();
+      boolean().clientDefault(() => false).named('is_primary')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -187,7 +177,7 @@ class TaskValuesTable extends Table {
       .named('value_id')
       .references(ValueTable, #id, onDelete: KeyAction.cascade)();
   BoolColumn get isPrimary =>
-      boolean().withDefault(const Constant(false)).named('is_primary')();
+      boolean().clientDefault(() => false).named('is_primary')();
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>
@@ -214,31 +204,16 @@ class UserProfileTable extends Table {
   /// Individual settings columns for PowerSync field-level sync.
   /// Each column syncs independently to prevent cross-device conflicts.
   ///
-  /// IMPORTANT: When inserting via PowerSync, you MUST explicitly provide
-  /// values for all columns. The withDefault() only applies to Drift's own
-  /// schema - PowerSync stores data as JSON blobs and will return NULL for
-  /// any keys not present in the JSON.
-  TextColumn get globalSettings =>
-      text().withDefault(const Constant('{}')).named('global_settings')();
+  /// These columns are nullable because PowerSync syncs data as JSON blobs,
+  /// and fields not present in the JSON will be NULL. The repository layer
+  /// handles null values by returning default settings objects.
+  TextColumn get globalSettings => text().nullable().named('global_settings')();
   TextColumn get allocationSettings =>
-      text().withDefault(const Constant('{}')).named('allocation_settings')();
-  TextColumn get softGatesSettings =>
-      text().withDefault(const Constant('{}')).named('soft_gates_settings')();
-  TextColumn get nextActionsSettings =>
-      text().withDefault(const Constant('{}')).named('next_actions_settings')();
-  TextColumn get valueRanking =>
-      text().withDefault(const Constant('{}')).named('value_ranking')();
-  TextColumn get allocationAlertsSettings => text()
-      .withDefault(const Constant('{}'))
-      .named('allocation_alerts_settings')();
+      text().nullable().named('allocation_settings')();
   TextColumn get pageSortPreferences =>
-      text().withDefault(const Constant('{}')).named('page_sort_preferences')();
+      text().nullable().named('page_sort_preferences')();
   TextColumn get pageDisplaySettings =>
-      text().withDefault(const Constant('{}')).named('page_display_settings')();
-  TextColumn get screenPreferences =>
-      text().withDefault(const Constant('{}')).named('screen_preferences')();
-  TextColumn get reviewSettings =>
-      text().withDefault(const Constant('{}')).named('review_settings')();
+      text().nullable().named('page_display_settings')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
@@ -425,19 +400,27 @@ class ProjectRecurrenceExceptionsTable extends Table {
     Trackers,
     TrackerResponses,
     DailyTrackerResponses,
-    // Generic screen/workflow system
+    // Screen definitions (system templates + user-created)
     ScreenDefinitions,
+    // Screen preferences (per-user ordering/visibility)
+    ScreenPreferencesTable,
     PendingNotifications,
-    // New workflow system
+    // Workflow tables
     WorkflowDefinitions,
     Workflows,
+    // Allocation snapshots (allocated membership only)
+    AllocationSnapshots,
+    AllocationSnapshotEntries,
+    // Attention System (unified attention management)
+    AttentionRules,
+    AttentionResolutions,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

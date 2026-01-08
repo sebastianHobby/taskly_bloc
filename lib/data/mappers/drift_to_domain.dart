@@ -12,13 +12,13 @@ Value valueFromTable(drift.ValueTableData t) {
     color: t.color,
     priority: t.priority ?? ValuePriority.medium,
     iconName: t.iconName,
-    lastReviewedAt: t.lastReviewedAt,
   );
 }
 
 Project projectFromTable(
   drift.ProjectTableData t, {
   List<Value>? values,
+  String? primaryValueId,
 }) {
   return Project(
     id: t.id,
@@ -32,10 +32,10 @@ Project projectFromTable(
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
-    lastReviewedAt: t.lastReviewedAt,
     priority: t.priority,
     isPinned: t.isPinned,
     values: values ?? const <Value>[],
+    primaryValueId: primaryValueId,
   );
 }
 
@@ -43,6 +43,7 @@ Task taskFromTable(
   drift.TaskTableData t, {
   Project? project,
   List<Value>? values,
+  String? primaryValueId,
 }) {
   return Task(
     id: t.id,
@@ -53,13 +54,14 @@ Task taskFromTable(
     description: t.description,
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),
+    projectId: t.projectId,
     repeatIcalRrule: t.repeatIcalRrule,
     repeatFromCompletion: t.repeatFromCompletion,
     seriesEnded: t.seriesEnded,
-    lastReviewedAt: t.lastReviewedAt,
     priority: t.priority,
     isPinned: t.isPinned,
     project: project,
     values: values ?? const <Value>[],
+    primaryValueId: primaryValueId,
   );
 }

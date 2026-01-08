@@ -57,6 +57,7 @@ void main() {
       mockL10n = MockAppLocalizations();
       when(() => mockL10n.taskNotFound).thenReturn('Task not found');
       when(() => mockL10n.projectNotFound).thenReturn('Project not found');
+      when(() => mockL10n.valueNotFound).thenReturn('Value not found');
       when(() => mockL10n.labelNotFound).thenReturn('Label not found');
       when(() => mockL10n.genericErrorFallback).thenReturn('An error occurred');
     });

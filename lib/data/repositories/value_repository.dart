@@ -3,6 +3,7 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
+import 'package:taskly_bloc/data/repositories/query_stream_cache.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
@@ -19,12 +20,28 @@ class ValueRepository implements ValueRepositoryContract {
   final drift.AppDatabase driftDb;
   final IdGenerator idGenerator;
 
+  final QueryStreamCache<ValueQuery, List<Value>> _sharedWatchAllCache =
+      QueryStreamCache(maxEntries: 16);
+
+  drift_pkg.Expression<int> _prioritySortExpr(drift.ValueTable l) {
+    // `ValueTable.priority` is stored as a text enum (low/medium/high). Ordering
+    // lexicographically does not match domain priority ordering, so we map it to
+    // a numeric rank for correct sorting.
+    return drift_pkg.CustomExpression<int>(
+      'CASE priority '
+      "WHEN 'high' THEN 2 "
+      "WHEN 'medium' THEN 1 "
+      "WHEN 'low' THEN 0 "
+      'ELSE -1 END',
+    );
+  }
+
   Stream<List<drift.ValueTableData>> get _valueStream =>
       (driftDb.select(
             driftDb.valueTable,
           )..orderBy([
             (l) => drift_pkg.OrderingTerm(
-              expression: l.priority,
+              expression: _prioritySortExpr(l),
               mode: drift_pkg.OrderingMode.desc,
             ),
             (l) => drift_pkg.OrderingTerm(expression: l.name),
@@ -36,7 +53,7 @@ class ValueRepository implements ValueRepositoryContract {
             driftDb.valueTable,
           )..orderBy([
             (l) => drift_pkg.OrderingTerm(
-              expression: l.priority,
+              expression: _prioritySortExpr(l),
               mode: drift_pkg.OrderingMode.desc,
             ),
             (l) => drift_pkg.OrderingTerm(expression: l.name),
@@ -52,21 +69,27 @@ class ValueRepository implements ValueRepositoryContract {
   // Domain-aware read methods
   @override
   Stream<List<Value>> watchAll([ValueQuery? query]) {
-    if (query == null) {
-      return _valueStream.map((rows) => rows.map(valueFromTable).toList());
-    }
+    final normalizedQuery = query ?? ValueQuery.all();
 
-    final select = driftDb.select(driftDb.valueTable);
-    final where = _whereExpressionFromFilter(query.filter);
-    if (where != null) select.where((_) => where);
-    select.orderBy([
-      (l) => drift_pkg.OrderingTerm(
-        expression: l.priority,
-        mode: drift_pkg.OrderingMode.desc,
-      ),
-      (l) => drift_pkg.OrderingTerm(expression: l.name),
-    ]);
-    return select.watch().map((rows) => rows.map(valueFromTable).toList());
+    return _sharedWatchAllCache.getOrCreate(normalizedQuery, () {
+      // Fast path: no filter.
+      if (normalizedQuery.filter.shared.isEmpty &&
+          normalizedQuery.filter.orGroups.isEmpty) {
+        return _valueStream.map((rows) => rows.map(valueFromTable).toList());
+      }
+
+      final select = driftDb.select(driftDb.valueTable);
+      final where = _whereExpressionFromFilter(normalizedQuery.filter);
+      if (where != null) select.where((_) => where);
+      select.orderBy([
+        (l) => drift_pkg.OrderingTerm(
+          expression: _prioritySortExpr(l),
+          mode: drift_pkg.OrderingMode.desc,
+        ),
+        (l) => drift_pkg.OrderingTerm(expression: l.name),
+      ]);
+      return select.watch().map((rows) => rows.map(valueFromTable).toList());
+    });
   }
 
   @override
@@ -80,7 +103,7 @@ class ValueRepository implements ValueRepositoryContract {
     if (where != null) select.where((_) => where);
     select.orderBy([
       (l) => drift_pkg.OrderingTerm(
-        expression: l.priority,
+        expression: _prioritySortExpr(l),
         mode: drift_pkg.OrderingMode.desc,
       ),
       (l) => drift_pkg.OrderingTerm(expression: l.name),
@@ -249,22 +272,10 @@ class ValueRepository implements ValueRepositoryContract {
     required String id,
     required DateTime reviewedAt,
   }) async {
-    talker.debug('[ValueRepository] updateLastReviewedAt: id=$id');
-    final existing = await _getValueById(id);
-    if (existing == null) {
-      talker.warning(
-        '[ValueRepository] updateLastReviewedAt failed: value not found id=$id',
-      );
-      throw RepositoryNotFoundException('No value found to update');
-    }
-
-    await (driftDb.update(
-      driftDb.valueTable,
-    )..where((l) => l.id.equals(id))).write(
-      drift.ValueTableCompanion(
-        lastReviewedAt: drift_pkg.Value(reviewedAt),
-        updatedAt: drift_pkg.Value(DateTime.now()),
-      ),
+    // TODO(attention-migration): This is now handled by AttentionResolutions table
+    // The method is kept for interface compatibility but is a no-op
+    talker.debug(
+      '[ValueRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
     );
   }
 

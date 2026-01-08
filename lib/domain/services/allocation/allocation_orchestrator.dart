@@ -16,7 +16,11 @@ import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.da
 import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocator.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
+import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
 ///
@@ -30,12 +34,14 @@ class AllocationOrchestrator {
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
+    AllocationSnapshotRepositoryContract? allocationSnapshotRepository,
     AllocationAlertEvaluator? alertEvaluator,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
+       _allocationSnapshotRepository = allocationSnapshotRepository,
        _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator();
 
   final TaskRepositoryContract _taskRepository;
@@ -44,209 +50,171 @@ class AllocationOrchestrator {
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
   final AllocationAlertEvaluator _alertEvaluator;
+  final AllocationSnapshotRepositoryContract? _allocationSnapshotRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
-  Stream<AllocationResult> watchAllocation() async* {
+  Stream<AllocationResult> watchAllocation() {
     talker.debug('[AllocationOrchestrator] watchAllocation started');
 
-    await for (final combined in _combineStreams()) {
-      final tasks = combined.$1;
-      final projects = combined.$2;
-      final allocationConfig = combined.$3;
-      final alertSettings = combined.$4;
-
-      talker.debug(
-        '[AllocationOrchestrator] Stream update: '
-        '${tasks.length} tasks, ${projects.length} projects, dailyLimit=${allocationConfig.dailyLimit}',
-      );
-
-      // DEBUG: Log each task's values
-      for (final task in tasks) {
-        final valueInfo = task.values.map((v) => v.name).join(', ');
-        talker.debug(
-          '[AllocationOrchestrator] Task "${task.name}" (${task.id.substring(0, 8)}): '
-          '${task.values.length} values [${valueInfo.isEmpty ? 'none' : valueInfo}]',
-        );
-      }
-
-      // Check if user has any values defined
-      final values = await _valueRepository.getAll();
-      talker.debug(
-        '[AllocationOrchestrator] Found ${values.length} values in DB: '
-        '${values.map((v) => '${v.name}(${v.id.substring(0, 8)})').join(', ')}',
-      );
-      if (values.isEmpty) {
-        talker.debug(
-          '[AllocationOrchestrator] No values defined - setup required',
-        );
-        // No values defined - require setup
-        yield AllocationResult(
-          allocatedTasks: const [],
-          reasoning: AllocationReasoning(
-            strategyUsed: 'none',
-            categoryAllocations: const {},
-            categoryWeights: const {},
-            explanation: 'No values defined',
-          ),
-          excludedTasks: const [],
-          requiresValueSetup: true,
-        );
-        continue;
-      }
-
-      if (allocationConfig.dailyLimit == 0) {
-        talker.debug(
-          '[AllocationOrchestrator] Daily limit is 0 - no allocation',
-        );
-        // No allocation configured - return empty result
-        yield AllocationResult(
-          allocatedTasks: const [],
-          reasoning: AllocationReasoning(
-            strategyUsed: 'none',
-            categoryAllocations: const {},
-            categoryWeights: const {},
-            explanation: 'No allocation preferences configured',
-          ),
-          excludedTasks: const [],
-        );
-        continue;
-      }
-
-      // Identify pinned projects
-      final pinnedProjectIds = projects
-          .where((p) => p.isPinned)
-          .map((p) => p.id)
-          .toSet();
-
-      // Partition tasks into pinned vs regular
-      // A task is pinned if it is explicitly pinned OR its project is pinned
-      final pinnedTasks = tasks
-          .where(
-            (t) =>
-                t.isPinned ||
-                (t.projectId != null && pinnedProjectIds.contains(t.projectId)),
-          )
-          .toList();
-
-      final regularTasks = tasks
-          .where(
-            (t) =>
-                !t.isPinned &&
-                (t.projectId == null ||
-                    !pinnedProjectIds.contains(t.projectId)),
-          )
-          .toList();
-
-      talker.debug(
-        '[AllocationOrchestrator] Partitioned: '
-        '${pinnedTasks.length} pinned, ${regularTasks.length} regular',
-      );
-
-      // Sort pinned tasks by deadline (urgent first)
-      pinnedTasks.sort((a, b) {
-        if (a.deadlineDate == null && b.deadlineDate == null) return 0;
-        if (a.deadlineDate == null) return 1;
-        if (b.deadlineDate == null) return -1;
-        return a.deadlineDate!.compareTo(b.deadlineDate!);
-      });
-
-      // Convert pinned tasks to AllocatedTask format
-      final allocatedPinnedTasks = pinnedTasks.asMap().entries.map((entry) {
-        final taskValues = entry.value.values;
-
-        return AllocatedTask(
-          task: entry.value,
-          qualifyingValueId: taskValues.isNotEmpty
-              ? taskValues.first.id
-              : 'pinned',
-          allocationScore: 10, // Max score for pinned
-        );
-      }).toList();
-
-      // Allocate regular tasks
-      final allocatedRegularTasks = await _allocateRegularTasks(
-        regularTasks,
-        allocationConfig,
-      );
-
-      // Combine results
-      final allAllocatedTasks = [
-        ...allocatedPinnedTasks,
-        ...allocatedRegularTasks.allocatedTasks,
-      ];
-
-      // Create urgency detector from config
-      final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
-      final urgentBehavior =
-          allocationConfig.strategySettings.urgentTaskBehavior;
-
-      // Find urgent value-less tasks from regular tasks (not pinned)
-      final urgentValuelessTasks = urgencyDetector.findUrgentValuelessTasks(
-        regularTasks,
-      );
-
-      // Handle urgent value-less tasks based on behavior
-      switch (urgentBehavior) {
-        case UrgentTaskBehavior.ignore:
-        case UrgentTaskBehavior.warnOnly:
-          // Do nothing - urgent tasks without values are excluded
-          // Problem detection is handled by ProblemDetectorService
-          if (urgentValuelessTasks.isNotEmpty) {
-            talker.debug(
-              '[AllocationOrchestrator] ${urgentValuelessTasks.length} urgent '
-              'value-less tasks (behavior: $urgentBehavior)',
+    // Latest snapshot wins: cancel in-flight computations when inputs change.
+    return combineStreams()
+        .switchMap(
+          (combined) => Stream.fromFuture(_computeAllocation(combined)),
+        )
+        .asyncMap((result) async {
+          // Persist a stable daily snapshot of allocation membership.
+          // IMPORTANT: App code does not filter on `user_id`; RLS + PowerSync buckets
+          // handle scoping.
+          final repo = _allocationSnapshotRepository;
+          if (repo != null) {
+            final todayUtc = dateOnly(DateTime.now().toUtc());
+            final allocated = result.allocatedTasks
+                .map(
+                  (a) => AllocationSnapshotEntryInput(
+                    entity: AllocationEntityRef(
+                      type: AllocationSnapshotEntityType.task,
+                      id: a.task.id,
+                    ),
+                    projectId: a.task.projectId,
+                    qualifyingValueId: a.qualifyingValueId,
+                    effectivePrimaryValueId: a.task.effectivePrimaryValueId,
+                    allocationScore: a.allocationScore,
+                  ),
+                )
+                .toList();
+            await repo.persistAllocatedForUtcDay(
+              dayUtc: todayUtc,
+              allocated: allocated,
             );
           }
-        case UrgentTaskBehavior.includeAll:
-          // Add urgent value-less tasks to allocated list with override flag
-          for (final task in urgentValuelessTasks) {
-            // Don't add if already allocated (shouldn't happen, but safety)
-            if (allAllocatedTasks.any((at) => at.task.id == task.id)) continue;
 
-            allAllocatedTasks.add(
-              AllocatedTask(
-                task: task,
-                qualifyingValueId: 'urgent-override',
-                allocationScore: 10, // High score for urgent override
-                isUrgentOverride: true,
-              ),
-            );
-          }
-          if (urgentValuelessTasks.isNotEmpty) {
-            talker.debug(
-              '[AllocationOrchestrator] Added ${urgentValuelessTasks.length} '
-              'urgent value-less tasks via override',
-            );
-          }
-      }
+          return result;
+        });
+  }
 
-      talker.debug(
-        '[AllocationOrchestrator] Final result: '
-        '${allAllocatedTasks.length} allocated, '
-        '${allocatedRegularTasks.excludedTasks.length} excluded',
-      );
+  Future<AllocationResult> _computeAllocation(
+    (List<Task>, List<Project>, AllocationConfig) combined,
+  ) async {
+    final tasks = combined.$1;
+    final projects = combined.$2;
+    final allocationConfig = combined.$3;
 
-      // Evaluate alerts on excluded tasks
-      final alertResult = _alertEvaluator.evaluate(
-        excludedTasks: allocatedRegularTasks.excludedTasks,
-        config: alertSettings.config,
-      );
+    talker.debug(
+      '[AllocationOrchestrator] Stream update: '
+      '${tasks.length} tasks, ${projects.length} projects, '
+      'dailyLimit=${allocationConfig.dailyLimit}',
+    );
 
-      yield AllocationResult(
-        allocatedTasks: allAllocatedTasks,
-        reasoning: allocatedRegularTasks.reasoning,
-        excludedTasks: allocatedRegularTasks.excludedTasks,
-        alertResult: alertResult,
-        activePersona: allocationConfig.persona,
+    // Ensure values exist (soft-gate).
+    final values = await _valueRepository.getAll();
+    talker.debug(
+      '[AllocationOrchestrator] Found ${values.length} values in DB: '
+      '${values.map((v) => '${v.name}(${v.id.substring(0, 8)})').join(', ')}',
+    );
+    if (values.isEmpty) {
+      return AllocationResult(
+        allocatedTasks: const [],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'No values defined',
+        ),
+        excludedTasks: const [],
+        requiresValueSetup: true,
       );
     }
+
+    if (allocationConfig.dailyLimit == 0) {
+      return AllocationResult(
+        allocatedTasks: const [],
+        reasoning: const AllocationReasoning(
+          strategyUsed: 'none',
+          categoryAllocations: {},
+          categoryWeights: {},
+          explanation: 'No allocation preferences configured',
+        ),
+        excludedTasks: const [],
+      );
+    }
+
+    // Identify pinned projects.
+    final pinnedProjectIds = projects
+        .where((p) => p.isPinned)
+        .map((p) => p.id)
+        .toSet();
+
+    // Partition tasks into pinned vs regular.
+    // A task is pinned if it is explicitly pinned OR its project is pinned.
+    final pinnedTasks = tasks
+        .where(
+          (t) =>
+              t.isPinned ||
+              (t.projectId != null && pinnedProjectIds.contains(t.projectId)),
+        )
+        .toList();
+
+    final regularTasks = tasks
+        .where(
+          (t) =>
+              !t.isPinned &&
+              (t.projectId == null || !pinnedProjectIds.contains(t.projectId)),
+        )
+        .toList();
+
+    final pinnedAllocatedTasks = pinnedTasks
+        .map(
+          (t) => AllocatedTask(
+            task: t,
+            qualifyingValueId: 'pinned',
+            allocationScore: 0,
+          ),
+        )
+        .toList();
+
+    final allocatedRegularTasks = await allocateRegularTasks(
+      regularTasks,
+      allocationConfig,
+    );
+
+    final allAllocatedTasks = [
+      ...pinnedAllocatedTasks,
+      ...allocatedRegularTasks.allocatedTasks,
+    ];
+
+    // Evaluate alerts on excluded tasks.
+    // Note: alert settings have migrated to the attention system.
+    final alertResult = _alertEvaluator.evaluate(
+      excludedTasks: allocatedRegularTasks.excludedTasks,
+      config: const AllocationAlertConfig(),
+    );
+
+    // Best-effort logging: urgent valueless tasks are a key signal for UX.
+    final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
+    final urgentValueless = urgencyDetector.findUrgentValuelessTasks(
+      regularTasks,
+    );
+    if (urgentValueless.isNotEmpty) {
+      talker.debug(
+        '[AllocationOrchestrator] urgent valueless tasks: '
+        '${urgentValueless.length}',
+      );
+    }
+
+    return AllocationResult(
+      allocatedTasks: allAllocatedTasks,
+      reasoning: allocatedRegularTasks.reasoning,
+      excludedTasks: allocatedRegularTasks.excludedTasks,
+      alertResult: alertResult,
+      activeFocusMode: allocationConfig.focusMode,
+    );
   }
 
   /// Allocate regular (non-pinned) tasks using persona-based strategy.
   ///
   /// For Phase 1, this simplifies to proportional allocation.
   /// Future phases will implement persona-specific logic.
-  Future<AllocationResult> _allocateRegularTasks(
+  Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks,
     AllocationConfig config,
   ) async {
@@ -291,29 +259,19 @@ class AllocationOrchestrator {
       );
     }
 
-    // Filter tasks to only those with values
-    final tasksWithValues = tasks.where((t) => t.values.isNotEmpty).toList();
-
-    // DEBUG: Log filtering results
+    // DEBUG: Log task/value distribution.
+    final tasksWithValuesCount = tasks.where((t) => t.values.isNotEmpty).length;
     talker.debug(
-      '[AllocationOrchestrator] Filtering for values: '
-      '${tasksWithValues.length}/${tasks.length} tasks have values',
+      '[AllocationOrchestrator] Task value distribution: '
+      '$tasksWithValuesCount/${tasks.length} tasks have values',
     );
-    for (final task in tasks) {
-      final hasValue = task.values.isNotEmpty;
-      talker.debug(
-        '[AllocationOrchestrator]   - "${task.name}": hasValue=$hasValue, '
-        'valueCount=${task.values.length}, '
-        'values=${task.values.map((v) => v.name).join(", ")}',
-      );
-    }
 
     // Create allocation strategy based on persona
-    final strategy = _createStrategyForPersona(config);
+    final strategy = createStrategyForPersona(config);
 
     talker.debug(
       '[AllocationOrchestrator] Using ${strategy.strategyName} strategy, '
-      '${tasksWithValues.length}/${tasks.length} tasks have values, '
+      '$tasksWithValuesCount/${tasks.length} tasks have values, '
       '${categories.length} categories',
     );
 
@@ -328,7 +286,7 @@ class AllocationOrchestrator {
 
     // Run allocation
     final parameters = AllocationParameters(
-      tasks: tasksWithValues,
+      tasks: tasks,
       categories: categories,
       maxTasks: config.dailyLimit,
       urgencyInfluence: settings.urgencyBoostMultiplier - 1.0,
@@ -349,7 +307,7 @@ class AllocationOrchestrator {
   /// - NeglectBasedAllocator when enableNeglectWeighting is true (Reflector)
   /// - UrgencyWeightedAllocator when urgency boost > 1.0 (Firefighter/Realist)
   /// - ProportionalAllocator as default (Idealist)
-  AllocationStrategy _createStrategyForPersona(AllocationConfig config) {
+  AllocationStrategy createStrategyForPersona(AllocationConfig config) {
     final settings = config.strategySettings;
 
     // Check for neglect weighting first (enables combo mode in Custom)
@@ -372,10 +330,9 @@ class AllocationOrchestrator {
       List<Task>,
       List<Project>,
       AllocationConfig,
-      AllocationAlertSettings,
     )
   >
-  _combineStreams() {
+  combineStreams() {
     // Watch incomplete tasks
     final tasksStream = _taskRepository.watchAll(TaskQuery.incomplete());
 
@@ -386,17 +343,13 @@ class AllocationOrchestrator {
     final allocationConfigStream = _settingsRepository.watch(
       SettingsKey.allocation,
     );
-    final alertSettingsStream = _settingsRepository.watch(
-      SettingsKey.allocationAlerts,
-    );
 
     // Combine all streams
-    return Rx.combineLatest4(
+    return Rx.combineLatest3(
       tasksStream,
       projectsStream,
       allocationConfigStream,
-      alertSettingsStream,
-      (tasks, projects, allocationConfig, alertSettings) {
+      (tasks, projects, allocationConfig) {
         talker.debug(
           '[AllocationOrchestrator] _combineStreams loaded:\n'
           '  allocationConfig.dailyLimit=${allocationConfig.dailyLimit}',
@@ -406,7 +359,6 @@ class AllocationOrchestrator {
           tasks,
           projects,
           allocationConfig,
-          alertSettings,
         );
       },
     );

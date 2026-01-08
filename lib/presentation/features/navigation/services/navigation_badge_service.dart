@@ -1,17 +1,20 @@
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/screens/badge_config.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///
-/// Badge counts are computed based on the first section of a screen that
-/// contains task or project data. Only workspace screens (not wellbeing
-/// or settings) show badge counts.
+/// Badge counts are computed based on the screen's [BadgeConfig]:
+/// - [BadgeFromFirstSection]: Uses the first data section's query
+/// - [CustomBadgeConfig]: Uses a custom task or project query
+/// - [NoBadge]: No badge shown
 class NavigationBadgeService {
   NavigationBadgeService({
     required TaskRepositoryContract taskRepository,
@@ -24,60 +27,79 @@ class NavigationBadgeService {
 
   /// Returns a stream of badge counts for the given screen.
   ///
-  /// Returns null if the screen should not display a badge (e.g., settings).
+  /// Returns null if the screen should not display a badge.
   Stream<int>? badgeStreamFor(ScreenDefinition screen) {
-    // Only show badges for workspace screens (task lists, projects, etc.)
-    // Wellbeing and settings screens don't need task count badges
-    if (screen.category != ScreenCategory.workspace) {
-      return null;
-    }
+    return switch (screen.chrome.badgeConfig) {
+      NoBadge() => null,
+      CustomBadgeConfig(:final taskQuery, :final projectQuery) =>
+        _streamForCustomConfig(taskQuery, projectQuery),
+      BadgeFromFirstSection() => _streamForFirstSection(screen),
+    };
+  }
 
-    // Only data-driven screens can have badges
-    if (screen is! DataDrivenScreenDefinition) {
-      return null;
+  /// Get badge stream from a custom badge config.
+  Stream<int>? _streamForCustomConfig(
+    TaskQuery? taskQuery,
+    ProjectQuery? projectQuery,
+  ) {
+    if (taskQuery != null) {
+      return _taskRepository.watchAllCount(taskQuery);
     }
+    if (projectQuery != null) {
+      return _projectRepository.watchAllCount(projectQuery);
+    }
+    return null;
+  }
 
-    // Find the first data section to use for badge counting
-    final dataSection = _findFirstDataSection(screen.sections);
-    if (dataSection == null) {
+  /// Get badge stream from the first data section of a screen.
+  Stream<int>? _streamForFirstSection(ScreenDefinition screen) {
+    final dataConfig = _findFirstDataConfig(screen.sections);
+    if (dataConfig == null) {
       return null;
     }
 
     // Get the query from the data config and return appropriate stream
-    return switch (dataSection.config) {
-      TaskDataConfig(:final query) => _taskRepository.watchCount(query),
-      ProjectDataConfig(:final query) => _projectRepository.watchCount(query),
+    return switch (dataConfig) {
+      TaskDataConfig(:final query) => _taskRepository.watchAllCount(query),
+      ProjectDataConfig(:final query) => _projectRepository.watchAllCount(
+        query,
+      ),
       ValueDataConfig() => null, // Values don't show counts
       JournalDataConfig() => null, // Journals don't show counts in badge
     };
   }
 
-  /// Finds the first data section in the list.
-  DataSection? _findFirstDataSection(List<Section> sections) {
-    for (final section in sections) {
-      if (section is DataSection) {
-        return section;
+  DataConfig? _findFirstDataConfig(List<SectionRef> sections) {
+    for (final ref in sections) {
+      if (ref.overrides?.enabled == false) continue;
+
+      if (ref.templateId != SectionTemplateId.taskList &&
+          ref.templateId != SectionTemplateId.projectList &&
+          ref.templateId != SectionTemplateId.valueList) {
+        continue;
       }
+
+      final params = DataListSectionParams.fromJson(ref.params);
+      return params.config;
     }
+
     return null;
   }
 
   /// Returns the task query for badge counting if the screen has task data.
   TaskQuery? getTaskQueryForScreen(ScreenDefinition screen) {
-    if (screen.category != ScreenCategory.workspace) {
-      return null;
-    }
+    return switch (screen.chrome.badgeConfig) {
+      NoBadge() => null,
+      CustomBadgeConfig(:final taskQuery) => taskQuery,
+      BadgeFromFirstSection() => _getTaskQueryFromFirstSection(screen),
+    };
+  }
 
-    if (screen is! DataDrivenScreenDefinition) {
-      return null;
-    }
+  TaskQuery? _getTaskQueryFromFirstSection(ScreenDefinition screen) {
+    final dataConfig = _findFirstDataConfig(screen.sections);
+    if (dataConfig == null) return null;
 
-    final dataSection = _findFirstDataSection(screen.sections);
-    if (dataSection == null) {
-      return null;
-    }
-
-    return switch (dataSection.config) {
+    return switch (dataConfig) {
       TaskDataConfig(:final query) => query,
       _ => null,
     };
@@ -85,20 +107,18 @@ class NavigationBadgeService {
 
   /// Returns the project query for badge counting if the screen has project data.
   ProjectQuery? getProjectQueryForScreen(ScreenDefinition screen) {
-    if (screen.category != ScreenCategory.workspace) {
-      return null;
-    }
+    return switch (screen.chrome.badgeConfig) {
+      NoBadge() => null,
+      CustomBadgeConfig(:final projectQuery) => projectQuery,
+      BadgeFromFirstSection() => _getProjectQueryFromFirstSection(screen),
+    };
+  }
 
-    if (screen is! DataDrivenScreenDefinition) {
-      return null;
-    }
+  ProjectQuery? _getProjectQueryFromFirstSection(ScreenDefinition screen) {
+    final dataConfig = _findFirstDataConfig(screen.sections);
+    if (dataConfig == null) return null;
 
-    final dataSection = _findFirstDataSection(screen.sections);
-    if (dataSection == null) {
-      return null;
-    }
-
-    return switch (dataSection.config) {
+    return switch (dataConfig) {
       ProjectDataConfig(:final query) => query,
       _ => null,
     };

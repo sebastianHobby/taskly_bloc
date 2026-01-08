@@ -126,7 +126,7 @@ class AgendaSectionDataService {
   Future<List<Task>> _getOverdueTasks(DateTime today) async {
     // Use built-in overdue query: deadline < today AND completed = false
     final query = TaskQuery.overdue();
-    return taskRepository.queryTasks(query);
+    return taskRepository.getAll(query);
   }
 
   Future<List<Project>> _getOverdueProjects(DateTime today) async {
@@ -159,7 +159,7 @@ class AgendaSectionDataService {
       rangeStart: fromDate,
       rangeEnd: toDate,
     );
-    return taskRepository.queryTasks(query);
+    return taskRepository.getAll(query);
   }
 
   Future<List<Project>> _getProjectsWithDates(
@@ -338,7 +338,10 @@ class AgendaSectionDataService {
     Task? task,
     Project? project,
   }) {
-    assert(task != null || project != null);
+    assert(
+      task != null || project != null,
+      'Either task or project must be provided',
+    );
 
     final isCondensed = tag == AgendaDateTag.inProgress;
     final isAfterCompletionRepeat =

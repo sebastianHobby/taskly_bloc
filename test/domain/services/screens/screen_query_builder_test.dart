@@ -2,7 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -445,50 +450,65 @@ void main() {
       });
     });
 
-    group('buildTaskQueryFromSection', () {
-      test('builds query from TaskDataConfig section', () {
-        final section = DataSection(
-          config: DataConfig.task(query: TaskQuery.incomplete()),
-          title: 'Test Section',
+    group('buildTaskQueryFromSectionRef', () {
+      test('builds query from task_list section ref', () {
+        final section = SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(query: TaskQuery.incomplete()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromSection(
+        final query = queryBuilder.buildTaskQueryFromSectionRef(
           section: section,
           now: now,
         );
 
-        expect(query, isA<TaskQuery>());
-        expect(query.filter.shared, isNotEmpty);
+        expect(query, isNotNull);
+        expect(query!.filter.shared, isNotEmpty);
       });
 
-      test('throws for non-TaskDataConfig sections', () {
-        final section = DataSection(
-          config: DataConfig.project(query: ProjectQuery.all()),
-          title: 'Projects',
+      test('returns null for non-task sections', () {
+        final section = SectionRef(
+          templateId: SectionTemplateId.projectList,
+          params: DataListSectionParams(
+            config: DataConfig.project(query: ProjectQuery.all()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+          ).toJson(),
         );
 
-        expect(
-          () => queryBuilder.buildTaskQueryFromSection(
-            section: section,
-            now: now,
-          ),
-          throwsArgumentError,
+        final query = queryBuilder.buildTaskQueryFromSectionRef(
+          section: section,
+          now: now,
         );
+
+        expect(query, isNull);
       });
 
       test('applies display config showCompleted=false filter', () {
-        final section = DataSection(
-          config: DataConfig.task(query: TaskQuery.all()),
-          title: 'Test',
-          display: const DisplayConfig(showCompleted: false),
+        final section = SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(query: TaskQuery.all()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: const DisplayConfig(showCompleted: false),
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromSection(
+        final query = queryBuilder.buildTaskQueryFromSectionRef(
           section: section,
           now: now,
         );
 
-        final hasIncompletePredicate = query.filter.shared.any(
+        expect(query, isNotNull);
+        final hasIncompletePredicate = query!.filter.shared.any(
           (p) =>
               p is TaskBoolPredicate &&
               p.field == TaskBoolField.completed &&
@@ -498,34 +518,41 @@ void main() {
       });
 
       test('preserves display sorting when query has no sort criteria', () {
-        final section = DataSection(
-          config: DataConfig.task(query: const TaskQuery()),
-          title: 'Test',
-          display: const DisplayConfig(
-            sorting: [
-              SortCriterion(field: SortField.name),
-            ],
-          ),
+        final section = SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: const DataListSectionParams(
+            config: TaskDataConfig(query: TaskQuery()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: DisplayConfig(
+              sorting: [SortCriterion(field: SortField.name)],
+            ),
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromSection(
+        final query = queryBuilder.buildTaskQueryFromSectionRef(
           section: section,
           now: now,
         );
 
-        expect(query.sortCriteria, isNotEmpty);
+        expect(query, isNotNull);
+        expect(query!.sortCriteria, isNotEmpty);
       });
     });
 
-    group('buildTaskQueryFromAllocationSection', () {
+    group('buildTaskQueryFromAllocationSectionRef', () {
       test('returns sourceFilter when provided', () {
         final sourceQuery = TaskQuery.incomplete();
-        final section = AllocationSection(
-          title: 'Focus',
-          sourceFilter: sourceQuery,
+        final section = SectionRef(
+          templateId: SectionTemplateId.allocation,
+          params: AllocationSectionParams(
+            taskTileVariant: TaskTileVariant.listTile,
+            sourceFilter: sourceQuery,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAllocationSection(
+        final query = queryBuilder.buildTaskQueryFromAllocationSectionRef(
           section: section,
           now: now,
         );
@@ -534,16 +561,20 @@ void main() {
       });
 
       test('returns default incomplete query when no sourceFilter', () {
-        const section = AllocationSection(
-          title: 'Focus',
+        final section = SectionRef(
+          templateId: SectionTemplateId.allocation,
+          params: const AllocationSectionParams(
+            taskTileVariant: TaskTileVariant.listTile,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAllocationSection(
+        final query = queryBuilder.buildTaskQueryFromAllocationSectionRef(
           section: section,
           now: now,
         );
 
-        final hasIncompletePredicate = query.filter.shared.any(
+        expect(query, isNotNull);
+        final hasIncompletePredicate = query!.filter.shared.any(
           (p) =>
               p is TaskBoolPredicate &&
               p.field == TaskBoolField.completed &&
@@ -553,20 +584,25 @@ void main() {
       });
     });
 
-    group('buildTaskQueryFromAgendaSection', () {
+    group('buildTaskQueryFromAgendaSectionRef', () {
       test('builds query with date filter for deadlineDate field', () {
-        const section = AgendaSection(
-          title: 'Agenda',
-          dateField: AgendaDateField.deadlineDate,
-          grouping: AgendaGrouping.standard,
+        final section = SectionRef(
+          templateId: SectionTemplateId.agenda,
+          params: const AgendaSectionParams(
+            dateField: AgendaDateField.deadlineDate,
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            grouping: AgendaGrouping.standard,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+        final query = queryBuilder.buildTaskQueryFromAgendaSectionRef(
           section: section,
           now: now,
         );
 
-        final datePreds = query.filter.shared
+        expect(query, isNotNull);
+        final datePreds = query!.filter.shared
             .whereType<TaskDatePredicate>()
             .toList();
         expect(datePreds, isNotEmpty);
@@ -574,18 +610,23 @@ void main() {
       });
 
       test('builds query with date filter for startDate field', () {
-        const section = AgendaSection(
-          title: 'Agenda',
-          dateField: AgendaDateField.startDate,
-          grouping: AgendaGrouping.standard,
+        final section = SectionRef(
+          templateId: SectionTemplateId.agenda,
+          params: const AgendaSectionParams(
+            dateField: AgendaDateField.startDate,
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            grouping: AgendaGrouping.standard,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+        final query = queryBuilder.buildTaskQueryFromAgendaSectionRef(
           section: section,
           now: now,
         );
 
-        final datePreds = query.filter.shared
+        expect(query, isNotNull);
+        final datePreds = query!.filter.shared
             .whereType<TaskDatePredicate>()
             .toList();
         expect(datePreds, isNotEmpty);
@@ -593,18 +634,23 @@ void main() {
       });
 
       test('includes incomplete filter', () {
-        const section = AgendaSection(
-          title: 'Agenda',
-          dateField: AgendaDateField.deadlineDate,
-          grouping: AgendaGrouping.standard,
+        final section = SectionRef(
+          templateId: SectionTemplateId.agenda,
+          params: const AgendaSectionParams(
+            dateField: AgendaDateField.deadlineDate,
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            grouping: AgendaGrouping.standard,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+        final query = queryBuilder.buildTaskQueryFromAgendaSectionRef(
           section: section,
           now: now,
         );
 
-        final hasIncompletePredicate = query.filter.shared.any(
+        expect(query, isNotNull);
+        final hasIncompletePredicate = query!.filter.shared.any(
           (p) =>
               p is TaskBoolPredicate &&
               p.field == TaskBoolField.completed &&
@@ -623,19 +669,24 @@ void main() {
             ],
           ),
         );
-        final section = AgendaSection(
-          title: 'Agenda',
-          dateField: AgendaDateField.deadlineDate,
-          grouping: AgendaGrouping.standard,
-          additionalFilter: additionalQuery,
+        final section = SectionRef(
+          templateId: SectionTemplateId.agenda,
+          params: AgendaSectionParams(
+            dateField: AgendaDateField.deadlineDate,
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            grouping: AgendaGrouping.standard,
+            additionalFilter: additionalQuery,
+          ).toJson(),
         );
 
-        final query = queryBuilder.buildTaskQueryFromAgendaSection(
+        final query = queryBuilder.buildTaskQueryFromAgendaSectionRef(
           section: section,
           now: now,
         );
 
-        final hasProjectPredicate = query.filter.shared.any(
+        expect(query, isNotNull);
+        final hasProjectPredicate = query!.filter.shared.any(
           (p) => p is TaskProjectPredicate,
         );
         expect(hasProjectPredicate, isTrue);

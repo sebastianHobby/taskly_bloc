@@ -380,11 +380,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     const SizedBox(height: 16),
 
                     // Values
-                    // TODO: Implement Value Picker
-                    // FormBuilderValuePicker(
-                    //   name: 'valueIds',
-                    //   availableLabels: widget.availableValues,
-                    // ),
+                    FormBuilderValuePicker(
+                      name: 'valueIds',
+                      label: l10n.valuesTitle,
+                      hint: 'Select values',
+                      availableValues: widget.availableValues,
+                      isRequired: false,
+                    ),
                   ],
                 ),
               ),

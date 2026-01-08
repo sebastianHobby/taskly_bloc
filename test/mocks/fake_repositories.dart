@@ -36,6 +36,13 @@ class FakeTaskRepository implements TaskRepositoryContract {
   Stream<List<Task>> watchAll([TaskQuery? query]) => _controller.stream;
 
   @override
+  Future<List<Task>> getAll([TaskQuery? query]) async => _last;
+
+  @override
+  Stream<int> watchAllCount([TaskQuery? query]) =>
+      _controller.stream.map((tasks) => tasks.length);
+
+  @override
   Future<Task?> getById(String id) async {
     try {
       return _last.firstWhere((r) => r.id == id);
@@ -163,7 +170,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     _controller.add(_last);
   }
 
-  @override
   Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject() {
     return _controller.stream.map(_aggregateCounts);
   }
@@ -234,7 +240,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     required String taskId,
     required DateTime originalDate,
     required DateTime newDate,
-    DateTime? newDeadline,
   }) async {}
 
   Future<void> removeException({
@@ -248,21 +253,16 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
   Future<void> convertToOneTime(String taskId) async {}
 
-  @override
   Future<int> count([TaskQuery? query]) async => _last.length;
 
-  @override
   Stream<int> watchCount([TaskQuery? query]) =>
       _controller.stream.map((tasks) => tasks.length);
 
-  @override
   Future<List<Task>> queryTasks(TaskQuery query) async => _last;
 
-  @override
   Future<List<Task>> getTasksByIds(List<String> ids) async =>
       _last.where((t) => ids.contains(t.id)).toList();
 
-  @override
   Future<List<Task>> getTasksByProject(String projectId) async =>
       _last.where((t) => t.projectId == projectId).toList();
 
@@ -300,8 +300,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
       SettingsKey.allocation => _current.allocation as T,
       SettingsKey.softGates => _current.softGates as T,
       SettingsKey.nextActions => _current.nextActions as T,
-      SettingsKey.valueRanking => _current.valueRanking as T,
-      SettingsKey.allScreenPrefs => _current.screenPreferences as T,
       SettingsKey.all => _current as T,
       _ => _extractKeyedValue(key),
     };
@@ -315,7 +313,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     return switch (name) {
       'pageSort' => _current.sortFor(subKey) as T,
       'pageDisplay' => _current.displaySettingsFor(subKey) as T,
-      'screenPrefs' => _current.screenPreferencesFor(subKey) as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -331,12 +328,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
       ),
       SettingsKey.nextActions => _current.updateNextActions(
         value as NextActionsSettings,
-      ),
-      SettingsKey.valueRanking => _current.updateValueRanking(
-        value as ValueRanking,
-      ),
-      SettingsKey.allScreenPrefs => _current.copyWith(
-        screenPreferences: value as Map<String, ScreenPreferences>,
       ),
       SettingsKey.all => value as AppSettings,
       _ => _applyKeyedValue(key, value),
@@ -356,10 +347,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
       'pageDisplay' => _current.upsertPageDisplaySettings(
         pageKey: subKey,
         settings: value as PageDisplaySettings,
-      ),
-      'screenPrefs' => _current.upsertScreenPreferences(
-        screenKey: subKey,
-        preferences: value as ScreenPreferences,
       ),
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
@@ -384,6 +371,10 @@ class FakeProjectRepository implements ProjectRepositoryContract {
 
   @override
   Stream<List<Project>> watchAll([ProjectQuery? query]) => _controller.stream;
+
+  @override
+  Stream<int> watchAllCount([ProjectQuery? query]) =>
+      _controller.stream.map((projects) => projects.length);
 
   @override
   Future<List<Project>> getAll([ProjectQuery? query]) async => _last;
@@ -419,10 +410,8 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     _controller.add(_last);
   }
 
-  @override
   Future<int> count([ProjectQuery? query]) async => _last.length;
 
-  @override
   Stream<int> watchCount([ProjectQuery? query]) =>
       _controller.stream.map((projects) => projects.length);
 
@@ -570,14 +559,11 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     required String projectId,
     required DateTime originalDate,
     required DateTime newDate,
-    DateTime? newDeadline,
   }) async {}
 
-  @override
   Future<List<Project>> getProjectsByIds(List<String> ids) async =>
       _last.where((p) => ids.contains(p.id)).toList();
 
-  @override
   Future<List<Project>> getProjectsByValue(String valueId) async =>
       _last.where((p) => p.values.any((v) => v.id == valueId)).toList();
 

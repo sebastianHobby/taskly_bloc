@@ -18,7 +18,6 @@ class MockAuthResponse extends Mock implements AuthResponse {}
 
 void main() {
   late MockAuthRepositoryContract authRepo;
-  late MockUserDataSeeder userDataSeeder;
   late MockUser mockUser;
   late MockSession mockSession;
 
@@ -29,7 +28,6 @@ void main() {
 
   setUp(() {
     authRepo = MockAuthRepositoryContract();
-    userDataSeeder = MockUserDataSeeder();
     mockUser = MockUser();
     mockSession = MockSession();
 
@@ -42,7 +40,6 @@ void main() {
     AuthBloc buildBloc() {
       return AuthBloc(
         authRepository: authRepo,
-        userDataSeeder: userDataSeeder,
       );
     }
 
@@ -78,41 +75,11 @@ void main() {
         when(
           () => authRepo.watchAuthState(),
         ).thenAnswer((_) => const Stream.empty());
-        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
         return buildBloc();
       },
       act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
       expect: () => [
-        // First emits seeding while preparing user data (includes user)
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.seeding)
-            .having((s) => s.user, 'user', isNotNull),
-        // Then emits authenticated after seeding completes
-        isA<AppAuthState>().having(
-          (s) => s.status,
-          'status',
-          AuthStatus.authenticated,
-        ),
-      ],
-    );
-
-    blocTest<AuthBloc, AppAuthState>(
-      'subscriptionRequested continues on seeding failure',
-      build: () {
-        when(() => authRepo.currentSession).thenReturn(mockSession);
-        when(
-          () => authRepo.watchAuthState(),
-        ).thenAnswer((_) => const Stream.empty());
-        when(
-          () => userDataSeeder.seedAll(any()),
-        ).thenThrow(Exception('Seeding failed'));
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(const AuthSubscriptionRequested()),
-      expect: () => [
-        isA<AppAuthState>()
-            .having((s) => s.status, 'status', AuthStatus.seeding)
-            .having((s) => s.user, 'user', isNotNull),
+        // Emits authenticated directly (no seeding step)
         isA<AppAuthState>().having(
           (s) => s.status,
           'status',
@@ -285,7 +252,6 @@ void main() {
           () => authRepo.watchAuthState(),
         ).thenAnswer((_) => const Stream.empty());
         when(() => authRepo.signOut()).thenAnswer((_) async {});
-        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
         return buildBloc();
       },
       seed: () =>
@@ -311,7 +277,6 @@ void main() {
           () => authRepo.watchAuthState(),
         ).thenAnswer((_) => const Stream.empty());
         when(() => authRepo.signOut()).thenThrow(Exception('Network error'));
-        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
         return buildBloc();
       },
       seed: () =>
@@ -369,7 +334,6 @@ void main() {
         when(
           () => authRepo.resetPasswordForEmail(any()),
         ).thenThrow(Exception('Email not found'));
-        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
         return buildBloc();
       },
       seed: () =>
@@ -427,7 +391,6 @@ void main() {
         when(
           () => authRepo.resetPasswordForEmail(any()),
         ).thenAnswer((_) async {});
-        when(() => userDataSeeder.seedAll(any())).thenAnswer((_) async {});
         return buildBloc();
       },
       seed: () =>
@@ -488,16 +451,6 @@ void main() {
     test('isLoading returns true when loading', () {
       const state = AppAuthState(status: AuthStatus.loading);
       expect(state.isLoading, isTrue);
-    });
-
-    test('isSeeding returns true when seeding', () {
-      const state = AppAuthState(status: AuthStatus.seeding);
-      expect(state.isSeeding, isTrue);
-    });
-
-    test('isSeeding returns false when authenticated', () {
-      const state = AppAuthState(status: AuthStatus.authenticated);
-      expect(state.isSeeding, isFalse);
     });
 
     test('copyWith creates new state with updated fields', () {

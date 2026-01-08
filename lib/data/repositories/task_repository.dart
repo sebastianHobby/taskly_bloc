@@ -9,13 +9,13 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/mappers/task_predicate_mapper.dart';
+import 'package:taskly_bloc/data/repositories/query_stream_cache.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/models/project_task_counts.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_filter_evaluator.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -60,8 +60,12 @@ class TaskRepository implements TaskRepositoryContract {
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
   ValueStream<List<Task>>? _sharedInboxStream;
-  ValueStream<List<Task>>? _sharedTodayStream;
+  final Map<DateTime, ValueStream<List<Task>>> _sharedTodayStreamsByDate = {};
   ValueStream<List<Task>>? _sharedUpcomingStream;
+
+  // Generic query-keyed cache for stable, non-date queries.
+  final QueryStreamCache<TaskQuery, List<Task>> _sharedWatchAllCache =
+      QueryStreamCache(maxEntries: 32);
 
   final Map<_OccurrenceRangeKey, ValueStream<List<Task>>>
   _occurrenceStreamCache = {};
@@ -72,55 +76,50 @@ class TaskRepository implements TaskRepositoryContract {
   /// All filtering happens at the database level for optimal performance.
   @override
   Stream<List<Task>> watchAll([TaskQuery? query]) {
-    query ??= TaskQuery.all();
+    final normalizedQuery = query ?? TaskQuery.all();
 
-    // Route to shared streams for common patterns
-    if (_isInboxQuery(query)) {
-      return _getOrCreateInboxStream(query);
-    } else if (_isTodayQuery(query)) {
-      return _getOrCreateTodayStream(query);
-    } else if (_isUpcomingQuery(query)) {
-      return _getOrCreateUpcomingStream(query);
+    // Route to shared streams for common patterns.
+    if (isInboxQuery(normalizedQuery)) {
+      return getOrCreateInboxStream(normalizedQuery);
+    } else if (isTodayQuery(normalizedQuery)) {
+      return getOrCreateTodayStream(normalizedQuery);
+    } else if (isUpcomingQuery(normalizedQuery)) {
+      return getOrCreateUpcomingStream(normalizedQuery);
     }
 
-    // Build unique query for non-common patterns
-    return _buildAndExecuteQuery(query);
+    // Conservative policy: don't cache date-based queries by default.
+    if (normalizedQuery.hasDateFilter ||
+        normalizedQuery.shouldExpandOccurrences) {
+      return buildAndExecuteQuery(normalizedQuery);
+    }
+
+    return _sharedWatchAllCache.getOrCreate(
+      normalizedQuery,
+      () => buildAndExecuteQuery(normalizedQuery),
+    );
   }
 
   @override
-  Future<int> count([TaskQuery? query]) async {
-    query ??= TaskQuery.all();
-
-    if (query.shouldExpandOccurrences) {
-      return (await _buildAndExecuteQuery(query).first).length;
-    }
-
-    final countExp = driftDb.taskTable.id.count();
-    final statement = driftDb.selectOnly(driftDb.taskTable)
-      ..addColumns([countExp]);
-
-    final where = _whereExpressionFromFilter(query.filter, driftDb.taskTable);
-    if (where != null) statement.where(where);
-
-    final row = await statement.getSingle();
-    return row.read(countExp) ?? 0;
+  Future<List<Task>> getAll([TaskQuery? query]) async {
+    final normalizedQuery = query ?? TaskQuery.all();
+    return buildAndExecuteQuery(normalizedQuery).first;
   }
 
   @override
-  Stream<int> watchCount([TaskQuery? query]) {
+  Stream<int> watchAllCount([TaskQuery? query]) {
     query ??= TaskQuery.all();
 
     if (query.shouldExpandOccurrences) {
-      return _buildAndExecuteQuery(
+      return buildAndExecuteQuery(
         query,
-      ).map((items) => items.length).distinct();
+      ).map((List<Task> items) => items.length).distinct();
     }
 
     final countExp = driftDb.taskTable.id.count();
     final statement = driftDb.selectOnly(driftDb.taskTable)
       ..addColumns([countExp]);
 
-    final where = _whereExpressionFromFilter(query.filter, driftDb.taskTable);
+    final where = whereExpressionFromFilter(query.filter, driftDb.taskTable);
     if (where != null) statement.where(where);
 
     return statement
@@ -132,6 +131,12 @@ class TaskRepository implements TaskRepositoryContract {
   /// Get a single task by ID with related entities.
   @override
   Future<Task?> getById(String id) async {
+    final taskValueTable = driftDb.valueTable.createAlias('task_value');
+    final projectValuesTable = driftDb.projectValuesTable.createAlias(
+      'project_values_for_task',
+    );
+    final projectValueTable = driftDb.valueTable.createAlias('project_value');
+
     final joined =
         (driftDb.select(driftDb.taskTable)..where((t) => t.id.equals(id))).join(
           [
@@ -144,8 +149,16 @@ class TaskRepository implements TaskRepositoryContract {
               driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
             ),
             drift_pkg.leftOuterJoin(
-              driftDb.valueTable,
-              driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
+              taskValueTable,
+              driftDb.taskValuesTable.valueId.equalsExp(taskValueTable.id),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValuesTable,
+              driftDb.projectTable.id.equalsExp(projectValuesTable.projectId),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValueTable,
+              projectValuesTable.valueId.equalsExp(projectValueTable.id),
             ),
           ],
         );
@@ -154,12 +167,21 @@ class TaskRepository implements TaskRepositoryContract {
     return TaskAggregation.fromRows(
       rows: rows,
       driftDb: driftDb,
+      projectValuesTable: projectValuesTable,
+      projectValueTable: projectValueTable,
+      taskValueTable: taskValueTable,
     ).toSingleTask();
   }
 
   /// Watch a single task by ID with related entities.
   @override
   Stream<Task?> watchById(String taskId) {
+    final taskValueTable = driftDb.valueTable.createAlias('task_value');
+    final projectValuesTable = driftDb.projectValuesTable.createAlias(
+      'project_values_for_task',
+    );
+    final projectValueTable = driftDb.valueTable.createAlias('project_value');
+
     final joined =
         (driftDb.select(
           driftDb.taskTable,
@@ -173,8 +195,16 @@ class TaskRepository implements TaskRepositoryContract {
             driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
           ),
           drift_pkg.leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
+            taskValueTable,
+            driftDb.taskValuesTable.valueId.equalsExp(taskValueTable.id),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectValuesTable,
+            driftDb.projectTable.id.equalsExp(projectValuesTable.projectId),
+          ),
+          drift_pkg.leftOuterJoin(
+            projectValueTable,
+            projectValuesTable.valueId.equalsExp(projectValueTable.id),
           ),
         ]);
 
@@ -182,43 +212,11 @@ class TaskRepository implements TaskRepositoryContract {
       return TaskAggregation.fromRows(
         rows: rows,
         driftDb: driftDb,
+        projectValuesTable: projectValuesTable,
+        projectValueTable: projectValueTable,
+        taskValueTable: taskValueTable,
       ).toSingleTask();
     });
-  }
-
-  @override
-  Future<List<Task>> queryTasks(TaskQuery query) async {
-    return _buildAndExecuteQuery(query).first;
-  }
-
-  @override
-  Future<List<Task>> getTasksByProject(String projectId) async {
-    final query = TaskQuery.forProject(projectId: projectId);
-    return queryTasks(query);
-  }
-
-  @override
-  Future<List<Task>> getTasksByIds(List<String> ids) async {
-    if (ids.isEmpty) return [];
-    final joined =
-        (driftDb.select(driftDb.taskTable)..where((t) => t.id.isIn(ids))).join(
-          [
-            drift_pkg.leftOuterJoin(
-              driftDb.projectTable,
-              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
-            ),
-            drift_pkg.leftOuterJoin(
-              driftDb.taskValuesTable,
-              driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
-            ),
-            drift_pkg.leftOuterJoin(
-              driftDb.valueTable,
-              driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
-            ),
-          ],
-        );
-    final rows = await joined.get();
-    return TaskAggregation.fromRows(rows: rows, driftDb: driftDb).toTasks();
   }
 
   @override
@@ -254,23 +252,32 @@ class TaskRepository implements TaskRepositoryContract {
               deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
               projectId: drift_pkg.Value(projectId),
               priority: drift_pkg.Value(priority),
+              isPinned: const drift_pkg.Value(false),
               repeatIcalRrule: repeatIcalRrule == null
                   ? const drift_pkg.Value<String>.absent()
                   : drift_pkg.Value(repeatIcalRrule),
               repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+              seriesEnded: const drift_pkg.Value(false),
               createdAt: drift_pkg.Value(now),
               updatedAt: drift_pkg.Value(now),
             ),
           );
 
-      if (valueIds != null && valueIds.isNotEmpty) {
+      if (valueIds != null) {
+        final primaryValueId = valueIds.isEmpty ? null : valueIds.first;
         for (final valueId in valueIds) {
+          final taskValueId = idGenerator.taskValueId(
+            taskId: id,
+            valueId: valueId,
+          );
           await driftDb
               .into(driftDb.taskValuesTable)
               .insert(
                 TaskValuesTableCompanion(
+                  id: drift_pkg.Value(taskValueId),
                   taskId: drift_pkg.Value(id),
                   valueId: drift_pkg.Value(valueId),
+                  isPrimary: drift_pkg.Value(valueId == primaryValueId),
                 ),
               );
         }
@@ -330,7 +337,6 @@ class TaskRepository implements TaskRepositoryContract {
                   ? drift_pkg.Value(existing.repeatFromCompletion)
                   : drift_pkg.Value(repeatFromCompletion),
               seriesEnded: drift_pkg.Value(existing.seriesEnded),
-              lastReviewedAt: drift_pkg.Value(existing.lastReviewedAt),
               createdAt: drift_pkg.Value(existing.createdAt),
               updatedAt: drift_pkg.Value(now),
             ),
@@ -341,13 +347,20 @@ class TaskRepository implements TaskRepositoryContract {
           driftDb.taskValuesTable,
         )..where((t) => t.taskId.equals(id))).go();
 
+        final primaryValueId = valueIds.isEmpty ? null : valueIds.first;
         for (final valueId in valueIds) {
+          final taskValueId = idGenerator.taskValueId(
+            taskId: id,
+            valueId: valueId,
+          );
           await driftDb
               .into(driftDb.taskValuesTable)
               .insert(
                 TaskValuesTableCompanion(
+                  id: drift_pkg.Value(taskValueId),
                   taskId: drift_pkg.Value(id),
                   valueId: drift_pkg.Value(valueId),
+                  isPrimary: drift_pkg.Value(valueId == primaryValueId),
                 ),
               );
         }
@@ -384,51 +397,10 @@ class TaskRepository implements TaskRepositoryContract {
     required String id,
     required DateTime reviewedAt,
   }) async {
-    talker.debug('[TaskRepository] updateLastReviewedAt: id=$id');
-    await (driftDb.update(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).write(
-      TaskTableCompanion(
-        lastReviewedAt: drift_pkg.Value(reviewedAt),
-        updatedAt: drift_pkg.Value(DateTime.now()),
-      ),
-    );
-  }
-
-  @override
-  Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject() {
-    // Watch all tasks and aggregate counts by project
-    return driftDb.select(driftDb.taskTable).watch().map(_aggregateCounts);
-  }
-
-  Future<Map<String, ProjectTaskCounts>> getTaskCountsByProject() async {
-    final rows = await driftDb.select(driftDb.taskTable).get();
-    return _aggregateCounts(rows);
-  }
-
-  Map<String, ProjectTaskCounts> _aggregateCounts(List<TaskTableData> rows) {
-    final counts = <String, ({int total, int completed})>{};
-
-    for (final row in rows) {
-      final projectId = row.projectId;
-      if (projectId != null) {
-        final current = counts[projectId] ?? (total: 0, completed: 0);
-        counts[projectId] = (
-          total: current.total + 1,
-          completed: current.completed + (row.completed ? 1 : 0),
-        );
-      }
-    }
-
-    return counts.map(
-      (projectId, data) => MapEntry(
-        projectId,
-        ProjectTaskCounts(
-          projectId: projectId,
-          totalCount: data.total,
-          completedCount: data.completed,
-        ),
-      ),
+    // TODO(attention-migration): This is now handled by AttentionResolutions table
+    // The method is kept for interface compatibility but is a no-op
+    talker.debug(
+      '[TaskRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
     );
   }
 
@@ -454,8 +426,8 @@ class TaskRepository implements TaskRepositoryContract {
         .get();
 
     // Convert to DTOs
-    final completions = completionRows.map(_toCompletionData).toList();
-    final exceptions = exceptionRows.map(_toExceptionData).toList();
+    final completions = completionRows.map(toCompletionData).toList();
+    final exceptions = exceptionRows.map(toExceptionData).toList();
 
     // Expand occurrences using the expander
     return occurrenceExpander.expandTaskOccurrencesSync(
@@ -493,12 +465,12 @@ class TaskRepository implements TaskRepositoryContract {
     final completionsStream = driftDb
         .select(driftDb.taskCompletionHistoryTable)
         .watch()
-        .map((rows) => rows.map(_toCompletionData).toList());
+        .map((rows) => rows.map(toCompletionData).toList());
 
     final exceptionsStream = driftDb
         .select(driftDb.taskRecurrenceExceptionsTable)
         .watch()
-        .map((rows) => rows.map(_toExceptionData).toList());
+        .map((rows) => rows.map(toExceptionData).toList());
 
     // Use the expander (includes debounce)
     final stream = occurrenceExpander.expandTaskOccurrences(
@@ -515,7 +487,7 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Converts a completion history row to a DTO.
-  CompletionHistoryData _toCompletionData(TaskCompletionHistoryTableData row) {
+  CompletionHistoryData toCompletionData(TaskCompletionHistoryTableData row) {
     return CompletionHistoryData(
       id: row.id,
       entityId: row.taskId,
@@ -527,7 +499,7 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Converts an exception row to a DTO.
-  RecurrenceExceptionData _toExceptionData(
+  RecurrenceExceptionData toExceptionData(
     TaskRecurrenceExceptionsTableData row,
   ) {
     return RecurrenceExceptionData(
@@ -615,16 +587,16 @@ class TaskRepository implements TaskRepositoryContract {
   ///
   /// For queries WITHOUT occurrence expansion:
   /// - All rules applied at SQL level for optimal performance
-  Stream<List<Task>> _buildAndExecuteQuery(TaskQuery query) {
+  Stream<List<Task>> buildAndExecuteQuery(TaskQuery query) {
     final QueryFilter<TaskPredicate> sqlFilter = query.shouldExpandOccurrences
-        ? _removeDatePredicates(query.filter)
+        ? removeDatePredicates(query.filter)
         : query.filter;
 
     // Start with base query
     final select = driftDb.select(driftDb.taskTable);
 
     select.where((t) {
-      return _whereExpressionFromFilter(sqlFilter, t) ??
+      return whereExpressionFromFilter(sqlFilter, t) ??
           const drift_pkg.Constant(true);
     });
 
@@ -684,7 +656,13 @@ class TaskRepository implements TaskRepositoryContract {
       select.orderBy(orderingFuncs);
     }
 
-    // Build the join query - always include values for complete domain model
+    final taskValueTable = driftDb.valueTable.createAlias('task_value');
+    final projectValuesTable = driftDb.projectValuesTable.createAlias(
+      'project_values_for_task',
+    );
+    final projectValueTable = driftDb.valueTable.createAlias('project_value');
+
+    // Build the join query - include task values AND project values.
     final joinQuery = select.join([
       drift_pkg.leftOuterJoin(
         driftDb.projectTable,
@@ -695,14 +673,28 @@ class TaskRepository implements TaskRepositoryContract {
         driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
       ),
       drift_pkg.leftOuterJoin(
-        driftDb.valueTable,
-        driftDb.taskValuesTable.valueId.equalsExp(driftDb.valueTable.id),
+        taskValueTable,
+        driftDb.taskValuesTable.valueId.equalsExp(taskValueTable.id),
+      ),
+      drift_pkg.leftOuterJoin(
+        projectValuesTable,
+        driftDb.projectTable.id.equalsExp(projectValuesTable.projectId),
+      ),
+      drift_pkg.leftOuterJoin(
+        projectValueTable,
+        projectValuesTable.valueId.equalsExp(projectValueTable.id),
       ),
     ]);
 
     // Map results to Task objects
     Stream<List<Task>> stream = joinQuery.watch().map((rows) {
-      return TaskAggregation.fromRows(rows: rows, driftDb: driftDb).toTasks();
+      return TaskAggregation.fromRows(
+        rows: rows,
+        driftDb: driftDb,
+        projectValuesTable: projectValuesTable,
+        projectValueTable: projectValueTable,
+        taskValueTable: taskValueTable,
+      ).toTasks();
     });
 
     // Apply occurrence expansion if needed (with two-phase date filtering)
@@ -711,12 +703,12 @@ class TaskRepository implements TaskRepositoryContract {
       final completionsStream = driftDb
           .select(driftDb.taskCompletionHistoryTable)
           .watch()
-          .map((rows) => rows.map(_toCompletionData).toList());
+          .map((rows) => rows.map(toCompletionData).toList());
 
       final exceptionsStream = driftDb
           .select(driftDb.taskRecurrenceExceptionsTable)
           .watch()
-          .map((rows) => rows.map(_toExceptionData).toList());
+          .map((rows) => rows.map(toExceptionData).toList());
 
       final evaluator = TaskFilterEvaluator();
       final context = EvaluationContext();
@@ -737,7 +729,7 @@ class TaskRepository implements TaskRepositoryContract {
     return stream;
   }
 
-  QueryFilter<TaskPredicate> _removeDatePredicates(
+  QueryFilter<TaskPredicate> removeDatePredicates(
     QueryFilter<TaskPredicate> filter,
   ) {
     final shared = filter.shared
@@ -755,7 +747,7 @@ class TaskRepository implements TaskRepositoryContract {
     return QueryFilter<TaskPredicate>(shared: shared, orGroups: orGroups);
   }
 
-  drift_pkg.Expression<bool>? _whereExpressionFromFilter(
+  drift_pkg.Expression<bool>? whereExpressionFromFilter(
     QueryFilter<TaskPredicate> filter,
     $TaskTableTable t,
   ) {
@@ -767,7 +759,7 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Checks if a query matches the inbox tier.
-  bool _isInboxQuery(TaskQuery query) {
+  bool isInboxQuery(TaskQuery query) {
     if (query.filter.orGroups.isNotEmpty) return false;
     final predicates = query.filter.shared;
     if (predicates.length != 2) return false;
@@ -787,7 +779,7 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Checks if a query matches the today tier.
-  bool _isTodayQuery(TaskQuery query) {
+  bool isTodayQuery(TaskQuery query) {
     if (query.filter.orGroups.isNotEmpty) return false;
     final predicates = query.filter.shared;
     if (predicates.length != 2) return false;
@@ -809,7 +801,7 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Checks if a query matches the upcoming tier.
-  bool _isUpcomingQuery(TaskQuery query) {
+  bool isUpcomingQuery(TaskQuery query) {
     if (query.filter.orGroups.isNotEmpty) return false;
     final predicates = query.filter.shared;
     if (predicates.length != 2) return false;
@@ -832,9 +824,9 @@ class TaskRepository implements TaskRepositoryContract {
   }
 
   /// Gets or creates the shared inbox stream with tier-based caching.
-  Stream<List<Task>> _getOrCreateInboxStream(TaskQuery query) {
+  Stream<List<Task>> getOrCreateInboxStream(TaskQuery query) {
     if (_sharedInboxStream == null) {
-      final stream = _buildAndExecuteQuery(query).map((tasks) {
+      final stream = buildAndExecuteQuery(query).map((tasks) {
         developer.log(
           'INBOX STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(completed=${t.completed})").join(", ")}',
           name: 'TaskRepository',
@@ -846,25 +838,53 @@ class TaskRepository implements TaskRepositoryContract {
     return _sharedInboxStream!;
   }
 
-  /// Gets or creates the shared today stream with tier-based caching.
-  Stream<List<Task>> _getOrCreateTodayStream(TaskQuery query) {
-    if (_sharedTodayStream == null) {
-      final stream = _buildAndExecuteQuery(query).map((tasks) {
-        developer.log(
-          'TODAY STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
-          name: 'TaskRepository',
-        );
-        return tasks;
-      });
-      _sharedTodayStream = stream.shareValue();
+  DateTime? extractTodayCutoffDate(TaskQuery query) {
+    // TaskQuery.today(now: ...) encodes the cutoff as a date-only predicate.
+    for (final p in query.filter.shared.whereType<TaskDatePredicate>()) {
+      if (p.field == TaskDateField.deadlineDate &&
+          p.operator == DateOperator.onOrBefore) {
+        return p.date;
+      }
     }
-    return _sharedTodayStream!;
+    return null;
+  }
+
+  /// Gets or creates the shared today stream with tier-based caching.
+  Stream<List<Task>> getOrCreateTodayStream(TaskQuery query) {
+    final todayCutoff = extractTodayCutoffDate(query);
+    if (todayCutoff == null) {
+      // Safety: if we cannot reliably key this stream by day, do not cache it.
+      return buildAndExecuteQuery(query);
+    }
+
+    final cached = _sharedTodayStreamsByDate[todayCutoff];
+    if (cached != null) return cached;
+
+    final stream = buildAndExecuteQuery(query).map((tasks) {
+      developer.log(
+        'TODAY STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
+        name: 'TaskRepository',
+      );
+      return tasks;
+    });
+    final shared = stream.shareValue();
+    _sharedTodayStreamsByDate[todayCutoff] = shared;
+
+    // Prevent unbounded growth (e.g., app stays open for weeks).
+    // Keep only the most recent few days.
+    if (_sharedTodayStreamsByDate.length > 4) {
+      final keys = _sharedTodayStreamsByDate.keys.toList()..sort();
+      final keysToRemove = keys.take(keys.length - 4);
+      keysToRemove.forEach(_sharedTodayStreamsByDate.remove);
+    }
+
+    return shared;
   }
 
   /// Gets or creates the shared upcoming stream with tier-based caching.
-  Stream<List<Task>> _getOrCreateUpcomingStream(TaskQuery query) {
+  Stream<List<Task>> getOrCreateUpcomingStream(TaskQuery query) {
     if (_sharedUpcomingStream == null) {
-      final stream = _buildAndExecuteQuery(query).map((tasks) {
+      final stream = buildAndExecuteQuery(query).map((tasks) {
         developer.log(
           'UPCOMING STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
           name: 'TaskRepository',

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/presentation/features/screens/widgets/urgent_banner.dart';
-import 'package:taskly_bloc/presentation/features/screens/widgets/value_balance_chart.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
-import 'package:taskly_bloc/presentation/features/screens/widgets/persona_banner.dart';
+import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 class AllocationSectionRenderer extends StatelessWidget {
   const AllocationSectionRenderer({
@@ -19,57 +17,170 @@ class AllocationSectionRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // print('AllocationSectionRenderer build. Persona: ${data.activePersona}');
-    final criticalAlerts =
-        data.alertEvaluationResult?.bySeverity[AlertSeverity.critical] ?? [];
-    final warningAlerts =
-        data.alertEvaluationResult?.bySeverity[AlertSeverity.warning] ?? [];
-    final persona = data.activePersona ?? AllocationPersona.realist;
+    final focusMode = data.activeFocusMode ?? FocusMode.sustainable;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Persona Banner
-        PersonaBanner(persona: persona),
-
-        // Banners
-        if (criticalAlerts.isNotEmpty) UrgentBanner(alerts: criticalAlerts),
-
-        if (warningAlerts.isNotEmpty) WarningBanner(alerts: warningAlerts),
-
-        // Content based on Persona
+        // Content based on Focus Mode
         if (data.allocatedTasks.isEmpty)
           _buildEmptyState(context)
         else
-          _buildContent(context, persona),
-
-        // Footer
-        if (data.excludedCount > 0) _buildFooter(context, persona),
+          _buildContent(context, focusMode),
       ],
     );
   }
 
-  Widget _buildContent(BuildContext context, AllocationPersona persona) {
-    // print('Building content for persona: $persona');
-    return switch (persona) {
-      AllocationPersona.firefighter => _buildUrgencyGroupedList(context),
-      AllocationPersona.idealist ||
-      AllocationPersona.realist => _buildValueGroupedList(context),
-      AllocationPersona.reflector => Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: 24),
-            child: ValueBalanceChart(
-              tasksByValue: data.tasksByValue,
-            ),
-          ),
-          _buildValueGroupedList(context),
-        ],
-      ),
-      AllocationPersona.custom => _buildValueGroupedList(
+  Widget _buildContent(BuildContext context, FocusMode focusMode) {
+    if (data.displayMode == AllocationDisplayMode.groupedByProject) {
+      return _buildProjectGroupedList(context);
+    }
+
+    return switch (focusMode) {
+      FocusMode.responsive => _buildUrgencyGroupedList(context),
+      FocusMode.intentional => _buildValueGroupedList(context),
+      FocusMode.sustainable => _buildValueGroupedList(context),
+      FocusMode.personalized => _buildValueGroupedList(
         context,
       ), // Default to value grouping for custom
     };
+  }
+
+  Widget _buildProjectGroupedList(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final groups = <String, List<Task>>{};
+    final groupKeys = <String>[];
+
+    for (final task in data.allocatedTasks) {
+      final key = _projectGroupKey(task);
+      final existing = groups[key];
+      if (existing == null) {
+        groups[key] = [task];
+        groupKeys.add(key);
+      } else {
+        existing.add(task);
+      }
+    }
+
+    // Sort tasks and groups deterministically.
+    for (final entry in groups.entries) {
+      entry.value.sort((a, b) => a.name.compareTo(b.name));
+    }
+
+    groupKeys.sort((a, b) {
+      final aTasks = groups[a] ?? const <Task>[];
+      final bTasks = groups[b] ?? const <Task>[];
+
+      final aHasUrgent = aTasks.any(_isProjectGroupUrgent);
+      final bHasUrgent = bTasks.any(_isProjectGroupUrgent);
+
+      if (aHasUrgent != bHasUrgent) return aHasUrgent ? -1 : 1;
+      return a.compareTo(b);
+    });
+
+    return Column(
+      children: groupKeys.map((key) {
+        final tasks = groups[key] ?? const <Task>[];
+        if (tasks.isEmpty) return const SizedBox.shrink();
+
+        final Project? project = tasks
+            .map((t) => t.project)
+            .cast<Project?>()
+            .firstWhere(
+              (p) => p != null,
+              orElse: () => null,
+            );
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      key.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${tasks.length}',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (project != null &&
+                (project.primaryValue != null ||
+                    project.secondaryValues.isNotEmpty))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ValuesFooter(
+                  primaryValue: project.primaryValue,
+                  secondaryValues: project.secondaryValues,
+                ),
+              ),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: tasks.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return TaskListTile(
+                  task: task,
+                  onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  String _projectGroupKey(Task task) {
+    final projectName = task.project?.name.trim();
+    if (projectName != null && projectName.isNotEmpty) return projectName;
+    if (task.projectId != null) return 'Project';
+    return 'No Project';
+  }
+
+  bool _isProjectGroupUrgent(Task task) {
+    if (task.completed) return false;
+    final deadline = task.deadlineDate;
+    if (deadline == null) return false;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+    return deadlineDay.isBefore(tomorrow);
   }
 
   Widget _buildValueGroupedList(BuildContext context) {
@@ -173,9 +284,9 @@ class AllocationSectionRenderer extends StatelessWidget {
         if (overdue.isNotEmpty)
           _buildUrgencyGroup('Overdue', overdue, colorScheme.error),
         if (dueToday.isNotEmpty)
-          _buildUrgencyGroup('Due Today', dueToday, Colors.orange),
+          _buildUrgencyGroup('Due Today', dueToday, colorScheme.tertiary),
         if (upcoming.isNotEmpty)
-          _buildUrgencyGroup('Upcoming', upcoming, Colors.blue),
+          _buildUrgencyGroup('Upcoming', upcoming, colorScheme.primary),
         if (noDeadline.isNotEmpty)
           _buildUrgencyGroup(
             'No Deadline',
@@ -242,36 +353,6 @@ class AllocationSectionRenderer extends StatelessWidget {
       child: Text(
         'No tasks allocated for today.',
         style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context, AllocationPersona persona) {
-    final count = data.excludedCount;
-    final message = switch (persona) {
-      AllocationPersona.firefighter =>
-        '$count tasks not urgent have been deprioritized.',
-      AllocationPersona.idealist =>
-        '$count tasks not aligned with your values have been hidden.',
-      AllocationPersona.realist => '$count tasks excluded to maintain balance.',
-      AllocationPersona.reflector =>
-        '$count tasks excluded to focus on neglected values.',
-      AllocationPersona.custom =>
-        '$count tasks excluded by your custom settings.',
-    };
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 40),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 12,
-            fontStyle: FontStyle.italic,
-          ),
-        ),
       ),
     );
   }

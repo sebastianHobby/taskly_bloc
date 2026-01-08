@@ -40,7 +40,7 @@ class ValueStats {
 class EnhancedValueCard extends StatelessWidget {
   const EnhancedValueCard({
     required this.value,
-    required this.rank,
+    this.rank,
     this.stats,
     this.onTap,
     this.compact = false,
@@ -52,7 +52,7 @@ class EnhancedValueCard extends StatelessWidget {
   /// Creates a compact version for settings/ranking contexts.
   const EnhancedValueCard.compact({
     required this.value,
-    required this.rank,
+    this.rank,
     this.stats,
     this.onTap,
     this.notRankedMessage,
@@ -64,7 +64,9 @@ class EnhancedValueCard extends StatelessWidget {
 
   /// Statistics for the value. Optional in compact mode to show "not ranked".
   final ValueStats? stats;
-  final int rank;
+
+  /// Rank of this value (optional since ranking feature was removed).
+  final int? rank;
 
   /// Tap callback. If null, card is not tappable.
   final VoidCallback? onTap;
@@ -170,9 +172,9 @@ class EnhancedValueCard extends StatelessWidget {
               // Header row with inline stats
               Row(
                 children: [
-                  if (showDragHandle)
+                  if (showDragHandle && rank != null)
                     ReorderableDragStartListener(
-                      index: rank - 1,
+                      index: rank! - 1,
                       child: Icon(
                         Icons.drag_handle,
                         color: colorScheme.onSurfaceVariant,
@@ -186,14 +188,16 @@ class EnhancedValueCard extends StatelessWidget {
                       size: 20,
                     ),
                   const SizedBox(width: 6),
-                  Text(
-                    '$rank.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
+                  if (rank != null) ...[
+                    Text(
+                      '$rank.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
+                    const SizedBox(width: 6),
+                  ],
                   Text(
                     (value.iconName?.isNotEmpty ?? false)
                         ? value.iconName!
@@ -262,9 +266,9 @@ class EnhancedValueCard extends StatelessWidget {
   Widget _buildHeader(ThemeData theme, ColorScheme colorScheme) {
     return Row(
       children: [
-        if (showDragHandle)
+        if (showDragHandle && rank != null)
           ReorderableDragStartListener(
-            index: rank - 1,
+            index: rank! - 1,
             child: Icon(
               Icons.drag_handle,
               color: colorScheme.onSurfaceVariant,
@@ -276,13 +280,15 @@ class EnhancedValueCard extends StatelessWidget {
             color: colorScheme.onSurfaceVariant,
           ),
         const SizedBox(width: 8),
-        Text(
-          '$rank.',
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
+        if (rank != null) ...[
+          Text(
+            '$rank.',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
+        ],
         Text(
           (value.iconName?.isNotEmpty ?? false) ? value.iconName! : '⭐',
           style: EmojiUtils.emojiTextStyle(fontSize: 22),

@@ -9,7 +9,6 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
@@ -53,7 +52,6 @@ void main() {
         // Properties that NavigationBloc expects
         expect(wrapped.screen.screenKey, isNotEmpty);
         expect(wrapped.screen.name, isNotEmpty);
-        expect(wrapped.screen.category, isNotNull);
         expect(wrapped.preferences.isActive, isNotNull);
         expect(wrapped.preferences.sortOrder, isNotNull);
       });
@@ -85,10 +83,10 @@ void main() {
 
             final icons = resolver.resolve(
               screenId: wrapped.screen.screenKey,
-              iconName: wrapped.screen.iconName,
+              iconName: wrapped.screen.chrome.iconName,
             );
 
-            // All properties needed for NavigationDestination must be non-null
+            // All properties needed for NavigationDestination must be noncumen-null
             expect(wrapped.screen.name, isNotEmpty, reason: 'name required');
             expect(icons.icon, isNotNull, reason: 'icon required');
             expect(
@@ -114,81 +112,19 @@ void main() {
           // They should have required fields
           expect(screen.screenKey, isNotEmpty);
           expect(screen.name, isNotEmpty);
-          // category is available on all ScreenDefinition variants
-          expect(screen.category, isNotNull);
         }
       });
 
       testContract('data-driven screens have sections property', () {
         for (final screen in SystemScreenDefinitions.all) {
-          // Only DataDrivenScreenDefinition has sections
-          if (screen is DataDrivenScreenDefinition) {
-            expect(
-              screen.sections,
-              isNotNull,
-              reason: 'sections should be accessible for ${screen.screenKey}',
-            );
-            expect(
-              screen.screenType,
-              isNotNull,
-              reason: 'screenType should be set for ${screen.screenKey}',
-            );
-          }
+          // Unified model: all ScreenDefinitions have sections.
+          expect(
+            screen.sections,
+            isNotNull,
+            reason: 'sections should be accessible for ${screen.screenKey}',
+          );
         }
       });
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // Category Contracts
-    // ═══════════════════════════════════════════════════════════════════════
-
-    group('ScreenCategory contracts', () {
-      testContract('system screens have consistent category assignments', () {
-        // Workspace screens
-        expect(
-          SystemScreenDefinitions.inbox.category,
-          ScreenCategory.workspace,
-        );
-        expect(
-          SystemScreenDefinitions.myDay.category,
-          ScreenCategory.workspace,
-        );
-        expect(
-          SystemScreenDefinitions.scheduled.category,
-          ScreenCategory.workspace,
-        );
-        expect(
-          SystemScreenDefinitions.projects.category,
-          ScreenCategory.workspace,
-        );
-
-        // Settings screens
-        expect(
-          SystemScreenDefinitions.settings.category,
-          ScreenCategory.settings,
-        );
-        expect(
-          SystemScreenDefinitions.screenManagement.category,
-          ScreenCategory.settings,
-        );
-      });
-
-      testContract(
-        'all system screens belong to a valid category',
-        () {
-          for (final screen in SystemScreenDefinitions.all) {
-            expect(
-              screen.category,
-              anyOf(
-                ScreenCategory.workspace,
-                ScreenCategory.wellbeing,
-                ScreenCategory.settings,
-              ),
-              reason: '${screen.screenKey} has unexpected category',
-            );
-          }
-        },
-      );
     });
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -196,36 +132,23 @@ void main() {
     // ═══════════════════════════════════════════════════════════════════════
 
     group('Sort order contracts', () {
-      testContract('workspace screens have sort orders < 100', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          if (screen.category == ScreenCategory.workspace) {
-            final order = SystemScreenDefinitions.getDefaultSortOrder(
-              screen.screenKey,
-            );
-            expect(
-              order,
-              lessThan(100),
-              reason:
-                  '${screen.screenKey} is workspace but has order >= 100: $order',
-            );
-          }
+      testContract('default sort order for settings is 100', () {
+        expect(SystemScreenDefinitions.getDefaultSortOrder('settings'), 100);
+      });
+
+      testContract('default sort orders for main screens are < 100', () {
+        for (final entry in SystemScreenDefinitions.defaultSortOrders.entries) {
+          if (entry.key == 'settings') continue;
+          expect(
+            entry.value,
+            lessThan(100),
+            reason: '${entry.key} should sort before settings',
+          );
         }
       });
 
-      testContract('settings screens have sort orders >= 100', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          if (screen.category == ScreenCategory.settings) {
-            final order = SystemScreenDefinitions.getDefaultSortOrder(
-              screen.screenKey,
-            );
-            expect(
-              order,
-              greaterThanOrEqualTo(100),
-              reason:
-                  '${screen.screenKey} is settings but has order < 100: $order',
-            );
-          }
-        }
+      testContract('unknown screens sort last (999)', () {
+        expect(SystemScreenDefinitions.getDefaultSortOrder('unknown_key'), 999);
       });
     });
   });

@@ -152,7 +152,7 @@ class IntegrationTestContext {
     final db = createTestDb();
 
     final idGenerator = IdGenerator.withUserId('test-user');
-    final systemScreenProvider = DefaultSystemScreenProvider(idGenerator);
+    const systemScreenProvider = DefaultSystemScreenProvider();
     final settingsRepository = SettingsRepository(driftDb: db);
 
     final screensRepository = ScreenDefinitionsRepository(
@@ -160,7 +160,6 @@ class IntegrationTestContext {
         db,
         idGenerator,
         systemScreenProvider,
-        settingsRepository,
       ),
     );
 

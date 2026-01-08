@@ -97,6 +97,10 @@ class NavigationIconResolver {
         icon: Icons.tune_outlined,
         selectedIcon: Icons.tune,
       ),
+      'focus_setup' || 'focus-setup' => (
+        icon: Icons.tune_outlined,
+        selectedIcon: Icons.tune,
+      ),
       'navigation_settings' || 'navigation-settings' => (
         icon: Icons.reorder_outlined,
         selectedIcon: Icons.reorder,

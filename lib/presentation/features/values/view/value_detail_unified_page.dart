@@ -6,13 +6,10 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
@@ -152,7 +149,6 @@ class _ValueScreenView extends StatefulWidget {
 
 class _ValueScreenViewState extends State<_ValueScreenView> {
   ValueStats? _valueStats;
-  int _valueRank = 1;
   bool _isLoadingStats = true;
 
   Value get value => widget.value;
@@ -166,7 +162,6 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
   Future<void> _loadValueStats() async {
     try {
       final analyticsService = getIt<AnalyticsService>();
-      final settingsRepository = getIt<SettingsRepositoryContract>();
 
       // Load all required data in parallel
       final results = await Future.wait([
@@ -174,33 +169,12 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
         analyticsService.getValueActivityStats(),
         analyticsService.getRecentCompletionsByValue(days: 56),
         analyticsService.getTotalRecentCompletions(days: 56),
-        settingsRepository.load(SettingsKey.valueRanking),
       ]);
 
       final weeklyTrends = results[0] as Map<String, List<double>>;
       final activityStats = results[1] as Map<String, ValueActivityStats>;
       final recentCompletions = results[2] as Map<String, int>;
       final totalRecentCompletions = results[3] as int;
-      final valueRanking = results[4] as ValueRanking;
-
-      // Calculate total weight for percentage calculation
-      final totalWeight = valueRanking.items.fold<int>(
-        0,
-        (sum, item) => sum + item.weight,
-      );
-
-      // Find ranking item for this value
-      final rankIndex = valueRanking.items.indexWhere(
-        (item) => item.valueId == value.id,
-      );
-      final rankItem = rankIndex >= 0
-          ? valueRanking.items[rankIndex]
-          : ValueRankItem(valueId: value.id, weight: 5);
-
-      // Calculate target percent from ranking weight
-      final targetPercent = totalWeight > 0
-          ? (rankItem.weight / totalWeight) * 100
-          : 0.0;
 
       // Calculate actual percent from recent completions
       final actualPercent = totalRecentCompletions > 0
@@ -218,14 +192,13 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
       if (mounted) {
         setState(() {
           _valueStats = ValueStats(
-            targetPercent: targetPercent,
+            targetPercent: 0, // No longer tracking target allocation
             actualPercent: actualPercent,
             taskCount: activity.taskCount,
             projectCount: activity.projectCount,
             weeklyTrend: weeklyTrend,
             gapWarningThreshold: 15,
           );
-          _valueRank = rankIndex >= 0 ? rankIndex + 1 : 0;
           _isLoadingStats = false;
         });
       }
@@ -354,12 +327,8 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
           else
             EnhancedValueCard(
               value: value,
-              rank: _valueRank,
               stats: _valueStats,
               onTap: () => _showEditValueSheet(context),
-              notRankedMessage: _valueRank == 0
-                  ? l10n.notRankedDragToRank
-                  : null,
             ),
 
           // Related lists via ScreenBloc
@@ -376,9 +345,7 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
                   ),
                   ScreenErrorState(:final message) => ErrorStateWidget(
                     message: message,
-                    onRetry: () => context.read<ScreenBloc>().add(
-                      const ScreenEvent.refresh(),
-                    ),
+                    onRetry: () => Navigator.of(context).pop(),
                   ),
                 };
               },
@@ -403,8 +370,8 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Data updates automatically via reactive streams
+        await Future<void>.delayed(const Duration(milliseconds: 300));
       },
       child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 80),
@@ -435,15 +402,9 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
               } else {
                 await entityActionService.uncompleteTask(task.id);
               }
-              if (context.mounted) {
-                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-              }
             },
             onTaskDelete: (task) async {
               await entityActionService.deleteTask(task.id);
-              if (context.mounted) {
-                context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-              }
             },
           );
         },

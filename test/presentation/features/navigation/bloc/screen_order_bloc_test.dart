@@ -102,7 +102,7 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'ordered keys',
-              ['inbox', 'my_day', 'planned'],
+              ['inbox', 'my_day', 'scheduled'],
             ),
       ],
     );
@@ -130,12 +130,12 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['my_day', 'inbox', 'planned'],
+              ['my_day', 'inbox', 'scheduled'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['my_day', 'inbox', 'planned']),
+          () => mockRepository.reorderScreens(['my_day', 'inbox', 'scheduled']),
         ).called(1);
       },
     );
@@ -163,12 +163,12 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['planned', 'inbox', 'my_day'],
+              ['scheduled', 'inbox', 'my_day'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['planned', 'inbox', 'my_day']),
+          () => mockRepository.reorderScreens(['scheduled', 'inbox', 'my_day']),
         ).called(1);
       },
     );
@@ -217,9 +217,10 @@ void main() {
     blocTestSafe<ScreenOrderBloc, ScreenOrderState>(
       'updates when screens stream emits new data',
       build: buildBloc,
-      act: (bloc) {
+      act: (bloc) async {
         bloc.add(const ScreenOrderStarted());
         screensController.emit([testScreen1, testScreen2]);
+        await Future<void>.delayed(const Duration(milliseconds: 1));
         // Simulate new screen added
         screensController.emit([testScreen1, testScreen2, testScreen3]);
       },

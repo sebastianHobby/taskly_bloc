@@ -5,23 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/presentation/features/next_action/widgets/persona_selection_card.dart';
-import 'package:taskly_bloc/presentation/features/values/widgets/enhanced_value_card.dart';
 
-/// Settings page for configuring task allocation strategy and value rankings.
+/// Settings page for configuring task allocation strategy.
 class AllocationSettingsPage extends StatefulWidget {
   const AllocationSettingsPage({
     required this.settingsRepository,
-    required this.valueRepository,
     super.key,
   });
 
   final SettingsRepositoryContract settingsRepository;
-  final ValueRepositoryContract valueRepository;
 
   @override
   State<AllocationSettingsPage> createState() => _AllocationSettingsPageState();
@@ -29,15 +24,10 @@ class AllocationSettingsPage extends StatefulWidget {
 
 class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
   SettingsRepositoryContract get _settingsRepo => widget.settingsRepository;
-  ValueRepositoryContract get _valueRepo => widget.valueRepository;
 
-  // Preserved for debugging/future enhancements
+  // Retained for potential future use
   // ignore: unused_field
   AllocationConfig? _allocationConfig;
-  // ignore: unused_field
-  ValueRanking? _valueRanking;
-  // ignore: unused_field
-  List<Value> _values = [];
   bool _isLoading = true;
   bool _hasChanges = false;
 
@@ -58,9 +48,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
   bool _showOrphanTaskCount = true;
   bool _showProjectNextTask = true;
 
-  // Value rankings
-  List<_RankableValue> _rankedValues = [];
-
   @override
   void initState() {
     super.initState();
@@ -78,22 +65,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
         'dailyLimit=${settings.dailyLimit}, persona=${settings.persona}',
       );
 
-      final ranking = await _settingsRepo.load(SettingsKey.valueRanking);
-      developer.log(
-        '[AllocationSettingsPage] Loaded valueRanking: '
-        '${ranking.items.length} items\n'
-        '  items=${ranking.items.map((i) => "${i.valueId.substring(0, 8)}:w${i.weight}").join(", ")}',
-      );
-
-      final values = await _valueRepo.getAll();
-      developer.log(
-        '[AllocationSettingsPage] Loaded ${values.length} values: '
-        '${values.map((l) => "${l.name}(${l.id.substring(0, 8)})").join(", ")}',
-      );
-
       _allocationConfig = settings;
-      _valueRanking = ranking;
-      _values = values;
 
       // Initialize form state from settings
       _persona = settings.persona;
@@ -115,8 +87,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       // Display settings
       _showOrphanTaskCount = settings.displaySettings.showOrphanTaskCount;
       _showProjectNextTask = settings.displaySettings.showProjectNextTask;
-
-      _recalculateRankedValues(ranking, values);
     } catch (e, s) {
       developer.log(
         '[AllocationSettingsPage] Error loading settings',
@@ -133,33 +103,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _recalculateRankedValues(ValueRanking ranking, List<Value> values) {
-    final ranked = <_RankableValue>[];
-
-    // First add ranked items in order
-    for (final item in ranking.items) {
-      try {
-        final value = values.firstWhere((l) => l.id == item.valueId);
-        ranked.add(
-          _RankableValue(value: value, weight: item.weight, isRanked: true),
-        );
-      } catch (_) {
-        // Value might have been deleted
-      }
-    }
-
-    // Then add unranked items
-    for (final value in values) {
-      if (!ranking.items.any((i) => i.valueId == value.id)) {
-        ranked.add(
-          _RankableValue(value: value, weight: 0, isRanked: false),
-        );
-      }
-    }
-
-    setState(() => _rankedValues = ranked);
   }
 
   Future<void> _saveSettings() async {
@@ -187,21 +130,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
 
       await _settingsRepo.save(SettingsKey.allocation, newSettings);
 
-      // Save value ranking
-      final newRankingItems = _rankedValues
-          .where((r) => r.isRanked)
-          .map(
-            (r) => ValueRankItem(
-              valueId: r.value.id,
-              weight: r.weight,
-              sortOrder: _rankedValues.indexOf(r),
-            ),
-          )
-          .toList();
-
-      final newRanking = ValueRanking(items: newRankingItems);
-      await _settingsRepo.save(SettingsKey.valueRanking, newRanking);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.settingsSaved)),
@@ -219,33 +147,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  void _onValueReordered(int oldIndex, int newIndex) {
-    setState(() {
-      final adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
-      final item = _rankedValues.removeAt(oldIndex);
-      _rankedValues.insert(adjustedNewIndex, item);
-
-      // Update isRanked status based on position
-      // For now, assume all items in the list are ranked if they have weight > 0
-      // But actually, the UI implies dragging to reorder.
-      // If we want to support "unranked", we might need a separator or separate list.
-      // For this implementation, we'll mark all as ranked if they are in the list
-      // and give them a default weight if they were unranked.
-
-      final updatedList = <_RankableValue>[];
-      for (var i = 0; i < _rankedValues.length; i++) {
-        var val = _rankedValues[i];
-        if (!val.isRanked) {
-          // Item was moved from unranked to ranked (implicitly)
-          val = val.copyWith(isRanked: true, weight: 50); // Default weight
-        }
-        updatedList.add(val);
-      }
-      _rankedValues = updatedList;
-      _hasChanges = true;
-    });
   }
 
   @override
@@ -271,8 +172,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
           _buildPersonaSection(theme, l10n),
           const SizedBox(height: 24),
           _buildStrategySection(theme, l10n),
-          const SizedBox(height: 24),
-          _buildValueRankingsSection(theme, l10n),
           const SizedBox(height: 24),
           _buildDisplaySection(theme, l10n),
         ],
@@ -438,77 +337,6 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     );
   }
 
-  Widget _buildValueRankingsSection(ThemeData theme, AppLocalizations l10n) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.star, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  l10n.valueRankingsTitle,
-                  style: theme.textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.valueRankingsDescription,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (_rankedValues.isEmpty)
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Text(
-                    l10n.noValuesForRanking,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            else
-              ReorderableListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _rankedValues.length,
-                onReorder: _onValueReordered,
-                buildDefaultDragHandles: false,
-                itemBuilder: (context, index) {
-                  final rankableValue = _rankedValues[index];
-                  return EnhancedValueCard.compact(
-                    key: ValueKey(rankableValue.value.id),
-                    value: rankableValue.value,
-                    rank: index + 1,
-                    showDragHandle: true,
-                    stats: rankableValue.isRanked
-                        ? ValueStats(
-                            targetPercent: rankableValue.weight.toDouble(),
-                            actualPercent: 0,
-                            taskCount: 0,
-                            projectCount: 0,
-                            weeklyTrend: const [],
-                          )
-                        : null,
-                    notRankedMessage: l10n.notRankedDragToRank,
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
   String _urgentBehaviorName(AppLocalizations l10n, UrgentTaskBehavior b) {
     return switch (b) {
       UrgentTaskBehavior.ignore => l10n.urgentTaskIgnore,
@@ -526,25 +354,5 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       UrgentTaskBehavior.warnOnly => l10n.urgentTaskWarnOnlyDescription,
       UrgentTaskBehavior.includeAll => l10n.urgentTaskIncludeAllDescription,
     };
-  }
-}
-
-class _RankableValue {
-  const _RankableValue({
-    required this.value,
-    required this.weight,
-    required this.isRanked,
-  });
-
-  final Value value;
-  final int weight;
-  final bool isRanked;
-
-  _RankableValue copyWith({Value? value, int? weight, bool? isRanked}) {
-    return _RankableValue(
-      value: value ?? this.value,
-      weight: weight ?? this.weight,
-      isRanked: isRanked ?? this.isRanked,
-    );
   }
 }

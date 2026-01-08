@@ -9,7 +9,6 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 
 /// Shared mock implementations for repository contracts.
@@ -60,5 +59,3 @@ class MockIdGenerator extends Mock implements IdGenerator {}
 
 class MockAuthRepositoryContract extends Mock
     implements AuthRepositoryContract {}
-
-class MockUserDataSeeder extends Mock implements UserDataSeederContract {}

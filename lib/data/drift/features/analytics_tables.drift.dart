@@ -87,7 +87,7 @@ class AnalyticsInsights extends Table {
       .clientDefault(() => '{}')();
   RealColumn get score => real().nullable()();
   RealColumn get confidence => real().nullable()();
-  BoolColumn get isPositive => boolean().withDefault(const Constant(true))();
+  BoolColumn get isPositive => boolean().clientDefault(() => true)();
   DateTimeColumn get generatedAt => dateTime().clientDefault(DateTime.now)();
   DateTimeColumn get periodStart => dateTime()();
   DateTimeColumn get periodEnd => dateTime()();

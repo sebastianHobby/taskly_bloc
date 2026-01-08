@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/features/screens/tiles/screen_item_tile_registry.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 class TaskListRenderer extends StatelessWidget {
@@ -17,8 +17,8 @@ class TaskListRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cast primaryEntities to List<Task> safely
-    final tasks = data.primaryEntities.whereType<Task>().toList();
+    const registry = ScreenItemTileRegistry();
+    final tasks = data.items.whereType<ScreenItemTask>().toList();
 
     if (tasks.isEmpty) {
       return const SizedBox.shrink();
@@ -38,12 +38,11 @@ class TaskListRenderer extends StatelessWidget {
           itemCount: tasks.length,
           separatorBuilder: (_, __) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
-            final task = tasks[index];
-            return TaskListTile(
-              task: task,
-              onCheckboxChanged: (t, val) {
-                onTaskToggle?.call(t.id, val);
-              },
+            final item = tasks[index];
+            return registry.build(
+              context,
+              item: item,
+              onTaskToggle: onTaskToggle,
             );
           },
         ),

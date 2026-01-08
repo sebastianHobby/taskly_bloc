@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
@@ -80,12 +81,16 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   }) : _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        super(const ProjectDetailState.initial()) {
-    on<_ProjectDetailLoadById>((event, emit) => _onGet(event.projectId, emit));
-    on<_ProjectDetailCreate>(_onCreate);
-    on<_ProjectDetailUpdate>(_onUpdate);
-    on<_ProjectDetailDelete>(_onDelete);
+    on<_ProjectDetailLoadById>(
+      (event, emit) => _onGet(event.projectId, emit),
+      transformer: restartable(),
+    );
+    on<_ProjectDetailCreate>(_onCreate, transformer: droppable());
+    on<_ProjectDetailUpdate>(_onUpdate, transformer: droppable());
+    on<_ProjectDetailDelete>(_onDelete, transformer: droppable());
     on<_ProjectDetailLoadInitialData>(
       (event, emit) => _onLoadInitialData(emit),
+      transformer: restartable(),
     );
   }
 

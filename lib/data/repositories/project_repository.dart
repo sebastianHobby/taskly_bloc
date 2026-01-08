@@ -5,6 +5,7 @@ import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/data/repositories/mappers/project_predicate_mapper.dart';
+import 'package:taskly_bloc/data/repositories/query_stream_cache.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
@@ -34,6 +35,9 @@ class ProjectRepository implements ProjectRepositoryContract {
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
+
+  final QueryStreamCache<ProjectQuery, List<Project>> _sharedWatchAllCache =
+      QueryStreamCache(maxEntries: 16);
 
   Future<ProjectTableData?> _getProjectById(String id) async {
     return driftDb.managers.projectTable
@@ -68,11 +72,23 @@ class ProjectRepository implements ProjectRepositoryContract {
       return _buildAndExecuteQuery(query);
     }
 
-    return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
-      return ProjectAggregation.fromRows(
-        rows: rows,
-        driftDb: driftDb,
-      ).toProjects();
+    // Conservative policy: don't cache date-based queries by default.
+    if (query.hasDateFilter) {
+      return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
+        return ProjectAggregation.fromRows(
+          rows: rows,
+          driftDb: driftDb,
+        ).toProjects();
+      });
+    }
+
+    return _sharedWatchAllCache.getOrCreate(query, () {
+      return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
+        return ProjectAggregation.fromRows(
+          rows: rows,
+          driftDb: driftDb,
+        ).toProjects();
+      });
     });
   }
 
@@ -100,29 +116,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<int> count([ProjectQuery? query]) async {
-    query ??= ProjectQuery.all();
-
-    if (query.shouldExpandOccurrences) {
-      return (await _buildAndExecuteQuery(query).first).length;
-    }
-
-    final countExp = driftDb.projectTable.id.count();
-    final statement = driftDb.selectOnly(driftDb.projectTable)
-      ..addColumns([countExp]);
-
-    final where = _whereExpressionFromFilter(
-      query.filter,
-      driftDb.projectTable,
-    );
-    if (where != null) statement.where(where);
-
-    final row = await statement.getSingle();
-    return row.read(countExp) ?? 0;
-  }
-
-  @override
-  Stream<int> watchCount([ProjectQuery? query]) {
+  Stream<int> watchAllCount([ProjectQuery? query]) {
     query ??= ProjectQuery.all();
 
     if (query.shouldExpandOccurrences) {
@@ -311,51 +305,6 @@ class ProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<List<Project>> getProjectsByIds(List<String> ids) async {
-    if (ids.isEmpty) return [];
-    final joined =
-        (driftDb.select(
-          driftDb.projectTable,
-        )..where((p) => p.id.isIn(ids))).join([
-          drift_pkg.leftOuterJoin(
-            driftDb.projectValuesTable,
-            driftDb.projectValuesTable.projectId.equalsExp(
-              driftDb.projectTable.id,
-            ),
-          ),
-          drift_pkg.leftOuterJoin(
-            driftDb.valueTable,
-            driftDb.projectValuesTable.valueId.equalsExp(
-              driftDb.valueTable.id,
-            ),
-          ),
-        ]);
-    final rows = await joined.get();
-    return ProjectAggregation.fromRows(
-      rows: rows,
-      driftDb: driftDb,
-    ).toProjects();
-  }
-
-  @override
-  Future<List<Project>> getProjectsByValue(String valueId) async {
-    final joined = (driftDb.select(driftDb.projectTable).join([
-      drift_pkg.innerJoin(
-        driftDb.projectValuesTable,
-        driftDb.projectValuesTable.projectId.equalsExp(driftDb.projectTable.id),
-      ),
-    ])..where(driftDb.projectValuesTable.valueId.equals(valueId)));
-
-    final rows = await joined.get();
-    final projectIds = rows
-        .map((row) => row.readTable(driftDb.projectTable).id)
-        .toSet()
-        .toList();
-
-    return getProjectsByIds(projectIds);
-  }
-
-  @override
   Future<void> create({
     required String name,
     String? description,
@@ -368,6 +317,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     int? priority,
   }) async {
     talker.debug('[ProjectRepository] create: name="$name"');
+
+    if (valueIds == null || valueIds.isEmpty) {
+      throw RepositoryValidationException(
+        'Projects must have at least one value.',
+      );
+    }
     final now = DateTime.now();
     final id = idGenerator.projectId();
 
@@ -391,17 +346,22 @@ class ProjectRepository implements ProjectRepositoryContract {
         ),
       );
 
-      if (valueIds != null && valueIds.isNotEmpty) {
-        for (final valueId in valueIds) {
-          await driftDb
-              .into(driftDb.projectValuesTable)
-              .insert(
-                ProjectValuesTableCompanion(
-                  projectId: drift_pkg.Value(id),
-                  valueId: drift_pkg.Value(valueId),
-                ),
-              );
-        }
+      final primaryValueId = valueIds.first;
+      for (final valueId in valueIds) {
+        final projectValueId = idGenerator.projectValueId(
+          projectId: id,
+          valueId: valueId,
+        );
+        await driftDb
+            .into(driftDb.projectValuesTable)
+            .insert(
+              ProjectValuesTableCompanion(
+                id: drift_pkg.Value(projectValueId),
+                projectId: drift_pkg.Value(id),
+                valueId: drift_pkg.Value(valueId),
+                isPrimary: drift_pkg.Value(valueId == primaryValueId),
+              ),
+            );
       }
     });
   }
@@ -421,6 +381,13 @@ class ProjectRepository implements ProjectRepositoryContract {
     bool? isPinned,
   }) async {
     talker.debug('[ProjectRepository] update: id=$id, name="$name"');
+
+    if (valueIds != null && valueIds.isEmpty) {
+      throw RepositoryValidationException(
+        'Projects must have at least one value.',
+      );
+    }
+
     final existing = await _getProjectById(id);
     if (existing == null) {
       talker.warning(
@@ -464,13 +431,20 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb.projectValuesTable,
         )..where((t) => t.projectId.equals(id))).go();
 
+        final primaryValueId = valueIds.isEmpty ? null : valueIds.first;
         for (final valueId in valueIds) {
+          final projectValueId = idGenerator.projectValueId(
+            projectId: id,
+            valueId: valueId,
+          );
           await driftDb
               .into(driftDb.projectValuesTable)
               .insert(
                 ProjectValuesTableCompanion(
+                  id: drift_pkg.Value(projectValueId),
                   projectId: drift_pkg.Value(id),
                   valueId: drift_pkg.Value(valueId),
+                  isPrimary: drift_pkg.Value(valueId == primaryValueId),
                 ),
               );
         }
@@ -505,22 +479,10 @@ class ProjectRepository implements ProjectRepositoryContract {
     required String id,
     required DateTime reviewedAt,
   }) async {
-    talker.debug('[ProjectRepository] updateLastReviewedAt: id=$id');
-    final existing = await _getProjectById(id);
-    if (existing == null) {
-      talker.warning(
-        '[ProjectRepository] updateLastReviewedAt failed: project not found id=$id',
-      );
-      throw RepositoryNotFoundException('No project found to update');
-    }
-
-    await (driftDb.update(
-      driftDb.projectTable,
-    )..where((p) => p.id.equals(id))).write(
-      ProjectTableCompanion(
-        lastReviewedAt: drift_pkg.Value(reviewedAt),
-        updatedAt: drift_pkg.Value(DateTime.now()),
-      ),
+    // TODO(attention-migration): This is now handled by AttentionResolutions table
+    // The method is kept for interface compatibility but is a no-op
+    talker.debug(
+      '[ProjectRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
     );
   }
 

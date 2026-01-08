@@ -336,9 +336,7 @@ Future<bool> _checkRawStreamController() async {
 
     if (violations.isNotEmpty) {
       print('   ❌ Found raw StreamController usage in test files:\n');
-      for (final v in violations.take(10)) {
-        print(v);
-      }
+      violations.take(10).forEach(print);
       if (violations.length > 10) {
         print('   ... and ${violations.length - 10} more');
       }

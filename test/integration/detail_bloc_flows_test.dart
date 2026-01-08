@@ -43,6 +43,7 @@ void main() {
   setUpAll(() {
     initializeTalkerForTest();
     registerFallbackValue(const TaskQuery());
+    registerFallbackValue(ValuePriority.low);
   });
 
   group('Task Detail Bloc Integration', () {

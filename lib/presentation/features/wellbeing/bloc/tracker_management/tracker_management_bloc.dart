@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
@@ -35,10 +36,10 @@ class TrackerManagementBloc
     extends Bloc<TrackerManagementEvent, TrackerManagementState> {
   TrackerManagementBloc(this._repository)
     : super(const TrackerManagementState.initial()) {
-    on<_LoadTrackers>(_onLoadTrackers);
-    on<_SaveTracker>(_onSaveTracker);
-    on<_DeleteTracker>(_onDeleteTracker);
-    on<_ReorderTrackers>(_onReorderTrackers);
+    on<_LoadTrackers>(_onLoadTrackers, transformer: restartable());
+    on<_SaveTracker>(_onSaveTracker, transformer: droppable());
+    on<_DeleteTracker>(_onDeleteTracker, transformer: droppable());
+    on<_ReorderTrackers>(_onReorderTrackers, transformer: restartable());
   }
 
   final WellbeingRepositoryContract _repository;

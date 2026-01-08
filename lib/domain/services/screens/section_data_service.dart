@@ -1,11 +1,11 @@
-import 'dart:developer' as developer;
-
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
@@ -13,7 +13,10 @@ import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/models/screens/value_stats.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
@@ -22,10 +25,11 @@ import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_alert_evaluator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/domain/services/screens/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Service for fetching data for screen sections.
 ///
@@ -38,7 +42,8 @@ class SectionDataService {
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required AllocationOrchestrator allocationOrchestrator,
-    AllocationAlertEvaluator? alertEvaluator,
+    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
+    required AgendaSectionDataService agendaDataService,
     WellbeingRepositoryContract? wellbeingRepository,
     AnalyticsService? analyticsService,
     SettingsRepositoryContract? settingsRepository,
@@ -47,7 +52,8 @@ class SectionDataService {
        _valueRepository = valueRepository,
        _wellbeingRepository = wellbeingRepository,
        _allocationOrchestrator = allocationOrchestrator,
-       _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator(),
+       _allocationSnapshotRepository = allocationSnapshotRepository,
+       _agendaDataService = agendaDataService,
        _analyticsService = analyticsService,
        _settingsRepository = settingsRepository;
 
@@ -56,103 +62,104 @@ class SectionDataService {
   final ValueRepositoryContract _valueRepository;
   final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
-  final AllocationAlertEvaluator _alertEvaluator;
+  final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
+  final AgendaSectionDataService _agendaDataService;
   final AnalyticsService? _analyticsService;
   final SettingsRepositoryContract? _settingsRepository;
 
-  /// Fetch data for a section (one-time)
-  Future<SectionDataResult> fetchSectionData(Section section) async {
-    talker.serviceLog(
-      'SectionDataService',
-      'fetchSectionData: ${section.runtimeType}',
-    );
-    talker.serviceLog('SectionDataService', 'Section details: $section');
-
-    try {
-      final result = await switch (section) {
-        DataSection(:final config, :final relatedData, :final enrichment) =>
-          _fetchDataSection(config, relatedData, enrichment),
-        AllocationSection(
-          :final sourceFilter,
-          :final maxTasks,
-          :final displayMode,
-          :final showExcludedSection,
-        ) =>
-          _fetchAllocationSection(
-            sourceFilter: sourceFilter,
-            maxTasks: maxTasks,
-            displayMode: displayMode,
-            showExcludedSection: showExcludedSection,
-          ),
-        AgendaSection(
-          :final dateField,
-          :final grouping,
-          :final additionalFilter,
-        ) =>
-          _fetchAgendaSection(dateField, grouping, additionalFilter),
-      };
-
-      talker.serviceLog(
-        'SectionDataService',
-        'Result type: ${result.runtimeType}',
-      );
-      talker.serviceLog(
-        'SectionDataService',
-        'Primary entities: ${result.primaryCount} items',
-      );
-      return result;
-    } catch (e, st) {
-      talker.handle(e, st, '[SectionDataService] fetchSectionData failed');
-      rethrow;
-    }
+  DateTime _todayUtcDay() {
+    final nowUtc = DateTime.now().toUtc();
+    return DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
   }
 
-  /// Watch data for a section (returns a stream)
-  Stream<SectionDataResult> watchSectionData(Section section) {
-    return switch (section) {
-      DataSection(:final config, :final relatedData, :final enrichment) =>
-        _watchDataSection(config, relatedData, enrichment),
-      AllocationSection(
-        :final sourceFilter,
-        :final maxTasks,
-        :final displayMode,
-        :final showExcludedSection,
-      ) =>
-        _watchAllocationSection(
-          sourceFilter: sourceFilter,
-          maxTasks: maxTasks,
-          displayMode: displayMode,
-          showExcludedSection: showExcludedSection,
-        ),
-      AgendaSection(
-        :final dateField,
-        :final grouping,
-        :final additionalFilter,
-      ) =>
-        _watchAgendaSection(dateField, grouping, additionalFilter),
-    };
+  Future<SectionDataResult> fetchDataList(DataListSectionParams params) async {
+    return _fetchDataSection(
+      params.config,
+      params.relatedData,
+      params.enrichment,
+    );
+  }
+
+  Stream<SectionDataResult> watchDataList(DataListSectionParams params) {
+    return _watchDataSection(
+      params.config,
+      params.relatedData,
+      params.enrichment,
+    );
+  }
+
+  Future<SectionDataResult> fetchAllocation(AllocationSectionParams params) {
+    return _fetchAllocationSection(
+      sourceFilter: params.sourceFilter,
+      maxTasks: params.maxTasks,
+      displayMode: params.displayMode,
+      showExcludedSection: params.showExcludedSection,
+    );
+  }
+
+  Stream<SectionDataResult> watchAllocation(AllocationSectionParams params) {
+    return _watchAllocationSection(
+      sourceFilter: params.sourceFilter,
+      maxTasks: params.maxTasks,
+      displayMode: params.displayMode,
+      showExcludedSection: params.showExcludedSection,
+    );
+  }
+
+  Future<SectionDataResult> fetchAgenda(AgendaSectionParams params) {
+    // Current agenda data service provides a unified agenda pipeline.
+    // Params are persisted for future extensibility.
+    return _fetchAgendaSection();
+  }
+
+  Stream<SectionDataResult> watchAgenda(AgendaSectionParams params) {
+    return _watchAgendaSection();
   }
 
   // ===========================================================================
   // DATA SECTION
   // ===========================================================================
 
+  static _PrimaryEntityKind _kindFor(DataConfig config) {
+    return switch (config) {
+      TaskDataConfig() => _PrimaryEntityKind.task,
+      ProjectDataConfig() => _PrimaryEntityKind.project,
+      ValueDataConfig() => _PrimaryEntityKind.value,
+      JournalDataConfig() => _PrimaryEntityKind.journal,
+    };
+  }
+
+  static List<ScreenItem> _toScreenItems(
+    _PrimaryEntityKind kind,
+    List<Object> entities,
+  ) {
+    return switch (kind) {
+      _PrimaryEntityKind.task =>
+        entities.cast<Task>().map<ScreenItem>(ScreenItem.task).toList(),
+      _PrimaryEntityKind.project =>
+        entities.cast<Project>().map<ScreenItem>(ScreenItem.project).toList(),
+      _PrimaryEntityKind.value =>
+        entities.cast<Value>().map<ScreenItem>(ScreenItem.value).toList(),
+      _PrimaryEntityKind.journal => const <ScreenItem>[],
+    };
+  }
+
   Future<SectionDataResult> _fetchDataSection(
     DataConfig config,
     List<RelatedDataConfig> relatedData,
     EnrichmentConfig? enrichmentConfig,
   ) async {
-    final (entities, entityType) = await _fetchPrimaryEntities(config);
-    final related = await _fetchRelatedData(entities, entityType, relatedData);
+    final kind = _kindFor(config);
+    final entities = await _fetchPrimaryEntities(config);
+    final related = await _fetchRelatedData(entities, kind, relatedData);
     final enrichment = await _computeEnrichment(
       enrichmentConfig,
       entities,
-      entityType,
+      kind,
     );
 
     return SectionDataResult.data(
-      primaryEntities: entities,
-      primaryEntityType: entityType,
+      items: _toScreenItems(kind, entities),
       relatedEntities: related,
       enrichment: enrichment,
     );
@@ -162,58 +169,54 @@ class SectionDataService {
     DataConfig config,
     List<RelatedDataConfig> relatedData,
     EnrichmentConfig? enrichmentConfig,
-  ) async* {
-    await for (final entities in _watchPrimaryEntities(config)) {
-      final entityType = _getEntityType(config);
-      final related = await _fetchRelatedData(
-        entities,
-        entityType,
-        relatedData,
-      );
-      final enrichment = await _computeEnrichment(
-        enrichmentConfig,
-        entities,
-        entityType,
-      );
+  ) {
+    final kind = _kindFor(config);
 
-      yield SectionDataResult.data(
-        primaryEntities: entities,
-        primaryEntityType: entityType,
-        relatedEntities: related,
-        enrichment: enrichment,
-      );
-    }
+    // Latest snapshot wins: if the primary entities stream emits again while
+    // related/enrichment computation is still running, cancel the in-flight
+    // computation and start a new one for the latest entities.
+    return _watchPrimaryEntities(config).switchMap(
+      (entities) => Stream.fromFuture(
+        _buildDataSectionResult(
+          kind: kind,
+          entities: entities,
+          relatedData: relatedData,
+          enrichmentConfig: enrichmentConfig,
+        ),
+      ),
+    );
   }
 
-  String _getEntityType(DataConfig config) {
-    return switch (config) {
-      TaskDataConfig() => 'task',
-      ProjectDataConfig() => 'project',
-      ValueDataConfig() => 'value',
-      JournalDataConfig() => 'journal',
-    };
+  Future<SectionDataResult> _buildDataSectionResult({
+    required _PrimaryEntityKind kind,
+    required List<Object> entities,
+    required List<RelatedDataConfig> relatedData,
+    required EnrichmentConfig? enrichmentConfig,
+  }) async {
+    final related = await _fetchRelatedData(entities, kind, relatedData);
+    final enrichment = await _computeEnrichment(
+      enrichmentConfig,
+      entities,
+      kind,
+    );
+
+    return SectionDataResult.data(
+      items: _toScreenItems(kind, entities),
+      relatedEntities: related,
+      enrichment: enrichment,
+    );
   }
 
-  Future<(List<dynamic>, String)> _fetchPrimaryEntities(
-    DataConfig config,
-  ) async {
+  Future<List<Object>> _fetchPrimaryEntities(DataConfig config) async {
     return switch (config) {
-      TaskDataConfig(:final query) => (
-        await _taskRepository.watchAll(query).first,
-        'task',
-      ),
-      ProjectDataConfig(:final query) => (
-        await _projectRepository.watchAll(query).first,
-        'project',
-      ),
-      ValueDataConfig() => (
-        await _valueRepository.getAll(),
-        'value',
-      ),
-      JournalDataConfig(:final query) => (
-        await _fetchJournalEntries(query),
-        'journal',
-      ),
+      TaskDataConfig(:final query) =>
+        (await _taskRepository.watchAll(query).first).cast<Object>(),
+      ProjectDataConfig(:final query) =>
+        (await _projectRepository.watchAll(query).first).cast<Object>(),
+      ValueDataConfig() => (await _valueRepository.getAll()).cast<Object>(),
+      JournalDataConfig(:final query) => (await _fetchJournalEntries(
+        query,
+      )).cast<Object>(),
     };
   }
 
@@ -232,12 +235,18 @@ class SectionDataService {
         .first;
   }
 
-  Stream<List<dynamic>> _watchPrimaryEntities(DataConfig config) {
+  Stream<List<Object>> _watchPrimaryEntities(DataConfig config) {
     return switch (config) {
-      TaskDataConfig(:final query) => _taskRepository.watchAll(query),
-      ProjectDataConfig(:final query) => _projectRepository.watchAll(query),
-      ValueDataConfig() => _valueRepository.watchAll(),
-      JournalDataConfig(:final query) => _watchJournalEntries(query),
+      TaskDataConfig(:final query) =>
+        _taskRepository.watchAll(query).map((items) => items.cast<Object>()),
+      ProjectDataConfig(:final query) =>
+        _projectRepository.watchAll(query).map((items) => items.cast<Object>()),
+      ValueDataConfig() => _valueRepository.watchAll().map(
+        (i) => i.cast<Object>(),
+      ),
+      JournalDataConfig(:final query) => _watchJournalEntries(
+        query,
+      ).map((items) => items.cast<Object>()),
     };
   }
 
@@ -253,18 +262,18 @@ class SectionDataService {
     );
   }
 
-  Future<Map<String, List<dynamic>>> _fetchRelatedData(
-    List<dynamic> primaryEntities,
-    String entityType,
+  Future<Map<String, List<Object>>> _fetchRelatedData(
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
     List<RelatedDataConfig> relatedData,
   ) async {
-    final result = <String, List<dynamic>>{};
+    final result = <String, List<Object>>{};
 
     for (final config in relatedData) {
       final key = _getRelatedDataKey(config);
       result[key] = await _fetchRelatedEntities(
-        primaryEntities,
-        entityType,
+        entities,
+        entityKind,
         config,
       );
     }
@@ -280,47 +289,53 @@ class SectionDataService {
     };
   }
 
-  Future<List<dynamic>> _fetchRelatedEntities(
-    List<dynamic> primaryEntities,
-    String entityType,
+  Future<List<Object>> _fetchRelatedEntities(
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
     RelatedDataConfig config,
   ) async {
     return switch (config) {
       RelatedTasksConfig(:final additionalFilter) => await _fetchRelatedTasks(
-        primaryEntities,
-        entityType,
+        entities,
+        entityKind,
         additionalFilter,
       ),
       RelatedProjectsConfig() => await _fetchRelatedProjects(
-        primaryEntities,
-        entityType,
+        entities,
+        entityKind,
       ),
-      ValueHierarchyConfig() => await _fetchValueHierarchy(primaryEntities),
+      ValueHierarchyConfig() => (await _fetchValueHierarchy(
+        entities,
+      )).cast<Object>(),
     };
   }
 
   Future<List<Task>> _fetchRelatedTasks(
-    List<dynamic> entities,
-    String entityType,
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
     TaskQuery? filter,
   ) async {
     final allTasks = <Task>[];
 
-    switch (entityType) {
-      case 'project':
+    switch (entityKind) {
+      case _PrimaryEntityKind.task:
+        break;
+      case _PrimaryEntityKind.project:
         for (final project in entities.cast<Project>()) {
           // Get tasks belonging to this project using TaskQuery
           final projectQuery = TaskQuery.byProject(project.id);
           final tasks = await _taskRepository.watchAll(projectQuery).first;
           allTasks.addAll(tasks);
         }
-      case 'value':
+      case _PrimaryEntityKind.value:
         for (final value in entities.cast<Value>()) {
           // Get tasks with this value using TaskQuery
           final valueQuery = TaskQuery.forValue(valueId: value.id);
           final tasks = await _taskRepository.watchAll(valueQuery).first;
           allTasks.addAll(tasks);
         }
+      case _PrimaryEntityKind.journal:
+        break;
     }
 
     // Remove duplicates
@@ -340,18 +355,22 @@ class SectionDataService {
   }
 
   Future<List<Project>> _fetchRelatedProjects(
-    List<dynamic> entities,
-    String entityType,
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
   ) async {
     final projectIds = <String>{};
 
-    switch (entityType) {
-      case 'task':
+    switch (entityKind) {
+      case _PrimaryEntityKind.task:
         for (final task in entities.cast<Task>()) {
           if (task.projectId != null) {
             projectIds.add(task.projectId!);
           }
         }
+      case _PrimaryEntityKind.project:
+      case _PrimaryEntityKind.value:
+      case _PrimaryEntityKind.journal:
+        break;
     }
 
     if (projectIds.isEmpty) return [];
@@ -385,7 +404,22 @@ class SectionDataService {
     required AllocationDisplayMode displayMode,
     required bool showExcludedSection,
   }) async {
-    // Get current allocation from orchestrator
+    final dayUtc = _todayUtcDay();
+    final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
+      dayUtc,
+    );
+
+    if (snapshot != null) {
+      return _buildAllocationSectionResultFromSnapshot(
+        snapshot: snapshot,
+        sourceFilter: sourceFilter,
+        maxTasks: maxTasks,
+        displayMode: displayMode,
+        showExcludedSection: showExcludedSection,
+      );
+    }
+
+    // Fallback to live allocation (first-run before snapshot exists).
     final allocation = await _allocationOrchestrator.watchAllocation().first;
 
     // Check if value setup is required
@@ -413,24 +447,15 @@ class SectionDataService {
     ].map((at) => at.task).toList();
 
     // Count total available (all non-completed tasks)
-    final totalAvailable = await _taskRepository.count(TaskQuery.incomplete());
+    final totalAvailable = await _taskRepository
+        .watchAllCount(TaskQuery.incomplete())
+        .first;
 
-    // Extract excluded urgent tasks for problem detection
+    // Allocation warnings are handled by the attention system.
+    // Keep excluded tasks data only for optional “outside focus” rendering.
     final excludedUrgentTasks = allocation.excludedTasks
         .where((e) => e.isUrgent ?? false)
         .toList();
-
-    // Evaluate alerts if section wants excluded section
-    AlertEvaluationResult? alertResult;
-    if (showExcludedSection && _settingsRepository != null) {
-      final alertSettings = await _settingsRepository.load(
-        SettingsKey.allocationAlerts,
-      );
-      alertResult = _alertEvaluator.evaluate(
-        excludedTasks: allocation.excludedTasks,
-        config: alertSettings.config,
-      );
-    }
 
     return SectionDataResult.allocation(
       allocatedTasks: tasks,
@@ -440,7 +465,8 @@ class SectionDataService {
       excludedCount: allocation.excludedTasks.length,
       excludedUrgentTasks: excludedUrgentTasks,
       excludedTasks: allocation.excludedTasks,
-      alertEvaluationResult: alertResult,
+      alertEvaluationResult: null,
+      activeFocusMode: allocation.activeFocusMode,
       displayMode: displayMode,
       showExcludedSection: showExcludedSection,
     );
@@ -451,59 +477,237 @@ class SectionDataService {
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
     required bool showExcludedSection,
-  }) async* {
-    await for (final allocation in _allocationOrchestrator.watchAllocation()) {
-      // Check if value setup is required
-      if (allocation.requiresValueSetup) {
-        yield SectionDataResult.allocation(
-          allocatedTasks: const [],
-          totalAvailable: 0,
-          requiresValueSetup: true,
-          displayMode: displayMode,
-          showExcludedSection: showExcludedSection,
+  }) {
+    final dayUtc = _todayUtcDay();
+
+    // Prefer persisted snapshots. If a snapshot does not exist yet for today,
+    // fall back to live allocation (first-run bootstrap).
+    return _allocationSnapshotRepository.watchLatestForUtcDay(dayUtc).switchMap(
+      (snapshot) {
+        if (snapshot != null) {
+          return _watchAllocationSectionFromSnapshot(
+            snapshot: snapshot,
+            sourceFilter: sourceFilter,
+            maxTasks: maxTasks,
+            displayMode: displayMode,
+            showExcludedSection: showExcludedSection,
+          );
+        }
+
+        return _allocationOrchestrator.watchAllocation().switchMap(
+          (allocation) => Stream.fromFuture(
+            _buildAllocationSectionResult(
+              allocation: allocation,
+              sourceFilter: sourceFilter,
+              maxTasks: maxTasks,
+              displayMode: displayMode,
+              showExcludedSection: showExcludedSection,
+            ),
+          ),
         );
-        continue;
-      }
+      },
+    );
+  }
 
-      // Build pinned tasks and value groups for UI rendering
-      final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
-        allocation.allocatedTasks,
-        sourceFilter,
-        maxTasks,
-      );
-
-      // Extract just the Task objects for backward compatibility
-      final tasks = [
-        ...pinnedTasks,
-        ...tasksByValue.values.expand((g) => g.tasks),
-      ].map((at) => at.task).toList();
-
-      // Count total available
-      final totalAvailable = await _taskRepository.count(
-        TaskQuery.incomplete(),
-      );
-
-      // Extract excluded urgent tasks for problem detection
-      final excludedUrgentTasks = allocation.excludedTasks
-          .where((e) => e.isUrgent ?? false)
-          .toList();
-
-      // Use pre-calculated alert result from orchestrator
-      final alertResult = allocation.alertResult;
-
-      yield SectionDataResult.allocation(
-        allocatedTasks: tasks,
-        totalAvailable: totalAvailable,
-        pinnedTasks: pinnedTasks,
-        tasksByValue: tasksByValue,
-        excludedCount: allocation.excludedTasks.length,
-        excludedUrgentTasks: excludedUrgentTasks,
-        excludedTasks: allocation.excludedTasks,
-        alertEvaluationResult: alertResult,
+  Future<SectionDataResult> _buildAllocationSectionResult({
+    required AllocationResult allocation,
+    required TaskQuery? sourceFilter,
+    required int? maxTasks,
+    required AllocationDisplayMode displayMode,
+    required bool showExcludedSection,
+  }) async {
+    // Check if value setup is required
+    if (allocation.requiresValueSetup) {
+      return SectionDataResult.allocation(
+        allocatedTasks: const [],
+        totalAvailable: 0,
+        requiresValueSetup: true,
         displayMode: displayMode,
         showExcludedSection: showExcludedSection,
       );
     }
+
+    // Build pinned tasks and value groups for UI rendering
+    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
+      allocation.allocatedTasks,
+      sourceFilter,
+      maxTasks,
+    );
+
+    // Extract just the Task objects for backward compatibility
+    final tasks = [
+      ...pinnedTasks,
+      ...tasksByValue.values.expand((g) => g.tasks),
+    ].map((at) => at.task).toList();
+
+    // Count total available
+    final totalAvailable = await _taskRepository
+        .watchAllCount(TaskQuery.incomplete())
+        .first;
+
+    // Extract excluded urgent tasks for problem detection
+    final excludedUrgentTasks = allocation.excludedTasks
+        .where((e) => e.isUrgent ?? false)
+        .toList();
+
+    // Allocation warnings are handled by the attention system.
+
+    return SectionDataResult.allocation(
+      allocatedTasks: tasks,
+      totalAvailable: totalAvailable,
+      pinnedTasks: pinnedTasks,
+      tasksByValue: tasksByValue,
+      excludedCount: allocation.excludedTasks.length,
+      excludedUrgentTasks: excludedUrgentTasks,
+      excludedTasks: allocation.excludedTasks,
+      alertEvaluationResult: null,
+      activeFocusMode: allocation.activeFocusMode,
+      displayMode: displayMode,
+      showExcludedSection: showExcludedSection,
+    );
+  }
+
+  Future<SectionDataResult> _buildAllocationSectionResultFromSnapshot({
+    required AllocationSnapshot snapshot,
+    required TaskQuery? sourceFilter,
+    required int? maxTasks,
+    required AllocationDisplayMode displayMode,
+    required bool showExcludedSection,
+  }) async {
+    final taskEntries = snapshot.allocated
+        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
+        .toList(growable: false);
+
+    final tasks = <Task>[];
+    final allocatedTasks = <AllocatedTask>[];
+
+    for (final entry in taskEntries) {
+      final task = await _taskRepository.getById(entry.entity.id);
+      if (task == null) continue;
+      tasks.add(task);
+      allocatedTasks.add(
+        AllocatedTask(
+          task: task,
+          qualifyingValueId: entry.qualifyingValueId ?? 'unknown',
+          allocationScore: entry.allocationScore ?? 0,
+        ),
+      );
+    }
+
+    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
+      allocatedTasks,
+      sourceFilter,
+      maxTasks,
+    );
+
+    final flatTasks = [
+      ...pinnedTasks,
+      ...tasksByValue.values.expand((g) => g.tasks),
+    ].map((at) => at.task).toList();
+
+    final totalAvailable = await _taskRepository
+        .watchAllCount(TaskQuery.incomplete())
+        .first;
+
+    final allocationConfig = _settingsRepository == null
+        ? const AllocationConfig()
+        : await _settingsRepository.load(SettingsKey.allocation);
+
+    return SectionDataResult.allocation(
+      allocatedTasks: flatTasks,
+      totalAvailable: totalAvailable,
+      pinnedTasks: pinnedTasks,
+      tasksByValue: tasksByValue,
+      excludedCount: 0,
+      excludedUrgentTasks: const [],
+      excludedTasks: const [],
+      alertEvaluationResult: null,
+      activeFocusMode: allocationConfig.focusMode,
+      displayMode: displayMode,
+      showExcludedSection: showExcludedSection,
+    );
+  }
+
+  Stream<SectionDataResult> _watchAllocationSectionFromSnapshot({
+    required AllocationSnapshot snapshot,
+    required TaskQuery? sourceFilter,
+    required int? maxTasks,
+    required AllocationDisplayMode displayMode,
+    required bool showExcludedSection,
+  }) {
+    final taskEntries = snapshot.allocated
+        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
+        .toList(growable: false);
+
+    final taskStreams = taskEntries
+        .map((e) => _taskRepository.watchById(e.entity.id))
+        .toList(growable: false);
+
+    final tasksStream = taskStreams.isEmpty
+        ? Stream.value(const <Task?>[])
+        : Rx.combineLatestList<Task?>(taskStreams);
+
+    final totalAvailableStream = _taskRepository.watchAllCount(
+      TaskQuery.incomplete(),
+    );
+
+    final allocationConfigStream = _settingsRepository == null
+        ? Stream.value(const AllocationConfig())
+        : _settingsRepository.watch(SettingsKey.allocation);
+
+    return Rx.combineLatest3(
+      tasksStream,
+      totalAvailableStream,
+      allocationConfigStream,
+      (List<Task?> tasks, int totalAvailable, AllocationConfig cfg) => (
+        tasks,
+        totalAvailable,
+        cfg,
+      ),
+    ).asyncMap((tuple) async {
+      final tasksNullable = tuple.$1;
+      final totalAvailable = tuple.$2;
+      final config = tuple.$3;
+
+      final allocatedTasks = <AllocatedTask>[];
+      for (var i = 0; i < taskEntries.length; i++) {
+        final task = i < tasksNullable.length ? tasksNullable[i] : null;
+        if (task == null) continue;
+        final entry = taskEntries[i];
+        allocatedTasks.add(
+          AllocatedTask(
+            task: task,
+            qualifyingValueId: entry.qualifyingValueId ?? 'unknown',
+            allocationScore: entry.allocationScore ?? 0,
+          ),
+        );
+      }
+
+      final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
+        allocatedTasks,
+        sourceFilter,
+        maxTasks,
+      );
+
+      final flatTasks = [
+        ...pinnedTasks,
+        ...tasksByValue.values.expand((g) => g.tasks),
+      ].map((at) => at.task).toList();
+
+      return SectionDataResult.allocation(
+        allocatedTasks: flatTasks,
+        totalAvailable: totalAvailable,
+        pinnedTasks: pinnedTasks,
+        tasksByValue: tasksByValue,
+        excludedCount: 0,
+        excludedUrgentTasks: const [],
+        excludedTasks: const [],
+        alertEvaluationResult: null,
+        activeFocusMode: config.focusMode,
+        displayMode: displayMode,
+        showExcludedSection: showExcludedSection,
+      );
+    });
   }
 
   /// Builds pinned tasks list and value groups from allocated tasks.
@@ -597,141 +801,34 @@ class SectionDataService {
   // AGENDA SECTION
   // ===========================================================================
 
-  Future<SectionDataResult> _fetchAgendaSection(
-    AgendaDateField dateField,
-    AgendaGrouping grouping,
-    TaskQuery? additionalFilter,
-  ) async {
-    final tasks = await _taskRepository.watchAll(additionalFilter).first;
-    final (grouped, order) = _groupTasksByDate(tasks, dateField, grouping);
+  Future<SectionDataResult> _fetchAgendaSection() async {
+    final agendaData = await _agendaDataService.loadInitial();
 
     return SectionDataResult.agenda(
-      groupedTasks: grouped,
-      groupOrder: order,
+      agendaData: agendaData,
     );
   }
 
-  Stream<SectionDataResult> _watchAgendaSection(
-    AgendaDateField dateField,
-    AgendaGrouping grouping,
-    TaskQuery? additionalFilter,
-  ) async* {
-    developer.log(
-      'AGENDA: _watchAgendaSection called with dateField=$dateField, grouping=$grouping, filter=$additionalFilter',
-      name: 'SectionDataService',
-    );
-    await for (final tasks in _taskRepository.watchAll(additionalFilter)) {
-      developer.log(
-        'AGENDA: Got ${tasks.length} tasks from watchAll: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate}, completed=${t.completed})").join(", ")}',
-        name: 'SectionDataService',
-      );
-      final (grouped, order) = _groupTasksByDate(tasks, dateField, grouping);
-      developer.log(
-        'AGENDA: After grouping: groups=${grouped.length}, order=$order',
-        name: 'SectionDataService',
-      );
+  Stream<SectionDataResult> _watchAgendaSection() async* {
+    // Initial load
+    final initialData = await _agendaDataService.loadInitial();
+    yield SectionDataResult.agenda(agendaData: initialData);
 
-      yield SectionDataResult.agenda(
-        groupedTasks: grouped,
-        groupOrder: order,
-      );
-    }
-  }
-
-  (Map<String, List<Task>>, List<String>) _groupTasksByDate(
-    List<Task> tasks,
-    AgendaDateField dateField,
-    AgendaGrouping grouping,
-  ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final weekEnd = today.add(const Duration(days: 7));
-
-    final groups = <String, List<Task>>{};
-    final order = <String>[];
-
-    DateTime? getDate(Task task) {
-      return switch (dateField) {
-        AgendaDateField.deadlineDate => task.deadlineDate,
-        AgendaDateField.startDate => task.startDate,
-        // scheduledFor is not currently on Task - fall back to deadlineDate
-        AgendaDateField.scheduledFor => task.deadlineDate,
-      };
-    }
-
-    for (final task in tasks) {
-      final date = getDate(task);
-      if (date == null) continue;
-
-      final groupKey = switch (grouping) {
-        AgendaGrouping.standard => _getStandardGroupKey(
-          date,
-          today,
-          tomorrow,
-          weekEnd,
-        ),
-        AgendaGrouping.byDate => _formatDate(date),
-        AgendaGrouping.overdueFirst => _getOverdueFirstGroupKey(
-          date,
-          today,
-          tomorrow,
-          weekEnd,
-        ),
-      };
-
-      groups.putIfAbsent(groupKey, () => []).add(task);
-      if (!order.contains(groupKey)) order.add(groupKey);
-    }
-
-    // Sort order based on grouping type
-    if (grouping == AgendaGrouping.overdueFirst) {
-      order.sort((a, b) => _groupPriority(a).compareTo(_groupPriority(b)));
-    }
-
-    return (groups, order);
-  }
-
-  String _getStandardGroupKey(
-    DateTime date,
-    DateTime today,
-    DateTime tomorrow,
-    DateTime weekEnd,
-  ) {
-    if (date.isBefore(today)) return 'Overdue';
-    if (_isSameDay(date, today)) return 'Today';
-    if (_isSameDay(date, tomorrow)) return 'Tomorrow';
-    if (date.isBefore(weekEnd)) return 'This Week';
-    return 'Later';
-  }
-
-  String _getOverdueFirstGroupKey(
-    DateTime date,
-    DateTime today,
-    DateTime tomorrow,
-    DateTime weekEnd,
-  ) {
-    // Same as standard but ordering is handled separately
-    return _getStandardGroupKey(date, today, tomorrow, weekEnd);
-  }
-
-  int _groupPriority(String groupKey) {
-    return switch (groupKey) {
-      'Overdue' => 0,
-      'Today' => 1,
-      'Tomorrow' => 2,
-      'This Week' => 3,
-      'Later' => 4,
-      _ => 5,
-    };
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+    // Watch for changes - latest snapshot wins.
+    yield* _taskRepository
+        .watchAll()
+        .debounceTime(const Duration(milliseconds: 50))
+        .switchMap(
+          (_) =>
+              Stream.fromFuture(
+                _agendaDataService.getAgendaData(
+                  focusDate: DateTime.now(),
+                ),
+              ).map(
+                (agendaData) =>
+                    SectionDataResult.agenda(agendaData: agendaData),
+              ),
+        );
   }
 
   // ===========================================================================
@@ -744,8 +841,8 @@ class SectionDataService {
   /// services are not available.
   Future<EnrichmentResult?> _computeEnrichment(
     EnrichmentConfig? config,
-    List<dynamic> entities,
-    String entityType,
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
   ) async {
     if (config == null) return null;
 
@@ -753,7 +850,7 @@ class SectionDataService {
       ValueStatsEnrichment(:final sparklineWeeks, :final gapWarningThreshold) =>
         _computeValueStatsEnrichment(
           entities,
-          entityType,
+          entityKind,
           sparklineWeeks,
           gapWarningThreshold,
         ),
@@ -764,16 +861,16 @@ class SectionDataService {
   ///
   /// Requires analytics service and settings repository to be available.
   Future<EnrichmentResult?> _computeValueStatsEnrichment(
-    List<dynamic> entities,
-    String entityType,
+    List<Object> entities,
+    _PrimaryEntityKind entityKind,
     int sparklineWeeks,
     int gapWarningThreshold,
   ) async {
     // Only compute for value entities
-    if (entityType != 'value') {
+    if (entityKind != _PrimaryEntityKind.value) {
       talker.warning(
         '[SectionDataService] ValueStats enrichment requested for non-value '
-        'entity type: $entityType',
+        'entity kind: $entityKind',
       );
       return null;
     }
@@ -861,4 +958,11 @@ class SectionDataService {
       return null;
     }
   }
+}
+
+enum _PrimaryEntityKind {
+  task,
+  project,
+  value,
+  journal,
 }

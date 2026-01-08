@@ -10,10 +10,13 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
@@ -38,18 +41,23 @@ void main() {
       // Register fallback for ScreenDefinition used with any()
       final now = DateTime.now();
       registerFallbackValue(
-        DataDrivenScreenDefinition(
+        ScreenDefinition(
           id: 'fallback-id',
           screenKey: 'fallback',
           name: 'Fallback',
-          screenType: ScreenType.list,
-          sections: [
-            Section.data(
-              config: DataConfig.task(query: TaskQuery.all()),
-            ),
-          ],
           createdAt: now,
           updatedAt: now,
+          sections: [
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: TaskDataConfig(query: TaskQuery.all()),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+            ),
+          ],
         ),
       );
     });
@@ -75,27 +83,30 @@ void main() {
       required String screenKey,
       required String name,
       int sortOrder = 0,
-      ScreenCategory category = ScreenCategory.workspace,
       ScreenSource screenSource = ScreenSource.systemTemplate,
       bool isActive = true,
       String? iconName,
     }) {
       final now = DateTime.now();
-      final screen = DataDrivenScreenDefinition(
+      final screen = ScreenDefinition(
         id: id,
         screenKey: screenKey,
         name: name,
-        screenType: ScreenType.list,
         sections: [
-          Section.data(
-            config: DataConfig.task(query: TaskQuery.all()),
+          SectionRef(
+            templateId: SectionTemplateId.taskList,
+            params: DataListSectionParams(
+              config: TaskDataConfig(query: TaskQuery.all()),
+              taskTileVariant: TaskTileVariant.listTile,
+              projectTileVariant: ProjectTileVariant.listTile,
+              valueTileVariant: ValueTileVariant.compactCard,
+            ).toJson(),
           ),
         ],
         createdAt: now,
         updatedAt: now,
         screenSource: screenSource,
-        category: category,
-        iconName: iconName,
+        chrome: ScreenChrome(iconName: iconName),
       );
       return ScreenWithPreferences(
         screen: screen,
@@ -228,7 +239,6 @@ void main() {
             id: '1',
             screenKey: 'wellbeing',
             name: 'Wellbeing',
-            category: ScreenCategory.wellbeing,
           ),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -252,7 +262,6 @@ void main() {
             id: '1',
             screenKey: 'journal',
             name: 'Journal',
-            category: ScreenCategory.wellbeing,
           ),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -276,14 +285,12 @@ void main() {
             id: '1',
             screenKey: 'settings',
             name: 'Settings',
-            category: ScreenCategory.settings,
           ),
           createScreen(
             id: '2',
             screenKey: 'navigation_settings',
             name: 'Navigation',
             sortOrder: 1,
-            category: ScreenCategory.settings,
           ),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));

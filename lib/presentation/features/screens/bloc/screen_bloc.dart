@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
@@ -23,17 +24,12 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   }) : _screenRepository = screenRepository,
        _interpreter = interpreter,
        super(const ScreenState.initial()) {
-    on<ScreenLoadEvent>(_onLoad);
-    on<ScreenLoadByIdEvent>(_onLoadById);
-    on<ScreenRefreshEvent>(_onRefresh);
-    on<ScreenResetEvent>(_onReset);
+    on<ScreenLoadEvent>(_onLoad, transformer: restartable());
+    on<ScreenLoadByIdEvent>(_onLoadById, transformer: restartable());
   }
 
   final ScreenDefinitionsRepositoryContract _screenRepository;
   final ScreenDataInterpreter _interpreter;
-
-  StreamSubscription<void>? _dataSubscription;
-  DataDrivenScreenDefinition? _currentDefinition;
 
   Future<void> _onLoad(
     ScreenLoadEvent event,
@@ -42,16 +38,6 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     talker.blocLog('ScreenBloc', 'load: ${event.definition.id}');
 
     final definition = event.definition;
-    if (definition is! DataDrivenScreenDefinition) {
-      emit(
-        ScreenState.error(
-          message: 'Cannot render navigation-only screen: ${definition.name}',
-        ),
-      );
-      return;
-    }
-
-    _currentDefinition = definition;
     emit(ScreenState.loading(definition: definition));
 
     await _subscribeToData(definition, emit);
@@ -80,16 +66,6 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
       }
 
       final screen = screenWithPrefs.screen;
-      if (screen is! DataDrivenScreenDefinition) {
-        emit(
-          ScreenState.error(
-            message: 'Cannot render navigation-only screen: ${screen.name}',
-          ),
-        );
-        return;
-      }
-
-      _currentDefinition = screen;
       emit(ScreenState.loading(definition: screen));
 
       await _subscribeToData(screen, emit);
@@ -105,45 +81,10 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     }
   }
 
-  Future<void> _onRefresh(
-    ScreenRefreshEvent event,
-    Emitter<ScreenState> emit,
-  ) async {
-    talker.blocLog('ScreenBloc', 'refresh');
-
-    final definition = _currentDefinition;
-    if (definition == null) return;
-
-    // Mark as refreshing
-    final currentState = state;
-    if (currentState is ScreenLoadedState) {
-      emit(currentState.copyWith(isRefreshing: true));
-    }
-
-    // Re-subscribe to get fresh data
-    await _subscribeToData(definition, emit);
-  }
-
-  Future<void> _onReset(
-    ScreenResetEvent event,
-    Emitter<ScreenState> emit,
-  ) async {
-    talker.blocLog('ScreenBloc', 'reset');
-
-    await _dataSubscription?.cancel();
-    _dataSubscription = null;
-    _currentDefinition = null;
-
-    emit(const ScreenState.initial());
-  }
-
   Future<void> _subscribeToData(
-    DataDrivenScreenDefinition definition,
+    ScreenDefinition definition,
     Emitter<ScreenState> emit,
   ) async {
-    // Cancel existing subscription
-    await _dataSubscription?.cancel();
-
     // Subscribe to interpreter stream
     await emit.forEach(
       _interpreter.watchScreen(definition),
@@ -166,11 +107,5 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
         );
       },
     );
-  }
-
-  @override
-  Future<void> close() async {
-    await _dataSubscription?.cancel();
-    return super.close();
   }
 }

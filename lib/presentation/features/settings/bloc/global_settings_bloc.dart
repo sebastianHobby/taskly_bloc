@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -122,15 +123,33 @@ class GlobalSettingsBloc
     required SettingsRepositoryContract settingsRepository,
   }) : _settingsRepository = settingsRepository,
        super(const GlobalSettingsState()) {
-    on<GlobalSettingsStarted>(_onStarted);
-    on<GlobalSettingsThemeModeChanged>(_onThemeModeChanged);
-    on<GlobalSettingsColorChanged>(_onColorChanged);
-    on<GlobalSettingsLocaleChanged>(_onLocaleChanged);
-    on<GlobalSettingsDateFormatChanged>(_onDateFormatChanged);
-    on<GlobalSettingsTextScaleChanged>(_onTextScaleChanged);
-    on<GlobalSettingsOnboardingCompleted>(_onOnboardingCompleted);
-    on<GlobalSettingsReset>(_onReset);
-    on<GlobalSettingsStreamUpdated>(_onStreamUpdated);
+    on<GlobalSettingsStarted>(_onStarted, transformer: droppable());
+    on<GlobalSettingsThemeModeChanged>(
+      _onThemeModeChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsColorChanged>(_onColorChanged, transformer: sequential());
+    on<GlobalSettingsLocaleChanged>(
+      _onLocaleChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsDateFormatChanged>(
+      _onDateFormatChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsTextScaleChanged>(
+      _onTextScaleChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsOnboardingCompleted>(
+      _onOnboardingCompleted,
+      transformer: droppable(),
+    );
+    on<GlobalSettingsReset>(_onReset, transformer: droppable());
+    on<GlobalSettingsStreamUpdated>(
+      _onStreamUpdated,
+      transformer: sequential(),
+    );
   }
 
   final SettingsRepositoryContract _settingsRepository;

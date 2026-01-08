@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
@@ -47,9 +48,12 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
        _pageKey = pageKey,
        _sortPreferences = initialSortPreferences,
        super(const ValueListInitial()) {
-    on<ValueListSubscriptionRequested>(_onSubscriptionRequested);
-    on<ValueListSortChanged>(_onSortChanged);
-    on<ValueListDeleteValue>(_onDeleteValue);
+    on<ValueListSubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: restartable(),
+    );
+    on<ValueListSortChanged>(_onSortChanged, transformer: restartable());
+    on<ValueListDeleteValue>(_onDeleteValue, transformer: droppable());
   }
 
   final ValueRepositoryContract _valueRepository;

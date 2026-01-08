@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
@@ -86,11 +87,14 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        super(const TaskDetailState.initial()) {
-    on<_TaskDetailLoadInitialData>(_onLoadInitialData);
-    on<_TaskDetailLoadById>(_onGet);
-    on<_TaskDetailCreate>(_onCreate);
-    on<_TaskDetailUpdate>(_onUpdate);
-    on<_TaskDetailDelete>(_onDelete);
+    on<_TaskDetailLoadInitialData>(
+      _onLoadInitialData,
+      transformer: restartable(),
+    );
+    on<_TaskDetailLoadById>(_onGet, transformer: restartable());
+    on<_TaskDetailCreate>(_onCreate, transformer: droppable());
+    on<_TaskDetailUpdate>(_onUpdate, transformer: droppable());
+    on<_TaskDetailDelete>(_onDelete, transformer: droppable());
 
     if (autoLoad) {
       if (taskId != null && taskId.isNotEmpty) {

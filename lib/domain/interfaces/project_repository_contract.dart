@@ -11,6 +11,12 @@ abstract class ProjectRepositoryContract {
   /// - Whether to expand repeating projects into occurrences (via occurrenceExpansion)
   Stream<List<Project>> watchAll([ProjectQuery? query]);
 
+  /// Watch the count of projects matching the optional [query].
+  ///
+  /// When [query] includes `occurrenceExpansion`, this counts expanded
+  /// occurrences (virtual rows) instead of base project rows.
+  Stream<int> watchAllCount([ProjectQuery? query]);
+
   /// Get projects with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all projects with related labels.
@@ -21,24 +27,6 @@ abstract class ProjectRepositoryContract {
 
   /// Get a project by ID with its related labels.
   Future<Project?> getById(String id);
-
-  /// Count projects matching the optional [query].
-  ///
-  /// When [query] includes `occurrenceExpansion`, this counts expanded
-  /// occurrences (virtual rows) instead of base project rows.
-  Future<int> count([ProjectQuery? query]);
-
-  /// Watch the count of projects matching the optional [query].
-  ///
-  /// When [query] includes `occurrenceExpansion`, this counts expanded
-  /// occurrences (virtual rows) instead of base project rows.
-  Stream<int> watchCount([ProjectQuery? query]);
-
-  /// Get projects by IDs.
-  Future<List<Project>> getProjectsByIds(List<String> ids);
-
-  /// Get projects by value ID.
-  Future<List<Project>> getProjectsByValue(String valueId);
 
   Future<void> create({
     required String name,

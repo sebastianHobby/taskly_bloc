@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/user_data_seeder_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 
 part 'auth_event.dart';
@@ -17,17 +17,21 @@ part 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   AuthBloc({
     required AuthRepositoryContract authRepository,
-    required UserDataSeederContract userDataSeeder,
   }) : _authRepository = authRepository,
-       _userDataSeeder = userDataSeeder,
        super(const AppAuthState()) {
     talker.blocLog('Auth', 'AuthBloc CONSTRUCTOR called');
-    on<AuthSubscriptionRequested>(_onSubscriptionRequested);
-    on<AuthSignInRequested>(_onSignInRequested);
-    on<AuthSignUpRequested>(_onSignUpRequested);
-    on<AuthSignOutRequested>(_onSignOutRequested);
-    on<AuthPasswordResetRequested>(_onPasswordResetRequested);
-    on<_AuthStateChanged>(_onAuthStateChanged);
+    on<AuthSubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: droppable(),
+    );
+    on<AuthSignInRequested>(_onSignInRequested, transformer: restartable());
+    on<AuthSignUpRequested>(_onSignUpRequested, transformer: restartable());
+    on<AuthSignOutRequested>(_onSignOutRequested, transformer: droppable());
+    on<AuthPasswordResetRequested>(
+      _onPasswordResetRequested,
+      transformer: restartable(),
+    );
+    on<_AuthStateChanged>(_onAuthStateChanged, transformer: sequential());
     talker.blocLog(
       'Auth',
       'AuthBloc CONSTRUCTOR done, event handlers registered',
@@ -35,7 +39,6 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
   }
 
   final AuthRepositoryContract _authRepository;
-  final UserDataSeederContract _userDataSeeder;
   StreamSubscription<AuthState>? _authSubscription;
 
   @override
@@ -58,20 +61,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
     );
 
     if (session != null) {
-      // Show seeding state while preparing user data
-      // This signals to other components that auth is valid but data may not exist yet
-      talker.blocLog('Auth', 'Initial session found, preparing user data...');
-      emit(state.copyWith(status: AuthStatus.seeding, user: session.user));
-
-      // Seed user data and wait for completion
-      // This ensures system labels exist before emitting authenticated
-      try {
-        await _userDataSeeder.seedAll(session.user.id);
-        talker.blocLog('Auth', 'User data seeded, emitting authenticated');
-      } catch (e, st) {
-        talker.handle(e, st, '[AuthBloc] Seeding failed, continuing anyway');
-      }
-
+      talker.blocLog('Auth', 'Initial session found, emitting authenticated');
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,
@@ -112,19 +102,7 @@ class AuthBloc extends Bloc<AuthEvent, AppAuthState> {
         return;
       }
 
-      // Show seeding state while preparing user data
-      // This signals to other components that auth is valid but data may not exist yet
-      talker.blocLog('Auth', 'Session found, preparing user data...');
-      emit(state.copyWith(status: AuthStatus.seeding, user: session.user));
-
-      // Seed user data and wait for completion
-      try {
-        await _userDataSeeder.seedAll(session.user.id);
-        talker.blocLog('Auth', 'User data seeded after auth state change');
-      } catch (e, st) {
-        talker.handle(e, st, '[AuthBloc] Seeding failed, continuing anyway');
-      }
-
+      talker.blocLog('Auth', 'Session found, emitting authenticated');
       emit(
         state.copyWith(
           status: AuthStatus.authenticated,

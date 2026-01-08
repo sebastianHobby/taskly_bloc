@@ -161,6 +161,16 @@ class FakeIdGenerator implements IdGenerator {
     return 'snapshot-$entityType-$entityId-$dateKey';
   }
 
+  @override
+  String attentionRuleId({required String ruleKey}) =>
+      'attention-rule-${ruleKey.toLowerCase().replaceAll('_', '-')}';
+
+  @override
+  String attentionResolutionId() =>
+      'attention-resolution-${_attentionResolutionIdCounter++}';
+
+  int _attentionResolutionIdCounter = 0;
+
   // ═══════════════════════════════════════════════════════════════════════════
   // Test Utilities
   // ═══════════════════════════════════════════════════════════════════════════
@@ -175,6 +185,7 @@ class FakeIdGenerator implements IdGenerator {
     _pendingNotificationIdCounter = 0;
     _analyticsCorrelationIdCounter = 0;
     _analyticsInsightIdCounter = 0;
+    _attentionResolutionIdCounter = 0;
   }
 
   /// Get the next task ID without incrementing the counter.

@@ -18,6 +18,7 @@ import 'package:taskly_bloc/domain/services/allocation/project_next_task_resolve
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_next_task_card.dart';
@@ -289,9 +290,7 @@ class _ProjectScreenView extends StatelessWidget {
                       ),
                       ScreenErrorState(:final message) => ErrorStateWidget(
                         message: message,
-                        onRetry: () => context.read<ScreenBloc>().add(
-                          const ScreenEvent.refresh(),
-                        ),
+                        onRetry: () => Navigator.of(context).pop(),
                       ),
                     };
                   },
@@ -321,7 +320,10 @@ class _ProjectScreenView extends StatelessWidget {
     // Extract all incomplete tasks from sections for next task resolution
     final allTasks = <Task>[];
     for (final section in data.sections) {
-      allTasks.addAll(section.result.allTasks);
+      final result = section.data;
+      if (result is SectionDataResult) {
+        allTasks.addAll(result.allTasks);
+      }
     }
     final incompleteTasks = allTasks.where((t) => !t.completed).toList();
 
@@ -347,8 +349,8 @@ class _ProjectScreenView extends StatelessWidget {
 
     return RefreshIndicator(
       onRefresh: () async {
-        context.read<ScreenBloc>().add(const ScreenEvent.refresh());
-        await Future<void>.delayed(const Duration(milliseconds: 500));
+        // Data updates automatically via reactive streams
+        await Future<void>.delayed(const Duration(milliseconds: 300));
       },
       child: CustomScrollView(
         slivers: [
@@ -394,19 +396,9 @@ class _ProjectScreenView extends StatelessWidget {
                     } else {
                       await entityActionService.uncompleteTask(task.id);
                     }
-                    if (context.mounted) {
-                      context.read<ScreenBloc>().add(
-                        const ScreenEvent.refresh(),
-                      );
-                    }
                   },
                   onTaskDelete: (task) async {
                     await entityActionService.deleteTask(task.id);
-                    if (context.mounted) {
-                      context.read<ScreenBloc>().add(
-                        const ScreenEvent.refresh(),
-                      );
-                    }
                   },
                 );
               },
@@ -428,8 +420,6 @@ class _ProjectScreenView extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.taskPinnedToFocus(task.name))),
       );
-      // Refresh to update the UI
-      context.read<ScreenBloc>().add(const ScreenEvent.refresh());
     }
   }
 }

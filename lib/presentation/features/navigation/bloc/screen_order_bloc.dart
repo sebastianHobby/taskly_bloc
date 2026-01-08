@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
@@ -62,9 +63,9 @@ class ScreenOrderBloc extends Bloc<ScreenOrderEvent, ScreenOrderState> {
     required ScreenDefinitionsRepositoryContract screensRepository,
   }) : _screensRepository = screensRepository,
        super(const ScreenOrderState.loading()) {
-    on<ScreenOrderStarted>(_onStarted);
-    on<ScreenOrderScreensChanged>(_onScreensChanged);
-    on<ScreenOrderReordered>(_onReordered);
+    on<ScreenOrderStarted>(_onStarted, transformer: droppable());
+    on<ScreenOrderScreensChanged>(_onScreensChanged, transformer: sequential());
+    on<ScreenOrderReordered>(_onReordered, transformer: sequential());
   }
 
   final ScreenDefinitionsRepositoryContract _screensRepository;

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
@@ -74,11 +76,26 @@ class WorkflowDefinitionBloc
     required WorkflowRepositoryContract workflowRepository,
   }) : _workflowRepository = workflowRepository,
        super(const WorkflowDefinitionState.initial()) {
-    on<WorkflowDefinitionSubscriptionRequested>(_onSubscriptionRequested);
-    on<WorkflowDefinitionCreated>(_onDefinitionCreated);
-    on<WorkflowDefinitionUpdated>(_onDefinitionUpdated);
-    on<WorkflowDefinitionDeleted>(_onDefinitionDeleted);
-    on<WorkflowDefinitionActiveToggled>(_onActiveToggled);
+    on<WorkflowDefinitionSubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: restartable(),
+    );
+    on<WorkflowDefinitionCreated>(
+      _onDefinitionCreated,
+      transformer: droppable(),
+    );
+    on<WorkflowDefinitionUpdated>(
+      _onDefinitionUpdated,
+      transformer: droppable(),
+    );
+    on<WorkflowDefinitionDeleted>(
+      _onDefinitionDeleted,
+      transformer: droppable(),
+    );
+    on<WorkflowDefinitionActiveToggled>(
+      _onActiveToggled,
+      transformer: restartable(),
+    );
   }
 
   final WorkflowRepositoryContract _workflowRepository;
@@ -123,12 +140,12 @@ class WorkflowDefinitionBloc
     final definitionsStream = _workflowRepository.watchWorkflowDefinitions();
     final activeWorkflowsStream = _workflowRepository.watchActiveWorkflows();
 
-    // Combine the streams
-    return definitionsStream.asyncExpand((definitions) {
-      return activeWorkflowsStream.map((workflows) {
-        return (definitions, workflows);
-      });
-    });
+    // Combine using latest-snapshot semantics.
+    return Rx.combineLatest2(
+      definitionsStream,
+      activeWorkflowsStream,
+      (definitions, workflows) => (definitions, workflows),
+    );
   }
 
   Future<void> _onDefinitionCreated(

@@ -7,11 +7,13 @@ import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart'
     as display;
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
@@ -414,7 +416,7 @@ class TestData {
     String? id,
     String name = 'Test Step',
     int order = 0,
-    List<Section>? sections,
+    List<SectionRef>? sections,
     String? description,
   }) {
     return WorkflowStep(
@@ -424,9 +426,16 @@ class TestData {
       sections:
           sections ??
           [
-            Section.data(
-              config: DataConfig.task(query: TaskQuery.all()),
-              title: 'Test Section',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: TaskQuery.all()),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+                display: const display.DisplayConfig(),
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Test Section'),
             ),
           ],
       description: description,
@@ -474,46 +483,53 @@ class TestData {
 
   // === Screens ===
 
-  /// Creates a data-driven screen definition for testing
-  static DataDrivenScreenDefinition screenDefinition({
+  /// Creates a screen definition for testing.
+  ///
+  /// Historically tests used a DataDrivenScreenDefinition; this now returns the
+  /// unified [ScreenDefinition] shape.
+  static ScreenDefinition screenDefinition({
     String? id,
     String? screenKey,
     String name = 'Test Screen',
-    ScreenType screenType = ScreenType.list,
-    List<Section>? sections,
-    EntitySelector? selector,
+    List<SectionRef>? sections,
     display.DisplayConfig? displayConfig,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? iconName,
     ScreenSource screenSource = ScreenSource.userDefined,
-    ScreenCategory category = ScreenCategory.workspace,
   }) {
     final now = DateTime.now();
-    return DataDrivenScreenDefinition(
+    return ScreenDefinition(
       id: id ?? _nextId('screen'),
       screenKey: screenKey ?? 'screen-key-1',
       name: name,
-      screenType: screenType,
       sections:
           sections ??
           [
-            Section.data(
-              config: DataConfig.task(query: TaskQuery.all()),
-              display: displayConfig,
-              title: 'Test Section',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: TaskQuery.all()),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+                display: displayConfig ?? const display.DisplayConfig(),
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Test Section'),
             ),
           ],
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
-      iconName: iconName,
+      chrome: ScreenChrome(iconName: iconName),
       screenSource: screenSource,
-      category: category,
     );
   }
 
-  /// Creates a navigation-only screen definition for testing
-  static NavigationOnlyScreenDefinition navigationOnlyScreen({
+  /// Creates a navigation-only screen definition for testing.
+  ///
+  /// A navigation-only screen is represented as a [ScreenDefinition] with no
+  /// sections.
+  static ScreenDefinition navigationOnlyScreen({
     String? id,
     String? screenKey,
     String name = 'Test Navigation Screen',
@@ -521,18 +537,17 @@ class TestData {
     DateTime? updatedAt,
     String? iconName,
     ScreenSource screenSource = ScreenSource.userDefined,
-    ScreenCategory category = ScreenCategory.settings,
   }) {
     final now = DateTime.now();
-    return NavigationOnlyScreenDefinition(
+    return ScreenDefinition(
       id: id ?? _nextId('nav-screen'),
       screenKey: screenKey ?? 'nav-screen-key-1',
       name: name,
       createdAt: createdAt ?? now,
       updatedAt: updatedAt ?? now,
-      iconName: iconName,
       screenSource: screenSource,
-      category: category,
+      sections: const [],
+      chrome: ScreenChrome(iconName: iconName),
     );
   }
 
@@ -832,9 +847,7 @@ class TestData {
     GlobalSettings global = const GlobalSettings(),
     Map<String, SortPreferences> pageSortPreferences = const {},
     Map<String, PageDisplaySettings> pageDisplaySettings = const {},
-    Map<String, ScreenPreferences> screenPreferences = const {},
     AllocationConfig allocation = const AllocationConfig(),
-    ValueRanking valueRanking = const ValueRanking(),
     SoftGatesSettings? softGates,
     NextActionsSettings? nextActions,
   }) {
@@ -842,9 +855,7 @@ class TestData {
       global: global,
       pageSortPreferences: pageSortPreferences,
       pageDisplaySettings: pageDisplaySettings,
-      screenPreferences: screenPreferences,
       allocation: allocation,
-      valueRanking: valueRanking,
       softGates: softGates,
       nextActions: nextActions,
     );

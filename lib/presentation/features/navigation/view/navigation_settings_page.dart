@@ -77,7 +77,7 @@ class _ReadyState extends StatelessWidget {
               final screen = screenWithPrefs.screen;
               final iconSet = _iconResolver.resolve(
                 screenId: screen.screenKey,
-                iconName: screen.iconName,
+                iconName: screen.chrome.iconName,
               );
               return ListTile(
                 key: ValueKey(screen.id),

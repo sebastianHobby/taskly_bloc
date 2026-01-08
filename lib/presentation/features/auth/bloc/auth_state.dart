@@ -5,17 +5,11 @@ part of 'auth_bloc.dart';
 /// The flow is:
 /// 1. [initial] - App just started, checking for existing session
 /// 2. [loading] - Auth operation in progress (sign in/up/out)
-/// 3. [seeding] - User authenticated, seeding required data (labels, etc.)
-/// 4. [authenticated] - Ready for use, all data seeded
-/// 5. [unauthenticated] - No valid session
-///
-/// Note: Other components (like ScreenDefinitionBloc) should wait for
-/// [authenticated] status before querying data, as [seeding] indicates
-/// that required system data may not exist yet.
+/// 3. [authenticated] - User is authenticated and ready
+/// 4. [unauthenticated] - No valid session
 enum AuthStatus {
   initial,
   loading,
-  seeding,
   authenticated,
   unauthenticated,
 }
@@ -36,7 +30,6 @@ class AppAuthState extends Equatable {
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
   bool get isLoading => status == AuthStatus.loading;
-  bool get isSeeding => status == AuthStatus.seeding;
 
   AppAuthState copyWith({
     AuthStatus? status,

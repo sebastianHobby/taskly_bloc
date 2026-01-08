@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/allocation_section_renderer.dart';
-import 'package:taskly_bloc/presentation/features/screens/widgets/value_balance_chart.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 
 void main() {
   group('AllocationSectionRenderer', () {
-    testWidgets('renders ValueBalanceChart when persona is reflector', (
+    // Note: Reflector persona was merged into sustainable focus mode
+    // Value balance chart behavior may have changed with FocusMode migration
+    testWidgets('renders tasks in allocation section', (
       tester,
     ) async {
       final data = AllocationSectionResult(
@@ -22,7 +26,7 @@ void main() {
           ),
         ],
         totalAvailable: 1,
-        activePersona: AllocationPersona.reflector,
+        activeFocusMode: FocusMode.sustainable,
         tasksByValue: {},
       );
 
@@ -36,11 +40,12 @@ void main() {
         ),
       );
 
-      expect(find.byType(ValueBalanceChart), findsOneWidget);
+      // Verify tasks are rendered in the allocation section
+      expect(find.text('Test Task'), findsOneWidget);
     });
 
     testWidgets(
-      'does not render ValueBalanceChart when persona is not reflector',
+      'renders with different focus modes',
       (tester) async {
         final data = AllocationSectionResult(
           allocatedTasks: [
@@ -53,7 +58,7 @@ void main() {
             ),
           ],
           totalAvailable: 1,
-          activePersona: AllocationPersona.realist,
+          activeFocusMode: FocusMode.intentional,
           tasksByValue: {},
         );
 
@@ -67,7 +72,108 @@ void main() {
           ),
         );
 
-        expect(find.byType(ValueBalanceChart), findsNothing);
+        expect(find.text('Test Task'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders project-grouped list and shows effective values',
+      (tester) async {
+        final now = DateTime.utc(2026, 1, 1);
+
+        const valueAId = 'value-a';
+        const valueBId = 'value-b';
+
+        final valueA = Value(
+          id: valueAId,
+          createdAt: now,
+          updatedAt: now,
+          name: 'Health',
+          color: '#00FF00',
+          priority: ValuePriority.medium,
+        );
+        final valueB = Value(
+          id: valueBId,
+          createdAt: now,
+          updatedAt: now,
+          name: 'Work',
+          color: '#0000FF',
+          priority: ValuePriority.medium,
+        );
+
+        final project = Project(
+          id: 'project-1',
+          createdAt: now,
+          updatedAt: now,
+          name: 'P1',
+          completed: false,
+          values: [valueA],
+          primaryValueId: valueAId,
+        );
+
+        final data = AllocationSectionResult(
+          allocatedTasks: [
+            // Inherits project values.
+            Task(
+              id: '1',
+              name: 'Alpha',
+              completed: false,
+              createdAt: now,
+              updatedAt: now,
+              projectId: project.id,
+              project: project,
+              values: const [],
+            ),
+            // Explicit override.
+            Task(
+              id: '2',
+              name: 'Beta',
+              completed: false,
+              createdAt: now,
+              updatedAt: now,
+              projectId: project.id,
+              project: project,
+              values: [valueB],
+              primaryValueId: valueBId,
+            ),
+            // No project group.
+            Task(
+              id: '3',
+              name: 'Gamma',
+              completed: false,
+              createdAt: now,
+              updatedAt: now,
+              values: [valueB],
+              primaryValueId: valueBId,
+            ),
+          ],
+          totalAvailable: 3,
+          activeFocusMode: FocusMode.sustainable,
+          tasksByValue: {},
+          displayMode: AllocationDisplayMode.groupedByProject,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: AllocationSectionRenderer(data: data),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Alpha'), findsOneWidget);
+        expect(find.text('Beta'), findsOneWidget);
+        expect(find.text('Gamma'), findsOneWidget);
+
+        // Group headers are uppercased.
+        expect(find.text('P1'), findsWidgets);
+        expect(find.text('NO PROJECT'), findsOneWidget);
+
+        // Health should appear twice: project header + inherited task.
+        expect(find.text('Health'), findsNWidgets(2));
+        expect(find.text('Work'), findsNWidgets(2));
       },
     );
   });

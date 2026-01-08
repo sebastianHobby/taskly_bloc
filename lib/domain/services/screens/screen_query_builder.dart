@@ -4,7 +4,11 @@ import 'package:taskly_bloc/domain/models/screens/display_config.dart'
     as screen_models;
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart'
     as screen_models;
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart'
     as sort_preferences;
 import 'package:taskly_bloc/domain/queries/project_query.dart';
@@ -150,20 +154,20 @@ class ScreenQueryBuilder {
     return sort_preferences.SortCriterion(field: field, direction: direction);
   }
 
-  /// Builds a [TaskQuery] from a [DataSection].
-  TaskQuery buildTaskQueryFromSection({
-    required DataSection section,
+  /// Builds a [TaskQuery] from a [SectionRef] if it represents a task list.
+  TaskQuery? buildTaskQueryFromSectionRef({
+    required SectionRef section,
     required DateTime now,
   }) {
-    final config = section.config;
-    final display = section.display ?? const screen_models.DisplayConfig();
+    if (section.templateId != SectionTemplateId.taskList) return null;
 
-    // DataConfig is a sealed class - get query based on type
+    final params = DataListSectionParams.fromJson(section.params);
+    final config = params.config;
+    final display = params.display ?? const screen_models.DisplayConfig();
+
     return switch (config) {
       TaskDataConfig(:final query) => _applyDisplay(query, display),
-      _ => throw ArgumentError(
-        'buildTaskQueryFromSection only supports TaskDataConfig',
-      ),
+      _ => null,
     };
   }
 
@@ -183,16 +187,16 @@ class ScreenQueryBuilder {
     );
   }
 
-  /// Builds a [TaskQuery] from an [AllocationSection].
-  TaskQuery buildTaskQueryFromAllocationSection({
-    required AllocationSection section,
+  /// Builds a [TaskQuery] from a [SectionRef] if it represents an allocation.
+  TaskQuery? buildTaskQueryFromAllocationSectionRef({
+    required SectionRef section,
     required DateTime now,
   }) {
-    // Use the source filter if provided, otherwise get all incomplete tasks
-    final query = section.sourceFilter;
-    if (query != null) {
-      return query;
-    }
+    if (section.templateId != SectionTemplateId.allocation) return null;
+
+    final params = AllocationSectionParams.fromJson(section.params);
+    final query = params.sourceFilter;
+    if (query != null) return query;
 
     // Default: all incomplete tasks
     return TaskQuery(
@@ -207,20 +211,22 @@ class ScreenQueryBuilder {
     );
   }
 
-  /// Builds a [TaskQuery] from an [AgendaSection].
-  TaskQuery buildTaskQueryFromAgendaSection({
-    required AgendaSection section,
+  /// Builds a [TaskQuery] from a [SectionRef] if it represents an agenda.
+  TaskQuery? buildTaskQueryFromAgendaSectionRef({
+    required SectionRef section,
     required DateTime now,
   }) {
-    // Start with the additional filter if provided
+    if (section.templateId != SectionTemplateId.agenda) return null;
+
+    final params = AgendaSectionParams.fromJson(section.params);
     final baseFilter =
-        section.additionalFilter?.filter ?? const QueryFilter.matchAll();
+        params.additionalFilter?.filter ?? const QueryFilter.matchAll();
 
     // Add incomplete predicate
     final withCompletion = _ensureIncomplete(baseFilter);
 
     // Add date field predicate based on dateField
-    final dateField = switch (section.dateField) {
+    final dateField = switch (params.dateField) {
       AgendaDateField.deadlineDate => TaskDateField.deadlineDate,
       AgendaDateField.startDate => TaskDateField.startDate,
       AgendaDateField.scheduledFor => TaskDateField.deadlineDate,

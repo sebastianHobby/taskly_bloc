@@ -61,6 +61,7 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     _buildTaskAllocationItem(context),
                     _buildNavigationOrderItem(context),
+                    _buildAttentionRulesItem(context),
                   ],
                 ),
                 _buildSection(
@@ -126,7 +127,7 @@ class SettingsScreen extends StatelessWidget {
       title: const Text('Task Allocation'),
       subtitle: const Text('Strategy, limits, and value ranking'),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'allocation-settings'),
+      onTap: () => Routing.toScreenKey(context, 'focus_setup'),
     );
   }
 
@@ -157,6 +158,16 @@ class SettingsScreen extends StatelessWidget {
       subtitle: const Text('Create and manage review workflows'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Routing.toScreenKey(context, 'workflows'),
+    );
+  }
+
+  Widget _buildAttentionRulesItem(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.notifications_active),
+      title: const Text('Attention Rules'),
+      subtitle: const Text('Configure problem detection and review reminders'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'focus_setup'),
     );
   }
 
