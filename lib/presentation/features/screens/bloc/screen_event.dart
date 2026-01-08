@@ -18,10 +18,4 @@ sealed class ScreenEvent with _$ScreenEvent {
   const factory ScreenEvent.loadById({
     required String screenId,
   }) = ScreenLoadByIdEvent;
-
-  /// Force refresh (re-fetch all data).
-  const factory ScreenEvent.refresh() = ScreenRefreshEvent;
-
-  /// Stop watching and reset to initial state.
-  const factory ScreenEvent.reset() = ScreenResetEvent;
 }

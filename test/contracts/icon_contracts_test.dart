@@ -25,7 +25,7 @@ void main() {
         for (final screen in SystemScreenDefinitions.all) {
           final result = resolver.resolve(
             screenId: screen.screenKey,
-            iconName: screen.iconName,
+            iconName: screen.chrome.iconName,
           );
 
           expect(
@@ -50,7 +50,7 @@ void main() {
         for (final screen in SystemScreenDefinitions.all) {
           final result = resolver.resolve(
             screenId: screen.screenKey,
-            iconName: screen.iconName,
+            iconName: screen.chrome.iconName,
           );
 
           // Check if this icon is already used by another screen
@@ -79,7 +79,7 @@ void main() {
       test('inbox screen has inbox icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.inbox.screenKey,
-          iconName: SystemScreenDefinitions.inbox.iconName,
+          iconName: SystemScreenDefinitions.inbox.chrome.iconName,
         );
         expect(result.icon, Icons.inbox_outlined);
         expect(result.selectedIcon, Icons.inbox);
@@ -88,7 +88,7 @@ void main() {
       test('myDay screen has sun icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.myDay.screenKey,
-          iconName: SystemScreenDefinitions.myDay.iconName,
+          iconName: SystemScreenDefinitions.myDay.chrome.iconName,
         );
         expect(result.icon, Icons.wb_sunny_outlined);
         expect(result.selectedIcon, Icons.wb_sunny);
@@ -97,7 +97,7 @@ void main() {
       test('logbook screen has done_all icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.logbook.screenKey,
-          iconName: SystemScreenDefinitions.logbook.iconName,
+          iconName: SystemScreenDefinitions.logbook.chrome.iconName,
         );
         expect(result.icon, Icons.done_all_outlined);
         expect(result.selectedIcon, Icons.done_all);
@@ -106,7 +106,7 @@ void main() {
       test('values screen has star icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.values.screenKey,
-          iconName: SystemScreenDefinitions.values.iconName,
+          iconName: SystemScreenDefinitions.values.chrome.iconName,
         );
         expect(result.icon, Icons.star_outline);
         expect(result.selectedIcon, Icons.star);
@@ -115,7 +115,7 @@ void main() {
       test('journal screen has book icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.journal.screenKey,
-          iconName: SystemScreenDefinitions.journal.iconName,
+          iconName: SystemScreenDefinitions.journal.chrome.iconName,
         );
         expect(result.icon, Icons.book_outlined);
         expect(result.selectedIcon, Icons.book);
@@ -124,7 +124,7 @@ void main() {
       test('workflows screen has account_tree icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.workflows.screenKey,
-          iconName: SystemScreenDefinitions.workflows.iconName,
+          iconName: SystemScreenDefinitions.workflows.chrome.iconName,
         );
         expect(result.icon, Icons.account_tree_outlined);
         expect(result.selectedIcon, Icons.account_tree);
@@ -133,7 +133,7 @@ void main() {
       test('screen_management screen has dashboard_customize icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenDefinitions.screenManagement.screenKey,
-          iconName: SystemScreenDefinitions.screenManagement.iconName,
+          iconName: SystemScreenDefinitions.screenManagement.chrome.iconName,
         );
         expect(result.icon, Icons.dashboard_customize_outlined);
         expect(result.selectedIcon, Icons.dashboard_customize);

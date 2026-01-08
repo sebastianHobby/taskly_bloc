@@ -6,11 +6,13 @@ import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart'
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
@@ -411,17 +413,21 @@ class WorkflowStepFormData {
   }
 
   factory WorkflowStepFormData.fromStep(WorkflowStep step) {
-    // Extract entity type from first data section, defaulting to task
-    EntityType entityType = EntityType.task;
+    // Extract entity type from the first supported list template.
+    var entityType = EntityType.task;
     for (final section in step.sections) {
-      if (section is DataSection) {
-        final config = section.config;
-        entityType = switch (config) {
-          TaskDataConfig() => EntityType.task,
-          ProjectDataConfig() => EntityType.project,
-          ValueDataConfig() => EntityType.value,
-          JournalDataConfig() => EntityType.journal,
-        };
+      entityType = switch (section.templateId) {
+        SectionTemplateId.taskList => EntityType.task,
+        SectionTemplateId.projectList => EntityType.project,
+        SectionTemplateId.valueList => EntityType.value,
+        SectionTemplateId.journalTimeline => EntityType.journal,
+        _ => entityType,
+      };
+
+      if (section.templateId == SectionTemplateId.taskList ||
+          section.templateId == SectionTemplateId.projectList ||
+          section.templateId == SectionTemplateId.valueList ||
+          section.templateId == SectionTemplateId.journalTimeline) {
         break;
       }
     }
@@ -447,33 +453,73 @@ class WorkflowStepFormData {
     );
   }
 
-  List<Section> toSections() {
-    // Create a basic data section for the entity type
-    final dataConfig = switch (entityType) {
-      EntityType.task => DataConfig.task(query: const TaskQuery()),
-      EntityType.project => DataConfig.project(query: const ProjectQuery()),
-      EntityType.value => DataConfig.value(query: const ValueQuery()),
-      EntityType.goal => DataConfig.task(query: const TaskQuery()), // Fallback
-      EntityType.journal => DataConfig.journal(query: JournalQuery.all()),
-      EntityType.tracker => DataConfig.task(
-        query: const TaskQuery(),
-      ), // Fallback until tracker support
-    };
-
-    return [
-      Section.data(
-        config: dataConfig,
-        display: const DisplayConfig(
-          showCompleted: false,
-          sorting: [
-            SortCriterion(
-              field: SortField.updatedAt,
-              direction: SortDirection.desc,
-            ),
-          ],
+  List<SectionRef> toSections() {
+    const display = DisplayConfig(
+      showCompleted: false,
+      sorting: [
+        SortCriterion(
+          field: SortField.updatedAt,
+          direction: SortDirection.desc,
         ),
-      ),
-    ];
+      ],
+    );
+
+    return switch (entityType) {
+      EntityType.task => [
+        SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(query: const TaskQuery()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: display,
+          ).toJson(),
+        ),
+      ],
+      EntityType.project => [
+        SectionRef(
+          templateId: SectionTemplateId.projectList,
+          params: DataListSectionParams(
+            config: DataConfig.project(query: const ProjectQuery()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: display,
+          ).toJson(),
+        ),
+      ],
+      EntityType.value => [
+        SectionRef(
+          templateId: SectionTemplateId.valueList,
+          params: DataListSectionParams(
+            config: DataConfig.value(query: const ValueQuery()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: display,
+          ).toJson(),
+        ),
+      ],
+      // Workflows currently support review of lists (task/project/value).
+      // For other entity types, fall back to a task list until a dedicated
+      // template is introduced.
+      EntityType.journal => const [
+        SectionRef(templateId: SectionTemplateId.journalTimeline),
+      ],
+      _ => [
+        SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(query: const TaskQuery()),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: display,
+          ).toJson(),
+        ),
+      ],
+    };
   }
 }
 

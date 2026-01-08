@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:taskly_bloc/domain/models/screens/actions_config.dart';
+import 'package:taskly_bloc/domain/models/screens/content_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 
 /// Handles potentially double-encoded JSON data.
@@ -58,44 +58,46 @@ triggerConfigConverter = TypeConverter.json2(
   toJson: (TriggerConfig config) => config.toJson(),
 );
 
-/// Type converter for `List<Section>` stored as JSON text.
-final JsonTypeConverter2<List<Section>, String, Object?>
-sectionsConfigConverter = TypeConverter.json2(
-  fromJson: (json) {
-    final list = _parseJsonListWithDoubleEncodingFallback(json);
-    return list.map(Section.fromJson).toList();
-  },
-  toJson: (List<Section> sections) =>
-      sections.map((section) => section.toJson()).toList(),
-);
+/// Generic converter for a map from String keys to dynamic values as JSON text.
+///
+/// Used by attention system tables for flexible JSON storage of trigger_config,
+/// entity_selector, display_config, resolution_actions, and action_details.
+class JsonMapConverter extends TypeConverter<Map<String, dynamic>, String> {
+  const JsonMapConverter();
 
-/// Type converter for `List<SupportBlock>` stored as JSON text.
-final JsonTypeConverter2<List<SupportBlock>, String, Object?>
-supportBlocksConfigConverter = TypeConverter.json2(
-  fromJson: (json) {
-    final list = _parseJsonListWithDoubleEncodingFallback(json);
-    return list.map(SupportBlock.fromJson).toList();
-  },
-  toJson: (List<SupportBlock> blocks) =>
-      blocks.map((block) => block.toJson()).toList(),
-);
+  @override
+  Map<String, dynamic> fromSql(String fromDb) {
+    return _parseJsonWithDoubleEncodingFallback(fromDb);
+  }
 
-/// Handles potentially double-encoded JSON list data.
-List<Map<String, dynamic>> _parseJsonListWithDoubleEncodingFallback(
-  Object? json,
-) {
-  if (json == null) {
-    return [];
+  @override
+  String toSql(Map<String, dynamic> value) {
+    return jsonEncode(value);
   }
-  if (json is List) {
-    return json.whereType<Map<String, dynamic>>().toList();
-  }
-  if (json is String) {
-    final decoded = jsonDecode(json);
-    if (decoded is List) {
-      return decoded.whereType<Map<String, dynamic>>().toList();
-    }
-    return [];
-  }
-  return [];
 }
+
+/// Type converter for [ContentConfig] stored as JSON text.
+///
+/// ContentConfig combines sections and support blocks into a single blob.
+final JsonTypeConverter2<ContentConfig, String, Object?>
+contentConfigConverter = TypeConverter.json2(
+  fromJson: (json) {
+    if (json == null) return ContentConfig.empty;
+    final map = _parseJsonWithDoubleEncodingFallback(json);
+    return ContentConfig.fromJson(map);
+  },
+  toJson: (ContentConfig config) => config.toJson(),
+);
+
+/// Type converter for [ActionsConfig] stored as JSON text.
+///
+/// ActionsConfig combines FAB operations, AppBar actions, and settings route.
+final JsonTypeConverter2<ActionsConfig, String, Object?>
+actionsConfigConverter = TypeConverter.json2(
+  fromJson: (json) {
+    if (json == null) return ActionsConfig.empty;
+    final map = _parseJsonWithDoubleEncodingFallback(json);
+    return ActionsConfig.fromJson(map);
+  },
+  toJson: (ActionsConfig config) => config.toJson(),
+);

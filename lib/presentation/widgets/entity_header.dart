@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/date_chip.dart';
+import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 /// A reusable header widget for entity detail pages (projects, labels).
 ///
@@ -19,6 +20,8 @@ class EntityHeader extends StatelessWidget {
     this.onCheckboxChanged,
     this.showCheckbox = true,
     this.metadata,
+    this.primaryValue,
+    this.secondaryValues = const [],
     this.values,
   });
 
@@ -37,6 +40,8 @@ class EntityHeader extends StatelessWidget {
       onCheckboxChanged: onCheckboxChanged,
       showCheckbox: showCheckbox,
       metadata: _ProjectMetadata(project: project),
+      primaryValue: project.primaryValue,
+      secondaryValues: project.secondaryValues,
       values: project.values,
     );
   }
@@ -65,6 +70,8 @@ class EntityHeader extends StatelessWidget {
   final ValueChanged<bool?>? onCheckboxChanged;
   final bool showCheckbox;
   final Widget? metadata;
+  final Value? primaryValue;
+  final List<Value> secondaryValues;
   final List<Value>? values;
 
   @override
@@ -137,8 +144,19 @@ class EntityHeader extends StatelessWidget {
                 ],
               ),
 
-              // Values
-              if (values != null && values!.isNotEmpty) ...[
+              // Values (preferred: primary/secondary footer)
+              if (primaryValue != null || secondaryValues.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                ValuesFooter(
+                  primaryValue: primaryValue,
+                  secondaryValues: secondaryValues,
+                ),
+              ],
+
+              // Values (legacy fallback: list-of-values chips)
+              if ((primaryValue == null && secondaryValues.isEmpty) &&
+                  values != null &&
+                  values!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 8,

@@ -5,8 +5,7 @@ import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
 import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
 
 /// Default number of days after which a task is considered stale.
-/// Should match the default in SoftGatesSettings.staleAfterDaysWithoutUpdates.
-const int kDefaultStaleThresholdDays = 30;
+const int kDefaultStaleThresholdDays = 14;
 
 /// Calculates task-related statistics
 class TaskStatsCalculator {

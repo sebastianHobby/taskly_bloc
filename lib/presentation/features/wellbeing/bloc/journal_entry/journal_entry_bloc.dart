@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
@@ -54,12 +55,15 @@ class JournalEntryState with _$JournalEntryState {
 class JournalEntryBloc extends Bloc<JournalEntryEvent, JournalEntryState> {
   JournalEntryBloc(this._repository)
     : super(const JournalEntryState.initial()) {
-    on<_Load>(_onLoad);
-    on<_LoadByDate>(_onLoadByDate);
-    on<_LoadEntriesForDate>(_onLoadEntriesForDate);
-    on<_Save>(_onSave);
-    on<_SaveWithDailyResponses>(_onSaveWithDailyResponses);
-    on<_Delete>(_onDelete);
+    on<_Load>(_onLoad, transformer: restartable());
+    on<_LoadByDate>(_onLoadByDate, transformer: restartable());
+    on<_LoadEntriesForDate>(_onLoadEntriesForDate, transformer: restartable());
+    on<_Save>(_onSave, transformer: droppable());
+    on<_SaveWithDailyResponses>(
+      _onSaveWithDailyResponses,
+      transformer: droppable(),
+    );
+    on<_Delete>(_onDelete, transformer: droppable());
   }
 
   final WellbeingRepositoryContract _repository;

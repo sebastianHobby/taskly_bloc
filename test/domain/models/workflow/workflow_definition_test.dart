@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 
@@ -14,7 +14,6 @@ void main() {
 
     WorkflowDefinition createDefinition({
       List<WorkflowStep>? steps,
-      List<SupportBlock>? globalSupportBlocks,
     }) {
       return WorkflowDefinition(
         id: 'workflow-123',
@@ -22,7 +21,6 @@ void main() {
         steps: steps ?? [],
         createdAt: now,
         updatedAt: now,
-        globalSupportBlocks: globalSupportBlocks ?? [],
       );
     }
 
@@ -31,9 +29,7 @@ void main() {
         id: id,
         name: 'Step $order',
         order: order,
-        sections: const [
-          Section.agenda(dateField: AgendaDateField.deadlineDate),
-        ],
+        sections: const [SectionRef(templateId: SectionTemplateId.agenda)],
       );
     }
 
@@ -46,12 +42,6 @@ void main() {
         expect(workflow.steps, isEmpty);
         expect(workflow.createdAt, now);
         expect(workflow.updatedAt, now);
-      });
-
-      test('globalSupportBlocks defaults to empty list', () {
-        final workflow = createDefinition();
-
-        expect(workflow.globalSupportBlocks, isEmpty);
       });
 
       test('isSystem defaults to false', () {

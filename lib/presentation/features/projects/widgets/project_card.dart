@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
+import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 class ProjectCard extends StatelessWidget {
   const ProjectCard({
     required this.project,
-    required this.progress,
+    required this.completedTaskCount,
+    required this.totalTaskCount,
     super.key,
     this.nextActionTitle,
   });
+
   final Project project;
-  final double progress; // 0.0 to 1.0
+  final int completedTaskCount;
+  final int totalTaskCount;
   final String? nextActionTitle;
 
   @override
@@ -18,10 +23,21 @@ class ProjectCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Determine color
+    final primaryValue = project.primaryValue;
+    final progressColor = primaryValue != null
+        ? ColorUtils.fromHexWithThemeFallback(context, primaryValue.color)
+        : colorScheme.primary;
+
+    final progress = totalTaskCount > 0
+        ? completedTaskCount / totalTaskCount
+        : 0.0;
+
     return TasklyCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
               Container(
@@ -48,21 +64,59 @@ class ProjectCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          if (nextActionTitle != null) ...[
-            Text(
-              'Next: $nextActionTitle',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+
+          // Body
+          Row(
+            children: [
+              // Circular Progress
+              SizedBox(
+                width: 48,
+                height: 48,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  color: progressColor,
+                  strokeWidth: 5,
+                  backgroundColor: colorScheme.surfaceContainerHighest,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-          ],
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: colorScheme.surfaceContainerHighest,
-            color: colorScheme.primary,
-            borderRadius: BorderRadius.circular(4),
+              const SizedBox(width: 16),
+              // Stats and Next Action
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$completedTaskCount/$totalTaskCount Tasks',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (nextActionTitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        'Next: $nextActionTitle',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
+
+          // Footer
+          if (project.primaryValue != null ||
+              project.secondaryValues.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ValuesFooter(
+              primaryValue: project.primaryValue,
+              secondaryValues: project.secondaryValues,
+            ),
+          ],
         ],
       ),
     );

@@ -5,9 +5,12 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
@@ -107,22 +110,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
                 labelText: 'Icon',
                 border: OutlineInputBorder(),
               ),
-            ),
-            const SizedBox(height: 16),
-
-            // Category
-            FormBuilderDropdown<ScreenCategory>(
-              name: 'category',
-              decoration: const InputDecoration(
-                labelText: 'Category',
-                border: OutlineInputBorder(),
-              ),
-              items: ScreenCategory.values.map((c) {
-                return DropdownMenuItem(
-                  value: c,
-                  child: Text(c.displayName),
-                );
-              }).toList(),
             ),
             const SizedBox(height: 24),
 
@@ -229,7 +216,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
               ],
             ),
             const SizedBox(height: 24),
-
             // ===== Visibility Section =====
             _SectionHeader(
               icon: Icons.visibility,
@@ -269,22 +255,7 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
 
   Map<String, dynamic> _getInitialValues() {
     if (widget.existingScreen case final screen?) {
-      // Only DataDriven screens can be edited
-      if (screen is! DataDrivenScreenDefinition) {
-        return {
-          'name': screen.name,
-          'iconName': screen.iconName,
-          'category': screen.category,
-          'entityType': null,
-          'groupBy': GroupByField.none,
-          'sortField': SortField.updatedAt,
-          'sortDirection': SortDirection.desc,
-          'showCompleted': true,
-          'showArchived': false,
-        };
-      }
-
-      // Extract values from existing data-driven screen
+      // Extract values from the first list section (if present)
       EntityTypeOption? entityType;
       GroupByField groupBy = GroupByField.none;
       SortField sortField = SortField.updatedAt;
@@ -292,35 +263,35 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
       bool showCompleted = true;
       bool showArchived = false;
 
-      final firstSection = screen.sections.isNotEmpty
-          ? screen.sections.first
-          : null;
-      if (firstSection is DataSection) {
-        // Determine entity type from config
-        entityType = switch (firstSection.config) {
-          TaskDataConfig() => EntityTypeOption.task,
-          ProjectDataConfig() => EntityTypeOption.project,
-          ValueDataConfig() => EntityTypeOption.value,
-          JournalDataConfig() => null, // Journal editing not yet supported
-        };
+      if (screen.sections.isNotEmpty) {
+        final firstRef = screen.sections.first;
+        if (firstRef.templateId == SectionTemplateId.taskList ||
+            firstRef.templateId == SectionTemplateId.projectList ||
+            firstRef.templateId == SectionTemplateId.valueList) {
+          final params = DataListSectionParams.fromJson(firstRef.params);
+          entityType = switch (params.config) {
+            TaskDataConfig() => EntityTypeOption.task,
+            ProjectDataConfig() => EntityTypeOption.project,
+            ValueDataConfig() => EntityTypeOption.value,
+            JournalDataConfig() => null, // Journal editing not yet supported
+          };
 
-        // Extract display settings
-        if (firstSection.display case final display?) {
-          groupBy = display.groupBy;
-          if (display.sorting.isNotEmpty) {
-            sortField = display.sorting.first.field;
-            sortDirection = display.sorting.first.direction;
+          if (params.display case final display?) {
+            groupBy = display.groupBy;
+            if (display.sorting.isNotEmpty) {
+              sortField = display.sorting.first.field;
+              sortDirection = display.sorting.first.direction;
+            }
+            showCompleted = display.showCompleted;
+            showArchived = display.showArchived;
           }
-          showCompleted = display.showCompleted;
-          showArchived = display.showArchived;
         }
       }
 
       return {
         'name': screen.name,
-        'iconName': screen.iconName,
-        'category': screen.category,
-        'entityType': entityType,
+        'iconName': screen.chrome.iconName,
+        'entityType': entityType ?? EntityTypeOption.task,
         'groupBy': groupBy,
         'sortField': sortField,
         'sortDirection': sortDirection,
@@ -333,7 +304,6 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
     return {
       'name': '',
       'iconName': null,
-      'category': ScreenCategory.workspace,
       'entityType': EntityTypeOption.task,
       'groupBy': GroupByField.none,
       'sortField': SortField.updatedAt,
@@ -396,21 +366,30 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
         EntityTypeOption.value => const DataConfig.value(),
       };
 
-      // Build the section
-      final section = Section.data(
-        config: dataConfig,
-        display: displayConfig,
+      final templateId = switch (entityType) {
+        EntityTypeOption.task => SectionTemplateId.taskList,
+        EntityTypeOption.project => SectionTemplateId.projectList,
+        EntityTypeOption.value => SectionTemplateId.valueList,
+      };
+
+      final section = SectionRef(
+        templateId: templateId,
+        params: DataListSectionParams(
+          config: dataConfig,
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+          display: displayConfig,
+        ).toJson(),
       );
 
       if (widget.isEditing) {
         final existing = widget.existingScreen!;
-        if (existing is! DataDrivenScreenDefinition) {
-          throw StateError('Cannot edit a non-data-driven screen');
-        }
         final updated = existing.copyWith(
           name: values['name'] as String,
-          iconName: values['iconName'] as String?,
-          category: values['category'] as ScreenCategory,
+          chrome: existing.chrome.copyWith(
+            iconName: values['iconName'] as String?,
+          ),
           sections: [section],
           updatedAt: now,
         );
@@ -437,13 +416,11 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
           return;
         }
 
-        final screen = ScreenDefinition.dataDriven(
+        final screen = ScreenDefinition(
           id: '', // Repository generates v5 ID based on screenKey
           screenKey: screenKey,
           name: values['name'] as String,
-          screenType: ScreenType.list,
-          iconName: values['iconName'] as String?,
-          category: values['category'] as ScreenCategory,
+          chrome: ScreenChrome(iconName: values['iconName'] as String?),
           sections: [section],
           createdAt: now,
           updatedAt: now,
@@ -507,7 +484,7 @@ class _ScreenCreatorPageState extends State<ScreenCreatorPage> {
     if ((confirmed ?? false) && mounted) {
       try {
         await widget.screensRepository.deleteCustomScreen(
-          widget.existingScreen!.id,
+          widget.existingScreen!.screenKey,
         );
         if (mounted) {
           Navigator.of(context).pop(true);

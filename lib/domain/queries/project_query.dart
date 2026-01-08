@@ -167,6 +167,12 @@ class ProjectQuery {
   /// Whether this query should expand repeating projects into occurrences.
   bool get shouldExpandOccurrences => occurrenceExpansion != null;
 
+  /// Whether this query has any date-based filtering rules.
+  bool get hasDateFilter {
+    return filter.shared.any((p) => p is ProjectDatePredicate) ||
+        filter.orGroups.expand((g) => g).any((p) => p is ProjectDatePredicate);
+  }
+
   // ========================================================================
   // Equality & Hash
   // ========================================================================

@@ -9,17 +9,12 @@ import 'package:taskly_bloc/domain/domain.dart';
 class ValuesSection extends StatelessWidget {
   const ValuesSection({
     required this.values,
-    this.valueRanks,
     this.padding = const EdgeInsets.only(top: 8),
     super.key,
   });
 
   /// The values to display.
   final List<Value> values;
-
-  /// Optional map of value IDs to their rank (1-based).
-  /// When provided, values will display their rank badge.
-  final Map<String, int>? valueRanks;
 
   /// Padding around the section.
   final EdgeInsets padding;
@@ -34,10 +29,8 @@ class ValuesSection extends StatelessWidget {
         spacing: 8,
         runSpacing: 6,
         children: values.map((value) {
-          final rank = valueRanks?[value.id];
           return ValueChip(
             value: value,
-            rank: rank,
           );
         }).toList(),
       ),

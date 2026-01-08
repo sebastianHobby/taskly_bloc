@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -10,6 +11,11 @@ import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 
@@ -154,17 +160,17 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
        _taskRepository = taskRepository,
        _sectionDataService = sectionDataService,
        super(const WorkflowRunState.initial()) {
-    on<WorkflowStarted>(_onStarted);
-    on<WorkflowResumed>(_onResumed);
-    on<ItemReviewed>(_onItemReviewed);
-    on<ItemSkipped>(_onItemSkipped);
-    on<NextItemRequested>(_onNextItem);
-    on<PreviousItemRequested>(_onPreviousItem);
-    on<JumpToItemRequested>(_onJumpToItem);
-    on<NextStepRequested>(_onNextStep);
-    on<PreviousStepRequested>(_onPreviousStep);
-    on<WorkflowCompleteRequested>(_onCompleted);
-    on<WorkflowAbandonRequested>(_onAbandoned);
+    on<WorkflowStarted>(_onStarted, transformer: sequential());
+    on<WorkflowResumed>(_onResumed, transformer: sequential());
+    on<ItemReviewed>(_onItemReviewed, transformer: sequential());
+    on<ItemSkipped>(_onItemSkipped, transformer: sequential());
+    on<NextItemRequested>(_onNextItem, transformer: sequential());
+    on<PreviousItemRequested>(_onPreviousItem, transformer: sequential());
+    on<JumpToItemRequested>(_onJumpToItem, transformer: sequential());
+    on<NextStepRequested>(_onNextStep, transformer: sequential());
+    on<PreviousStepRequested>(_onPreviousStep, transformer: sequential());
+    on<WorkflowCompleteRequested>(_onCompleted, transformer: sequential());
+    on<WorkflowAbandonRequested>(_onAbandoned, transformer: sequential());
   }
 
   final WorkflowRepositoryContract _workflowRepository;
@@ -610,7 +616,8 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
 
     // Load data for all sections in this step
     for (final section in step.sections) {
-      final result = await _sectionDataService.fetchSectionData(section);
+      final result = await _fetchSectionData(section);
+      if (result == null) continue;
       sectionResults.add(result);
 
       // Collect tasks from the result
@@ -618,6 +625,23 @@ class WorkflowRunBloc extends Bloc<WorkflowRunEvent, WorkflowRunState> {
     }
 
     return (allTasks, sectionResults);
+  }
+
+  Future<SectionDataResult?> _fetchSectionData(SectionRef section) {
+    return switch (section.templateId) {
+      SectionTemplateId.taskList ||
+      SectionTemplateId.projectList ||
+      SectionTemplateId.valueList => _sectionDataService.fetchDataList(
+        DataListSectionParams.fromJson(section.params),
+      ),
+      SectionTemplateId.allocation => _sectionDataService.fetchAllocation(
+        AllocationSectionParams.fromJson(section.params),
+      ),
+      SectionTemplateId.agenda => _sectionDataService.fetchAgenda(
+        AgendaSectionParams.fromJson(section.params),
+      ),
+      _ => Future.value(null),
+    };
   }
 
   /// Loads task items for a workflow step.

@@ -6,7 +6,6 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_alert_settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 
@@ -75,23 +74,36 @@ class SettingsRepository implements SettingsRepositoryContract {
         );
       }
 
-      // Also check PowerSync's internal ps_crud table for pending uploads
-      final crudResults = await driftDb
-          .customSelect(
-            "SELECT * FROM ps_crud WHERE data LIKE '%user_profiles%' LIMIT 5",
-          )
-          .get();
-      if (crudResults.isNotEmpty) {
-        talker.repositoryLog(
-          'Settings',
-          'ps_crud has ${crudResults.length} pending user_profiles uploads:',
-        );
-        for (final row in crudResults) {
-          talker.repositoryLog(
-            'Settings',
-            '  PENDING UPLOAD: ${row.data}',
-          );
+      // Also check PowerSync's internal ps_crud table for pending uploads.
+      // This table won't exist in unit tests (in-memory DB), so guard it.
+      try {
+        final psCrudExists = await driftDb
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='ps_crud' LIMIT 1",
+            )
+            .get();
+
+        if (psCrudExists.isNotEmpty) {
+          final crudResults = await driftDb
+              .customSelect(
+                "SELECT * FROM ps_crud WHERE data LIKE '%user_profiles%' LIMIT 5",
+              )
+              .get();
+          if (crudResults.isNotEmpty) {
+            talker.repositoryLog(
+              'Settings',
+              'ps_crud has ${crudResults.length} pending user_profiles uploads:',
+            );
+            for (final row in crudResults) {
+              talker.repositoryLog(
+                'Settings',
+                '  PENDING UPLOAD: ${row.data}',
+              );
+            }
+          }
         }
+      } catch (_) {
+        // Best-effort debug helper; ignore ps_crud issues.
       }
     } catch (e, st) {
       talker.databaseError('[Settings] debugDumpRawProfileData FAILED', e, st);
@@ -186,18 +198,13 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (key) {
       SettingsKey.global => _globalFromRow(row) as T,
       SettingsKey.allocation => _allocationFromRow(row) as T,
-      SettingsKey.allocationAlerts => _allocationAlertsFromRow(row) as T,
-      SettingsKey.softGates => _softGatesFromRow(row) as T,
-      SettingsKey.nextActions => _nextActionsFromRow(row) as T,
-      SettingsKey.valueRanking => _valueRankingFromRow(row) as T,
-      SettingsKey.allScreenPrefs => _allScreenPrefsFromRow(row) as T,
       SettingsKey.all => _rowToAppSettings(row) as T,
       _ => _extractKeyedValue(key, row),
     };
   }
 
   T _extractKeyedValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
-    // Handle keyed keys (pageSort, pageDisplay, screenPrefs)
+    // Handle keyed keys (pageSort, pageDisplay)
     final keyedKey = key as dynamic;
     final name = keyedKey.name as String;
     final subKey = keyedKey.subKey as String;
@@ -205,7 +212,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (name) {
       'pageSort' => _pageSortFromRow(row, subKey) as T,
       'pageDisplay' => _pageDisplayFromRow(row, subKey) as T,
-      'screenPrefs' => _screenPrefsFromRow(row, subKey) as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -231,32 +237,6 @@ class SettingsRepository implements SettingsRepositoryContract {
           jsonEncode((value as AllocationConfig).toJson()),
         ),
         updatedAt: now,
-      ),
-      SettingsKey.allocationAlerts => UserProfileTableCompanion(
-        allocationAlertsSettings: Value(
-          jsonEncode((value as AllocationAlertSettings).toJson()),
-        ),
-        updatedAt: now,
-      ),
-      SettingsKey.softGates => UserProfileTableCompanion(
-        softGatesSettings: Value(
-          jsonEncode((value as SoftGatesSettings).toJson()),
-        ),
-        updatedAt: now,
-      ),
-      SettingsKey.nextActions => UserProfileTableCompanion(
-        nextActionsSettings: Value(
-          jsonEncode((value as NextActionsSettings).toJson()),
-        ),
-        updatedAt: now,
-      ),
-      SettingsKey.valueRanking => _buildValueRankingCompanion(
-        value as ValueRanking,
-        now,
-      ),
-      SettingsKey.allScreenPrefs => _buildAllScreenPrefsCompanion(
-        value as Map<String, ScreenPreferences>,
-        now,
       ),
       SettingsKey.all => throw UnsupportedError(
         'Cannot save full AppSettings; save individual keys instead',
@@ -288,12 +268,6 @@ class SettingsRepository implements SettingsRepositoryContract {
         profile,
         now,
       ),
-      'screenPrefs' => _buildScreenPrefsCompanion(
-        subKey,
-        value as ScreenPreferences,
-        profile,
-        now,
-      ),
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -312,60 +286,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     return AllocationConfig.fromJson(_parseJson(row.allocationSettings));
   }
 
-  AllocationAlertSettings _allocationAlertsFromRow(UserProfileTableData? row) {
-    if (row == null) return const AllocationAlertSettings();
-    return AllocationAlertSettings.fromJson(
-      _parseJson(row.allocationAlertsSettings),
-    );
-  }
-
-  SoftGatesSettings _softGatesFromRow(UserProfileTableData? row) {
-    if (row == null) return const SoftGatesSettings();
-    return SoftGatesSettings.fromJson(_parseJson(row.softGatesSettings));
-  }
-
-  NextActionsSettings _nextActionsFromRow(UserProfileTableData? row) {
-    if (row == null) return const NextActionsSettings();
-    return NextActionsSettings.fromJson(_parseJson(row.nextActionsSettings));
-  }
-
-  ValueRanking _valueRankingFromRow(UserProfileTableData? row) {
-    talker.repositoryLog(
-      'Settings',
-      '[ValueRanking] _valueRankingFromRow: row=${row == null ? "null" : "exists"}',
-    );
-    if (row == null) {
-      talker.repositoryLog(
-        'Settings',
-        '[ValueRanking] Returning default empty ValueRanking (row is null)',
-      );
-      return const ValueRanking();
-    }
-    talker.repositoryLog(
-      'Settings',
-      '[ValueRanking] Raw DB column value_ranking: "${row.valueRanking}"',
-    );
-    final parsed = _parseJson(row.valueRanking);
-    talker.repositoryLog(
-      'Settings',
-      '[ValueRanking] Parsed JSON: $parsed',
-    );
-    final ranking = ValueRanking.fromJson(parsed);
-    talker.repositoryLog(
-      'Settings',
-      '[ValueRanking] Deserialized: ${ranking.items.length} items - '
-          '${ranking.items.map((i) => "${i.valueId.substring(0, 8)}:w${i.weight}").join(", ")}',
-    );
-    return ranking;
-  }
-
-  Map<String, ScreenPreferences> _allScreenPrefsFromRow(
-    UserProfileTableData? row,
-  ) {
-    if (row == null) return {};
-    return _parseScreenPreferences(row.screenPreferences);
-  }
-
   SortPreferences? _pageSortFromRow(UserProfileTableData? row, String subKey) {
     if (row == null) return null;
     final prefs = _parsePageSortPreferences(row.pageSortPreferences);
@@ -381,15 +301,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     return settings[subKey] ?? const PageDisplaySettings();
   }
 
-  ScreenPreferences _screenPrefsFromRow(
-    UserProfileTableData? row,
-    String subKey,
-  ) {
-    if (row == null) return const ScreenPreferences();
-    final prefs = _parseScreenPreferences(row.screenPreferences);
-    return prefs[subKey] ?? const ScreenPreferences();
-  }
-
   AppSettings _rowToAppSettings(UserProfileTableData? row) {
     if (row == null) return const AppSettings();
     return AppSettings(
@@ -397,38 +308,14 @@ class SettingsRepository implements SettingsRepositoryContract {
       allocation: AllocationConfig.fromJson(
         _parseJson(row.allocationSettings),
       ),
-      softGates: SoftGatesSettings.fromJson(_parseJson(row.softGatesSettings)),
-      nextActions: NextActionsSettings.fromJson(
-        _parseJson(row.nextActionsSettings),
-      ),
-      valueRanking: ValueRanking.fromJson(_parseJson(row.valueRanking)),
       pageSortPreferences: _parsePageSortPreferences(row.pageSortPreferences),
       pageDisplaySettings: _parsePageDisplaySettings(row.pageDisplaySettings),
-      screenPreferences: _parseScreenPreferences(row.screenPreferences),
     );
   }
 
   // =========================================================================
   // Companion builders for keyed settings
   // =========================================================================
-
-  UserProfileTableCompanion _buildValueRankingCompanion(
-    ValueRanking value,
-    Value<DateTime> now,
-  ) {
-    final json = jsonEncode(value.toJson());
-    talker.repositoryLog(
-      'Settings',
-      '[ValueRanking] _buildValueRankingCompanion:\n'
-          '  items.length=${value.items.length}\n'
-          '  items=${value.items.map((i) => "${i.valueId.substring(0, 8)}:w${i.weight}").join(", ")}\n'
-          '  JSON to save: $json',
-    );
-    return UserProfileTableCompanion(
-      valueRanking: Value(json),
-      updatedAt: now,
-    );
-  }
 
   UserProfileTableCompanion _buildPageSortCompanion(
     String subKey,
@@ -468,36 +355,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     );
   }
 
-  UserProfileTableCompanion _buildScreenPrefsCompanion(
-    String subKey,
-    ScreenPreferences value,
-    UserProfileTableData profile,
-    Value<DateTime> now,
-  ) {
-    final current = _parseScreenPreferences(profile.screenPreferences);
-    current[subKey] = value;
-    final json = jsonEncode(
-      current.map((key, v) => MapEntry(key, v.toJson())),
-    );
-    return UserProfileTableCompanion(
-      screenPreferences: Value(json),
-      updatedAt: now,
-    );
-  }
-
-  UserProfileTableCompanion _buildAllScreenPrefsCompanion(
-    Map<String, ScreenPreferences> value,
-    Value<DateTime> now,
-  ) {
-    final json = jsonEncode(
-      value.map((key, v) => MapEntry(key, v.toJson())),
-    );
-    return UserProfileTableCompanion(
-      screenPreferences: Value(json),
-      updatedAt: now,
-    );
-  }
-
   // =========================================================================
   // Private helpers
   // =========================================================================
@@ -513,12 +370,8 @@ class SettingsRepository implements SettingsRepositoryContract {
         (row) =>
             row.globalSettings.isNotNull() &
             row.allocationSettings.isNotNull() &
-            row.softGatesSettings.isNotNull() &
-            row.nextActionsSettings.isNotNull() &
-            row.valueRanking.isNotNull() &
             row.pageSortPreferences.isNotNull() &
-            row.pageDisplaySettings.isNotNull() &
-            row.screenPreferences.isNotNull(),
+            row.pageDisplaySettings.isNotNull(),
       );
 
     return query.watch().map((rows) {
@@ -538,7 +391,7 @@ class SettingsRepository implements SettingsRepositoryContract {
               '  id=${row.id}\n'
               '  updatedAt=$updatedAt\n'
               '  age=${age.inMilliseconds}ms (${age.inSeconds}s)\n'
-              '  globalSettings first 80 chars: ${row.globalSettings.substring(0, row.globalSettings.length > 80 ? 80 : row.globalSettings.length)}',
+              '  globalSettings first 80 chars: ${(row.globalSettings ?? "").substring(0, (row.globalSettings?.length ?? 0) > 80 ? 80 : (row.globalSettings?.length ?? 0))}',
         );
 
         // Detect potential sync bounce - stale data coming back
@@ -572,12 +425,8 @@ class SettingsRepository implements SettingsRepositoryContract {
         (row) =>
             row.globalSettings.isNotNull() &
             row.allocationSettings.isNotNull() &
-            row.softGatesSettings.isNotNull() &
-            row.nextActionsSettings.isNotNull() &
-            row.valueRanking.isNotNull() &
             row.pageSortPreferences.isNotNull() &
-            row.pageDisplaySettings.isNotNull() &
-            row.screenPreferences.isNotNull(),
+            row.pageDisplaySettings.isNotNull(),
       )
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
@@ -608,14 +457,10 @@ class SettingsRepository implements SettingsRepositoryContract {
       'Settings',
       '[$source] RAW user_profile data: '
           'id=${row.id}, '
-          'globalSettings="${row.globalSettings.length} chars", '
-          'allocationSettings="${row.allocationSettings.length} chars", '
-          'softGatesSettings="${row.softGatesSettings.length} chars", '
-          'nextActionsSettings="${row.nextActionsSettings.length} chars", '
-          'valueRanking="${row.valueRanking.length} chars", '
-          'pageSortPreferences="${row.pageSortPreferences.length} chars", '
-          'pageDisplaySettings="${row.pageDisplaySettings.length} chars", '
-          'screenPreferences="${row.screenPreferences.length} chars", '
+          'globalSettings="${row.globalSettings?.length ?? 0} chars", '
+          'allocationSettings="${row.allocationSettings?.length ?? 0} chars", '
+          'pageSortPreferences="${row.pageSortPreferences?.length ?? 0} chars", '
+          'pageDisplaySettings="${row.pageDisplaySettings?.length ?? 0} chars", '
           'createdAt=${row.createdAt}, '
           'updatedAt=${row.updatedAt}',
     );
@@ -628,8 +473,8 @@ class SettingsRepository implements SettingsRepositoryContract {
     );
   }
 
-  Map<String, dynamic> _parseJson(String json) {
-    if (json.isEmpty) return {};
+  Map<String, dynamic> _parseJson(String? json) {
+    if (json == null || json.isEmpty) return {};
     try {
       final parsed = jsonDecode(json);
       return parsed is Map<String, dynamic> ? parsed : {};
@@ -667,12 +512,8 @@ class SettingsRepository implements SettingsRepositoryContract {
           UserProfileTableCompanion.insert(
             globalSettings: const Value('{}'),
             allocationSettings: const Value('{}'),
-            softGatesSettings: const Value('{}'),
-            nextActionsSettings: const Value('{}'),
-            valueRanking: const Value('{}'),
             pageSortPreferences: const Value('{}'),
             pageDisplaySettings: const Value('{}'),
-            screenPreferences: const Value('{}'),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -699,7 +540,7 @@ class SettingsRepository implements SettingsRepositoryContract {
     return newProfile;
   }
 
-  Map<String, SortPreferences> _parsePageSortPreferences(String json) {
+  Map<String, SortPreferences> _parsePageSortPreferences(String? json) {
     final map = _parseJson(json);
     return map.map(
       (key, value) => MapEntry(
@@ -709,22 +550,12 @@ class SettingsRepository implements SettingsRepositoryContract {
     );
   }
 
-  Map<String, PageDisplaySettings> _parsePageDisplaySettings(String json) {
+  Map<String, PageDisplaySettings> _parsePageDisplaySettings(String? json) {
     final map = _parseJson(json);
     return map.map(
       (key, value) => MapEntry(
         key,
         PageDisplaySettings.fromJson(value as Map<String, dynamic>),
-      ),
-    );
-  }
-
-  Map<String, ScreenPreferences> _parseScreenPreferences(String json) {
-    final map = _parseJson(json);
-    return map.map(
-      (key, value) => MapEntry(
-        key,
-        ScreenPreferences.fromJson(value as Map<String, dynamic>),
       ),
     );
   }

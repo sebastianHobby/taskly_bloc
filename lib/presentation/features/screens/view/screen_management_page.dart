@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/focus_screen_creator_page.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_creator_page.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 
@@ -80,28 +77,11 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showScreenTypeChooser(context),
+        onPressed: () => _navigateToListCreator(context),
         icon: const Icon(Icons.add),
         label: const Text('New Screen'),
       ),
     );
-  }
-
-  Future<void> _showScreenTypeChooser(BuildContext context) async {
-    final screenType = await showModalBottomSheet<_ScreenTypeChoice>(
-      context: context,
-      builder: (context) => _ScreenTypeChooserSheet(),
-    );
-
-    if (screenType == null || !mounted) return;
-    if (!context.mounted) return;
-
-    switch (screenType) {
-      case _ScreenTypeChoice.list:
-        await _navigateToListCreator(context);
-      case _ScreenTypeChoice.focus:
-        await _navigateToFocusCreator(context);
-    }
   }
 
   Future<void> _navigateToListCreator(
@@ -132,46 +112,21 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
     }
   }
 
-  Future<void> _navigateToFocusCreator(
-    BuildContext context, {
-    ScreenDefinition? existingScreen,
-  }) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => FocusScreenCreatorPage(
-          screensRepository: _screensRepository,
-          projectRepository: getIt<ProjectRepositoryContract>(),
-          allocationOrchestrator: getIt<AllocationOrchestrator>(),
-          userId: widget.userId,
-          existingScreen: existingScreen,
-        ),
-      ),
-    );
-
-    if ((result ?? false) && mounted) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            existingScreen != null
-                ? 'Focus screen updated successfully'
-                : 'Focus screen created successfully',
-          ),
-        ),
-      );
-    }
-  }
-
   Future<void> _navigateToCreator(
     BuildContext context, {
     ScreenDefinition? existingScreen,
   }) async {
-    // Determine screen type from existing screen
-    if (existingScreen case final DataDrivenScreenDefinition screen) {
-      if (screen.screenType == ScreenType.focus) {
-        return _navigateToFocusCreator(context, existingScreen: existingScreen);
-      }
+    final isAllocationScreen =
+        existingScreen?.sections.any(
+          (s) => s.templateId == SectionTemplateId.allocation,
+        ) ??
+        false;
+
+    if (isAllocationScreen && existingScreen != null) {
+      Routing.toScreenKey(context, existingScreen.screenKey);
+      return;
     }
+
     return _navigateToListCreator(context, existingScreen: existingScreen);
   }
 
@@ -371,78 +326,19 @@ class _ScreenListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Group by category
-    final byCategory = <ScreenCategory, List<ScreenDefinition>>{};
-    for (final screen in screens) {
-      byCategory.putIfAbsent(screen.category, () => []).add(screen);
-    }
+    final sortedScreens = List<ScreenDefinition>.from(screens)
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 88),
       children: [
-        for (final category in ScreenCategory.values)
-          if (byCategory.containsKey(category)) ...[
-            _SectionHeader(
-              title: category.displayName,
-              count: byCategory[category]!.length,
-            ),
-            ...byCategory[category]!.map(
-              (s) => _ScreenTile(
-                screen: s,
-                onTap: () => onScreenTapped(s),
-                onDelete: () => onDeleteTapped(s),
-              ),
-            ),
-          ],
+        for (final screen in sortedScreens)
+          _ScreenTile(
+            screen: screen,
+            onTap: () => onScreenTapped(screen),
+            onDelete: () => onDeleteTapped(screen),
+          ),
       ],
-    );
-  }
-}
-
-// =============================================================================
-// Section Header
-// =============================================================================
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.count,
-  });
-
-  final String title;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              count.toString(),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -465,7 +361,7 @@ class _ScreenTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final icon = FormBuilderIconPicker.getIconData(screen.iconName);
+    final icon = FormBuilderIconPicker.getIconData(screen.chrome.iconName);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -548,228 +444,63 @@ class _ScreenMetadata extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
 
-    // Extract screen type and entity type info based on variant
-    return switch (screen) {
-      DataDrivenScreenDefinition(:final screenType, :final sections) => Wrap(
-        spacing: 16,
-        runSpacing: 4,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.view_list,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(_getScreenTypeLabel(screenType), style: textStyle),
-            ],
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.category_outlined,
-                size: 14,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 4),
-              Text(_getEntityTypeFromSections(sections), style: textStyle),
-            ],
-          ),
-        ],
-      ),
-      NavigationOnlyScreenDefinition() => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.widgets_outlined,
-            size: 14,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text('Custom Widget', style: textStyle),
-        ],
-      ),
-    };
+    final sections = screen.sections;
+    return Wrap(
+      spacing: 16,
+      runSpacing: 4,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.view_list,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(_getInferredScreenTypeLabel(sections), style: textStyle),
+          ],
+        ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.category_outlined,
+              size: 14,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(_getEntityTypeFromSections(sections), style: textStyle),
+          ],
+        ),
+      ],
+    );
   }
 
-  String _getScreenTypeLabel(ScreenType type) {
-    return switch (type) {
-      ScreenType.list => 'List',
-      ScreenType.focus => 'Focus',
-      ScreenType.workflow => 'Workflow',
-    };
+  /// Infers a display label for the screen type from sections.
+  String _getInferredScreenTypeLabel(List<SectionRef> sections) {
+    if (sections.any((s) => s.templateId == SectionTemplateId.allocation)) {
+      return 'Focus';
+    }
+    if (sections.any((s) => s.templateId == SectionTemplateId.agenda)) {
+      return 'Agenda';
+    }
+    return 'List';
   }
 
-  String _getEntityTypeFromSections(List<Section> sections) {
+  String _getEntityTypeFromSections(List<SectionRef> sections) {
     for (final section in sections) {
-      if (section is DataSection) {
-        return switch (section.config) {
-          TaskDataConfig() => 'Tasks',
-          ProjectDataConfig() => 'Projects',
-          ValueDataConfig() => 'Values',
-          JournalDataConfig() => 'Journal Entries',
-        };
-      } else if (section is AllocationSection) {
-        return 'Tasks';
-      } else if (section is AgendaSection) {
-        return 'Tasks';
+      switch (section.templateId) {
+        case SectionTemplateId.taskList:
+        case SectionTemplateId.allocation:
+        case SectionTemplateId.agenda:
+          return 'Tasks';
+        case SectionTemplateId.projectList:
+          return 'Projects';
+        case SectionTemplateId.valueList:
+          return 'Values';
       }
     }
     return 'Items';
-  }
-}
-
-// =============================================================================
-// Screen Type Chooser
-// =============================================================================
-
-enum _ScreenTypeChoice { list, focus }
-
-class _ScreenTypeChooserSheet extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Create New Screen',
-              style: theme.textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'What type of screen would you like to create?',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _ScreenTypeOption(
-              icon: Icons.view_list,
-              title: 'List Screen',
-              description:
-                  'Display tasks, projects, labels, or values with '
-                  'custom filtering and sorting.',
-              onTap: () => Navigator.of(context).pop(_ScreenTypeChoice.list),
-            ),
-            const SizedBox(height: 8),
-            _ScreenTypeOption(
-              icon: Icons.wb_sunny,
-              title: 'Focus Screen',
-              description:
-                  'Value-aligned task allocation with urgency modes '
-                  'and smart prioritization.',
-              badge: 'Recommended',
-              onTap: () => Navigator.of(context).pop(_ScreenTypeChoice.focus),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ScreenTypeOption extends StatelessWidget {
-  const _ScreenTypeOption({
-    required this.icon,
-    required this.title,
-    required this.description,
-    required this.onTap,
-    this.badge,
-  });
-
-  final IconData icon;
-  final String title;
-  final String description;
-  final VoidCallback onTap;
-  final String? badge;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (badge != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              badge!,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

@@ -1,15 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 
 part 'workflow_step.freezed.dart';
 part 'workflow_step.g.dart';
 
-/// A step in a workflow (DR-008: uses Section for content).
+/// A step in a workflow.
 ///
 /// Each step defines content via sections (same as screens) and can have
-/// step-specific support blocks and triggers for progression.
+/// triggers for progression.
 @freezed
 abstract class WorkflowStep with _$WorkflowStep {
   const factory WorkflowStep({
@@ -22,11 +21,8 @@ abstract class WorkflowStep with _$WorkflowStep {
     /// Position in workflow sequence
     required int order,
 
-    /// Content sections for this step (DR-008)
-    required List<Section> sections,
-
-    /// Support blocks specific to this step
-    @Default([]) List<SupportBlock> supportBlocks,
+    /// Content sections for this step.
+    required List<SectionRef> sections,
 
     /// Step description
     String? description,

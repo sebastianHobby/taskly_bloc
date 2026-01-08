@@ -1,12 +1,16 @@
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Presentation model for workflow execution.
 ///
-/// Extracts the essential fields from a [DataDrivenScreenDefinition] needed
+/// Extracts the essential fields from a [ScreenDefinition] needed
 /// to run a workflow, simplifying the BLoC interface.
 class WorkflowScreen {
   const WorkflowScreen({
@@ -22,12 +26,6 @@ class WorkflowScreen {
   /// Throws [ArgumentError] if the screen doesn't have task data
   /// that supports workflow execution.
   factory WorkflowScreen.fromScreenDefinition(ScreenDefinition definition) {
-    if (definition is! DataDrivenScreenDefinition) {
-      throw ArgumentError(
-        'Screen "${definition.name}" is not a data-driven screen',
-      );
-    }
-
     final taskQuery = _extractTaskQuery(definition.sections);
     if (taskQuery == null) {
       throw ArgumentError(
@@ -47,29 +45,47 @@ class WorkflowScreen {
   }
 
   /// Extracts the TaskQuery from sections.
-  static TaskQuery? _extractTaskQuery(List<Section> sections) {
-    for (final section in sections) {
-      switch (section) {
-        case DataSection(:final config):
+  static TaskQuery? _extractTaskQuery(List<SectionRef> sections) {
+    for (final ref in sections) {
+      if (ref.overrides?.enabled == false) continue;
+
+      switch (ref.templateId) {
+        case SectionTemplateId.taskList:
+        case SectionTemplateId.projectList:
+        case SectionTemplateId.valueList:
+          final params = DataListSectionParams.fromJson(ref.params);
+          final config = params.config;
           if (config is TaskDataConfig) {
             return config.query;
           }
-        case AllocationSection(:final sourceFilter):
-          return sourceFilter ?? TaskQuery.incomplete();
-        case AgendaSection(:final additionalFilter):
-          return additionalFilter ?? TaskQuery.incomplete();
+        case SectionTemplateId.allocation:
+          final params = AllocationSectionParams.fromJson(ref.params);
+          return params.sourceFilter ?? TaskQuery.incomplete();
+        case SectionTemplateId.agenda:
+          final params = AgendaSectionParams.fromJson(ref.params);
+          return params.additionalFilter ?? TaskQuery.incomplete();
       }
     }
     return null;
   }
 
   /// Extracts the DisplayConfig from sections.
-  static DisplayConfig? _extractDisplayConfig(List<Section> sections) {
-    for (final section in sections) {
-      if (section is DataSection && section.display != null) {
-        return section.display;
+  static DisplayConfig? _extractDisplayConfig(List<SectionRef> sections) {
+    for (final ref in sections) {
+      if (ref.overrides?.enabled == false) continue;
+
+      if (ref.templateId != SectionTemplateId.taskList &&
+          ref.templateId != SectionTemplateId.projectList &&
+          ref.templateId != SectionTemplateId.valueList) {
+        continue;
+      }
+
+      final params = DataListSectionParams.fromJson(ref.params);
+      if (params.display case final display?) {
+        return display;
       }
     }
+
     return null;
   }
 

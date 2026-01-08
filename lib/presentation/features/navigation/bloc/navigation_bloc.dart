@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -70,9 +71,9 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
        _badgeService = badgeService,
        _iconResolver = iconResolver,
        super(const NavigationState.loading()) {
-    on<NavigationStarted>(_onStarted);
-    on<NavigationScreensChanged>(_onScreensChanged);
-    on<NavigationFailed>(_onFailed);
+    on<NavigationStarted>(_onStarted, transformer: droppable());
+    on<NavigationScreensChanged>(_onScreensChanged, transformer: sequential());
+    on<NavigationFailed>(_onFailed, transformer: sequential());
   }
 
   final ScreenDefinitionsRepositoryContract _screensRepository;
@@ -107,6 +108,18 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     Emitter<NavigationState> emit,
   ) {
     try {
+      talker.blocLog(
+        'NavigationBloc',
+        'Received ${event.screens.length} screens from repository',
+      );
+      for (final screen in event.screens) {
+        talker.blocLog(
+          'NavigationBloc',
+          '  - ${screen.screen.screenKey}: ${screen.screen.name} '
+              '(sortOrder: ${screen.effectiveSortOrder})',
+        );
+      }
+
       final destinations = event.screens.map(_mapScreen).toList();
       destinations.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       emit(NavigationState.ready(destinations: destinations));
@@ -120,7 +133,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     final screen = screenWithPrefs.screen;
     final iconSet = _iconResolver.resolve(
       screenId: screen.screenKey,
-      iconName: screen.iconName,
+      iconName: screen.chrome.iconName,
     );
 
     return NavigationDestinationVm(
@@ -133,7 +146,6 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       screenSource: screen.screenSource,
       badgeStream: _badgeService.badgeStreamFor(screen),
       sortOrder: screenWithPrefs.effectiveSortOrder,
-      category: screen.category,
     );
   }
 

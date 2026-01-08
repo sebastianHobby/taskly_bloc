@@ -13,36 +13,22 @@ abstract class TaskRepositoryContract {
   /// All filtering happens at the database level for optimal performance.
   Stream<List<Task>> watchAll([TaskQuery? query]);
 
-  /// Count tasks matching the optional [query].
+  /// Get tasks with optional filtering, sorting, and occurrence expansion.
   ///
-  /// When [query] includes `occurrenceExpansion`, this counts expanded
-  /// occurrences (virtual rows) instead of base task rows.
-  Future<int> count([TaskQuery? query]);
+  /// If [query] is null, returns all tasks with related entities.
+  Future<List<Task>> getAll([TaskQuery? query]);
 
   /// Watch the count of tasks matching the optional [query].
   ///
   /// When [query] includes `occurrenceExpansion`, this counts expanded
   /// occurrences (virtual rows) instead of base task rows.
-  Stream<int> watchCount([TaskQuery? query]);
-
-  /// Query tasks using TaskQuery (returns a Future, not a Stream).
-  Future<List<Task>> queryTasks(TaskQuery query);
-
-  /// Get tasks by project ID.
-  Future<List<Task>> getTasksByProject(String projectId);
-
-  /// Get tasks by IDs.
-  Future<List<Task>> getTasksByIds(List<String> ids);
+  Stream<int> watchAllCount([TaskQuery? query]);
 
   /// Get a single task by ID with related entities.
   Future<Task?> getById(String id);
 
   /// Watch a single task by ID with related entities.
   Stream<Task?> watchById(String id);
-
-  /// Watch task counts for all projects.
-  /// Returns a stream of maps where keys are project IDs.
-  Stream<Map<String, ProjectTaskCounts>> watchTaskCountsByProject();
 
   Future<void> create({
     required String name,

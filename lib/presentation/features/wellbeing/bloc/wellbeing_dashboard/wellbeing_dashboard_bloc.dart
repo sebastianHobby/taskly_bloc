@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
@@ -33,7 +34,7 @@ class WellbeingDashboardBloc
     extends Bloc<WellbeingDashboardEvent, WellbeingDashboardState> {
   WellbeingDashboardBloc(this._analyticsService)
     : super(const WellbeingDashboardState()) {
-    on<_Load>(_onLoad);
+    on<_Load>(_onLoad, transformer: restartable());
 
     // Automatically load dashboard data on initialization
     add(

@@ -10,8 +10,10 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/theme/app_theme.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
@@ -339,34 +341,34 @@ void main() {
 // =============================================================================
 
 /// Creates a test section with tasks.
-SectionDataWithMeta _createTaskSection({
+SectionVm _createTaskSection({
   required List<Task> tasks,
   String? title,
 }) {
-  return SectionDataWithMeta(
+  return SectionVm(
     index: 0,
     title: title,
-    result: DataSectionResult(
-      primaryEntities: tasks,
-      primaryEntityType: 'task',
-      relatedEntities: const {},
+    templateId: SectionTemplateId.taskList,
+    params: const <String, dynamic>{},
+    data: SectionDataResult.data(
+      items: tasks.map(ScreenItem.task).toList(),
     ),
     isLoading: false,
   );
 }
 
 /// Creates a test section with projects.
-SectionDataWithMeta _createProjectSection({
+SectionVm _createProjectSection({
   required List<Project> projects,
   String? title,
 }) {
-  return SectionDataWithMeta(
+  return SectionVm(
     index: 0,
     title: title,
-    result: DataSectionResult(
-      primaryEntities: projects,
-      primaryEntityType: 'project',
-      relatedEntities: const {},
+    templateId: SectionTemplateId.projectList,
+    params: const <String, dynamic>{},
+    data: SectionDataResult.data(
+      items: projects.map(ScreenItem.project).toList(),
     ),
     isLoading: false,
   );
@@ -375,7 +377,7 @@ SectionDataWithMeta _createProjectSection({
 /// Pumps a SectionWidget with the app's theme and localizations.
 Future<void> _pumpSectionWidget(
   WidgetTester tester, {
-  required SectionDataWithMeta section,
+  required SectionVm section,
   void Function(Task, bool?)? onTaskCheckboxChanged,
   void Function(Project, bool?)? onProjectCheckboxChanged,
   void Function(dynamic)? onEntityTap,

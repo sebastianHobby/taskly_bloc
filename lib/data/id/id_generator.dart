@@ -52,6 +52,7 @@ class IdGenerator {
     'screen_definitions',
     'workflow_definitions',
     'analytics_snapshots',
+    'attention_rules',
   };
 
   /// Tables using UUID v4 (random - user content with no natural key).
@@ -64,6 +65,7 @@ class IdGenerator {
     'pending_notifications',
     'analytics_correlations',
     'analytics_insights',
+    'attention_resolutions',
   };
 
   /// Check if a table uses deterministic v5 IDs.
@@ -223,6 +225,15 @@ class IdGenerator {
     final dateKey = snapshotDate.toIso8601String().split('T').first;
     return _v5('analytics_snapshot/$entityType/$entityId/$dateKey');
   }
+
+  /// Generate deterministic ID for attention rule.
+  /// Natural key: userId + ruleKey
+  String attentionRuleId({required String ruleKey}) {
+    return _v5('attention_rules/$ruleKey');
+  }
+
+  /// Generate random ID for attention resolution.
+  String attentionResolutionId() => _uuid.v4();
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PRIVATE HELPERS

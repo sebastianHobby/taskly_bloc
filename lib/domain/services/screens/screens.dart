@@ -5,6 +5,4 @@ export 'screen_data_interpreter.dart';
 export 'screen_query_builder.dart';
 export 'section_data_result.dart';
 export 'section_data_service.dart';
-export 'support_block_computer.dart';
-export 'support_block_result.dart';
 export 'trigger_evaluator.dart';

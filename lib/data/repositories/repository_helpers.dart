@@ -22,12 +22,18 @@ class ProjectAggregation {
   }) {
     final Map<String, ProjectTableData> projectsById = {};
     final Map<String, Map<String, ValueTableData>> valuesByProject = {};
+    final Map<String, String?> primaryValueIdByProject = {};
 
     for (final row in rows) {
       final project = row.readTable(driftDb.projectTable);
       final id = project.id;
 
       projectsById.putIfAbsent(id, () => project);
+
+      final projectValue = row.readTableOrNull(driftDb.projectValuesTable);
+      if (projectValue?.isPrimary ?? false) {
+        primaryValueIdByProject[id] ??= projectValue!.valueId;
+      }
 
       final value = row.readTableOrNull(driftDb.valueTable);
       if (value != null) {
@@ -40,21 +46,28 @@ class ProjectAggregation {
     return ProjectAggregation._(
       projectsById: projectsById,
       valuesByProject: valuesByProject,
+      primaryValueIdByProject: primaryValueIdByProject,
     );
   }
   ProjectAggregation._({
     required this.projectsById,
     required this.valuesByProject,
+    required this.primaryValueIdByProject,
   });
 
   final Map<String, ProjectTableData> projectsById;
   final Map<String, Map<String, ValueTableData>> valuesByProject;
+  final Map<String, String?> primaryValueIdByProject;
 
   /// Convert to list of domain Project objects.
   List<Project> toProjects() {
     return projectsById.entries.map((entry) {
       final values = sortedValuesFromMap(valuesByProject[entry.key]);
-      return projectFromTable(entry.value, values: values);
+      return projectFromTable(
+        entry.value,
+        values: values,
+        primaryValueId: primaryValueIdByProject[entry.key],
+      );
     }).toList();
   }
 
@@ -65,7 +78,11 @@ class ProjectAggregation {
 
     final entry = projectsById.entries.first;
     final values = sortedValuesFromMap(valuesByProject[entry.key]);
-    return projectFromTable(entry.value, values: values);
+    return projectFromTable(
+      entry.value,
+      values: values,
+      primaryValueId: primaryValueIdByProject[entry.key],
+    );
   }
 }
 
@@ -77,10 +94,17 @@ class TaskAggregation {
   factory TaskAggregation.fromRows({
     required Iterable<drift_pkg.TypedResult> rows,
     required AppDatabase driftDb,
+    required $ProjectValuesTableTable projectValuesTable,
+    required $ValueTableTable projectValueTable,
+    required $ValueTableTable taskValueTable,
   }) {
     final Map<String, TaskTableData> tasksById = {};
     final Map<String, ProjectTableData?> projectByTask = {};
     final Map<String, Map<String, ValueTableData>> valuesByTask = {};
+    final Map<String, String?> primaryValueIdByTask = {};
+
+    final Map<String, Map<String, ValueTableData>> valuesByProject = {};
+    final Map<String, String?> primaryValueIdByProject = {};
 
     for (final row in rows) {
       final task = row.readTable(driftDb.taskTable);
@@ -93,11 +117,32 @@ class TaskAggregation {
         () => row.readTableOrNull(driftDb.projectTable),
       );
 
-      final value = row.readTableOrNull(driftDb.valueTable);
-      if (value != null) {
+      final taskValueJoin = row.readTableOrNull(driftDb.taskValuesTable);
+      if (taskValueJoin?.isPrimary ?? false) {
+        primaryValueIdByTask[taskId] ??= taskValueJoin!.valueId;
+      }
+
+      final taskValue = row.readTableOrNull(taskValueTable);
+      if (taskValue != null) {
         valuesByTask
             .putIfAbsent(taskId, () => <String, ValueTableData>{})
-            .putIfAbsent(value.id, () => value);
+            .putIfAbsent(taskValue.id, () => taskValue);
+      }
+
+      final projectTable = projectByTask[taskId];
+      final projectId = projectTable?.id;
+      if (projectId != null) {
+        final projectValueJoin = row.readTableOrNull(projectValuesTable);
+        if (projectValueJoin?.isPrimary ?? false) {
+          primaryValueIdByProject[projectId] ??= projectValueJoin!.valueId;
+        }
+
+        final projectValue = row.readTableOrNull(projectValueTable);
+        if (projectValue != null) {
+          valuesByProject
+              .putIfAbsent(projectId, () => <String, ValueTableData>{})
+              .putIfAbsent(projectValue.id, () => projectValue);
+        }
       }
     }
 
@@ -105,17 +150,27 @@ class TaskAggregation {
       tasksById: tasksById,
       projectByTask: projectByTask,
       valuesByTask: valuesByTask,
+      primaryValueIdByTask: primaryValueIdByTask,
+      valuesByProject: valuesByProject,
+      primaryValueIdByProject: primaryValueIdByProject,
     );
   }
   TaskAggregation._({
     required this.tasksById,
     required this.projectByTask,
     required this.valuesByTask,
+    required this.primaryValueIdByTask,
+    required this.valuesByProject,
+    required this.primaryValueIdByProject,
   });
 
   final Map<String, TaskTableData> tasksById;
   final Map<String, ProjectTableData?> projectByTask;
   final Map<String, Map<String, ValueTableData>> valuesByTask;
+  final Map<String, String?> primaryValueIdByTask;
+
+  final Map<String, Map<String, ValueTableData>> valuesByProject;
+  final Map<String, String?> primaryValueIdByProject;
 
   /// Convert to list of domain Task objects.
   List<Task> toTasks() {
@@ -125,12 +180,17 @@ class TaskAggregation {
       final projectTable = projectByTask[id];
       final project = projectTable == null
           ? null
-          : projectFromTable(projectTable);
+          : projectFromTable(
+              projectTable,
+              values: sortedValuesFromMap(valuesByProject[projectTable.id]),
+              primaryValueId: primaryValueIdByProject[projectTable.id],
+            );
 
       return taskFromTable(
         entry.value,
         project: project,
         values: values,
+        primaryValueId: primaryValueIdByTask[id],
       );
     }).toList();
   }
@@ -146,12 +206,17 @@ class TaskAggregation {
     final projectTable = projectByTask[id];
     final project = projectTable == null
         ? null
-        : projectFromTable(projectTable);
+        : projectFromTable(
+            projectTable,
+            values: sortedValuesFromMap(valuesByProject[projectTable.id]),
+            primaryValueId: primaryValueIdByProject[projectTable.id],
+          );
 
     return taskFromTable(
       entry.value,
       project: project,
       values: values,
+      primaryValueId: primaryValueIdByTask[id],
     );
   }
 }

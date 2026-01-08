@@ -12,3 +12,7 @@ class RepositoryException implements Exception {
 class RepositoryNotFoundException extends RepositoryException {
   RepositoryNotFoundException(super.message, [super.cause, super.stackTrace]);
 }
+
+class RepositoryValidationException extends RepositoryException {
+  RepositoryValidationException(super.message, [super.cause, super.stackTrace]);
+}

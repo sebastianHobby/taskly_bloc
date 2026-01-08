@@ -3,11 +3,21 @@ import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_alerts_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/attention_tile_variants.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/check_in_summary_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/issues_summary_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -24,19 +34,32 @@ abstract class SystemScreenDefinitions {
   SystemScreenDefinitions._();
 
   /// Inbox screen - tasks without a project
-  static final inbox = ScreenDefinition.dataDriven(
+  static final inbox = ScreenDefinition(
     id: 'inbox',
     screenKey: 'inbox',
     name: 'Inbox',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createTask],
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createTask],
+    ),
     sections: [
-      Section.data(
-        config: DataConfig.task(query: TaskQuery.inbox()),
+      SectionRef(
+        templateId: SectionTemplateId.issuesSummary,
+        params: const IssuesSummarySectionParams(
+          attentionItemTileVariant: AttentionItemTileVariant.standard,
+          entityTypes: ['task'],
+        ).toJson(),
+      ),
+      SectionRef(
+        templateId: SectionTemplateId.taskList,
+        params: DataListSectionParams(
+          config: DataConfig.task(query: TaskQuery.inbox()),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+        ).toJson(),
       ),
     ],
   );
@@ -45,185 +68,259 @@ abstract class SystemScreenDefinitions {
   ///
   /// Replaces both Today and Next Actions screens.
   /// Shows persona-driven allocation with alert banners for excluded tasks.
-  static final myDay = ScreenDefinition.dataDriven(
+  static final myDay = ScreenDefinition(
     id: 'my_day',
     screenKey: 'my_day',
     name: 'My Day',
-    screenType: ScreenType.focus,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    appBarActions: [AppBarAction.settingsLink],
-    settingsRoute: 'allocation-settings',
+    chrome: const ScreenChrome(
+      appBarActions: [AppBarAction.settingsLink],
+      settingsRoute: 'focus_setup',
+    ),
     sections: [
-      const Section.allocation(
-        displayMode: AllocationDisplayMode.pinnedFirst,
-        showExcludedWarnings: true,
-        showExcludedSection: true,
+      SectionRef(
+        templateId: SectionTemplateId.checkInSummary,
+        params: const CheckInSummarySectionParams(
+          reviewItemTileVariant: ReviewItemTileVariant.standard,
+        ).toJson(),
+      ),
+      SectionRef(
+        templateId: SectionTemplateId.allocationAlerts,
+        params: const AllocationAlertsSectionParams(
+          attentionItemTileVariant: AttentionItemTileVariant.standard,
+        ).toJson(),
+      ),
+      SectionRef(
+        templateId: SectionTemplateId.allocation,
+        params: const AllocationSectionParams(
+          taskTileVariant: TaskTileVariant.listTile,
+          displayMode: AllocationDisplayMode.groupedByProject,
+          showExcludedWarnings: true,
+          showExcludedSection: true,
+        ).toJson(),
       ),
     ],
   );
 
   /// Scheduled screen - future tasks (formerly Planned)
-  static final scheduled = ScreenDefinition.dataDriven(
+  static final scheduled = ScreenDefinition(
     id: 'scheduled',
     screenKey: 'scheduled',
     name: 'Scheduled',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createTask],
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createTask],
+    ),
     sections: [
-      Section.agenda(
-        dateField: AgendaDateField.deadlineDate,
-        grouping: AgendaGrouping.byDate,
+      SectionRef(
+        templateId: SectionTemplateId.agenda,
+        params: const AgendaSectionParams(
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          dateField: AgendaDateField.deadlineDate,
+          grouping: AgendaGrouping.byDate,
+        ).toJson(),
       ),
     ],
   );
 
   /// Someday screen - Inbox and tasks without dates
-  static final someday = ScreenDefinition.dataDriven(
+  static final someday = ScreenDefinition(
     id: 'someday',
     screenKey: 'someday',
     name: 'Someday',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createTask],
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createTask],
+    ),
     sections: [
-      Section.data(
-        title: 'Inbox',
-        config: DataConfig.task(query: TaskQuery.inbox()),
+      SectionRef(
+        templateId: SectionTemplateId.issuesSummary,
+        params: const IssuesSummarySectionParams(
+          attentionItemTileVariant: AttentionItemTileVariant.standard,
+          entityTypes: ['task'],
+        ).toJson(),
       ),
-      Section.data(
-        title: 'No Date',
-        config: DataConfig.task(
-          query: const TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              shared: [
-                TaskBoolPredicate(
-                  field: TaskBoolField.completed,
-                  operator: BoolOperator.isFalse,
-                ),
-                TaskDatePredicate(
-                  field: TaskDateField.deadlineDate,
-                  operator: DateOperator.isNull,
-                ),
-                TaskProjectPredicate(operator: ProjectOperator.isNotNull),
-              ],
+      SectionRef(
+        templateId: SectionTemplateId.taskList,
+        params: DataListSectionParams(
+          config: DataConfig.task(query: TaskQuery.inbox()),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+        ).toJson(),
+        overrides: const SectionOverrides(title: 'Inbox'),
+      ),
+      SectionRef(
+        templateId: SectionTemplateId.taskList,
+        params: DataListSectionParams(
+          config: DataConfig.task(
+            query: const TaskQuery(
+              filter: QueryFilter<TaskPredicate>(
+                shared: [
+                  TaskBoolPredicate(
+                    field: TaskBoolField.completed,
+                    operator: BoolOperator.isFalse,
+                  ),
+                  TaskDatePredicate(
+                    field: TaskDateField.deadlineDate,
+                    operator: DateOperator.isNull,
+                  ),
+                  TaskProjectPredicate(operator: ProjectOperator.isNotNull),
+                ],
+              ),
             ),
           ),
-        ),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+        ).toJson(),
+        overrides: const SectionOverrides(title: 'No Date'),
       ),
     ],
   );
 
   /// Logbook screen - completed tasks
-  static final logbook = ScreenDefinition.dataDriven(
+  static final logbook = ScreenDefinition(
     id: 'logbook',
     screenKey: 'logbook',
     name: 'Logbook',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
     sections: [
-      Section.data(
-        config: DataConfig.task(
-          query: const TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              shared: [
-                TaskBoolPredicate(
-                  field: TaskBoolField.completed,
-                  operator: BoolOperator.isTrue,
-                ),
-              ],
+      SectionRef(
+        templateId: SectionTemplateId.taskList,
+        params: DataListSectionParams(
+          config: DataConfig.task(
+            query: const TaskQuery(
+              filter: QueryFilter<TaskPredicate>(
+                shared: [
+                  TaskBoolPredicate(
+                    field: TaskBoolField.completed,
+                    operator: BoolOperator.isTrue,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        title: 'Completed',
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+        ).toJson(),
+        overrides: const SectionOverrides(title: 'Completed'),
       ),
     ],
   );
 
   /// Projects screen - list of projects
-  static final projects = ScreenDefinition.dataDriven(
+  static final projects = ScreenDefinition(
     id: 'projects',
     screenKey: 'projects',
     name: 'Projects',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createProject],
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createProject],
+    ),
     sections: [
-      Section.data(
-        config: DataConfig.project(query: const ProjectQuery()),
+      SectionRef(
+        templateId: SectionTemplateId.projectList,
+        params: DataListSectionParams(
+          config: DataConfig.project(query: const ProjectQuery()),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+          relatedData: [
+            RelatedDataConfig.tasks(
+              additionalFilter: TaskQuery(
+                filter: QueryFilter(
+                  shared: const [
+                    TaskBoolPredicate(
+                      field: TaskBoolField.completed,
+                      operator: BoolOperator.isFalse,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ).toJson(),
       ),
     ],
   );
 
   /// Values screen - list of values (labels with type=value)
-  static final values = ScreenDefinition.dataDriven(
+  static final values = ScreenDefinition(
     id: 'values',
     screenKey: 'values',
     name: 'Values',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
-    fabOperations: [FabOperation.createValue],
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createValue],
+    ),
     sections: [
-      Section.data(
-        config: DataConfig.value(query: const ValueQuery()),
-        enrichment: const EnrichmentConfig.valueStats(),
+      SectionRef(
+        templateId: SectionTemplateId.valueList,
+        params: DataListSectionParams(
+          config: DataConfig.value(query: const ValueQuery()),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+          enrichment: const EnrichmentConfig.valueStats(),
+        ).toJson(),
       ),
     ],
   );
 
   /// Orphan Tasks screen - incomplete tasks without any value assigned
-  static final orphanTasks = ScreenDefinition.dataDriven(
+  static final orphanTasks = ScreenDefinition(
     id: 'orphan_tasks',
     screenKey: 'orphan_tasks',
     name: 'Unassigned Tasks',
-    screenType: ScreenType.list,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
     sections: [
-      Section.data(
-        config: DataConfig.task(
-          query: const TaskQuery(
-            filter: QueryFilter<TaskPredicate>(
-              shared: [
-                TaskBoolPredicate(
-                  field: TaskBoolField.completed,
-                  operator: BoolOperator.isFalse,
-                ),
-                TaskValuePredicate(
-                  operator: ValueOperator.isNull,
-                  valueIds: [],
-                  includeInherited: true,
-                ),
-              ],
+      SectionRef(
+        templateId: SectionTemplateId.taskList,
+        params: DataListSectionParams(
+          config: DataConfig.task(
+            query: const TaskQuery(
+              filter: QueryFilter<TaskPredicate>(
+                shared: [
+                  TaskBoolPredicate(
+                    field: TaskBoolField.completed,
+                    operator: BoolOperator.isFalse,
+                  ),
+                  TaskValuePredicate(
+                    operator: ValueOperator.isNull,
+                    valueIds: [],
+                    includeInherited: true,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        display: DisplayConfig(
-          groupByCompletion: false,
-          enableSwipeToDelete: false,
-          showCompleted: false,
-        ),
-        title: 'Tasks without values',
+          display: DisplayConfig(
+            groupByCompletion: false,
+            enableSwipeToDelete: false,
+            showCompleted: false,
+          ),
+          taskTileVariant: TaskTileVariant.listTile,
+          projectTileVariant: ProjectTileVariant.listTile,
+          valueTileVariant: ValueTileVariant.compactCard,
+        ).toJson(),
+        overrides: const SectionOverrides(title: 'Tasks without values'),
       ),
     ],
   );
@@ -233,58 +330,62 @@ abstract class SystemScreenDefinitions {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Settings screen - app configuration
-  static final settings = ScreenDefinition.navigationOnly(
+  static final settings = ScreenDefinition(
     id: 'settings',
     screenKey: 'settings',
     name: 'Settings',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
+    sections: const [SectionRef(templateId: SectionTemplateId.settingsMenu)],
   );
 
   /// Statistics - charts and insights
-  static final statistics = ScreenDefinition.navigationOnly(
+  static final statistics = ScreenDefinition(
     id: 'statistics',
     screenKey: 'statistics',
     name: 'Statistics',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.workspace,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.statisticsDashboard),
+    ],
   );
 
   /// Journal - mood tracking and reflection
-  static final journal = ScreenDefinition.navigationOnly(
+  static final journal = ScreenDefinition(
     id: 'journal',
     screenKey: 'journal',
     name: 'Journal',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.wellbeing,
+    sections: const [SectionRef(templateId: SectionTemplateId.journalTimeline)],
   );
 
   /// Workflows - automation and scheduled tasks
-  static final workflows = ScreenDefinition.navigationOnly(
+  static final workflows = ScreenDefinition(
     id: 'workflows',
     screenKey: 'workflows',
     name: 'Workflows',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
+    sections: const [SectionRef(templateId: SectionTemplateId.workflowList)],
   );
 
   /// Screen management - customize screens and navigation
-  static final screenManagement = ScreenDefinition.navigationOnly(
+  static final screenManagement = ScreenDefinition(
     id: 'screen_management',
     screenKey: 'screen_management',
     name: 'Screens',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.screenManagement),
+    ],
   );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -292,47 +393,103 @@ abstract class SystemScreenDefinitions {
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Trackers - habit and metric tracking (accessed via Journal)
-  static final trackers = ScreenDefinition.navigationOnly(
+  static final trackers = ScreenDefinition(
     id: 'trackers',
     screenKey: 'trackers',
     name: 'Trackers',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.wellbeing,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.trackerManagement),
+    ],
   );
 
   /// Wellbeing dashboard - analytics and insights (accessed via Journal)
-  static final wellbeingDashboard = ScreenDefinition.navigationOnly(
+  static final wellbeingDashboard = ScreenDefinition(
     id: 'wellbeing_dashboard',
     screenKey: 'wellbeing_dashboard',
     name: 'Wellbeing',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.wellbeing,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.wellbeingDashboard),
+    ],
   );
 
   /// Allocation settings - configure My Day allocation (accessed via My Day settings)
-  static final allocationSettings = ScreenDefinition.navigationOnly(
+  static final allocationSettings = ScreenDefinition(
     id: 'allocation_settings',
     screenKey: 'allocation_settings',
     name: 'Allocation Settings',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.allocationSettings),
+    ],
   );
 
   /// Navigation settings - configure navigation bar (accessed via Settings)
-  static final navigationSettings = ScreenDefinition.navigationOnly(
+  static final navigationSettings = ScreenDefinition(
     id: 'navigation_settings',
     screenKey: 'navigation_settings',
     name: 'Navigation',
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
-    category: ScreenCategory.settings,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.navigationSettings),
+    ],
+  );
+
+  /// Focus Setup - configure allocation + review cadence
+  ///
+  /// This is the canonical settings flow (wizard). Legacy entrypoints
+  /// (allocation/attention settings) route here.
+  static final focusSetup = ScreenDefinition(
+    id: 'focus_setup',
+    screenKey: 'focus_setup',
+    name: 'Focus Setup',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    chrome: const ScreenChrome(iconName: 'tune'),
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.focusSetupWizard),
+    ],
+  );
+
+  /// Check-in workflow - review and resolve attention items
+  /// Accessed via checkInSummary support block on My Day
+  static final checkIn = ScreenDefinition(
+    id: 'check_in',
+    screenKey: 'check_in',
+    name: 'Check In',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    sections: [
+      SectionRef(
+        templateId: SectionTemplateId.checkInSummary,
+        params: const CheckInSummarySectionParams(
+          reviewItemTileVariant: ReviewItemTileVariant.standard,
+        ).toJson(),
+      ),
+    ],
+  );
+
+  /// Attention Rules settings - manage attention rules
+  /// Accessed via Settings
+  static final attentionRules = ScreenDefinition(
+    id: 'attention_rules',
+    screenKey: 'attention_rules',
+    name: 'Attention Rules',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    sections: const [SectionRef(templateId: SectionTemplateId.attentionRules)],
   );
 
   /// Get all system screens that appear in navigation.
@@ -352,7 +509,6 @@ abstract class SystemScreenDefinitions {
     // Hidden/Sub-screens
     inbox,
     orphanTasks,
-    logbook,
     workflows,
     screenManagement,
   ];
@@ -369,7 +525,6 @@ abstract class SystemScreenDefinitions {
       'scheduled' => scheduled,
       'someday' => someday,
       'statistics' => statistics,
-      'logbook' => logbook,
       'projects' => projects,
       'values' => values,
       'orphan_tasks' => orphanTasks,
@@ -380,8 +535,16 @@ abstract class SystemScreenDefinitions {
       // Sub-screens (accessed via parent screens)
       'trackers' => trackers,
       'wellbeing_dashboard' => wellbeingDashboard,
-      'allocation_settings' => allocationSettings,
+      'focus_setup' => focusSetup,
+
+      // Legacy settings entrypoints (redirect to focus_setup)
+      'allocation_settings' ||
+      'allocation-settings' ||
+      'attention_rules' ||
+      'attention-rules' => focusSetup,
       'navigation_settings' => navigationSettings,
+      // Attention system screens
+      'check_in' => checkIn,
       _ => null,
     };
   }
@@ -397,23 +560,21 @@ abstract class SystemScreenDefinitions {
 
   /// Default sort orders for system screens.
   ///
-  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics, Settings
-  /// Note: logbook, workflows, screen_management not included as they're
-  /// accessible via settings, not navigation.
+  /// Order: Inbox, My Day, Scheduled, Someday, Journal, Values, Projects,
+  /// Statistics, Settings.
   static const Map<String, int> defaultSortOrders = {
-    'my_day': 0,
-    'scheduled': 1,
-    'someday': 2,
-    'journal': 3,
-    'values': 4,
-    'projects': 5,
-    'statistics': 6,
+    'inbox': 0,
+    'my_day': 1,
+    'scheduled': 2,
+    'someday': 3,
+    'journal': 4,
+    'values': 5,
+    'projects': 6,
+    'statistics': 7,
     'settings': 100,
-    // Legacy/Hidden
-    'planned': 99,
-    'inbox': 99,
-    'labels': 99,
-    'orphan_tasks': 99,
+    'orphan_tasks': 8,
+    'workflows': 9,
+    'screen_management': 10,
   };
 
   /// Returns the default sort order for a screen key.
@@ -424,91 +585,105 @@ abstract class SystemScreenDefinitions {
   }
 
   /// Create a screen definition for a specific project
-  static DataDrivenScreenDefinition forProject({
+  static ScreenDefinition forProject({
     required String projectId,
     required String projectName,
     String? projectColor,
   }) {
-    return DataDrivenScreenDefinition(
+    return ScreenDefinition(
       id: 'project_$projectId',
       screenKey: 'project_detail',
       name: projectName,
-      screenType: ScreenType.list,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       screenSource: ScreenSource.userDefined,
-      iconName: 'folder',
-      category: ScreenCategory.workspace,
-      supportBlocks: [
-        SupportBlock.entityHeader(
-          entityType: 'project',
-          entityId: projectId,
-          showCheckbox: true,
-          showMetadata: true,
-        ),
-      ],
+      chrome: const ScreenChrome(iconName: 'folder'),
       sections: [
-        Section.data(
-          config: DataConfig.task(
-            query: TaskQuery.forProject(projectId: projectId),
-          ),
-          display: const DisplayConfig(
-            groupByCompletion: true,
-            completedCollapsed: true,
-            enableSwipeToDelete: true,
-            showCompleted: true,
-          ),
-          title: 'Tasks',
+        SectionRef(
+          templateId: SectionTemplateId.entityHeader,
+          params: EntityHeaderSectionParams(
+            entityType: 'project',
+            entityId: projectId,
+            showCheckbox: true,
+            showMetadata: true,
+          ).toJson(),
+        ),
+        SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(
+              query: TaskQuery.forProject(projectId: projectId),
+            ),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: const DisplayConfig(
+              groupByCompletion: true,
+              completedCollapsed: true,
+              enableSwipeToDelete: true,
+              showCompleted: true,
+            ),
+          ).toJson(),
+          overrides: const SectionOverrides(title: 'Tasks'),
         ),
       ],
     );
   }
 
   /// Create a screen definition for a specific value
-  static DataDrivenScreenDefinition forValue({
+  static ScreenDefinition forValue({
     required String valueId,
     required String valueName,
     String? valueColor,
   }) {
-    return DataDrivenScreenDefinition(
+    return ScreenDefinition(
       id: 'value_$valueId',
       screenKey: 'value_detail',
       name: valueName,
-      screenType: ScreenType.list,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
       screenSource: ScreenSource.userDefined,
-      iconName: 'value',
-      category: ScreenCategory.workspace,
-      supportBlocks: [
-        SupportBlock.entityHeader(
-          entityType: 'value',
-          entityId: valueId,
-          showCheckbox: false,
-          showMetadata: true,
-        ),
-      ],
+      chrome: const ScreenChrome(iconName: 'value'),
       sections: [
-        Section.data(
-          config: DataConfig.task(
-            query: TaskQuery.forValue(valueId: valueId),
-          ),
-          display: const DisplayConfig(
-            groupByCompletion: true,
-            completedCollapsed: true,
-            enableSwipeToDelete: true,
-            showCompleted: true,
-          ),
-          title: 'Tasks',
+        SectionRef(
+          templateId: SectionTemplateId.entityHeader,
+          params: EntityHeaderSectionParams(
+            entityType: 'value',
+            entityId: valueId,
+            showCheckbox: false,
+            showMetadata: true,
+          ).toJson(),
         ),
-        Section.data(
-          config: DataConfig.project(
-            query: ProjectQuery.byValues([valueId]),
-          ),
-          display: const DisplayConfig(
-            enableSwipeToDelete: false,
-          ),
-          title: 'Projects',
+        SectionRef(
+          templateId: SectionTemplateId.taskList,
+          params: DataListSectionParams(
+            config: DataConfig.task(
+              query: TaskQuery.forValue(valueId: valueId),
+            ),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: const DisplayConfig(
+              groupByCompletion: true,
+              completedCollapsed: true,
+              enableSwipeToDelete: true,
+              showCompleted: true,
+            ),
+          ).toJson(),
+          overrides: const SectionOverrides(title: 'Tasks'),
+        ),
+        SectionRef(
+          templateId: SectionTemplateId.projectList,
+          params: DataListSectionParams(
+            config: DataConfig.project(
+              query: ProjectQuery.byValues([valueId]),
+            ),
+            taskTileVariant: TaskTileVariant.listTile,
+            projectTileVariant: ProjectTileVariant.listTile,
+            valueTileVariant: ValueTileVariant.compactCard,
+            display: const DisplayConfig(enableSwipeToDelete: false),
+          ).toJson(),
+          overrides: const SectionOverrides(title: 'Projects'),
         ),
       ],
     );

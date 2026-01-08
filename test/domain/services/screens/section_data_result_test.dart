@@ -3,6 +3,8 @@ import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 
 import '../../../fixtures/test_data.dart';
@@ -12,20 +14,17 @@ void main() {
     group('DataSectionResult', () {
       test('creates with required fields', () {
         final result = SectionDataResult.data(
-          primaryEntities: [TestData.task()],
-          primaryEntityType: 'task',
+          items: [ScreenItem.task(TestData.task())],
         );
 
         expect(result, isA<DataSectionResult>());
         final dataResult = result as DataSectionResult;
-        expect(dataResult.primaryEntityType, 'task');
-        expect(dataResult.primaryEntities, hasLength(1));
+        expect(dataResult.items, hasLength(1));
       });
 
       test('creates with related entities', () {
         final result = SectionDataResult.data(
-          primaryEntities: [TestData.task()],
-          primaryEntityType: 'task',
+          items: [ScreenItem.task(TestData.task())],
           relatedEntities: {
             'projects': [TestData.project()],
           },
@@ -39,8 +38,7 @@ void main() {
         test('returns tasks when primaryEntityType is task', () {
           final tasks = [TestData.task(), TestData.task()];
           final result = SectionDataResult.data(
-            primaryEntities: tasks,
-            primaryEntityType: 'task',
+            items: tasks.map(ScreenItem.task).toList(),
           );
 
           expect(result.allTasks, hasLength(2));
@@ -48,8 +46,7 @@ void main() {
 
         test('returns empty list when primaryEntityType is not task', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.project()],
-            primaryEntityType: 'project',
+            items: [ScreenItem.project(TestData.project())],
           );
 
           expect(result.allTasks, isEmpty);
@@ -60,8 +57,7 @@ void main() {
         test('returns projects when primaryEntityType is project', () {
           final projects = [TestData.project(), TestData.project()];
           final result = SectionDataResult.data(
-            primaryEntities: projects,
-            primaryEntityType: 'project',
+            items: projects.map(ScreenItem.project).toList(),
           );
 
           expect(result.allProjects, hasLength(2));
@@ -69,8 +65,7 @@ void main() {
 
         test('returns empty list when primaryEntityType is not project', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.task()],
-            primaryEntityType: 'task',
+            items: [ScreenItem.task(TestData.task())],
           );
 
           expect(result.allProjects, isEmpty);
@@ -81,8 +76,7 @@ void main() {
         test('returns labels when primaryEntityType is label', () {
           final values = [TestData.value(), TestData.value()];
           final result = SectionDataResult.data(
-            primaryEntities: values,
-            primaryEntityType: 'label',
+            items: values.map(ScreenItem.value).toList(),
           );
 
           expect(result.allValues, hasLength(2));
@@ -93,8 +87,7 @@ void main() {
             TestData.value(priority: ValuePriority.medium),
           ];
           final result = SectionDataResult.data(
-            primaryEntities: values,
-            primaryEntityType: 'value',
+            items: values.map(ScreenItem.value).toList(),
           );
 
           expect(result.allValues, hasLength(1));
@@ -104,8 +97,7 @@ void main() {
           'returns empty list when primaryEntityType is not label/value',
           () {
             final result = SectionDataResult.data(
-              primaryEntities: [TestData.task()],
-              primaryEntityType: 'task',
+              items: [ScreenItem.task(TestData.task())],
             );
 
             expect(result.allValues, isEmpty);
@@ -116,8 +108,7 @@ void main() {
       group('relatedTasks', () {
         test('returns related tasks from relatedEntities', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.project()],
-            primaryEntityType: 'project',
+            items: [ScreenItem.project(TestData.project())],
             relatedEntities: {
               'tasks': <Task>[TestData.task(), TestData.task()],
             },
@@ -128,8 +119,7 @@ void main() {
 
         test('returns empty list when no related tasks', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.project()],
-            primaryEntityType: 'project',
+            items: [ScreenItem.project(TestData.project())],
           );
 
           expect(result.relatedTasks, isEmpty);
@@ -139,8 +129,7 @@ void main() {
       group('relatedProjects', () {
         test('returns related projects from relatedEntities', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.task()],
-            primaryEntityType: 'task',
+            items: [ScreenItem.task(TestData.task())],
             relatedEntities: {
               'projects': <Project>[TestData.project()],
             },
@@ -151,8 +140,7 @@ void main() {
 
         test('returns empty list when no related projects', () {
           final result = SectionDataResult.data(
-            primaryEntities: [TestData.task()],
-            primaryEntityType: 'task',
+            items: [ScreenItem.task(TestData.task())],
           );
 
           expect(result.relatedProjects, isEmpty);
@@ -257,39 +245,89 @@ void main() {
 
     group('AgendaSectionResult', () {
       test('creates with required fields', () {
+        final today = DateTime.utc(2025, 1, 1);
+        final agendaData = AgendaData(
+          focusDate: today,
+          groups: [
+            AgendaDateGroup(
+              date: today,
+              semanticLabel: 'Today',
+              formattedHeader: 'Wed, Jan 1',
+              items: [
+                AgendaItem(
+                  entityType: 'task',
+                  entityId: 't1',
+                  name: 'Task 1',
+                  tag: AgendaDateTag.due,
+                  task: TestData.task(id: 't1'),
+                ),
+              ],
+            ),
+          ],
+        );
         final result = SectionDataResult.agenda(
-          groupedTasks: {
-            'today': [TestData.task()],
-            'tomorrow': [TestData.task(), TestData.task()],
-          },
-          groupOrder: ['today', 'tomorrow'],
+          agendaData: agendaData,
         );
 
         expect(result, isA<AgendaSectionResult>());
-        expect(
-          (result as AgendaSectionResult).groupedTasks['today'],
-          hasLength(1),
-        );
-        expect(result.groupOrder, ['today', 'tomorrow']);
+        expect((result as AgendaSectionResult).agendaData, agendaData);
       });
 
       group('allTasks', () {
         test('returns all tasks from all groups flattened', () {
+          final today = DateTime.utc(2025, 1, 1);
+          final tomorrow = DateTime.utc(2025, 1, 2);
+          final agendaData = AgendaData(
+            focusDate: today,
+            groups: [
+              AgendaDateGroup(
+                date: today,
+                semanticLabel: 'Today',
+                formattedHeader: 'Wed, Jan 1',
+                items: [
+                  AgendaItem(
+                    entityType: 'task',
+                    entityId: 't1',
+                    name: 'Task 1',
+                    tag: AgendaDateTag.due,
+                    task: TestData.task(id: 't1'),
+                  ),
+                ],
+              ),
+              AgendaDateGroup(
+                date: tomorrow,
+                semanticLabel: 'Tomorrow',
+                formattedHeader: 'Thu, Jan 2',
+                items: [
+                  AgendaItem(
+                    entityType: 'task',
+                    entityId: 't2',
+                    name: 'Task 2',
+                    tag: AgendaDateTag.due,
+                    task: TestData.task(id: 't2'),
+                  ),
+                  AgendaItem(
+                    entityType: 'task',
+                    entityId: 't3',
+                    name: 'Task 3',
+                    tag: AgendaDateTag.due,
+                    task: TestData.task(id: 't3'),
+                  ),
+                ],
+              ),
+            ],
+          );
           final result = SectionDataResult.agenda(
-            groupedTasks: {
-              'today': [TestData.task()],
-              'tomorrow': [TestData.task(), TestData.task()],
-            },
-            groupOrder: ['today', 'tomorrow'],
+            agendaData: agendaData,
           );
 
           expect(result.allTasks, hasLength(3));
         });
 
         test('returns empty list when no groups', () {
+          final today = DateTime.utc(2025, 1, 1);
           final result = SectionDataResult.agenda(
-            groupedTasks: {},
-            groupOrder: [],
+            agendaData: AgendaData(focusDate: today, groups: const []),
           );
 
           expect(result.allTasks, isEmpty);
@@ -298,11 +336,9 @@ void main() {
 
       group('allProjects', () {
         test('returns empty list for agenda results', () {
+          final today = DateTime.utc(2025, 1, 1);
           final result = SectionDataResult.agenda(
-            groupedTasks: {
-              'today': [TestData.task()],
-            },
-            groupOrder: ['today'],
+            agendaData: AgendaData(focusDate: today, groups: const []),
           );
 
           expect(result.allProjects, isEmpty);
@@ -311,11 +347,9 @@ void main() {
 
       group('allValues', () {
         test('returns empty list for agenda results', () {
+          final today = DateTime.utc(2025, 1, 1);
           final result = SectionDataResult.agenda(
-            groupedTasks: {
-              'today': [TestData.task()],
-            },
-            groupOrder: ['today'],
+            agendaData: AgendaData(focusDate: today, groups: const []),
           );
 
           expect(result.allValues, isEmpty);
@@ -324,11 +358,9 @@ void main() {
 
       group('relatedTasks', () {
         test('returns empty list for agenda results', () {
+          final today = DateTime.utc(2025, 1, 1);
           final result = SectionDataResult.agenda(
-            groupedTasks: {
-              'today': [TestData.task()],
-            },
-            groupOrder: ['today'],
+            agendaData: AgendaData(focusDate: today, groups: const []),
           );
 
           expect(result.relatedTasks, isEmpty);
@@ -337,11 +369,9 @@ void main() {
 
       group('relatedProjects', () {
         test('returns empty list for agenda results', () {
+          final today = DateTime.utc(2025, 1, 1);
           final result = SectionDataResult.agenda(
-            groupedTasks: {
-              'today': [TestData.task()],
-            },
-            groupOrder: ['today'],
+            agendaData: AgendaData(focusDate: today, groups: const []),
           );
 
           expect(result.relatedProjects, isEmpty);

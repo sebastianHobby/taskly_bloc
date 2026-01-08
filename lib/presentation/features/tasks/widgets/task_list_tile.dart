@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 
@@ -84,6 +85,9 @@ class TaskListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    final effectivePrimaryValue = task.effectivePrimaryValue;
+    final effectiveSecondaryValues = task.effectiveSecondaryValues;
 
     final isOverdue = _isOverdue(task.deadlineDate);
     final isDueToday = _isDueToday(task.deadlineDate);
@@ -190,9 +194,6 @@ class TaskListTile extends StatelessWidget {
                       ),
                     ],
 
-                    // Values section
-                    ValuesSection(values: task.values),
-
                     // Dates row
                     DatesRow(
                       startDate: task.startDate,
@@ -203,6 +204,17 @@ class TaskListTile extends StatelessWidget {
                       formatDate: _formatRelativeDate,
                       hasRepeat: task.repeatIcalRrule != null,
                     ),
+
+                    // Values Footer
+                    if (effectivePrimaryValue != null ||
+                        effectiveSecondaryValues.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ValuesFooter(
+                          primaryValue: effectivePrimaryValue,
+                          secondaryValues: effectiveSecondaryValues,
+                        ),
+                      ),
                   ],
                 ),
               ),

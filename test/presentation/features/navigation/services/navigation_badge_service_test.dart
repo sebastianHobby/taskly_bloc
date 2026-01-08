@@ -1,32 +1,33 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 
 import '../../../../mocks/repository_mocks.dart';
 
-/// Helper to create a test DataDrivenScreenDefinition with required fields.
-DataDrivenScreenDefinition _makeScreen({
+ScreenDefinition _makeScreen({
   required String id,
   required String name,
-  ScreenCategory category = ScreenCategory.workspace,
-  List<Section> sections = const [],
+  List<SectionRef> sections = const [],
+  ScreenChrome chrome = ScreenChrome.empty,
 }) {
   final now = DateTime.now();
-  return DataDrivenScreenDefinition(
+  return ScreenDefinition(
     id: id,
     screenKey: 'test-$id',
     name: name,
-    screenType: ScreenType.list,
     createdAt: now,
     updatedAt: now,
-    category: category,
     sections: sections,
+    chrome: chrome,
   );
 }
 
@@ -46,18 +47,8 @@ void main() {
 
   group('NavigationBadgeService', () {
     group('badgeStreamFor', () {
-      test('returns null for non-workspace category', () {
-        final screen = _makeScreen(
-          id: 'wellbeing-1',
-          name: 'Wellbeing',
-          category: ScreenCategory.wellbeing,
-          sections: [
-            DataSection(
-              config: DataConfig.task(query: TaskQuery.all()),
-              title: 'Tasks',
-            ),
-          ],
-        );
+      test('returns null for navigation-only screens', () {
+        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
 
         final stream = badgeService.badgeStreamFor(screen);
 
@@ -68,7 +59,6 @@ void main() {
         final screen = _makeScreen(
           id: 'empty-1',
           name: 'Empty',
-          category: ScreenCategory.workspace,
         );
 
         final stream = badgeService.badgeStreamFor(screen);
@@ -81,23 +71,28 @@ void main() {
         final screen = _makeScreen(
           id: 'inbox-1',
           name: 'Inbox',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.task(query: taskQuery),
-              title: 'Tasks',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: taskQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Tasks'),
             ),
           ],
         );
 
         when(
-          () => taskRepo.watchCount(taskQuery),
+          () => taskRepo.watchAllCount(taskQuery),
         ).thenAnswer((_) => Stream.value(5));
 
         final stream = badgeService.badgeStreamFor(screen);
 
         expect(stream, isNotNull);
-        verify(() => taskRepo.watchCount(taskQuery)).called(1);
+        verify(() => taskRepo.watchAllCount(taskQuery)).called(1);
       });
 
       test('returns project count stream for project data section', () {
@@ -105,52 +100,44 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.project(query: projectQuery),
-              title: 'Projects',
+            SectionRef(
+              templateId: SectionTemplateId.projectList,
+              params: DataListSectionParams(
+                config: DataConfig.project(query: projectQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Projects'),
             ),
           ],
         );
 
         when(
-          () => projectRepo.watchCount(projectQuery),
+          () => projectRepo.watchAllCount(projectQuery),
         ).thenAnswer((_) => Stream.value(3));
 
         final stream = badgeService.badgeStreamFor(screen);
 
         expect(stream, isNotNull);
-        verify(() => projectRepo.watchCount(projectQuery)).called(1);
+        verify(() => projectRepo.watchAllCount(projectQuery)).called(1);
       });
 
       test('returns null for value data section', () {
         final screen = _makeScreen(
           id: 'values-1',
           name: 'Values',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.value(),
-              title: 'Values',
-            ),
-          ],
-        );
-
-        final stream = badgeService.badgeStreamFor(screen);
-
-        expect(stream, isNull);
-      });
-
-      test('returns null for value data section', () {
-        final screen = _makeScreen(
-          id: 'values-1',
-          name: 'Values',
-          category: ScreenCategory.workspace,
-          sections: [
-            DataSection(
-              config: DataConfig.value(),
-              title: 'Values',
+            SectionRef(
+              templateId: SectionTemplateId.valueList,
+              params: DataListSectionParams(
+                config: DataConfig.value(),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Values'),
             ),
           ],
         );
@@ -166,43 +153,44 @@ void main() {
         final screen = _makeScreen(
           id: 'mixed-1',
           name: 'Mixed',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.task(query: taskQuery),
-              title: 'Tasks First',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: taskQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Tasks First'),
             ),
-            DataSection(
-              config: DataConfig.project(query: projectQuery),
-              title: 'Projects Second',
+            SectionRef(
+              templateId: SectionTemplateId.projectList,
+              params: DataListSectionParams(
+                config: DataConfig.project(query: projectQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Projects Second'),
             ),
           ],
         );
 
         when(
-          () => taskRepo.watchCount(taskQuery),
+          () => taskRepo.watchAllCount(taskQuery),
         ).thenAnswer((_) => Stream.value(10));
 
         badgeService.badgeStreamFor(screen);
 
-        verify(() => taskRepo.watchCount(taskQuery)).called(1);
-        verifyNever(() => projectRepo.watchCount(any()));
+        verify(() => taskRepo.watchAllCount(taskQuery)).called(1);
+        verifyNever(() => projectRepo.watchAllCount(any()));
       });
     });
 
     group('getTaskQueryForScreen', () {
-      test('returns null for non-workspace category', () {
-        final screen = _makeScreen(
-          id: 'settings-1',
-          name: 'Settings',
-          category: ScreenCategory.settings,
-          sections: [
-            DataSection(
-              config: DataConfig.task(query: TaskQuery.all()),
-              title: 'Tasks',
-            ),
-          ],
-        );
+      test('returns null for navigation-only screens', () {
+        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
 
         final query = badgeService.getTaskQueryForScreen(screen);
 
@@ -213,7 +201,6 @@ void main() {
         final screen = _makeScreen(
           id: 'empty-1',
           name: 'Empty',
-          category: ScreenCategory.workspace,
         );
 
         final query = badgeService.getTaskQueryForScreen(screen);
@@ -226,11 +213,16 @@ void main() {
         final screen = _makeScreen(
           id: 'inbox-1',
           name: 'Inbox',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.task(query: taskQuery),
-              title: 'Tasks',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: taskQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Tasks'),
             ),
           ],
         );
@@ -244,11 +236,16 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.project(query: ProjectQuery.all()),
-              title: 'Projects',
+            SectionRef(
+              templateId: SectionTemplateId.projectList,
+              params: DataListSectionParams(
+                config: DataConfig.project(query: ProjectQuery.all()),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Projects'),
             ),
           ],
         );
@@ -260,18 +257,8 @@ void main() {
     });
 
     group('getProjectQueryForScreen', () {
-      test('returns null for non-workspace category', () {
-        final screen = _makeScreen(
-          id: 'wellbeing-1',
-          name: 'Wellbeing',
-          category: ScreenCategory.wellbeing,
-          sections: [
-            DataSection(
-              config: DataConfig.project(query: ProjectQuery.all()),
-              title: 'Projects',
-            ),
-          ],
-        );
+      test('returns null for navigation-only screens', () {
+        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
 
         final query = badgeService.getProjectQueryForScreen(screen);
 
@@ -282,7 +269,6 @@ void main() {
         final screen = _makeScreen(
           id: 'empty-1',
           name: 'Empty',
-          category: ScreenCategory.workspace,
         );
 
         final query = badgeService.getProjectQueryForScreen(screen);
@@ -295,11 +281,16 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.project(query: projectQuery),
-              title: 'Projects',
+            SectionRef(
+              templateId: SectionTemplateId.projectList,
+              params: DataListSectionParams(
+                config: DataConfig.project(query: projectQuery),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Projects'),
             ),
           ],
         );
@@ -313,11 +304,16 @@ void main() {
         final screen = _makeScreen(
           id: 'tasks-1',
           name: 'Tasks',
-          category: ScreenCategory.workspace,
           sections: [
-            DataSection(
-              config: DataConfig.task(query: TaskQuery.all()),
-              title: 'Tasks',
+            SectionRef(
+              templateId: SectionTemplateId.taskList,
+              params: DataListSectionParams(
+                config: DataConfig.task(query: TaskQuery.all()),
+                taskTileVariant: TaskTileVariant.listTile,
+                projectTileVariant: ProjectTileVariant.listTile,
+                valueTileVariant: ValueTileVariant.compactCard,
+              ).toJson(),
+              overrides: const SectionOverrides(title: 'Tasks'),
             ),
           ],
         );

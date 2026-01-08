@@ -11,12 +11,14 @@ import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/powersync/api_connector.dart';
 import 'package:taskly_bloc/data/repositories/auth_repository.dart';
+import 'package:taskly_bloc/data/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/supabase/supabase.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
@@ -43,16 +45,31 @@ import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart'
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_grouper.dart';
+import 'package:taskly_bloc/domain/services/screens/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/trigger_evaluator.dart';
-import 'package:taskly_bloc/domain/services/screens/support_block_computer.dart';
 import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_evaluator.dart';
+import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
+import 'package:taskly_bloc/data/repositories/attention_repository.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/agenda_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/allocation_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/allocation_alerts_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/check_in_summary_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/data_list_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/entity_header_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/issues_summary_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/interleaved_list_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -60,7 +77,30 @@ final GetIt getIt = GetIt.instance;
 Future<void> setupDependencies() async {
   // Load supabase and powersync before registering dependencies
   await loadSupabase();
-  final PowerSyncDatabase syncDb = await openDatabase();
+
+  // Track if this is first auth callback (from openDatabase itself when already logged in)
+  // vs later callbacks from auth state changes
+  var initialSetupComplete = false;
+
+  final PowerSyncDatabase syncDb = await openDatabase(
+    onAuthenticated: () async {
+      // This callback runs:
+      // 1. Immediately after openDatabase if user is already logged in
+      // 2. On each signedIn event
+      //
+      // On first call (from openDatabase), DI setup isn't complete yet.
+      // On subsequent calls, we can run maintenance.
+      if (!initialSetupComplete) {
+        // First call - DI not ready, skip (we'll run maintenance below)
+        return;
+      }
+      // Run post-auth maintenance (seeding, cleanup)
+      await runPostAuthMaintenance(
+        driftDb: getIt<AppDatabase>(),
+        idGenerator: getIt<IdGenerator>(),
+      );
+    },
+  );
 
   // db variable is set by the openDatabase function. Someday improve this
   // so it's not a global variable ...
@@ -127,18 +167,20 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<SettingsRepositoryContract>(
       () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
-    // System screen provider - generates system screens from code
-    ..registerLazySingleton<SystemScreenProvider>(
-      () => DefaultSystemScreenProvider(getIt<IdGenerator>()),
+    ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
+      () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
-    // Screens - combines system screens from code + custom screens from DB
+    // System screen provider - validates system screens
+    ..registerLazySingleton<SystemScreenProvider>(
+      () => const DefaultSystemScreenProvider(),
+    )
+    // Screens - all screens come from DB (system seeded + custom)
     ..registerLazySingleton<ScreenDefinitionsRepositoryContract>(
       () => ScreenDefinitionsRepository(
         databaseRepository: ScreenDefinitionsRepositoryImpl(
           getIt<AppDatabase>(),
           getIt<IdGenerator>(),
           getIt<SystemScreenProvider>(),
-          getIt<SettingsRepositoryContract>(),
         ),
       ),
     )
@@ -149,6 +191,8 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
       ),
     )
     // Entity action service for unified screen model
@@ -159,11 +203,26 @@ Future<void> setupDependencies() async {
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
       ),
     )
+    ..registerLazySingleton<AgendaSectionDataService>(
+      () => AgendaSectionDataService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.statisticsDashboard,
+      ),
+      instanceName: SectionTemplateId.statisticsDashboard,
+    )
     ..registerLazySingleton<SectionDataService>(
       () => SectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        agendaDataService: getIt<AgendaSectionDataService>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
@@ -203,18 +262,216 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
     ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
-    ..registerLazySingleton<SupportBlockComputer>(
-      () => SupportBlockComputer(
-        statsCalculator: getIt<TaskStatsCalculator>(),
-        analyticsService: getIt<AnalyticsService>(),
-        problemDetectorService: getIt<ProblemDetectorService>(),
+    // Attention system
+    ..registerLazySingleton<AttentionRepositoryContract>(
+      () => AttentionRepository(db: getIt<AppDatabase>()),
+    )
+    ..registerLazySingleton<AttentionEvaluator>(
+      () => AttentionEvaluator(
+        attentionRepository: getIt<AttentionRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
-    // ScreenDataInterpreter - coordinates section data and support blocks
+    ..registerLazySingleton<SectionTemplateParamsCodec>(
+      SectionTemplateParamsCodec.new,
+    )
+    ..registerLazySingleton<DataListSectionInterpreter>(
+      () => DataListSectionInterpreter(
+        templateId: SectionTemplateId.taskList,
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.taskList,
+    )
+    ..registerLazySingleton<DataListSectionInterpreter>(
+      () => DataListSectionInterpreter(
+        templateId: SectionTemplateId.projectList,
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.projectList,
+    )
+    ..registerLazySingleton<DataListSectionInterpreter>(
+      () => DataListSectionInterpreter(
+        templateId: SectionTemplateId.valueList,
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.valueList,
+    )
+    ..registerLazySingleton<InterleavedListSectionInterpreter>(
+      () => InterleavedListSectionInterpreter(
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.interleavedList,
+    )
+    ..registerLazySingleton<AllocationSectionInterpreter>(
+      () => AllocationSectionInterpreter(
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.allocation,
+    )
+    ..registerLazySingleton<AgendaSectionInterpreter>(
+      () => AgendaSectionInterpreter(
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.agenda,
+    )
+    ..registerLazySingleton<IssuesSummarySectionInterpreter>(
+      () => IssuesSummarySectionInterpreter(
+        attentionEvaluator: getIt<AttentionEvaluator>(),
+      ),
+      instanceName: SectionTemplateId.issuesSummary,
+    )
+    ..registerLazySingleton<AllocationAlertsSectionInterpreter>(
+      () => AllocationAlertsSectionInterpreter(
+        attentionEvaluator: getIt<AttentionEvaluator>(),
+      ),
+      instanceName: SectionTemplateId.allocationAlerts,
+    )
+    ..registerLazySingleton<CheckInSummarySectionInterpreter>(
+      () => CheckInSummarySectionInterpreter(
+        attentionEvaluator: getIt<AttentionEvaluator>(),
+      ),
+      instanceName: SectionTemplateId.checkInSummary,
+    )
+    ..registerLazySingleton<EntityHeaderSectionInterpreter>(
+      () => EntityHeaderSectionInterpreter(
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+      ),
+      instanceName: SectionTemplateId.entityHeader,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () =>
+          StaticSectionInterpreter(templateId: SectionTemplateId.settingsMenu),
+      instanceName: SectionTemplateId.settingsMenu,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () =>
+          StaticSectionInterpreter(templateId: SectionTemplateId.workflowList),
+      instanceName: SectionTemplateId.workflowList,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.journalTimeline,
+      ),
+      instanceName: SectionTemplateId.journalTimeline,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.navigationSettings,
+      ),
+      instanceName: SectionTemplateId.navigationSettings,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.allocationSettings,
+      ),
+      instanceName: SectionTemplateId.allocationSettings,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.attentionRules,
+      ),
+      instanceName: SectionTemplateId.attentionRules,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.focusSetupWizard,
+      ),
+      instanceName: SectionTemplateId.focusSetupWizard,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.screenManagement,
+      ),
+      instanceName: SectionTemplateId.screenManagement,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.trackerManagement,
+      ),
+      instanceName: SectionTemplateId.trackerManagement,
+    )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.wellbeingDashboard,
+      ),
+      instanceName: SectionTemplateId.wellbeingDashboard,
+    )
+    ..registerLazySingleton<SectionTemplateInterpreterRegistry>(
+      () => SectionTemplateInterpreterRegistry([
+        getIt<DataListSectionInterpreter>(
+          instanceName: SectionTemplateId.taskList,
+        ),
+        getIt<DataListSectionInterpreter>(
+          instanceName: SectionTemplateId.projectList,
+        ),
+        getIt<DataListSectionInterpreter>(
+          instanceName: SectionTemplateId.valueList,
+        ),
+        getIt<InterleavedListSectionInterpreter>(
+          instanceName: SectionTemplateId.interleavedList,
+        ),
+        getIt<AllocationSectionInterpreter>(
+          instanceName: SectionTemplateId.allocation,
+        ),
+        getIt<AgendaSectionInterpreter>(instanceName: SectionTemplateId.agenda),
+        getIt<IssuesSummarySectionInterpreter>(
+          instanceName: SectionTemplateId.issuesSummary,
+        ),
+        getIt<AllocationAlertsSectionInterpreter>(
+          instanceName: SectionTemplateId.allocationAlerts,
+        ),
+        getIt<CheckInSummarySectionInterpreter>(
+          instanceName: SectionTemplateId.checkInSummary,
+        ),
+        getIt<EntityHeaderSectionInterpreter>(
+          instanceName: SectionTemplateId.entityHeader,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.settingsMenu,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.statisticsDashboard,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.workflowList,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.journalTimeline,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.navigationSettings,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.allocationSettings,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.attentionRules,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.focusSetupWizard,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.screenManagement,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.trackerManagement,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.wellbeingDashboard,
+        ),
+      ]),
+    )
+    // ScreenDataInterpreter - coordinates section templates
     ..registerLazySingleton<ScreenDataInterpreter>(
       () => ScreenDataInterpreter(
-        sectionDataService: getIt<SectionDataService>(),
-        supportBlockComputer: getIt<SupportBlockComputer>(),
+        interpreterRegistry: getIt<SectionTemplateInterpreterRegistry>(),
+        paramsCodec: getIt<SectionTemplateParamsCodec>(),
       ),
     )
     // Screen architecture services
@@ -242,6 +499,15 @@ Future<void> setupDependencies() async {
       ),
     );
 
-  // Note: Seeding has been moved to post-authentication flow
-  // See UserDataSeeder service triggered by AuthBloc
+  // Mark DI setup as complete for future auth callbacks
+  initialSetupComplete = true;
+
+  // Run post-auth maintenance if user was already logged in during openDatabase
+  // (The callback above would have skipped because initialSetupComplete was false)
+  if (isLoggedIn()) {
+    await runPostAuthMaintenance(
+      driftDb: getIt<AppDatabase>(),
+      idGenerator: getIt<IdGenerator>(),
+    );
+  }
 }

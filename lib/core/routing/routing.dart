@@ -27,8 +27,8 @@ import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_pa
 ///
 /// ## Initialization
 ///
-/// Call [registerScreenBuilders] and [registerEntityBuilders] at app startup
-/// (in bootstrap.dart) to inject bloc factories and dependencies.
+/// Call [registerEntityBuilders] at app startup (in bootstrap.dart)
+/// to inject bloc factories and dependencies.
 abstract final class Routing {
   // === PATH UTILITIES ===
 
@@ -84,38 +84,13 @@ abstract final class Routing {
   ) =>
       () => toEntity(context, type, id);
 
-  // === SCREEN BUILDERS ===
-
-  /// Custom screen builders for screens that need specific blocs or DI.
-  /// Key: screenKey, Value: builder function.
-  /// Screens NOT in this map use [UnifiedScreenPage].
-  static final Map<String, Widget Function()> _screenBuilders = {};
-
-  /// Register custom screen builders at app startup.
-  ///
-  /// Called once from bootstrap.dart after DI is initialized.
-  /// Only screens that need custom blocs or DI should be registered here.
-  /// All other screens automatically use [UnifiedScreenPage].
-  static void registerScreenBuilders(
-    Map<String, Widget Function()> builders,
-  ) {
-    _screenBuilders
-      ..clear()
-      ..addAll(builders);
-  }
-
   /// Build a screen widget by screenKey.
   ///
-  /// Uses custom builder if registered, otherwise [UnifiedScreenPage].
+  /// Always uses [UnifiedScreenPage] (either via system templates or
+  /// by loading from repository).
+  ///
   /// This is the single entry point for all screen construction.
   static Widget buildScreen(String screenKey) {
-    // Check for custom builder first (screens with blocs/DI)
-    final builder = _screenBuilders[screenKey];
-    if (builder != null) {
-      return builder();
-    }
-
-    // Default: data-driven unified screen
     final systemScreen = SystemScreenDefinitions.getByKey(screenKey);
     if (systemScreen != null) {
       return UnifiedScreenPage(
@@ -175,7 +150,6 @@ abstract final class Routing {
   /// Reset all registered builders. Used for testing.
   @visibleForTesting
   static void reset() {
-    _screenBuilders.clear();
     _taskDetailBuilder = null;
     _projectDetailBuilder = null;
     _valueDetailBuilder = null;

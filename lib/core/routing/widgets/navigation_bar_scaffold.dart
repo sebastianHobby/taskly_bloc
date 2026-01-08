@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_category.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
@@ -22,26 +21,13 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Separate workspace destinations from others
-    final workspaceDestinations = destinations
-        .where((d) => d.category == ScreenCategory.workspace)
-        .toList();
-    final otherDestinations = destinations
-        .where((d) => d.category != ScreenCategory.workspace)
-        .toList();
-
-    // Show first N workspace destinations + More button if there are overflow items
-    final visible = workspaceDestinations.take(bottomVisibleCount).toList();
-    final overflow = [
-      ...workspaceDestinations.skip(bottomVisibleCount),
-      ...otherDestinations,
-    ];
+    // Show first N destinations in bottom nav, rest in drawer overflow
+    // Destinations are already sorted by sortOrder from NavigationBloc
+    final visible = destinations.take(bottomVisibleCount).toList();
+    final overflow = destinations.skip(bottomVisibleCount).toList();
     final hasOverflow = overflow.isNotEmpty;
 
-    final selectedIndex = _selectedIndex(
-      visibleLength: visible.length,
-      allDestinations: destinations,
-    );
+    final selectedIndex = _selectedIndex(visibleLength: visible.length);
 
     return Scaffold(
       key: _scaffoldKey,
@@ -94,29 +80,23 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
     );
   }
 
-  int _selectedIndex({
-    required int visibleLength,
-    required List<NavigationDestinationVm> allDestinations,
-  }) {
-    final workspaceDestinations = allDestinations
-        .where((d) => d.category == ScreenCategory.workspace)
-        .toList();
-    final idx = workspaceDestinations.indexWhere(
-      (d) => d.screenId == activeScreenId,
-    );
+  int _selectedIndex({required int visibleLength}) {
+    final idx = destinations
+        .take(visibleLength)
+        .toList()
+        .indexWhere(
+          (d) => d.screenId == activeScreenId,
+        );
     if (idx == -1) {
-      // Check if active screen is in overflow (non-workspace or beyond visible)
-      final isInOverflow =
-          allDestinations.any(
-            (d) =>
-                d.screenId == activeScreenId &&
-                d.category != ScreenCategory.workspace,
-          ) ||
-          idx >= visibleLength;
+      // Active screen is in overflow - highlight "Browse" button
+      final isInOverflow = destinations
+          .skip(visibleLength)
+          .any(
+            (d) => d.screenId == activeScreenId,
+          );
       return isInOverflow ? visibleLength : 0;
     }
-    if (idx < visibleLength) return idx;
-    return visibleLength; // Highlight "More" when selection is in overflow.
+    return idx;
   }
 
   NavigationDestination _toNavDestination(NavigationDestinationVm dest) {

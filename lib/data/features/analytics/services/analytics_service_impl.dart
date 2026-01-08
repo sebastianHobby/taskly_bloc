@@ -375,7 +375,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
         ],
       ),
     );
-    final completedTasks = await _taskRepo.queryTasks(query);
+    final completedTasks = await _taskRepo.getAll(query);
 
     // Count by value
     final counts = <String, int>{};
@@ -429,7 +429,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
           ],
         ),
       );
-      final completions = await _taskRepo.queryTasks(query);
+      final completions = await _taskRepo.getAll(query);
 
       // Count total completions this week
       final totalThisWeek = completions.length;
@@ -469,7 +469,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
         ],
       ),
     );
-    final tasks = await _taskRepo.queryTasks(taskQuery);
+    final tasks = await _taskRepo.getAll(taskQuery);
 
     final taskCounts = <String, int>{};
     for (final task in tasks) {

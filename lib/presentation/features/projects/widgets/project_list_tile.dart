@@ -200,8 +200,16 @@ class ProjectListTile extends StatelessWidget {
                       ),
                     ],
 
-                    // Values section
-                    ValuesSection(values: project.values),
+                    // Values Footer (Primary + Secondary)
+                    if (project.primaryValue != null ||
+                        project.secondaryValues.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: ValuesFooter(
+                          primaryValue: project.primaryValue,
+                          secondaryValues: project.secondaryValues,
+                        ),
+                      ),
 
                     // Dates row
                     DatesRow(

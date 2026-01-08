@@ -5,7 +5,10 @@ import 'package:taskly_bloc/domain/models/page_key.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/section.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
@@ -75,9 +78,16 @@ void registerAllFallbackValues() {
   // === Sealed Classes (use real instances) ===
   registerFallbackValue(const ProblemAction.rescheduleToday());
   registerFallbackValue(
-    Section.data(
-      config: DataConfig.task(query: TaskQuery.all()),
-      title: 'Fallback Section',
+    SectionRef(
+      templateId: SectionTemplateId.taskList,
+      params: DataListSectionParams(
+        config: DataConfig.task(query: TaskQuery.all()),
+        taskTileVariant: TaskTileVariant.listTile,
+        projectTileVariant: ProjectTileVariant.listTile,
+        valueTileVariant: ValueTileVariant.compactCard,
+        display: const DisplayConfig(),
+      ).toJson(),
+      overrides: const SectionOverrides(title: 'Fallback Section'),
     ),
   );
 

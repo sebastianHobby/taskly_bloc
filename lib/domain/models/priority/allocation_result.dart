@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 part 'allocation_result.freezed.dart';
@@ -16,8 +16,8 @@ abstract class AllocationResult with _$AllocationResult {
     /// Evaluated alerts for excluded tasks
     AlertEvaluationResult? alertResult,
 
-    /// The persona used for this allocation
-    AllocationPersona? activePersona,
+    /// The focus mode used for this allocation
+    FocusMode? activeFocusMode,
 
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.

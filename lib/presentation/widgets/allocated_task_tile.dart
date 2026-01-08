@@ -3,7 +3,9 @@ import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/shared/utils/rrule_display_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 /// Task list tile for allocated tasks in My Day view
 /// Shows task with compact value icon badges
@@ -12,12 +14,14 @@ class AllocatedTaskTile extends StatefulWidget {
     required this.allocatedTask,
     required this.onCheckboxChanged,
     this.onTap,
+    this.isPinned,
     super.key,
   });
 
   final AllocatedTask allocatedTask;
   final void Function(Task, bool?) onCheckboxChanged;
   final void Function(Task)? onTap;
+  final bool? isPinned;
 
   @override
   State<AllocatedTaskTile> createState() => _AllocatedTaskTileState();
@@ -31,10 +35,13 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final task = widget.allocatedTask.task;
+    final effectiveIsPinned = widget.isPinned ?? task.isPinned;
+
+    final effectivePrimaryValue = task.effectivePrimaryValue;
+    final effectiveSecondaryValues = task.effectiveSecondaryValues;
 
     final isOverdue = _isOverdue(task.deadlineDate);
     final isDueToday = _isDueToday(task.deadlineDate);
-    final values = task.values;
     final hasMetadata =
         task.deadlineDate != null || task.startDate != null || task.isRepeating;
 
@@ -47,6 +54,8 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
         decoration: BoxDecoration(
           color: _isHovered
               ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3)
+              : effectiveIsPinned
+              ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
               : isOverdue
               ? colorScheme.errorContainer.withValues(alpha: 0.05)
               : null,
@@ -99,11 +108,19 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (effectiveIsPinned) ...[
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.push_pin,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ],
                   ],
                 ),
 
-                // Row 2: Metadata (dates, values, project)
-                if (hasMetadata || values.isNotEmpty) ...[
+                // Row 2: Metadata (dates, project)
+                if (hasMetadata || task.project != null) ...[
                   const SizedBox(height: 6),
                   Padding(
                     padding: const EdgeInsets.only(left: 32),
@@ -199,41 +216,10 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                           ),
                         ],
 
-                        // 3. Value emojis
-                        if (values.isNotEmpty) ...[
-                          if (task.startDate != null ||
-                              task.deadlineDate != null)
-                            Text(
-                              '•',
-                              style: TextStyle(
-                                color: colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.3,
-                                ),
-                                fontSize: 12,
-                              ),
-                            ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: values
-                                .take(3)
-                                .map(
-                                  (value) => Padding(
-                                    padding: const EdgeInsets.only(right: 2),
-                                    child: Text(
-                                      value.iconName ?? '⭐',
-                                      style: const TextStyle(fontSize: 14),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ],
-
                         // 4. Recurrence
                         if (task.isRepeating) ...[
                           if (task.startDate != null ||
-                              task.deadlineDate != null ||
-                              values.isNotEmpty)
+                              task.deadlineDate != null)
                             Text(
                               '•',
                               style: TextStyle(
@@ -269,7 +255,6 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                         if (task.project != null) ...[
                           if (task.startDate != null ||
                               task.deadlineDate != null ||
-                              values.isNotEmpty ||
                               task.isRepeating)
                             Text(
                               '•',
@@ -320,6 +305,17 @@ class _AllocatedTaskTileState extends State<AllocatedTaskTile> {
                     ),
                   ),
                 ],
+
+                // Row 3: Values Footer
+                if (effectivePrimaryValue != null ||
+                    effectiveSecondaryValues.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 32),
+                    child: ValuesFooter(
+                      primaryValue: effectivePrimaryValue,
+                      secondaryValues: effectiveSecondaryValues,
+                    ),
+                  ),
               ],
             ),
           ),

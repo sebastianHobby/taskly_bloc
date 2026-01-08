@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/screens/support_block.dart';
 import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 
@@ -9,7 +8,6 @@ part 'workflow_definition.g.dart';
 /// Template for a multi-step workflow.
 ///
 /// Workflows are composed of steps, each containing sections (same as screens).
-/// Global support blocks can provide workflow-wide context like progress.
 @freezed
 abstract class WorkflowDefinition with _$WorkflowDefinition {
   const factory WorkflowDefinition({
@@ -18,9 +16,6 @@ abstract class WorkflowDefinition with _$WorkflowDefinition {
     required List<WorkflowStep> steps,
     required DateTime createdAt,
     required DateTime updatedAt,
-
-    /// Support blocks shown throughout workflow (e.g., progress)
-    @Default([]) List<SupportBlock> globalSupportBlocks,
 
     /// Workflow-level trigger configuration
     TriggerConfig? triggerConfig,

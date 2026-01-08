@@ -3,6 +3,8 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
+enum ValueChipVariant { solid, outlined }
+
 /// A chip displaying a value with enhanced visual prominence.
 ///
 /// Designed to be more visually distinct than regular label chips:
@@ -15,19 +17,19 @@ import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 class ValueChip extends StatelessWidget {
   const ValueChip({
     required this.value,
-    this.rank,
     this.onTap,
+    this.variant = ValueChipVariant.solid,
     super.key,
   });
 
   /// The value to display.
   final Value value;
 
-  /// Optional rank to display (1-based). Shows as "#1", "#2", etc.
-  final int? rank;
-
   /// Optional tap handler. When provided, the chip becomes tappable.
   final VoidCallback? onTap;
+
+  /// The visual variant (solid or outlined).
+  final ValueChipVariant variant;
 
   @override
   Widget build(BuildContext context) {
@@ -35,53 +37,48 @@ class ValueChip extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final color = ColorUtils.fromHexWithThemeFallback(context, value.color);
 
-    // Contrasting text color based on background luminance
-    final textColor = color.computeLuminance() > 0.5
-        ? Colors.black87
-        : Colors.white;
+    Color backgroundColor;
+    Color textColor;
+    BoxBorder? border;
+    List<BoxShadow>? boxShadow;
+
+    if (variant == ValueChipVariant.solid) {
+      backgroundColor = color;
+      textColor = color.computeLuminance() > 0.5
+          ? Colors.black87
+          : Colors.white;
+      border = Border.all(
+        color: colorScheme.outline.withOpacity(0.2),
+        width: 1,
+      );
+      boxShadow = [
+        BoxShadow(
+          color: color.withOpacity(0.3),
+          blurRadius: 4,
+          offset: const Offset(0, 2),
+        ),
+      ];
+    } else {
+      backgroundColor = Colors.transparent;
+      textColor = color;
+      border = Border.all(color: color, width: 1);
+      boxShadow = null;
+    }
 
     // Get emoji icon
     final emoji = value.iconName?.isNotEmpty ?? false ? value.iconName! : '⭐';
 
     final chip = Container(
       decoration: BoxDecoration(
-        color: color,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: border,
+        boxShadow: boxShadow,
       ),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Rank badge (if provided)
-          if (rank != null) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-              decoration: BoxDecoration(
-                color: textColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                '#$rank',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-          ],
           // Emoji icon (smaller)
           Text(
             emoji,
@@ -105,9 +102,8 @@ class ValueChip extends StatelessWidget {
     );
 
     if (onTap != null) {
-      return InkWell(
+      return GestureDetector(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
         child: chip,
       );
     }

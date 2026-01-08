@@ -6,8 +6,10 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/powersync/schema.dart';
+import 'package:taskly_bloc/data/services/system_data_cleanup_service.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
 /// Note: 23505 (unique violation) is handled separately in _handle23505.
@@ -169,6 +171,9 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         /// If protecting against data loss is important, save the failing records
         /// elsewhere instead of discarding, and/or notify the user.
         talker.error('[powersync] Data upload error - discarding $lastOp', e);
+        if (kDebugMode) {
+          rethrow; // Crash in debug to surface bugs immediately
+        }
         await transaction.complete();
       } else {
         // Error may be retryable - e.g. network error or temporary server error.
@@ -300,7 +305,14 @@ Future<String> getDatabasePath() async {
   return join(dir.path, dbFilename);
 }
 
-Future<PowerSyncDatabase> openDatabase() async {
+/// Opens the PowerSync database and sets up auth state listeners.
+///
+/// [onAuthenticated] is called after each successful authentication:
+/// - Once immediately if user is already logged in
+/// - On each signedIn event
+Future<PowerSyncDatabase> openDatabase({
+  Future<void> Function()? onAuthenticated,
+}) async {
   final db = PowerSyncDatabase(
     schema: schema,
     path: await getDatabasePath(),
@@ -358,6 +370,9 @@ Future<PowerSyncDatabase> openDatabase() async {
     // Otherwise, connect once logged in.
     currentConnector = SupabaseConnector(db);
     await db.connect(connector: currentConnector);
+
+    // Run post-auth maintenance (seeding, cleanup)
+    await onAuthenticated?.call();
   }
 
   Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
@@ -366,6 +381,9 @@ Future<PowerSyncDatabase> openDatabase() async {
       // Connect to PowerSync when the user is signed in
       currentConnector = SupabaseConnector(db);
       await db.connect(connector: currentConnector!);
+
+      // Run post-auth maintenance (seeding, cleanup)
+      await onAuthenticated?.call();
     } else if (event == AuthChangeEvent.signedOut) {
       // Implicit sign out - disconnect, but don't delete data
       currentConnector = null;
@@ -376,4 +394,31 @@ Future<PowerSyncDatabase> openDatabase() async {
     }
   });
   return db;
+}
+
+/// Run post-authentication maintenance tasks.
+///
+/// Should be called once during app initialization after user is authenticated.
+/// This ensures:
+/// 1. Orphaned system data is cleaned up (after template changes)
+Future<void> runPostAuthMaintenance({
+  required AppDatabase driftDb,
+  required IdGenerator idGenerator,
+}) async {
+  if (!isLoggedIn()) {
+    talker.debug('[PostAuthMaintenance] Skipping - user not logged in');
+    return;
+  }
+
+  talker.info('[PostAuthMaintenance] Running post-auth maintenance');
+
+  // Clean up orphaned system data
+  final cleanupService = SystemDataCleanupService(
+    db: driftDb,
+    idGenerator: idGenerator,
+  );
+  await cleanupService.cleanOrphanedScreenDefinitions();
+  await cleanupService.cleanOrphanedAttentionRules();
+
+  talker.info('[PostAuthMaintenance] Completed');
 }

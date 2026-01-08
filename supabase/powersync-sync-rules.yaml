@@ -1,0 +1,89 @@
+bucket_definitions:
+
+  user_core:
+    priority: 1
+    parameters:
+      - SELECT token_parameters.user_id as user_id
+
+    data:
+      # Tasks
+      - SELECT * FROM tasks WHERE user_id = bucket.user_id
+
+      # Projects
+      - SELECT * FROM projects WHERE user_id = bucket.user_id
+
+      # Values
+      - SELECT * FROM values WHERE user_id = bucket.user_id
+
+      # Project-Value associations
+      - SELECT * FROM project_values WHERE user_id = bucket.user_id
+
+      # Task-Value associations
+      - SELECT * FROM task_values WHERE user_id = bucket.user_id
+
+      # User settings
+      - SELECT * FROM user_profiles WHERE user_id = bucket.user_id
+
+      # Screen Definitions
+      - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
+
+      # Screen Preferences (per-user navigation ordering/visibility)
+      - SELECT * FROM screen_preferences WHERE user_id = bucket.user_id
+
+      # Pending Notifications
+      - SELECT * FROM pending_notifications WHERE user_id = bucket.user_id
+
+      # Attention Rules (with UUID PK - clean sync)
+      - SELECT * FROM attention_rules WHERE user_id = bucket.user_id
+
+      # Allocation Snapshots (daily, allocated membership only)
+      - SELECT * FROM allocation_snapshots WHERE user_id = bucket.user_id
+
+      # Allocation Snapshot Entries
+      - SELECT * FROM allocation_snapshot_entries WHERE user_id = bucket.user_id
+
+
+  user_history:
+    priority: 2
+    parameters:
+      - SELECT token_parameters.user_id as user_id
+
+    data:
+      # Task Completion History
+      - SELECT * FROM task_completion_history WHERE user_id = bucket.user_id
+
+      # Project Completion History
+      - SELECT * FROM project_completion_history WHERE user_id = bucket.user_id
+
+      # Task Recurrence Exceptions
+      - SELECT * FROM task_recurrence_exceptions WHERE user_id = bucket.user_id
+
+      # Project Recurrence Exceptions
+      - SELECT * FROM project_recurrence_exceptions WHERE user_id = bucket.user_id
+
+      # Attention Resolutions (with UUID PK - clean sync)
+      - SELECT * FROM attention_resolutions WHERE user_id = bucket.user_id
+
+      # Analytics Snapshots
+      - SELECT * FROM analytics_snapshots WHERE user_id = bucket.user_id
+
+      # Analytics Correlations
+      - SELECT * FROM analytics_correlations WHERE user_id = bucket.user_id
+
+      # Analytics Insights
+      - SELECT * FROM analytics_insights WHERE user_id = bucket.user_id
+
+      # Journal Entries
+      - SELECT * FROM journal_entries WHERE user_id = bucket.user_id
+
+      # Trackers
+      - SELECT * FROM trackers WHERE user_id = bucket.user_id
+
+      # Tracker Responses (per-entry)
+      - SELECT * FROM tracker_responses WHERE user_id = bucket.user_id
+
+      # Daily Tracker Responses (all-day scope trackers)
+      - SELECT * FROM daily_tracker_responses WHERE user_id = bucket.user_id
+
+      # Attention Condition States (time-gated alerts like “no next action”)
+      - SELECT * FROM attention_condition_states WHERE user_id = bucket.user_id
