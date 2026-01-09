@@ -107,13 +107,11 @@ class SectionDataService {
   }
 
   Future<SectionDataResult> fetchAgenda(AgendaSectionParams params) {
-    // Current agenda data service provides a unified agenda pipeline.
-    // Params are persisted for future extensibility.
-    return _fetchAgendaSection();
+    return _fetchAgendaSection(params);
   }
 
   Stream<SectionDataResult> watchAgenda(AgendaSectionParams params) {
-    return _watchAgendaSection();
+    return _watchAgendaSection(params);
   }
 
   // ===========================================================================
@@ -801,34 +799,39 @@ class SectionDataService {
   // AGENDA SECTION
   // ===========================================================================
 
-  Future<SectionDataResult> _fetchAgendaSection() async {
-    final agendaData = await _agendaDataService.loadInitial();
+  Future<SectionDataResult> _fetchAgendaSection(
+    AgendaSectionParams params,
+  ) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final rangeEnd = DateTime(today.year, today.month + 2, 0);
+    final agendaData = await _agendaDataService.getAgendaData(
+      referenceDate: now,
+      focusDate: now,
+      rangeStart: today,
+      rangeEnd: rangeEnd,
+    );
 
     return SectionDataResult.agenda(
       agendaData: agendaData,
     );
   }
 
-  Stream<SectionDataResult> _watchAgendaSection() async* {
-    // Initial load
-    final initialData = await _agendaDataService.loadInitial();
-    yield SectionDataResult.agenda(agendaData: initialData);
+  Stream<SectionDataResult> _watchAgendaSection(
+    AgendaSectionParams params,
+  ) async* {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final rangeEnd = DateTime(today.year, today.month + 2, 0);
 
-    // Watch for changes - latest snapshot wins.
-    yield* _taskRepository
-        .watchAll()
-        .debounceTime(const Duration(milliseconds: 50))
-        .switchMap(
-          (_) =>
-              Stream.fromFuture(
-                _agendaDataService.getAgendaData(
-                  focusDate: DateTime.now(),
-                ),
-              ).map(
-                (agendaData) =>
-                    SectionDataResult.agenda(agendaData: agendaData),
-              ),
-        );
+    yield* _agendaDataService
+        .watchAgendaData(
+          referenceDate: now,
+          focusDate: now,
+          rangeStart: today,
+          rangeEnd: rangeEnd,
+        )
+        .map((agendaData) => SectionDataResult.agenda(agendaData: agendaData));
   }
 
   // ===========================================================================

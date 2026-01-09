@@ -1,4 +1,5 @@
 import 'package:intl/intl.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -32,27 +33,142 @@ class AgendaSectionDataService {
   /// Number of days from today to show empty day placeholders.
   final int nearTermDays;
 
-  /// Current loaded horizon end (for on-demand loading).
-  DateTime _loadedHorizonEnd = DateTime.now().add(const Duration(days: 30));
+  /// Current loaded range end (for on-demand loading).
+  DateTime _loadedRangeEnd = DateTime.now().add(const Duration(days: 30));
+
+  /// Watches agenda data reactively for a given range.
+  ///
+  /// This uses occurrence expansion streams for tasks/projects, so repeating
+  /// entities update live when completions/exceptions change.
+  Stream<AgendaData> watchAgendaData({
+    required DateTime referenceDate,
+    required DateTime focusDate,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    int? nearTermDaysOverride,
+  }) {
+    final today = DateTime(
+      referenceDate.year,
+      referenceDate.month,
+      referenceDate.day,
+    );
+    final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
+
+    final overdueTasksStream = taskRepository.watchAll(TaskQuery.overdue());
+    final overdueProjectsStream = projectRepository.watchAll(
+      ProjectQuery(
+        filter: QueryFilter<ProjectPredicate>(
+          shared: [
+            ProjectDatePredicate(
+              field: ProjectDateField.deadlineDate,
+              operator: DateOperator.before,
+              date: dateOnly(today),
+            ),
+            const ProjectBoolPredicate(
+              field: ProjectBoolField.completed,
+              operator: BoolOperator.isFalse,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final scheduledTasksStream = taskRepository.watchOccurrences(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+    final scheduledProjectsStream = projectRepository.watchOccurrences(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    );
+
+    return Rx.combineLatest4<
+          List<Task>,
+          List<Project>,
+          List<Task>,
+          List<Project>,
+          AgendaData
+        >(
+          overdueTasksStream,
+          overdueProjectsStream,
+          scheduledTasksStream,
+          scheduledProjectsStream,
+          (overdueTasks, overdueProjects, tasksWithDates, projectsWithDates) {
+            // 1. Build overdue items list
+            final overdueItems = [
+              ...overdueTasks.map(
+                (t) => _createAgendaItem(
+                  task: t,
+                  displayDate: today,
+                  tag: AgendaDateTag.due,
+                ),
+              ),
+              ...overdueProjects.map(
+                (p) => _createAgendaItem(
+                  project: p,
+                  displayDate: today,
+                  tag: AgendaDateTag.due,
+                ),
+              ),
+            ];
+
+            // 2. Expand items into per-day entries and group by date
+            final itemsByDate = <DateTime, List<AgendaItem>>{};
+
+            for (final task in tasksWithDates) {
+              _addTaskToDateMap(task, itemsByDate, today, rangeEnd);
+            }
+
+            for (final project in projectsWithDates) {
+              _addProjectToDateMap(project, itemsByDate, today, rangeEnd);
+            }
+
+            final groups = _generateDateGroups(
+              itemsByDate: itemsByDate,
+              today: today,
+              nearTermDays: effectiveNearTermDays,
+              horizonEnd: rangeEnd,
+            );
+
+            return AgendaData(
+              groups: groups,
+              focusDate: focusDate,
+              overdueItems: overdueItems,
+              loadedHorizonEnd: rangeEnd,
+            );
+          },
+        )
+        .debounceTime(const Duration(milliseconds: 50));
+  }
 
   /// Fetches agenda data for the Scheduled view.
   ///
   /// Returns grouped items with date tags and semantic labels.
   Future<AgendaData> getAgendaData({
+    required DateTime referenceDate,
     required DateTime focusDate,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
     int? nearTermDaysOverride,
   }) async {
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
-    final today = DateTime(focusDate.year, focusDate.month, focusDate.day);
-    final horizonEnd = _loadedHorizonEnd;
+    final today = DateTime(
+      referenceDate.year,
+      referenceDate.month,
+      referenceDate.day,
+    );
+    final horizonEnd = rangeEnd;
 
     // 1. Fetch overdue items
     final overdueTasks = await _getOverdueTasks(today);
     final overdueProjects = await _getOverdueProjects(today);
 
     // 2. Fetch items with dates within horizon
-    final tasksWithDates = await _getTasksWithDates(today, horizonEnd);
-    final projectsWithDates = await _getProjectsWithDates(today, horizonEnd);
+    final tasksWithDates = await _getTasksWithDates(rangeStart, horizonEnd);
+    final projectsWithDates = await _getProjectsWithDates(
+      rangeStart,
+      horizonEnd,
+    );
 
     // 3. Build overdue items list
     final overdueItems = [
@@ -102,21 +218,44 @@ class AgendaSectionDataService {
   /// Loads initial data (today + 1 month).
   Future<AgendaData> loadInitial() {
     final today = DateTime.now();
-    _loadedHorizonEnd = today.add(const Duration(days: 30));
-    return getAgendaData(focusDate: today);
+    final rangeStart = DateTime(today.year, today.month, today.day);
+    _loadedRangeEnd = today.add(const Duration(days: 30));
+    return getAgendaData(
+      referenceDate: today,
+      focusDate: today,
+      rangeStart: rangeStart,
+      rangeEnd: _loadedRangeEnd,
+    );
   }
 
   /// Loads more data when user scrolls past current horizon.
   Future<AgendaData> loadMore(DateTime newHorizonEnd) {
-    _loadedHorizonEnd = newHorizonEnd;
-    return getAgendaData(focusDate: DateTime.now());
+    _loadedRangeEnd = newHorizonEnd;
+    final now = DateTime.now();
+    final rangeStart = DateTime(now.year, now.month, now.day);
+    return getAgendaData(
+      referenceDate: now,
+      focusDate: now,
+      rangeStart: rangeStart,
+      rangeEnd: _loadedRangeEnd,
+    );
   }
 
   /// Jumps to a specific date (from calendar modal).
   Future<AgendaData> jumpToDate(DateTime targetDate) {
     // Load 1 month after target date (1 week before is in near-term range)
-    _loadedHorizonEnd = targetDate.add(const Duration(days: 30));
-    return getAgendaData(focusDate: targetDate);
+    _loadedRangeEnd = targetDate.add(const Duration(days: 30));
+    final rangeStart = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+    );
+    return getAgendaData(
+      referenceDate: DateTime.now(),
+      focusDate: targetDate,
+      rangeStart: rangeStart,
+      rangeEnd: _loadedRangeEnd,
+    );
   }
 
   // ===========================================================================
@@ -230,6 +369,11 @@ class AgendaSectionDataService {
     final start = task.startDate;
     final deadline = task.deadlineDate;
 
+    final hasSameStartAndDeadline =
+        start != null &&
+        deadline != null &&
+        _normalizeDate(start) == _normalizeDate(deadline);
+
     // Handle repeating items
     if (task.isRepeating) {
       if (task.repeatFromCompletion) {
@@ -254,16 +398,20 @@ class AgendaSectionDataService {
     }
 
     // Non-repeating item
-    if (start != null && _isInRange(start, today, horizonEnd)) {
-      dates[_normalizeDate(start)] = AgendaDateTag.starts;
-    }
-
     if (deadline != null && _isInRange(deadline, today, horizonEnd)) {
       dates[_normalizeDate(deadline)] = AgendaDateTag.due;
     }
 
+    // Only add a separate start tag when it differs from deadline.
+    if (!hasSameStartAndDeadline &&
+        start != null &&
+        _isInRange(start, today, horizonEnd)) {
+      // Avoid overwriting a due tag on the same day.
+      dates.putIfAbsent(_normalizeDate(start), () => AgendaDateTag.starts);
+    }
+
     // Add "In Progress" entries for days between start and deadline
-    if (start != null && deadline != null) {
+    if (!hasSameStartAndDeadline && start != null && deadline != null) {
       var current = start.add(const Duration(days: 1));
       while (current.isBefore(deadline)) {
         if (_isInRange(current, today, horizonEnd)) {
@@ -285,6 +433,11 @@ class AgendaSectionDataService {
     final dates = <DateTime, AgendaDateTag>{};
     final start = project.startDate;
     final deadline = project.deadlineDate;
+
+    final hasSameStartAndDeadline =
+        start != null &&
+        deadline != null &&
+        _normalizeDate(start) == _normalizeDate(deadline);
 
     // Handle repeating items
     if (project.isRepeating) {
@@ -310,16 +463,19 @@ class AgendaSectionDataService {
     }
 
     // Non-repeating item
-    if (start != null && _isInRange(start, today, horizonEnd)) {
-      dates[_normalizeDate(start)] = AgendaDateTag.starts;
-    }
-
     if (deadline != null && _isInRange(deadline, today, horizonEnd)) {
       dates[_normalizeDate(deadline)] = AgendaDateTag.due;
     }
 
+    // Only add a separate start tag when it differs from deadline.
+    if (!hasSameStartAndDeadline &&
+        start != null &&
+        _isInRange(start, today, horizonEnd)) {
+      dates.putIfAbsent(_normalizeDate(start), () => AgendaDateTag.starts);
+    }
+
     // Add "In Progress" entries for days between start and deadline
-    if (start != null && deadline != null) {
+    if (!hasSameStartAndDeadline && start != null && deadline != null) {
       var current = start.add(const Duration(days: 1));
       while (current.isBefore(deadline)) {
         if (_isInRange(current, today, horizonEnd)) {

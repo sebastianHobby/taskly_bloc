@@ -17,6 +17,9 @@ class ProjectListTile extends StatelessWidget {
     this.completedTaskCount,
     this.nextTask,
     this.showNextTask = false,
+    this.isInFocus = false,
+    this.showPinnedIndicator = true,
+    this.showFocusIndicator = true,
     super.key,
   });
 
@@ -37,6 +40,17 @@ class ProjectListTile extends StatelessWidget {
 
   /// Whether to display the next task subtitle.
   final bool showNextTask;
+
+  /// Whether this project is part of today's focus allocation.
+  ///
+  /// If true and the project is not pinned, a focus indicator is shown.
+  final bool isInFocus;
+
+  /// Whether to show a pinned indicator when the project is pinned.
+  final bool showPinnedIndicator;
+
+  /// Whether to show a focus indicator when [isInFocus] is true.
+  final bool showFocusIndicator;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
@@ -136,6 +150,13 @@ class ProjectListTile extends StatelessWidget {
                     // Title row
                     Row(
                       children: [
+                        if (showPinnedIndicator && project.isPinned) ...[
+                          const PinnedIndicator(),
+                          const SizedBox(width: 8),
+                        ] else if (showFocusIndicator && isInFocus) ...[
+                          const FocusIndicator(),
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: Text(
                             project.name,

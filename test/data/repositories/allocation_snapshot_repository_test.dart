@@ -17,6 +17,8 @@ void main() {
 
       await repo.persistAllocatedForUtcDay(
         dayUtc: dayUtc,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 2,
         allocated: const [
           AllocationSnapshotEntryInput(
             entity: AllocationEntityRef(
@@ -40,6 +42,8 @@ void main() {
       final snap = await repo.getLatestForUtcDay(dayUtc);
       expect(snap, isA<AllocationSnapshot>());
       expect(snap!.version, 1);
+      expect(snap.capAtGeneration, 3);
+      expect(snap.candidatePoolCountAtGeneration, 2);
       expect(snap.allocated.length, 2);
     });
 
@@ -52,6 +56,8 @@ void main() {
 
       await repo.persistAllocatedForUtcDay(
         dayUtc: dayUtc,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 1,
         allocated: const [
           AllocationSnapshotEntryInput(
             entity: AllocationEntityRef(
@@ -65,6 +71,8 @@ void main() {
 
       await repo.persistAllocatedForUtcDay(
         dayUtc: dayUtc,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 1,
         allocated: const [
           // Same membership, different score.
           AllocationSnapshotEntryInput(
@@ -94,6 +102,8 @@ void main() {
 
       await repo.persistAllocatedForUtcDay(
         dayUtc: dayUtc,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 1,
         allocated: const [
           AllocationSnapshotEntryInput(
             entity: AllocationEntityRef(
@@ -106,6 +116,8 @@ void main() {
 
       await repo.persistAllocatedForUtcDay(
         dayUtc: dayUtc,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 2,
         allocated: const [
           AllocationSnapshotEntryInput(
             entity: AllocationEntityRef(

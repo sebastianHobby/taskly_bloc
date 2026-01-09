@@ -166,6 +166,8 @@ const schema = Schema([
     Column.text('user_id'),
     Column.text('day_utc'),
     Column.integer('version'),
+    Column.integer('cap_at_generation'),
+    Column.integer('candidate_pool_count_at_generation'),
     Column.text('created_at'),
     Column.text('updated_at'),
   ]),

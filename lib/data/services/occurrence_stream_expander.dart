@@ -125,7 +125,7 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       final expanded = _expandEntity<Task>(
         entity: task,
         entityId: task.id,
-        startDate: task.startDate ?? task.createdAt,
+        startDate: task.startDate ?? task.deadlineDate ?? task.createdAt,
         deadlineDate: task.deadlineDate,
         repeatIcalRrule: task.repeatIcalRrule,
         repeatFromCompletion: task.repeatFromCompletion,
@@ -178,7 +178,8 @@ class OccurrenceStreamExpander implements OccurrenceStreamExpanderContract {
       final expanded = _expandEntity<Project>(
         entity: project,
         entityId: project.id,
-        startDate: project.startDate ?? project.createdAt,
+        startDate:
+            project.startDate ?? project.deadlineDate ?? project.createdAt,
         deadlineDate: project.deadlineDate,
         repeatIcalRrule: project.repeatIcalRrule,
         repeatFromCompletion: project.repeatFromCompletion,

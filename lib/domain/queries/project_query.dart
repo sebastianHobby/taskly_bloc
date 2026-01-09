@@ -130,17 +130,29 @@ class ProjectQuery {
   }) {
     return ProjectQuery(
       filter: QueryFilter<ProjectPredicate>(
-        shared: [
-          const ProjectBoolPredicate(
+        shared: const [
+          ProjectBoolPredicate(
             field: ProjectBoolField.completed,
             operator: BoolOperator.isFalse,
           ),
-          ProjectDatePredicate(
-            field: ProjectDateField.startDate,
-            operator: DateOperator.between,
-            startDate: rangeStart,
-            endDate: rangeEnd,
-          ),
+        ],
+        orGroups: [
+          [
+            ProjectDatePredicate(
+              field: ProjectDateField.startDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+          [
+            ProjectDatePredicate(
+              field: ProjectDateField.deadlineDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
         ],
       ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,

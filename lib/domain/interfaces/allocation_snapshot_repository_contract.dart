@@ -17,6 +17,8 @@ abstract class AllocationSnapshotRepositoryContract {
   /// Creates a new version only when membership changes.
   Future<void> persistAllocatedForUtcDay({
     required DateTime dayUtc,
+    required int capAtGeneration,
+    required int candidatePoolCountAtGeneration,
     required List<AllocationSnapshotEntryInput> allocated,
   });
 

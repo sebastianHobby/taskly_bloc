@@ -67,6 +67,7 @@ import 'package:taskly_bloc/domain/services/screens/templates/data_list_section_
 import 'package:taskly_bloc/domain/services/screens/templates/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/interleaved_list_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/someday_null_dates_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
@@ -306,6 +307,15 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.interleavedList,
     )
+    ..registerLazySingleton<SomedayNullDatesSectionInterpreter>(
+      () => SomedayNullDatesSectionInterpreter(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+      ),
+      instanceName: SectionTemplateId.somedayNullDates,
+    )
     ..registerLazySingleton<AllocationSectionInterpreter>(
       () => AllocationSectionInterpreter(
         sectionDataService: getIt<SectionDataService>(),
@@ -415,6 +425,9 @@ Future<void> setupDependencies() async {
         ),
         getIt<InterleavedListSectionInterpreter>(
           instanceName: SectionTemplateId.interleavedList,
+        ),
+        getIt<SomedayNullDatesSectionInterpreter>(
+          instanceName: SectionTemplateId.somedayNullDates,
         ),
         getIt<AllocationSectionInterpreter>(
           instanceName: SectionTemplateId.allocation,

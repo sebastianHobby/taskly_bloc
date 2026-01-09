@@ -25,7 +25,7 @@ import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_pag
 /// No legacy redirects - all paths are canonical.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
-  observers: [TalkerRouteObserver(talker)],
+  observers: [TalkerRouteObserver(talker), appRouteObserver],
   routes: [
     ShellRoute(
       builder: (context, state, child) {

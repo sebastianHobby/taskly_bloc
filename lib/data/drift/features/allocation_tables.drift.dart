@@ -21,6 +21,13 @@ class AllocationSnapshots extends Table {
   /// Monotonically increasing version for [dayUtc].
   IntColumn get version => integer().clientDefault(() => 1).named('version')();
 
+  /// Daily cap in effect when the day's allocation was first generated.
+  IntColumn get capAtGeneration => integer().named('cap_at_generation')();
+
+  /// Eligible candidate pool size when the day's allocation was first generated.
+  IntColumn get candidatePoolCountAtGeneration =>
+      integer().named('candidate_pool_count_at_generation')();
+
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();
   DateTimeColumn get updatedAt =>

@@ -1,10 +1,10 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -128,10 +128,54 @@ class _UnifiedScreenView extends StatelessWidget {
           return SectionWidget(section: fullScreenSection);
         }
 
+        // Scheduled uses a single agenda section that needs to own scrolling
+        // to support date-chip ↔ timeline scroll synchronization.
+        final singleAgendaSection = switch (state) {
+          ScreenLoadedState(:final data)
+              when data.sections.length == 1 &&
+                  data.sections.first.templateId == SectionTemplateId.agenda =>
+            data.sections.first,
+          _ => null,
+        };
+
         // Build body based on state
         final body = switch (state) {
           ScreenInitialState() || ScreenLoadingState() => const Center(
             child: CircularProgressIndicator(),
+          ),
+          ScreenLoadedState() when singleAgendaSection != null => SectionWidget(
+            section: singleAgendaSection,
+            onEntityTap: (entity) {
+              if (entity is Task) {
+                Routing.toEntity(
+                  context,
+                  EntityType.task,
+                  entity.id,
+                );
+              } else if (entity is Project) {
+                Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  entity.id,
+                );
+              }
+            },
+            onTaskCheckboxChanged: (task, value) async {
+              if (value ?? false) {
+                await getIt<EntityActionService>().completeTask(task.id);
+              } else {
+                await getIt<EntityActionService>().uncompleteTask(task.id);
+              }
+            },
+            onProjectCheckboxChanged: (project, value) async {
+              if (value ?? false) {
+                await getIt<EntityActionService>().completeProject(project.id);
+              } else {
+                await getIt<EntityActionService>().uncompleteProject(
+                  project.id,
+                );
+              }
+            },
           ),
           ScreenLoadedState(:final data) => _ScreenContent(
             data: data,
@@ -337,9 +381,9 @@ class _ScreenContent extends StatelessWidget {
               }
             },
             onTaskCheckboxChanged: (task, value) async {
-              developer.log(
+              AppLog.routine(
+                'ui.unified_screen',
                 'Task checkbox changed: ${task.id} -> $value',
-                name: 'UnifiedScreenPage',
               );
               if (value ?? false) {
                 await entityActionService.completeTask(task.id);
@@ -369,18 +413,19 @@ class _ScreenContent extends StatelessWidget {
             }
           },
           onTaskCheckboxChanged: (task, value) async {
-            developer.log(
-              'CHECKBOX: task=${task.id}, newValue=$value, task.completed=${task.completed}',
-              name: 'UnifiedScreenPage',
+            AppLog.routine(
+              'ui.unified_screen',
+              'CHECKBOX: task=${task.id}, newValue=$value, '
+                  'task.completed=${task.completed}',
             );
             if (value ?? false) {
               await entityActionService.completeTask(task.id);
             } else {
               await entityActionService.uncompleteTask(task.id);
             }
-            developer.log(
+            AppLog.routine(
+              'ui.unified_screen',
               'CHECKBOX: action complete, data will update automatically',
-              name: 'UnifiedScreenPage',
             );
           },
           onProjectCheckboxChanged: (project, value) async {

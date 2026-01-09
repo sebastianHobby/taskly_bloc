@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
@@ -16,6 +17,12 @@ import 'package:talker_flutter/talker_flutter.dart';
 /// - Error/exception handling with stack traces
 /// - Log history for debugging
 late Talker talker;
+
+/// Tracks the most recently observed route so crash logs can include context.
+///
+/// This is intentionally lightweight (no throttling/deduping) and safe to use
+/// outside of a BuildContext (e.g. in `FlutterError.onError`).
+final AppRouteObserver appRouteObserver = AppRouteObserver();
 
 bool _isInitialized = false;
 
@@ -72,17 +79,17 @@ extension TalkerExtensions on Talker {
 
   /// Log a BLoC-related message.
   void blocLog(String blocName, String message) {
-    debug('[bloc.$blocName] $message');
+    trace('[bloc.$blocName] $message');
   }
 
   /// Log a service-related message.
   void serviceLog(String serviceName, String message) {
-    debug('[service.$serviceName] $message');
+    trace('[service.$serviceName] $message');
   }
 
   /// Log a repository-related message.
   void repositoryLog(String repoName, String message) {
-    debug('[repository.$repoName] $message');
+    trace('[repository.$repoName] $message');
   }
 
   /// Log an API error with context.
@@ -150,7 +157,15 @@ class TasklyLog extends TalkerLog {
 class DebugFileLogObserver extends TalkerObserver {
   DebugFileLogObserver({
     this.maxFileSizeBytes = 512 * 1024, // 512 KB default
-  });
+    Set<String>? includedTitles,
+  }) : includedTitles =
+           includedTitles ?? const {'WARNING', 'ERROR', 'EXCEPTION'};
+
+  /// Talker "titles" that should be persisted to file.
+  ///
+  /// We intentionally keep the file log small and high-signal.
+  /// Console / in-app Talker UI can still show debug/info verbosity.
+  final Set<String> includedTitles;
 
   /// Maximum file size before auto-clearing (default 512 KB).
   final int maxFileSizeBytes;
@@ -217,8 +232,11 @@ class DebugFileLogObserver extends TalkerObserver {
   @override
   void onLog(TalkerData log) {
     _ensureInitialized();
-    // Log all messages to file for debugging
-    _writeLog(log.title ?? 'LOG', log.message, null, null);
+
+    final title = (log.title ?? 'LOG').toUpperCase();
+    if (!includedTitles.contains(title)) return;
+
+    _writeLog(title, log.message, null, null);
   }
 
   /// Lazily initialize the file when first log is written.
@@ -272,4 +290,55 @@ class DebugFileLogObserver extends TalkerObserver {
 
   /// Get the path to the log file.
   String? get logFilePath => _logFile?.path;
+}
+
+/// Navigator observer that records the current route for diagnostics.
+///
+/// GoRouter installs its own Navigator; this observer is attached via the
+/// router's `observers` list.
+class AppRouteObserver extends NavigatorObserver {
+  String? _currentRoute;
+
+  String get currentRouteSummary => _currentRoute ?? '<unknown>';
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    _currentRoute = _describeRoute(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    _currentRoute = _describeRoute(newRoute ?? oldRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    _currentRoute = _describeRoute(previousRoute);
+  }
+
+  String _describeRoute(Route<dynamic>? route) {
+    if (route == null) return '<null>';
+
+    final settings = route.settings;
+    final name = settings.name;
+    final args = settings.arguments;
+
+    return '${route.runtimeType}(name=${name ?? "<null>"}, args=${_formatArgs(args)})';
+  }
+
+  String _formatArgs(Object? args) {
+    if (args == null) return '<null>';
+
+    // Avoid dumping large objects or PII-heavy structures into logs.
+    final typeName = args.runtimeType.toString();
+    final text = args.toString();
+    const maxLen = 240;
+    final truncated = text.length <= maxLen
+        ? text
+        : '${text.substring(0, maxLen)}…';
+    return '$typeName:$truncated';
+  }
 }

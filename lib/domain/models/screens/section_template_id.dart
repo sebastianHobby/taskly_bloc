@@ -8,6 +8,9 @@ abstract final class SectionTemplateId {
   static const agenda = 'agenda';
   static const allocation = 'allocation';
 
+  // System composites
+  static const somedayNullDates = 'someday_null_dates';
+
   // Former support-block behaviors (now inline sections)
   static const issuesSummary = 'issues_summary';
   static const checkInSummary = 'check_in_summary';

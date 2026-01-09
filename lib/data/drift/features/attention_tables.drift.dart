@@ -50,8 +50,9 @@ class AttentionRules extends Table {
       text().map(const JsonMapConverter()).named('display_config')();
 
   /// Available resolution actions as JSON array
-  TextColumn get resolutionActions =>
-      text().map(const JsonMapConverter()).named('resolution_actions')();
+  TextColumn get resolutionActions => text()
+      .map(const JsonMapOrWrappedListConverter(listKey: 'actions'))
+      .named('resolution_actions')();
 
   /// Whether this rule is active
   BoolColumn get active =>

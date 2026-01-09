@@ -14,6 +14,8 @@ class TaskListTile extends StatelessWidget {
     this.onTap,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
+    this.isInFocus = false,
+    this.showFocusIndicator = true,
     this.reasonText,
     this.reasonColor,
     super.key,
@@ -31,6 +33,14 @@ class TaskListTile extends StatelessWidget {
 
   /// Whether to show the Next Action indicator for pinned tasks.
   final bool showNextActionIndicator;
+
+  /// Whether this task is part of today's focus allocation.
+  ///
+  /// If true and the task is not pinned, a focus indicator is shown.
+  final bool isInFocus;
+
+  /// Whether to show a focus indicator when [isInFocus] is true.
+  final bool showFocusIndicator;
 
   /// Optional reason text to display below the task name.
   /// Used for excluded task alerts (e.g., "Overdue by 2 days").
@@ -143,6 +153,9 @@ class TaskListTile extends StatelessWidget {
                                 ? () => onNextActionRemoved!(task)
                                 : null,
                           ),
+                          const SizedBox(width: 8),
+                        ] else if (showFocusIndicator && isInFocus) ...[
+                          const FocusIndicator(),
                           const SizedBox(width: 8),
                         ],
                         Expanded(

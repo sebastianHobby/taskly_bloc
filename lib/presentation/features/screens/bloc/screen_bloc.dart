@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
@@ -31,6 +32,36 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   final ScreenDefinitionsRepositoryContract _screenRepository;
   final ScreenDataInterpreter _interpreter;
 
+  bool _hasAnyEnabledSection(ScreenDefinition definition) {
+    return definition.sections.any((s) => s.overrides?.enabled ?? true);
+  }
+
+  void _failFastOrEmitError({
+    required Emitter<ScreenState> emit,
+    required String message,
+    ScreenDefinition? definition,
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    if (!kReleaseMode) {
+      throw FlutterError(
+        '$message\n'
+        'screenId=${definition?.id}, screenKey=${definition?.screenKey}, '
+        'name=${definition?.name}, '
+        'sectionTemplateIds=${definition?.sections.map((s) => s.templateId).toList()}',
+      );
+    }
+
+    emit(
+      ScreenState.error(
+        message: message,
+        definition: definition,
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  }
+
   Future<void> _onLoad(
     ScreenLoadEvent event,
     Emitter<ScreenState> emit,
@@ -38,6 +69,16 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     talker.blocLog('ScreenBloc', 'load: ${event.definition.id}');
 
     final definition = event.definition;
+
+    if (!_hasAnyEnabledSection(definition)) {
+      _failFastOrEmitError(
+        emit: emit,
+        definition: definition,
+        message: 'Screen has no enabled sections configured.',
+      );
+      return;
+    }
+
     emit(ScreenState.loading(definition: definition));
 
     await _subscribeToData(definition, emit);
@@ -66,6 +107,16 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
       }
 
       final screen = screenWithPrefs.screen;
+
+      if (!_hasAnyEnabledSection(screen)) {
+        _failFastOrEmitError(
+          emit: emit,
+          definition: screen,
+          message: 'Screen has no enabled sections configured.',
+        );
+        return;
+      }
+
       emit(ScreenState.loading(definition: screen));
 
       await _subscribeToData(screen, emit);
