@@ -20,12 +20,49 @@ class ScreenDataInterpreter {
   final SectionTemplateInterpreterRegistry _interpreterRegistry;
   final SectionTemplateParamsCodec _paramsCodec;
 
+  static const bool _isReleaseMode = bool.fromEnvironment('dart.vm.product');
+
+  Never _failFast(String message) {
+    throw StateError(message);
+  }
+
+  void _validateSectionRefOrFail(SectionRef ref) {
+    try {
+      _interpreterRegistry.get(ref.templateId);
+    } catch (e) {
+      _failFast(
+        'Unknown section templateId: ${ref.templateId} (no interpreter)',
+      );
+    }
+
+    try {
+      _paramsCodec.decode(ref.templateId, ref.params);
+    } catch (e) {
+      _failFast(
+        'Invalid params for templateId=${ref.templateId}: $e (params=${ref.params})',
+      );
+    }
+  }
+
   /// Watch a screen definition and emit [ScreenData] on changes.
   Stream<ScreenData> watchScreen(ScreenDefinition definition) {
     talker.serviceLog(
       'ScreenDataInterpreter',
       'watchScreen: ${definition.id} with ${definition.sections.length} sections',
     );
+
+    try {
+      for (final ref in definition.sections) {
+        if (ref.overrides?.enabled == false) continue;
+        _validateSectionRefOrFail(ref);
+      }
+    } catch (e, st) {
+      talker.handle(e, st, '[ScreenDataInterpreter] invalid screen definition');
+      if (!_isReleaseMode) {
+        rethrow;
+      }
+      return Stream.value(ScreenData.error(definition, e.toString()));
+    }
 
     if (definition.sections.isEmpty) {
       return Stream.value(
@@ -58,14 +95,23 @@ class ScreenDataInterpreter {
         .map((sectionResults) {
           return ScreenData(definition: definition, sections: sectionResults);
         })
-        .handleError((Object error, StackTrace stackTrace) {
-          talker.handle(
-            error,
-            stackTrace,
-            '[ScreenDataInterpreter] watchScreen failed',
-          );
-          return ScreenData.error(definition, error.toString());
-        });
+        .transform(
+          StreamTransformer.fromHandlers(
+            handleError:
+                (
+                  Object error,
+                  StackTrace stackTrace,
+                  EventSink<ScreenData> sink,
+                ) {
+                  talker.handle(
+                    error,
+                    stackTrace,
+                    '[ScreenDataInterpreter] watchScreen failed',
+                  );
+                  sink.add(ScreenData.error(definition, error.toString()));
+                },
+          ),
+        );
   }
 
   /// Fetch screen data once (non-reactive).
@@ -76,6 +122,11 @@ class ScreenDataInterpreter {
     );
 
     try {
+      for (final ref in definition.sections) {
+        if (ref.overrides?.enabled == false) continue;
+        _validateSectionRefOrFail(ref);
+      }
+
       final sections = await Future.wait(
         definition.sections.asMap().entries.map((entry) async {
           final index = entry.key;
@@ -93,6 +144,9 @@ class ScreenDataInterpreter {
       );
     } catch (e, st) {
       talker.handle(e, st, '[ScreenDataInterpreter] fetchScreen failed');
+      if (!_isReleaseMode) {
+        rethrow;
+      }
       return ScreenData.error(definition, e.toString());
     }
   }
@@ -102,32 +156,45 @@ class ScreenDataInterpreter {
     final params = _paramsCodec.decode(ref.templateId, ref.params);
     final title = ref.overrides?.title;
 
-    return interpreter
-        .watch(params)
-        .map(
-          (data) => SectionVm(
-            index: index,
-            templateId: ref.templateId,
-            params: params,
-            title: title,
-            data: data,
-          ),
-        )
-        .handleError((Object error, StackTrace stackTrace) {
-          talker.handle(
-            error,
-            stackTrace,
-            '[ScreenDataInterpreter] Section $index failed',
+    final stream = interpreter.watch(params).cast<Object?>();
+
+    return stream.transform(
+      StreamTransformer<Object?, SectionVm>.fromHandlers(
+        handleData: (data, EventSink<SectionVm> sink) {
+          sink.add(
+            SectionVm(
+              index: index,
+              templateId: ref.templateId,
+              params: params,
+              title: title,
+              data: data,
+            ),
           );
-          return SectionVm(
-            index: index,
-            templateId: ref.templateId,
-            params: params,
-            title: title,
-            data: null,
-            error: error.toString(),
-          );
-        });
+        },
+        handleError:
+            (
+              Object error,
+              StackTrace stackTrace,
+              EventSink<SectionVm> sink,
+            ) {
+              talker.handle(
+                error,
+                stackTrace,
+                '[ScreenDataInterpreter] Section $index failed',
+              );
+              sink.add(
+                SectionVm(
+                  index: index,
+                  templateId: ref.templateId,
+                  params: params,
+                  title: title,
+                  data: null,
+                  error: error.toString(),
+                ),
+              );
+            },
+      ),
+    );
   }
 
   Future<SectionVm> _fetchSection(int index, SectionRef ref) async {

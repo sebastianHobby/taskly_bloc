@@ -38,6 +38,14 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   final AppDatabase driftDb;
 
+  // Diagnostics for detecting PowerSync CDC "sync bounce".
+  //
+  // A real bounce looks like: optimistic save -> local echo -> older server row
+  // reappears briefly -> newest row returns. "Old" rows by themselves are normal
+  // (e.g. settings last changed days ago).
+  DateTime? _lastSaveCompletedAtUtc;
+  DateTime? _lastEmittedUpdatedAtUtc;
+
   /// Debounce duration for sync bounce protection.
   ///
   /// 250ms is sufficient to catch the typical bounce pattern:
@@ -181,6 +189,10 @@ class SettingsRepository implements SettingsRepositoryContract {
     )..where((row) => row.id.equals(profile.id))).write(companion);
 
     final driftWriteTime = DateTime.now();
+
+    // Diagnostics: mark that a local save just completed.
+    _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
+
     talker.repositoryLog(
       'Settings',
       '[SEQUENCE 3/3] save<$T> COMPLETE at $driftWriteTime\n'
@@ -381,6 +393,42 @@ class SettingsRepository implements SettingsRepositoryContract {
         '[STREAM EMIT] _profileStream emitted at $emitTime\n'
             '  rows.length=${rows.length} (ghost rows filtered)',
       );
+
+      // Track the newest updatedAt in this emission.
+      final newestUpdatedAtUtc = rows.isEmpty
+          ? null
+          : rows
+                .map((r) => r.updatedAt.toUtc())
+                .reduce((a, b) => a.isAfter(b) ? a : b);
+
+      // Detect time-regression bounce: updatedAt going backwards shortly after a save.
+      final previousEmittedUtc = _lastEmittedUpdatedAtUtc;
+      if (newestUpdatedAtUtc != null && previousEmittedUtc != null) {
+        final regressed = newestUpdatedAtUtc.isBefore(
+          previousEmittedUtc.subtract(const Duration(seconds: 2)),
+        );
+
+        final savedRecently =
+            _lastSaveCompletedAtUtc != null &&
+            DateTime.now().toUtc().difference(_lastSaveCompletedAtUtc!) <
+                const Duration(seconds: 10);
+
+        if (regressed && savedRecently) {
+          talker.warning(
+            '[SYNC BOUNCE?] updatedAt regressed after recent save\n'
+            '  newestUpdatedAt=$newestUpdatedAtUtc\n'
+            '  previousEmittedUpdatedAt=$previousEmittedUtc\n'
+            '  lastSaveCompletedAt=$_lastSaveCompletedAtUtc\n'
+            '  hint=Likely CDC delivered an older server snapshot briefly',
+          );
+        }
+      }
+
+      // Update last-emitted marker (newest row wins for monotonicity).
+      if (newestUpdatedAtUtc != null) {
+        _lastEmittedUpdatedAtUtc = newestUpdatedAtUtc;
+      }
+
       for (final row in rows) {
         final updatedAt = row.updatedAt;
         final age = emitTime.difference(updatedAt);
@@ -394,15 +442,9 @@ class SettingsRepository implements SettingsRepositoryContract {
               '  globalSettings first 80 chars: ${(row.globalSettings ?? "").substring(0, (row.globalSettings?.length ?? 0) > 80 ? 80 : (row.globalSettings?.length ?? 0))}',
         );
 
-        // Detect potential sync bounce - stale data coming back
-        if (age.inMinutes > 1) {
-          talker.warning(
-            '[SYNC BOUNCE?] STALE DATA DETECTED!\n'
-            '  Row updatedAt=$updatedAt is ${age.inMinutes} minutes old\n'
-            '  Current time=$emitTime\n'
-            '  This may be a PowerSync sync bounce (old server data overwriting local).',
-          );
-        } else if (age.inSeconds < 2) {
+        // NOTE: "Old" settings are normal (user may not have changed them).
+        // Only treat this as suspicious if updatedAt regresses (handled above).
+        if (age.inSeconds < 2) {
           talker.repositoryLog(
             'Settings',
             '[STREAM EMIT] FRESH data - likely our own save echoing back',

@@ -105,6 +105,8 @@ void main() {
       // Snapshots: prevDay allocates t1 (not completed), day allocates t1 + t3.
       await allocationSnapshotRepository.persistAllocatedForUtcDay(
         dayUtc: prevDay,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 2,
         allocated: [
           AllocationSnapshotEntryInput(
             entity: const AllocationEntityRef(
@@ -119,6 +121,8 @@ void main() {
       );
       await allocationSnapshotRepository.persistAllocatedForUtcDay(
         dayUtc: day,
+        capAtGeneration: 3,
+        candidatePoolCountAtGeneration: 3,
         allocated: [
           AllocationSnapshotEntryInput(
             entity: const AllocationEntityRef(

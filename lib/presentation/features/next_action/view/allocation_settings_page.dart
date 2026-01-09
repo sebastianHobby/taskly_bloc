@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
@@ -58,11 +58,12 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     setState(() => _isLoading = true);
 
     try {
-      developer.log('[AllocationSettingsPage] Loading settings...');
+      AppLog.routine('ui.allocation_settings', 'Loading settings');
       final settings = await _settingsRepo.load(SettingsKey.allocation);
-      developer.log(
-        '[AllocationSettingsPage] Loaded allocation: '
-        'dailyLimit=${settings.dailyLimit}, persona=${settings.persona}',
+      AppLog.routine(
+        'ui.allocation_settings',
+        'Loaded allocation: dailyLimit=${settings.dailyLimit}, '
+            'persona=${settings.persona}',
       );
 
       _allocationConfig = settings;
@@ -88,11 +89,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       _showOrphanTaskCount = settings.displaySettings.showOrphanTaskCount;
       _showProjectNextTask = settings.displaySettings.showProjectNextTask;
     } catch (e, s) {
-      developer.log(
-        '[AllocationSettingsPage] Error loading settings',
-        error: e,
-        stackTrace: s,
-      );
+      AppLog.handle('ui.allocation_settings', 'Error loading settings', e, s);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error loading settings: $e')),

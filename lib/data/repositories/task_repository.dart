@@ -1,4 +1,4 @@
-import 'dart:developer' as developer;
+import 'package:taskly_bloc/core/utils/app_log.dart';
 
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
@@ -827,9 +827,11 @@ class TaskRepository implements TaskRepositoryContract {
   Stream<List<Task>> getOrCreateInboxStream(TaskQuery query) {
     if (_sharedInboxStream == null) {
       final stream = buildAndExecuteQuery(query).map((tasks) {
-        developer.log(
-          'INBOX STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(completed=${t.completed})").join(", ")}',
-          name: 'TaskRepository',
+        AppLog.routineThrottled(
+          'task_repo.inbox_stream',
+          const Duration(seconds: 10),
+          'data.task_repository',
+          'INBOX stream emitting ${tasks.length} tasks',
         );
         return tasks;
       });
@@ -861,9 +863,11 @@ class TaskRepository implements TaskRepositoryContract {
     if (cached != null) return cached;
 
     final stream = buildAndExecuteQuery(query).map((tasks) {
-      developer.log(
-        'TODAY STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
-        name: 'TaskRepository',
+      AppLog.routineThrottled(
+        'task_repo.today_stream',
+        const Duration(seconds: 10),
+        'data.task_repository',
+        'TODAY stream emitting ${tasks.length} tasks',
       );
       return tasks;
     });
@@ -885,9 +889,11 @@ class TaskRepository implements TaskRepositoryContract {
   Stream<List<Task>> getOrCreateUpcomingStream(TaskQuery query) {
     if (_sharedUpcomingStream == null) {
       final stream = buildAndExecuteQuery(query).map((tasks) {
-        developer.log(
-          'UPCOMING STREAM emitting ${tasks.length} tasks: ${tasks.map((t) => "${t.name}(deadline=${t.deadlineDate})").join(", ")}',
-          name: 'TaskRepository',
+        AppLog.routineThrottled(
+          'task_repo.upcoming_stream',
+          const Duration(seconds: 10),
+          'data.task_repository',
+          'UPCOMING stream emitting ${tasks.length} tasks',
         );
         return tasks;
       });

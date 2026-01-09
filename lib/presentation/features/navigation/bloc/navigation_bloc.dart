@@ -121,7 +121,19 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       }
 
       final destinations = event.screens.map(_mapScreen).toList();
-      destinations.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      destinations.sort((a, b) {
+        final aIsSettings = a.screenId == 'settings';
+        final bIsSettings = b.screenId == 'settings';
+        if (aIsSettings != bIsSettings) {
+          return aIsSettings ? 1 : -1;
+        }
+
+        final bySortOrder = a.sortOrder.compareTo(b.sortOrder);
+        if (bySortOrder != 0) return bySortOrder;
+
+        // Deterministic ordering when sort orders are equal.
+        return a.label.compareTo(b.label);
+      });
       emit(NavigationState.ready(destinations: destinations));
     } catch (e, stack) {
       talker.handle(e, stack, 'Failed to process screen changes');

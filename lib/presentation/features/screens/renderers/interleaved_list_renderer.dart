@@ -21,6 +21,13 @@ class InterleavedListRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     const registry = ScreenItemTileRegistry();
 
+    final focusTaskIds =
+        data.relatedEntities['focusTaskIds']?.whereType<String>().toSet() ??
+        const <String>{};
+    final focusProjectIds =
+        data.relatedEntities['focusProjectIds']?.whereType<String>().toSet() ??
+        const <String>{};
+
     if (data.items.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -43,6 +50,8 @@ class InterleavedListRenderer extends StatelessWidget {
             return registry.build(
               context,
               item: item,
+              focusTaskIds: focusTaskIds,
+              focusProjectIds: focusProjectIds,
               onTaskToggle: onTaskToggle,
               onProjectToggle: onProjectToggle,
             );

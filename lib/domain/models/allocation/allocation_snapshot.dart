@@ -58,11 +58,15 @@ class AllocationSnapshot {
     required this.id,
     required this.dayUtc,
     required this.version,
+    required this.capAtGeneration,
+    required this.candidatePoolCountAtGeneration,
     required this.allocated,
   });
 
   final String id;
   final DateTime dayUtc;
   final int version;
+  final int capAtGeneration;
+  final int candidatePoolCountAtGeneration;
   final List<AllocationSnapshotEntryInput> allocated;
 }

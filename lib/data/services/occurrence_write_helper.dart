@@ -1,6 +1,5 @@
-import 'dart:developer' as developer;
-
 import 'package:drift/drift.dart';
+import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -30,9 +29,10 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     DateTime? originalOccurrenceDate,
     String? notes,
   }) async {
-    developer.log(
-      'completeTaskOccurrence CALLED: taskId=$taskId, occurrenceDate=$occurrenceDate',
-      name: 'OccurrenceWriteHelper',
+    AppLog.routine(
+      'data.occurrence_write',
+      'completeTaskOccurrence called: taskId=$taskId, '
+          'occurrenceDate=$occurrenceDate',
     );
     final normalizedOccurrenceDate = occurrenceDate != null
         ? _normalizeDate(occurrenceDate)
@@ -56,9 +56,9 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
 
     if (existing != null) {
       // Update existing record
-      developer.log(
+      AppLog.routine(
+        'data.occurrence_write',
         'Completion record exists, updating: id=$id',
-        name: 'OccurrenceWriteHelper',
       );
       await (driftDb.update(
         driftDb.taskCompletionHistoryTable,
@@ -71,9 +71,9 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
       );
     } else {
       // Insert new record
-      developer.log(
+      AppLog.routine(
+        'data.occurrence_write',
         'Inserting new completion record: id=$id',
-        name: 'OccurrenceWriteHelper',
       );
       await driftDb
           .into(driftDb.taskCompletionHistoryTable)
@@ -98,14 +98,15 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
     )..where((t) => t.id.equals(taskId))).getSingleOrNull();
 
     final isRepeating = task?.repeatIcalRrule?.isNotEmpty ?? false;
-    developer.log(
-      'Task lookup: found=${task != null}, isRepeating=$isRepeating, rrule=${task?.repeatIcalRrule}',
-      name: 'OccurrenceWriteHelper',
+    AppLog.routine(
+      'data.occurrence_write',
+      'Task lookup: found=${task != null}, isRepeating=$isRepeating, '
+          'rrule=${task?.repeatIcalRrule}',
     );
     if (!isRepeating) {
-      developer.log(
-        'UPDATING tasks.completed=true for taskId=$taskId',
-        name: 'OccurrenceWriteHelper',
+      AppLog.routine(
+        'data.occurrence_write',
+        'Updating tasks.completed=true for taskId=$taskId',
       );
       await (driftDb.update(
         driftDb.taskTable,
@@ -115,14 +116,14 @@ class OccurrenceWriteHelper implements OccurrenceWriteHelperContract {
           updatedAt: Value(now),
         ),
       );
-      developer.log(
-        'UPDATE COMPLETE for taskId=$taskId',
-        name: 'OccurrenceWriteHelper',
+      AppLog.routine(
+        'data.occurrence_write',
+        'Update complete for taskId=$taskId',
       );
     } else {
-      developer.log(
-        'SKIPPING completed flag update (repeating task)',
-        name: 'OccurrenceWriteHelper',
+      AppLog.routine(
+        'data.occurrence_write',
+        'Skipping completed flag update (repeating task)',
       );
     }
   }

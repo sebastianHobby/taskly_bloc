@@ -7,6 +7,11 @@ import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
@@ -78,6 +83,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Developer',
                   children: [
                     _buildViewLogsItem(context),
+                    if (kDebugMode) const _GenerateTemplateDataItem(),
                     if (kDebugMode) const _ClearLocalDataItem(),
                   ],
                 ),
@@ -416,6 +422,93 @@ class _ResetButton extends StatelessWidget {
       context.read<GlobalSettingsBloc>().add(const GlobalSettingsEvent.reset());
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Settings reset to defaults')),
+      );
+    }
+  }
+}
+
+class _GenerateTemplateDataItem extends StatelessWidget {
+  const _GenerateTemplateDataItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(
+        Icons.auto_awesome,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      title: const Text('Generate Template Data'),
+      subtitle: const Text('Deletes user data and seeds a demo set'),
+      trailing: Icon(
+        Icons.warning_amber,
+        color: Theme.of(context).colorScheme.error,
+      ),
+      onTap: () => _confirmAndRun(context),
+    );
+  }
+
+  Future<void> _confirmAndRun(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Generate Template Data'),
+        content: const Text(
+          'This will delete all Tasks, Projects, and Values for the current '
+          'account and then generate a sample dataset.\n\n'
+          'This is intended for debug/demo use only.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Generate'),
+          ),
+        ],
+      ),
+    );
+
+    if (!(confirmed ?? false) || !context.mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Generating template data…'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      final getIt = GetIt.instance;
+      final service = TemplateDataService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+      );
+
+      await service.resetAndSeed();
+
+      if (!context.mounted) return;
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Template data generated.')),
+      );
+    } catch (e, st) {
+      talker.handle(e, st, '[Settings] Failed to generate template data');
+      if (!context.mounted) return;
+      messenger.clearSnackBars();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to generate template data: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
       );
     }
   }

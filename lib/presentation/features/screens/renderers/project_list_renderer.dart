@@ -26,6 +26,10 @@ class ProjectListRenderer extends StatelessWidget {
     final projects = data.items.whereType<ScreenItemProject>().toList();
     final relatedTasks = data.relatedTasks;
 
+    final focusProjectIds =
+        data.relatedEntities['focusProjectIds']?.whereType<String>().toSet() ??
+        const <String>{};
+
     if (projects.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -59,6 +63,7 @@ class ProjectListRenderer extends StatelessWidget {
             return registry.build(
               context,
               item: item,
+              focusProjectIds: focusProjectIds,
               onProjectToggle: onProjectToggle,
               projectStats: ProjectTileStats(
                 taskCount: taskCount,

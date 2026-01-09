@@ -51,6 +51,8 @@ class AllocationSnapshotRepository
   @override
   Future<void> persistAllocatedForUtcDay({
     required DateTime dayUtc,
+    required int capAtGeneration,
+    required int candidatePoolCountAtGeneration,
     required List<AllocationSnapshotEntryInput> allocated,
   }) async {
     final normalizedDayUtc = dateOnly(dayUtc.toUtc());
@@ -71,7 +73,13 @@ class AllocationSnapshotRepository
             .map((e) => _membershipKey(_parseType(e.entityType), e.entityId))
             .toSet();
 
-        if (_setEquals(existingMembership, nextMembership)) {
+        final metadataUnchanged =
+            latest.capAtGeneration == capAtGeneration &&
+            latest.candidatePoolCountAtGeneration ==
+                candidatePoolCountAtGeneration;
+
+        if (_setEquals(existingMembership, nextMembership) &&
+            metadataUnchanged) {
           return;
         }
       }
@@ -84,6 +92,8 @@ class AllocationSnapshotRepository
             db.AllocationSnapshotsCompanion.insert(
               dayUtc: normalizedDayUtc,
               version: Value(nextVersion),
+              capAtGeneration: capAtGeneration,
+              candidatePoolCountAtGeneration: candidatePoolCountAtGeneration,
               createdAt: Value(nowUtc),
               updatedAt: Value(nowUtc),
             ),
@@ -213,6 +223,8 @@ class AllocationSnapshotRepository
       id: snapshot.id,
       dayUtc: snapshot.dayUtc,
       version: snapshot.version,
+      capAtGeneration: snapshot.capAtGeneration,
+      candidatePoolCountAtGeneration: snapshot.candidatePoolCountAtGeneration,
       allocated: entries
           .map(
             (e) => AllocationSnapshotEntryInput(

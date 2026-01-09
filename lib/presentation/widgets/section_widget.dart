@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
 import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
@@ -173,10 +174,25 @@ class SectionWidget extends StatelessWidget {
               onProjectCheckboxChanged?.call(project, val);
             },
           ),
+          SectionTemplateId.somedayNullDates => InterleavedListRenderer(
+            data: d,
+            title: section.title,
+            onTaskToggle: (taskId, val) {
+              final task = d.allTasks.firstWhere((t) => t.id == taskId);
+              onTaskCheckboxChanged?.call(task, val);
+            },
+            onProjectToggle: (projectId, val) {
+              final project = d.allProjects.firstWhere(
+                (p) => p.id == projectId,
+              );
+              onProjectCheckboxChanged?.call(project, val);
+            },
+          ),
           _ => _buildLegacySection(d),
         },
         final AgendaSectionResult d => AgendaSectionRenderer(
           data: d,
+          params: section.params as AgendaSectionParams,
           onTaskToggle: (taskId, val) {
             final task = d.agendaData.groups
                 .expand((g) => g.items)
@@ -263,7 +279,7 @@ class SectionWidget extends StatelessWidget {
           child: Text('Statistics dashboard not implemented yet.'),
         ),
       ),
-      _ => const SizedBox.shrink(),
+      _ => Text('Unsupported full-screen template: ${section.templateId}'),
     };
   }
 

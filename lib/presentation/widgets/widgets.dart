@@ -6,6 +6,7 @@ export 'entity_tap_handler.dart';
 export 'error_state_widget.dart';
 export 'form_date_chip.dart';
 export 'form_shell.dart';
+export 'focus_indicator.dart';
 export 'icon_picker/icon_picker_dialog.dart';
 export 'value_chip.dart';
 export 'values_footer.dart';

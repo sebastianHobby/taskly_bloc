@@ -148,40 +148,8 @@ abstract class SystemScreenDefinitions {
         ).toJson(),
       ),
       SectionRef(
-        templateId: SectionTemplateId.taskList,
-        params: DataListSectionParams(
-          config: DataConfig.task(query: TaskQuery.inbox()),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-        ).toJson(),
-        overrides: const SectionOverrides(title: 'Inbox'),
-      ),
-      SectionRef(
-        templateId: SectionTemplateId.taskList,
-        params: DataListSectionParams(
-          config: DataConfig.task(
-            query: const TaskQuery(
-              filter: QueryFilter<TaskPredicate>(
-                shared: [
-                  TaskBoolPredicate(
-                    field: TaskBoolField.completed,
-                    operator: BoolOperator.isFalse,
-                  ),
-                  TaskDatePredicate(
-                    field: TaskDateField.deadlineDate,
-                    operator: DateOperator.isNull,
-                  ),
-                  TaskProjectPredicate(operator: ProjectOperator.isNotNull),
-                ],
-              ),
-            ),
-          ),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-        ).toJson(),
-        overrides: const SectionOverrides(title: 'No Date'),
+        templateId: SectionTemplateId.somedayNullDates,
+        params: const <String, dynamic>{},
       ),
     ],
   );

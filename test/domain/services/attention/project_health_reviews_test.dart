@@ -155,6 +155,8 @@ void main() {
         for (var i = 0; i < 3; i++) {
           await h.allocationSnapshotRepository.persistAllocatedForUtcDay(
             dayUtc: today.subtract(Duration(days: i)),
+            capAtGeneration: 3,
+            candidatePoolCountAtGeneration: 1,
             allocated: [
               AllocationSnapshotEntryInput(
                 entity: const AllocationEntityRef(
@@ -201,6 +203,8 @@ void main() {
       for (var i = 0; i < 3; i++) {
         await h.allocationSnapshotRepository.persistAllocatedForUtcDay(
           dayUtc: today.subtract(Duration(days: i)),
+          capAtGeneration: 3,
+          candidatePoolCountAtGeneration: 1,
           allocated: [
             AllocationSnapshotEntryInput(
               entity: const AllocationEntityRef(

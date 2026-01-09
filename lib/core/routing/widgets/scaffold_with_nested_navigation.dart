@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_rail_scaffold.dart';
+import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/core/utils/responsive.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
@@ -22,8 +22,9 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    talker.debug(
-      '[navigation] ScaffoldWithNestedNavigation.build() called, activeScreenId=$activeScreenId',
+    AppLog.routine(
+      'navigation',
+      'ScaffoldWithNestedNavigation.build(): activeScreenId=$activeScreenId',
     );
     return BlocBuilder<NavigationBloc, NavigationState>(
       builder: (context, state) {
@@ -71,7 +72,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
     List<NavigationDestinationVm> destinations,
     String screenId,
   ) {
-    talker.debug('[navigation] _goTo called with screenId="$screenId"');
+    AppLog.routine('navigation', '_goTo: screenId="$screenId"');
     final dest = destinations.firstWhere(
       (d) => d.screenId == screenId,
       orElse: () => destinations.first,
@@ -79,13 +80,13 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
 
     // Debug: log current location before navigating
     final currentLocation = GoRouterState.of(context).uri.toString();
-    talker.debug('[navigation] Current location: $currentLocation');
-    talker.debug('[navigation] Navigating to route: ${dest.route}');
+    AppLog.routine('navigation', 'Current location: $currentLocation');
+    AppLog.routine('navigation', 'Navigating to route: ${dest.route}');
 
     context.go(dest.route);
 
     // Debug: log location after go() call
     final newLocation = GoRouterState.of(context).uri.toString();
-    talker.debug('[navigation] After go(), location is: $newLocation');
+    AppLog.routine('navigation', 'After go(): location is: $newLocation');
   }
 }

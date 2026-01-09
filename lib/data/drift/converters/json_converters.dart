@@ -12,6 +12,17 @@ import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
 /// Some data in the database may have been incorrectly double-encoded
 /// (stored as a JSON string containing another JSON string). This helper
 /// detects and handles that case.
+Object? _decodePossiblyDoubleEncodedJson(String json) {
+  final decoded = jsonDecode(json);
+
+  // If the first decode yields another JSON string, decode again.
+  if (decoded is String) {
+    return jsonDecode(decoded);
+  }
+
+  return decoded;
+}
+
 Map<String, dynamic> _parseJsonWithDoubleEncodingFallback(Object? json) {
   if (json == null) {
     throw ArgumentError('JSON value cannot be null');
@@ -20,17 +31,41 @@ Map<String, dynamic> _parseJsonWithDoubleEncodingFallback(Object? json) {
     return json;
   }
   if (json is String) {
-    // Data was double-encoded - parse the string as JSON
-    final decoded = jsonDecode(json);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
-    }
+    // Data may be incorrectly double-encoded.
+    final decoded = _decodePossiblyDoubleEncodedJson(json);
+    if (decoded is Map<String, dynamic>) return decoded;
     throw ArgumentError(
       'Expected Map<String, dynamic> after decoding String, got ${decoded.runtimeType}',
     );
   }
   throw ArgumentError(
     'Expected Map<String, dynamic> or String, got ${json.runtimeType}',
+  );
+}
+
+Map<String, dynamic> _parseJsonMapOrWrappedListWithDoubleEncodingFallback(
+  Object? json, {
+  required String listKey,
+}) {
+  if (json == null) {
+    throw ArgumentError('JSON value cannot be null');
+  }
+
+  if (json is Map<String, dynamic>) return json;
+  if (json is List) return <String, dynamic>{listKey: json};
+
+  if (json is String) {
+    final decoded = _decodePossiblyDoubleEncodedJson(json);
+    if (decoded is Map<String, dynamic>) return decoded;
+    if (decoded is List) return <String, dynamic>{listKey: decoded};
+
+    throw ArgumentError(
+      'Expected Map<String, dynamic> or List after decoding String, got ${decoded.runtimeType}',
+    );
+  }
+
+  throw ArgumentError(
+    'Expected Map<String, dynamic>, List, or String, got ${json.runtimeType}',
   );
 }
 
@@ -68,6 +103,33 @@ class JsonMapConverter extends TypeConverter<Map<String, dynamic>, String> {
   @override
   Map<String, dynamic> fromSql(String fromDb) {
     return _parseJsonWithDoubleEncodingFallback(fromDb);
+  }
+
+  @override
+  String toSql(Map<String, dynamic> value) {
+    return jsonEncode(value);
+  }
+}
+
+/// Converter for JSON text that may be either a map or a list.
+///
+/// This is used for legacy/remote data where a column sometimes stores a JSON
+/// array (e.g. `resolution_actions`), but the application wants to treat it as
+/// a map-shaped payload.
+///
+/// When the stored value is a JSON array, the list is wrapped under [listKey].
+class JsonMapOrWrappedListConverter
+    extends TypeConverter<Map<String, dynamic>, String> {
+  const JsonMapOrWrappedListConverter({this.listKey = 'actions'});
+
+  final String listKey;
+
+  @override
+  Map<String, dynamic> fromSql(String fromDb) {
+    return _parseJsonMapOrWrappedListWithDoubleEncodingFallback(
+      fromDb,
+      listKey: listKey,
+    );
   }
 
   @override

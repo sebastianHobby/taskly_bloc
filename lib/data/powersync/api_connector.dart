@@ -1,4 +1,6 @@
 // This file performs setup of the PowerSync database
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,6 +30,159 @@ final List<RegExp> fatalResponseCodes = [
 /// PostgREST error codes that indicate schema mismatch (table doesn't exist).
 /// PGRST205: Could not find the table in the schema cache
 const _schemaNotFoundCode = 'PGRST205';
+
+/// Columns that are json/jsonb (or array-like) in Supabase.
+///
+/// PowerSync syncs these as TEXT on-device. Before uploading back to Supabase,
+/// we convert JSON strings into structured values (Map/List) so PostgREST sends
+/// real JSON/arrays rather than JSON-as-string.
+final Map<String, Set<String>> _uploadJsonColumnsByTable = {
+  // jsonb in Supabase
+  'user_profiles': {
+    'global_settings',
+    'allocation_settings',
+    'page_sort_preferences',
+    'page_display_settings',
+  },
+  // jsonb in Supabase
+  'screen_definitions': {'content_config', 'actions_config'},
+  // jsonb + array-like fields in Supabase
+  'attention_rules': {
+    'trigger_config',
+    'entity_selector',
+    'display_config',
+    'resolution_actions',
+  },
+  // jsonb in Supabase
+  'pending_notifications': {'payload'},
+  // jsonb in Supabase
+  'trackers': {'response_config'},
+  // jsonb in Supabase
+  'tracker_responses': {'response_value'},
+  // jsonb in Supabase
+  'daily_tracker_responses': {'response_value'},
+  // jsonb in Supabase
+  'analytics_snapshots': {'metrics'},
+  // jsonb in Supabase
+  'analytics_insights': {'metadata'},
+  // jsonb in Supabase
+  'analytics_correlations': {
+    'performance_metrics',
+    'value_with_source',
+    'value_without_source',
+  },
+};
+
+String _previewForLog(Object? value, {int maxChars = 200}) {
+  if (value == null) return '<null>';
+  if (value is String) {
+    final trimmed = value.trim();
+    if (trimmed.length <= maxChars) return trimmed;
+    return '${trimmed.substring(0, maxChars)}…';
+  }
+
+  try {
+    final encoded = jsonEncode(value);
+    if (encoded.length <= maxChars) return encoded;
+    return '${encoded.substring(0, maxChars)}…';
+  } catch (_) {
+    final stringified = value.toString();
+    if (stringified.length <= maxChars) return stringified;
+    return '${stringified.substring(0, maxChars)}…';
+  }
+}
+
+({Object? value, bool changed, bool doubleEncoded}) _tryDecodeJsonValue(
+  Object? value,
+) {
+  if (value is! String) {
+    return (value: value, changed: false, doubleEncoded: false);
+  }
+
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) {
+    return (value: value, changed: false, doubleEncoded: false);
+  }
+
+  // Fast-path: only attempt JSON decode when it looks like JSON.
+  final first = trimmed.codeUnitAt(0);
+  final looksLikeJson =
+      first == 0x7B /* { */ ||
+      first == 0x5B /* [ */ ||
+      first == 0x22 /* " */ ||
+      trimmed == 'null' ||
+      trimmed == 'true' ||
+      trimmed == 'false' ||
+      RegExp(r'^-?\d').hasMatch(trimmed);
+  if (!looksLikeJson) {
+    return (value: value, changed: false, doubleEncoded: false);
+  }
+
+  try {
+    final decoded = jsonDecode(trimmed);
+    if (decoded is String) {
+      // Handle "{...}" / "[...]" (double-encoded) cases.
+      try {
+        final decodedTwice = jsonDecode(decoded);
+        return (value: decodedTwice, changed: true, doubleEncoded: true);
+      } catch (_) {
+        final changed = decoded != value;
+        return (value: decoded, changed: changed, doubleEncoded: false);
+      }
+    }
+    return (value: decoded, changed: true, doubleEncoded: false);
+  } catch (_) {
+    return (value: value, changed: false, doubleEncoded: false);
+  }
+}
+
+Map<String, dynamic> _normalizeUploadData(
+  String table,
+  String rowId,
+  UpdateType opType,
+  Map<String, dynamic> data,
+) {
+  final jsonColumns = _uploadJsonColumnsByTable[table];
+  if (jsonColumns == null || jsonColumns.isEmpty) return data;
+
+  final normalized = Map<String, dynamic>.of(data);
+  for (final column in jsonColumns) {
+    if (!normalized.containsKey(column)) continue;
+    final value = normalized[column];
+    final result = _tryDecodeJsonValue(value);
+    final decoded = result.value;
+
+    // With fresh data, any upload-time decoding indicates a bug (writing JSON
+    // as text into a JSON/array column). Log loudly so we can trace the source.
+    if (result.changed &&
+        (decoded is Map || decoded is List || result.doubleEncoded)) {
+      talker.error(
+        '''
+    [powersync] Upload normalized JSON field (unexpected)
+  table=$table
+  id=$rowId
+  op=$opType
+  column=$column
+  doubleEncoded=${result.doubleEncoded}
+  beforeType=${value.runtimeType}
+  afterType=${decoded.runtimeType}
+  before=${_previewForLog(value)}
+  after=${_previewForLog(decoded)}''',
+      );
+    }
+
+    // Special case: `resolution_actions` is an array-like server field in some
+    // schemas. If we decode a JSON array, keep it as a List so PostgREST can
+    // send it as an array/json depending on server column type.
+    if (column == 'resolution_actions' && decoded is String) {
+      // If a plain string sneaks through, keep as-is.
+      normalized[column] = decoded;
+    } else {
+      normalized[column] = decoded;
+    }
+  }
+  return normalized;
+}
 
 /// Use Supabase for authentication and data upload.
 class SupabaseConnector extends PowerSyncBackendConnector {
@@ -94,13 +249,35 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       return;
     }
 
+    // IMPORTANT: Never discard/consume queued CRUD when the user is signed out.
+    // If we proceed without a session, REST calls may fail with RLS/auth errors
+    // and our fatal handler would discard the transaction (data loss).
+    final session = Supabase.instance.client.auth.currentSession;
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (session == null) {
+      talker.info(
+        '[powersync] uploadData skipped (no Supabase session)\n'
+        '  queuedOps=${transaction.crud.length}\n'
+        '  hint=Wait for sign-in before uploading',
+      );
+      return;
+    }
+
+    talker.debug(
+      '[powersync] uploadData starting\n'
+      '  queuedOps=${transaction.crud.length}\n'
+      '  userId=${currentUser?.id ?? "<null>"}',
+    );
+
     final rest = Supabase.instance.client.rest;
     CrudEntry? lastOp;
+    var lastOpIndex = -1;
     try {
       // Note: If transactional consistency is important, use database functions
       // or edge functions to process the entire transaction in a single call.
       for (final op in transaction.crud) {
         lastOp = op;
+        lastOpIndex++;
 
         // Enhanced logging for user_profiles to trace sync sequence
         final isUserProfiles = op.table == 'user_profiles';
@@ -118,11 +295,22 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
         final table = rest.from(op.table);
         if (op.op == UpdateType.put) {
-          final data = Map<String, dynamic>.of(op.opData!);
+          final data = _normalizeUploadData(
+            op.table,
+            op.id,
+            op.op,
+            Map<String, dynamic>.of(op.opData!),
+          );
           data['id'] = op.id;
           await table.upsert(data);
         } else if (op.op == UpdateType.patch) {
-          await table.update(op.opData!).eq('id', op.id);
+          final data = _normalizeUploadData(
+            op.table,
+            op.id,
+            op.op,
+            Map<String, dynamic>.of(op.opData!),
+          );
+          await table.update(data).eq('id', op.id);
         } else if (op.op == UpdateType.delete) {
           await table.delete().eq('id', op.id);
         }
@@ -145,7 +333,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         '  All ${transaction.crud.length} operations uploaded to Supabase\n'
         '  PowerSync will now wait for CDC to sync back',
       );
-    } on PostgrestException catch (e) {
+    } on PostgrestException catch (e, st) {
       if (e.code == '23505') {
         // Unique constraint violation - handle based on table ID strategy
         await _handle23505(rest, lastOp!, e);
@@ -170,10 +358,29 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         /// Note that these errors typically indicate a bug in the application.
         /// If protecting against data loss is important, save the failing records
         /// elsewhere instead of discarding, and/or notify the user.
-        talker.error('[powersync] Data upload error - discarding $lastOp', e);
-        if (kDebugMode) {
-          rethrow; // Crash in debug to surface bugs immediately
-        }
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+        final opContext = lastOp == null
+            ? '  lastOp=<null>'
+            : '  lastOp.index=$lastOpIndex/${transaction.crud.length - 1}\n'
+                  '  lastOp.table=${lastOp.table}\n'
+                  '  lastOp.op=${lastOp.op}\n'
+                  '  lastOp.id=${lastOp.id}\n'
+                  '  lastOp.opData keys=${lastOp.opData?.keys.toList()}';
+
+        talker.handle(
+          e,
+          st,
+          '[powersync] Data upload error - discarding transaction\n'
+          '  userId=${userId ?? "<null>"}\n'
+          '  powersyncEndpoint=${Env.powersyncUrl}\n'
+          '  transaction.ops=${transaction.crud.length}\n'
+          '$opContext\n'
+          '  postgrest.code=${e.code ?? "<null>"}\n'
+          '  postgrest.message=${e.message}\n'
+          '  postgrest.details=${e.details ?? "<null>"}\n'
+          '  postgrest.hint=${e.hint ?? "<null>"}',
+        );
+
         await transaction.complete();
       } else {
         // Error may be retryable - e.g. network error or temporary server error.
@@ -287,12 +494,24 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 }
 
 bool isLoggedIn() {
-  return Supabase.instance.client.auth.currentSession?.accessToken != null;
+  try {
+    return Supabase.instance.client.auth.currentSession?.accessToken != null;
+  } on AssertionError {
+    return false;
+  } on StateError {
+    return false;
+  }
 }
 
 /// id of the user currently logged in
 String? getUserId() {
-  return Supabase.instance.client.auth.currentSession?.user.id;
+  try {
+    return Supabase.instance.client.auth.currentSession?.user.id;
+  } on AssertionError {
+    return null;
+  } on StateError {
+    return null;
+  }
 }
 
 Future<String> getDatabasePath() async {

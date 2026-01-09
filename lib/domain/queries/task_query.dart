@@ -154,17 +154,29 @@ class TaskQuery {
   }) {
     return TaskQuery(
       filter: QueryFilter<TaskPredicate>(
-        shared: [
-          const TaskBoolPredicate(
+        shared: const [
+          TaskBoolPredicate(
             field: TaskBoolField.completed,
             operator: BoolOperator.isFalse,
           ),
-          TaskDatePredicate(
-            field: TaskDateField.startDate,
-            operator: DateOperator.between,
-            startDate: rangeStart,
-            endDate: rangeEnd,
-          ),
+        ],
+        orGroups: [
+          [
+            TaskDatePredicate(
+              field: TaskDateField.startDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+          [
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
         ],
       ),
       sortCriteria: sortCriteria ?? _defaultSortCriteria,

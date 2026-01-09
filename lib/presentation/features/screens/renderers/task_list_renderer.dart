@@ -20,6 +20,10 @@ class TaskListRenderer extends StatelessWidget {
     const registry = ScreenItemTileRegistry();
     final tasks = data.items.whereType<ScreenItemTask>().toList();
 
+    final focusTaskIds =
+        data.relatedEntities['focusTaskIds']?.whereType<String>().toSet() ??
+        const <String>{};
+
     if (tasks.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -42,6 +46,7 @@ class TaskListRenderer extends StatelessWidget {
             return registry.build(
               context,
               item: item,
+              focusTaskIds: focusTaskIds,
               onTaskToggle: onTaskToggle,
             );
           },
