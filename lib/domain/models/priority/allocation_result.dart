@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
@@ -12,9 +11,6 @@ abstract class AllocationResult with _$AllocationResult {
     required List<AllocatedTask> allocatedTasks,
     required AllocationReasoning reasoning,
     required List<ExcludedTask> excludedTasks,
-
-    /// Evaluated alerts for excluded tasks
-    AlertEvaluationResult? alertResult,
 
     /// The focus mode used for this allocation
     FocusMode? activeFocusMode,

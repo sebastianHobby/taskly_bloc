@@ -10,6 +10,7 @@ abstract final class SectionTemplateId {
 
   // System composites
   static const somedayNullDates = 'someday_null_dates';
+  static const somedayBacklog = 'someday_backlog';
 
   // Former support-block behaviors (now inline sections)
   static const issuesSummary = 'issues_summary';
@@ -29,4 +30,7 @@ abstract final class SectionTemplateId {
   static const trackerManagement = 'tracker_management';
   static const wellbeingDashboard = 'wellbeing_dashboard';
   static const statisticsDashboard = 'statistics_dashboard';
+
+  // Screen-level gates (full-screen)
+  static const myDayFocusModeRequired = 'my_day_focus_mode_required';
 }

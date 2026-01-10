@@ -4,7 +4,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 /// A generic radio card group for FormBuilder.
 ///
 /// Displays options as selectable cards with icons, titles, and descriptions.
-/// Useful for persona selection, mode selection, etc.
+/// Useful for focus mode selection, option pickers, etc.
 ///
 /// Type parameter [T] is the value type for each option.
 class FormBuilderRadioCardGroup<T> extends StatelessWidget {

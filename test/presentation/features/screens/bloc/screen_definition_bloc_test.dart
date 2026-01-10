@@ -61,8 +61,8 @@ void main() {
     blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
       'emits [loading, loaded] when screen found immediately',
       build: () {
-        final screen = SystemScreenDefinitions.inbox;
-        when(() => mockRepository.watchScreen('inbox')).thenAnswer(
+        final screen = SystemScreenDefinitions.myDay;
+        when(() => mockRepository.watchScreen('my_day')).thenAnswer(
           (_) => Stream.value(
             ScreenWithPreferences(
               screen: screen,
@@ -76,7 +76,7 @@ void main() {
         return buildBloc();
       },
       act: (bloc) => bloc.add(
-        const ScreenDefinitionEvent.subscriptionRequested(screenKey: 'inbox'),
+        const ScreenDefinitionEvent.subscriptionRequested(screenKey: 'my_day'),
       ),
       expect: () => [
         const ScreenDefinitionState.loading(),
@@ -84,7 +84,7 @@ void main() {
           (s) =>
               s.maybeMap(loaded: (l) => l.screen.screenKey, orElse: () => ''),
           'screen.screenKey',
-          'inbox',
+          'my_day',
         ),
       ],
     );

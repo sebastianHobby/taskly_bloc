@@ -71,8 +71,7 @@ class AttentionSeeder {
             entitySelector: template.entitySelector,
             severity: _mapSeverity(template.severity),
             displayConfig: template.displayConfig,
-            // Store List<String> as Map for JSON column
-            resolutionActions: {'actions': template.resolutionActions},
+            resolutionActions: template.resolutionActions,
             source: const Value(EntitySource.system_template),
           ),
           mode: InsertMode.insertOrIgnore, // Skip if already exists

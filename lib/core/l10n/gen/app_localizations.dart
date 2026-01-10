@@ -415,12 +415,6 @@ abstract class AppLocalizations {
   /// **'Apply'**
   String get groupSortApplyButton;
 
-  /// Title for the Inbox section
-  ///
-  /// In en, this message translates to:
-  /// **'Inbox'**
-  String get inboxTitle;
-
   /// Title for the Today section
   ///
   /// In en, this message translates to:
@@ -606,18 +600,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Repeat rule is too long'**
   String get projectFormRepeatRuleTooLong;
-
-  /// Title shown when the inbox has no tasks
-  ///
-  /// In en, this message translates to:
-  /// **'Your inbox is empty'**
-  String get emptyInboxTitle;
-
-  /// Description shown when the inbox has no tasks
-  ///
-  /// In en, this message translates to:
-  /// **'Tasks without a project will appear here'**
-  String get emptyInboxDescription;
 
   /// Title shown when there are no tasks or projects due today
   ///
@@ -1315,113 +1297,17 @@ abstract class AppLocalizations {
   /// **'Confirm'**
   String get confirmButton;
 
-  /// Name of the Idealist allocation persona
-  ///
-  /// In en, this message translates to:
-  /// **'Idealist'**
-  String get personaIdealist;
-
-  /// Short description of the Idealist persona
-  ///
-  /// In en, this message translates to:
-  /// **'Show me what matters most, not what\'s most urgent.'**
-  String get personaIdealistDescription;
-
-  /// Detailed explanation of how Idealist persona works
-  ///
-  /// In en, this message translates to:
-  /// **'Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.'**
-  String get personaIdealistHowItWorks;
-
-  /// Name of the Reflector allocation persona
-  ///
-  /// In en, this message translates to:
-  /// **'Reflector'**
-  String get personaReflector;
-
-  /// Short description of the Reflector persona
-  ///
-  /// In en, this message translates to:
-  /// **'Show me values I\'ve been neglecting.'**
-  String get personaReflectorDescription;
-
-  /// Detailed explanation of how Reflector persona works
-  ///
-  /// In en, this message translates to:
-  /// **'Analyzes your recent completions and prioritizes values you\'ve been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.'**
-  String get personaReflectorHowItWorks;
-
-  /// Name of the Realist allocation persona
-  ///
-  /// In en, this message translates to:
-  /// **'Realist'**
-  String get personaRealist;
-
-  /// Short description of the Realist persona
-  ///
-  /// In en, this message translates to:
-  /// **'Show me what matters most, but warn me about urgent tasks.'**
-  String get personaRealistDescription;
-
-  /// Detailed explanation of how Realist persona works
-  ///
-  /// In en, this message translates to:
-  /// **'Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.'**
-  String get personaRealistHowItWorks;
-
-  /// Name of the Firefighter allocation persona
-  ///
-  /// In en, this message translates to:
-  /// **'Firefighter'**
-  String get personaFirefighter;
-
-  /// Short description of the Firefighter persona
-  ///
-  /// In en, this message translates to:
-  /// **'Show me what\'s urgent right now.'**
-  String get personaFirefighterDescription;
-
-  /// Detailed explanation of how Firefighter persona works
-  ///
-  /// In en, this message translates to:
-  /// **'Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.'**
-  String get personaFirefighterHowItWorks;
-
-  /// Name of the Custom allocation persona
-  ///
-  /// In en, this message translates to:
-  /// **'Custom'**
-  String get personaCustom;
-
-  /// Short description of the Custom persona
-  ///
-  /// In en, this message translates to:
-  /// **'Let me decide what you show me.'**
-  String get personaCustomDescription;
-
-  /// Detailed explanation of how Custom persona works
-  ///
-  /// In en, this message translates to:
-  /// **'Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.'**
-  String get personaCustomHowItWorks;
-
-  /// Badge text for recommended persona
-  ///
-  /// In en, this message translates to:
-  /// **'Recommended'**
-  String get personaRecommended;
-
-  /// Expandable section title for persona explanation
-  ///
-  /// In en, this message translates to:
-  /// **'How it works'**
-  String get personaHowItWorks;
-
-  /// Section title for persona selection
+  /// Section title for focus mode selection
   ///
   /// In en, this message translates to:
   /// **'How should Focus prioritize tasks?'**
-  String get personaSectionTitle;
+  String get focusModeSectionTitle;
+
+  /// Generic label for recommended badge
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get recommendedLabel;
 
   /// Section title for urgency threshold settings
   ///
@@ -1537,7 +1423,7 @@ abstract class AppLocalizations {
   /// **'Neglect influence (0-1)'**
   String get neglectInfluence;
 
-  /// Snackbar message when auto-switching to Custom persona
+  /// Snackbar message when auto-switching to Custom mode
   ///
   /// In en, this message translates to:
   /// **'Switched to Custom mode'**
@@ -1735,31 +1621,31 @@ abstract class AppLocalizations {
   /// **'Review'**
   String get myDayAlertBannerReview;
 
-  /// Excluded section title for Idealist persona
+  /// Excluded section title for Intentional focus mode
   ///
   /// In en, this message translates to:
   /// **'Needs Alignment'**
   String get excludedSectionNeedsAlignment;
 
-  /// Excluded section title for Reflector persona
+  /// Excluded section title for Sustainable focus mode
   ///
   /// In en, this message translates to:
   /// **'Worth Considering'**
   String get excludedSectionWorthConsidering;
 
-  /// Excluded section title for Realist persona
+  /// Excluded section title (legacy)
   ///
   /// In en, this message translates to:
   /// **'Overdue Attention'**
   String get excludedSectionOverdueAttention;
 
-  /// Excluded section title for Firefighter persona
+  /// Excluded section title for Responsive focus mode
   ///
   /// In en, this message translates to:
   /// **'Active Fires'**
   String get excludedSectionActiveFires;
 
-  /// Excluded section title for Custom persona
+  /// Excluded section title for Personalized focus mode
   ///
   /// In en, this message translates to:
   /// **'Outside Focus'**
@@ -1819,11 +1705,11 @@ abstract class AppLocalizations {
   /// **'Basic Information'**
   String get basicInfoSection;
 
-  /// Subtitle for persona selection section
+  /// Subtitle for focus mode selection section
   ///
   /// In en, this message translates to:
-  /// **'Choose a persona to control how tasks are prioritized'**
-  String get personaSectionSubtitle;
+  /// **'Choose a focus mode to control how tasks are prioritized'**
+  String get focusModeSectionSubtitle;
 
   /// Section title for task limit setting
   ///
@@ -1902,12 +1788,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} days'**
   String daysFormat(int count);
-
-  /// Title for the Persona settings section
-  ///
-  /// In en, this message translates to:
-  /// **'Persona'**
-  String get personaTitle;
 
   /// Label for daily task limit setting
   ///

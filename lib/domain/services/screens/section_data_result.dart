@@ -7,8 +7,6 @@ import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
-
-import 'package:taskly_bloc/domain/models/settings/evaluated_alert.dart';
 import 'package:taskly_bloc/domain/models/attention/attention_item.dart';
 
 part 'section_data_result.freezed.dart';
@@ -87,9 +85,6 @@ sealed class SectionDataResult with _$SectionDataResult {
 
     /// Full list of excluded tasks (for Outside Focus section)
     @Default([]) List<ExcludedTask> excludedTasks,
-
-    /// Evaluated alerts based on user's alert config
-    AlertEvaluationResult? alertEvaluationResult,
 
     /// The focus mode used for this allocation
     FocusMode? activeFocusMode,

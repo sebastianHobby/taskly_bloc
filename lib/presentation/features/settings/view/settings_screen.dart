@@ -26,6 +26,8 @@ import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
+  static const bool _showLegacyFocusItems = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -64,9 +66,11 @@ class SettingsScreen extends StatelessWidget {
                   context: context,
                   title: 'Customization',
                   children: [
-                    _buildTaskAllocationItem(context),
                     _buildNavigationOrderItem(context),
-                    _buildAttentionRulesItem(context),
+                    if (_showLegacyFocusItems)
+                      _buildTaskAllocationItem(context),
+                    if (_showLegacyFocusItems)
+                      _buildAttentionRulesItem(context),
                   ],
                 ),
                 _buildSection(

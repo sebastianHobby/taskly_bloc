@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Someday - Multi-Value</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#359EFF", "primary-dark": "#0ea842", "background-light": "#f5f7f8", "background-dark": "#0f1923", "surface-dark": "#193322", "surface-light": "#ffffff"}, fontFamily: {display: "Inter"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, boxShadow: {glow: "0 0 15px rgba(19, 236, 91, 0.3)"}}}};</script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen flex flex-col antialiased selection:bg-primary selection:text-black text-gray-900 dark:text-gray-100">
+<header class="sticky top-0 z-40 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-xl border-b border-gray-200 dark:border-white/5 transition-all duration-200">
+<div class="px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h1 class="text-xl font-bold tracking-tight">Someday</h1>
+<div class="bg-gray-200 dark:bg-white/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                Multi-Value
+            </div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="relative p-2 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-white/5">
+<span class="material-symbols-outlined">tune</span>
+<span class="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full border border-white dark:border-background-dark"></span>
+</button>
+</div>
+</div>
+<div class="px-4 pb-3 pt-1 overflow-x-auto scrollbar-hide">
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-1.5 pl-3 pr-4 py-1.5 rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-white/5 text-xs font-semibold shadow-sm hover:border-primary/50 transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px] text-gray-400">sort</span>
+                Sort by Priority
+            </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-white/5 text-xs font-semibold shadow-sm hover:border-primary/50 transition-colors text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                All Values
+                <span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-white/5 text-xs font-semibold shadow-sm hover:border-primary/50 transition-colors text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                Projects Only
+            </button>
+</div>
+</div>
+</header>
+<main class="flex-1 px-4 py-6 flex flex-col gap-8 pb-24">
+<section>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-gray-400 filled">inbox</span>
+<h2 class="text-lg font-black tracking-tight text-gray-900 dark:text-white">NO VALUE ASSIGNED (Inbox)</h2>
+</div>
+</div>
+<div class="border-l-2 border-gray-300 dark:border-white/10 pl-4 flex flex-col gap-4">
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Call Mom regarding weekend plans</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-blue-500 hover:text-white text-gray-400 transition-colors" title="Assign Value">
+<span class="material-symbols-outlined text-[16px]">label</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">diversity_3</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">event</span>
+</div>
+<span class="text-gray-300 dark:text-white/10">•</span>
+<span class="text-gray-400 italic">Unsorted</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Review subscription charges</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-blue-500 hover:text-white text-gray-400 transition-colors" title="Assign Value">
+<span class="material-symbols-outlined text-[16px]">label</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">payments</span>
+</div>
+<span class="text-gray-300 dark:text-white/10">•</span>
+<span class="text-gray-400 italic">Added 2 days ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-purple-500 filled">work</span>
+<h2 class="text-lg font-black tracking-tight text-gray-900 dark:text-white">Career</h2>
+</div>
+<span class="text-[10px] font-bold bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 px-2 py-1 rounded uppercase tracking-wide border border-purple-200 dark:border-purple-800/30">
+                High Priority Value
+            </span>
+</div>
+<div class="border-l-2 border-purple-500/20 dark:border-purple-500/10 pl-4 flex flex-col gap-6">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 opacity-80">
+<span class="material-symbols-outlined text-[16px] text-gray-400">folder_open</span>
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Project: Brand Redesign</h3>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+<div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none"></div>
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Competitor visual analysis</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors" title="Schedule">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-blue-500 hover:text-white text-gray-400 transition-colors" title="Assign">
+<span class="material-symbols-outlined text-[16px]">person_add</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">visibility</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">lightbulb</span>
+</div>
+<span class="text-gray-300 dark:text-white/10">•</span>
+<span class="flex items-center gap-1 text-amber-500 font-bold">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+                                    Med Priority
+                                </span>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Draft new logo concepts</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">palette</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">brush</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 opacity-80">
+<span class="material-symbols-outlined text-[16px] text-gray-400">inbox</span>
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Inbox (Career)</h3>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all border-l-4 border-l-purple-500">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Update LinkedIn Profile</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">connect_without_contact</span>
+</div>
+<span class="text-gray-300 dark:text-white/10">•</span>
+<span class="flex items-center gap-1 text-red-500 dark:text-red-400 font-bold">
+<span class="material-symbols-outlined text-[14px]">priority_high</span>
+                                    High Priority
+                                </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-red-500 filled">favorite</span>
+<h2 class="text-lg font-black tracking-tight text-gray-900 dark:text-white">Health &amp; Wellbeing</h2>
+</div>
+<span class="text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 px-2 py-1 rounded uppercase tracking-wide border border-red-200 dark:border-red-800/30">
+                Priority Value
+            </span>
+</div>
+<div class="border-l-2 border-red-500/20 dark:border-red-500/10 pl-4 flex flex-col gap-6">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 opacity-80">
+<span class="material-symbols-outlined text-[16px] text-gray-400">inbox</span>
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Inbox (Health)</h3>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Research local gym memberships</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-blue-500 hover:text-white text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">person_add</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">payments</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">location_on</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Buy running shoes</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">shopping_bag</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">payments</span>
+</div>
+<span class="text-gray-300 dark:text-white/10">•</span>
+<span class="text-gray-400 italic">Quick win</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-500 filled">school</span>
+<h2 class="text-lg font-black tracking-tight text-gray-900 dark:text-white">Growth &amp; Learning</h2>
+</div>
+<span class="text-[10px] font-bold bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 px-2 py-1 rounded uppercase tracking-wide">
+                Standard Value
+            </span>
+</div>
+<div class="border-l-2 border-blue-500/20 dark:border-blue-500/10 pl-4 flex flex-col gap-6">
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 opacity-80">
+<span class="material-symbols-outlined text-[16px] text-gray-400">folder_open</span>
+<h3 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">Project: Learn Spanish</h3>
+</div>
+<div class="group bg-white dark:bg-surface-dark rounded-xl p-3.5 border border-gray-200 dark:border-white/5 shadow-sm hover:shadow-md transition-all">
+<div class="flex items-start gap-3">
+<button class="mt-0.5 flex-shrink-0 h-5 w-5 rounded border-2 border-gray-300 dark:border-white/20 hover:border-primary flex items-center justify-center transition-colors"></button>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">Find a tutor on Preply</h3>
+<div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="h-7 w-7 flex items-center justify-center rounded-full bg-gray-100 dark:bg-white/10 hover:bg-primary hover:text-black text-gray-400 transition-colors">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-medium mt-1">
+<div class="flex items-center gap-1.5" title="Secondary Values">
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">translate</span>
+<span class="material-symbols-outlined text-[16px] text-gray-400 dark:text-gray-500">school</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<button class="fixed right-5 bottom-24 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-black shadow-2xl shadow-primary/40 hover:scale-105 transition-transform active:scale-95 ring-2 ring-white dark:ring-surface-dark">
+<span class="material-symbols-outlined" style="font-size: 28px;">add</span>
+</button>
+<nav class="sticky bottom-0 z-50 w-full bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/5 pb-6 pt-3 px-6">
+<div class="flex justify-between items-center">
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">star</span>
+<span class="text-[10px] font-medium">Values</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined fill-current">calendar_month</span>
+<span class="text-[10px] font-medium">Plan</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-gray-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium">Profile</span>
+</button>
+</div>
+</nav>
+</body></html>

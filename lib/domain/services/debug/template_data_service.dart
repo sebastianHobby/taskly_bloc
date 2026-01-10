@@ -69,31 +69,31 @@ class TemplateDataService {
     // 3) Create Values (must exist or allocation soft-gates).
     await _valueRepository.create(
       name: 'Life Admin',
-      color: '455A64',
+      color: '#455A64',
       iconName: '🧾',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Home & Comfort',
-      color: 'FB8C00',
+      color: '#FB8C00',
       iconName: '🏠',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Relationships',
-      color: 'E91E63',
+      color: '#E91E63',
       iconName: '🎉',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Health & Energy',
-      color: '43A047',
+      color: '#43A047',
       iconName: '💪',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Learning & Curiosity',
-      color: '1E88E5',
+      color: '#1E88E5',
       iconName: '📚',
       priority: ValuePriority.low,
     );

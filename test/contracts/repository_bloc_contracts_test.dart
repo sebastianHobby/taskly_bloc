@@ -43,7 +43,7 @@ void main() {
       );
 
       testContract('ScreenWithPreferences exposes all required properties', () {
-        final screen = SystemScreenDefinitions.inbox;
+        final screen = SystemScreenDefinitions.myDay;
         final wrapped = ScreenWithPreferences(
           screen: screen,
           preferences: const ScreenPreferences(isActive: true, sortOrder: 5),

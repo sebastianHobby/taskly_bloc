@@ -41,6 +41,22 @@ void main() {
     );
 
     test(
+      'create normalizes color without leading #',
+      tags: 'repository',
+      () async {
+        await repo.create(
+          name: 'Finance',
+          color: '455A64',
+          priority: ValuePriority.medium,
+        );
+
+        final value = await repo.getById('value-finance');
+        expect(value, isNotNull);
+        expect(value!.color, '#455A64');
+      },
+    );
+
+    test(
       'getAll orders by priority desc then name asc',
       tags: 'repository',
       () async {

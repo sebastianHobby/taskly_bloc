@@ -32,6 +32,11 @@ class AllocationParameters {
     this.urgencyBoostMultiplier = 1.0,
     this.neglectLookbackDays = 7,
     this.neglectInfluence = 0.7,
+    this.valuePriorityWeight = 1.0,
+    this.taskPriorityBoost = 1.0,
+    this.recencyPenalty = 0.0,
+    this.overdueEmergencyMultiplier = 1.0,
+    this.overdueEmergencyGrowth = OverdueEmergencyGrowth.linear,
     this.completionsByValue = const {},
   });
 
@@ -75,6 +80,23 @@ class AllocationParameters {
   /// Weight of neglect score vs base weight (0-1). (Reflector mode).
   /// 0 = pure base weight, 1 = pure neglect-based.
   final double neglectInfluence;
+
+  /// Weight applied to the base value/category contribution.
+  ///
+  /// This is used for Fine Tuning in Focus Setup.
+  final double valuePriorityWeight;
+
+  /// Boost applied to prioritized tasks.
+  final double taskPriorityBoost;
+
+  /// Penalty applied to newly-created tasks (0-1).
+  final double recencyPenalty;
+
+  /// Multiplier controlling how much overdue tasks are boosted.
+  final double overdueEmergencyMultiplier;
+
+  /// Growth curve for overdue urgency.
+  final OverdueEmergencyGrowth overdueEmergencyGrowth;
 
   /// Recent completions by value ID (pre-computed for Reflector mode).
   /// Passed in from orchestrator to avoid async in allocate().

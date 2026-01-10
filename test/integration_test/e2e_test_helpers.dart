@@ -269,7 +269,9 @@ void expectScreenVisible(WidgetTester tester, String screenKey) {
 /// Maps screen keys to expected titles.
 String _screenKeyToTitle(String screenKey) {
   const titles = {
-    'inbox': 'Inbox',
+    'my_day': 'My Day',
+    'scheduled': 'Scheduled',
+    'someday': 'Someday',
     'today': 'Today',
     'upcoming': 'Upcoming',
     'logbook': 'Logbook',
@@ -281,6 +283,8 @@ String _screenKeyToTitle(String screenKey) {
     'wellbeing': 'Wellbeing',
     'workflows': 'Workflows',
     'screen_management': 'Screens',
+    'statistics': 'Statistics',
+    'journal': 'Journal',
   };
   return titles[screenKey] ?? screenKey;
 }

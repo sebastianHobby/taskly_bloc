@@ -68,6 +68,7 @@ import 'package:taskly_bloc/domain/services/screens/templates/entity_header_sect
 import 'package:taskly_bloc/domain/services/screens/templates/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/interleaved_list_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/someday_null_dates_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/templates/someday_backlog_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
@@ -316,6 +317,15 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.somedayNullDates,
     )
+    ..registerLazySingleton<SomedayBacklogSectionInterpreter>(
+      () => SomedayBacklogSectionInterpreter(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+      ),
+      instanceName: SectionTemplateId.somedayBacklog,
+    )
     ..registerLazySingleton<AllocationSectionInterpreter>(
       () => AllocationSectionInterpreter(
         sectionDataService: getIt<SectionDataService>(),
@@ -412,6 +422,12 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.wellbeingDashboard,
     )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.myDayFocusModeRequired,
+      ),
+      instanceName: SectionTemplateId.myDayFocusModeRequired,
+    )
     ..registerLazySingleton<SectionTemplateInterpreterRegistry>(
       () => SectionTemplateInterpreterRegistry([
         getIt<DataListSectionInterpreter>(
@@ -428,6 +444,9 @@ Future<void> setupDependencies() async {
         ),
         getIt<SomedayNullDatesSectionInterpreter>(
           instanceName: SectionTemplateId.somedayNullDates,
+        ),
+        getIt<SomedayBacklogSectionInterpreter>(
+          instanceName: SectionTemplateId.somedayBacklog,
         ),
         getIt<AllocationSectionInterpreter>(
           instanceName: SectionTemplateId.allocation,
@@ -478,6 +497,9 @@ Future<void> setupDependencies() async {
         getIt<StaticSectionInterpreter>(
           instanceName: SectionTemplateId.wellbeingDashboard,
         ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.myDayFocusModeRequired,
+        ),
       ]),
     )
     // ScreenDataInterpreter - coordinates section templates
@@ -485,6 +507,7 @@ Future<void> setupDependencies() async {
       () => ScreenDataInterpreter(
         interpreterRegistry: getIt<SectionTemplateInterpreterRegistry>(),
         paramsCodec: getIt<SectionTemplateParamsCodec>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
     // Screen architecture services

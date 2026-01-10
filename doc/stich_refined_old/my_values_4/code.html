@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+
+<html class="" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>My Values</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>tailwind.config = {darkMode: "class", theme: {extend: {colors: {primary: "#359EFF", "background-light": "#f5f7f8", "background-dark": "#0f1923", "surface-dark": "#193322", "surface-light": "#ffffff"}, fontFamily: {display: "Inter"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-display bg-background-light dark:bg-background-dark min-h-screen flex flex-col antialiased selection:bg-primary selection:text-black">
+<header class="sticky top-0 z-10 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md px-4 py-4 flex items-center justify-between border-b border-gray-200 dark:border-white/5">
+<h1 class="text-black dark:text-white text-2xl font-bold tracking-tight">My Values</h1>
+<button class="flex h-10 w-10 items-center justify-center rounded-full bg-primary hover:bg-primary/90 transition-colors text-black shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined" style="font-size: 24px;">add</span>
+</button>
+</header>
+<div class="px-4 py-4 overflow-x-auto scrollbar-hide">
+<div class="flex gap-3 min-w-max">
+<button class="flex h-8 items-center justify-center px-4 rounded-full bg-surface-dark/10 dark:bg-surface-dark border border-transparent dark:border-white/10 hover:border-primary/50 transition-all group">
+<span class="text-gray-900 dark:text-white text-sm font-medium">All Priorities</span>
+</button>
+<button class="flex h-8 items-center justify-center px-4 rounded-full bg-transparent border border-gray-300 dark:border-white/20 hover:border-primary transition-all">
+<span class="text-gray-600 dark:text-gray-300 text-sm font-medium">High Priority</span>
+</button>
+<button class="flex h-8 items-center justify-center px-4 rounded-full bg-transparent border border-gray-300 dark:border-white/20 hover:border-primary transition-all">
+<span class="text-gray-600 dark:text-gray-300 text-sm font-medium">Most Active</span>
+</button>
+<button class="flex h-8 items-center justify-center px-4 rounded-full bg-transparent border border-gray-300 dark:border-white/20 hover:border-primary transition-all">
+<span class="text-gray-600 dark:text-gray-300 text-sm font-medium">Recent</span>
+</button>
+</div>
+</div>
+<main class="flex-1 px-4 flex flex-col gap-4 pb-28">
+<div class="group relative overflow-hidden rounded-xl bg-white dark:bg-surface-dark shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 transition-all hover:bg-gray-50 dark:hover:bg-[#1f3f2a]">
+<div class="p-4 flex gap-4 items-start">
+<div class="flex-shrink-0 h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
+<span class="material-symbols-outlined">favorite</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-1">
+<h3 class="text-gray-900 dark:text-white text-lg font-bold truncate">Health</h3>
+<span class="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20">High Priority</span>
+</div>
+<p class="text-gray-500 dark:text-[#92c9a4] text-sm mb-3">12 tasks completed this week</p>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500 dark:text-gray-400">Weekly Goal</span>
+<span class="text-primary font-semibold">80%</span>
+</div>
+<div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-black/30">
+<div class="h-1.5 rounded-full bg-primary transition-all duration-500" style="width: 80%"></div>
+</div>
+</div>
+</div>
+<div class="flex h-full items-center justify-center pl-2">
+<span class="material-symbols-outlined text-gray-400">chevron_right</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl bg-white dark:bg-surface-dark shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 transition-all hover:bg-gray-50 dark:hover:bg-[#1f3f2a]">
+<div class="p-4 flex gap-4 items-start">
+<div class="flex-shrink-0 h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+<span class="material-symbols-outlined">school</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-1">
+<h3 class="text-gray-900 dark:text-white text-lg font-bold truncate">Growth</h3>
+<span class="inline-flex items-center rounded-md bg-blue-400/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-400/20">Medium Priority</span>
+</div>
+<p class="text-gray-500 dark:text-[#92c9a4] text-sm mb-3">45% of total focus time</p>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500 dark:text-gray-400">Monthly Target</span>
+<span class="text-blue-400 font-semibold">45%</span>
+</div>
+<div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-black/30">
+<div class="h-1.5 rounded-full bg-blue-400 transition-all duration-500" style="width: 45%"></div>
+</div>
+</div>
+</div>
+<div class="flex h-full items-center justify-center pl-2">
+<span class="material-symbols-outlined text-gray-400">chevron_right</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl bg-white dark:bg-surface-dark shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 transition-all hover:bg-gray-50 dark:hover:bg-[#1f3f2a]">
+<div class="p-4 flex gap-4 items-start">
+<div class="flex-shrink-0 h-12 w-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+<span class="material-symbols-outlined">diversity_3</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-1">
+<h3 class="text-gray-900 dark:text-white text-lg font-bold truncate">Community</h3>
+<span class="inline-flex items-center rounded-md bg-gray-400/10 px-2 py-1 text-xs font-medium text-gray-500 dark:text-gray-400 ring-1 ring-inset ring-gray-400/20">Low Priority</span>
+</div>
+<p class="text-gray-500 dark:text-[#92c9a4] text-sm mb-3">No active tasks recently</p>
+<div class="flex flex-col gap-1.5 opacity-50">
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500 dark:text-gray-400">Weekly Goal</span>
+<span class="text-gray-400 font-semibold">0%</span>
+</div>
+<div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-black/30">
+<div class="h-1.5 rounded-full bg-gray-400 transition-all duration-500" style="width: 5%"></div>
+</div>
+</div>
+</div>
+<div class="flex h-full items-center justify-center pl-2">
+<span class="material-symbols-outlined text-gray-400">chevron_right</span>
+</div>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl bg-white dark:bg-surface-dark shadow-sm dark:shadow-none border border-gray-100 dark:border-white/5 transition-all hover:bg-gray-50 dark:hover:bg-[#1f3f2a]">
+<div class="p-4 flex gap-4 items-start">
+<div class="flex-shrink-0 h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
+<span class="material-symbols-outlined">palette</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-1">
+<h3 class="text-gray-900 dark:text-white text-lg font-bold truncate">Creativity</h3>
+<span class="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20">High Priority</span>
+</div>
+<p class="text-gray-500 dark:text-[#92c9a4] text-sm mb-3">5 active projects</p>
+<div class="flex flex-col gap-1.5">
+<div class="flex justify-between items-center text-xs">
+<span class="text-gray-500 dark:text-gray-400">Project Status</span>
+<span class="text-purple-400 font-semibold">60%</span>
+</div>
+<div class="h-1.5 w-full rounded-full bg-gray-200 dark:bg-black/30">
+<div class="h-1.5 rounded-full bg-purple-500 transition-all duration-500" style="width: 60%"></div>
+</div>
+</div>
+</div>
+<div class="flex h-full items-center justify-center pl-2">
+<span class="material-symbols-outlined text-gray-400">chevron_right</span>
+</div>
+</div>
+</div>
+<button class="group mt-2 flex w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 dark:border-white/10 bg-transparent p-6 text-center hover:border-primary hover:bg-primary/5 transition-all">
+<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-white/5 text-gray-500 group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add</span>
+</div>
+<h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">Create New Value</h3>
+<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Define what matters most to you</p>
+</button>
+</main>
+<nav class="fixed bottom-0 z-20 w-full bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-xl border-t border-gray-200 dark:border-white/5 pb-6 pt-3 px-2">
+<div class="grid grid-cols-5 items-end justify-items-center">
+<button class="flex flex-col items-center gap-1 group w-full">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">light_mode</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">My Day</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">calendar_month</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Scheduled</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">all_inbox</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Someday</span>
+</button>
+<button class="flex flex-col items-center gap-1 group w-full">
+<span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">menu_book</span>
+<span class="text-[10px] font-medium text-gray-400 group-hover:text-primary transition-colors">Journal</span>
+</button>
+<button class="flex flex-col items-center gap-1 w-full text-primary">
+<span class="material-symbols-outlined fill-current">grid_view</span>
+<span class="text-[10px] font-medium">Browse</span>
+</button>
+</div>
+</nav>
+</body></html>

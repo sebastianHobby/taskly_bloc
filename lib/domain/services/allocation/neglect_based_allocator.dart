@@ -1,11 +1,13 @@
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_scoring.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
 /// Allocator that prioritizes values the user has been neglecting.
 ///
-/// Used by the Reflector persona to maintain balance across values.
+/// Used by the sustainable focus mode to maintain balance across values.
 /// Calculates neglect scores based on recent completion history.
 ///
 /// **Combined Scoring**: All factors (value weight, neglect, urgency) are
@@ -68,6 +70,8 @@ class NeglectBasedAllocator implements AllocationStrategy {
       projectThresholdDays: parameters.taskUrgencyThresholdDays,
     );
 
+    final now = DateTime.now();
+
     // SINGLE-PASS: Calculate combined score for EACH task
     final scoredTasks = <_ScoredTask>[];
 
@@ -83,8 +87,8 @@ class NeglectBasedAllocator implements AllocationStrategy {
         continue;
       }
 
-      // Get task's direct values (no inheritance)
-      final categoryIds = task.values.map((v) => v.id).toSet();
+      // Get task's effective values (task overrides project, else inherit).
+      final categoryIds = task.effectiveValues.map((v) => v.id).toSet();
 
       final matchedCategories = categories.keys
           .where(categoryIds.contains)
@@ -106,17 +110,45 @@ class NeglectBasedAllocator implements AllocationStrategy {
       final categoryWeight = categories[categoryId] ?? 0;
 
       // Base score from value weight (normalized)
-      final baseScore = categoryWeight / totalWeight;
+      final baseScore =
+          (categoryWeight / totalWeight) * parameters.valuePriorityWeight;
 
       // Neglect factor (from task's value)
       final neglectFactor = neglectMultipliers[categoryId] ?? 1.0;
 
       // Urgency factor (from task's deadline)
       final isUrgent = detector.isTaskUrgent(task);
-      final urgencyFactor = isUrgent ? parameters.urgencyBoostMultiplier : 1.0;
+      var urgencyFactor = isUrgent ? parameters.urgencyBoostMultiplier : 1.0;
+      final deadline = task.deadlineDate;
+      if (deadline != null) {
+        final daysUntilDeadline = deadline.difference(now).inDays;
+        if (daysUntilDeadline < 0) {
+          urgencyFactor *= AllocationScoring.overdueEmergencyFactor(
+            daysOverdue: -daysUntilDeadline,
+            overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
+            overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
+          );
+        }
+      }
+
+      final taskPriorityFactor = AllocationScoring.taskPriorityMultiplier(
+        task: task,
+        taskPriorityBoost: parameters.taskPriorityBoost,
+      );
+
+      final recencyFactor = AllocationScoring.recencyMultiplier(
+        task: task,
+        now: now,
+        recencyPenalty: parameters.recencyPenalty,
+      );
 
       // COMBINED SCORE: all factors multiplied together
-      final combinedScore = baseScore * neglectFactor * urgencyFactor;
+      final combinedScore =
+          baseScore *
+          neglectFactor *
+          urgencyFactor *
+          taskPriorityFactor *
+          recencyFactor;
 
       // Check if value is neglected (positive neglect score)
       final isNeglectedValue = (neglectScores[categoryId] ?? 0) > 0;

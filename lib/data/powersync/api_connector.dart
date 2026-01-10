@@ -1,5 +1,4 @@
 // This file performs setup of the PowerSync database
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
@@ -11,6 +10,9 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/powersync/schema.dart';
+import 'package:taskly_bloc/data/powersync/upload_data_normalizer.dart'
+    as upload_normalizer;
+import 'package:taskly_bloc/data/services/attention_seeder.dart';
 import 'package:taskly_bloc/data/services/system_data_cleanup_service.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
@@ -31,157 +33,19 @@ final List<RegExp> fatalResponseCodes = [
 /// PGRST205: Could not find the table in the schema cache
 const _schemaNotFoundCode = 'PGRST205';
 
-/// Columns that are json/jsonb (or array-like) in Supabase.
-///
-/// PowerSync syncs these as TEXT on-device. Before uploading back to Supabase,
-/// we convert JSON strings into structured values (Map/List) so PostgREST sends
-/// real JSON/arrays rather than JSON-as-string.
-final Map<String, Set<String>> _uploadJsonColumnsByTable = {
-  // jsonb in Supabase
-  'user_profiles': {
-    'global_settings',
-    'allocation_settings',
-    'page_sort_preferences',
-    'page_display_settings',
-  },
-  // jsonb in Supabase
-  'screen_definitions': {'content_config', 'actions_config'},
-  // jsonb + array-like fields in Supabase
-  'attention_rules': {
-    'trigger_config',
-    'entity_selector',
-    'display_config',
-    'resolution_actions',
-  },
-  // jsonb in Supabase
-  'pending_notifications': {'payload'},
-  // jsonb in Supabase
-  'trackers': {'response_config'},
-  // jsonb in Supabase
-  'tracker_responses': {'response_value'},
-  // jsonb in Supabase
-  'daily_tracker_responses': {'response_value'},
-  // jsonb in Supabase
-  'analytics_snapshots': {'metrics'},
-  // jsonb in Supabase
-  'analytics_insights': {'metadata'},
-  // jsonb in Supabase
-  'analytics_correlations': {
-    'performance_metrics',
-    'value_with_source',
-    'value_without_source',
-  },
-};
-
-String _previewForLog(Object? value, {int maxChars = 200}) {
-  if (value == null) return '<null>';
-  if (value is String) {
-    final trimmed = value.trim();
-    if (trimmed.length <= maxChars) return trimmed;
-    return '${trimmed.substring(0, maxChars)}…';
-  }
-
-  try {
-    final encoded = jsonEncode(value);
-    if (encoded.length <= maxChars) return encoded;
-    return '${encoded.substring(0, maxChars)}…';
-  } catch (_) {
-    final stringified = value.toString();
-    if (stringified.length <= maxChars) return stringified;
-    return '${stringified.substring(0, maxChars)}…';
-  }
-}
-
-({Object? value, bool changed, bool doubleEncoded}) _tryDecodeJsonValue(
-  Object? value,
-) {
-  if (value is! String) {
-    return (value: value, changed: false, doubleEncoded: false);
-  }
-
-  final trimmed = value.trim();
-  if (trimmed.isEmpty) {
-    return (value: value, changed: false, doubleEncoded: false);
-  }
-
-  // Fast-path: only attempt JSON decode when it looks like JSON.
-  final first = trimmed.codeUnitAt(0);
-  final looksLikeJson =
-      first == 0x7B /* { */ ||
-      first == 0x5B /* [ */ ||
-      first == 0x22 /* " */ ||
-      trimmed == 'null' ||
-      trimmed == 'true' ||
-      trimmed == 'false' ||
-      RegExp(r'^-?\d').hasMatch(trimmed);
-  if (!looksLikeJson) {
-    return (value: value, changed: false, doubleEncoded: false);
-  }
-
-  try {
-    final decoded = jsonDecode(trimmed);
-    if (decoded is String) {
-      // Handle "{...}" / "[...]" (double-encoded) cases.
-      try {
-        final decodedTwice = jsonDecode(decoded);
-        return (value: decodedTwice, changed: true, doubleEncoded: true);
-      } catch (_) {
-        final changed = decoded != value;
-        return (value: decoded, changed: changed, doubleEncoded: false);
-      }
-    }
-    return (value: decoded, changed: true, doubleEncoded: false);
-  } catch (_) {
-    return (value: value, changed: false, doubleEncoded: false);
-  }
-}
-
 Map<String, dynamic> _normalizeUploadData(
   String table,
   String rowId,
   UpdateType opType,
   Map<String, dynamic> data,
 ) {
-  final jsonColumns = _uploadJsonColumnsByTable[table];
-  if (jsonColumns == null || jsonColumns.isEmpty) return data;
-
-  final normalized = Map<String, dynamic>.of(data);
-  for (final column in jsonColumns) {
-    if (!normalized.containsKey(column)) continue;
-    final value = normalized[column];
-    final result = _tryDecodeJsonValue(value);
-    final decoded = result.value;
-
-    // With fresh data, any upload-time decoding indicates a bug (writing JSON
-    // as text into a JSON/array column). Log loudly so we can trace the source.
-    if (result.changed &&
-        (decoded is Map || decoded is List || result.doubleEncoded)) {
-      talker.error(
-        '''
-    [powersync] Upload normalized JSON field (unexpected)
-  table=$table
-  id=$rowId
-  op=$opType
-  column=$column
-  doubleEncoded=${result.doubleEncoded}
-  beforeType=${value.runtimeType}
-  afterType=${decoded.runtimeType}
-  before=${_previewForLog(value)}
-  after=${_previewForLog(decoded)}''',
-      );
-    }
-
-    // Special case: `resolution_actions` is an array-like server field in some
-    // schemas. If we decode a JSON array, keep it as a List so PostgREST can
-    // send it as an array/json depending on server column type.
-    if (column == 'resolution_actions' && decoded is String) {
-      // If a plain string sneaks through, keep as-is.
-      normalized[column] = decoded;
-    } else {
-      normalized[column] = decoded;
-    }
-  }
-  return normalized;
+  return upload_normalizer.normalizeUploadData(
+    table: table,
+    rowId: rowId,
+    opType: opType,
+    data: data,
+    logError: talker.error,
+  );
 }
 
 /// Use Supabase for authentication and data upload.
@@ -630,6 +494,11 @@ Future<void> runPostAuthMaintenance({
   }
 
   talker.info('[PostAuthMaintenance] Running post-auth maintenance');
+
+  // Seed system attention rules into the local database.
+  // This is required when Supabase has no rows yet because the UI reads from
+  // the local Drift/PowerSync database.
+  await AttentionSeeder(db: driftDb, idGenerator: idGenerator).ensureSeeded();
 
   // Clean up orphaned system data
   final cleanupService = SystemDataCleanupService(

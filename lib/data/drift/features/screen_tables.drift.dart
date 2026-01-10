@@ -5,9 +5,15 @@ import 'package:taskly_bloc/data/drift/features/shared_enums.dart';
 
 /// Unified screen definitions table.
 ///
-/// Stores both system-seeded screen templates and user-created screens.
-/// System screens are seeded on first launch with source='system_template'.
-/// User-created screens have source='user_created'.
+/// Stores user-created screen definitions, and may also contain legacy
+/// system-template rows.
+///
+/// In the current Option B architecture:
+/// - System screen definitions are authored in code via `SystemScreenDefinitions`.
+/// - User-created screens are stored here (`source='user_created'`).
+/// - Older system-template rows (`source='system_template'`) may exist for
+///   backward compatibility and only act as a fallback for preference-like
+///   fields such as `isActive`/`sortOrder`.
 ///
 /// This table supports:
 /// - System screens (inbox, my_day, scheduled, etc.)

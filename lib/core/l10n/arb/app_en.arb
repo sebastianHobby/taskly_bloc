@@ -212,10 +212,6 @@
     "@groupSortApplyButton": {
         "description": "Button text for applying group & sort changes"
     },
-    "inboxTitle": "Inbox",
-    "@inboxTitle": {
-        "description": "Title for the Inbox section"
-    },
     "todayTitle": "Today",
     "@todayTitle": {
         "description": "Title for the Today section"
@@ -339,14 +335,6 @@
     "projectFormRepeatRuleTooLong": "Repeat rule is too long",
     "@projectFormRepeatRuleTooLong": {
         "description": "Validation error shown when the RRULE repeat rule is too long"
-    },
-    "emptyInboxTitle": "Your inbox is empty",
-    "@emptyInboxTitle": {
-        "description": "Title shown when the inbox has no tasks"
-    },
-    "emptyInboxDescription": "Tasks without a project will appear here",
-    "@emptyInboxDescription": {
-        "description": "Description shown when the inbox has no tasks"
     },
     "emptyTodayTitle": "Nothing due today",
     "@emptyTodayTitle": {
@@ -887,77 +875,13 @@
     "@confirmButton": {
         "description": "Confirm action button"
     },
-    "personaIdealist": "Idealist",
-    "@personaIdealist": {
-        "description": "Name of the Idealist allocation persona"
+    "focusModeSectionTitle": "How should Focus prioritize tasks?",
+    "@focusModeSectionTitle": {
+        "description": "Section title for focus mode selection"
     },
-    "personaIdealistDescription": "Show me what matters most, not what's most urgent.",
-    "@personaIdealistDescription": {
-        "description": "Short description of the Idealist persona"
-    },
-    "personaIdealistHowItWorks": "Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.",
-    "@personaIdealistHowItWorks": {
-        "description": "Detailed explanation of how Idealist persona works"
-    },
-    "personaReflector": "Reflector",
-    "@personaReflector": {
-        "description": "Name of the Reflector allocation persona"
-    },
-    "personaReflectorDescription": "Show me values I've been neglecting.",
-    "@personaReflectorDescription": {
-        "description": "Short description of the Reflector persona"
-    },
-    "personaReflectorHowItWorks": "Analyzes your recent completions and prioritizes values you've been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.",
-    "@personaReflectorHowItWorks": {
-        "description": "Detailed explanation of how Reflector persona works"
-    },
-    "personaRealist": "Realist",
-    "@personaRealist": {
-        "description": "Name of the Realist allocation persona"
-    },
-    "personaRealistDescription": "Show me what matters most, but warn me about urgent tasks.",
-    "@personaRealistDescription": {
-        "description": "Short description of the Realist persona"
-    },
-    "personaRealistHowItWorks": "Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.",
-    "@personaRealistHowItWorks": {
-        "description": "Detailed explanation of how Realist persona works"
-    },
-    "personaFirefighter": "Firefighter",
-    "@personaFirefighter": {
-        "description": "Name of the Firefighter allocation persona"
-    },
-    "personaFirefighterDescription": "Show me what's urgent right now.",
-    "@personaFirefighterDescription": {
-        "description": "Short description of the Firefighter persona"
-    },
-    "personaFirefighterHowItWorks": "Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.",
-    "@personaFirefighterHowItWorks": {
-        "description": "Detailed explanation of how Firefighter persona works"
-    },
-    "personaCustom": "Custom",
-    "@personaCustom": {
-        "description": "Name of the Custom allocation persona"
-    },
-    "personaCustomDescription": "Let me decide what you show me.",
-    "@personaCustomDescription": {
-        "description": "Short description of the Custom persona"
-    },
-    "personaCustomHowItWorks": "Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.",
-    "@personaCustomHowItWorks": {
-        "description": "Detailed explanation of how Custom persona works"
-    },
-    "personaRecommended": "Recommended",
-    "@personaRecommended": {
-        "description": "Badge text for recommended persona"
-    },
-    "personaHowItWorks": "How it works",
-    "@personaHowItWorks": {
-        "description": "Expandable section title for persona explanation"
-    },
-    "personaSectionTitle": "How should Focus prioritize tasks?",
-    "@personaSectionTitle": {
-        "description": "Section title for persona selection"
+    "recommendedLabel": "Recommended",
+    "@recommendedLabel": {
+        "description": "Generic label for recommended badge"
     },
     "urgencyThresholdsSection": "Urgency Thresholds",
     "@urgencyThresholdsSection": {
@@ -1037,7 +961,7 @@
     },
     "switchedToCustomMode": "Switched to Custom mode",
     "@switchedToCustomMode": {
-        "description": "Snackbar message when auto-switching to Custom persona"
+        "description": "Snackbar message when auto-switching to Custom mode"
     },
     "allocationSettingsTitle": "Allocation Settings",
     "@allocationSettingsTitle": {
@@ -1216,23 +1140,23 @@
     },
     "excludedSectionNeedsAlignment": "Needs Alignment",
     "@excludedSectionNeedsAlignment": {
-        "description": "Excluded section title for Idealist persona"
+        "description": "Excluded section title for Intentional focus mode"
     },
     "excludedSectionWorthConsidering": "Worth Considering",
     "@excludedSectionWorthConsidering": {
-        "description": "Excluded section title for Reflector persona"
+        "description": "Excluded section title for Sustainable focus mode"
     },
     "excludedSectionOverdueAttention": "Overdue Attention",
     "@excludedSectionOverdueAttention": {
-        "description": "Excluded section title for Realist persona"
+        "description": "Excluded section title (legacy)"
     },
     "excludedSectionActiveFires": "Active Fires",
     "@excludedSectionActiveFires": {
-        "description": "Excluded section title for Firefighter persona"
+        "description": "Excluded section title for Responsive focus mode"
     },
     "excludedSectionOutsideFocus": "Outside Focus",
     "@excludedSectionOutsideFocus": {
-        "description": "Excluded section title for Custom persona"
+        "description": "Excluded section title for Personalized focus mode"
     },
     "alertTypeUrgent": "Urgent tasks",
     "@alertTypeUrgent": {
@@ -1270,9 +1194,9 @@
     "@basicInfoSection": {
         "description": "Section title for basic screen info"
     },
-    "personaSectionSubtitle": "Choose a persona to control how tasks are prioritized",
-    "@personaSectionSubtitle": {
-        "description": "Subtitle for persona selection section"
+    "focusModeSectionSubtitle": "Choose a focus mode to control how tasks are prioritized",
+    "@focusModeSectionSubtitle": {
+        "description": "Subtitle for focus mode selection section"
     },
     "taskLimitSection": "Task Limit",
     "@taskLimitSection": {
@@ -1330,10 +1254,6 @@
                 "type": "int"
             }
         }
-    },
-    "personaTitle": "Persona",
-    "@personaTitle": {
-        "description": "Title for the Persona settings section"
     },
     "dailyTaskLimitLabel": "Daily Task Limit",
     "@dailyTaskLimitLabel": {

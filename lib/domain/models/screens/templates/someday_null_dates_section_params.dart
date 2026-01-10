@@ -8,9 +8,7 @@ import 'package:flutter/foundation.dart';
 class SomedayNullDatesSectionParams {
   const SomedayNullDatesSectionParams();
 
-  factory SomedayNullDatesSectionParams.fromJson(
-    Map<String, dynamic> json,
-  ) {
+  factory SomedayNullDatesSectionParams.fromJson(Map<String, dynamic> json) {
     // Intentionally empty for now.
     return const SomedayNullDatesSectionParams();
   }

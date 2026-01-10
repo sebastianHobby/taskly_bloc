@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
 import 'package:taskly_bloc/domain/models/screens/related_data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
@@ -33,41 +34,10 @@ import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 abstract class SystemScreenDefinitions {
   SystemScreenDefinitions._();
 
-  /// Inbox screen - tasks without a project
-  static final inbox = ScreenDefinition(
-    id: 'inbox',
-    screenKey: 'inbox',
-    name: 'Inbox',
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    screenSource: ScreenSource.systemTemplate,
-    chrome: const ScreenChrome(
-      fabOperations: [FabOperation.createTask],
-    ),
-    sections: [
-      SectionRef(
-        templateId: SectionTemplateId.issuesSummary,
-        params: const IssuesSummarySectionParams(
-          attentionItemTileVariant: AttentionItemTileVariant.standard,
-          entityTypes: ['task'],
-        ).toJson(),
-      ),
-      SectionRef(
-        templateId: SectionTemplateId.taskList,
-        params: DataListSectionParams(
-          config: DataConfig.task(query: TaskQuery.inbox()),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-        ).toJson(),
-      ),
-    ],
-  );
-
   /// My Day screen - unified Focus view with allocation alerts
   ///
   /// Replaces both Today and Next Actions screens.
-  /// Shows persona-driven allocation with alert banners for excluded tasks.
+  /// Shows focus-mode-driven allocation with alert banners for excluded tasks.
   static final myDay = ScreenDefinition(
     id: 'my_day',
     screenKey: 'my_day',
@@ -78,6 +48,13 @@ abstract class SystemScreenDefinitions {
     chrome: const ScreenChrome(
       appBarActions: [AppBarAction.settingsLink],
       settingsRoute: 'focus_setup',
+    ),
+    gate: ScreenGateConfig(
+      criteria: const ScreenGateCriteria.allocationFocusModeNotSelected(),
+      section: const SectionRef(
+        templateId: SectionTemplateId.myDayFocusModeRequired,
+        params: <String, dynamic>{},
+      ),
     ),
     sections: [
       SectionRef(
@@ -148,7 +125,7 @@ abstract class SystemScreenDefinitions {
         ).toJson(),
       ),
       SectionRef(
-        templateId: SectionTemplateId.somedayNullDates,
+        templateId: SectionTemplateId.somedayBacklog,
         params: const <String, dynamic>{},
       ),
     ],
@@ -464,7 +441,8 @@ abstract class SystemScreenDefinitions {
   ///
   /// Note: Some screens (logbook, workflows, screenManagement) are accessible
   /// via settings but not shown in the main navigation.
-  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics, Settings
+  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics,
+  /// Settings
   static List<ScreenDefinition> get all => [
     myDay,
     scheduled,
@@ -475,7 +453,6 @@ abstract class SystemScreenDefinitions {
     statistics,
     settings,
     // Hidden/Sub-screens
-    inbox,
     orphanTasks,
     workflows,
     screenManagement,
@@ -488,7 +465,6 @@ abstract class SystemScreenDefinitions {
   static ScreenDefinition? getByKey(String screenKey) {
     return switch (screenKey) {
       // Main navigable screens
-      'inbox' => inbox,
       'my_day' => myDay,
       'scheduled' => scheduled,
       'someday' => someday,
@@ -500,17 +476,19 @@ abstract class SystemScreenDefinitions {
       'journal' => journal,
       'workflows' => workflows,
       'screen_management' => screenManagement,
+
+      // Settings screens
+      // Legacy entrypoints (allocation/attention settings) route to the
+      // canonical focus setup flow.
+      'allocation_settings' || 'allocation-settings' => focusSetup,
+      'attention_rules' || 'attention-rules' => focusSetup,
+      'navigation_settings' || 'navigation-settings' => navigationSettings,
+
       // Sub-screens (accessed via parent screens)
       'trackers' => trackers,
       'wellbeing_dashboard' => wellbeingDashboard,
       'focus_setup' => focusSetup,
 
-      // Legacy settings entrypoints (redirect to focus_setup)
-      'allocation_settings' ||
-      'allocation-settings' ||
-      'attention_rules' ||
-      'attention-rules' => focusSetup,
-      'navigation_settings' => navigationSettings,
       // Attention system screens
       'check_in' => checkIn,
       _ => null,
@@ -528,21 +506,20 @@ abstract class SystemScreenDefinitions {
 
   /// Default sort orders for system screens.
   ///
-  /// Order: Inbox, My Day, Scheduled, Someday, Journal, Values, Projects,
+  /// Order: My Day, Scheduled, Someday, Journal, Values, Projects,
   /// Statistics, Settings.
   static const Map<String, int> defaultSortOrders = {
-    'inbox': 0,
-    'my_day': 1,
-    'scheduled': 2,
-    'someday': 3,
-    'journal': 4,
-    'values': 5,
-    'projects': 6,
-    'statistics': 7,
+    'my_day': 0,
+    'scheduled': 1,
+    'someday': 2,
+    'journal': 3,
+    'values': 4,
+    'projects': 5,
+    'statistics': 6,
     'settings': 100,
-    'orphan_tasks': 8,
-    'workflows': 9,
-    'screen_management': 10,
+    'orphan_tasks': 7,
+    'workflows': 8,
+    'screen_management': 9,
   };
 
   /// Returns the default sort order for a screen key.

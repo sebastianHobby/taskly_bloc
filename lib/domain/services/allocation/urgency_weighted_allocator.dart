@@ -1,6 +1,8 @@
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_scoring.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
 /// Urgency-weighted allocation strategy
 ///
@@ -27,6 +29,7 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
     final categories = parameters.categories;
     final totalLimit = parameters.maxTasks;
     final urgencyInfluence = parameters.urgencyInfluence;
+    final now = DateTime.now();
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
@@ -67,8 +70,8 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         continue;
       }
 
-      // Get category priority score (0-1) using task's direct values
-      final categoryIds = task.values.map((v) => v.id).toSet();
+      // Get category priority score (0-1) using effective values.
+      final categoryIds = task.effectiveValues.map((v) => v.id).toSet();
 
       final matchedCategories = categories.keys
           .where(categoryIds.contains)
@@ -91,15 +94,33 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         (a, b) => categories[b]!.compareTo(categories[a]!),
       );
       final topCategoryId = matchedCategories.first;
-      final priorityScore = categoryWeights[topCategoryId]! / totalWeight;
+      final priorityScore =
+          (categoryWeights[topCategoryId]! / totalWeight) *
+          parameters.valuePriorityWeight;
 
       // Calculate urgency score (0-1, where 1 = most urgent)
-      final urgencyScore = _calculateUrgencyScore(task);
+      final urgencyScore = AllocationScoring.deadlineUrgencyScore(
+        task: task,
+        now: now,
+        overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
+        overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
+      );
 
       // Blend priority and urgency
-      final finalScore =
+      var finalScore =
           (1 - urgencyInfluence) * priorityScore +
           urgencyInfluence * urgencyScore;
+
+      finalScore *= AllocationScoring.taskPriorityMultiplier(
+        task: task,
+        taskPriorityBoost: parameters.taskPriorityBoost,
+      );
+
+      finalScore *= AllocationScoring.recencyMultiplier(
+        task: task,
+        now: now,
+        recencyPenalty: parameters.recencyPenalty,
+      );
 
       scoredTasks.add(
         ScoredTask(
@@ -160,33 +181,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
       ),
       excludedTasks: excludedTasks,
     );
-  }
-
-  /// Calculates urgency score (0-1) using smooth decay curve.
-  ///
-  /// Uses formula: 1 / (1 + days/7)
-  /// - Day 0 = 1.0
-  /// - Day 7 = 0.5
-  /// - Day 14 = 0.33
-  /// - Day 21 = 0.25
-  ///
-  /// Returns:
-  /// - 1.0 for overdue tasks (clamped)
-  /// - Smooth decay for future deadlines
-  /// - 0.0 for tasks with no deadline
-  double _calculateUrgencyScore(Task task) {
-    if (task.deadlineDate == null) return 0;
-
-    final now = DateTime.now();
-    final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
-
-    if (daysUntilDeadline < 0) {
-      // Overdue: clamp at 1.0
-      return 1;
-    }
-
-    // Smooth decay: 1 / (1 + days/7)
-    return 1.0 / (1.0 + daysUntilDeadline / 7.0);
   }
 
   bool _isUrgent(Task task, int thresholdDays) {

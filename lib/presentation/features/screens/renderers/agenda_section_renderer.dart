@@ -41,6 +41,14 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   final AgendaSectionDataService _agendaDataService =
       getIt<AgendaSectionDataService>();
 
+  String _searchQuery = '';
+  _AgendaEntityFilter _entityFilter = _AgendaEntityFilter.all;
+  Set<AgendaDateTag> _tagFilter = {
+    AgendaDateTag.starts,
+    AgendaDateTag.due,
+    AgendaDateTag.inProgress,
+  };
+
   late ScrollController _scrollController;
   late ScrollController _datePickerController;
 
@@ -251,16 +259,18 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         _buildMonthHeader(context),
         _buildDatePicker(context, agendaData),
         Expanded(
-          child: ListView(
+          child: CustomScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.only(bottom: 24),
-            children: [
-              ..._buildTimelineSections(context, agendaData),
+            slivers: [
+              ..._buildTimelineSlivers(context, agendaData),
               if (_isLoadingMore)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator()),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
                 ),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
         ),
@@ -304,6 +314,16 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
                 onPressed: _jumpToToday,
               ),
             ),
+          IconButton(
+            tooltip: 'Search',
+            onPressed: _openSearch,
+            icon: const Icon(Icons.search),
+          ),
+          IconButton(
+            tooltip: 'Filter',
+            onPressed: _openFilter,
+            icon: const Icon(Icons.filter_list),
+          ),
           IconButton(
             tooltip: 'Calendar',
             onPressed: () => _pickDate(context, initial: _focusedDate),
@@ -375,12 +395,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
     return Container(
       height: 84,
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outlineVariant),
-        ),
-      ),
+      decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
       child: ListView.builder(
         controller: _datePickerController,
         scrollDirection: Axis.horizontal,
@@ -415,11 +430,11 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     return set;
   }
 
-  List<Widget> _buildTimelineSections(
+  List<Widget> _buildTimelineSlivers(
     BuildContext context,
     AgendaData agendaData,
   ) {
-    final widgets = <Widget>[];
+    final slivers = <Widget>[];
 
     final today = _dateOnly(DateTime.now());
     final monthStart = _monthStart(_selectedMonth);
@@ -428,70 +443,130 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     final restOfWeekEnd = _endOfWeekSunday(today);
     final restOfWeekStart = today.add(const Duration(days: 1));
 
-    final nextWeekStart = _startOfWeekMonday(
-      today,
-    ).add(const Duration(days: 7));
+    final nextWeekStart = _startOfWeekMonday(today).add(
+      const Duration(days: 7),
+    );
     final nextWeekEnd = nextWeekStart.add(const Duration(days: 6));
 
+    final sections = <_AgendaSectionSpec>[];
     if (_selectedMonthContainsToday) {
-      widgets.addAll(
-        _buildSection(
-          context,
+      sections.add(
+        _AgendaSectionSpec(
           title: 'Today',
           subtitle: DateFormat('EEEE, MMM d').format(today),
           dates: [today],
-          agendaData: agendaData,
+          alwaysShowHeader: true,
+          emphasizeHeader: true,
         ),
       );
-
-      widgets.addAll(
-        _buildSection(
-          context,
+      sections.add(
+        _AgendaSectionSpec(
           title: 'REST OF WEEK',
           rangeLabel: _formatRangeLabel(restOfWeekStart, restOfWeekEnd),
           dates: _datesInRange(restOfWeekStart, restOfWeekEnd),
-          agendaData: agendaData,
         ),
       );
-
-      widgets.addAll(
-        _buildSection(
-          context,
+      sections.add(
+        _AgendaSectionSpec(
           title: 'NEXT WEEK',
           rangeLabel: _formatRangeLabel(nextWeekStart, nextWeekEnd),
           dates: _datesInRange(nextWeekStart, nextWeekEnd),
-          agendaData: agendaData,
         ),
       );
     }
 
-    // Later: strictly capped to selected month.
     final laterStart = _selectedMonthContainsToday
         ? nextWeekEnd.add(const Duration(days: 1))
         : monthStart;
     final laterEnd = monthEnd;
     if (!laterStart.isAfter(laterEnd)) {
-      widgets.addAll(
-        _buildSection(
-          context,
+      sections.add(
+        _AgendaSectionSpec(
           title: 'LATER',
           rangeLabel: _formatRangeLabel(laterStart, laterEnd),
           dates: _datesInRange(laterStart, laterEnd),
-          agendaData: agendaData,
         ),
       );
     }
 
-    if (widgets.isEmpty) {
-      widgets.add(
-        const Padding(
-          padding: EdgeInsets.all(24),
-          child: Text('No scheduled items in this month.'),
+    var anyContent = false;
+    for (final section in sections) {
+      final dateGroups = _buildDateGroupsForDates(
+        agendaData: agendaData,
+        dates: section.dates,
+      );
+
+      if (!section.alwaysShowHeader && dateGroups.isEmpty) {
+        continue;
+      }
+      anyContent = true;
+
+      slivers.add(
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _SectionHeaderDelegate(
+            title: section.title,
+            subtitle: section.subtitle,
+            rangeLabel: section.rangeLabel,
+            emphasize: section.emphasizeHeader,
+          ),
+        ),
+      );
+
+      if (dateGroups.isEmpty) {
+        slivers.add(
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Text('No scheduled items.'),
+            ),
+          ),
+        );
+        continue;
+      }
+
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+            child: _SectionTimeline(
+              dateGroups: dateGroups,
+              buildAgendaItem: (item) => _buildAgendaItem(context, item),
+              dateKeyFor: (date) {
+                final normalized = _dateOnly(date);
+                return _dateKeys.putIfAbsent(normalized, GlobalKey.new);
+              },
+            ),
+          ),
         ),
       );
     }
 
-    return widgets;
+    if (!anyContent) {
+      slivers.add(
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('No scheduled items in this month.'),
+          ),
+        ),
+      );
+    }
+
+    return slivers;
+  }
+
+  List<_DateGroup> _buildDateGroupsForDates({
+    required AgendaData agendaData,
+    required List<DateTime> dates,
+  }) {
+    final dateGroups = <_DateGroup>[];
+    for (final date in dates) {
+      final items = _filteredItemsForDate(agendaData, date);
+      if (items.isEmpty) continue;
+      dateGroups.add(_DateGroup(date: date, items: items));
+    }
+    return dateGroups;
   }
 
   DateTime _startOfWeekMonday(DateTime date) {
@@ -523,73 +598,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     return '$startFmt - $endFmt';
   }
 
-  List<Widget> _buildSection(
-    BuildContext context, {
-    required String title,
-    required List<DateTime> dates,
-    required AgendaData agendaData,
-    String? subtitle,
-    String? rangeLabel,
-  }) {
-    final theme = Theme.of(context);
-
-    final dateGroups = <_DateGroup>[];
-    for (final date in dates) {
-      final items = _itemsForDate(agendaData, date);
-      if (items.isEmpty) continue;
-      dateGroups.add(_DateGroup(date: date, items: items));
-      _dateKeys.putIfAbsent(_dateOnly(date), GlobalKey.new);
-    }
-
-    if (dateGroups.isEmpty) return const [];
-
-    final header = Padding(
-      padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (subtitle != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text(
-                      subtitle.toUpperCase(),
-                      style: theme.textTheme.labelMedium,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          if (rangeLabel != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                rangeLabel,
-                style: theme.textTheme.labelMedium,
-              ),
-            ),
-        ],
-      ),
-    );
-
-    return [
-      header,
-      ...dateGroups.map((g) => _buildDateGroup(context, g)),
-    ];
-  }
-
   List<AgendaItem> _itemsForDate(AgendaData agendaData, DateTime date) {
     final normalized = _dateOnly(date);
     for (final group in agendaData.groups) {
@@ -598,41 +606,24 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     return const [];
   }
 
-  Widget _buildDateGroup(BuildContext context, _DateGroup group) {
-    final theme = Theme.of(context);
-    final key = _dateKeys[_dateOnly(group.date)]!;
+  List<AgendaItem> _filteredItemsForDate(AgendaData agendaData, DateTime date) {
+    final items = _itemsForDate(agendaData, date);
+    if (items.isEmpty) return const [];
+    return items.where(_matchesFilters).toList(growable: false);
+  }
 
-    final dayName = DateFormat.E().format(group.date).toUpperCase();
-    final dayNumber = group.date.day.toString();
+  bool _matchesFilters(AgendaItem item) {
+    if (_entityFilter == _AgendaEntityFilter.tasksOnly && !item.isTask) {
+      return false;
+    }
+    if (_entityFilter == _AgendaEntityFilter.projectsOnly && !item.isProject) {
+      return false;
+    }
+    if (!_tagFilter.contains(item.tag)) return false;
 
-    return Padding(
-      key: key,
-      padding: const EdgeInsets.only(bottom: 8),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 56,
-              child: _TimelineMarker(
-                dayName: dayName,
-                dayNumber: dayNumber,
-                color: theme.colorScheme.outlineVariant,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                children: [
-                  for (final item in group.items)
-                    _buildAgendaItem(context, item),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return item.name.toLowerCase().contains(q);
   }
 
   Widget _buildAgendaItem(BuildContext context, AgendaItem item) {
@@ -688,6 +679,198 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       ],
     );
   }
+
+  Future<void> _openSearch() async {
+    final controller = TextEditingController(text: _searchQuery);
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 16 + MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'Search',
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'Clear',
+                    onPressed: controller.clear,
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  hintText: 'Search scheduled items',
+                  prefixIcon: Icon(Icons.search),
+                ),
+                onSubmitted: (value) => Navigator.of(sheetContext).pop(value),
+              ),
+              const SizedBox(height: 12),
+              FilledButton(
+                onPressed: () =>
+                    Navigator.of(sheetContext).pop(controller.text),
+                child: const Text('Apply'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted) return;
+    if (result == null) return;
+    setState(() => _searchQuery = result);
+  }
+
+  Future<void> _openFilter() async {
+    final current = _AgendaFilterSelection(
+      entityFilter: _entityFilter,
+      tagFilter: _tagFilter,
+    );
+
+    final result = await showModalBottomSheet<_AgendaFilterSelection>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        var entity = current.entityFilter;
+        var tags = current.tagFilter.toSet();
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Filter',
+                        style: Theme.of(sheetContext).textTheme.titleLarge,
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () {
+                          setModalState(() {
+                            entity = _AgendaEntityFilter.all;
+                            tags = {
+                              AgendaDateTag.starts,
+                              AgendaDateTag.due,
+                              AgendaDateTag.inProgress,
+                            };
+                          });
+                        },
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Type',
+                    style: Theme.of(sheetContext).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  SegmentedButton<_AgendaEntityFilter>(
+                    segments: const [
+                      ButtonSegment(
+                        value: _AgendaEntityFilter.all,
+                        label: Text('All'),
+                      ),
+                      ButtonSegment(
+                        value: _AgendaEntityFilter.tasksOnly,
+                        label: Text('Tasks'),
+                      ),
+                      ButtonSegment(
+                        value: _AgendaEntityFilter.projectsOnly,
+                        label: Text('Projects'),
+                      ),
+                    ],
+                    selected: {entity},
+                    onSelectionChanged: (value) => setModalState(
+                      () => entity = value.first,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Status',
+                    style: Theme.of(sheetContext).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Start'),
+                        selected: tags.contains(AgendaDateTag.starts),
+                        onSelected: (value) => setModalState(() {
+                          value
+                              ? tags.add(AgendaDateTag.starts)
+                              : tags.remove(AgendaDateTag.starts);
+                        }),
+                      ),
+                      FilterChip(
+                        label: const Text('Due'),
+                        selected: tags.contains(AgendaDateTag.due),
+                        onSelected: (value) => setModalState(() {
+                          value
+                              ? tags.add(AgendaDateTag.due)
+                              : tags.remove(AgendaDateTag.due);
+                        }),
+                      ),
+                      FilterChip(
+                        label: const Text('In Progress'),
+                        selected: tags.contains(AgendaDateTag.inProgress),
+                        onSelected: (value) => setModalState(() {
+                          value
+                              ? tags.add(AgendaDateTag.inProgress)
+                              : tags.remove(AgendaDateTag.inProgress);
+                        }),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.of(sheetContext).pop(
+                      _AgendaFilterSelection(
+                        entityFilter: entity,
+                        tagFilter: tags,
+                      ),
+                    ),
+                    child: const Text('Apply'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (!mounted) return;
+    if (result == null) return;
+    setState(() {
+      _entityFilter = result.entityFilter;
+      _tagFilter = result.tagFilter;
+    });
+  }
 }
 
 /// Date chip widget for the horizontal date picker
@@ -714,120 +897,70 @@ class _DateChip extends StatelessWidget {
     final dayName = DateFormat.E().format(date);
     final dayNumber = date.day.toString();
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        width: 72,
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colorScheme.primaryContainer
-              : isToday
-              ? colorScheme.secondaryContainer.withOpacity(0.3)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
+    return Transform.scale(
+      scale: isSelected ? 1.05 : 1.0,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: 72,
+          decoration: BoxDecoration(
             color: isSelected
-                ? colorScheme.primary
+                ? colorScheme.primaryContainer
                 : isToday
-                ? colorScheme.secondary
+                ? colorScheme.secondaryContainer.withOpacity(0.3)
                 : Colors.transparent,
-            width: 2,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isSelected
+                  ? colorScheme.primary
+                  : isToday
+                  ? colorScheme.secondary
+                  : Colors.transparent,
+              width: 2,
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              dayName,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: isSelected
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                dayName,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              dayNumber,
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: isSelected
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurface,
-                fontWeight: FontWeight.bold,
+              const SizedBox(height: 4),
+              Text(
+                dayNumber,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: isSelected
+                      ? colorScheme.onPrimaryContainer
+                      : colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            SizedBox(
-              height: 6,
-              child: hasDot
-                  ? Container(
-                      width: 6,
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? colorScheme.onPrimaryContainer
-                            : colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
-          ],
+              const SizedBox(height: 6),
+              SizedBox(
+                height: 6,
+                child: hasDot
+                    ? Container(
+                        width: 6,
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.primary,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-}
-
-class _TimelineMarker extends StatelessWidget {
-  const _TimelineMarker({
-    required this.dayName,
-    required this.dayNumber,
-    required this.color,
-  });
-
-  final String dayName;
-  final String dayNumber;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          left: 27,
-          child: Container(
-            width: 2,
-            color: color,
-          ),
-        ),
-        Align(
-          alignment: Alignment.topCenter,
-          child: Container(
-            width: 44,
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Column(
-              children: [
-                Text(dayName, style: theme.textTheme.labelSmall),
-                const SizedBox(height: 4),
-                Text(
-                  dayNumber,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -901,15 +1034,18 @@ class _CondensedInProgressRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                  shape: BoxShape.circle,
+              SizedBox(
+                width: 68,
+                child: Text(
+                  'ONGOING',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   title,
@@ -917,15 +1053,8 @@ class _CondensedInProgressRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
                   ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'ONGOING',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
@@ -941,4 +1070,337 @@ class _DateGroup {
 
   final DateTime date;
   final List<AgendaItem> items;
+}
+
+enum _AgendaEntityFilter { all, tasksOnly, projectsOnly }
+
+class _AgendaFilterSelection {
+  const _AgendaFilterSelection({
+    required this.entityFilter,
+    required this.tagFilter,
+  });
+
+  final _AgendaEntityFilter entityFilter;
+  final Set<AgendaDateTag> tagFilter;
+}
+
+class _AgendaSectionSpec {
+  const _AgendaSectionSpec({
+    required this.title,
+    required this.dates,
+    this.subtitle,
+    this.rangeLabel,
+    this.alwaysShowHeader = false,
+    this.emphasizeHeader = false,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? rangeLabel;
+  final List<DateTime> dates;
+  final bool alwaysShowHeader;
+  final bool emphasizeHeader;
+}
+
+class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _SectionHeaderDelegate({
+    required this.title,
+    required this.emphasize,
+    this.subtitle,
+    this.rangeLabel,
+  });
+
+  final String title;
+  final String? subtitle;
+  final String? rangeLabel;
+  final bool emphasize;
+
+  @override
+  double get minExtent => 64;
+
+  @override
+  double get maxExtent => 64;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      alignment: Alignment.bottomCenter,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.outlineVariant.withOpacity(0.6),
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            if (emphasize)
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Container(
+                  width: 5,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    title,
+                    style: emphasize
+                        ? theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          )
+                        : theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                  ),
+                  if (subtitle != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        subtitle!.toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (rangeLabel != null)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(rangeLabel!, style: theme.textTheme.labelMedium),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SectionHeaderDelegate oldDelegate) {
+    return title != oldDelegate.title ||
+        subtitle != oldDelegate.subtitle ||
+        rangeLabel != oldDelegate.rangeLabel ||
+        emphasize != oldDelegate.emphasize;
+  }
+}
+
+class _SectionTimeline extends StatelessWidget {
+  const _SectionTimeline({
+    required this.dateGroups,
+    required this.buildAgendaItem,
+    required this.dateKeyFor,
+  });
+
+  final List<_DateGroup> dateGroups;
+  final Widget Function(AgendaItem item) buildAgendaItem;
+  final GlobalKey Function(DateTime date) dateKeyFor;
+
+  static const double _timelineWidth = 64;
+  static const double _lineX = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final lineColor = theme.colorScheme.outlineVariant;
+
+    return Column(
+      children: [
+        for (final group in dateGroups)
+          _DateTimelineGroup(
+            key: dateKeyFor(group.date),
+            group: group,
+            timelineWidth: _timelineWidth,
+            lineX: _lineX,
+            lineColor: lineColor,
+            buildAgendaItem: buildAgendaItem,
+          ),
+      ],
+    );
+  }
+}
+
+class _DateTimelineGroup extends StatelessWidget {
+  const _DateTimelineGroup({
+    required this.group,
+    required this.timelineWidth,
+    required this.lineX,
+    required this.lineColor,
+    required this.buildAgendaItem,
+    super.key,
+  });
+
+  final _DateGroup group;
+  final double timelineWidth;
+  final double lineX;
+  final Color lineColor;
+  final Widget Function(AgendaItem item) buildAgendaItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final dayName = DateFormat.E().format(group.date).toUpperCase();
+    final dayNumber = group.date.day.toString();
+
+    return Column(
+      children: [
+        for (var i = 0; i < group.items.length; i++)
+          _TimelineRow(
+            isFirstOfDate: i == 0,
+            dayName: dayName,
+            dayNumber: dayNumber,
+            item: group.items[i],
+            timelineWidth: timelineWidth,
+            lineX: lineX,
+            lineColor: lineColor,
+            child: buildAgendaItem(group.items[i]),
+          ),
+      ],
+    );
+  }
+}
+
+class _TimelineRow extends StatelessWidget {
+  const _TimelineRow({
+    required this.isFirstOfDate,
+    required this.dayName,
+    required this.dayNumber,
+    required this.item,
+    required this.timelineWidth,
+    required this.lineX,
+    required this.lineColor,
+    required this.child,
+  });
+
+  final bool isFirstOfDate;
+  final String dayName;
+  final String dayNumber;
+  final AgendaItem item;
+  final double timelineWidth;
+  final double lineX;
+  final Color lineColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dotColor = theme.colorScheme.primary;
+
+    // Reserve space for the date marker so it reads like a timeline header.
+    final topPad = isFirstOfDate ? 14.0 : 0.0;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: 10, top: topPad),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: timelineWidth,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  left: lineX,
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: Container(width: 2, color: lineColor),
+                  ),
+                ),
+                if (isFirstOfDate)
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: _TimelineDateMarker(
+                      dayName: dayName,
+                      dayNumber: dayNumber,
+                    ),
+                  ),
+                Positioned(
+                  left: lineX - 6,
+                  top: isFirstOfDate ? 48 : 22,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: dotColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.scaffoldBackgroundColor,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: isFirstOfDate ? 24 : 0),
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineDateMarker extends StatelessWidget {
+  const _TimelineDateMarker({required this.dayName, required this.dayNumber});
+
+  final String dayName;
+  final String dayNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: 44,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        children: [
+          Text(dayName, style: theme.textTheme.labelSmall),
+          const SizedBox(height: 4),
+          Text(
+            dayNumber,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

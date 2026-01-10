@@ -17,6 +17,8 @@ import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
@@ -32,6 +34,7 @@ import '../../../../mocks/repository_mocks.dart';
 void main() {
   group('UnifiedScreenPageById (widget) infinite loading guards', () {
     late MockScreenDefinitionsRepositoryContract screensRepository;
+    late MockSettingsRepositoryContract settingsRepository;
 
     setUp(() async {
       initializeTalkerForTest();
@@ -40,6 +43,15 @@ void main() {
       await getIt.reset();
 
       screensRepository = MockScreenDefinitionsRepositoryContract();
+      settingsRepository = MockSettingsRepositoryContract();
+
+      when(
+        () =>
+            settingsRepository.watch<AllocationConfig>(SettingsKey.allocation),
+      ).thenAnswer((_) => Stream.value(const AllocationConfig()));
+      when(
+        () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
+      ).thenAnswer((_) async => const AllocationConfig());
 
       final interpreter = ScreenDataInterpreter(
         interpreterRegistry: SectionTemplateInterpreterRegistry([
@@ -49,12 +61,14 @@ void main() {
           ),
         ]),
         paramsCodec: SectionTemplateParamsCodec(),
+        settingsRepository: settingsRepository,
       );
 
       getIt
         ..registerSingleton<ScreenDefinitionsRepositoryContract>(
           screensRepository,
         )
+        ..registerSingleton(settingsRepository)
         ..registerSingleton<ScreenDataInterpreter>(interpreter);
     });
 

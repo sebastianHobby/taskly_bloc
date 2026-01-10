@@ -24,12 +24,14 @@ import 'package:taskly_bloc/presentation/features/screens/renderers/entity_heade
 import 'package:taskly_bloc/presentation/features/screens/renderers/issues_summary_section_renderer.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/interleaved_list_renderer.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/project_list_renderer.dart';
+import 'package:taskly_bloc/presentation/features/screens/renderers/someday_backlog_renderer.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/task_list_renderer.dart';
 import 'package:taskly_bloc/presentation/features/screens/renderers/value_list_renderer.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_management_page.dart';
+import 'package:taskly_bloc/presentation/features/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
@@ -188,6 +190,20 @@ class SectionWidget extends StatelessWidget {
               onProjectCheckboxChanged?.call(project, val);
             },
           ),
+          SectionTemplateId.somedayBacklog => SomedayBacklogRenderer(
+            data: d,
+            onTaskToggle: (taskId, val) {
+              final task = d.allTasks.firstWhere((t) => t.id == taskId);
+              onTaskCheckboxChanged?.call(task, val);
+            },
+            onProjectToggle: (projectId, val) {
+              final project = d.allProjects.firstWhere(
+                (p) => p.id == projectId,
+              );
+              onProjectCheckboxChanged?.call(project, val);
+            },
+            onEntityTap: (entity) => onEntityTap?.call(entity),
+          ),
           _ => _buildLegacySection(d),
         },
         final AgendaSectionResult d => AgendaSectionRenderer(
@@ -220,7 +236,8 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.allocationSettings ||
       SectionTemplateId.navigationSettings ||
       SectionTemplateId.attentionRules ||
-      SectionTemplateId.focusSetupWizard => true,
+      SectionTemplateId.focusSetupWizard ||
+      SectionTemplateId.myDayFocusModeRequired => true,
       _ => false,
     };
   }
@@ -228,6 +245,8 @@ class SectionWidget extends StatelessWidget {
   Widget _buildFullScreenTemplate() {
     return switch (section.templateId) {
       SectionTemplateId.settingsMenu => const SettingsScreen(),
+      SectionTemplateId.myDayFocusModeRequired =>
+        const MyDayFocusModeRequiredPage(),
       SectionTemplateId.allocationSettings => BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),

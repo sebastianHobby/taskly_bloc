@@ -76,11 +76,8 @@ void main() {
         );
       });
 
-      test('inbox screen has inbox icon', () {
-        final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.inbox.screenKey,
-          iconName: SystemScreenDefinitions.inbox.chrome.iconName,
-        );
+      test('iconName inbox maps to inbox icon for custom screens', () {
+        final result = resolver.resolve(screenId: 'custom', iconName: 'inbox');
         expect(result.icon, Icons.inbox_outlined);
         expect(result.selectedIcon, Icons.inbox);
       });

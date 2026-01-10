@@ -11,33 +11,6 @@ part 'allocation_config.g.dart';
 // ENUMS
 // ============================================================================
 
-/// @deprecated Use [FocusMode] instead.
-/// Kept for backwards compatibility during migration.
-///
-/// Defines the allocation behavior personality.
-/// Each persona represents a different approach to task prioritization:
-/// - [idealist]: Pure value alignment, no urgency consideration
-/// - [reflector]: Prioritizes neglected values based on recent activity
-/// - [realist]: Balanced approach with urgency warnings (recommended)
-/// - [firefighter]: Urgency-first, includes all urgent tasks regardless of value
-/// - [custom]: User-defined settings (allows combining all features)
-enum AllocationPersona {
-  @JsonValue('idealist')
-  idealist,
-
-  @JsonValue('reflector')
-  reflector,
-
-  @JsonValue('realist')
-  realist,
-
-  @JsonValue('firefighter')
-  firefighter,
-
-  @JsonValue('custom')
-  custom,
-}
-
 /// Defines how urgent tasks without values are handled during allocation.
 ///
 /// - [ignore]: Urgent value-less tasks are excluded, no warnings
@@ -54,6 +27,15 @@ enum UrgentTaskBehavior {
   includeAll,
 }
 
+/// Defines how overdue urgency grows as tasks become more overdue.
+enum OverdueEmergencyGrowth {
+  @JsonValue('linear')
+  linear,
+
+  @JsonValue('exponential')
+  exponential,
+}
+
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -67,11 +49,10 @@ abstract class AllocationConfig with _$AllocationConfig {
   const factory AllocationConfig({
     @Default(10) int dailyLimit,
 
-    /// @deprecated Use [focusMode] instead.
-    @Default(AllocationPersona.realist) AllocationPersona persona,
+    /// Whether the user has explicitly selected a focus mode.
+    @Default(false) bool hasSelectedFocusMode,
 
     /// The focus mode controlling allocation behavior.
-    /// This is the preferred field over [persona].
     @Default(FocusMode.sustainable) FocusMode focusMode,
     @Default(StrategySettings()) StrategySettings strategySettings,
     @Default(DisplaySettings()) DisplaySettings displaySettings,
@@ -81,32 +62,13 @@ abstract class AllocationConfig with _$AllocationConfig {
   }) = _AllocationConfig;
 
   factory AllocationConfig.fromJson(Map<String, dynamic> json) =>
-      _$AllocationConfigFromJson(_migratePersonaToFocusMode(json));
-}
-
-/// Migrates legacy 'persona' field to 'focusMode' if needed.
-Map<String, dynamic> _migratePersonaToFocusMode(Map<String, dynamic> json) {
-  // If focusMode is already set, use it
-  if (json.containsKey('focusMode')) {
-    return json;
-  }
-
-  // If persona is set, migrate it to focusMode
-  if (json.containsKey('persona')) {
-    final persona = json['persona'] as String?;
-    if (persona != null) {
-      final focusMode = FocusModeX.fromLegacyPersona(persona);
-      json['focusMode'] = focusMode.name;
-    }
-  }
-
-  return json;
+      _$AllocationConfigFromJson(json);
 }
 
 /// Strategy-related settings controlling allocation behavior.
 ///
 /// Uses orthogonal feature flags that can be combined (e.g., urgency + neglect).
-/// Provides factory constructors for persona presets.
+/// Provides factory constructors for focus-mode presets.
 @freezed
 abstract class StrategySettings with _$StrategySettings {
   const factory StrategySettings({
@@ -130,7 +92,7 @@ abstract class StrategySettings with _$StrategySettings {
     @Default(7) int neglectLookbackDays,
 
     /// Weight of neglect score vs base weight (0.0-1.0).
-    /// Default 0.7 matches Reflector persona preset.
+    /// Default 0.7 matches the Reflector-mode preset.
     @Default(0.7) double neglectInfluence,
 
     /// Weight given to value priority.
@@ -147,6 +109,10 @@ abstract class StrategySettings with _$StrategySettings {
 
     /// Multiplier for overdue emergency tasks.
     @Default(1.0) double overdueEmergencyMultiplier,
+
+    /// Growth curve for overdue emergency urgency.
+    @Default(OverdueEmergencyGrowth.linear)
+    OverdueEmergencyGrowth overdueEmergencyGrowth,
   }) = _StrategySettings;
   const StrategySettings._();
 
@@ -191,62 +157,6 @@ abstract class StrategySettings with _$StrategySettings {
       FocusMode.personalized => const StrategySettings(),
     };
   }
-
-  /// @deprecated Use [forFocusMode] instead.
-  /// Factory: Returns preset settings for the given persona.
-  factory StrategySettings.forPersona(AllocationPersona persona) {
-    switch (persona) {
-      case AllocationPersona.idealist:
-        return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.ignore,
-          urgencyBoostMultiplier: 1,
-          enableNeglectWeighting: false,
-          valuePriorityWeight: 2,
-          taskPriorityBoost: 0.5,
-          recencyPenalty: 0,
-          startDateProximity: 0,
-          overdueEmergencyMultiplier: 1,
-        );
-      case AllocationPersona.reflector:
-        return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-          urgencyBoostMultiplier: 1,
-          enableNeglectWeighting: true,
-          neglectLookbackDays: 7,
-          neglectInfluence: 0.7,
-          valuePriorityWeight: 1,
-          taskPriorityBoost: 0.5,
-          recencyPenalty: 0.2,
-          startDateProximity: 0,
-          overdueEmergencyMultiplier: 1,
-        );
-      case AllocationPersona.realist:
-        return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
-          urgencyBoostMultiplier: 1.5,
-          enableNeglectWeighting: false,
-          valuePriorityWeight: 1.5,
-          taskPriorityBoost: 1,
-          recencyPenalty: 0.1,
-          startDateProximity: 0.5,
-          overdueEmergencyMultiplier: 1.5,
-        );
-      case AllocationPersona.firefighter:
-        return const StrategySettings(
-          urgentTaskBehavior: UrgentTaskBehavior.includeAll,
-          urgencyBoostMultiplier: 2,
-          enableNeglectWeighting: false,
-          valuePriorityWeight: 0.5,
-          taskPriorityBoost: 2,
-          recencyPenalty: 0,
-          startDateProximity: 1,
-          overdueEmergencyMultiplier: 3,
-        );
-      case AllocationPersona.custom:
-        // Custom returns defaults - user configures individually
-        return const StrategySettings();
-    }
-  }
 }
 
 /// Display-related settings controlling UI behavior.
@@ -275,16 +185,4 @@ abstract class DisplaySettings with _$DisplaySettings {
 
   factory DisplaySettings.fromJson(Map<String, dynamic> json) =>
       _$DisplaySettingsFromJson(json);
-}
-
-/// Extension for persona-specific UI elements
-extension AllocationPersonaX on AllocationPersona {
-  /// Section title for excluded tasks in My Day view
-  String get excludedSectionTitle => switch (this) {
-    AllocationPersona.idealist => 'Needs Alignment',
-    AllocationPersona.reflector => 'Worth Considering',
-    AllocationPersona.realist => 'Overdue Attention',
-    AllocationPersona.firefighter => 'Active Fires',
-    AllocationPersona.custom => 'Outside Focus',
-  };
 }

@@ -14,8 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$AllocationResult {
 
- List<AllocatedTask> get allocatedTasks; AllocationReasoning get reasoning; List<ExcludedTask> get excludedTasks;/// Evaluated alerts for excluded tasks
- AlertEvaluationResult? get alertResult;/// The focus mode used for this allocation
+ List<AllocatedTask> get allocatedTasks; AllocationReasoning get reasoning; List<ExcludedTask> get excludedTasks;/// The focus mode used for this allocation
  FocusMode? get activeFocusMode;/// True if allocation cannot proceed because user has no values defined.
 /// When true, the UI should show a gateway prompting value setup.
  bool get requiresValueSetup;
@@ -29,16 +28,16 @@ $AllocationResultCopyWith<AllocationResult> get copyWith => _$AllocationResultCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationResult&&const DeepCollectionEquality().equals(other.allocatedTasks, allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other.excludedTasks, excludedTasks)&&(identical(other.alertResult, alertResult) || other.alertResult == alertResult)&&(identical(other.activeFocusMode, activeFocusMode) || other.activeFocusMode == activeFocusMode)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AllocationResult&&const DeepCollectionEquality().equals(other.allocatedTasks, allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other.excludedTasks, excludedTasks)&&(identical(other.activeFocusMode, activeFocusMode) || other.activeFocusMode == activeFocusMode)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(allocatedTasks),reasoning,const DeepCollectionEquality().hash(excludedTasks),alertResult,activeFocusMode,requiresValueSetup);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(allocatedTasks),reasoning,const DeepCollectionEquality().hash(excludedTasks),activeFocusMode,requiresValueSetup);
 
 @override
 String toString() {
-  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, alertResult: $alertResult, activeFocusMode: $activeFocusMode, requiresValueSetup: $requiresValueSetup)';
+  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, activeFocusMode: $activeFocusMode, requiresValueSetup: $requiresValueSetup)';
 }
 
 
@@ -49,11 +48,11 @@ abstract mixin class $AllocationResultCopyWith<$Res>  {
   factory $AllocationResultCopyWith(AllocationResult value, $Res Function(AllocationResult) _then) = _$AllocationResultCopyWithImpl;
 @useResult
 $Res call({
- List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, AlertEvaluationResult? alertResult, FocusMode? activeFocusMode, bool requiresValueSetup
+ List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, FocusMode? activeFocusMode, bool requiresValueSetup
 });
 
 
-$AllocationReasoningCopyWith<$Res> get reasoning;$AlertEvaluationResultCopyWith<$Res>? get alertResult;
+$AllocationReasoningCopyWith<$Res> get reasoning;
 
 }
 /// @nodoc
@@ -66,13 +65,12 @@ class _$AllocationResultCopyWithImpl<$Res>
 
 /// Create a copy of AllocationResult
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? alertResult = freezed,Object? activeFocusMode = freezed,Object? requiresValueSetup = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? activeFocusMode = freezed,Object? requiresValueSetup = null,}) {
   return _then(_self.copyWith(
 allocatedTasks: null == allocatedTasks ? _self.allocatedTasks : allocatedTasks // ignore: cast_nullable_to_non_nullable
 as List<AllocatedTask>,reasoning: null == reasoning ? _self.reasoning : reasoning // ignore: cast_nullable_to_non_nullable
 as AllocationReasoning,excludedTasks: null == excludedTasks ? _self.excludedTasks : excludedTasks // ignore: cast_nullable_to_non_nullable
-as List<ExcludedTask>,alertResult: freezed == alertResult ? _self.alertResult : alertResult // ignore: cast_nullable_to_non_nullable
-as AlertEvaluationResult?,activeFocusMode: freezed == activeFocusMode ? _self.activeFocusMode : activeFocusMode // ignore: cast_nullable_to_non_nullable
+as List<ExcludedTask>,activeFocusMode: freezed == activeFocusMode ? _self.activeFocusMode : activeFocusMode // ignore: cast_nullable_to_non_nullable
 as FocusMode?,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -85,18 +83,6 @@ $AllocationReasoningCopyWith<$Res> get reasoning {
   
   return $AllocationReasoningCopyWith<$Res>(_self.reasoning, (value) {
     return _then(_self.copyWith(reasoning: value));
-  });
-}/// Create a copy of AllocationResult
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$AlertEvaluationResultCopyWith<$Res>? get alertResult {
-    if (_self.alertResult == null) {
-    return null;
-  }
-
-  return $AlertEvaluationResultCopyWith<$Res>(_self.alertResult!, (value) {
-    return _then(_self.copyWith(alertResult: value));
   });
 }
 }
@@ -180,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AlertEvaluationResult? alertResult,  FocusMode? activeFocusMode,  bool requiresValueSetup)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  FocusMode? activeFocusMode,  bool requiresValueSetup)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AllocationResult() when $default != null:
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.alertResult,_that.activeFocusMode,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activeFocusMode,_that.requiresValueSetup);case _:
   return orElse();
 
 }
@@ -201,10 +187,10 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.a
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AlertEvaluationResult? alertResult,  FocusMode? activeFocusMode,  bool requiresValueSetup)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  FocusMode? activeFocusMode,  bool requiresValueSetup)  $default,) {final _that = this;
 switch (_that) {
 case _AllocationResult():
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.alertResult,_that.activeFocusMode,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activeFocusMode,_that.requiresValueSetup);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -221,10 +207,10 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.a
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  AlertEvaluationResult? alertResult,  FocusMode? activeFocusMode,  bool requiresValueSetup)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<AllocatedTask> allocatedTasks,  AllocationReasoning reasoning,  List<ExcludedTask> excludedTasks,  FocusMode? activeFocusMode,  bool requiresValueSetup)?  $default,) {final _that = this;
 switch (_that) {
 case _AllocationResult() when $default != null:
-return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.alertResult,_that.activeFocusMode,_that.requiresValueSetup);case _:
+return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.activeFocusMode,_that.requiresValueSetup);case _:
   return null;
 
 }
@@ -236,7 +222,7 @@ return $default(_that.allocatedTasks,_that.reasoning,_that.excludedTasks,_that.a
 
 
 class _AllocationResult implements AllocationResult {
-  const _AllocationResult({required final  List<AllocatedTask> allocatedTasks, required this.reasoning, required final  List<ExcludedTask> excludedTasks, this.alertResult, this.activeFocusMode, this.requiresValueSetup = false}): _allocatedTasks = allocatedTasks,_excludedTasks = excludedTasks;
+  const _AllocationResult({required final  List<AllocatedTask> allocatedTasks, required this.reasoning, required final  List<ExcludedTask> excludedTasks, this.activeFocusMode, this.requiresValueSetup = false}): _allocatedTasks = allocatedTasks,_excludedTasks = excludedTasks;
   
 
  final  List<AllocatedTask> _allocatedTasks;
@@ -254,8 +240,6 @@ class _AllocationResult implements AllocationResult {
   return EqualUnmodifiableListView(_excludedTasks);
 }
 
-/// Evaluated alerts for excluded tasks
-@override final  AlertEvaluationResult? alertResult;
 /// The focus mode used for this allocation
 @override final  FocusMode? activeFocusMode;
 /// True if allocation cannot proceed because user has no values defined.
@@ -272,16 +256,16 @@ _$AllocationResultCopyWith<_AllocationResult> get copyWith => __$AllocationResul
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationResult&&const DeepCollectionEquality().equals(other._allocatedTasks, _allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other._excludedTasks, _excludedTasks)&&(identical(other.alertResult, alertResult) || other.alertResult == alertResult)&&(identical(other.activeFocusMode, activeFocusMode) || other.activeFocusMode == activeFocusMode)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AllocationResult&&const DeepCollectionEquality().equals(other._allocatedTasks, _allocatedTasks)&&(identical(other.reasoning, reasoning) || other.reasoning == reasoning)&&const DeepCollectionEquality().equals(other._excludedTasks, _excludedTasks)&&(identical(other.activeFocusMode, activeFocusMode) || other.activeFocusMode == activeFocusMode)&&(identical(other.requiresValueSetup, requiresValueSetup) || other.requiresValueSetup == requiresValueSetup));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allocatedTasks),reasoning,const DeepCollectionEquality().hash(_excludedTasks),alertResult,activeFocusMode,requiresValueSetup);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_allocatedTasks),reasoning,const DeepCollectionEquality().hash(_excludedTasks),activeFocusMode,requiresValueSetup);
 
 @override
 String toString() {
-  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, alertResult: $alertResult, activeFocusMode: $activeFocusMode, requiresValueSetup: $requiresValueSetup)';
+  return 'AllocationResult(allocatedTasks: $allocatedTasks, reasoning: $reasoning, excludedTasks: $excludedTasks, activeFocusMode: $activeFocusMode, requiresValueSetup: $requiresValueSetup)';
 }
 
 
@@ -292,11 +276,11 @@ abstract mixin class _$AllocationResultCopyWith<$Res> implements $AllocationResu
   factory _$AllocationResultCopyWith(_AllocationResult value, $Res Function(_AllocationResult) _then) = __$AllocationResultCopyWithImpl;
 @override @useResult
 $Res call({
- List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, AlertEvaluationResult? alertResult, FocusMode? activeFocusMode, bool requiresValueSetup
+ List<AllocatedTask> allocatedTasks, AllocationReasoning reasoning, List<ExcludedTask> excludedTasks, FocusMode? activeFocusMode, bool requiresValueSetup
 });
 
 
-@override $AllocationReasoningCopyWith<$Res> get reasoning;@override $AlertEvaluationResultCopyWith<$Res>? get alertResult;
+@override $AllocationReasoningCopyWith<$Res> get reasoning;
 
 }
 /// @nodoc
@@ -309,13 +293,12 @@ class __$AllocationResultCopyWithImpl<$Res>
 
 /// Create a copy of AllocationResult
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? alertResult = freezed,Object? activeFocusMode = freezed,Object? requiresValueSetup = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? allocatedTasks = null,Object? reasoning = null,Object? excludedTasks = null,Object? activeFocusMode = freezed,Object? requiresValueSetup = null,}) {
   return _then(_AllocationResult(
 allocatedTasks: null == allocatedTasks ? _self._allocatedTasks : allocatedTasks // ignore: cast_nullable_to_non_nullable
 as List<AllocatedTask>,reasoning: null == reasoning ? _self.reasoning : reasoning // ignore: cast_nullable_to_non_nullable
 as AllocationReasoning,excludedTasks: null == excludedTasks ? _self._excludedTasks : excludedTasks // ignore: cast_nullable_to_non_nullable
-as List<ExcludedTask>,alertResult: freezed == alertResult ? _self.alertResult : alertResult // ignore: cast_nullable_to_non_nullable
-as AlertEvaluationResult?,activeFocusMode: freezed == activeFocusMode ? _self.activeFocusMode : activeFocusMode // ignore: cast_nullable_to_non_nullable
+as List<ExcludedTask>,activeFocusMode: freezed == activeFocusMode ? _self.activeFocusMode : activeFocusMode // ignore: cast_nullable_to_non_nullable
 as FocusMode?,requiresValueSetup: null == requiresValueSetup ? _self.requiresValueSetup : requiresValueSetup // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
@@ -329,18 +312,6 @@ $AllocationReasoningCopyWith<$Res> get reasoning {
   
   return $AllocationReasoningCopyWith<$Res>(_self.reasoning, (value) {
     return _then(_self.copyWith(reasoning: value));
-  });
-}/// Create a copy of AllocationResult
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$AlertEvaluationResultCopyWith<$Res>? get alertResult {
-    if (_self.alertResult == null) {
-    return null;
-  }
-
-  return $AlertEvaluationResultCopyWith<$Res>(_self.alertResult!, (value) {
-    return _then(_self.copyWith(alertResult: value));
   });
 }
 }

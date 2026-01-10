@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
+import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 class AllocationSectionRenderer extends StatelessWidget {
@@ -348,11 +356,52 @@ class AllocationSectionRenderer extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final theme = Theme.of(context);
+
+    if (data.totalAvailable == 0) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'No tasks yet.',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Add your first task to get started.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () async {
+                await showDetailModal<void>(
+                  context: context,
+                  childBuilder: (modalSheetContext) => BlocProvider(
+                    create: (_) => TaskDetailBloc(
+                      taskRepository: getIt<TaskRepositoryContract>(),
+                      projectRepository: getIt<ProjectRepositoryContract>(),
+                      valueRepository: getIt<ValueRepositoryContract>(),
+                    ),
+                    child: const TaskDetailSheet(),
+                  ),
+                );
+              },
+              child: const Text('Add First Task'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Text(
         'No tasks allocated for today.',
-        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
       ),
     );
   }
