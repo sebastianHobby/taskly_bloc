@@ -117,7 +117,7 @@ class TaskListTile extends StatelessWidget {
 
     return Card(
       key: Key('task-${task.id}'),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -137,7 +137,7 @@ class TaskListTile extends StatelessWidget {
             : Routing.toEntity(context, EntityType.task, task.id),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -223,13 +223,6 @@ class TaskListTile extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Chevron indicator
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
             ],
           ),
         ),
@@ -265,36 +258,10 @@ class _MetaChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     final children = <Widget>[];
-
-    if (projectName != null && projectName!.trim().isNotEmpty) {
-      children.add(_ProjectBadge(projectName: projectName!));
-    }
-
-    if (startDate != null) {
-      children.add(
-        DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate!),
-        ),
-      );
-    }
-
-    if (deadlineDate != null) {
-      children.add(
-        DateChip.deadline(
-          context: context,
-          label: formatDate(context, deadlineDate!),
-          isOverdue: isOverdue,
-          isDueToday: isDueToday,
-          isDueSoon: isDueSoon,
-        ),
-      );
-    }
-
-    if (hasRepeat) {
-      children.add(DateChip.repeat(context: context));
-    }
 
     if (primaryValue != null) {
       children.add(
@@ -314,13 +281,74 @@ class _MetaChips extends StatelessWidget {
       );
     }
 
+    if (startDate != null) {
+      children.add(
+        _InlineMetaItem(
+          icon: Icons.calendar_today_rounded,
+          label: formatDate(context, startDate!),
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    if (deadlineDate != null) {
+      final deadlineColor = isOverdue
+          ? scheme.error
+          : isDueToday
+          ? scheme.tertiary
+          : isDueSoon
+          ? scheme.secondary
+          : scheme.onSurfaceVariant;
+      children.add(
+        _InlineMetaItem(
+          icon: Icons.event_busy_rounded,
+          label: formatDate(context, deadlineDate!),
+          color: deadlineColor,
+        ),
+      );
+    }
+
+    if (hasRepeat) {
+      children.add(
+        Icon(
+          Icons.sync_rounded,
+          size: 14,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+      );
+    }
+
+    final pName = projectName?.trim();
+    if (pName != null && pName.isNotEmpty) {
+      children.add(
+        RichText(
+          text: TextSpan(
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+            children: [
+              const TextSpan(text: 'Project: '),
+              TextSpan(
+                text: pName,
+                style: TextStyle(
+                  color: scheme.onSurface.withValues(alpha: 0.85),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (children.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
+        spacing: 12,
+        runSpacing: 6,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: children,
       ),
@@ -328,7 +356,39 @@ class _MetaChips extends StatelessWidget {
   }
 }
 
-/// Custom checkbox with animated states and accessibility support.
+class _InlineMetaItem extends StatelessWidget {
+  const _InlineMetaItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w500,
+            fontSize: 11,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _TaskCheckbox extends StatelessWidget {
   const _TaskCheckbox({
     required this.completed,
@@ -355,7 +415,7 @@ class _TaskCheckbox extends StatelessWidget {
         height: 24,
         child: Checkbox(
           value: completed,
-          onChanged: (value) {
+          onChanged: (bool? value) {
             HapticFeedback.lightImpact();
             onChanged(value);
           },
@@ -375,50 +435,6 @@ class _TaskCheckbox extends StatelessWidget {
           materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
-      ),
-    );
-  }
-}
-
-/// Badge showing project name.
-class _ProjectBadge extends StatelessWidget {
-  const _ProjectBadge({required this.projectName});
-
-  final String projectName;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.folder_outlined,
-            size: 12,
-            color: colorScheme.tertiary,
-          ),
-          const SizedBox(width: 4),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 80),
-            child: Text(
-              projectName,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.tertiary,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }

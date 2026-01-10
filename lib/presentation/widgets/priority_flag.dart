@@ -19,8 +19,8 @@ class PriorityFlag extends StatelessWidget {
       label: 'Priority',
       value: 'P$p',
       child: Icon(
-        Icons.flag_rounded,
-        size: 18,
+        Icons.flag,
+        size: 22,
         color: color,
       ),
     );
