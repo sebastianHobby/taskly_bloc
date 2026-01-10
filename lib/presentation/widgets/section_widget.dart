@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
 import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
@@ -109,6 +110,16 @@ class SectionWidget extends StatelessWidget {
 
     final result = section.data;
 
+    final paramsDisplayConfig = switch (section.params) {
+      final DataListSectionParams p => p.display,
+      _ => null,
+    };
+
+    final effectiveDisplayConfig =
+        displayConfig ?? section.displayConfig ?? paramsDisplayConfig;
+
+    final compactTiles = effectiveDisplayConfig?.compactTiles ?? false;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       child: switch (result) {
@@ -143,6 +154,7 @@ class SectionWidget extends StatelessWidget {
           SectionTemplateId.taskList => TaskListRenderer(
             data: d,
             title: section.title,
+            compactTiles: compactTiles,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
@@ -151,12 +163,7 @@ class SectionWidget extends StatelessWidget {
           SectionTemplateId.projectList => ProjectListRenderer(
             data: d,
             title: section.title,
-            onProjectToggle: (projectId, val) {
-              final project = d.allProjects.firstWhere(
-                (p) => p.id == projectId,
-              );
-              onProjectCheckboxChanged?.call(project, val);
-            },
+            compactTiles: compactTiles,
           ),
           SectionTemplateId.valueList => ValueListRenderer(
             data: d,
@@ -165,42 +172,27 @@ class SectionWidget extends StatelessWidget {
           SectionTemplateId.interleavedList => InterleavedListRenderer(
             data: d,
             title: section.title,
+            compactTiles: compactTiles,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
-            },
-            onProjectToggle: (projectId, val) {
-              final project = d.allProjects.firstWhere(
-                (p) => p.id == projectId,
-              );
-              onProjectCheckboxChanged?.call(project, val);
             },
           ),
           SectionTemplateId.somedayNullDates => InterleavedListRenderer(
             data: d,
             title: section.title,
+            compactTiles: compactTiles,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
-            },
-            onProjectToggle: (projectId, val) {
-              final project = d.allProjects.firstWhere(
-                (p) => p.id == projectId,
-              );
-              onProjectCheckboxChanged?.call(project, val);
             },
           ),
           SectionTemplateId.somedayBacklog => SomedayBacklogRenderer(
             data: d,
+            compactTiles: compactTiles,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
-            },
-            onProjectToggle: (projectId, val) {
-              final project = d.allProjects.firstWhere(
-                (p) => p.id == projectId,
-              );
-              onProjectCheckboxChanged?.call(project, val);
             },
             onEntityTap: (entity) => onEntityTap?.call(entity),
           ),

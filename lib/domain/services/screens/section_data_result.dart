@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
@@ -35,6 +36,7 @@ abstract class AllocationValueGroup with _$AllocationValueGroup {
     required List<AllocatedTask> tasks,
     required double weight,
     required int quota,
+    @Default(ValuePriority.medium) ValuePriority valuePriority,
     String? color,
     String? iconName,
   }) = _AllocationValueGroup;

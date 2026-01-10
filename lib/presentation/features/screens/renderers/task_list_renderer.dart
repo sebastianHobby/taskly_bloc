@@ -9,10 +9,12 @@ class TaskListRenderer extends StatelessWidget {
     required this.data,
     super.key,
     this.title,
+    this.compactTiles = false,
     this.onTaskToggle,
   });
   final DataSectionResult data;
   final String? title;
+  final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
 
   @override
@@ -48,6 +50,7 @@ class TaskListRenderer extends StatelessWidget {
               item: item,
               focusTaskIds: focusTaskIds,
               onTaskToggle: onTaskToggle,
+              compactTiles: compactTiles,
             );
           },
         ),

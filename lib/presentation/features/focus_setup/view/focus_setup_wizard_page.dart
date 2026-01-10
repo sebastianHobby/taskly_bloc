@@ -37,27 +37,38 @@ class FocusSetupWizardPage extends StatelessWidget {
       child: BlocBuilder<FocusSetupBloc, FocusSetupState>(
         builder: (context, state) {
           final theme = Theme.of(context);
-          final title = switch (state.stepIndex) {
-            0 => 'Select Focus Mode',
-            1 => 'Allocation Strategy',
-            2 => 'Review Schedule',
-            _ => 'Finalize Settings',
+          final title = switch (state.currentStep) {
+            FocusSetupWizardStep.selectFocusMode => 'Select Focus Mode',
+            FocusSetupWizardStep.allocationStrategy => 'Allocation Strategy',
+            FocusSetupWizardStep.reviewSchedule => 'Review Schedule',
+            FocusSetupWizardStep.finalize => 'Finalize Settings',
           };
 
           return Scaffold(
             appBar: AppBar(
               title: Text(title),
+              centerTitle: true,
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: state.canGoBack
-                    ? () => context.read<FocusSetupBloc>().add(
-                        const FocusSetupEvent.backPressed(),
-                      )
-                    : null,
+                onPressed: () {
+                  if (state.canGoBack) {
+                    context.read<FocusSetupBloc>().add(
+                      const FocusSetupEvent.backPressed(),
+                    );
+                    return;
+                  }
+
+                  final router = GoRouter.of(context);
+                  if (router.canPop()) {
+                    router.pop();
+                  } else {
+                    router.go(Routing.screenPath('my_day'));
+                  }
+                },
               ),
               actions: [
-                if (state.stepIndex < state.maxStepIndex &&
-                    state.stepIndex != 0)
+                if (state.stepIndex != 0 &&
+                    state.stepIndex < state.maxStepIndex)
                   TextButton(
                     onPressed: state.canGoNext
                         ? () => context.read<FocusSetupBloc>().add(
@@ -66,7 +77,7 @@ class FocusSetupWizardPage extends StatelessWidget {
                         : null,
                     child: const Text('Next'),
                   )
-                else
+                else if (state.stepIndex == state.maxStepIndex)
                   TextButton(
                     onPressed: state.isSaving
                         ? null
@@ -103,11 +114,38 @@ class FocusSetupWizardPage extends StatelessWidget {
                               ),
                             ),
                           if (state.stepIndex == 0)
-                            Padding(
-                              padding: const EdgeInsets.all(16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                16,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    theme.scaffoldBackgroundColor.withOpacity(
+                                      0,
+                                    ),
+                                    theme.scaffoldBackgroundColor.withOpacity(
+                                      0.9,
+                                    ),
+                                    theme.scaffoldBackgroundColor,
+                                  ],
+                                ),
+                              ),
                               child: SizedBox(
                                 width: double.infinity,
                                 child: FilledButton(
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(56),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
                                   onPressed: state.canGoNext
                                       ? () => context.read<FocusSetupBloc>().add(
                                           const FocusSetupEvent.nextPressed(),
@@ -162,11 +200,11 @@ class _StepBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (state.stepIndex) {
-      0 => _FocusModeStep(state: state),
-      1 => _AllocationStep(state: state),
-      2 => _ReviewScheduleStep(state: state),
-      _ => _FinalizeStep(state: state),
+    return switch (state.currentStep) {
+      FocusSetupWizardStep.selectFocusMode => _FocusModeStep(state: state),
+      FocusSetupWizardStep.allocationStrategy => _AllocationStep(state: state),
+      FocusSetupWizardStep.reviewSchedule => _ReviewScheduleStep(state: state),
+      FocusSetupWizardStep.finalize => _FinalizeStep(state: state),
     };
   }
 }
@@ -187,18 +225,15 @@ class _FocusModeStep extends StatelessWidget {
           'How do you want to structure your day?',
           style: Theme.of(context).textTheme.bodyLarge,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         ...FocusMode.values.map(
           (mode) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SizedBox(
-              height: 140,
-              child: FocusModeCard(
-                focusMode: mode,
-                isSelected: mode == state.effectiveFocusMode,
-                isRecommended: mode == FocusMode.sustainable,
-                onTap: () => bloc.add(FocusSetupEvent.focusModeChanged(mode)),
-              ),
+            padding: const EdgeInsets.only(bottom: 16),
+            child: FocusModeCard(
+              focusMode: mode,
+              isSelected: mode == state.effectiveFocusMode,
+              isRecommended: mode == FocusMode.sustainable,
+              onTap: () => bloc.add(FocusSetupEvent.focusModeChanged(mode)),
             ),
           ),
         ),

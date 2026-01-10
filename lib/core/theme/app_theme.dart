@@ -29,6 +29,14 @@ class AppTheme {
 
   /// Taskly (Stitch) theme configuration.
   static ThemeData tasklyTheme() {
+    final tasklyDesignExtension = TasklyDesignExtension(
+      urgentSurface: AppColors.tasklyError.withOpacity(0.1),
+      warningSurface: AppColors.tasklyWarning.withOpacity(0.1),
+      safeSurface: AppColors.tasklyNeonGreen.withOpacity(0.05),
+      neonAccent: AppColors.tasklyNeonGreen,
+      glassBorder: Colors.white.withOpacity(0.1),
+    );
+
     final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -42,13 +50,7 @@ class AppTheme {
         secondary: AppColors.tasklySurfaceLight,
       ),
       extensions: <ThemeExtension<dynamic>>[
-        TasklyDesignExtension(
-          urgentSurface: AppColors.tasklyError.withOpacity(0.1),
-          warningSurface: AppColors.tasklyWarning.withOpacity(0.1),
-          safeSurface: AppColors.tasklyNeonGreen.withOpacity(0.05),
-          neonAccent: AppColors.tasklyNeonGreen,
-          glassBorder: Colors.white.withOpacity(0.1),
-        ),
+        tasklyDesignExtension,
       ],
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -69,7 +71,7 @@ class AppTheme {
 
     return base.copyWith(
       extensions: <ThemeExtension<dynamic>>[
-        ...base.extensions.values,
+        tasklyDesignExtension,
         TasklyTypography.from(
           textTheme: base.textTheme,
           colorScheme: base.colorScheme,

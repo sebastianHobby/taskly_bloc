@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Taskly - Task List Item Variant 3</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#308ce8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                        "card-dark": "#1C2630",
+                        "card-light": "#FFFFFF",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>body {
+    font-family: "Inter", sans-serif
+    }
+/* Custom checkbox tick */
+.custom-checkbox {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBon6pSS8ewoE0JIUH194b_fL5Wkae2-4oGDXuN3C8W77HkyJP40VaWBRYRFHvm8KmGL_TQKPHO6fffJplQ1FdY7IANorROVxc-vuDawVMX5IVudOivDtqX7Ume_u1leBKnK1x9KuvNHNix7NY6TtJvnrQGwE3m7UEpDPsQzKzhldbOgMo06xj-EJ78RDMrzcxYfwFY_wzDY_V2etPMlwUtHjA-TiJ2aoB3unDlbh7Pu5DZqV-siMIX8Pm7noo9DQ4VwFI2oT-IoATo)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-start py-8 px-4 transition-colors duration-200">
+<!-- Screen Container (Mobile Width Simulation) -->
+<div class="w-full max-w-md flex flex-col gap-6">
+<!-- Header Context -->
+<div class="flex items-center justify-between mb-2 px-2">
+<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Today's Focus</h1>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400">filter_list</span>
+<span class="material-symbols-outlined text-gray-500 dark:text-gray-400">more_horiz</span>
+</div>
+</div>
+<!-- Task Card: High Priority (Variant 3) -->
+<!-- Priority: High (Orange) -->
+<div class="relative w-full bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden group">
+<!-- Priority Indicator Border -->
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-orange-500"></div>
+<div class="p-4 pl-5">
+<!-- Top Row: Checkbox + Title + Meta -->
+<div class="flex items-start gap-3">
+<!-- Checkbox -->
+<div class="pt-1 shrink-0">
+<input class="h-6 w-6 rounded-md border-gray-300 dark:border-gray-600 bg-transparent text-primary focus:ring-primary/20 focus:ring-offset-0 checked:bg-primary checked:border-primary cursor-pointer transition-colors" type="checkbox"/>
+</div>
+<!-- Content Stack -->
+<div class="flex flex-1 flex-col gap-1">
+<!-- Header -->
+<div class="flex justify-between items-start gap-2">
+<h3 class="text-gray-900 dark:text-white text-base font-semibold leading-tight">Draft Q3 Strategy Document</h3>
+</div>
+<!-- Description -->
+<p class="text-gray-500 dark:text-[#93adc8] text-sm font-normal leading-relaxed line-clamp-2">
+                            Outline key objectives and align with the marketing budget review.
+                        </p>
+<!-- Chips Row -->
+<div class="flex flex-wrap items-center gap-2 mt-2">
+<!-- Project Tag -->
+<div class="flex items-center px-2 py-0.5 rounded bg-blue-50 dark:bg-[#243647] border border-blue-100 dark:border-transparent">
+<span class="material-symbols-outlined text-primary dark:text-blue-400 text-[14px] mr-1">folder</span>
+<span class="text-primary dark:text-blue-200 text-xs font-medium">Annual Planning</span>
+</div>
+<!-- Start Date -->
+<div class="flex items-center px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] mr-1">play_arrow</span>
+<span class="text-xs">Oct 12</span>
+</div>
+<!-- Due Date -->
+<div class="flex items-center px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/50 text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-[14px] mr-1">event_busy</span>
+<span class="text-xs font-medium">Oct 15</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Divider -->
+<div class="my-3 border-t border-gray-100 dark:border-gray-700/50 w-full"></div>
+<!-- Footer: Values & Status Icons -->
+<div class="flex items-end justify-between pl-9">
+<!-- Values Hierarchy -->
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[16px]">stars</span>
+<span class="text-gray-800 dark:text-gray-200 text-xs font-semibold tracking-wide uppercase">Professional Growth</span>
+</div>
+<span class="text-gray-400 dark:text-gray-500 text-[11px] pl-5">Secondary: Financial Stability</span>
+</div>
+<!-- Status Icons -->
+<div class="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+<div class="flex items-center gap-1" title="Pinned">
+<span class="material-symbols-outlined text-[18px] text-primary">push_pin</span>
+</div>
+<div class="flex items-center gap-1" title="Recurring">
+<span class="material-symbols-outlined text-[18px]">repeat</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Card: Medium Priority (Example 2) -->
+<!-- Priority: Medium (Yellow) -->
+<div class="relative w-full bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden opacity-90 hover:opacity-100 transition-opacity">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-yellow-400"></div>
+<div class="p-4 pl-5">
+<div class="flex items-start gap-3">
+<div class="pt-1 shrink-0">
+<input class="h-6 w-6 rounded-md border-gray-300 dark:border-gray-600 bg-transparent text-primary focus:ring-primary/20 focus:ring-offset-0 checked:bg-primary checked:border-primary cursor-pointer transition-colors" type="checkbox"/>
+</div>
+<div class="flex flex-1 flex-col gap-1">
+<div class="flex justify-between items-start gap-2">
+<h3 class="text-gray-900 dark:text-white text-base font-semibold leading-tight">Review Q2 Analytics</h3>
+</div>
+<p class="text-gray-500 dark:text-[#93adc8] text-sm font-normal leading-relaxed line-clamp-1">
+                            Compile performance report for weekly sync.
+                        </p>
+<div class="flex flex-wrap items-center gap-2 mt-2">
+<div class="flex items-center px-2 py-0.5 rounded bg-blue-50 dark:bg-[#243647] border border-blue-100 dark:border-transparent">
+<span class="material-symbols-outlined text-primary dark:text-blue-400 text-[14px] mr-1">folder</span>
+<span class="text-primary dark:text-blue-200 text-xs font-medium">Analytics</span>
+</div>
+<div class="flex items-center px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[14px] mr-1">event</span>
+<span class="text-xs">Due Tomorrow</span>
+</div>
+</div>
+</div>
+</div>
+<div class="my-3 border-t border-gray-100 dark:border-gray-700/50 w-full"></div>
+<div class="flex items-end justify-between pl-9">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-[16px]">stars</span>
+<span class="text-gray-700 dark:text-gray-300 text-xs font-medium tracking-wide uppercase">Data Driven</span>
+</div>
+</div>
+<!-- No Pinned/Recurring icons for this one -->
+</div>
+</div>
+</div>
+<!-- Task Card: Low Priority (Example 3) -->
+<!-- Priority: Low (Green) -->
+<div class="relative w-full bg-card-light dark:bg-card-dark rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden opacity-80 hover:opacity-100 transition-opacity">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
+<div class="p-4 pl-5">
+<div class="flex items-start gap-3">
+<div class="pt-1 shrink-0">
+<input class="h-6 w-6 rounded-md border-gray-300 dark:border-gray-600 bg-transparent text-primary focus:ring-primary/20 focus:ring-offset-0 checked:bg-primary checked:border-primary cursor-pointer transition-colors" type="checkbox"/>
+</div>
+<div class="flex flex-1 flex-col gap-1">
+<h3 class="text-gray-900 dark:text-white text-base font-semibold leading-tight">Update Team Roster</h3>
+<div class="flex flex-wrap items-center gap-2 mt-2">
+<div class="flex items-center px-2 py-0.5 rounded bg-blue-50 dark:bg-[#243647] border border-blue-100 dark:border-transparent">
+<span class="material-symbols-outlined text-primary dark:text-blue-400 text-[14px] mr-1">folder</span>
+<span class="text-primary dark:text-blue-200 text-xs font-medium">Admin</span>
+</div>
+</div>
+</div>
+</div>
+<div class="my-3 border-t border-gray-100 dark:border-gray-700/50 w-full"></div>
+<div class="flex items-end justify-between pl-9">
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-gray-400 dark:text-gray-500 text-[16px]">stars</span>
+<span class="text-gray-700 dark:text-gray-300 text-xs font-medium tracking-wide uppercase">Team Alignment</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-gray-400 dark:text-gray-500">
+<div class="flex items-center gap-1" title="Recurring">
+<span class="material-symbols-outlined text-[18px]">repeat</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

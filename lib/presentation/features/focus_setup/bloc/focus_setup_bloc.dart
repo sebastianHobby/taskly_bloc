@@ -16,6 +16,13 @@ part 'focus_setup_bloc.freezed.dart';
 const _minNeglectLookbackDays = 1;
 const _maxNeglectLookbackDays = 60;
 
+enum FocusSetupWizardStep {
+  selectFocusMode,
+  allocationStrategy,
+  reviewSchedule,
+  finalize,
+}
+
 @freezed
 sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.started() = FocusSetupStarted;
@@ -135,7 +142,30 @@ sealed class FocusSetupState with _$FocusSetupState {
     return stepIndex < maxStepIndex;
   }
 
-  int get maxStepIndex => 3;
+  List<FocusSetupWizardStep> get steps {
+    final focusMode = effectiveFocusMode;
+    if (focusMode == FocusMode.personalized) {
+      return const [
+        FocusSetupWizardStep.selectFocusMode,
+        FocusSetupWizardStep.allocationStrategy,
+        FocusSetupWizardStep.reviewSchedule,
+        FocusSetupWizardStep.finalize,
+      ];
+    }
+
+    return const [
+      FocusSetupWizardStep.selectFocusMode,
+      FocusSetupWizardStep.reviewSchedule,
+      FocusSetupWizardStep.finalize,
+    ];
+  }
+
+  int get maxStepIndex => steps.length - 1;
+
+  FocusSetupWizardStep get currentStep {
+    final i = stepIndex.clamp(0, maxStepIndex);
+    return steps[i];
+  }
 
   FocusMode get effectiveFocusMode {
     final draft = draftFocusMode;
@@ -480,7 +510,68 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     FocusSetupFocusModeChanged event,
     Emitter<FocusSetupState> emit,
   ) {
-    emit(state.copyWith(draftFocusMode: event.focusMode));
+    final nextFocusMode = event.focusMode;
+
+    final nextSteps = nextFocusMode == FocusMode.personalized
+        ? const [
+            FocusSetupWizardStep.selectFocusMode,
+            FocusSetupWizardStep.allocationStrategy,
+            FocusSetupWizardStep.reviewSchedule,
+            FocusSetupWizardStep.finalize,
+          ]
+        : const [
+            FocusSetupWizardStep.selectFocusMode,
+            FocusSetupWizardStep.reviewSchedule,
+            FocusSetupWizardStep.finalize,
+          ];
+    final nextMaxIndex = nextSteps.length - 1;
+    final clampedStepIndex = state.stepIndex.clamp(0, nextMaxIndex);
+
+    // Non-personalized modes always use their default weightings.
+    // Personalized keeps the user's existing settings until they adjust.
+    if (nextFocusMode == FocusMode.personalized) {
+      emit(
+        state.copyWith(
+          draftFocusMode: nextFocusMode,
+          stepIndex: clampedStepIndex,
+          draftUrgencyBoostMultiplier: null,
+          draftNeglectEnabled: null,
+          draftNeglectLookbackDays: null,
+          draftNeglectInfluencePercent: null,
+          draftValuePriorityWeightPercent: null,
+          draftTaskFlagBoost: null,
+          draftRecencyPenaltyPercent: null,
+          draftOverdueEmergencyMultiplier: null,
+          errorMessage: null,
+        ),
+      );
+      return;
+    }
+
+    final preset = StrategySettings.forFocusMode(nextFocusMode);
+
+    emit(
+      state.copyWith(
+        draftFocusMode: nextFocusMode,
+        stepIndex: clampedStepIndex,
+        draftUrgencyBoostMultiplier: preset.urgencyBoostMultiplier,
+        draftNeglectEnabled: preset.enableNeglectWeighting,
+        draftNeglectLookbackDays: preset.neglectLookbackDays,
+        draftNeglectInfluencePercent: (preset.neglectInfluence * 100)
+            .round()
+            .clamp(0, 100),
+        draftValuePriorityWeightPercent: (preset.valuePriorityWeight * 50)
+            .round()
+            .clamp(0, 100),
+        draftTaskFlagBoost: preset.taskPriorityBoost,
+        draftRecencyPenaltyPercent: (preset.recencyPenalty * 100).round().clamp(
+          0,
+          50,
+        ),
+        draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
+        errorMessage: null,
+      ),
+    );
   }
 
   void _onUrgencyBoostChanged(
@@ -618,19 +709,27 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     emit(state.copyWith(isSaving: true, errorMessage: null));
 
     try {
+      final focusMode = state.effectiveFocusMode;
+
+      final strategySettings = focusMode == FocusMode.personalized
+          ? persisted.strategySettings.copyWith(
+              urgencyBoostMultiplier: state.effectiveUrgencyBoostMultiplier,
+              enableNeglectWeighting: state.effectiveNeglectEnabled,
+              neglectLookbackDays: state.effectiveNeglectLookbackDays,
+              neglectInfluence: state.effectiveNeglectInfluencePercent / 100.0,
+              valuePriorityWeight:
+                  state.effectiveValuePriorityWeightPercent / 50.0,
+              taskPriorityBoost: state.effectiveTaskFlagBoost,
+              recencyPenalty: state.effectiveRecencyPenaltyPercent / 100.0,
+              overdueEmergencyMultiplier:
+                  state.effectiveOverdueEmergencyMultiplier,
+            )
+          : StrategySettings.forFocusMode(focusMode);
+
       final updatedConfig = persisted.copyWith(
         hasSelectedFocusMode: true,
-        focusMode: state.effectiveFocusMode,
-        strategySettings: persisted.strategySettings.copyWith(
-          urgencyBoostMultiplier: state.effectiveUrgencyBoostMultiplier,
-          enableNeglectWeighting: state.effectiveNeglectEnabled,
-          neglectLookbackDays: state.effectiveNeglectLookbackDays,
-          neglectInfluence: state.effectiveNeglectInfluencePercent / 100.0,
-          valuePriorityWeight: state.effectiveValuePriorityWeightPercent / 50.0,
-          taskPriorityBoost: state.effectiveTaskFlagBoost,
-          recencyPenalty: state.effectiveRecencyPenaltyPercent / 100.0,
-          overdueEmergencyMultiplier: state.effectiveOverdueEmergencyMultiplier,
-        ),
+        focusMode: focusMode,
+        strategySettings: strategySettings,
       );
 
       await _settingsRepository.save(SettingsKey.allocation, updatedConfig);

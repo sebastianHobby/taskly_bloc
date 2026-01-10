@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
@@ -32,9 +33,12 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
     return Scaffold(
       key: _scaffoldKey,
       drawer: NavigationDrawer(
-        selectedIndex: destinations.indexWhere(
-          (d) => d.screenId == activeScreenId,
-        ),
+        selectedIndex: () {
+          final idx = destinations.indexWhere(
+            (d) => d.screenId == activeScreenId,
+          );
+          return idx == -1 ? null : idx;
+        }(),
         onDestinationSelected: (index) {
           // Close drawer
           _scaffoldKey.currentState?.closeDrawer();
@@ -63,10 +67,10 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         destinations: [
           ...visible.map(_toNavDestination),
           if (hasOverflow)
-            const NavigationDestination(
-              label: 'Browse',
-              icon: Icon(Icons.menu),
-              selectedIcon: Icon(Icons.menu),
+            NavigationDestination(
+              label: context.l10n.browseTitle,
+              icon: const Icon(Icons.menu),
+              selectedIcon: const Icon(Icons.menu),
             ),
         ],
         onDestinationSelected: (index) {

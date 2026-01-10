@@ -159,6 +159,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.allocationSettingsTitle),
+        centerTitle: true,
         actions: [
           if (_hasChanges)
             IconButton(icon: const Icon(Icons.save), onPressed: _saveSettings),

@@ -16,10 +16,10 @@ class ScreenItemTileRegistry {
   Widget build(
     BuildContext context, {
     required ScreenItem item,
+    bool compactTiles = false,
     Set<String> focusTaskIds = const {},
     Set<String> focusProjectIds = const {},
     void Function(String taskId, bool? value)? onTaskToggle,
-    void Function(String projectId, bool? value)? onProjectToggle,
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
@@ -27,16 +27,17 @@ class ScreenItemTileRegistry {
     return switch (item) {
       ScreenItemTask(:final task) => TaskListTile(
         task: task,
+        compact: compactTiles,
         isInFocus: focusTaskIds.contains(task.id),
         onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
       ),
       ScreenItemProject(:final project) => ProjectListTile(
         project: project,
+        compact: compactTiles,
         isInFocus: focusProjectIds.contains(project.id),
         taskCount: projectStats?.taskCount,
         completedTaskCount: projectStats?.completedTaskCount,
-        onCheckboxChanged: (p, val) => onProjectToggle?.call(p.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
       ),
       ScreenItemValue(:final value) => enhanced.EnhancedValueCard.compact(

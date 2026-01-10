@@ -43,18 +43,20 @@ extension FocusModeX on FocusMode {
   String get wizardTagline => switch (this) {
     FocusMode.intentional => 'Important over urgent',
     FocusMode.sustainable => 'Balance values and urgency',
-    FocusMode.responsive => 'Quick Adaptation',
-    FocusMode.personalized => 'Custom Setup',
+    FocusMode.responsive => 'Time-sensitive first',
+    FocusMode.personalized => 'Your own formula',
   };
 
   /// Short description used in the Focus Setup wizard cards.
   String get wizardDescription => switch (this) {
     FocusMode.intentional =>
-      'Strict limits on distractions. Best for aggressive goals.',
+      'Focuses on what matters most to you, filtering out distractions.',
     FocusMode.sustainable =>
-      'A healthy mix of focus and flexibility. Prevents burnout.',
-    FocusMode.responsive => 'Prioritizes incoming requests and quick tasks.',
-    FocusMode.personalized => 'Manually configure your allocation rules.',
+      'Focus on maintaining balance across all your values and meeting deadlines.',
+    FocusMode.responsive =>
+      'Ensures time-sensitive tasks get attention regardless of their value alignment.',
+    FocusMode.personalized =>
+      'Fine-tune importance, urgency, synergy, and balance weights.',
   };
 
   /// Longer description explaining the focus mode behavior.

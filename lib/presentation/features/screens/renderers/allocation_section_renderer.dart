@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
@@ -40,18 +41,87 @@ class AllocationSectionRenderer extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, FocusMode focusMode) {
-    if (data.displayMode == AllocationDisplayMode.groupedByProject) {
-      return _buildProjectGroupedList(context);
-    }
-
-    return switch (focusMode) {
-      FocusMode.responsive => _buildUrgencyGroupedList(context),
-      FocusMode.intentional => _buildValueGroupedList(context),
-      FocusMode.sustainable => _buildValueGroupedList(context),
-      FocusMode.personalized => _buildValueGroupedList(
+    return switch (data.displayMode) {
+      AllocationDisplayMode.groupedByProject => _buildProjectGroupedList(
         context,
-      ), // Default to value grouping for custom
+      ),
+      AllocationDisplayMode.flat => _buildFlatList(),
+      AllocationDisplayMode.groupedByValue => _buildValueGroupedList(
+        context,
+        includePinned: true,
+      ),
+      AllocationDisplayMode.pinnedFirst => _buildValueGroupedList(
+        context,
+        includePinned: true,
+      ),
     };
+  }
+
+  int _priorityRank(ValuePriority p) {
+    // Lower rank = higher priority.
+    return switch (p) {
+      ValuePriority.high => 0,
+      ValuePriority.medium => 1,
+      ValuePriority.low => 2,
+    };
+  }
+
+  Widget _buildPinnedTasks(BuildContext context) {
+    if (data.pinnedTasks.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Text(
+                'PINNED',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${data.pinnedTasks.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: data.pinnedTasks.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final allocatedTask = data.pinnedTasks[index];
+            return TaskListTile(
+              task: allocatedTask.task,
+              onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+            );
+          },
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   Widget _buildProjectGroupedList(BuildContext context) {
@@ -191,7 +261,10 @@ class AllocationSectionRenderer extends StatelessWidget {
     return deadlineDay.isBefore(tomorrow);
   }
 
-  Widget _buildValueGroupedList(BuildContext context) {
+  Widget _buildValueGroupedList(
+    BuildContext context, {
+    required bool includePinned,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -200,141 +273,81 @@ class AllocationSectionRenderer extends StatelessWidget {
       return _buildFlatList();
     }
 
-    return Column(
-      children: data.tasksByValue.values.map((group) {
-        if (group.tasks.isEmpty) return const SizedBox.shrink();
+    final groups =
+        data.tasksByValue.values
+            .where((g) => g.tasks.isNotEmpty)
+            .toList(growable: false)
+          ..sort((a, b) {
+            final byPriority = _priorityRank(
+              a.valuePriority,
+            ).compareTo(_priorityRank(b.valuePriority));
+            if (byPriority != 0) return byPriority;
+            return a.valueName.toLowerCase().compareTo(
+              b.valueName.toLowerCase(),
+            );
+          });
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Text(
-                    group.valueName.toUpperCase(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${group.tasks.length}',
+    return Column(
+      children: [
+        if (includePinned) _buildPinnedTasks(context),
+        ...groups.map((group) {
+          if (group.tasks.isEmpty) return const SizedBox.shrink();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Text(
+                      group.valueName.toUpperCase(),
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
+                        color: colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        letterSpacing: 1,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${group.tasks.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: group.tasks.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final allocatedTask = group.tasks[index];
-                return TaskListTile(
-                  task: allocatedTask.task,
-                  onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildUrgencyGroupedList(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final tomorrow = today.add(const Duration(days: 1));
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final overdue = <Task>[];
-    final dueToday = <Task>[];
-    final upcoming = <Task>[];
-    final noDeadline = <Task>[];
-
-    for (final task in data.allocatedTasks) {
-      if (task.deadlineDate == null) {
-        noDeadline.add(task);
-      } else {
-        final deadline = task.deadlineDate!;
-        if (deadline.isBefore(today)) {
-          overdue.add(task);
-        } else if (deadline.isBefore(tomorrow)) {
-          dueToday.add(task);
-        } else {
-          upcoming.add(task);
-        }
-      }
-    }
-
-    return Column(
-      children: [
-        if (overdue.isNotEmpty)
-          _buildUrgencyGroup('Overdue', overdue, colorScheme.error),
-        if (dueToday.isNotEmpty)
-          _buildUrgencyGroup('Due Today', dueToday, colorScheme.tertiary),
-        if (upcoming.isNotEmpty)
-          _buildUrgencyGroup('Upcoming', upcoming, colorScheme.primary),
-        if (noDeadline.isNotEmpty)
-          _buildUrgencyGroup(
-            'No Deadline',
-            noDeadline,
-            colorScheme.onSurfaceVariant,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildUrgencyGroup(String title, List<Task> tasks, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(
-            title.toUpperCase(),
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: tasks.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            final task = tasks[index];
-            return TaskListTile(
-              task: task,
-              onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: group.tasks.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final allocatedTask = group.tasks[index];
+                  return TaskListTile(
+                    task: allocatedTask.task,
+                    onCheckboxChanged: (t, val) =>
+                        onTaskToggle?.call(t.id, val),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          );
+        }),
       ],
     );
   }

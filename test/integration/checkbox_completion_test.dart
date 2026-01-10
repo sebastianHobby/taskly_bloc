@@ -257,8 +257,8 @@ void main() {
     );
   });
 
-  group('Project checkbox completion', () {
-    testWidgetsSafe('renders checkbox unchecked for incomplete project', (
+  group('Project tile progress', () {
+    testWidgetsSafe('does not render a checkbox for incomplete project', (
       tester,
     ) async {
       final project = TestData.project(
@@ -270,19 +270,13 @@ void main() {
       await _pumpProjectListTile(
         tester,
         project: project,
-        onCheckboxChanged: (_, __) {},
       );
 
-      // Find the checkbox
-      final checkbox = find.byType(Checkbox);
-      expect(checkbox, findsOneWidget);
-
-      // Verify it's unchecked
-      final checkboxWidget = tester.widget<Checkbox>(checkbox);
-      expect(checkboxWidget.value, isFalse);
+      expect(find.byType(Checkbox), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
     });
 
-    testWidgetsSafe('renders checkbox checked for completed project', (
+    testWidgetsSafe('does not render a checkbox for completed project', (
       tester,
     ) async {
       final project = TestData.project(
@@ -294,20 +288,14 @@ void main() {
       await _pumpProjectListTile(
         tester,
         project: project,
-        onCheckboxChanged: (_, __) {},
       );
 
-      // Find the checkbox
-      final checkbox = find.byType(Checkbox);
-      expect(checkbox, findsOneWidget);
-
-      // Verify it's checked
-      final checkboxWidget = tester.widget<Checkbox>(checkbox);
-      expect(checkboxWidget.value, isTrue);
+      expect(find.byType(Checkbox), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNWidgets(2));
     });
 
     testWidgetsSafe(
-      'calls onCheckboxChanged with true when tapped on incomplete project',
+      'tapping the tile calls onTap with the project',
       (
         tester,
       ) async {
@@ -317,60 +305,19 @@ void main() {
           completed: false,
         );
 
-        Project? callbackProject;
-        bool? callbackValue;
+        Project? tappedProject;
 
         await _pumpProjectListTile(
           tester,
           project: project,
-          onCheckboxChanged: (p, v) {
-            callbackProject = p;
-            callbackValue = v;
-          },
+          onTap: (p) => tappedProject = p,
         );
 
-        // Tap the checkbox
-        await tester.tap(find.byType(Checkbox));
+        await tester.tap(find.byKey(const Key('project-project-1')));
         await tester.pumpForStream();
 
-        // Verify callback was called with correct values
-        expect(callbackProject, isNotNull);
-        expect(callbackProject!.id, equals('project-1'));
-        expect(callbackValue, isTrue);
-      },
-    );
-
-    testWidgetsSafe(
-      'calls onCheckboxChanged with false when tapped on completed project',
-      (
-        tester,
-      ) async {
-        final project = TestData.project(
-          id: 'project-1',
-          name: 'Test Project',
-          completed: true,
-        );
-
-        Project? callbackProject;
-        bool? callbackValue;
-
-        await _pumpProjectListTile(
-          tester,
-          project: project,
-          onCheckboxChanged: (p, v) {
-            callbackProject = p;
-            callbackValue = v;
-          },
-        );
-
-        // Tap the checkbox
-        await tester.tap(find.byType(Checkbox));
-        await tester.pumpForStream();
-
-        // Verify callback was called with correct values
-        expect(callbackProject, isNotNull);
-        expect(callbackProject!.id, equals('project-1'));
-        expect(callbackValue, isFalse);
+        expect(tappedProject, isNotNull);
+        expect(tappedProject!.id, equals('project-1'));
       },
     );
 
@@ -386,7 +333,6 @@ void main() {
       await _pumpProjectListTile(
         tester,
         project: project,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the project name text widget
@@ -410,7 +356,6 @@ void main() {
       await _pumpProjectListTile(
         tester,
         project: project,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the project name text widget
@@ -424,45 +369,6 @@ void main() {
         isNot(equals(TextDecoration.lineThrough)),
       );
     });
-
-    testWidgetsSafe(
-      'checkbox callback receives correct project for repeating project',
-      (
-        tester,
-      ) async {
-        final project = TestData.project(
-          id: 'repeating-project',
-          name: 'Repeating Project',
-          completed: false,
-          repeatIcalRrule: 'FREQ=WEEKLY;COUNT=10',
-        );
-
-        Project? callbackProject;
-        bool? callbackValue;
-
-        await _pumpProjectListTile(
-          tester,
-          project: project,
-          onCheckboxChanged: (p, v) {
-            callbackProject = p;
-            callbackValue = v;
-          },
-        );
-
-        // Tap the checkbox
-        await tester.tap(find.byType(Checkbox));
-        await tester.pumpForStream();
-
-        // Verify callback received the repeating project
-        expect(callbackProject, isNotNull);
-        expect(callbackProject!.id, equals('repeating-project'));
-        expect(
-          callbackProject!.repeatIcalRrule,
-          equals('FREQ=WEEKLY;COUNT=10'),
-        );
-        expect(callbackValue, isTrue);
-      },
-    );
   });
 
   group('Accessibility', () {
@@ -550,7 +456,6 @@ Future<void> _pumpTaskListTile(
 Future<void> _pumpProjectListTile(
   WidgetTester tester, {
   required Project project,
-  required void Function(Project, bool?) onCheckboxChanged,
   void Function(Project)? onTap,
 }) async {
   await tester.pumpWidget(
@@ -561,7 +466,6 @@ Future<void> _pumpProjectListTile(
       home: Scaffold(
         body: ProjectListTile(
           project: project,
-          onCheckboxChanged: onCheckboxChanged,
           onTap: onTap,
         ),
       ),

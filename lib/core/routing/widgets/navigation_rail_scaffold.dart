@@ -108,7 +108,13 @@ class ScaffoldWithNavigationRail extends StatelessWidget {
     NavigationDestinationVm destination,
   ) {
     return NavigationRailDestination(
-      label: Text(destination.label),
+      label: Text(
+        destination.label,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+      ),
       icon: _buildIcon(destination),
       selectedIcon: _buildIcon(destination, selected: true),
     );

@@ -2,14 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/domain/services/screens/agenda_section_data_service.dart';
 import 'package:taskly_bloc/presentation/features/screens/tiles/screen_item_tile_registry.dart';
 
 /// Renders an agenda section with date-based timeline.
@@ -39,8 +37,6 @@ class AgendaSectionRenderer extends StatefulWidget {
 
 class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   final ScreenItemTileRegistry _tileRegistry = const ScreenItemTileRegistry();
-  final AgendaSectionDataService _agendaDataService =
-      getIt<AgendaSectionDataService>();
 
   String _searchQuery = '';
   _AgendaEntityFilter _entityFilter = _AgendaEntityFilter.all;
@@ -55,13 +51,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   late DateTime _selectedMonth;
   late DateTime _focusedDate;
-
-  StreamSubscription<AgendaData>? _agendaSubscription;
-  AgendaData? _agendaData;
-  int _loadedMonths = 2;
-
-  bool _isLoading = true;
-  bool _isLoadingMore = false;
 
   // Prevent feedback loops during programmatic scrolling
   bool _programmaticScroll = false;
@@ -79,13 +68,11 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     _datePickerController = ScrollController();
 
     _scrollController.addListener(_onTimelineScrolled);
-    _subscribeAgenda();
   }
 
   @override
   void dispose() {
     _scrollDebounce?.cancel();
-    _agendaSubscription?.cancel();
     _scrollController.dispose();
     _datePickerController.dispose();
     super.dispose();
@@ -97,14 +84,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   DateTime _monthEnd(DateTime d) => DateTime(d.year, d.month + 1, 0);
 
-  DateTime _rangeEndForLoadedMonths() {
-    // End of (selectedMonth + loadedMonths - 1)
-    return DateTime(
-      _selectedMonth.year,
-      _selectedMonth.month + _loadedMonths,
-      0,
-    );
-  }
+  DateTime? get _loadedHorizonEnd => widget.data.agendaData.loadedHorizonEnd;
 
   bool get _selectedMonthContainsToday {
     final today = _dateOnly(DateTime.now());
@@ -112,41 +92,8 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         _selectedMonth.month == today.month;
   }
 
-  void _subscribeAgenda() {
-    _agendaSubscription?.cancel();
-    setState(() {
-      _isLoading = true;
-    });
-
-    final rangeStart = _monthStart(_selectedMonth);
-    final rangeEnd = _rangeEndForLoadedMonths();
-    final referenceDate = DateTime.now();
-
-    _agendaSubscription = _agendaDataService
-        .watchAgendaData(
-          referenceDate: referenceDate,
-          focusDate: _focusedDate,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        )
-        .listen((data) {
-          if (!mounted) return;
-          setState(() {
-            _agendaData = data;
-            _isLoading = false;
-            _isLoadingMore = false;
-          });
-        });
-  }
-
   void _onTimelineScrolled() {
     if (_programmaticScroll) return;
-
-    if (_scrollController.hasClients &&
-        !_isLoadingMore &&
-        _scrollController.position.extentAfter < 800) {
-      _loadMoreIfNeeded();
-    }
 
     // Debounce scroll events to avoid excessive updates
     _scrollDebounce?.cancel();
@@ -158,13 +105,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         _scrollDatePickerToDate(visibleDate);
       }
     });
-  }
-
-  void _loadMoreIfNeeded() {
-    if (_isLoadingMore) return;
-    setState(() => _isLoadingMore = true);
-    _loadedMonths += 1;
-    _subscribeAgenda();
   }
 
   DateTime? _calculateVisibleDate() {
@@ -239,11 +179,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   @override
   Widget build(BuildContext context) {
-    final agendaData = _agendaData ?? widget.data.agendaData;
-
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    final agendaData = widget.data.agendaData;
 
     final allItemsCount = agendaData.totalItemCount;
     if (allItemsCount == 0) {
@@ -264,13 +200,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
             controller: _scrollController,
             slivers: [
               ..._buildTimelineSlivers(context, agendaData),
-              if (_isLoadingMore)
-                const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                ),
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
@@ -364,9 +293,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     setState(() {
       _selectedMonth = month;
       _focusedDate = focus;
-      _loadedMonths = 2;
     });
-    _subscribeAgenda();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -382,8 +309,10 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
     // Show up to ~2 weeks of chips (enough for scroll-sync + next-week spill).
     final end = start.add(const Duration(days: 13));
-    final hardEnd = _rangeEndForLoadedMonths();
-    final effectiveEnd = end.isAfter(hardEnd) ? hardEnd : end;
+    final hardEnd = _loadedHorizonEnd;
+    final effectiveEnd = hardEnd == null
+        ? end
+        : (end.isAfter(hardEnd) ? hardEnd : end);
 
     final days = effectiveEnd.difference(start).inDays;
     return List.generate(

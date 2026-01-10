@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task List Item - Variant 1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#308ce8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                        "surface-dark": "#1e2832",
+                        "text-secondary": "#94a3b8",
+                        "flag-red": "#ef4444",
+                        "flag-yellow": "#facc15",
+                        "flag-green": "#4ade80",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.material-symbols-outlined.filled {
+    font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+/* Custom checkbox style */
+.task-checkbox:checked {
+    background-color: #308ce8;
+    border-color: #308ce8;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBAWnnrC4nAwuES24EKureA0YtYYe_BgHFKtd6wGuytnzYLFG6oW__Aio3eYA1O28Yi_Otzf7RYIVOSdho3mYzYtaI8k4M_3HFHtupS1mfs1AmBe2WSmbJdf6Gw3gpMihx0bW6FpiYf6YONS3A2_ch7sY_R2JnzJQg8-RvYNuph8gi0-M7K1LtkOVphZpFIOfVnV5eqSq-9yBsz3TcB2lmg0BRkOrx8MvD2rJeJldmxY9pmOnM1X6UfWiaizTkxw4zdzldcvrDCiVX-)
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex justify-center">
+<div class="w-full max-w-md bg-background-light dark:bg-background-dark min-h-screen flex flex-col relative overflow-hidden">
+<!-- Header -->
+<header class="flex items-center justify-between p-4 sticky top-0 z-10 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-8" data-alt="User profile picture with a calm gradient" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDHOY04-7y74OnSd_aScQipCYvCOny0EbTn40S9yewFPZE175yTUFJrU_Xv4k1ercfkC6yE30fziHGapv-E0zFbreS1-nNJ4wy9MBgku6teMiCf24g8i5SHwfNX1isYFBn_P4fzTQ155vrdvqZ6qpH3pTkwSex5GumQu5CjCKrFttCNT1_bP7vDPshwZ7WxTHXJlWO5iq9J0DBsClXf6E5E6WRJT334navs-fSyEEtHzP5yE039XZVirdY5oXd_SB_1gPw8dMpxB6ZP");'></div>
+<h1 class="text-gray-900 dark:text-white text-lg font-bold">My Tasks</h1>
+</div>
+<button class="flex items-center justify-center size-10 rounded-full text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-surface-dark transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</header>
+<!-- Main Content List -->
+<main class="flex-1 p-4 space-y-4">
+<!-- Section Header -->
+<div class="flex items-center justify-between pt-2">
+<h2 class="text-xs font-bold uppercase tracking-wider text-text-secondary">High Priority</h2>
+<span class="bg-primary/20 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">3 TASKS</span>
+</div>
+<!-- Task Card: High Priority, Pinned -->
+<div class="group relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-gray-800 transition-all active:scale-[0.99]">
+<!-- Top Row: Checkbox & Title -->
+<div class="flex items-start gap-3">
+<div class="flex-shrink-0 pt-0.5">
+<label class="relative flex items-center justify-center cursor-pointer">
+<input class="task-checkbox appearance-none size-6 rounded-full border-2 border-gray-300 dark:border-gray-600 checked:border-primary checked:bg-primary transition-all focus:ring-0 focus:ring-offset-0 cursor-pointer" type="checkbox"/>
+</label>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-gray-900 dark:text-white text-base font-semibold leading-tight truncate">Draft Q3 Report for Board</h3>
+<span class="material-symbols-outlined filled text-primary text-[18px] flex-shrink-0" title="Pinned">push_pin</span>
+</div>
+<p class="text-text-secondary text-sm font-normal truncate mt-1">Include financial summary from last month and projections.</p>
+</div>
+</div>
+<!-- Middle Row: Meta Data -->
+<div class="pl-9 flex flex-wrap items-center gap-y-2 gap-x-3 text-xs text-text-secondary">
+<div class="flex items-center gap-1 text-primary font-medium">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>Due Oct 15</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+<span>Start Today</span>
+</div>
+<div class="flex items-center gap-1" title="Recurring">
+<span class="material-symbols-outlined text-[16px]">cached</span>
+<span>Weekly</span>
+</div>
+</div>
+<!-- Bottom Row: Context Badges -->
+<div class="pl-9 pt-1 flex flex-wrap items-center gap-2">
+<!-- Project Badge -->
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+<span class="material-symbols-outlined filled text-flag-red text-[14px] mr-1.5">flag</span>
+<span class="text-xs font-medium text-gray-700 dark:text-gray-300">Quarterly Goals</span>
+</div>
+<!-- Primary Value -->
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-primary/10 border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[14px] mr-1.5">diamond</span>
+<span class="text-xs font-medium text-primary">Career</span>
+</div>
+<!-- Secondary Value -->
+<span class="text-xs text-text-secondary">#Leadership</span>
+</div>
+</div>
+<!-- Task Card: Medium Priority -->
+<div class="group relative flex flex-col gap-3 p-4 rounded-xl bg-white dark:bg-surface-dark shadow-sm border border-gray-100 dark:border-gray-800 transition-all active:scale-[0.99]">
+<div class="flex items-start gap-3">
+<div class="flex-shrink-0 pt-0.5">
+<label class="relative flex items-center justify-center cursor-pointer">
+<input class="task-checkbox appearance-none size-6 rounded-full border-2 border-gray-300 dark:border-gray-600 checked:border-primary checked:bg-primary transition-all focus:ring-0 focus:ring-offset-0 cursor-pointer" type="checkbox"/>
+</label>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-gray-900 dark:text-white text-base font-semibold leading-tight truncate">Family Dinner Planning</h3>
+</div>
+<p class="text-text-secondary text-sm font-normal truncate mt-1">Reserve table at the Italian place.</p>
+</div>
+</div>
+<div class="pl-9 flex flex-wrap items-center gap-y-2 gap-x-3 text-xs text-text-secondary">
+<div class="flex items-center gap-1 font-medium text-gray-500 dark:text-gray-400">
+<span class="material-symbols-outlined text-[16px]">event</span>
+<span>Due Tomorrow</span>
+</div>
+</div>
+<div class="pl-9 pt-1 flex flex-wrap items-center gap-2">
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+<span class="material-symbols-outlined filled text-flag-yellow text-[14px] mr-1.5">flag</span>
+<span class="text-xs font-medium text-gray-700 dark:text-gray-300">Personal</span>
+</div>
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-purple-500/10 border border-purple-500/20">
+<span class="material-symbols-outlined text-purple-500 text-[14px] mr-1.5">favorite</span>
+<span class="text-xs font-medium text-purple-500">Family</span>
+</div>
+</div>
+</div>
+<!-- Task Card: Low Priority, Checked State Example -->
+<div class="group relative flex flex-col gap-3 p-4 rounded-xl bg-gray-50 dark:bg-surface-dark/40 shadow-none border border-transparent dark:border-gray-800/50 opacity-70">
+<div class="flex items-start gap-3">
+<div class="flex-shrink-0 pt-0.5">
+<label class="relative flex items-center justify-center cursor-pointer">
+<input checked="" class="task-checkbox appearance-none size-6 rounded-full border-2 border-gray-300 dark:border-gray-600 checked:border-primary checked:bg-primary transition-all focus:ring-0 focus:ring-offset-0 cursor-pointer" type="checkbox"/>
+</label>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-start justify-between gap-2">
+<h3 class="text-gray-500 dark:text-gray-400 text-base font-semibold leading-tight truncate line-through">Review Design System</h3>
+</div>
+<p class="text-gray-400 dark:text-gray-600 text-sm font-normal truncate mt-1">Sync with engineering on token usage.</p>
+</div>
+</div>
+<div class="pl-9 flex flex-wrap items-center gap-y-2 gap-x-3 text-xs text-gray-400 dark:text-gray-600">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Completed Today</span>
+</div>
+</div>
+<div class="pl-9 pt-1 flex flex-wrap items-center gap-2 opacity-60 grayscale">
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+<span class="material-symbols-outlined filled text-flag-green text-[14px] mr-1.5">flag</span>
+<span class="text-xs font-medium text-gray-700 dark:text-gray-300">Design Sys</span>
+</div>
+<div class="inline-flex items-center h-6 px-2 rounded-md bg-blue-500/10 border border-blue-500/20">
+<span class="material-symbols-outlined text-blue-500 text-[14px] mr-1.5">lightbulb</span>
+<span class="text-xs font-medium text-blue-500">Creativity</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<div class="absolute bottom-6 right-6 z-20">
+<button class="flex items-center justify-center size-14 rounded-full bg-primary text-white shadow-lg shadow-primary/30 hover:bg-blue-600 transition-colors">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+</div>
+</body></html>

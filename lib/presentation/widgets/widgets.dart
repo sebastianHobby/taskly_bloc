@@ -13,6 +13,7 @@ export 'values_footer.dart';
 export 'values_section.dart';
 export 'loading_state_widget.dart';
 export 'next_action_indicator.dart';
+export 'priority_flag.dart';
 export 'section_header.dart';
 export 'section_widget.dart';
 export 'settings_section_card.dart';
