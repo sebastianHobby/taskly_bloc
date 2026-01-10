@@ -65,13 +65,6 @@ void main() {
         }
       });
 
-      test('inbox screen has /inbox path', () {
-        final path = Routing.screenPath(
-          SystemScreenDefinitions.inbox.screenKey,
-        );
-        expect(path, '/inbox');
-      });
-
       test('my_day screen has /my-day path', () {
         final path = Routing.screenPath(
           SystemScreenDefinitions.myDay.screenKey,

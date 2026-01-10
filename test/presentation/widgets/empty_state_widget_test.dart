@@ -175,19 +175,6 @@ void main() {
         expect(find.text('No projects'), findsOneWidget);
       });
 
-      testWidgets('inbox shows inbox icon', (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: EmptyStateWidget.inbox(title: 'Inbox empty'),
-            ),
-          ),
-        );
-
-        expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
-        expect(find.text('Inbox empty'), findsOneWidget);
-      });
-
       testWidgets('today shows today icon', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(

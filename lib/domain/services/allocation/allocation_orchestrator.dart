@@ -10,7 +10,6 @@ import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_alert_evaluator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/allocation/neglect_based_allocator.dart';
 import 'package:taskly_bloc/domain/services/allocation/proportional_allocator.dart';
@@ -36,21 +35,18 @@ class AllocationOrchestrator {
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
     AllocationSnapshotRepositoryContract? allocationSnapshotRepository,
-    AllocationAlertEvaluator? alertEvaluator,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository,
-       _alertEvaluator = alertEvaluator ?? const AllocationAlertEvaluator();
+       _allocationSnapshotRepository = allocationSnapshotRepository;
 
   final TaskRepositoryContract _taskRepository;
   final ValueRepositoryContract _valueRepository;
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
-  final AllocationAlertEvaluator _alertEvaluator;
   final AllocationSnapshotRepositoryContract? _allocationSnapshotRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
@@ -232,13 +228,6 @@ class AllocationOrchestrator {
 
     final allAllocatedTasks = [...pinnedAllocatedTasks, ...stabilizedRegular];
 
-    // Evaluate alerts on excluded tasks.
-    // Note: alert settings have migrated to the attention system.
-    final alertResult = _alertEvaluator.evaluate(
-      excludedTasks: allocatedRegularTasks.excludedTasks,
-      config: const AllocationAlertConfig(),
-    );
-
     // Best-effort logging: urgent valueless tasks are a key signal for UX.
     final urgencyDetector = UrgencyDetector.fromConfig(allocationConfig);
     final urgentValueless = urgencyDetector.findUrgentValuelessTasks(
@@ -256,7 +245,6 @@ class AllocationOrchestrator {
         allocatedTasks: allAllocatedTasks,
         reasoning: allocatedRegularTasks.reasoning,
         excludedTasks: allocatedRegularTasks.excludedTasks,
-        alertResult: alertResult,
         activeFocusMode: allocationConfig.focusMode,
       ),
       dayUtc: todayUtc,
@@ -340,10 +328,10 @@ class AllocationOrchestrator {
     return [...lockedPrev, ...topUps];
   }
 
-  /// Allocate regular (non-pinned) tasks using persona-based strategy.
+  /// Allocate regular (non-pinned) tasks using the configured strategy.
   ///
   /// For Phase 1, this simplifies to proportional allocation.
-  /// Future phases will implement persona-specific logic.
+  /// Future phases may implement focus-mode-specific logic.
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks,
     AllocationConfig config,
@@ -396,8 +384,8 @@ class AllocationOrchestrator {
       '$tasksWithValuesCount/${tasks.length} tasks have values',
     );
 
-    // Create allocation strategy based on persona
-    final strategy = createStrategyForPersona(config);
+    // Create allocation strategy based on configuration.
+    final strategy = createStrategyForConfig(config);
 
     talker.debug(
       '[AllocationOrchestrator] Using ${strategy.strategyName} strategy, '
@@ -425,19 +413,24 @@ class AllocationOrchestrator {
       urgencyBoostMultiplier: settings.urgencyBoostMultiplier,
       neglectLookbackDays: settings.neglectLookbackDays,
       neglectInfluence: settings.neglectInfluence,
+      valuePriorityWeight: settings.valuePriorityWeight,
+      taskPriorityBoost: settings.taskPriorityBoost,
+      recencyPenalty: settings.recencyPenalty,
+      overdueEmergencyMultiplier: settings.overdueEmergencyMultiplier,
+      overdueEmergencyGrowth: settings.overdueEmergencyGrowth,
       completionsByValue: completionsByValue,
     );
 
     return strategy.allocate(parameters);
   }
 
-  /// Create allocation strategy based on persona configuration.
+  /// Create allocation strategy based on allocation configuration.
   ///
   /// Selects appropriate allocator based on enabled features:
-  /// - NeglectBasedAllocator when enableNeglectWeighting is true (Reflector)
-  /// - UrgencyWeightedAllocator when urgency boost > 1.0 (Firefighter/Realist)
-  /// - ProportionalAllocator as default (Idealist)
-  AllocationStrategy createStrategyForPersona(AllocationConfig config) {
+  /// - NeglectBasedAllocator when enableNeglectWeighting is true
+  /// - UrgencyWeightedAllocator when urgency boost > 1.0
+  /// - ProportionalAllocator as default
+  AllocationStrategy createStrategyForConfig(AllocationConfig config) {
     final settings = config.strategySettings;
 
     // Check for neglect weighting first (enables combo mode in Custom)

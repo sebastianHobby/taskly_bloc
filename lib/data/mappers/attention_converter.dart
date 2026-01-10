@@ -28,7 +28,7 @@ class AttentionConverter {
       entitySelector: data.entitySelector,
       severity: _parseSeverity(data.severity),
       displayConfig: data.displayConfig,
-      resolutionActions: _parseResolutionActions(data.resolutionActions),
+      resolutionActions: data.resolutionActions,
       active: data.active,
       source: _parseSource(data.source),
       createdAt: data.createdAt,
@@ -50,7 +50,7 @@ class AttentionConverter {
       entitySelector: Value(rule.entitySelector),
       severity: Value(_mapSeverity(rule.severity)),
       displayConfig: Value(rule.displayConfig),
-      resolutionActions: Value(_mapResolutionActions(rule.resolutionActions)),
+      resolutionActions: Value(rule.resolutionActions),
       active: Value(rule.active),
       source: Value(_mapSource(rule.source)),
       createdAt: forUpdate ? const Value.absent() : Value(rule.createdAt),
@@ -174,26 +174,6 @@ class AttentionConverter {
       case drift_attention.AttentionResolutionAction.dismissed:
         return domain_resolution.AttentionResolutionAction.dismissed;
     }
-  }
-
-  static List<String> _parseResolutionActions(dynamic data) {
-    if (data == null) return [];
-    // Handle Map<String, dynamic> stored format (list stored as 'actions' key)
-    if (data is Map<String, dynamic>) {
-      final actions = data['actions'];
-      if (actions is List) {
-        return actions.map((e) => e.toString()).toList();
-      }
-    }
-    if (data is List) {
-      return data.map((e) => e.toString()).toList();
-    }
-    return [];
-  }
-
-  /// Convert `List<String>` to `Map<String, dynamic>` for Drift storage
-  static Map<String, dynamic> _mapResolutionActions(List<String> actions) {
-    return {'actions': actions};
   }
 
   // ==========================================================================

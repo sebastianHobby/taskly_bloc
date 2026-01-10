@@ -58,7 +58,6 @@ void main() {
         expect(
           keys,
           containsAll([
-            'inbox',
             'my_day',
             'scheduled',
             'projects',
@@ -88,10 +87,6 @@ void main() {
 
       test('returns correct screen for existing keys', () {
         expect(
-          SystemScreenDefinitions.getByKey('inbox'),
-          SystemScreenDefinitions.inbox,
-        );
-        expect(
           SystemScreenDefinitions.getByKey('scheduled'),
           SystemScreenDefinitions.scheduled,
         );
@@ -106,7 +101,7 @@ void main() {
 
     group('defaultSortOrders', () {
       test('has myDay at position 0', () {
-        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 1);
+        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 0);
       });
 
       test('does not have today or next_actions', () {
@@ -121,19 +116,18 @@ void main() {
       });
 
       test('has correct order for remaining screens', () {
-        expect(SystemScreenDefinitions.defaultSortOrders['inbox'], 0);
-        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 1);
-        expect(SystemScreenDefinitions.defaultSortOrders['scheduled'], 2);
-        expect(SystemScreenDefinitions.defaultSortOrders['someday'], 3);
-        expect(SystemScreenDefinitions.defaultSortOrders['journal'], 4);
-        expect(SystemScreenDefinitions.defaultSortOrders['values'], 5);
-        expect(SystemScreenDefinitions.defaultSortOrders['projects'], 6);
-        expect(SystemScreenDefinitions.defaultSortOrders['statistics'], 7);
-        expect(SystemScreenDefinitions.defaultSortOrders['orphan_tasks'], 8);
-        expect(SystemScreenDefinitions.defaultSortOrders['workflows'], 9);
+        expect(SystemScreenDefinitions.defaultSortOrders['my_day'], 0);
+        expect(SystemScreenDefinitions.defaultSortOrders['scheduled'], 1);
+        expect(SystemScreenDefinitions.defaultSortOrders['someday'], 2);
+        expect(SystemScreenDefinitions.defaultSortOrders['journal'], 3);
+        expect(SystemScreenDefinitions.defaultSortOrders['values'], 4);
+        expect(SystemScreenDefinitions.defaultSortOrders['projects'], 5);
+        expect(SystemScreenDefinitions.defaultSortOrders['statistics'], 6);
+        expect(SystemScreenDefinitions.defaultSortOrders['orphan_tasks'], 7);
+        expect(SystemScreenDefinitions.defaultSortOrders['workflows'], 8);
         expect(
           SystemScreenDefinitions.defaultSortOrders['screen_management'],
-          10,
+          9,
         );
         expect(SystemScreenDefinitions.defaultSortOrders['settings'], 100);
 
@@ -156,7 +150,7 @@ void main() {
 
     group('getDefaultSortOrder', () {
       test('returns correct order for myDay', () {
-        expect(SystemScreenDefinitions.getDefaultSortOrder('my_day'), 1);
+        expect(SystemScreenDefinitions.getDefaultSortOrder('my_day'), 0);
       });
 
       test('returns 999 for removed screens', () {

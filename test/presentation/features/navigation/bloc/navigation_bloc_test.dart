@@ -157,13 +157,13 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         screensController.emit([
-          createScreen(id: '1', screenKey: 'inbox', name: 'Inbox'),
+          createScreen(id: '1', screenKey: 'my_day', name: 'My Day'),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(bloc.state.status, NavigationStatus.ready);
         expect(bloc.state.destinations.length, 1);
-        expect(bloc.state.destinations.first.label, 'Inbox');
+        expect(bloc.state.destinations.first.label, 'My Day');
         await bloc.close();
       });
     });
@@ -186,7 +186,7 @@ void main() {
             name: 'Upcoming',
             sortOrder: 2,
           ),
-          createScreen(id: '1', screenKey: 'inbox', name: 'Inbox'),
+          createScreen(id: '1', screenKey: 'my_day', name: 'My Day'),
           createScreen(
             id: '2',
             screenKey: 'today',
@@ -197,7 +197,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final labels = bloc.state.destinations.map((d) => d.label).toList();
-        expect(labels, ['Inbox', 'Today', 'Upcoming']);
+        expect(labels, ['My Day', 'Today', 'Upcoming']);
         await bloc.close();
       });
 
@@ -214,13 +214,13 @@ void main() {
         screensController.emit([
           createScreen(
             id: '1',
-            screenKey: 'inbox',
-            name: 'Inbox',
+            screenKey: 'my_day',
+            name: 'My Day',
           ),
         ]);
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(bloc.state.destinations.first.route, '/inbox');
+        expect(bloc.state.destinations.first.route, '/my-day');
         await bloc.close();
       });
 
@@ -296,7 +296,8 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
         final routes = bloc.state.destinations.map((d) => d.route).toList();
-        expect(routes, ['/settings', '/navigation-settings']);
+        // Settings is always sorted last by NavigationBloc.
+        expect(routes, ['/navigation-settings', '/settings']);
         await bloc.close();
       });
     });
@@ -362,8 +363,8 @@ void main() {
     // System screens (resolved by screenId - the single source of truth)
     // ─────────────────────────────────────────────────────────────────
 
-    test('resolves inbox icon by screenId', () {
-      final result = resolver.resolve(screenId: 'inbox', iconName: null);
+    test('resolves inbox icon by iconName (custom screens)', () {
+      final result = resolver.resolve(screenId: 'custom', iconName: 'inbox');
       expect(result.icon, Icons.inbox_outlined);
       expect(result.selectedIcon, Icons.inbox);
     });
@@ -485,26 +486,26 @@ void main() {
     // ─────────────────────────────────────────────────────────────────
 
     test('screenId takes priority over iconName for system screens', () {
-      // Even if iconName is 'folder', screenId 'inbox' wins
-      final result = resolver.resolve(screenId: 'inbox', iconName: 'folder');
-      expect(result.icon, Icons.inbox_outlined);
-      expect(result.selectedIcon, Icons.inbox);
+      // Even if iconName is 'folder', screenId 'my_day' wins
+      final result = resolver.resolve(screenId: 'my_day', iconName: 'folder');
+      expect(result.icon, Icons.wb_sunny_outlined);
+      expect(result.selectedIcon, Icons.wb_sunny);
     });
 
     test('handles empty iconName by using screenId', () {
-      final result = resolver.resolve(screenId: 'inbox', iconName: '');
-      expect(result.icon, Icons.inbox_outlined);
+      final result = resolver.resolve(screenId: 'my_day', iconName: '');
+      expect(result.icon, Icons.wb_sunny_outlined);
     });
 
     test('handles whitespace iconName by using screenId', () {
-      final result = resolver.resolve(screenId: 'inbox', iconName: '  ');
-      expect(result.icon, Icons.inbox_outlined);
+      final result = resolver.resolve(screenId: 'my_day', iconName: '  ');
+      expect(result.icon, Icons.wb_sunny_outlined);
     });
 
     test('handles null iconName by using screenId', () {
-      final result = resolver.resolve(screenId: 'inbox', iconName: null);
-      expect(result.icon, Icons.inbox_outlined);
-      expect(result.selectedIcon, Icons.inbox);
+      final result = resolver.resolve(screenId: 'my_day', iconName: null);
+      expect(result.icon, Icons.wb_sunny_outlined);
+      expect(result.selectedIcon, Icons.wb_sunny);
     });
   });
 }

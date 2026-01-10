@@ -18,16 +18,14 @@ import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 
 /// Drift implementation of [ScreenDefinitionsRepositoryContract].
 ///
-/// ## Architecture (Updated 2026-01)
+/// ## Architecture (Option B)
 ///
-/// ALL screens (system + custom) are now read from the database.
-/// System screens are seeded via [ScreenSeeder] on first launch.
-///
-/// This enables:
-/// 1. **Unified cleanup**: [SystemDataCleanupService] can delete orphaned
-///    system screens when templates are renamed/removed.
-/// 2. **User customization**: Users can change sortOrder/isActive for system screens.
-/// 3. **Consistent architecture**: Screens and attention rules follow same pattern.
+/// - System screen definitions come from code via [SystemScreenDefinitions].
+/// - Custom screen definitions come from the database (`screen_definitions`).
+/// - Preferences (sort order + visibility) come from `screen_preferences`.
+/// - Legacy fallback: older `screen_definitions` rows with
+///   `source='system_template'` may exist and only contribute preference-like
+///   fields (`isActive/sortOrder`) when a dedicated preference row is missing.
 class ScreenDefinitionsRepositoryImpl
     implements ScreenDefinitionsRepositoryContract {
   ScreenDefinitionsRepositoryImpl(

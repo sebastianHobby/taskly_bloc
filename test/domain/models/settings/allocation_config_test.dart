@@ -1,15 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 
 void main() {
-  group('AllocationPersona', () {
+  group('FocusMode', () {
     test('has all expected values', () {
-      expect(AllocationPersona.values, [
-        AllocationPersona.idealist,
-        AllocationPersona.reflector,
-        AllocationPersona.realist,
-        AllocationPersona.firefighter,
-        AllocationPersona.custom,
+      expect(FocusMode.values, [
+        FocusMode.intentional,
+        FocusMode.sustainable,
+        FocusMode.responsive,
+        FocusMode.personalized,
       ]);
     });
   });
@@ -30,7 +30,8 @@ void main() {
         const config = AllocationConfig();
 
         expect(config.dailyLimit, 10);
-        expect(config.persona, AllocationPersona.realist);
+        expect(config.hasSelectedFocusMode, false);
+        expect(config.focusMode, FocusMode.sustainable);
         expect(config.strategySettings, const StrategySettings());
         expect(config.displaySettings, const DisplaySettings());
       });
@@ -38,7 +39,8 @@ void main() {
       test('creates with custom values', () {
         const config = AllocationConfig(
           dailyLimit: 15,
-          persona: AllocationPersona.firefighter,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.responsive,
           strategySettings: StrategySettings(
             urgentTaskBehavior: UrgentTaskBehavior.includeAll,
           ),
@@ -48,7 +50,8 @@ void main() {
         );
 
         expect(config.dailyLimit, 15);
-        expect(config.persona, AllocationPersona.firefighter);
+        expect(config.hasSelectedFocusMode, true);
+        expect(config.focusMode, FocusMode.responsive);
         expect(
           config.strategySettings.urgentTaskBehavior,
           UrgentTaskBehavior.includeAll,
@@ -61,7 +64,8 @@ void main() {
       test('parses complete JSON', () {
         final json = {
           'daily_limit': 20,
-          'persona': 'firefighter',
+          'has_selected_focus_mode': true,
+          'focus_mode': 'responsive',
           'strategy_settings': {
             'urgent_task_behavior': 'includeAll',
             'task_urgency_threshold_days': 5,
@@ -82,7 +86,8 @@ void main() {
         final config = AllocationConfig.fromJson(json);
 
         expect(config.dailyLimit, 20);
-        expect(config.persona, AllocationPersona.firefighter);
+        expect(config.hasSelectedFocusMode, true);
+        expect(config.focusMode, FocusMode.responsive);
         expect(
           config.strategySettings.urgentTaskBehavior,
           UrgentTaskBehavior.includeAll,
@@ -103,18 +108,19 @@ void main() {
         final config = AllocationConfig.fromJson(const {});
 
         expect(config.dailyLimit, 10);
-        expect(config.persona, AllocationPersona.realist);
+        expect(config.hasSelectedFocusMode, false);
+        expect(config.focusMode, FocusMode.sustainable);
         expect(
           config.strategySettings.urgentTaskBehavior,
           UrgentTaskBehavior.warnOnly,
         );
       });
 
-      test('parses all persona types', () {
-        for (final persona in AllocationPersona.values) {
-          final json = {'persona': persona.name};
+      test('parses all focus modes', () {
+        for (final mode in FocusMode.values) {
+          final json = {'focus_mode': mode.name};
           final config = AllocationConfig.fromJson(json);
-          expect(config.persona, persona);
+          expect(config.focusMode, mode);
         }
       });
 
@@ -133,7 +139,8 @@ void main() {
       test('serializes all fields', () {
         const config = AllocationConfig(
           dailyLimit: 25,
-          persona: AllocationPersona.idealist,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.intentional,
           strategySettings: StrategySettings(
             urgentTaskBehavior: UrgentTaskBehavior.ignore,
             urgencyBoostMultiplier: 1,
@@ -146,7 +153,8 @@ void main() {
         final json = config.toJson();
 
         expect(json['daily_limit'], 25);
-        expect(json['persona'], 'idealist');
+        expect(json['has_selected_focus_mode'], true);
+        expect(json['focus_mode'], 'intentional');
         // Note: nested objects are not serialized automatically by toJson
         // They need separate toJson calls
       });
@@ -154,7 +162,8 @@ void main() {
       test('round-trips through JSON using proper serialization', () {
         const original = AllocationConfig(
           dailyLimit: 12,
-          persona: AllocationPersona.reflector,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.personalized,
           strategySettings: StrategySettings(
             enableNeglectWeighting: true,
             neglectInfluence: 0.8,
@@ -167,7 +176,8 @@ void main() {
         // Manual deep serialization
         final json = {
           'daily_limit': original.dailyLimit,
-          'persona': original.persona.name,
+          'has_selected_focus_mode': original.hasSelectedFocusMode,
+          'focus_mode': original.focusMode.name,
           'strategy_settings': original.strategySettings.toJson(),
           'display_settings': original.displaySettings.toJson(),
         };
@@ -180,7 +190,8 @@ void main() {
     group('copyWith', () {
       test('copies with no changes', () {
         const config = AllocationConfig(
-          persona: AllocationPersona.firefighter,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.responsive,
           dailyLimit: 15,
         );
 
@@ -189,15 +200,23 @@ void main() {
         expect(copied, config);
       });
 
-      test('copies with persona change', () {
+      test('copies with focusMode change', () {
         const config = AllocationConfig();
 
         final copied = config.copyWith(
-          persona: AllocationPersona.custom,
+          focusMode: FocusMode.intentional,
         );
 
-        expect(copied.persona, AllocationPersona.custom);
+        expect(copied.focusMode, FocusMode.intentional);
         expect(copied.dailyLimit, config.dailyLimit);
+      });
+
+      test('copies with hasSelectedFocusMode change', () {
+        const config = AllocationConfig();
+
+        final copied = config.copyWith(hasSelectedFocusMode: true);
+
+        expect(copied.hasSelectedFocusMode, true);
       });
 
       test('copies with dailyLimit change', () {
@@ -239,24 +258,28 @@ void main() {
     group('equality', () {
       test('equal configs are equal', () {
         const config1 = AllocationConfig(
-          persona: AllocationPersona.firefighter,
           dailyLimit: 15,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.responsive,
         );
         const config2 = AllocationConfig(
-          persona: AllocationPersona.firefighter,
           dailyLimit: 15,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.responsive,
         );
 
         expect(config1, config2);
         expect(config1.hashCode, config2.hashCode);
       });
 
-      test('different persona are not equal', () {
+      test('different focusMode are not equal', () {
         const config1 = AllocationConfig(
-          persona: AllocationPersona.idealist,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.intentional,
         );
         const config2 = AllocationConfig(
-          persona: AllocationPersona.realist,
+          hasSelectedFocusMode: true,
+          focusMode: FocusMode.sustainable,
         );
 
         expect(config1, isNot(config2));
@@ -286,49 +309,35 @@ void main() {
       });
     });
 
-    group('forPersona factory', () {
-      test('idealist has no urgency', () {
-        final settings = StrategySettings.forPersona(
-          AllocationPersona.idealist,
-        );
+    group('forFocusMode factory', () {
+      test('intentional preset', () {
+        final settings = StrategySettings.forFocusMode(FocusMode.intentional);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.ignore);
         expect(settings.urgencyBoostMultiplier, 1);
         expect(settings.enableNeglectWeighting, false);
       });
 
-      test('reflector has neglect weighting', () {
-        final settings = StrategySettings.forPersona(
-          AllocationPersona.reflector,
-        );
-
-        expect(settings.urgentTaskBehavior, UrgentTaskBehavior.warnOnly);
-        expect(settings.urgencyBoostMultiplier, 1);
-        expect(settings.enableNeglectWeighting, true);
-        expect(settings.neglectLookbackDays, 7);
-        expect(settings.neglectInfluence, 0.7);
-      });
-
-      test('realist has balanced urgency', () {
-        final settings = StrategySettings.forPersona(AllocationPersona.realist);
+      test('sustainable preset', () {
+        final settings = StrategySettings.forFocusMode(FocusMode.sustainable);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.warnOnly);
         expect(settings.urgencyBoostMultiplier, 1.5);
-        expect(settings.enableNeglectWeighting, false);
+        expect(settings.enableNeglectWeighting, true);
+        expect(settings.neglectLookbackDays, 7);
+        expect(settings.neglectInfluence, 0.5);
       });
 
-      test('firefighter includes all urgent', () {
-        final settings = StrategySettings.forPersona(
-          AllocationPersona.firefighter,
-        );
+      test('responsive preset', () {
+        final settings = StrategySettings.forFocusMode(FocusMode.responsive);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.includeAll);
         expect(settings.urgencyBoostMultiplier, 2);
         expect(settings.enableNeglectWeighting, false);
       });
 
-      test('custom returns defaults', () {
-        final settings = StrategySettings.forPersona(AllocationPersona.custom);
+      test('personalized preset returns defaults', () {
+        final settings = StrategySettings.forFocusMode(FocusMode.personalized);
 
         expect(settings, const StrategySettings());
       });

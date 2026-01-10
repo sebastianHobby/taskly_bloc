@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
 
@@ -23,6 +24,10 @@ abstract class ScreenDefinition with _$ScreenDefinition {
 
     /// Sections that make up the screen.
     @Default(<SectionRef>[]) List<SectionRef> sections,
+
+    /// Optional screen-level gate. When active, the screen renders only the
+    /// gate's full-screen section instead of [sections].
+    ScreenGateConfig? gate,
 
     /// Source of this screen definition (system template vs user-defined)
     @Default(ScreenSource.userDefined) ScreenSource screenSource,

@@ -10,7 +10,7 @@ import 'package:taskly_bloc/domain/models/value_priority.dart';
 
 void main() {
   group('AllocationSectionRenderer', () {
-    // Note: Reflector persona was merged into sustainable focus mode
+    // Note: Reflector mode behavior was merged into sustainable focus mode.
     // Value balance chart behavior may have changed with FocusMode migration
     testWidgets('renders tasks in allocation section', (
       tester,

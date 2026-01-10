@@ -171,9 +171,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get groupSortApplyButton => 'Aplicar';
 
   @override
-  String get inboxTitle => 'Bandeja de entrada';
-
-  @override
   String get todayTitle => 'Hoy';
 
   @override
@@ -265,12 +262,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get projectFormRepeatRuleTooLong => 'La regla de repetición es demasiado larga';
-
-  @override
-  String get emptyInboxTitle => 'Tu bandeja de entrada está vacía';
-
-  @override
-  String get emptyInboxDescription => 'Las tareas sin proyecto aparecerán aquí';
 
   @override
   String get emptyTodayTitle => 'Nada para hoy';
@@ -664,58 +655,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get confirmButton => 'Confirmar';
 
   @override
-  String get personaIdealist => 'Idealista';
+  String get focusModeSectionTitle => '¿Cómo debería Enfoque priorizar las tareas?';
 
   @override
-  String get personaIdealistDescription => 'Alineación pura con valores. Ignora la urgencia.';
-
-  @override
-  String get personaIdealistHowItWorks => 'Las tareas se seleccionan únicamente según tus pesos de valores. Las fechas límite y la urgencia se ignoran por completo. Mejor para: Alineación de valores a largo plazo sin presión de tiempo.';
-
-  @override
-  String get personaReflector => 'Reflector';
-
-  @override
-  String get personaReflectorDescription => 'Prioriza valores que has estado descuidando.';
-
-  @override
-  String get personaReflectorHowItWorks => 'Analiza tus completaciones recientes y prioriza valores que has estado ignorando. Ayuda a mantener el equilibrio cuando tiendes a enfocarte demasiado en ciertas áreas. Mejor para: Evitar el agotamiento en valores favoritos.';
-
-  @override
-  String get personaRealist => 'Realista';
-
-  @override
-  String get personaRealistDescription => 'Enfoque equilibrado con conciencia de urgencia.';
-
-  @override
-  String get personaRealistHowItWorks => 'Respeta tus pesos de valores mientras advierte sobre fechas límite próximas. Las tareas urgentes con valores obtienen un impulso de prioridad. Mejor para: La mayoría de usuarios que quieren equilibrio.';
-
-  @override
-  String get personaFirefighter => 'Bombero';
-
-  @override
-  String get personaFirefighterDescription => 'Urgencia primero. Todas las tareas urgentes incluidas.';
-
-  @override
-  String get personaFirefighterHowItWorks => 'Las fechas límite van primero. Todas las tareas urgentes se incluyen, incluso sin valores. Previene fechas límite perdidas a costa de la alineación de valores. Mejor para: Períodos de alta presión con muchas fechas límite.';
-
-  @override
-  String get personaCustom => 'Personalizado';
-
-  @override
-  String get personaCustomDescription => 'Configura todos los ajustes manualmente.';
-
-  @override
-  String get personaCustomHowItWorks => 'Control total sobre todos los parámetros de asignación. Configura umbrales de urgencia, multiplicadores de impulso y opciones de visualización. Mejor para: Usuarios avanzados que quieren control detallado.';
-
-  @override
-  String get personaRecommended => 'Recomendado';
-
-  @override
-  String get personaHowItWorks => 'Cómo funciona';
-
-  @override
-  String get personaSectionTitle => '¿Cómo debería Enfoque priorizar las tareas?';
+  String get recommendedLabel => 'Recomendado';
 
   @override
   String get urgencyThresholdsSection => 'Umbrales de Urgencia';
@@ -939,7 +882,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get basicInfoSection => 'Información Básica';
 
   @override
-  String get personaSectionSubtitle => 'Elige una personalidad para controlar cómo se priorizan las tareas';
+  String get focusModeSectionSubtitle => 'Elige un modo de enfoque para controlar cómo se priorizan las tareas';
 
   @override
   String get taskLimitSection => 'Límite de Tareas';
@@ -981,9 +924,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String daysFormat(int count) {
     return '$count días';
   }
-
-  @override
-  String get personaTitle => 'Persona';
 
   @override
   String get dailyTaskLimitLabel => 'Daily Task Limit';

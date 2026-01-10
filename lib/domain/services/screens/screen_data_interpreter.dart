@@ -2,8 +2,12 @@ import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
@@ -14,11 +18,14 @@ class ScreenDataInterpreter {
   ScreenDataInterpreter({
     required SectionTemplateInterpreterRegistry interpreterRegistry,
     required SectionTemplateParamsCodec paramsCodec,
+    required SettingsRepositoryContract settingsRepository,
   }) : _interpreterRegistry = interpreterRegistry,
-       _paramsCodec = paramsCodec;
+       _paramsCodec = paramsCodec,
+       _settingsRepository = settingsRepository;
 
   final SectionTemplateInterpreterRegistry _interpreterRegistry;
   final SectionTemplateParamsCodec _paramsCodec;
+  final SettingsRepositoryContract _settingsRepository;
 
   static const bool _isReleaseMode = bool.fromEnvironment('dart.vm.product');
 
@@ -56,6 +63,10 @@ class ScreenDataInterpreter {
         if (ref.overrides?.enabled == false) continue;
         _validateSectionRefOrFail(ref);
       }
+      final gateSection = definition.gate?.section;
+      if (gateSection != null) {
+        _validateSectionRefOrFail(gateSection);
+      }
     } catch (e, st) {
       talker.handle(e, st, '[ScreenDataInterpreter] invalid screen definition');
       if (!_isReleaseMode) {
@@ -64,36 +75,18 @@ class ScreenDataInterpreter {
       return Stream.value(ScreenData.error(definition, e.toString()));
     }
 
-    if (definition.sections.isEmpty) {
-      return Stream.value(
-        ScreenData(
-          definition: definition,
-          sections: const [],
-        ),
-      );
+    final gate = definition.gate;
+    if (gate == null) {
+      return _watchUngatedScreen(definition);
     }
 
-    final enabledSections = <(int index, SectionRef ref)>[];
-    for (final entry in definition.sections.asMap().entries) {
-      final ref = entry.value;
-      if (ref.overrides?.enabled == false) continue;
-      enabledSections.add((entry.key, ref));
-    }
-
-    if (enabledSections.isEmpty) {
-      return Stream.value(
-        ScreenData(definition: definition, sections: const []),
-      );
-    }
-
-    final sectionStreams = enabledSections.map((entry) {
-      return _watchSection(entry.$1, entry.$2);
-    }).toList();
-
-    // Combine all section streams
-    return Rx.combineLatestList(sectionStreams)
-        .map((sectionResults) {
-          return ScreenData(definition: definition, sections: sectionResults);
+    return _watchGateActive(gate.criteria)
+        .distinct()
+        .switchMap((isActive) {
+          if (isActive) {
+            return _watchGateScreen(definition, gate.section);
+          }
+          return _watchUngatedScreen(definition);
         })
         .transform(
           StreamTransformer.fromHandlers(
@@ -127,6 +120,16 @@ class ScreenDataInterpreter {
         _validateSectionRefOrFail(ref);
       }
 
+      final gate = definition.gate;
+      if (gate != null) {
+        _validateSectionRefOrFail(gate.section);
+        final isActive = await _isGateActiveOnce(gate.criteria);
+        if (isActive) {
+          final sectionVm = await _fetchSection(0, gate.section);
+          return ScreenData(definition: definition, sections: [sectionVm]);
+        }
+      }
+
       final sections = await Future.wait(
         definition.sections.asMap().entries.map((entry) async {
           final index = entry.key;
@@ -149,6 +152,70 @@ class ScreenDataInterpreter {
       }
       return ScreenData.error(definition, e.toString());
     }
+  }
+
+  Stream<ScreenData> _watchUngatedScreen(ScreenDefinition definition) {
+    if (definition.sections.isEmpty) {
+      return Stream.value(
+        ScreenData(
+          definition: definition,
+          sections: const [],
+        ),
+      );
+    }
+
+    final enabledSections = <(int index, SectionRef ref)>[];
+    for (final entry in definition.sections.asMap().entries) {
+      final ref = entry.value;
+      if (ref.overrides?.enabled == false) continue;
+      enabledSections.add((entry.key, ref));
+    }
+
+    if (enabledSections.isEmpty) {
+      return Stream.value(
+        ScreenData(definition: definition, sections: const []),
+      );
+    }
+
+    final sectionStreams = enabledSections
+        .map((entry) {
+          return _watchSection(entry.$1, entry.$2);
+        })
+        .toList(growable: false);
+
+    return Rx.combineLatestList(sectionStreams).map((sectionResults) {
+      return ScreenData(definition: definition, sections: sectionResults);
+    });
+  }
+
+  Stream<ScreenData> _watchGateScreen(
+    ScreenDefinition definition,
+    SectionRef gateSection,
+  ) {
+    return _watchSection(
+      0,
+      gateSection,
+    ).map((vm) => ScreenData(definition: definition, sections: [vm]));
+  }
+
+  Stream<bool> _watchGateActive(ScreenGateCriteria criteria) {
+    return switch (criteria) {
+      AllocationFocusModeNotSelectedGateCriteria() =>
+        _settingsRepository
+            .watch<AllocationConfig>(SettingsKey.allocation)
+            .map((c) => !c.hasSelectedFocusMode),
+    };
+  }
+
+  Future<bool> _isGateActiveOnce(ScreenGateCriteria criteria) async {
+    if (criteria is AllocationFocusModeNotSelectedGateCriteria) {
+      final config = await _settingsRepository.load<AllocationConfig>(
+        SettingsKey.allocation,
+      );
+      return !config.hasSelectedFocusMode;
+    }
+
+    return false;
   }
 
   Stream<SectionVm> _watchSection(int index, SectionRef ref) {

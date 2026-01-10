@@ -171,9 +171,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupSortApplyButton => 'Apply';
 
   @override
-  String get inboxTitle => 'Inbox';
-
-  @override
   String get todayTitle => 'Today';
 
   @override
@@ -265,12 +262,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectFormRepeatRuleTooLong => 'Repeat rule is too long';
-
-  @override
-  String get emptyInboxTitle => 'Your inbox is empty';
-
-  @override
-  String get emptyInboxDescription => 'Tasks without a project will appear here';
 
   @override
   String get emptyTodayTitle => 'Nothing due today';
@@ -664,58 +655,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get confirmButton => 'Confirm';
 
   @override
-  String get personaIdealist => 'Idealist';
+  String get focusModeSectionTitle => 'How should Focus prioritize tasks?';
 
   @override
-  String get personaIdealistDescription => 'Show me what matters most, not what\'s most urgent.';
-
-  @override
-  String get personaIdealistHowItWorks => 'Tasks are selected purely based on your value weights. Deadlines and urgency are completely ignored. Best for: Long-term value alignment without time pressure.';
-
-  @override
-  String get personaReflector => 'Reflector';
-
-  @override
-  String get personaReflectorDescription => 'Show me values I\'ve been neglecting.';
-
-  @override
-  String get personaReflectorHowItWorks => 'Analyzes your recent completions and prioritizes values you\'ve been ignoring. Helps maintain balance when you tend to over-focus on certain areas. Best for: Avoiding burnout on favorite values.';
-
-  @override
-  String get personaRealist => 'Realist';
-
-  @override
-  String get personaRealistDescription => 'Show me what matters most, but warn me about urgent tasks.';
-
-  @override
-  String get personaRealistHowItWorks => 'Respects your value weights while warning about approaching deadlines. Urgent tasks with values get a priority boost. Best for: Most users who want balance.';
-
-  @override
-  String get personaFirefighter => 'Firefighter';
-
-  @override
-  String get personaFirefighterDescription => 'Show me what\'s urgent right now.';
-
-  @override
-  String get personaFirefighterHowItWorks => 'Deadlines come first. All urgent tasks are included, even without values. Prevents missed deadlines at the cost of value alignment. Best for: High-pressure periods with many deadlines.';
-
-  @override
-  String get personaCustom => 'Custom';
-
-  @override
-  String get personaCustomDescription => 'Let me decide what you show me.';
-
-  @override
-  String get personaCustomHowItWorks => 'Full control over all allocation parameters. Configure urgency thresholds, boost multipliers, and display options. Best for: Power users who want fine-grained control.';
-
-  @override
-  String get personaRecommended => 'Recommended';
-
-  @override
-  String get personaHowItWorks => 'How it works';
-
-  @override
-  String get personaSectionTitle => 'How should Focus prioritize tasks?';
+  String get recommendedLabel => 'Recommended';
 
   @override
   String get urgencyThresholdsSection => 'Urgency Thresholds';
@@ -939,7 +882,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get basicInfoSection => 'Basic Information';
 
   @override
-  String get personaSectionSubtitle => 'Choose a persona to control how tasks are prioritized';
+  String get focusModeSectionSubtitle => 'Choose a focus mode to control how tasks are prioritized';
 
   @override
   String get taskLimitSection => 'Task Limit';
@@ -981,9 +924,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String daysFormat(int count) {
     return '$count days';
   }
-
-  @override
-  String get personaTitle => 'Persona';
 
   @override
   String get dailyTaskLimitLabel => 'Daily Task Limit';

@@ -1,6 +1,8 @@
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_scoring.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_strategy.dart';
+import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
 /// Proportional allocation strategy
 ///
@@ -26,6 +28,7 @@ class ProportionalAllocator implements AllocationStrategy {
     final tasks = parameters.tasks;
     final categories = parameters.categories;
     final totalLimit = parameters.maxTasks;
+    final now = DateTime.now();
 
     final allocatedTasks = <AllocatedTask>[];
     final excludedTasks = <ExcludedTask>[];
@@ -97,8 +100,8 @@ class ProportionalAllocator implements AllocationStrategy {
         continue;
       }
 
-      // Use task's direct values only (no inheritance)
-      final categoryIds = task.values.map((v) => v.id).toSet();
+      // Use effective values (task values override project, else inherit).
+      final categoryIds = task.effectiveValues.map((v) => v.id).toSet();
 
       // Check if task matches any category from parameters
       final matchedCategories = categories.keys
@@ -122,6 +125,25 @@ class ProportionalAllocator implements AllocationStrategy {
       final categoryId = entry.key;
       final allocation = entry.value;
       final availableTasks = tasksByCategory[categoryId] ?? [];
+
+      availableTasks.sort(
+        (a, b) =>
+            _taskScore(
+              task: b,
+              now: now,
+              categoryWeight: categoryWeights[categoryId] ?? 0.0,
+              totalWeight: totalWeight,
+              parameters: parameters,
+            ).compareTo(
+              _taskScore(
+                task: a,
+                now: now,
+                categoryWeight: categoryWeights[categoryId] ?? 0.0,
+                totalWeight: totalWeight,
+                parameters: parameters,
+              ),
+            ),
+      );
 
       if (availableTasks.isEmpty) {
         // No tasks for this category - problem detection handles this
@@ -186,5 +208,47 @@ class ProportionalAllocator implements AllocationStrategy {
     final now = DateTime.now();
     final daysUntilDeadline = task.deadlineDate!.difference(now).inDays;
     return daysUntilDeadline <= thresholdDays;
+  }
+
+  double _taskScore({
+    required Task task,
+    required DateTime now,
+    required double categoryWeight,
+    required double totalWeight,
+    required AllocationParameters parameters,
+  }) {
+    var score =
+        (categoryWeight / totalWeight).clamp(0.0, 1.0) *
+        parameters.valuePriorityWeight;
+
+    final isUrgent = _isUrgent(task, parameters.taskUrgencyThresholdDays);
+    if (isUrgent) {
+      score *= parameters.urgencyBoostMultiplier;
+    }
+
+    final deadline = task.deadlineDate;
+    if (deadline != null) {
+      final daysUntilDeadline = deadline.difference(now).inDays;
+      if (daysUntilDeadline < 0) {
+        score *= AllocationScoring.overdueEmergencyFactor(
+          daysOverdue: -daysUntilDeadline,
+          overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
+          overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
+        );
+      }
+    }
+
+    score *= AllocationScoring.taskPriorityMultiplier(
+      task: task,
+      taskPriorityBoost: parameters.taskPriorityBoost,
+    );
+
+    score *= AllocationScoring.recencyMultiplier(
+      task: task,
+      now: now,
+      recencyPenalty: parameters.recencyPenalty,
+    );
+
+    return score;
   }
 }

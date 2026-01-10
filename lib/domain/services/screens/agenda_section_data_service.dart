@@ -73,13 +73,14 @@ class AgendaSectionDataService {
       ),
     );
 
-    final scheduledTasksStream = taskRepository.watchOccurrences(
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
+    // Use the Schedule queries (completed=false AND (start OR deadline in
+    // range) + occurrence expansion). This keeps streaming behavior consistent
+    // with getAgendaData() and ensures deadline-only tasks appear.
+    final scheduledTasksStream = taskRepository.watchAll(
+      TaskQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
     );
-    final scheduledProjectsStream = projectRepository.watchOccurrences(
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
+    final scheduledProjectsStream = projectRepository.watchAll(
+      ProjectQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
     );
 
     return Rx.combineLatest4<

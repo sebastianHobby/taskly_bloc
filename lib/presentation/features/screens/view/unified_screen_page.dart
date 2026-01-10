@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -19,7 +21,6 @@ import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
-import 'package:taskly_bloc/presentation/features/persona_wizard/view/persona_selection_page.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
@@ -91,6 +92,7 @@ class _UnifiedScreenView extends StatelessWidget {
     SectionTemplateId.navigationSettings,
     SectionTemplateId.attentionRules,
     SectionTemplateId.focusSetupWizard,
+    SectionTemplateId.myDayFocusModeRequired,
   };
 
   @override
@@ -184,6 +186,14 @@ class _UnifiedScreenView extends StatelessWidget {
           ScreenErrorState(:final message) => _ErrorContent(message: message),
         };
 
+        final isSystemScheduled = switch (state) {
+          ScreenLoadedState(:final data) => data.definition.id == 'scheduled',
+          ScreenLoadingState(:final definition) =>
+            definition?.id == 'scheduled',
+          ScreenErrorState(:final definition) => definition?.id == 'scheduled',
+          _ => false,
+        };
+
         // Build FAB only when loaded (returns null otherwise)
         final fab = data != null ? _buildFab(context, data) : null;
 
@@ -199,13 +209,17 @@ class _UnifiedScreenView extends StatelessWidget {
         // so this Scaffold's FAB is the primary one for the screen.
         return Scaffold(
           backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: AppBar(
-            title: Text(title ?? 'Loading...'),
-            actions: appBarActions,
-            backgroundColor: theme.scaffoldBackgroundColor,
-            elevation: 0,
-          ),
-          body: body,
+          appBar: isSystemScheduled
+              ? null
+              : AppBar(
+                  title: Text(title ?? 'Loading...'),
+                  actions: appBarActions,
+                  backgroundColor: theme.scaffoldBackgroundColor,
+                  elevation: 0,
+                ),
+          body: isSystemScheduled
+              ? SafeArea(top: true, bottom: false, child: body)
+              : body,
           // Use AnimatedSwitcher to smoothly transition FAB and avoid layout race
           floatingActionButton: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
@@ -306,6 +320,96 @@ class _ScreenContent extends StatelessWidget {
       (s) => s.templateId == SectionTemplateId.allocation,
     );
 
+    if (isFocusScreen) {
+      return StreamBuilder<AllocationConfig>(
+        stream: getIt<SettingsRepositoryContract>().watch(
+          SettingsKey.allocation,
+        ),
+        builder: (context, configSnapshot) {
+          final config = configSnapshot.data ?? const AllocationConfig();
+
+          return ListView.builder(
+            padding: const EdgeInsets.only(bottom: 80),
+            itemCount: sections.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                return Column(
+                  children: [
+                    FocusModeSelector(
+                      currentFocusMode: config.focusMode,
+                      onFocusModeSelected: (mode) {
+                        final settingsRepo =
+                            getIt<SettingsRepositoryContract>();
+                        unawaited(
+                          settingsRepo.save(
+                            SettingsKey.allocation,
+                            config.copyWith(
+                              focusMode: mode,
+                              hasSelectedFocusMode: true,
+                            ),
+                          ),
+                        );
+
+                        // Section rendering prefers persisted allocation
+                        // snapshots. Force a recompute so My Day updates
+                        // immediately when the focus mode changes.
+                        unawaited(
+                          getIt<AllocationOrchestrator>()
+                              .watchAllocation()
+                              .first,
+                        );
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          context.push(Routing.screenPath('focus_setup'));
+                        },
+                        icon: const Icon(Icons.tune, size: 16),
+                        label: const Text('Configure Focus Style'),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              final section = sections[index - 1];
+              return SectionWidget(
+                section: section,
+                onEntityTap: (entity) {
+                  if (entity is Task) {
+                    Routing.toEntity(
+                      context,
+                      EntityType.task,
+                      entity.id,
+                    );
+                  } else if (entity is Project) {
+                    Routing.toEntity(
+                      context,
+                      EntityType.project,
+                      entity.id,
+                    );
+                  }
+                },
+                onTaskCheckboxChanged: (task, value) async {
+                  AppLog.routine(
+                    'ui.unified_screen',
+                    'Task checkbox changed: ${task.id} -> $value',
+                  );
+                  if (value ?? false) {
+                    await entityActionService.completeTask(task.id);
+                  } else {
+                    await entityActionService.uncompleteTask(task.id);
+                  }
+                },
+              );
+            },
+          );
+        },
+      );
+    }
+
     if (sections.isEmpty && !isFocusScreen) {
       return const Center(
         child: Text('No sections configured'),
@@ -314,86 +418,8 @@ class _ScreenContent extends StatelessWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
-      itemCount: sections.length + (isFocusScreen ? 1 : 0),
+      itemCount: sections.length,
       itemBuilder: (context, index) {
-        if (isFocusScreen) {
-          if (index == 0) {
-            return Column(
-              children: [
-                StreamBuilder<AllocationConfig>(
-                  stream: getIt<SettingsRepositoryContract>().watch(
-                    SettingsKey.allocation,
-                  ),
-                  builder: (context, configSnapshot) {
-                    final config =
-                        configSnapshot.data ?? const AllocationConfig();
-
-                    return FocusModeSelector(
-                      currentFocusMode: config.focusMode,
-                      onFocusModeSelected: (mode) {
-                        final settingsRepo =
-                            getIt<SettingsRepositoryContract>();
-                        unawaited(
-                          settingsRepo.save(
-                            SettingsKey.allocation,
-                            config.copyWith(focusMode: mode),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: TextButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const PersonaSelectionPage(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.tune, size: 16),
-                    label: const Text('Configure Focus Style'),
-                  ),
-                ),
-              ],
-            );
-          }
-          // Adjust index for sections
-          final section = sections[index - 1];
-          return SectionWidget(
-            section: section,
-            onEntityTap: (entity) {
-              if (entity is Task) {
-                Routing.toEntity(
-                  context,
-                  EntityType.task,
-                  entity.id,
-                );
-              } else if (entity is Project) {
-                Routing.toEntity(
-                  context,
-                  EntityType.project,
-                  entity.id,
-                );
-              }
-            },
-            onTaskCheckboxChanged: (task, value) async {
-              AppLog.routine(
-                'ui.unified_screen',
-                'Task checkbox changed: ${task.id} -> $value',
-              );
-              if (value ?? false) {
-                await entityActionService.completeTask(task.id);
-              } else {
-                await entityActionService.uncompleteTask(task.id);
-              }
-            },
-          );
-        }
-
         final section = sections[index];
         return SectionWidget(
           section: section,

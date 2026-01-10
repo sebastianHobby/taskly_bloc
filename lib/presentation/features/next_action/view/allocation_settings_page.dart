@@ -5,9 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/presentation/features/next_action/widgets/persona_selection_card.dart';
+import 'package:taskly_bloc/presentation/features/screens/widgets/focus_mode_selector.dart';
 
 /// Settings page for configuring task allocation strategy.
 class AllocationSettingsPage extends StatefulWidget {
@@ -32,7 +33,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
   bool _hasChanges = false;
 
   // Form state - initialized with defaults to prevent LateInitializationError
-  AllocationPersona _persona = AllocationPersona.realist;
+  FocusMode _focusMode = FocusMode.sustainable;
   int _dailyTaskLimit = 10;
 
   // Strategy settings
@@ -63,13 +64,13 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       AppLog.routine(
         'ui.allocation_settings',
         'Loaded allocation: dailyLimit=${settings.dailyLimit}, '
-            'persona=${settings.persona}',
+            'focusMode=${settings.focusMode}',
       );
 
       _allocationConfig = settings;
 
       // Initialize form state from settings
-      _persona = settings.persona;
+      _focusMode = settings.focusMode;
       _dailyTaskLimit = settings.dailyLimit;
 
       // Strategy settings
@@ -108,8 +109,8 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     try {
       // Save allocation settings
       final newSettings = AllocationConfig(
-        persona: _persona,
         dailyLimit: _dailyTaskLimit,
+        focusMode: _focusMode,
         strategySettings: StrategySettings(
           urgentTaskBehavior: _urgentTaskBehavior,
           taskUrgencyThresholdDays: _taskUrgencyThresholdDays,
@@ -166,7 +167,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildPersonaSection(theme, l10n),
+          _buildFocusModeSection(theme, l10n),
           const SizedBox(height: 24),
           _buildStrategySection(theme, l10n),
           const SizedBox(height: 24),
@@ -176,7 +177,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     );
   }
 
-  Widget _buildPersonaSection(ThemeData theme, AppLocalizations l10n) {
+  Widget _buildFocusModeSection(ThemeData theme, AppLocalizations l10n) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -185,26 +186,26 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
           children: [
             Row(
               children: [
-                Icon(Icons.person, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.center_focus_strong,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
-                Text(l10n.personaTitle, style: theme.textTheme.titleMedium),
+                Text(
+                  l10n.focusModeSectionTitle,
+                  style: theme.textTheme.titleMedium,
+                ),
               ],
             ),
             const SizedBox(height: 16),
-            ...AllocationPersona.values.map(
-              (persona) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: PersonaSelectionCard(
-                  persona: persona,
-                  isSelected: _persona == persona,
-                  onTap: () {
-                    setState(() {
-                      _persona = persona;
-                      _hasChanges = true;
-                    });
-                  },
-                ),
-              ),
+            FocusModeSelector(
+              currentFocusMode: _focusMode,
+              onFocusModeSelected: (mode) {
+                setState(() {
+                  _focusMode = mode;
+                  _hasChanges = true;
+                });
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(

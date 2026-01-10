@@ -138,6 +138,29 @@ class JsonMapOrWrappedListConverter
   }
 }
 
+/// Converter for JSON text that must be a string list.
+///
+/// Stored format: a JSON array string (e.g. `["reviewed","snoozed"]`).
+class JsonStringListConverter extends TypeConverter<List<String>, String> {
+  const JsonStringListConverter();
+
+  @override
+  List<String> fromSql(String fromDb) {
+    final decoded = _decodePossiblyDoubleEncodedJson(fromDb);
+    if (decoded is List) {
+      return decoded.map((e) => e.toString()).toList(growable: false);
+    }
+    throw ArgumentError(
+      'Expected JSON array after decoding String, got ${decoded.runtimeType}',
+    );
+  }
+
+  @override
+  String toSql(List<String> value) {
+    return jsonEncode(value);
+  }
+}
+
 /// Type converter for [ContentConfig] stored as JSON text.
 ///
 /// ContentConfig combines sections and support blocks into a single blob.

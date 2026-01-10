@@ -30,7 +30,6 @@ class NavigationIconResolver {
       // ─────────────────────────────────────────────────────────────────
       // System screens (by screenKey)
       // ─────────────────────────────────────────────────────────────────
-      'inbox' => (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox),
       'my_day' => (
         icon: Icons.wb_sunny_outlined,
         selectedIcon: Icons.wb_sunny,
@@ -113,6 +112,7 @@ class NavigationIconResolver {
       // ─────────────────────────────────────────────────────────────────
       // Common icon names (for custom screen iconName overrides)
       // ─────────────────────────────────────────────────────────────────
+      'inbox' => (icon: Icons.inbox_outlined, selectedIcon: Icons.inbox),
       'folder' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'label' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'star' => (icon: Icons.star_outline, selectedIcon: Icons.star),

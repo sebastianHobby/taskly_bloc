@@ -46,18 +46,6 @@ class EmptyStateWidget extends StatelessWidget {
          key: key,
        );
 
-  /// Creates an empty state for the inbox.
-  const EmptyStateWidget.inbox({
-    required String title,
-    String? description,
-    Key? key,
-  }) : this(
-         icon: Icons.inbox_outlined,
-         title: title,
-         description: description,
-         key: key,
-       );
-
   /// Creates an empty state for today view.
   const EmptyStateWidget.today({
     required String title,

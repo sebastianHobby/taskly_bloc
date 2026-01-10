@@ -29,24 +29,24 @@ class ScreenWithPreferences {
 
 /// Interface for validating and looking up system screen definitions.
 ///
-/// ## Architecture Change (2026-01)
+/// ## Architecture (Option B)
 ///
-/// System screens are now **seeded to the database** via [ScreenSeeder],
-/// matching the pattern used by [AttentionSeeder]. This enables:
+/// System screen *definitions* are authored in code via
+/// [SystemScreenDefinitions].
 ///
-/// 1. **Unified cleanup**: [SystemDataCleanupService] can delete orphaned
-///    system screens when templates are renamed/removed.
+/// The database stores:
+/// - Custom screen definitions (`screen_definitions` rows with
+///   `source='user_created'`)
+/// - User preferences for system and custom screens (`screen_preferences`)
+/// - Legacy system preference fallback (older `screen_definitions` rows with
+///   `source='system_template'` that only contribute `isActive/sortOrder`)
 ///
-/// 2. **Consistent architecture**: Screens and attention rules follow
-///    the same seed → read from DB → cleanup pattern.
+/// [ScreenSeeder] may exist for migration/backward-compatibility, but runtime
+/// system screen definitions do not depend on seeded DB rows.
 ///
-/// 3. **PowerSync sync**: All screens flow through normal sync.
-///
-/// This interface now provides **validation and lookup only**:
-/// - Check if a screenKey is a system screen
-/// - Get template data for seeding
-///
-/// Runtime screen data comes from the database, not this provider.
+/// This interface provides **validation and lookup only**:
+/// - Check if a `screenKey` is reserved for a system screen
+/// - Provide the canonical list of system screen keys
 abstract interface class SystemScreenProvider {
   /// Returns true if the given screenKey is a system screen.
   ///

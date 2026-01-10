@@ -97,7 +97,7 @@ final router = GoRouter(
         ),
 
         // === UNIFIED SCREEN ROUTE (convention-based catch-all) ===
-        // ALL screens: inbox, my_day, settings, journal, etc.
+        // ALL screens: my_day, settings, journal, etc.
         // Builders are registered in Routing at bootstrap.
         GoRoute(
           path: '/:segment',

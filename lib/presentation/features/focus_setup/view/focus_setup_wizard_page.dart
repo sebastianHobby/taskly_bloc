@@ -1,7 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/next_action/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
@@ -15,7 +22,16 @@ class FocusSetupWizardPage extends StatelessWidget {
       listenWhen: (prev, next) => prev.saveSucceeded != next.saveSucceeded,
       listener: (context, state) {
         if (state.saveSucceeded) {
-          Navigator.of(context).pop();
+          // Force a fresh allocation snapshot so screens that prefer persisted
+          // snapshots (like My Day) update immediately after saving.
+          unawaited(getIt<AllocationOrchestrator>().watchAllocation().first);
+
+          final router = GoRouter.of(context);
+          if (router.canPop()) {
+            router.pop();
+          } else {
+            router.go(Routing.screenPath('my_day'));
+          }
         }
       },
       child: BlocBuilder<FocusSetupBloc, FocusSetupState>(
@@ -40,7 +56,8 @@ class FocusSetupWizardPage extends StatelessWidget {
                     : null,
               ),
               actions: [
-                if (state.stepIndex < state.maxStepIndex)
+                if (state.stepIndex < state.maxStepIndex &&
+                    state.stepIndex != 0)
                   TextButton(
                     onPressed: state.canGoNext
                         ? () => context.read<FocusSetupBloc>().add(
@@ -82,6 +99,21 @@ class FocusSetupWizardPage extends StatelessWidget {
                                 state.errorMessage!,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: theme.colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          if (state.stepIndex == 0)
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: state.canGoNext
+                                      ? () => context.read<FocusSetupBloc>().add(
+                                          const FocusSetupEvent.nextPressed(),
+                                        )
+                                      : null,
+                                  child: const Text('Confirm Selection'),
                                 ),
                               ),
                             ),
@@ -190,9 +222,112 @@ class _AllocationStep extends StatelessWidget {
     final lookback = state.effectiveNeglectLookbackDays;
     final influence = state.effectiveNeglectInfluencePercent;
 
+    final preset = StrategySettings.forFocusMode(state.effectiveFocusMode);
+    final presetInfluencePercent = (preset.neglectInfluence * 100)
+        .round()
+        .clamp(0, 100);
+    final isModifiedFromPreset =
+        urgency != preset.urgencyBoostMultiplier ||
+        neglectEnabled != preset.enableNeglectWeighting ||
+        lookback != preset.neglectLookbackDays ||
+        influence != presetInfluencePercent;
+
+    final persisted = state.persistedAllocationConfig?.strategySettings;
+    final isUnsaved =
+        persisted != null &&
+        ((state.draftUrgencyBoostMultiplier != null &&
+                state.draftUrgencyBoostMultiplier !=
+                    persisted.urgencyBoostMultiplier) ||
+            (state.draftNeglectEnabled != null &&
+                state.draftNeglectEnabled !=
+                    persisted.enableNeglectWeighting) ||
+            (state.draftNeglectLookbackDays != null &&
+                state.draftNeglectLookbackDays !=
+                    persisted.neglectLookbackDays) ||
+            (state.draftNeglectInfluencePercent != null &&
+                state.draftNeglectInfluencePercent !=
+                    (persisted.neglectInfluence * 100).round().clamp(0, 100)));
+
+    final presetName = switch (state.effectiveFocusMode) {
+      FocusMode.sustainable => 'Standard Balanced',
+      _ => state.effectiveFocusMode.displayName,
+    };
+    final deviationName = switch (state.effectiveFocusMode) {
+      FocusMode.sustainable => 'Balanced',
+      _ => state.effectiveFocusMode.displayName,
+    };
+    final headerPresetText = isModifiedFromPreset
+        ? 'Custom (Modified)'
+        : presetName;
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.tune, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Preset: $headerPresetText',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    if (isUnsaved)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'UNSAVED',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            color: theme.colorScheme.onTertiaryContainer,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isModifiedFromPreset
+                      ? 'You have deviated from the $deviationName preset.'
+                      : 'Using the $presetName preset.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: isModifiedFromPreset
+                        ? () => bloc.add(
+                            const FocusSetupEvent.allocationResetToDefaultPressed(),
+                          )
+                        : null,
+                    child: const Text('Reset to Default'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -231,7 +366,7 @@ class _AllocationStep extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'Increases priority score as due date approaches.',
+                  'Increases priority score exponentially as due date approaches.',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -262,7 +397,7 @@ class _AllocationStep extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Lookback Days'),
+                          const Text("Days until 'Neglected'"),
                           Row(
                             children: [
                               IconButton(
@@ -293,9 +428,9 @@ class _AllocationStep extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Neglect Influence'),
+                          const Text('Neglect Multiplier'),
                           Text(
-                            '$influence%',
+                            '${(1 + (influence / 100)).toStringAsFixed(1)}x',
                             style: theme.textTheme.labelLarge?.copyWith(
                               color: theme.colorScheme.primary,
                             ),
@@ -338,50 +473,140 @@ class _ReviewScheduleStep extends StatelessWidget {
       return const Center(child: Text('No review rules available.'));
     }
 
+    final presetLabel = switch (state.effectiveFocusMode) {
+      FocusMode.sustainable => 'STANDARD BALANCED',
+      _ => state.effectiveFocusMode.displayName.toUpperCase(),
+    };
+
+    final projectHealthRules = state.reviewSessionRules
+        .where((r) => r.ruleKey.startsWith('review_project_'))
+        .toList(growable: false);
+    final periodicRules = state.reviewSessionRules
+        .where((r) => !r.ruleKey.startsWith('review_project_'))
+        .toList(growable: false);
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.tune, size: 16, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'PRESET: $presetLabel',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         Text(
           'Define how often Taskly prompts you to reflect.',
           style: theme.textTheme.titleLarge,
         ),
         const SizedBox(height: 8),
         Text(
-          'Frequency adjustments apply to future prompts.',
+          'Frequency adjustments apply to future prompts. You can always run a '
+          'manual review from the "My Focus" tab.',
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 16),
-        Card(
-          child: Column(
-            children: [
-              for (final rule in state.reviewSessionRules)
-                _ReviewRuleRow(
-                  ruleId: rule.id,
-                  title:
-                      (rule.displayConfig['title'] as String?) ?? rule.ruleKey,
-                  enabled: state.draftRuleEnabled[rule.id] ?? rule.active,
-                  frequencyDays:
-                      state.draftRuleFrequencyDays[rule.id] ??
-                      (rule.triggerConfig['frequency_days'] as int? ?? 30),
-                  lastResolvedAt: state.lastResolvedAt[rule.id],
-                  onEnabledChanged: (enabled) => bloc.add(
-                    FocusSetupEvent.reviewRuleEnabledChanged(
-                      ruleId: rule.id,
-                      enabled: enabled,
-                    ),
-                  ),
-                  onFrequencyChanged: (days) => bloc.add(
-                    FocusSetupEvent.reviewRuleFrequencyDaysChanged(
-                      ruleId: rule.id,
-                      frequencyDays: days,
-                    ),
-                  ),
-                ),
-            ],
+        if (projectHealthRules.isNotEmpty) ...[
+          Text(
+            'RULE #3: PROJECT HEALTH',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                for (final rule in projectHealthRules)
+                  _ReviewRuleRow(
+                    ruleId: rule.id,
+                    title:
+                        (rule.displayConfig['title'] as String?) ??
+                        rule.ruleKey,
+                    enabled: state.draftRuleEnabled[rule.id] ?? rule.active,
+                    frequencyDays:
+                        state.draftRuleFrequencyDays[rule.id] ??
+                        (rule.triggerConfig['frequency_days'] as int? ?? 30),
+                    lastResolvedAt: state.lastResolvedAt[rule.id],
+                    onEnabledChanged: (enabled) => bloc.add(
+                      FocusSetupEvent.reviewRuleEnabledChanged(
+                        ruleId: rule.id,
+                        enabled: enabled,
+                      ),
+                    ),
+                    onFrequencyChanged: (days) => bloc.add(
+                      FocusSetupEvent.reviewRuleFrequencyDaysChanged(
+                        ruleId: rule.id,
+                        frequencyDays: days,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        if (periodicRules.isNotEmpty) ...[
+          Text(
+            'PERIODIC REVIEW SCHEDULE',
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                for (final rule in periodicRules)
+                  _ReviewRuleRow(
+                    ruleId: rule.id,
+                    title:
+                        (rule.displayConfig['title'] as String?) ??
+                        rule.ruleKey,
+                    enabled: state.draftRuleEnabled[rule.id] ?? rule.active,
+                    frequencyDays:
+                        state.draftRuleFrequencyDays[rule.id] ??
+                        (rule.triggerConfig['frequency_days'] as int? ?? 30),
+                    lastResolvedAt: state.lastResolvedAt[rule.id],
+                    onEnabledChanged: (enabled) => bloc.add(
+                      FocusSetupEvent.reviewRuleEnabledChanged(
+                        ruleId: rule.id,
+                        enabled: enabled,
+                      ),
+                    ),
+                    onFrequencyChanged: (days) => bloc.add(
+                      FocusSetupEvent.reviewRuleFrequencyDaysChanged(
+                        ruleId: rule.id,
+                        frequencyDays: days,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -32,7 +32,7 @@ The system supports:
   - [lib/domain/services/screens/templates/](../lib/domain/services/screens/templates/)
 
 ### Persistence + maintenance
-- Seed system templates into DB, cleanup orphaned templates, repository implementation
+- Custom screen persistence, preferences, cleanup, repository implementation
   - [lib/data/services/screen_seeder.dart](../lib/data/services/screen_seeder.dart)
   - [lib/data/services/system_data_cleanup_service.dart](../lib/data/services/system_data_cleanup_service.dart)
   - [lib/data/features/screens/repositories/screen_definitions_repository_impl.dart](../lib/data/features/screens/repositories/screen_definitions_repository_impl.dart)
@@ -88,8 +88,10 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 ┌───────────────────────────────┐
 │            Data layer          │
 │  ScreenDefinitionsRepository   │
+│    -> SystemScreenDefinitions  │
 │    <-> Drift/PowerSync DB      │
-│  ScreenSeeder + Cleanup        │
+│       (custom + prefs + legacy)│
+│  Cleanup (+ optional seeding)  │
 └───────────────────────────────┘
 
 (*) Either UnifiedScreenPage(definition) or UnifiedScreenPageById(screenKey)

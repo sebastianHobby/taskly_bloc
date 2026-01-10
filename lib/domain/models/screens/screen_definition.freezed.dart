@@ -17,7 +17,9 @@ mixin _$ScreenDefinition {
 
  String get id; String get screenKey; String get name;/// Audit fields
  DateTime get createdAt; DateTime get updatedAt;/// Sections that make up the screen.
- List<SectionRef> get sections;/// Source of this screen definition (system template vs user-defined)
+ List<SectionRef> get sections;/// Optional screen-level gate. When active, the screen renders only the
+/// gate's full-screen section instead of [sections].
+ ScreenGateConfig? get gate;/// Source of this screen definition (system template vs user-defined)
  ScreenSource get screenSource;/// UI chrome configuration (icon, badges, app bar actions, FAB, etc.).
  ScreenChrome get chrome;
 /// Create a copy of ScreenDefinition
@@ -32,16 +34,16 @@ $ScreenDefinitionCopyWith<ScreenDefinition> get copyWith => _$ScreenDefinitionCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.sections, sections)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.chrome, chrome) || other.chrome == chrome));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other.sections, sections)&&(identical(other.gate, gate) || other.gate == gate)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.chrome, chrome) || other.chrome == chrome));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,screenKey,name,createdAt,updatedAt,const DeepCollectionEquality().hash(sections),screenSource,chrome);
+int get hashCode => Object.hash(runtimeType,id,screenKey,name,createdAt,updatedAt,const DeepCollectionEquality().hash(sections),gate,screenSource,chrome);
 
 @override
 String toString() {
-  return 'ScreenDefinition(id: $id, screenKey: $screenKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, screenSource: $screenSource, chrome: $chrome)';
+  return 'ScreenDefinition(id: $id, screenKey: $screenKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, gate: $gate, screenSource: $screenSource, chrome: $chrome)';
 }
 
 
@@ -52,11 +54,11 @@ abstract mixin class $ScreenDefinitionCopyWith<$Res>  {
   factory $ScreenDefinitionCopyWith(ScreenDefinition value, $Res Function(ScreenDefinition) _then) = _$ScreenDefinitionCopyWithImpl;
 @useResult
 $Res call({
- String id, String screenKey, String name, DateTime createdAt, DateTime updatedAt, List<SectionRef> sections, ScreenSource screenSource, ScreenChrome chrome
+ String id, String screenKey, String name, DateTime createdAt, DateTime updatedAt, List<SectionRef> sections, ScreenGateConfig? gate, ScreenSource screenSource, ScreenChrome chrome
 });
 
 
-$ScreenChromeCopyWith<$Res> get chrome;
+$ScreenGateConfigCopyWith<$Res>? get gate;$ScreenChromeCopyWith<$Res> get chrome;
 
 }
 /// @nodoc
@@ -69,7 +71,7 @@ class _$ScreenDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? screenSource = null,Object? chrome = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? gate = freezed,Object? screenSource = null,Object? chrome = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
@@ -77,12 +79,25 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,sections: null == sections ? _self.sections : sections // ignore: cast_nullable_to_non_nullable
-as List<SectionRef>,screenSource: null == screenSource ? _self.screenSource : screenSource // ignore: cast_nullable_to_non_nullable
+as List<SectionRef>,gate: freezed == gate ? _self.gate : gate // ignore: cast_nullable_to_non_nullable
+as ScreenGateConfig?,screenSource: null == screenSource ? _self.screenSource : screenSource // ignore: cast_nullable_to_non_nullable
 as ScreenSource,chrome: null == chrome ? _self.chrome : chrome // ignore: cast_nullable_to_non_nullable
 as ScreenChrome,
   ));
 }
 /// Create a copy of ScreenDefinition
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ScreenGateConfigCopyWith<$Res>? get gate {
+    if (_self.gate == null) {
+    return null;
+  }
+
+  return $ScreenGateConfigCopyWith<$Res>(_self.gate!, (value) {
+    return _then(_self.copyWith(gate: value));
+  });
+}/// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')
@@ -173,10 +188,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenSource screenSource,  ScreenChrome chrome)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenGateConfig? gate,  ScreenSource screenSource,  ScreenChrome chrome)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ScreenDefinition() when $default != null:
-return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.screenSource,_that.chrome);case _:
+return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.gate,_that.screenSource,_that.chrome);case _:
   return orElse();
 
 }
@@ -194,10 +209,10 @@ return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.update
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenSource screenSource,  ScreenChrome chrome)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenGateConfig? gate,  ScreenSource screenSource,  ScreenChrome chrome)  $default,) {final _that = this;
 switch (_that) {
 case _ScreenDefinition():
-return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.screenSource,_that.chrome);case _:
+return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.gate,_that.screenSource,_that.chrome);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -214,10 +229,10 @@ return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.update
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenSource screenSource,  ScreenChrome chrome)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String screenKey,  String name,  DateTime createdAt,  DateTime updatedAt,  List<SectionRef> sections,  ScreenGateConfig? gate,  ScreenSource screenSource,  ScreenChrome chrome)?  $default,) {final _that = this;
 switch (_that) {
 case _ScreenDefinition() when $default != null:
-return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.screenSource,_that.chrome);case _:
+return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.updatedAt,_that.sections,_that.gate,_that.screenSource,_that.chrome);case _:
   return null;
 
 }
@@ -229,7 +244,7 @@ return $default(_that.id,_that.screenKey,_that.name,_that.createdAt,_that.update
 @JsonSerializable()
 
 class _ScreenDefinition extends ScreenDefinition {
-  const _ScreenDefinition({required this.id, required this.screenKey, required this.name, required this.createdAt, required this.updatedAt, final  List<SectionRef> sections = const <SectionRef>[], this.screenSource = ScreenSource.userDefined, this.chrome = ScreenChrome.empty}): _sections = sections,super._();
+  const _ScreenDefinition({required this.id, required this.screenKey, required this.name, required this.createdAt, required this.updatedAt, final  List<SectionRef> sections = const <SectionRef>[], this.gate, this.screenSource = ScreenSource.userDefined, this.chrome = ScreenChrome.empty}): _sections = sections,super._();
   factory _ScreenDefinition.fromJson(Map<String, dynamic> json) => _$ScreenDefinitionFromJson(json);
 
 @override final  String id;
@@ -247,6 +262,9 @@ class _ScreenDefinition extends ScreenDefinition {
   return EqualUnmodifiableListView(_sections);
 }
 
+/// Optional screen-level gate. When active, the screen renders only the
+/// gate's full-screen section instead of [sections].
+@override final  ScreenGateConfig? gate;
 /// Source of this screen definition (system template vs user-defined)
 @override@JsonKey() final  ScreenSource screenSource;
 /// UI chrome configuration (icon, badges, app bar actions, FAB, etc.).
@@ -265,16 +283,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._sections, _sections)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.chrome, chrome) || other.chrome == chrome));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScreenDefinition&&(identical(other.id, id) || other.id == id)&&(identical(other.screenKey, screenKey) || other.screenKey == screenKey)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&const DeepCollectionEquality().equals(other._sections, _sections)&&(identical(other.gate, gate) || other.gate == gate)&&(identical(other.screenSource, screenSource) || other.screenSource == screenSource)&&(identical(other.chrome, chrome) || other.chrome == chrome));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,screenKey,name,createdAt,updatedAt,const DeepCollectionEquality().hash(_sections),screenSource,chrome);
+int get hashCode => Object.hash(runtimeType,id,screenKey,name,createdAt,updatedAt,const DeepCollectionEquality().hash(_sections),gate,screenSource,chrome);
 
 @override
 String toString() {
-  return 'ScreenDefinition(id: $id, screenKey: $screenKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, screenSource: $screenSource, chrome: $chrome)';
+  return 'ScreenDefinition(id: $id, screenKey: $screenKey, name: $name, createdAt: $createdAt, updatedAt: $updatedAt, sections: $sections, gate: $gate, screenSource: $screenSource, chrome: $chrome)';
 }
 
 
@@ -285,11 +303,11 @@ abstract mixin class _$ScreenDefinitionCopyWith<$Res> implements $ScreenDefiniti
   factory _$ScreenDefinitionCopyWith(_ScreenDefinition value, $Res Function(_ScreenDefinition) _then) = __$ScreenDefinitionCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String screenKey, String name, DateTime createdAt, DateTime updatedAt, List<SectionRef> sections, ScreenSource screenSource, ScreenChrome chrome
+ String id, String screenKey, String name, DateTime createdAt, DateTime updatedAt, List<SectionRef> sections, ScreenGateConfig? gate, ScreenSource screenSource, ScreenChrome chrome
 });
 
 
-@override $ScreenChromeCopyWith<$Res> get chrome;
+@override $ScreenGateConfigCopyWith<$Res>? get gate;@override $ScreenChromeCopyWith<$Res> get chrome;
 
 }
 /// @nodoc
@@ -302,7 +320,7 @@ class __$ScreenDefinitionCopyWithImpl<$Res>
 
 /// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? screenSource = null,Object? chrome = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? screenKey = null,Object? name = null,Object? createdAt = null,Object? updatedAt = null,Object? sections = null,Object? gate = freezed,Object? screenSource = null,Object? chrome = null,}) {
   return _then(_ScreenDefinition(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,screenKey: null == screenKey ? _self.screenKey : screenKey // ignore: cast_nullable_to_non_nullable
@@ -310,13 +328,26 @@ as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime,sections: null == sections ? _self._sections : sections // ignore: cast_nullable_to_non_nullable
-as List<SectionRef>,screenSource: null == screenSource ? _self.screenSource : screenSource // ignore: cast_nullable_to_non_nullable
+as List<SectionRef>,gate: freezed == gate ? _self.gate : gate // ignore: cast_nullable_to_non_nullable
+as ScreenGateConfig?,screenSource: null == screenSource ? _self.screenSource : screenSource // ignore: cast_nullable_to_non_nullable
 as ScreenSource,chrome: null == chrome ? _self.chrome : chrome // ignore: cast_nullable_to_non_nullable
 as ScreenChrome,
   ));
 }
 
 /// Create a copy of ScreenDefinition
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$ScreenGateConfigCopyWith<$Res>? get gate {
+    if (_self.gate == null) {
+    return null;
+  }
+
+  return $ScreenGateConfigCopyWith<$Res>(_self.gate!, (value) {
+    return _then(_self.copyWith(gate: value));
+  });
+}/// Create a copy of ScreenDefinition
 /// with the given fields replaced by the non-null parameter values.
 @override
 @pragma('vm:prefer-inline')

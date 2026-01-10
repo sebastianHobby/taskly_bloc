@@ -30,17 +30,17 @@ void main() {
 
       // Create test screens using real system screen definitions
       testScreen1 = ScreenWithPreferences(
-        screen: SystemScreenDefinitions.inbox,
+        screen: SystemScreenDefinitions.myDay,
         preferences: const ScreenPreferences(sortOrder: 0),
       );
 
       testScreen2 = ScreenWithPreferences(
-        screen: SystemScreenDefinitions.myDay,
+        screen: SystemScreenDefinitions.scheduled,
         preferences: const ScreenPreferences(sortOrder: 1),
       );
 
       testScreen3 = ScreenWithPreferences(
-        screen: SystemScreenDefinitions.scheduled,
+        screen: SystemScreenDefinitions.someday,
         preferences: const ScreenPreferences(sortOrder: 2),
       );
 
@@ -79,7 +79,7 @@ void main() {
             .having(
               (s) => s.screens.first.screen.screenKey,
               'first key',
-              'inbox',
+              'my_day',
             ),
       ],
       verify: (_) {
@@ -102,7 +102,7 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'ordered keys',
-              ['inbox', 'my_day', 'scheduled'],
+              ['my_day', 'scheduled', 'someday'],
             ),
       ],
     );
@@ -130,12 +130,14 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['my_day', 'inbox', 'scheduled'],
+              ['scheduled', 'my_day', 'someday'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['my_day', 'inbox', 'scheduled']),
+          () => mockRepository.reorderScreens(
+            ['scheduled', 'my_day', 'someday'],
+          ),
         ).called(1);
       },
     );
@@ -163,12 +165,14 @@ void main() {
             .having(
               (s) => s.screens.map((s) => s.screen.screenKey).toList(),
               'reordered keys',
-              ['scheduled', 'inbox', 'my_day'],
+              ['someday', 'my_day', 'scheduled'],
             ),
       ],
       verify: (_) {
         verify(
-          () => mockRepository.reorderScreens(['scheduled', 'inbox', 'my_day']),
+          () => mockRepository.reorderScreens(
+            ['someday', 'my_day', 'scheduled'],
+          ),
         ).called(1);
       },
     );

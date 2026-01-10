@@ -8,7 +8,7 @@ import 'package:taskly_bloc/domain/models/screens/content_config.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 
-/// Seeds system screen definitions to database.
+/// Seeds system screen rows to the database.
 ///
 /// Pattern matches [AttentionSeeder]:
 /// - Uses deterministic UUID v5 for idempotent seeding
@@ -17,14 +17,16 @@ import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart
 ///
 /// ## Architecture
 ///
-/// After this change, ALL screens (system + custom) come from the database.
-/// System screens are seeded once on first launch, then users can customize
-/// them (change sortOrder, isActive) via the database.
+/// Current runtime behavior (Option B) uses [SystemScreenDefinitions] as the
+/// source of truth for *system screen definitions*.
 ///
-/// This enables:
-/// 1. Unified cleanup service for orphaned system screens
-/// 2. PowerSync sync for all screen data
-/// 3. Consistent architecture with attention rules
+/// The database remains the source of truth for:
+/// - Custom screen definitions
+/// - User preferences (via `screen_preferences`)
+/// - Legacy fallback preference fields on older system_template rows
+///
+/// This seeder is primarily useful for migration/backward-compatibility and
+/// for environments that still rely on legacy `screen_definitions` rows.
 class ScreenSeeder {
   ScreenSeeder({
     required AppDatabase db,
@@ -36,9 +38,6 @@ class ScreenSeeder {
   final IdGenerator _idGenerator;
 
   /// Seed all system screen definitions.
-  ///
-  /// IMPORTANT: This writes to database ONCE on first launch.
-  /// After that, users customize via database - templates are not consulted.
   ///
   /// Uses deterministic IDs so re-running is safe (no duplicates).
   /// Uses insertOrIgnore so existing screens are not overwritten.

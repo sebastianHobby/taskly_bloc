@@ -205,6 +205,18 @@ class ValueRepository implements ValueRepositoryContract {
     return driftDb.into(driftDb.valueTable).insert(createCompanion);
   }
 
+  String _normalizeColorOrThrow(String input) {
+    final trimmed = input.trim();
+    final normalized = trimmed.startsWith('#') ? trimmed : '#$trimmed';
+    final isValid = RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(normalized);
+    if (!isValid) {
+      throw RepositoryValidationException(
+        'Invalid color hex "$input". Expected "#RRGGBB" (or "RRGGBB").',
+      );
+    }
+    return normalized;
+  }
+
   @override
   Future<void> create({
     required String name,
@@ -215,6 +227,8 @@ class ValueRepository implements ValueRepositoryContract {
     talker.debug('[ValueRepository] create: name="$name", priority=$priority');
     final now = DateTime.now();
 
+    final normalizedColor = _normalizeColorOrThrow(color);
+
     // Generate deterministic v5 ID
     final id = idGenerator.valueId(name: name);
 
@@ -222,7 +236,7 @@ class ValueRepository implements ValueRepositoryContract {
       drift.ValueTableCompanion(
         id: drift_pkg.Value(id),
         name: drift_pkg.Value(name),
-        color: drift_pkg.Value(color),
+        color: drift_pkg.Value(normalizedColor),
         priority: drift_pkg.Value(priority),
         iconName: drift_pkg.Value(iconName),
         createdAt: drift_pkg.Value(now),
@@ -246,12 +260,14 @@ class ValueRepository implements ValueRepositoryContract {
       throw RepositoryNotFoundException('No value found to update');
     }
 
+    final normalizedColor = _normalizeColorOrThrow(color);
+
     final now = DateTime.now();
     await _updateValue(
       drift.ValueTableCompanion(
         id: drift_pkg.Value(id),
         name: drift_pkg.Value(name),
-        color: drift_pkg.Value(color),
+        color: drift_pkg.Value(normalizedColor),
         priority: priority != null
             ? drift_pkg.Value(priority)
             : const drift_pkg.Value<ValuePriority>.absent(),

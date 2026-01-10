@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_cont
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
+import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
@@ -51,6 +52,9 @@ ScreenDefinition _createScreenDefinition({
     createdAt: _fixedTime,
     updatedAt: _fixedTime,
     screenSource: ScreenSource.systemTemplate,
+    sections: const [
+      SectionRef(templateId: SectionTemplateId.taskList),
+    ],
   );
 }
 
@@ -126,7 +130,7 @@ void main() {
       blocTestSafe<ScreenBloc, ScreenState>(
         'emits loading then loaded when loadById succeeds',
         setUp: () {
-          when(() => mockScreenRepo.watchScreen('inbox')).thenAnswer(
+          when(() => mockScreenRepo.watchScreen('my_day')).thenAnswer(
             (_) => Stream.value(
               ScreenWithPreferences(
                 screen: testDefinition,
@@ -146,7 +150,7 @@ void main() {
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
         ),
-        act: (bloc) => bloc.add(const ScreenEvent.loadById(screenId: 'inbox')),
+        act: (bloc) => bloc.add(const ScreenEvent.loadById(screenId: 'my_day')),
         expect: () => [
           isA<ScreenLoadingState>(),
           isA<ScreenLoadingState>().having(

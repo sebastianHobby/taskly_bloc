@@ -39,6 +39,9 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.neglectInfluencePercentChanged(int percent) =
       FocusSetupNeglectInfluencePercentChanged;
 
+  const factory FocusSetupEvent.allocationResetToDefaultPressed() =
+      FocusSetupAllocationResetToDefaultPressed;
+
   const factory FocusSetupEvent.reviewRuleEnabledChanged({
     required String ruleId,
     required bool enabled,
@@ -124,8 +127,9 @@ sealed class FocusSetupState with _$FocusSetupState {
     final draft = draftUrgencyBoostMultiplier;
     if (draft != null) return draft;
     final persisted = persistedAllocationConfig;
-    if (persisted != null)
+    if (persisted != null) {
       return persisted.strategySettings.urgencyBoostMultiplier;
+    }
     return 1.5;
   }
 
@@ -133,8 +137,9 @@ sealed class FocusSetupState with _$FocusSetupState {
     final draft = draftNeglectEnabled;
     if (draft != null) return draft;
     final persisted = persistedAllocationConfig;
-    if (persisted != null)
+    if (persisted != null) {
       return persisted.strategySettings.enableNeglectWeighting;
+    }
     return false;
   }
 
@@ -142,8 +147,9 @@ sealed class FocusSetupState with _$FocusSetupState {
     final draft = draftNeglectLookbackDays;
     if (draft != null) return draft;
     final persisted = persistedAllocationConfig;
-    if (persisted != null)
+    if (persisted != null) {
       return persisted.strategySettings.neglectLookbackDays;
+    }
     return 7;
   }
 
@@ -201,6 +207,11 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
     on<FocusSetupNeglectInfluencePercentChanged>(
       _onNeglectInfluencePercentChanged,
+      transformer: droppable(),
+    );
+
+    on<FocusSetupAllocationResetToDefaultPressed>(
+      _onAllocationResetToDefaultPressed,
       transformer: droppable(),
     );
 
@@ -425,6 +436,24 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
   }
 
+  void _onAllocationResetToDefaultPressed(
+    FocusSetupAllocationResetToDefaultPressed event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    final preset = StrategySettings.forFocusMode(state.effectiveFocusMode);
+
+    emit(
+      state.copyWith(
+        draftUrgencyBoostMultiplier: preset.urgencyBoostMultiplier,
+        draftNeglectEnabled: preset.enableNeglectWeighting,
+        draftNeglectLookbackDays: preset.neglectLookbackDays,
+        draftNeglectInfluencePercent: (preset.neglectInfluence * 100)
+            .round()
+            .clamp(0, 100),
+      ),
+    );
+  }
+
   void _onReviewRuleEnabledChanged(
     FocusSetupReviewRuleEnabledChanged event,
     Emitter<FocusSetupState> emit,
@@ -459,6 +488,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
     try {
       final updatedConfig = persisted.copyWith(
+        hasSelectedFocusMode: true,
         focusMode: state.effectiveFocusMode,
         strategySettings: persisted.strategySettings.copyWith(
           urgencyBoostMultiplier: state.effectiveUrgencyBoostMultiplier,

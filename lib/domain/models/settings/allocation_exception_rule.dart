@@ -20,7 +20,7 @@ class TaskPredicateConverter
 /// A user-defined rule that triggers alerts for tasks that match specific conditions.
 ///
 /// Used in the "Safety Net" feature to catch tasks that might be missed by the
-/// active persona (e.g., "If deadline < 2 days, show Critical alert").
+/// active focus mode (e.g., "If deadline < 2 days, show Critical alert").
 @freezed
 abstract class AllocationExceptionRule with _$AllocationExceptionRule {
   const factory AllocationExceptionRule({

@@ -15,6 +15,7 @@ import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
+import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
@@ -815,13 +816,15 @@ class TestData {
   /// Creates AllocationConfig for allocation strategy configuration.
   static AllocationConfig allocationConfig({
     int dailyLimit = 10,
-    AllocationPersona persona = AllocationPersona.realist,
+    bool hasSelectedFocusMode = false,
+    FocusMode focusMode = FocusMode.sustainable,
     StrategySettings strategySettings = const StrategySettings(),
     DisplaySettings displaySettings = const DisplaySettings(),
   }) {
     return AllocationConfig(
       dailyLimit: dailyLimit,
-      persona: persona,
+      hasSelectedFocusMode: hasSelectedFocusMode,
+      focusMode: focusMode,
       strategySettings: strategySettings,
       displaySettings: displaySettings,
     );

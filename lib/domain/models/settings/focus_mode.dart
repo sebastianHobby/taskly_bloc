@@ -39,6 +39,24 @@ extension FocusModeX on FocusMode {
     FocusMode.personalized => 'Your own formula',
   };
 
+  /// Tagline used in the Focus Setup wizard cards.
+  String get wizardTagline => switch (this) {
+    FocusMode.intentional => 'Deep Work & Clarity',
+    FocusMode.sustainable => 'Balanced Progress',
+    FocusMode.responsive => 'Quick Adaptation',
+    FocusMode.personalized => 'Custom Setup',
+  };
+
+  /// Short description used in the Focus Setup wizard cards.
+  String get wizardDescription => switch (this) {
+    FocusMode.intentional =>
+      'Strict limits on distractions. Best for aggressive goals.',
+    FocusMode.sustainable =>
+      'A healthy mix of focus and flexibility. Prevents burnout.',
+    FocusMode.responsive => 'Prioritizes incoming requests and quick tasks.',
+    FocusMode.personalized => 'Manually configure your allocation rules.',
+  };
+
   /// Longer description explaining the focus mode behavior.
   String get description => switch (this) {
     FocusMode.intentional =>
@@ -70,23 +88,4 @@ extension FocusModeX on FocusMode {
     FocusMode.responsive => 'Active Fires',
     FocusMode.personalized => 'Outside Focus',
   };
-
-  /// Converts legacy AllocationPersona name to FocusMode.
-  ///
-  /// Mapping:
-  /// - idealist → intentional
-  /// - realist → sustainable
-  /// - firefighter → responsive
-  /// - reflector → sustainable (merged)
-  /// - custom → personalized
-  static FocusMode fromLegacyPersona(String persona) {
-    return switch (persona.toLowerCase()) {
-      'idealist' => FocusMode.intentional,
-      'realist' => FocusMode.sustainable,
-      'firefighter' => FocusMode.responsive,
-      'reflector' => FocusMode.sustainable, // Merged into sustainable
-      'custom' => FocusMode.personalized,
-      _ => FocusMode.sustainable, // Default fallback
-    };
-  }
 }
