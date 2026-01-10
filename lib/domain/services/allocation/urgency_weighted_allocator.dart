@@ -103,7 +103,6 @@ class UrgencyWeightedAllocator implements AllocationStrategy {
         task: task,
         now: now,
         overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
-        overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
       );
 
       // Blend priority and urgency

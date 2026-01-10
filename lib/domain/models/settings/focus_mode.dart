@@ -34,15 +34,15 @@ extension FocusModeX on FocusMode {
   /// Short tagline for the focus mode.
   String get tagline => switch (this) {
     FocusMode.intentional => 'Important over urgent',
-    FocusMode.sustainable => 'Growing all values',
+    FocusMode.sustainable => 'Balance values and urgency',
     FocusMode.responsive => 'Time-sensitive first',
     FocusMode.personalized => 'Your own formula',
   };
 
   /// Tagline used in the Focus Setup wizard cards.
   String get wizardTagline => switch (this) {
-    FocusMode.intentional => 'Deep Work & Clarity',
-    FocusMode.sustainable => 'Balanced Progress',
+    FocusMode.intentional => 'Important over urgent',
+    FocusMode.sustainable => 'Balance values and urgency',
     FocusMode.responsive => 'Quick Adaptation',
     FocusMode.personalized => 'Custom Setup',
   };

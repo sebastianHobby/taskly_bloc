@@ -169,12 +169,12 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
           signature: 'PlatformError:$error|route:$routeSummary',
           routeSummary: routeSummary,
         );
-        return true;
+        return !talker.failFastPolicy.enabled;
       };
 
       // Use TalkerBlocObserver for unified BLoC logging
       Bloc.observer = TalkerBlocObserver(
-        talker: talker,
+        talker: talker.raw,
         settings: TalkerBlocLoggerSettings(
           printCreations: kDebugMode,
           printClosings: kDebugMode,

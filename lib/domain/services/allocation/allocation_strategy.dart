@@ -36,7 +36,6 @@ class AllocationParameters {
     this.taskPriorityBoost = 1.0,
     this.recencyPenalty = 0.0,
     this.overdueEmergencyMultiplier = 1.0,
-    this.overdueEmergencyGrowth = OverdueEmergencyGrowth.linear,
     this.completionsByValue = const {},
   });
 
@@ -94,9 +93,6 @@ class AllocationParameters {
 
   /// Multiplier controlling how much overdue tasks are boosted.
   final double overdueEmergencyMultiplier;
-
-  /// Growth curve for overdue urgency.
-  final OverdueEmergencyGrowth overdueEmergencyGrowth;
 
   /// Recent completions by value ID (pre-computed for Reflector mode).
   /// Passed in from orchestrator to avoid async in allocate().

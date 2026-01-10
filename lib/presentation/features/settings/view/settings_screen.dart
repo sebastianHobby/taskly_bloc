@@ -190,7 +190,7 @@ class SettingsScreen extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => TalkerScreen(talker: talker),
+            builder: (_) => TalkerScreen(talker: talker.raw),
           ),
         );
       },

@@ -39,10 +39,9 @@ class SectionTemplateParamsCodec {
         paramsJson,
       ),
       SectionTemplateId.somedayNullDates =>
-        SomedayNullDatesSectionParams.fromJson(paramsJson),
-      SectionTemplateId.somedayBacklog => SomedayBacklogSectionParams.fromJson(
-        paramsJson,
-      ),
+        SomedayNullDatesSectionParams.fromJson(),
+      SectionTemplateId.somedayBacklog =>
+        SomedayBacklogSectionParams.fromJson(),
       // templates without params
       _ => const EmptySectionParams(),
     };

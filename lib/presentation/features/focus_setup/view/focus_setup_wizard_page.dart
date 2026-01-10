@@ -222,15 +222,33 @@ class _AllocationStep extends StatelessWidget {
     final lookback = state.effectiveNeglectLookbackDays;
     final influence = state.effectiveNeglectInfluencePercent;
 
+    final valuePriorityPercent = state.effectiveValuePriorityWeightPercent;
+    final taskFlagBoost = state.effectiveTaskFlagBoost;
+    final recencyPenaltyPercent = state.effectiveRecencyPenaltyPercent;
+    final overdueEmergencyMultiplier =
+        state.effectiveOverdueEmergencyMultiplier;
+
     final preset = StrategySettings.forFocusMode(state.effectiveFocusMode);
     final presetInfluencePercent = (preset.neglectInfluence * 100)
         .round()
         .clamp(0, 100);
+
+    final presetValuePriorityPercent = (preset.valuePriorityWeight * 50)
+        .round()
+        .clamp(0, 100);
+    final presetRecencyPenaltyPercent = (preset.recencyPenalty * 100)
+        .round()
+        .clamp(0, 50);
+
     final isModifiedFromPreset =
         urgency != preset.urgencyBoostMultiplier ||
         neglectEnabled != preset.enableNeglectWeighting ||
         lookback != preset.neglectLookbackDays ||
-        influence != presetInfluencePercent;
+        influence != presetInfluencePercent ||
+        valuePriorityPercent != presetValuePriorityPercent ||
+        taskFlagBoost != preset.taskPriorityBoost ||
+        recencyPenaltyPercent != presetRecencyPenaltyPercent ||
+        overdueEmergencyMultiplier != preset.overdueEmergencyMultiplier;
 
     final persisted = state.persistedAllocationConfig?.strategySettings;
     final isUnsaved =
@@ -246,7 +264,21 @@ class _AllocationStep extends StatelessWidget {
                     persisted.neglectLookbackDays) ||
             (state.draftNeglectInfluencePercent != null &&
                 state.draftNeglectInfluencePercent !=
-                    (persisted.neglectInfluence * 100).round().clamp(0, 100)));
+                    (persisted.neglectInfluence * 100).round().clamp(0, 100)) ||
+            (state.draftValuePriorityWeightPercent != null &&
+                state.draftValuePriorityWeightPercent !=
+                    (persisted.valuePriorityWeight * 50).round().clamp(
+                      0,
+                      100,
+                    )) ||
+            (state.draftTaskFlagBoost != null &&
+                state.draftTaskFlagBoost != persisted.taskPriorityBoost) ||
+            (state.draftRecencyPenaltyPercent != null &&
+                state.draftRecencyPenaltyPercent !=
+                    (persisted.recencyPenalty * 100).round().clamp(0, 50)) ||
+            (state.draftOverdueEmergencyMultiplier != null &&
+                state.draftOverdueEmergencyMultiplier !=
+                    persisted.overdueEmergencyMultiplier));
 
     final presetName = switch (state.effectiveFocusMode) {
       FocusMode.sustainable => 'Standard Balanced',
@@ -454,8 +486,161 @@ class _AllocationStep extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.tune, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('Fine Tuning', style: theme.textTheme.titleMedium),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Value Priority Weight'),
+                    Text(
+                      _valuePriorityChipText(valuePriorityPercent),
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: valuePriorityPercent.toDouble().clamp(0, 100),
+                  min: 0,
+                  max: 100,
+                  divisions: 100,
+                  onChanged: (v) => bloc.add(
+                    FocusSetupEvent.valuePriorityWeightPercentChanged(
+                      v.round(),
+                    ),
+                  ),
+                ),
+
+                const Divider(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Task Flag Boost'),
+                    Text(
+                      '${taskFlagBoost.toStringAsFixed(1)}x',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Text(
+                      '0.5x',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Expanded(
+                      child: Slider(
+                        value: taskFlagBoost.clamp(0.5, 5.0),
+                        min: 0.5,
+                        max: 5,
+                        divisions: 9,
+                        onChanged: (v) => bloc.add(
+                          FocusSetupEvent.taskFlagBoostChanged(
+                            (v * 2).roundToDouble() / 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '5x',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Divider(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Recency Penalty'),
+                    Text(
+                      '-$recencyPenaltyPercent%',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.tertiary,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Avoids "shiny object syndrome" by lowering score of new tasks.',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Slider(
+                  value: recencyPenaltyPercent.toDouble().clamp(0, 50),
+                  min: 0,
+                  max: 50,
+                  divisions: 50,
+                  onChanged: (v) => bloc.add(
+                    FocusSetupEvent.recencyPenaltyPercentChanged(v.round()),
+                  ),
+                ),
+
+                const Divider(height: 24),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Overdue Emergency Multiplier'),
+                    Text(
+                      '${overdueEmergencyMultiplier.toStringAsFixed(1)}x',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+                Slider(
+                  value: overdueEmergencyMultiplier.clamp(1.0, 5.0),
+                  min: 1,
+                  max: 5,
+                  divisions: 8,
+                  onChanged: (v) => bloc.add(
+                    FocusSetupEvent.overdueEmergencyMultiplierChanged(
+                      (v * 2).roundToDouble() / 2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
+  }
+
+  String _valuePriorityChipText(int percent) {
+    final p = percent.clamp(0, 100);
+    final label = switch (p) {
+      <= 33 => 'Low',
+      <= 66 => 'Medium',
+      _ => 'High',
+    };
+    return '$label ($p%)';
   }
 }
 
@@ -485,136 +670,196 @@ class _ReviewScheduleStep extends StatelessWidget {
         .where((r) => !r.ruleKey.startsWith('review_project_'))
         .toList(growable: false);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.tune, size: 16, color: theme.colorScheme.primary),
-              const SizedBox(width: 8),
-              Text(
-                'PRESET: $presetLabel',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                ),
+    final content = <Widget>[
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.tune, size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              'PRESET: $presetLabel',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        Text(
-          'Define how often Taskly prompts you to reflect.',
-          style: theme.textTheme.titleLarge,
+      ),
+      const SizedBox(height: 16),
+      Text(
+        'Define how often Taskly prompts you to reflect.',
+        style: theme.textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w800,
         ),
-        const SizedBox(height: 8),
-        Text(
-          'Frequency adjustments apply to future prompts. You can always run a '
-          'manual review from the "My Focus" tab.',
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'Consistent reviews help you catch stalled projects and realign with '
+        'your values before they drift too far.',
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          height: 1.35,
         ),
-        const SizedBox(height: 16),
-        if (projectHealthRules.isNotEmpty) ...[
+      ),
+      const SizedBox(height: 20),
+    ];
+
+    if (projectHealthRules.isNotEmpty) {
+      content
+        ..add(
           Text(
-            'RULE #3: PROJECT HEALTH',
+            'Rule #3: Project Health',
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
             ),
           ),
-          const SizedBox(height: 8),
+        )
+        ..add(const SizedBox(height: 10))
+        ..add(
           Card(
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                for (final rule in projectHealthRules)
+                for (var i = 0; i < projectHealthRules.length; i++) ...[
                   _ReviewRuleRow(
-                    ruleId: rule.id,
+                    ruleId: projectHealthRules[i].id,
+                    ruleKey: projectHealthRules[i].ruleKey,
                     title:
-                        (rule.displayConfig['title'] as String?) ??
-                        rule.ruleKey,
-                    enabled: state.draftRuleEnabled[rule.id] ?? rule.active,
+                        (projectHealthRules[i].displayConfig['title']
+                            as String?) ??
+                        projectHealthRules[i].ruleKey,
+                    enabled:
+                        state.draftRuleEnabled[projectHealthRules[i].id] ??
+                        projectHealthRules[i].active,
                     frequencyDays:
-                        state.draftRuleFrequencyDays[rule.id] ??
-                        (rule.triggerConfig['frequency_days'] as int? ?? 30),
-                    lastResolvedAt: state.lastResolvedAt[rule.id],
+                        state.draftRuleFrequencyDays[projectHealthRules[i]
+                            .id] ??
+                        (projectHealthRules[i].triggerConfig['frequency_days']
+                                as int? ??
+                            30),
+                    lastResolvedAt:
+                        state.lastResolvedAt[projectHealthRules[i].id],
                     onEnabledChanged: (enabled) => bloc.add(
                       FocusSetupEvent.reviewRuleEnabledChanged(
-                        ruleId: rule.id,
+                        ruleId: projectHealthRules[i].id,
                         enabled: enabled,
                       ),
                     ),
                     onFrequencyChanged: (days) => bloc.add(
                       FocusSetupEvent.reviewRuleFrequencyDaysChanged(
-                        ruleId: rule.id,
+                        ruleId: projectHealthRules[i].id,
                         frequencyDays: days,
                       ),
                     ),
                   ),
+                  if (i != projectHealthRules.length - 1)
+                    Divider(
+                      height: 1,
+                      color: theme.dividerColor.withOpacity(0.6),
+                    ),
+                ],
               ],
             ),
           ),
-          const SizedBox(height: 16),
-        ],
-        if (periodicRules.isNotEmpty) ...[
+        )
+        ..add(const SizedBox(height: 24));
+    }
+
+    if (periodicRules.isNotEmpty) {
+      content
+        ..add(
           Text(
-            'PERIODIC REVIEW SCHEDULE',
+            'Periodic Review Schedule',
             style: theme.textTheme.labelLarge?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.8,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
             ),
           ),
-          const SizedBox(height: 8),
+        )
+        ..add(const SizedBox(height: 10))
+        ..add(
           Card(
+            clipBehavior: Clip.antiAlias,
             child: Column(
               children: [
-                for (final rule in periodicRules)
+                for (var i = 0; i < periodicRules.length; i++) ...[
                   _ReviewRuleRow(
-                    ruleId: rule.id,
+                    ruleId: periodicRules[i].id,
+                    ruleKey: periodicRules[i].ruleKey,
                     title:
-                        (rule.displayConfig['title'] as String?) ??
-                        rule.ruleKey,
-                    enabled: state.draftRuleEnabled[rule.id] ?? rule.active,
+                        (periodicRules[i].displayConfig['title'] as String?) ??
+                        periodicRules[i].ruleKey,
+                    enabled:
+                        state.draftRuleEnabled[periodicRules[i].id] ??
+                        periodicRules[i].active,
                     frequencyDays:
-                        state.draftRuleFrequencyDays[rule.id] ??
-                        (rule.triggerConfig['frequency_days'] as int? ?? 30),
-                    lastResolvedAt: state.lastResolvedAt[rule.id],
+                        state.draftRuleFrequencyDays[periodicRules[i].id] ??
+                        (periodicRules[i].triggerConfig['frequency_days']
+                                as int? ??
+                            30),
+                    lastResolvedAt: state.lastResolvedAt[periodicRules[i].id],
                     onEnabledChanged: (enabled) => bloc.add(
                       FocusSetupEvent.reviewRuleEnabledChanged(
-                        ruleId: rule.id,
+                        ruleId: periodicRules[i].id,
                         enabled: enabled,
                       ),
                     ),
                     onFrequencyChanged: (days) => bloc.add(
                       FocusSetupEvent.reviewRuleFrequencyDaysChanged(
-                        ruleId: rule.id,
+                        ruleId: periodicRules[i].id,
                         frequencyDays: days,
                       ),
                     ),
                   ),
+                  if (i != periodicRules.length - 1)
+                    Divider(
+                      height: 1,
+                      color: theme.dividerColor.withOpacity(0.6),
+                    ),
+                ],
               ],
             ),
           ),
-        ],
-      ],
-    );
+        );
+    }
+
+    content
+      ..add(const SizedBox(height: 16))
+      ..add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Text(
+            'Frequency adjustments apply to future prompts. You can always run '
+            'a manual review from the "My Focus" tab.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.75),
+              height: 1.35,
+            ),
+          ),
+        ),
+      )
+      ..add(const SizedBox(height: 12));
+
+    return ListView(padding: const EdgeInsets.all(16), children: content);
   }
 }
 
 class _ReviewRuleRow extends StatelessWidget {
   const _ReviewRuleRow({
     required this.ruleId,
+    required this.ruleKey,
     required this.title,
     required this.enabled,
     required this.frequencyDays,
@@ -624,6 +869,7 @@ class _ReviewRuleRow extends StatelessWidget {
   });
 
   final String ruleId;
+  final String ruleKey;
   final String title;
   final bool enabled;
   final int frequencyDays;
@@ -636,25 +882,69 @@ class _ReviewRuleRow extends StatelessWidget {
     final theme = Theme.of(context);
     final lastText = _formatLast(lastResolvedAt);
 
-    return ListTile(
-      title: Text(title),
-      subtitle: Text('Last: $lastText'),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _FrequencyDropdown(
-            enabled: enabled,
-            valueDays: frequencyDays,
-            onChanged: onFrequencyChanged,
-          ),
-          const SizedBox(width: 8),
-          Switch(
-            value: enabled,
-            onChanged: onEnabledChanged,
-          ),
-        ],
+    final visual = _visualForRule(ruleKey: ruleKey, theme: theme);
+    final tileBg = visual.backgroundColor;
+    final iconColor = visual.foregroundColor;
+
+    final rowOpacity = enabled ? 1.0 : 0.7;
+    final titleStyle = theme.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: enabled
+          ? theme.colorScheme.onSurface
+          : theme.colorScheme.onSurface,
+    );
+    final subtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+
+    return Opacity(
+      opacity: rowOpacity,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: tileBg,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(visual.icon, color: iconColor),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: titleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Last: $lastText',
+                    style: subtitleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            _FrequencyControl(
+              enabled: enabled,
+              valueDays: frequencyDays,
+              onChanged: onFrequencyChanged,
+            ),
+            const SizedBox(width: 10),
+            Switch(value: enabled, onChanged: onEnabledChanged),
+          ],
+        ),
       ),
-      textColor: enabled ? null : theme.colorScheme.onSurfaceVariant,
     );
   }
 
@@ -666,14 +956,86 @@ class _ReviewRuleRow extends StatelessWidget {
 
     if (diff.inDays == 0) return 'Today';
     if (diff.inDays == 1) return 'Yesterday';
-    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    if (diff.inDays < 4) return '${diff.inDays} days ago';
+    if (diff.inDays < 7) return DateFormat.EEEE().format(local);
 
-    return DateFormat.yMMMd().format(local);
+    const monthAbbrev = <String>[
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sept',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final month = monthAbbrev[local.month - 1];
+    final day = local.day.toString().padLeft(2, '0');
+    return '$month $day';
+  }
+
+  _RuleVisual _visualForRule({
+    required String ruleKey,
+    required ThemeData theme,
+  }) {
+    final cs = theme.colorScheme;
+
+    return switch (ruleKey) {
+      'review_values_alignment' => _RuleVisual(
+        icon: Icons.diamond_outlined,
+        foregroundColor: cs.tertiary,
+        backgroundColor: cs.tertiary.withOpacity(0.14),
+      ),
+      'review_progress' => _RuleVisual(
+        icon: Icons.trending_up,
+        foregroundColor: cs.secondary,
+        backgroundColor: cs.secondary.withOpacity(0.14),
+      ),
+      'review_wellbeing' => _RuleVisual(
+        icon: Icons.spa,
+        foregroundColor: cs.primary,
+        backgroundColor: cs.primary.withOpacity(0.14),
+      ),
+      'review_balance' => _RuleVisual(
+        icon: Icons.balance,
+        foregroundColor: cs.primary,
+        backgroundColor: cs.primary.withOpacity(0.14),
+      ),
+      'review_pinned_tasks' => _RuleVisual(
+        icon: Icons.push_pin,
+        foregroundColor: cs.onSurfaceVariant,
+        backgroundColor: cs.onSurfaceVariant.withOpacity(0.12),
+      ),
+      'review_project_no_allocated_recently' => _RuleVisual(
+        icon: Icons.pending_actions,
+        foregroundColor: cs.tertiary,
+        backgroundColor: cs.tertiary.withOpacity(0.14),
+      ),
+      'review_project_high_value_neglected' => _RuleVisual(
+        icon: Icons.star_outline,
+        foregroundColor: cs.error,
+        backgroundColor: cs.error.withOpacity(0.14),
+      ),
+      'review_project_no_allocatable_tasks' => _RuleVisual(
+        icon: Icons.check_circle_outline,
+        foregroundColor: cs.secondary,
+        backgroundColor: cs.secondary.withOpacity(0.14),
+      ),
+      _ => _RuleVisual(
+        icon: Icons.rate_review_outlined,
+        foregroundColor: cs.onSurfaceVariant,
+        backgroundColor: cs.onSurfaceVariant.withOpacity(0.12),
+      ),
+    };
   }
 }
 
-class _FrequencyDropdown extends StatelessWidget {
-  const _FrequencyDropdown({
+class _FrequencyControl extends StatelessWidget {
+  const _FrequencyControl({
     required this.enabled,
     required this.valueDays,
     required this.onChanged,
@@ -693,23 +1055,56 @@ class _FrequencyDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = _options.entries
-        .map(
-          (e) => DropdownMenuItem<int>(
-            value: e.key,
-            child: Text(e.value),
-          ),
-        )
-        .toList(growable: false);
-
+    final theme = Theme.of(context);
     final safeValue = _options.containsKey(valueDays) ? valueDays : 30;
+    final label = _options[safeValue] ?? 'Monthly';
 
-    return DropdownButton<int>(
-      value: safeValue,
-      onChanged: enabled ? (v) => v != null ? onChanged(v) : null : null,
-      items: items,
+    final textStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: enabled
+          ? theme.colorScheme.primary
+          : theme.colorScheme.onSurfaceVariant,
+    );
+
+    return PopupMenuButton<int>(
+      enabled: enabled,
+      initialValue: safeValue,
+      onSelected: onChanged,
+      itemBuilder: (context) => _options.entries
+          .map(
+            (e) => PopupMenuItem<int>(
+              value: e.key,
+              child: Text(e.value),
+            ),
+          )
+          .toList(growable: false),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: textStyle),
+          Icon(
+            Icons.expand_more,
+            size: 18,
+            color: enabled
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurfaceVariant,
+          ),
+        ],
+      ),
     );
   }
+}
+
+class _RuleVisual {
+  const _RuleVisual({
+    required this.icon,
+    required this.foregroundColor,
+    required this.backgroundColor,
+  });
+
+  final IconData icon;
+  final Color foregroundColor;
+  final Color backgroundColor;
 }
 
 class _FinalizeStep extends StatelessWidget {

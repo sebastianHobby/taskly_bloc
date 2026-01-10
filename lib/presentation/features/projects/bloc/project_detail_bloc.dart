@@ -98,7 +98,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   final ValueRepositoryContract _valueRepository;
 
   @override
-  Talker get logger => talker;
+  Talker get logger => talker.raw;
 
   @override
   Future<void> close() {

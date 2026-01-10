@@ -417,7 +417,6 @@ class AllocationOrchestrator {
       taskPriorityBoost: settings.taskPriorityBoost,
       recencyPenalty: settings.recencyPenalty,
       overdueEmergencyMultiplier: settings.overdueEmergencyMultiplier,
-      overdueEmergencyGrowth: settings.overdueEmergencyGrowth,
       completionsByValue: completionsByValue,
     );
 

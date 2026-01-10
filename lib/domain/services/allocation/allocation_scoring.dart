@@ -1,6 +1,3 @@
-import 'dart:math' as math;
-
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 
 /// Score helpers for allocation strategies.
@@ -9,7 +6,6 @@ class AllocationScoring {
     required Task task,
     required DateTime now,
     required double overdueEmergencyMultiplier,
-    required OverdueEmergencyGrowth overdueEmergencyGrowth,
   }) {
     final deadline = task.deadlineDate;
     if (deadline == null) return 0;
@@ -18,12 +14,10 @@ class AllocationScoring {
 
     if (daysUntilDeadline < 0) {
       final daysOverdue = -daysUntilDeadline;
-      final growth = _overdueGrowthFactor(
+      return overdueEmergencyFactor(
         daysOverdue: daysOverdue,
-        overdueEmergencyGrowth: overdueEmergencyGrowth,
+        overdueEmergencyMultiplier: overdueEmergencyMultiplier,
       );
-
-      return (overdueEmergencyMultiplier * growth).clamp(0.0, 10.0);
     }
 
     return 1.0 / (1.0 + daysUntilDeadline / 7.0);
@@ -32,13 +26,11 @@ class AllocationScoring {
   static double overdueEmergencyFactor({
     required int daysOverdue,
     required double overdueEmergencyMultiplier,
-    required OverdueEmergencyGrowth overdueEmergencyGrowth,
   }) {
-    final growth = _overdueGrowthFactor(
-      daysOverdue: daysOverdue,
-      overdueEmergencyGrowth: overdueEmergencyGrowth,
-    );
+    if (daysOverdue <= 0) return 1;
 
+    // Linear growth over time: 7 days overdue = 2x, 14 days = 3x, etc.
+    final growth = 1.0 + daysOverdue / 7.0;
     return (overdueEmergencyMultiplier * growth).clamp(0.0, 10.0);
   }
 
@@ -68,17 +60,5 @@ class AllocationScoring {
 
     final freshness = 1.0 - (ageDays / windowDays);
     return (1.0 - recencyPenalty * freshness).clamp(0.0, 1.0);
-  }
-
-  static double _overdueGrowthFactor({
-    required int daysOverdue,
-    required OverdueEmergencyGrowth overdueEmergencyGrowth,
-  }) {
-    if (daysOverdue <= 0) return 1;
-
-    return switch (overdueEmergencyGrowth) {
-      OverdueEmergencyGrowth.linear => 1.0 + daysOverdue / 7.0,
-      OverdueEmergencyGrowth.exponential => math.pow(2.0, daysOverdue / 7.0),
-    }.toDouble();
   }
 }

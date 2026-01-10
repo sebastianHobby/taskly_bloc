@@ -39,6 +39,23 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.neglectInfluencePercentChanged(int percent) =
       FocusSetupNeglectInfluencePercentChanged;
 
+  /// UI uses 0-100%; persisted as 0.0-2.0 via (percent / 50).
+  const factory FocusSetupEvent.valuePriorityWeightPercentChanged(int percent) =
+      FocusSetupValuePriorityWeightPercentChanged;
+
+  /// UI uses multiplier (0.5-5.0).
+  const factory FocusSetupEvent.taskFlagBoostChanged(double multiplier) =
+      FocusSetupTaskFlagBoostChanged;
+
+  /// UI uses 0-50%; persisted as 0.0-0.5.
+  const factory FocusSetupEvent.recencyPenaltyPercentChanged(int percent) =
+      FocusSetupRecencyPenaltyPercentChanged;
+
+  /// UI uses multiplier (1.0-5.0).
+  const factory FocusSetupEvent.overdueEmergencyMultiplierChanged(
+    double multiplier,
+  ) = FocusSetupOverdueEmergencyMultiplierChanged;
+
   const factory FocusSetupEvent.allocationResetToDefaultPressed() =
       FocusSetupAllocationResetToDefaultPressed;
 
@@ -90,6 +107,11 @@ sealed class FocusSetupState with _$FocusSetupState {
     bool? draftNeglectEnabled,
     int? draftNeglectLookbackDays,
     int? draftNeglectInfluencePercent,
+
+    int? draftValuePriorityWeightPercent,
+    double? draftTaskFlagBoost,
+    int? draftRecencyPenaltyPercent,
+    double? draftOverdueEmergencyMultiplier,
 
     /// Review-session rules only.
     @Default(<AttentionRule>[]) List<AttentionRule> reviewSessionRules,
@@ -163,6 +185,51 @@ sealed class FocusSetupState with _$FocusSetupState {
     }
     return 50;
   }
+
+  int get effectiveValuePriorityWeightPercent {
+    final draft = draftValuePriorityWeightPercent;
+    if (draft != null) return draft.clamp(0, 100);
+    final persisted = persistedAllocationConfig;
+    if (persisted != null) {
+      return (persisted.strategySettings.valuePriorityWeight * 50)
+          .round()
+          .clamp(0, 100);
+    }
+    return 75;
+  }
+
+  double get effectiveTaskFlagBoost {
+    final draft = draftTaskFlagBoost;
+    if (draft != null) return draft;
+    final persisted = persistedAllocationConfig;
+    if (persisted != null) {
+      return persisted.strategySettings.taskPriorityBoost;
+    }
+    return 1;
+  }
+
+  int get effectiveRecencyPenaltyPercent {
+    final draft = draftRecencyPenaltyPercent;
+    if (draft != null) return draft.clamp(0, 50);
+    final persisted = persistedAllocationConfig;
+    if (persisted != null) {
+      return (persisted.strategySettings.recencyPenalty * 100).round().clamp(
+        0,
+        50,
+      );
+    }
+    return 10;
+  }
+
+  double get effectiveOverdueEmergencyMultiplier {
+    final draft = draftOverdueEmergencyMultiplier;
+    if (draft != null) return draft;
+    final persisted = persistedAllocationConfig;
+    if (persisted != null) {
+      return persisted.strategySettings.overdueEmergencyMultiplier;
+    }
+    return 1.5;
+  }
 }
 
 class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
@@ -207,6 +274,23 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
     on<FocusSetupNeglectInfluencePercentChanged>(
       _onNeglectInfluencePercentChanged,
+      transformer: droppable(),
+    );
+
+    on<FocusSetupValuePriorityWeightPercentChanged>(
+      _onValuePriorityWeightPercentChanged,
+      transformer: droppable(),
+    );
+    on<FocusSetupTaskFlagBoostChanged>(
+      _onTaskFlagBoostChanged,
+      transformer: droppable(),
+    );
+    on<FocusSetupRecencyPenaltyPercentChanged>(
+      _onRecencyPenaltyPercentChanged,
+      transformer: droppable(),
+    );
+    on<FocusSetupOverdueEmergencyMultiplierChanged>(
+      _onOverdueEmergencyMultiplierChanged,
       transformer: droppable(),
     );
 
@@ -436,6 +520,44 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
   }
 
+  void _onValuePriorityWeightPercentChanged(
+    FocusSetupValuePriorityWeightPercentChanged event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        draftValuePriorityWeightPercent: event.percent.clamp(0, 100),
+      ),
+    );
+  }
+
+  void _onTaskFlagBoostChanged(
+    FocusSetupTaskFlagBoostChanged event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(state.copyWith(draftTaskFlagBoost: event.multiplier.clamp(0.5, 5.0)));
+  }
+
+  void _onRecencyPenaltyPercentChanged(
+    FocusSetupRecencyPenaltyPercentChanged event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(
+      state.copyWith(draftRecencyPenaltyPercent: event.percent.clamp(0, 50)),
+    );
+  }
+
+  void _onOverdueEmergencyMultiplierChanged(
+    FocusSetupOverdueEmergencyMultiplierChanged event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        draftOverdueEmergencyMultiplier: event.multiplier.clamp(1.0, 5.0),
+      ),
+    );
+  }
+
   void _onAllocationResetToDefaultPressed(
     FocusSetupAllocationResetToDefaultPressed event,
     Emitter<FocusSetupState> emit,
@@ -450,6 +572,15 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         draftNeglectInfluencePercent: (preset.neglectInfluence * 100)
             .round()
             .clamp(0, 100),
+        draftValuePriorityWeightPercent: (preset.valuePriorityWeight * 50)
+            .round()
+            .clamp(0, 100),
+        draftTaskFlagBoost: preset.taskPriorityBoost,
+        draftRecencyPenaltyPercent: (preset.recencyPenalty * 100).round().clamp(
+          0,
+          50,
+        ),
+        draftOverdueEmergencyMultiplier: preset.overdueEmergencyMultiplier,
       ),
     );
   }
@@ -495,6 +626,10 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
           enableNeglectWeighting: state.effectiveNeglectEnabled,
           neglectLookbackDays: state.effectiveNeglectLookbackDays,
           neglectInfluence: state.effectiveNeglectInfluencePercent / 100.0,
+          valuePriorityWeight: state.effectiveValuePriorityWeightPercent / 50.0,
+          taskPriorityBoost: state.effectiveTaskFlagBoost,
+          recencyPenalty: state.effectiveRecencyPenaltyPercent / 100.0,
+          overdueEmergencyMultiplier: state.effectiveOverdueEmergencyMultiplier,
         ),
       );
 

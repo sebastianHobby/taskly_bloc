@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/core/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/screens/tiles/screen_item_tile_registry.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 enum _SomedaySortMode {
   updatedAt,
@@ -377,18 +377,28 @@ class _FilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ty = Theme.of(context).extension<TasklyTypography>();
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
-        _SortButton(sortMode: sortMode, onChanged: onSortModeChanged),
+        _SortButton(
+          sortMode: sortMode,
+          onChanged: onSortModeChanged,
+          textStyle: ty?.filterControl,
+        ),
         _ValueDropdown(
           selectedValueId: selectedValueId,
           values: values,
           onChanged: onSelectedValueChanged,
+          textStyle: ty?.filterControl,
         ),
         FilterChip(
-          label: const Text('Projects Only'),
+          label: Text(
+            'Projects Only',
+            style: ty?.filterControl,
+          ),
           selected: projectsOnly,
           onSelected: onProjectsOnlyChanged,
         ),
@@ -398,10 +408,15 @@ class _FilterBar extends StatelessWidget {
 }
 
 class _SortButton extends StatelessWidget {
-  const _SortButton({required this.sortMode, required this.onChanged});
+  const _SortButton({
+    required this.sortMode,
+    required this.onChanged,
+    this.textStyle,
+  });
 
   final _SomedaySortMode sortMode;
   final ValueChanged<_SomedaySortMode> onChanged;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -419,7 +434,10 @@ class _SortButton extends StatelessWidget {
         );
       },
       icon: const Icon(Icons.sort),
-      label: Text(label),
+      style: textStyle == null
+          ? null
+          : OutlinedButton.styleFrom(textStyle: textStyle),
+      label: Text(label, style: textStyle),
     );
   }
 }
@@ -429,11 +447,13 @@ class _ValueDropdown extends StatelessWidget {
     required this.selectedValueId,
     required this.values,
     required this.onChanged,
+    this.textStyle,
   });
 
   final String? selectedValueId;
   final List<Value> values;
   final ValueChanged<String?> onChanged;
+  final TextStyle? textStyle;
 
   @override
   Widget build(BuildContext context) {
@@ -447,6 +467,7 @@ class _ValueDropdown extends StatelessWidget {
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String?>(
             value: selectedValueId,
+            style: textStyle,
             items: [
               const DropdownMenuItem<String?>(
                 value: null,
@@ -455,7 +476,7 @@ class _ValueDropdown extends StatelessWidget {
               ...values.map(
                 (v) => DropdownMenuItem<String?>(
                   value: v.id,
-                  child: Text(v.name),
+                  child: Text(v.name, style: textStyle),
                 ),
               ),
             ],
@@ -476,12 +497,14 @@ class _GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final ty = theme.extension<TasklyTypography>();
 
     return Row(
       children: [
         Expanded(
-          child: TasklyHeader(
-            title: title,
+          child: Text(
+            title,
+            style: ty?.sectionHeaderHeavy ?? theme.textTheme.titleLarge,
           ),
         ),
         if (badgeText != null)
@@ -494,9 +517,7 @@ class _GroupHeader extends StatelessWidget {
             ),
             child: Text(
               badgeText!,
-              style: theme.textTheme.labelSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: ty?.badgeTinyCaps ?? theme.textTheme.labelSmall,
             ),
           ),
       ],

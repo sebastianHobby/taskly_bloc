@@ -27,15 +27,6 @@ enum UrgentTaskBehavior {
   includeAll,
 }
 
-/// Defines how overdue urgency grows as tasks become more overdue.
-enum OverdueEmergencyGrowth {
-  @JsonValue('linear')
-  linear,
-
-  @JsonValue('exponential')
-  exponential,
-}
-
 // ============================================================================
 // MODELS
 // ============================================================================
@@ -109,10 +100,6 @@ abstract class StrategySettings with _$StrategySettings {
 
     /// Multiplier for overdue emergency tasks.
     @Default(1.0) double overdueEmergencyMultiplier,
-
-    /// Growth curve for overdue emergency urgency.
-    @Default(OverdueEmergencyGrowth.linear)
-    OverdueEmergencyGrowth overdueEmergencyGrowth,
   }) = _StrategySettings;
   const StrategySettings._();
 
