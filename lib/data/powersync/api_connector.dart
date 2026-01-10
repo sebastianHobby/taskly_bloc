@@ -403,6 +403,11 @@ Future<PowerSyncDatabase> openDatabase({
   );
   await db.initialize();
 
+  // Normalize legacy enum strings before any sync/upload starts.
+  // This prevents Supabase enum rejections like:
+  // invalid input value for enum attention_rule_type: "allocation_warning".
+  await _migrateLegacyAttentionRuleTypeValues(db);
+
   // Helper to log user_profiles state after sync checkpoint
   Future<void> logUserProfilesAfterSync(
     PowerSyncDatabase database,
@@ -462,6 +467,7 @@ Future<PowerSyncDatabase> openDatabase({
     final event = data.event;
     if (event == AuthChangeEvent.signedIn) {
       // Connect to PowerSync when the user is signed in
+      await _migrateLegacyAttentionRuleTypeValues(db);
       currentConnector = SupabaseConnector(db);
       await db.connect(connector: currentConnector!);
 
@@ -477,6 +483,26 @@ Future<PowerSyncDatabase> openDatabase({
     }
   });
   return db;
+}
+
+Future<void> _migrateLegacyAttentionRuleTypeValues(PowerSyncDatabase db) async {
+  try {
+    await db.execute(
+      "UPDATE attention_rules SET rule_type='workflowStep' "
+      "WHERE rule_type='workflow_step'",
+    );
+    await db.execute(
+      "UPDATE attention_rules SET rule_type='allocationWarning' "
+      "WHERE rule_type='allocation_warning'",
+    );
+  } catch (e, st) {
+    // Best-effort migration: don't block database initialization.
+    talker.warning(
+      '[powersync] Failed legacy attention_rules rule_type migration',
+      e,
+      st,
+    );
+  }
 }
 
 /// Run post-authentication maintenance tasks.

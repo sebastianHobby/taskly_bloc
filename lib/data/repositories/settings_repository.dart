@@ -151,6 +151,7 @@ class SettingsRepository implements SettingsRepositoryContract {
               'selectedRow.updatedAt=${row?.updatedAt}',
         );
       }
+
       return value;
     }).distinct();
   }

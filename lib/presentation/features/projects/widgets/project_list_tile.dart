@@ -121,7 +121,7 @@ class ProjectListTile extends StatelessWidget {
 
     return Card(
       key: Key('project-${project.id}'),
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: EdgeInsets.zero,
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -141,7 +141,7 @@ class ProjectListTile extends StatelessWidget {
             : Routing.toEntity(context, EntityType.project, project.id),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -149,7 +149,6 @@ class ProjectListTile extends StatelessWidget {
               _ProjectProgressRing(
                 value: _progressValue,
                 isOverdue: isOverdue,
-                isCompleted: project.completed,
                 semanticsLabel: project.name,
                 taskCount: taskCount,
                 completedTaskCount: completedTaskCount,
@@ -190,7 +189,9 @@ class ProjectListTile extends StatelessWidget {
                         ),
                         const SizedBox(width: 8),
                         PriorityFlag(priority: project.priority),
-                        if (taskCount != null && taskCount! > 0) ...[
+                        if (!compact &&
+                            taskCount != null &&
+                            taskCount! > 0) ...[
                           const SizedBox(width: 8),
                           _TaskCountBadge(
                             total: taskCount!,
@@ -233,13 +234,6 @@ class ProjectListTile extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Chevron indicator
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
             ],
           ),
         ),
@@ -252,7 +246,6 @@ class _ProjectProgressRing extends StatelessWidget {
   const _ProjectProgressRing({
     required this.value,
     required this.isOverdue,
-    required this.isCompleted,
     required this.semanticsLabel,
     this.taskCount,
     this.completedTaskCount,
@@ -260,7 +253,6 @@ class _ProjectProgressRing extends StatelessWidget {
 
   final double? value;
   final bool isOverdue;
-  final bool isCompleted;
   final String semanticsLabel;
   final int? taskCount;
   final int? completedTaskCount;
@@ -286,21 +278,21 @@ class _ProjectProgressRing extends StatelessWidget {
       label: 'Project progress for $semanticsLabel',
       value: semanticsValue,
       child: SizedBox.square(
-        dimension: 28,
+        dimension: 24,
         child: Stack(
           alignment: Alignment.center,
           children: [
             CircularProgressIndicator(
               value: 1,
-              strokeWidth: 3,
+              strokeWidth: 2.5,
+              strokeCap: StrokeCap.round,
               valueColor: AlwaysStoppedAnimation<Color>(trackColor),
             ),
             CircularProgressIndicator(
               value: displayValue,
-              strokeWidth: 3,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isCompleted ? scheme.onSurfaceVariant : color,
-              ),
+              strokeWidth: 2.5,
+              strokeCap: StrokeCap.round,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
           ],
         ),
@@ -334,32 +326,10 @@ class _MetaChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
     final children = <Widget>[];
-
-    if (startDate != null) {
-      children.add(
-        DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate!),
-        ),
-      );
-    }
-
-    if (deadlineDate != null) {
-      children.add(
-        DateChip.deadline(
-          context: context,
-          label: formatDate(context, deadlineDate!),
-          isOverdue: isOverdue,
-          isDueToday: isDueToday,
-          isDueSoon: isDueSoon,
-        ),
-      );
-    }
-
-    if (hasRepeat) {
-      children.add(DateChip.repeat(context: context));
-    }
 
     if (primaryValue != null) {
       children.add(
@@ -379,16 +349,86 @@ class _MetaChips extends StatelessWidget {
       );
     }
 
+    if (startDate != null) {
+      children.add(
+        _InlineMetaItem(
+          icon: Icons.calendar_today_rounded,
+          label: formatDate(context, startDate!),
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    if (deadlineDate != null) {
+      final deadlineColor = isOverdue
+          ? scheme.error
+          : isDueToday
+          ? scheme.tertiary
+          : isDueSoon
+          ? scheme.secondary
+          : scheme.onSurfaceVariant;
+      children.add(
+        _InlineMetaItem(
+          icon: Icons.event_busy_rounded,
+          label: formatDate(context, deadlineDate!),
+          color: deadlineColor,
+        ),
+      );
+    }
+
+    if (hasRepeat) {
+      children.add(
+        Icon(
+          Icons.sync_rounded,
+          size: 14,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+      );
+    }
+
     if (children.isEmpty) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Wrap(
-        spacing: 8,
-        runSpacing: 4,
+        spacing: 12,
+        runSpacing: 6,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: children,
       ),
+    );
+  }
+}
+
+class _InlineMetaItem extends StatelessWidget {
+  const _InlineMetaItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w500,
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 }
