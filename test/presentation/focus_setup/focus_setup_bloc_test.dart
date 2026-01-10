@@ -75,4 +75,105 @@ void main() {
           ),
     ],
   );
+
+  blocTest<FocusSetupBloc, FocusSetupState>(
+    'focusModeChanged to non-personalized clamps steps and applies preset drafts',
+    build: () => FocusSetupBloc(
+      settingsRepository: _MockSettingsRepository(),
+      attentionRepository: _MockAttentionRepository(),
+    ),
+    seed: () => const FocusSetupState(
+      isLoading: false,
+      stepIndex: 1,
+      draftFocusMode: FocusMode.personalized,
+      draftUrgencyBoostMultiplier: 4,
+    ),
+    act: (bloc) =>
+        bloc.add(const FocusSetupEvent.focusModeChanged(FocusMode.intentional)),
+    expect: () {
+      final preset = StrategySettings.forFocusMode(FocusMode.intentional);
+
+      return [
+        isA<FocusSetupState>()
+            .having((s) => s.draftFocusMode, 'focusMode', FocusMode.intentional)
+            .having((s) => s.maxStepIndex, 'maxStepIndex', 2)
+            .having(
+              (s) => s.currentStep,
+              'currentStep',
+              FocusSetupWizardStep.reviewSchedule,
+            )
+            .having(
+              (s) => s.draftUrgencyBoostMultiplier,
+              'urgencyBoost',
+              preset.urgencyBoostMultiplier,
+            )
+            .having(
+              (s) => s.draftNeglectEnabled,
+              'neglectEnabled',
+              preset.enableNeglectWeighting,
+            )
+            .having(
+              (s) => s.draftNeglectLookbackDays,
+              'lookbackDays',
+              preset.neglectLookbackDays,
+            )
+            .having(
+              (s) => s.draftNeglectInfluencePercent,
+              'neglectInfluencePercent',
+              (preset.neglectInfluence * 100).round().clamp(0, 100),
+            ),
+      ];
+    },
+  );
+
+  blocTest<FocusSetupBloc, FocusSetupState>(
+    'focusModeChanged to personalized clears draft weightings',
+    build: () => FocusSetupBloc(
+      settingsRepository: _MockSettingsRepository(),
+      attentionRepository: _MockAttentionRepository(),
+    ),
+    seed: () => const FocusSetupState(
+      isLoading: false,
+      draftFocusMode: FocusMode.sustainable,
+      draftUrgencyBoostMultiplier: 1.5,
+      draftNeglectEnabled: true,
+      draftNeglectLookbackDays: 7,
+      draftNeglectInfluencePercent: 50,
+      draftValuePriorityWeightPercent: 75,
+      draftTaskFlagBoost: 1,
+      draftRecencyPenaltyPercent: 10,
+      draftOverdueEmergencyMultiplier: 1.5,
+    ),
+    act: (bloc) => bloc.add(
+      const FocusSetupEvent.focusModeChanged(FocusMode.personalized),
+    ),
+    expect: () => [
+      isA<FocusSetupState>()
+          .having((s) => s.draftFocusMode, 'focusMode', FocusMode.personalized)
+          .having((s) => s.draftUrgencyBoostMultiplier, 'urgency', isNull)
+          .having((s) => s.draftNeglectEnabled, 'neglectEnabled', isNull)
+          .having((s) => s.draftNeglectLookbackDays, 'lookback', isNull)
+          .having(
+            (s) => s.draftNeglectInfluencePercent,
+            'influencePercent',
+            isNull,
+          )
+          .having(
+            (s) => s.draftValuePriorityWeightPercent,
+            'valuePriorityPercent',
+            isNull,
+          )
+          .having((s) => s.draftTaskFlagBoost, 'taskFlagBoost', isNull)
+          .having(
+            (s) => s.draftRecencyPenaltyPercent,
+            'recencyPenaltyPercent',
+            isNull,
+          )
+          .having(
+            (s) => s.draftOverdueEmergencyMultiplier,
+            'overdueEmergencyMultiplier',
+            isNull,
+          ),
+    ],
+  );
 }

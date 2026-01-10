@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/screens/data_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_config.dart';
 import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
@@ -756,12 +757,14 @@ class SectionDataService {
       // Look up value for name, color, and icon
       final value = await _valueRepository.getById(valueId);
       final valueName = value?.name ?? 'Unknown Value';
+      final valuePriority = value?.priority ?? ValuePriority.medium;
       final color = value?.color;
       final iconName = value?.iconName;
 
       tasksByValue[valueId] = AllocationValueGroup(
         valueId: valueId,
         valueName: valueName,
+        valuePriority: valuePriority,
         tasks: tasks,
         weight: 1, // Default weight - could be enhanced later
         quota: tasks.length,

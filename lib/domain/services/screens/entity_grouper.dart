@@ -112,9 +112,15 @@ class EntityGrouper {
   }
 
   Map<String, List<Task>> _groupTasksByPriority(List<Task> tasks) {
-    // Task model doesn't have priority field
-    // Group all tasks under single key for now
-    return {'All Tasks': tasks};
+    final grouped = <String, List<Task>>{};
+
+    for (final task in tasks) {
+      final p = task.priority;
+      final key = (p == null) ? 'No Priority' : 'P$p';
+      grouped.putIfAbsent(key, () => []).add(task);
+    }
+
+    return _sortPriorityGroups(grouped);
   }
 
   Map<String, List<Project>> _groupProjectsByLabel(List<Project> projects) {
@@ -138,9 +144,39 @@ class EntityGrouper {
   Map<String, List<Project>> _groupProjectsByPriority(
     List<Project> projects,
   ) {
-    // Project model doesn't have priority field
-    // Group all projects under single key for now
-    return {'All Projects': projects};
+    final grouped = <String, List<Project>>{};
+
+    for (final project in projects) {
+      final p = project.priority;
+      final key = (p == null) ? 'No Priority' : 'P$p';
+      grouped.putIfAbsent(key, () => []).add(project);
+    }
+
+    return _sortPriorityGroups(grouped);
+  }
+
+  Map<String, List<T>> _sortPriorityGroups<T>(Map<String, List<T>> grouped) {
+    const order = ['P1', 'P2', 'P3', 'P4', 'No Priority'];
+    final sorted = <String, List<T>>{};
+
+    for (final key in order) {
+      final items = grouped[key];
+      if (items != null && items.isNotEmpty) {
+        sorted[key] = items;
+      }
+    }
+
+    // Preserve any unexpected priority labels (future-proofing).
+    final remainingKeys =
+        grouped.keys
+            .where((k) => !sorted.containsKey(k))
+            .toList(growable: false)
+          ..sort();
+    for (final key in remainingKeys) {
+      sorted[key] = grouped[key]!;
+    }
+
+    return sorted;
   }
 
   Map<String, List<T>> _sortMapByKey<T>(Map<String, List<T>> map) {

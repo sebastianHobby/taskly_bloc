@@ -314,26 +314,51 @@ void main() {
         final settings = StrategySettings.forFocusMode(FocusMode.intentional);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.ignore);
+        expect(settings.taskUrgencyThresholdDays, 3);
+        expect(settings.projectUrgencyThresholdDays, 7);
         expect(settings.urgencyBoostMultiplier, 1);
         expect(settings.enableNeglectWeighting, false);
+        expect(settings.neglectLookbackDays, 7);
+        expect(settings.neglectInfluence, 0.0);
+        expect(settings.valuePriorityWeight, 2);
+        expect(settings.taskPriorityBoost, 0.5);
+        expect(settings.recencyPenalty, 0);
+        expect(settings.startDateProximity, 0);
+        expect(settings.overdueEmergencyMultiplier, 1);
       });
 
       test('sustainable preset', () {
         final settings = StrategySettings.forFocusMode(FocusMode.sustainable);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.warnOnly);
+        expect(settings.taskUrgencyThresholdDays, 3);
+        expect(settings.projectUrgencyThresholdDays, 7);
         expect(settings.urgencyBoostMultiplier, 1.5);
         expect(settings.enableNeglectWeighting, true);
         expect(settings.neglectLookbackDays, 7);
         expect(settings.neglectInfluence, 0.5);
+        expect(settings.valuePriorityWeight, 1.5);
+        expect(settings.taskPriorityBoost, 1);
+        expect(settings.recencyPenalty, 0.1);
+        expect(settings.startDateProximity, 0.5);
+        expect(settings.overdueEmergencyMultiplier, 1.5);
       });
 
       test('responsive preset', () {
         final settings = StrategySettings.forFocusMode(FocusMode.responsive);
 
         expect(settings.urgentTaskBehavior, UrgentTaskBehavior.includeAll);
+        expect(settings.taskUrgencyThresholdDays, 3);
+        expect(settings.projectUrgencyThresholdDays, 7);
         expect(settings.urgencyBoostMultiplier, 2);
         expect(settings.enableNeglectWeighting, false);
+        expect(settings.neglectLookbackDays, 7);
+        expect(settings.neglectInfluence, 0.0);
+        expect(settings.valuePriorityWeight, 0.5);
+        expect(settings.taskPriorityBoost, 2);
+        expect(settings.recencyPenalty, 0);
+        expect(settings.startDateProximity, 1);
+        expect(settings.overdueEmergencyMultiplier, 3);
       });
 
       test('personalized preset returns defaults', () {

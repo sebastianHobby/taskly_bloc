@@ -184,14 +184,27 @@ class GlobalSettingsBloc
     final isDifferent = event.settings != state.settings;
     final wasLoading = state.isLoading;
 
-    talker.debug(
-      '[BLOC STREAM] _onStreamUpdated\n'
-      '  incoming.themeMode=${event.settings.themeMode}\n'
-      '  current.themeMode=${state.settings.themeMode}\n'
-      '  incoming.colorSchemeSeedArgb=${event.settings.colorSchemeSeedArgb}\n'
-      '  current.colorSchemeSeedArgb=${state.settings.colorSchemeSeedArgb}\n'
-      '  isDifferent=$isDifferent, wasLoading=$wasLoading',
-    );
+    // Persist high-signal settings changes to the debug file log so we can
+    // correlate "optimistic UI" updates with repository stream overwrites.
+    final themeModeChanged =
+        event.settings.themeMode != state.settings.themeMode;
+
+    if (themeModeChanged && !wasLoading) {
+      talker.warning(
+        '[settings.global] Stream overwrote themeMode\n'
+        '  current=${state.settings.themeMode}\n'
+        '  incoming=${event.settings.themeMode}',
+      );
+    } else {
+      talker.debug(
+        '[BLOC STREAM] _onStreamUpdated\n'
+        '  incoming.themeMode=${event.settings.themeMode}\n'
+        '  current.themeMode=${state.settings.themeMode}\n'
+        '  incoming.colorSchemeSeedArgb=${event.settings.colorSchemeSeedArgb}\n'
+        '  current.colorSchemeSeedArgb=${state.settings.colorSchemeSeedArgb}\n'
+        '  isDifferent=$isDifferent, wasLoading=$wasLoading',
+      );
+    }
 
     if (isDifferent || wasLoading) {
       talker.debug(
@@ -207,15 +220,31 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(themeMode: event.themeMode);
-    talker.debug(
-      '[BLOC SAVE] _onThemeModeChanged\n'
-      '  old themeMode: ${state.settings.themeMode}\n'
-      '  new themeMode: ${event.themeMode}',
+    final startedAtUtc = DateTime.now().toUtc();
+    talker.warning(
+      '[settings.global] ThemeMode change requested\n'
+      '  at=$startedAtUtc\n'
+      '  old=${state.settings.themeMode}\n'
+      '  new=${event.themeMode}',
     );
     // Optimistic UI update
     emit(state.copyWith(settings: updated));
     // Repository handles sync bounce protection
-    await _settingsRepository.save(SettingsKey.global, updated);
+    try {
+      await _settingsRepository.save(SettingsKey.global, updated);
+      talker.warning(
+        '[settings.global] ThemeMode persisted\n'
+        '  at=${DateTime.now().toUtc()}\n'
+        '  value=${event.themeMode}',
+      );
+    } catch (e, st) {
+      talker.error(
+        '[settings.global] ThemeMode persist FAILED',
+        e,
+        st,
+      );
+      rethrow;
+    }
   }
 
   Future<void> _onColorChanged(

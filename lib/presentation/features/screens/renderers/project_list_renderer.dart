@@ -13,12 +13,12 @@ class ProjectListRenderer extends StatelessWidget {
     required this.data,
     super.key,
     this.title,
-    this.onProjectToggle,
+    this.compactTiles = false,
   });
 
   final DataSectionResult data;
   final String? title;
-  final void Function(String, bool?)? onProjectToggle;
+  final bool compactTiles;
 
   @override
   Widget build(BuildContext context) {
@@ -64,11 +64,11 @@ class ProjectListRenderer extends StatelessWidget {
               context,
               item: item,
               focusProjectIds: focusProjectIds,
-              onProjectToggle: onProjectToggle,
               projectStats: ProjectTileStats(
                 taskCount: taskCount,
                 completedTaskCount: completedTaskCount,
               ),
+              compactTiles: compactTiles,
             );
           },
         ),

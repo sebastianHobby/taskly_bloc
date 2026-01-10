@@ -132,12 +132,25 @@ class SettingsRepository implements SettingsRepositoryContract {
     return _profileStream.debounceTime(_syncBounceDebounce).map((rows) {
       final row = _latestRow(rows);
       final value = _extractValue(key, row);
-      talker.repositoryLog(
-        'Settings',
-        'watch<$T>: emitting value for key=$key, '
-            'rows.length=${rows.length}, '
-            'selectedRow.updatedAt=${row?.updatedAt}',
-      );
+
+      // Only persist high-signal settings to the debug file log.
+      if (identical(key, SettingsKey.global)) {
+        final global = value as GlobalSettings;
+        talker.warning(
+          '[settings.global] watch<$T> emitted\n'
+          '  themeMode=${global.themeMode}\n'
+          '  seed=${global.colorSchemeSeedArgb}\n'
+          '  rows.length=${rows.length}\n'
+          '  selectedRow.updatedAt=${row?.updatedAt.toUtc()}',
+        );
+      } else {
+        talker.repositoryLog(
+          'Settings',
+          'watch<$T>: emitting value for key=$key, '
+              'rows.length=${rows.length}, '
+              'selectedRow.updatedAt=${row?.updatedAt}',
+        );
+      }
       return value;
     }).distinct();
   }
@@ -166,22 +179,43 @@ class SettingsRepository implements SettingsRepositoryContract {
   @override
   Future<void> save<T>(SettingsKey<T> key, T value) async {
     final saveStartTime = DateTime.now();
-    talker.repositoryLog(
-      'Settings',
-      '[SEQUENCE 1/3] save<$T> START at $saveStartTime\n'
-          '  key=$key\n'
-          '  value=$value',
-    );
+
+    final shouldPersistToFile = identical(key, SettingsKey.global);
+    if (shouldPersistToFile) {
+      final global = value as GlobalSettings;
+      talker.warning(
+        '[settings.global] save<$T> START\n'
+        '  at=${saveStartTime.toUtc()}\n'
+        '  themeMode=${global.themeMode}\n'
+        '  seed=${global.colorSchemeSeedArgb}',
+      );
+    } else {
+      talker.repositoryLog(
+        'Settings',
+        '[SEQUENCE 1/3] save<$T> START at $saveStartTime\n'
+            '  key=$key\n'
+            '  value=$value',
+      );
+    }
 
     final profile = await _ensureProfile();
     final companion = _buildCompanion(key, value, profile);
-    talker.repositoryLog(
-      'Settings',
-      '[SEQUENCE 2/3] save<$T>: about to write to Drift/SQLite\n'
-          '  profile.id=${profile.id}\n'
-          '  profile.updatedAt=${profile.updatedAt}\n'
-          '  companion will set updatedAt=${DateTime.now().toUtc()}',
-    );
+    if (shouldPersistToFile) {
+      talker.warning(
+        '[settings.global] save<$T> writing\n'
+        '  profile.id=${profile.id}\n'
+        '  profile.updatedAt=${profile.updatedAt.toUtc()}\n'
+        '  newUpdatedAt=${DateTime.now().toUtc()}',
+      );
+    } else {
+      talker.repositoryLog(
+        'Settings',
+        '[SEQUENCE 2/3] save<$T>: about to write to Drift/SQLite\n'
+            '  profile.id=${profile.id}\n'
+            '  profile.updatedAt=${profile.updatedAt}\n'
+            '  companion will set updatedAt=${DateTime.now().toUtc()}',
+      );
+    }
 
     // DRIFT WRITE - this updates local SQLite (owned by PowerSync)
     await (driftDb.update(
@@ -193,13 +227,22 @@ class SettingsRepository implements SettingsRepositoryContract {
     // Diagnostics: mark that a local save just completed.
     _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
 
-    talker.repositoryLog(
-      'Settings',
-      '[SEQUENCE 3/3] save<$T> COMPLETE at $driftWriteTime\n'
-          '  Duration: ${driftWriteTime.difference(saveStartTime).inMilliseconds}ms\n'
-          '  PowerSync will detect change and trigger upload\n'
-          '  Stream debounce will filter any CDC bounce',
-    );
+    if (shouldPersistToFile) {
+      talker.warning(
+        '[settings.global] save<$T> COMPLETE\n'
+        '  at=${driftWriteTime.toUtc()}\n'
+        '  durationMs=${driftWriteTime.difference(saveStartTime).inMilliseconds}\n'
+        '  note=PowerSync upload + stream debounce may follow',
+      );
+    } else {
+      talker.repositoryLog(
+        'Settings',
+        '[SEQUENCE 3/3] save<$T> COMPLETE at $driftWriteTime\n'
+            '  Duration: ${driftWriteTime.difference(saveStartTime).inMilliseconds}ms\n'
+            '  PowerSync will detect change and trigger upload\n'
+            '  Stream debounce will filter any CDC bounce',
+      );
+    }
   }
 
   // =========================================================================
@@ -393,6 +436,15 @@ class SettingsRepository implements SettingsRepositoryContract {
         '[STREAM EMIT] _profileStream emitted at $emitTime\n'
             '  rows.length=${rows.length} (ghost rows filtered)',
       );
+
+      if (rows.length > 1) {
+        talker.warning(
+          '[settings] Multiple user_profiles rows observed\n'
+          '  rows.length=${rows.length}\n'
+          '  ids=${rows.map((r) => r.id).toList()}\n'
+          '  updatedAtUtc=${rows.map((r) => r.updatedAt.toUtc()).toList()}',
+        );
+      }
 
       // Track the newest updatedAt in this emission.
       final newestUpdatedAtUtc = rows.isEmpty

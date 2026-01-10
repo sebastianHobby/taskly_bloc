@@ -349,12 +349,22 @@ void _setupPowerSyncLogging() {
     final message =
         '[${record.loggerName}] ${record.level.name}: ${record.message}';
 
+    // Persist a narrow slice of sync activity to the debug file log.
+    // This helps correlate settings writes with PowerSync upload/download.
+    final isSettingsSyncSignal =
+        record.message.contains('user_profiles') ||
+        record.message.contains('ps_crud');
+
     if (record.level >= Level.SEVERE) {
       talker.error(message, record.error, record.stackTrace);
     } else if (record.level >= Level.WARNING) {
       talker.warning(message);
     } else if (record.level >= Level.INFO) {
-      talker.info(message);
+      if (isSettingsSyncSignal) {
+        talker.warning(message);
+      } else {
+        talker.info(message);
+      }
     } else {
       // FINE, FINER, FINEST -> debug
       talker.debug(message);

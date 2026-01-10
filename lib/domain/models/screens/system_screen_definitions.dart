@@ -73,7 +73,7 @@ abstract class SystemScreenDefinitions {
         templateId: SectionTemplateId.allocation,
         params: const AllocationSectionParams(
           taskTileVariant: TaskTileVariant.listTile,
-          displayMode: AllocationDisplayMode.groupedByProject,
+          displayMode: AllocationDisplayMode.groupedByValue,
           showExcludedWarnings: true,
           showExcludedSection: true,
         ).toJson(),

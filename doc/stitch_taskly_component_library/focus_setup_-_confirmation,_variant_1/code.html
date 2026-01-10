@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Focus Setup - Confirmation</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#308ce8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a232d",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#2d3b4a",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-white transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col overflow-x-hidden pb-24">
+<!-- Header -->
+<header class="sticky top-0 z-10 flex items-center justify-between bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm p-4 pb-2">
+<button class="flex size-10 items-center justify-center rounded-full text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-10">Confirmation</h2>
+</header>
+<!-- Mode Identity Card -->
+<div class="flex flex-col items-center justify-center gap-5 p-6 pt-8">
+<div class="relative">
+<!-- Abstract focus icon ring -->
+<div class="absolute -inset-1 rounded-full bg-gradient-to-tr from-primary to-purple-500 opacity-30 blur-sm"></div>
+<div class="relative flex h-32 w-32 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark shadow-xl" data-alt="Minimalist abstract brain icon focusing on center" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCaiQgkhLaaAkNhK73D_8hLQ0UpswEs7QGkp3BPbtPS9ovO7vcaRReku9oJupVmtTuOH1uLa5ZqHMYkXnoLWAz2Ebl9xe7XnqZZreCnX2Fh8-ILqHdLENXzBmASUrr5UgumofutY2aanaqjYC6k6L1mI7pTe_bkHKU4__inm-8Tkl0GyJI3vO2mdKAy8qMhLhG0ztE_6solsSofRWZfKXo6KgtFRqwBY3rmqJ7im4wFUYap9Z2v34WiFa0aHfd0VduuWU_wBVhIXy0W"); background-size: cover; background-position: center;'>
+</div>
+<div class="absolute bottom-0 right-0 flex items-center justify-center rounded-full bg-primary p-2 shadow-lg ring-4 ring-background-light dark:ring-background-dark">
+<span class="material-symbols-outlined text-white text-[20px]">bolt</span>
+</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<h1 class="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Deep Work</h1>
+<span class="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-sm font-medium text-primary ring-1 ring-inset ring-primary/20">
+                    Personalized Config
+                </span>
+</div>
+</div>
+<!-- Progress Visualizer -->
+<div class="px-6 py-2">
+<div class="flex flex-col gap-2 rounded-2xl bg-surface-light dark:bg-surface-dark p-4 shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+<div class="flex justify-between items-end mb-1">
+<span class="text-sm font-medium text-gray-500 dark:text-gray-400">Session Goal</span>
+<span class="text-lg font-bold text-primary">50 min</span>
+</div>
+<div class="h-3 w-full rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
+<div class="h-full rounded-full bg-primary" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+<!-- Settings Summary List -->
+<div class="px-6 py-4">
+<h3 class="mb-3 px-1 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Session Rules</h3>
+<div class="overflow-hidden rounded-2xl bg-surface-light dark:bg-surface-dark shadow-sm ring-1 ring-black/5 dark:ring-white/5">
+<!-- Duration -->
+<div class="flex items-center justify-between border-b border-border-light dark:border-border-dark p-4 last:border-0">
+<div class="flex items-center gap-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+<span class="material-symbols-outlined text-[20px]">timer</span>
+</div>
+<span class="text-sm font-medium text-gray-900 dark:text-white">Duration</span>
+</div>
+<span class="text-sm text-gray-500 dark:text-gray-400">50 Minutes</span>
+</div>
+<!-- App Limits -->
+<div class="flex items-center justify-between border-b border-border-light dark:border-border-dark p-4 last:border-0">
+<div class="flex items-center gap-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+<span class="material-symbols-outlined text-[20px]">block</span>
+</div>
+<span class="text-sm font-medium text-gray-900 dark:text-white">App Limits</span>
+</div>
+<span class="text-sm text-gray-500 dark:text-gray-400 text-right">Social Media Blocked</span>
+</div>
+<!-- Notifications -->
+<div class="flex items-center justify-between border-b border-border-light dark:border-border-dark p-4 last:border-0">
+<div class="flex items-center gap-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-500">
+<span class="material-symbols-outlined text-[20px]">notifications_off</span>
+</div>
+<span class="text-sm font-medium text-gray-900 dark:text-white">Notifications</span>
+</div>
+<span class="text-sm text-gray-500 dark:text-gray-400 text-right max-w-[150px] truncate">Slack Muted, Calls Allowed</span>
+</div>
+<!-- Breaks -->
+<div class="flex items-center justify-between border-b border-border-light dark:border-border-dark p-4 last:border-0">
+<div class="flex items-center gap-3">
+<div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-500">
+<span class="material-symbols-outlined text-[20px]">coffee</span>
+</div>
+<span class="text-sm font-medium text-gray-900 dark:text-white">Breaks</span>
+</div>
+<span class="text-sm text-gray-500 dark:text-gray-400 text-right">5 min every 25 min</span>
+</div>
+</div>
+</div>
+<!-- Sticky Footer -->
+<div class="fixed bottom-0 left-0 right-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-t border-border-light dark:border-border-dark p-4 pb-8">
+<button class="w-full rounded-xl bg-primary py-4 text-center text-base font-bold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.02] active:scale-[0.98]">
+                Save and Activate Focus
+            </button>
+</div>
+</div>
+</body></html>

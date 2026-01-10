@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Focus Setup - Intro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#308ce8",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#111921",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom Utilities for consistent spacing on mobile */
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased text-slate-900 dark:text-white">
+<div class="relative flex h-full min-h-screen w-full max-w-md mx-auto flex-col overflow-hidden bg-background-light dark:bg-background-dark shadow-xl">
+<!-- Top App Bar -->
+<div class="flex items-center p-4 pb-2 justify-between z-10">
+<div class="flex w-12 items-center justify-start">
+<!-- Placeholder for back if needed, currently empty for intro -->
+</div>
+<h2 class="text-slate-900 dark:text-white text-sm font-bold uppercase tracking-widest flex-1 text-center opacity-70">Focus Setup</h2>
+<div class="flex w-12 items-center justify-end">
+<button class="text-slate-500 dark:text-[#93adc8] text-base font-medium leading-normal hover:text-primary transition-colors shrink-0">Skip</button>
+</div>
+</div>
+<!-- Main Content Area: Flex grow to push content to center/bottom -->
+<div class="flex-1 flex flex-col justify-center items-center px-6 relative">
+<!-- Hero Image / Illustration -->
+<div class="w-full aspect-square max-h-[360px] relative mb-8 rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-b from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
+<!-- Background abstract graphic -->
+<div class="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://placeholder.pics/svg/300/308ce8/111921')] bg-cover bg-center" data-alt="Abstract geometric pattern representing alignment and focus"></div>
+<!-- Center Icon/Graphic -->
+<div class="relative z-10 p-8 bg-primary/10 rounded-full border border-primary/20 backdrop-blur-sm">
+<span class="material-symbols-outlined text-primary !text-6xl">
+                        track_changes
+                    </span>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center text-center space-y-4 max-w-xs mx-auto">
+<h1 class="text-slate-900 dark:text-white text-3xl font-bold leading-tight tracking-tight">
+                    Stop Drifting. <br/>
+<span class="text-primary">Start Aligning.</span>
+</h1>
+<p class="text-slate-600 dark:text-slate-300 text-base font-normal leading-relaxed">
+                    Taskly helps you connect your daily to-dos with your life's biggest goals. Let's set up your focus modes to protect your time.
+                </p>
+</div>
+</div>
+<!-- Bottom Actions -->
+<div class="w-full p-6 pt-0 safe-pb mt-auto">
+<!-- Progress Indicator -->
+<div class="flex justify-center items-center gap-2 mb-6">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+<div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+</div>
+<!-- Primary Button -->
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold text-lg py-4 px-6 rounded-xl shadow-lg shadow-primary/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span>Start Setup</span>
+<span class="material-symbols-outlined !text-xl font-bold">arrow_forward</span>
+</button>
+<p class="text-center text-xs text-slate-400 dark:text-slate-500 mt-4">
+                Takes about 2 minutes
+            </p>
+</div>
+</div>
+</body></html>

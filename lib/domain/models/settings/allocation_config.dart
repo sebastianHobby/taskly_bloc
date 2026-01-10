@@ -111,8 +111,12 @@ abstract class StrategySettings with _$StrategySettings {
     return switch (mode) {
       FocusMode.intentional => const StrategySettings(
         urgentTaskBehavior: UrgentTaskBehavior.ignore,
+        taskUrgencyThresholdDays: 3,
+        projectUrgencyThresholdDays: 7,
         urgencyBoostMultiplier: 1,
         enableNeglectWeighting: false,
+        neglectLookbackDays: 7,
+        neglectInfluence: 0,
         valuePriorityWeight: 2,
         taskPriorityBoost: 0.5,
         recencyPenalty: 0,
@@ -121,6 +125,8 @@ abstract class StrategySettings with _$StrategySettings {
       ),
       FocusMode.sustainable => const StrategySettings(
         urgentTaskBehavior: UrgentTaskBehavior.warnOnly,
+        taskUrgencyThresholdDays: 3,
+        projectUrgencyThresholdDays: 7,
         urgencyBoostMultiplier: 1.5,
         enableNeglectWeighting: true,
         neglectLookbackDays: 7,
@@ -133,8 +139,12 @@ abstract class StrategySettings with _$StrategySettings {
       ),
       FocusMode.responsive => const StrategySettings(
         urgentTaskBehavior: UrgentTaskBehavior.includeAll,
+        taskUrgencyThresholdDays: 3,
+        projectUrgencyThresholdDays: 7,
         urgencyBoostMultiplier: 2,
         enableNeglectWeighting: false,
+        neglectLookbackDays: 7,
+        neglectInfluence: 0,
         valuePriorityWeight: 0.5,
         taskPriorityBoost: 2,
         recencyPenalty: 0,

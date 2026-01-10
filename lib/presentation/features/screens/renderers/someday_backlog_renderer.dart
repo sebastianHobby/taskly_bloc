@@ -15,14 +15,14 @@ class SomedayBacklogRenderer extends StatefulWidget {
   const SomedayBacklogRenderer({
     required this.data,
     super.key,
+    this.compactTiles = false,
     this.onTaskToggle,
-    this.onProjectToggle,
     this.onEntityTap,
   });
 
   final DataSectionResult data;
+  final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
-  final void Function(String, bool?)? onProjectToggle;
   final void Function(Object entity)? onEntityTap;
 
   @override
@@ -82,6 +82,8 @@ class _SomedayBacklogRendererState extends State<SomedayBacklogRenderer> {
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       children: [
         _FilterBar(
           sortMode: _sortMode,
@@ -108,7 +110,6 @@ class _SomedayBacklogRendererState extends State<SomedayBacklogRenderer> {
                 focusTaskIds: focusTaskIds,
                 focusProjectIds: focusProjectIds,
                 onTaskToggle: widget.onTaskToggle,
-                onProjectToggle: widget.onProjectToggle,
                 onTap: () {
                   switch (item) {
                     case ScreenItemTask(:final task):
@@ -120,6 +121,7 @@ class _SomedayBacklogRendererState extends State<SomedayBacklogRenderer> {
                       break;
                   }
                 },
+                compactTiles: widget.compactTiles,
               ),
             ),
           ),

@@ -12,6 +12,7 @@ class TaskListTile extends StatelessWidget {
     required this.task,
     required this.onCheckboxChanged,
     this.onTap,
+    this.compact = false,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
     this.isInFocus = false,
@@ -26,6 +27,9 @@ class TaskListTile extends StatelessWidget {
 
   /// Optional tap handler. If null, navigates to task detail via EntityNavigator.
   final void Function(Task)? onTap;
+
+  /// Whether to use a compact (2-row) layout.
+  final bool compact;
 
   /// Callback when user removes the Next Action status from the task.
   /// If null, the indicator won't show the unpin option.
@@ -103,6 +107,14 @@ class TaskListTile extends StatelessWidget {
     final isDueToday = _isDueToday(task.deadlineDate);
     final isDueSoon = _isDueSoon(task.deadlineDate);
 
+    final subtitle = !compact
+        ? (reasonText ??
+              ((task.description != null && task.description!.trim().isNotEmpty)
+                  ? task.description!.trim()
+                  : null))
+        : null;
+    final isReasonSubtitle = subtitle != null && subtitle == reasonText;
+
     return Card(
       key: Key('task-${task.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -174,41 +186,30 @@ class TaskListTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (task.project != null) ...[
-                          const SizedBox(width: 8),
-                          _ProjectBadge(projectName: task.project!.name),
-                        ],
+                        const SizedBox(width: 8),
+                        PriorityFlag(priority: task.priority),
                       ],
                     ),
 
-                    // Description
-                    if (task.description != null &&
-                        task.description!.isNotEmpty) ...[
+                    // Row 2 (full only): Reason or description
+                    if (!compact && subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        task.description!,
+                        subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: isReasonSubtitle
+                              ? (reasonColor ?? colorScheme.onSurfaceVariant)
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: isReasonSubtitle ? FontWeight.w500 : null,
                         ),
-                        maxLines: 1,
+                        maxLines: isReasonSubtitle ? 2 : 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
 
-                    // Reason text (for excluded task alerts)
-                    if (reasonText != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        reasonText!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: reasonColor ?? colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-
-                    // Dates row
-                    DatesRow(
+                    // Meta row: project + dates + values
+                    _MetaChips(
+                      projectName: task.project?.name,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -216,18 +217,9 @@ class TaskListTile extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       formatDate: _formatRelativeDate,
                       hasRepeat: task.repeatIcalRrule != null,
+                      primaryValue: effectivePrimaryValue,
+                      secondaryValues: effectiveSecondaryValues,
                     ),
-
-                    // Values Footer
-                    if (effectivePrimaryValue != null ||
-                        effectiveSecondaryValues.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: ValuesFooter(
-                          primaryValue: effectivePrimaryValue,
-                          secondaryValues: effectiveSecondaryValues,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -241,6 +233,96 @@ class TaskListTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MetaChips extends StatelessWidget {
+  const _MetaChips({
+    required this.formatDate,
+    required this.primaryValue,
+    required this.secondaryValues,
+    this.projectName,
+    this.startDate,
+    this.deadlineDate,
+    this.isOverdue = false,
+    this.isDueToday = false,
+    this.isDueSoon = false,
+    this.hasRepeat = false,
+  });
+
+  final String? projectName;
+  final DateTime? startDate;
+  final DateTime? deadlineDate;
+  final bool isOverdue;
+  final bool isDueToday;
+  final bool isDueSoon;
+  final bool hasRepeat;
+  final String Function(BuildContext, DateTime) formatDate;
+  final Value? primaryValue;
+  final List<Value> secondaryValues;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+
+    if (projectName != null && projectName!.trim().isNotEmpty) {
+      children.add(_ProjectBadge(projectName: projectName!));
+    }
+
+    if (startDate != null) {
+      children.add(
+        DateChip.startDate(
+          context: context,
+          label: formatDate(context, startDate!),
+        ),
+      );
+    }
+
+    if (deadlineDate != null) {
+      children.add(
+        DateChip.deadline(
+          context: context,
+          label: formatDate(context, deadlineDate!),
+          isOverdue: isOverdue,
+          isDueToday: isDueToday,
+          isDueSoon: isDueSoon,
+        ),
+      );
+    }
+
+    if (hasRepeat) {
+      children.add(DateChip.repeat(context: context));
+    }
+
+    if (primaryValue != null) {
+      children.add(
+        ValueChip(
+          value: primaryValue!,
+          variant: ValueChipVariant.solid,
+        ),
+      );
+    }
+
+    for (final value in secondaryValues) {
+      children.add(
+        ValueChip(
+          value: value,
+          variant: ValueChipVariant.outlined,
+        ),
+      );
+    }
+
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: children,
       ),
     );
   }

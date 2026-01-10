@@ -10,6 +10,7 @@ class TasklyCard extends StatelessWidget {
     this.backgroundColor,
     this.borderColor,
     this.isUrgent = false,
+    this.borderRadius = 16,
   });
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -17,6 +18,7 @@ class TasklyCard extends StatelessWidget {
   final Color? backgroundColor;
   final Color? borderColor;
   final bool isUrgent;
+  final double borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +35,7 @@ class TasklyCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: effectiveBgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: effectiveBorderColor),
         boxShadow: isUrgent
             ? [
@@ -49,7 +51,7 @@ class TasklyCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(borderRadius),
           child: Padding(
             padding: padding,
             child: child,

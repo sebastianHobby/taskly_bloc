@@ -8,14 +8,14 @@ class InterleavedListRenderer extends StatelessWidget {
     required this.data,
     super.key,
     this.title,
+    this.compactTiles = false,
     this.onTaskToggle,
-    this.onProjectToggle,
   });
 
   final DataSectionResult data;
   final String? title;
+  final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
-  final void Function(String, bool?)? onProjectToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +53,7 @@ class InterleavedListRenderer extends StatelessWidget {
               focusTaskIds: focusTaskIds,
               focusProjectIds: focusProjectIds,
               onTaskToggle: onTaskToggle,
-              onProjectToggle: onProjectToggle,
+              compactTiles: compactTiles,
             );
           },
         ),

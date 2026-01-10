@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
@@ -11,8 +10,8 @@ import 'package:taskly_bloc/domain/domain.dart';
 class ProjectListTile extends StatelessWidget {
   const ProjectListTile({
     required this.project,
-    required this.onCheckboxChanged,
     this.onTap,
+    this.compact = false,
     this.taskCount,
     this.completedTaskCount,
     this.nextTask,
@@ -24,7 +23,9 @@ class ProjectListTile extends StatelessWidget {
   });
 
   final Project project;
-  final void Function(Project, bool?) onCheckboxChanged;
+
+  /// Whether to use a compact (2-row) layout.
+  final bool compact;
 
   /// Optional tap handler. If null, navigates to project detail via EntityNavigator.
   final void Function(Project)? onTap;
@@ -107,6 +108,17 @@ class ProjectListTile extends StatelessWidget {
     final isDueToday = _isDueToday(project.deadlineDate);
     final isDueSoon = _isDueSoon(project.deadlineDate);
 
+    final hasDescription =
+        project.description != null && project.description!.trim().isNotEmpty;
+    final canShowNextTask = showNextTask && nextTask != null;
+    final subtitle = (!compact && (hasDescription || canShowNextTask))
+        ? (hasDescription
+              ? project.description!.trim()
+              : '${context.l10n.projectNextTaskPrefix} ${nextTask!.name}')
+        : null;
+    final isNextTaskSubtitle =
+        subtitle != null && !hasDescription && canShowNextTask;
+
     return Card(
       key: Key('project-${project.id}'),
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -133,12 +145,14 @@ class ProjectListTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Project icon/checkbox area
-              _ProjectCheckbox(
-                completed: project.completed,
+              // Progress ring (informational; not a completion toggle)
+              _ProjectProgressRing(
+                value: _progressValue,
                 isOverdue: isOverdue,
-                onChanged: (value) => onCheckboxChanged(project, value),
-                projectName: project.name,
+                isCompleted: project.completed,
+                semanticsLabel: project.name,
+                taskCount: taskCount,
+                completedTaskCount: completedTaskCount,
               ),
               const SizedBox(width: 12),
 
@@ -147,8 +161,9 @@ class ProjectListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Title row
+                    // Row 1: Title + indicators + priority flag
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (showPinnedIndicator && project.isPinned) ...[
                           const PinnedIndicator(),
@@ -173,7 +188,8 @@ class ProjectListTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        // Task count badge
+                        const SizedBox(width: 8),
+                        PriorityFlag(priority: project.priority),
                         if (taskCount != null && taskCount! > 0) ...[
                           const SizedBox(width: 8),
                           _TaskCountBadge(
@@ -184,56 +200,26 @@ class ProjectListTile extends StatelessWidget {
                       ],
                     ),
 
-                    // Description
-                    if (project.description != null &&
-                        project.description!.isNotEmpty) ...[
+                    // Row 2 (full only): Description or next task
+                    if (!compact && subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        project.description!,
+                        subtitle,
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                          color: isNextTaskSubtitle
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant,
+                          fontStyle: isNextTaskSubtitle
+                              ? FontStyle.italic
+                              : null,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
 
-                    // Next task recommendation
-                    if (showNextTask && nextTask != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${context.l10n.projectNextTaskPrefix} ${nextTask!.name}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-
-                    // Progress bar
-                    if (_progressValue != null) ...[
-                      const SizedBox(height: 8),
-                      _ProgressBar(
-                        progress: _progressValue!,
-                        isCompleted: project.completed,
-                      ),
-                    ],
-
-                    // Values Footer (Primary + Secondary)
-                    if (project.primaryValue != null ||
-                        project.secondaryValues.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: ValuesFooter(
-                          primaryValue: project.primaryValue,
-                          secondaryValues: project.secondaryValues,
-                        ),
-                      ),
-
-                    // Dates row
-                    DatesRow(
+                    // Meta row: dates + values
+                    _MetaChips(
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,
                       isOverdue: isOverdue,
@@ -241,6 +227,8 @@ class ProjectListTile extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       formatDate: _formatRelativeDate,
                       hasRepeat: project.repeatIcalRrule != null,
+                      primaryValue: project.primaryValue,
+                      secondaryValues: project.secondaryValues,
                     ),
                   ],
                 ),
@@ -260,53 +248,146 @@ class ProjectListTile extends StatelessWidget {
   }
 }
 
-/// Custom checkbox for projects with folder-style appearance and accessibility.
-class _ProjectCheckbox extends StatelessWidget {
-  const _ProjectCheckbox({
-    required this.completed,
+class _ProjectProgressRing extends StatelessWidget {
+  const _ProjectProgressRing({
+    required this.value,
     required this.isOverdue,
-    required this.onChanged,
-    required this.projectName,
+    required this.isCompleted,
+    required this.semanticsLabel,
+    this.taskCount,
+    this.completedTaskCount,
   });
 
-  final bool completed;
+  final double? value;
   final bool isOverdue;
-  final ValueChanged<bool?> onChanged;
-  final String projectName;
+  final bool isCompleted;
+  final String semanticsLabel;
+  final int? taskCount;
+  final int? completedTaskCount;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    final ringValue = value;
+    final hasValue = ringValue != null;
+    final displayValue = (ringValue ?? 0).clamp(0.0, 1.0);
+
+    final color = isOverdue ? scheme.error : scheme.primary;
+    final trackColor = scheme.outlineVariant.withValues(alpha: 0.4);
+
+    final semanticsValue = (taskCount != null && completedTaskCount != null)
+        ? '$completedTaskCount of $taskCount'
+        : hasValue
+        ? '${(displayValue * 100).round()}%'
+        : 'No tasks';
 
     return Semantics(
-      label: completed
-          ? 'Mark "$projectName" as incomplete'
-          : 'Mark "$projectName" as complete',
-      child: SizedBox(
-        width: 28,
-        height: 28,
-        child: Checkbox(
-          value: completed,
-          onChanged: (value) {
-            HapticFeedback.lightImpact();
-            onChanged(value);
-          },
-          shape: const ContinuousRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10)),
-          ),
-          side: BorderSide(
-            color: isOverdue
-                ? colorScheme.error
-                : completed
-                ? colorScheme.primary
-                : colorScheme.outline,
-            width: 2,
-          ),
-          activeColor: colorScheme.primary,
-          checkColor: colorScheme.onPrimary,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
+      label: 'Project progress for $semanticsLabel',
+      value: semanticsValue,
+      child: SizedBox.square(
+        dimension: 28,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CircularProgressIndicator(
+              value: 1,
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(trackColor),
+            ),
+            CircularProgressIndicator(
+              value: displayValue,
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isCompleted ? scheme.onSurfaceVariant : color,
+              ),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _MetaChips extends StatelessWidget {
+  const _MetaChips({
+    required this.formatDate,
+    required this.primaryValue,
+    required this.secondaryValues,
+    this.startDate,
+    this.deadlineDate,
+    this.isOverdue = false,
+    this.isDueToday = false,
+    this.isDueSoon = false,
+    this.hasRepeat = false,
+  });
+
+  final DateTime? startDate;
+  final DateTime? deadlineDate;
+  final bool isOverdue;
+  final bool isDueToday;
+  final bool isDueSoon;
+  final bool hasRepeat;
+  final String Function(BuildContext, DateTime) formatDate;
+  final Value? primaryValue;
+  final List<Value> secondaryValues;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+
+    if (startDate != null) {
+      children.add(
+        DateChip.startDate(
+          context: context,
+          label: formatDate(context, startDate!),
+        ),
+      );
+    }
+
+    if (deadlineDate != null) {
+      children.add(
+        DateChip.deadline(
+          context: context,
+          label: formatDate(context, deadlineDate!),
+          isOverdue: isOverdue,
+          isDueToday: isDueToday,
+          isDueSoon: isDueSoon,
+        ),
+      );
+    }
+
+    if (hasRepeat) {
+      children.add(DateChip.repeat(context: context));
+    }
+
+    if (primaryValue != null) {
+      children.add(
+        ValueChip(
+          value: primaryValue!,
+          variant: ValueChipVariant.solid,
+        ),
+      );
+    }
+
+    for (final value in secondaryValues) {
+      children.add(
+        ValueChip(
+          value: value,
+          variant: ValueChipVariant.outlined,
+        ),
+      );
+    }
+
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: children,
       ),
     );
   }
@@ -358,34 +439,6 @@ class _TaskCountBadge extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Progress bar for project completion.
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({
-    required this.progress,
-    required this.isCompleted,
-  });
-
-  final double progress;
-  final bool isCompleted;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: LinearProgressIndicator(
-        value: progress,
-        minHeight: 4,
-        backgroundColor: colorScheme.surfaceContainerHighest,
-        valueColor: AlwaysStoppedAnimation<Color>(
-          isCompleted ? colorScheme.primary : colorScheme.secondary,
-        ),
       ),
     );
   }

@@ -66,6 +66,11 @@ abstract class DisplayConfig with _$DisplayConfig {
     @Default(true) bool showCompleted,
     @Default(false) bool showArchived,
 
+    /// Whether list tiles should use a compact (2-row) layout.
+    ///
+    /// If false, tiles use the full (3-row) layout.
+    @Default(false) bool compactTiles,
+
     /// Whether to group tasks by completion status (active vs completed)
     @Default(false) bool groupByCompletion,
 

@@ -35,11 +35,13 @@ class FocusModeCard extends StatelessWidget {
     return TasklyCard(
       onTap: onTap,
       padding: EdgeInsets.zero,
+      borderRadius: 12,
       backgroundColor: isSelected
-          ? colorScheme.primary.withOpacity(0.08)
+          ? colorScheme.primary.withOpacity(0.05)
           : null,
       borderColor: isSelected ? colorScheme.primary : null,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
@@ -47,8 +49,8 @@ class FocusModeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
                     color: iconBackgroundColor,
                     borderRadius: BorderRadius.circular(12),
@@ -66,8 +68,8 @@ class FocusModeCard extends StatelessWidget {
                     children: [
                       Text(
                         focusMode.displayName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w800,
                           color: titleColor,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -94,22 +96,40 @@ class FocusModeCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Icon(
-                  isSelected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_unchecked,
-                  color: isSelected ? colorScheme.primary : colorScheme.outline,
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Radio<bool>(
+                    value: true,
+                    groupValue: isSelected,
+                    onChanged: (_) => onTap(),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ],
             ),
           ),
           if (isRecommended)
             Positioned(
-              top: 8,
-              right: 8,
-              child: TasklyBadge(
-                label: l10n.recommendedLabel.toUpperCase(),
-                color: colorScheme.tertiary,
+              top: -10,
+              right: 16,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  l10n.recommendedLabel.toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.6,
+                  ),
+                ),
               ),
             ),
         ],

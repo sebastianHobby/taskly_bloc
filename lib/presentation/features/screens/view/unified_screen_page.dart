@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +5,6 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -29,7 +26,7 @@ import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dar
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
-import 'package:taskly_bloc/presentation/features/screens/widgets/focus_mode_selector.dart';
+import 'package:taskly_bloc/presentation/features/screens/widgets/focus_mode_banner.dart';
 
 /// Unified page for rendering all screen types.
 ///
@@ -51,7 +48,7 @@ class UnifiedScreenPage extends StatelessWidget {
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
       )..add(ScreenEvent.load(definition: definition)),
-      child: const _UnifiedScreenView(),
+      child: const _UnifiedScreenScaffold(),
     );
   }
 }
@@ -72,19 +69,16 @@ class UnifiedScreenPageById extends StatelessWidget {
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
       )..add(ScreenEvent.loadById(screenId: screenId)),
-      child: const _UnifiedScreenView(),
+      child: const _UnifiedScreenScaffold(),
     );
   }
 }
 
-class _UnifiedScreenView extends StatelessWidget {
-  const _UnifiedScreenView();
+class _UnifiedScreenScaffold extends StatelessWidget {
+  const _UnifiedScreenScaffold();
 
   static const _fullScreenTemplateIds = <String>{
     SectionTemplateId.settingsMenu,
-    SectionTemplateId.statisticsDashboard,
-    SectionTemplateId.journalTimeline,
-    SectionTemplateId.workflowList,
     SectionTemplateId.screenManagement,
     SectionTemplateId.trackerManagement,
     SectionTemplateId.wellbeingDashboard,
@@ -333,45 +327,15 @@ class _ScreenContent extends StatelessWidget {
             itemCount: sections.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
-                return Column(
-                  children: [
-                    FocusModeSelector(
-                      currentFocusMode: config.focusMode,
-                      onFocusModeSelected: (mode) {
-                        final settingsRepo =
-                            getIt<SettingsRepositoryContract>();
-                        unawaited(
-                          settingsRepo.save(
-                            SettingsKey.allocation,
-                            config.copyWith(
-                              focusMode: mode,
-                              hasSelectedFocusMode: true,
-                            ),
-                          ),
-                        );
+                if (config.hasSelectedFocusMode) {
+                  return FocusModeBanner(
+                    focusMode: config.focusMode,
+                    onTap: () =>
+                        context.push(Routing.screenPath('focus_setup')),
+                  );
+                }
 
-                        // Section rendering prefers persisted allocation
-                        // snapshots. Force a recompute so My Day updates
-                        // immediately when the focus mode changes.
-                        unawaited(
-                          getIt<AllocationOrchestrator>()
-                              .watchAllocation()
-                              .first,
-                        );
-                      },
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          context.push(Routing.screenPath('focus_setup'));
-                        },
-                        icon: const Icon(Icons.tune, size: 16),
-                        label: const Text('Configure Focus Style'),
-                      ),
-                    ),
-                  ],
-                );
+                return const SizedBox.shrink();
               }
 
               final section = sections[index - 1];
