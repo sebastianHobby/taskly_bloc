@@ -29,6 +29,10 @@ void main() {
           enableNeglectWeighting: false,
           neglectLookbackDays: 10,
           neglectInfluence: 0.8,
+          valuePriorityWeight: 0.5,
+          taskPriorityBoost: 2,
+          recencyPenalty: 0.3,
+          overdueEmergencyMultiplier: 3,
         ),
       ),
       draftFocusMode: FocusMode.sustainable,
@@ -36,6 +40,10 @@ void main() {
       draftNeglectEnabled: false,
       draftNeglectLookbackDays: 3,
       draftNeglectInfluencePercent: 80,
+      draftValuePriorityWeightPercent: 0,
+      draftTaskFlagBoost: 4.5,
+      draftRecencyPenaltyPercent: 0,
+      draftOverdueEmergencyMultiplier: 5,
     ),
     act: (bloc) =>
         bloc.add(const FocusSetupEvent.allocationResetToDefaultPressed()),
@@ -48,6 +56,22 @@ void main() {
             (s) => s.draftNeglectInfluencePercent,
             'influencePercent',
             50,
+          )
+          .having(
+            (s) => s.draftValuePriorityWeightPercent,
+            'valuePriorityPercent',
+            75,
+          )
+          .having((s) => s.draftTaskFlagBoost, 'taskFlagBoost', 1.0)
+          .having(
+            (s) => s.draftRecencyPenaltyPercent,
+            'recencyPenaltyPercent',
+            10,
+          )
+          .having(
+            (s) => s.draftOverdueEmergencyMultiplier,
+            'overdueEmergencyMultiplier',
+            1.5,
           ),
     ],
   );

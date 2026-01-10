@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:talker_flutter/talker_flutter.dart';
+import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 
 /// Global Talker instance for the application.
 ///
@@ -16,7 +17,188 @@ import 'package:talker_flutter/talker_flutter.dart';
 /// - Route transition logging via TalkerRouteObserver
 /// - Error/exception handling with stack traces
 /// - Log history for debugging
-late Talker talker;
+late TasklyTalker talker;
+
+/// Controls whether to fail fast after logging errors.
+///
+/// This is primarily intended for debug builds to surface issues early.
+///
+/// Configure via `--dart-define=FAIL_FAST_ERRORS=true|false`.
+///
+/// Notes:
+/// - Forced off in release mode.
+/// - Forced off in tests via [initializeTalkerForTest].
+class TalkerFailFastPolicy {
+  const TalkerFailFastPolicy({
+    required this.enabled,
+    this.messagePrefixes = const <String>[
+      'Database Error:',
+      'Operation Failed:',
+      '[repository.',
+      'Bootstrap failed',
+      'Uncaught platform error',
+    ],
+  });
+
+  factory TalkerFailFastPolicy.fromEnvironment() {
+    const fromEnv = bool.fromEnvironment(
+      'FAIL_FAST_ERRORS',
+      defaultValue: true,
+    );
+    const enabled = kDebugMode && !kReleaseMode && fromEnv;
+    return TalkerFailFastPolicy(enabled: enabled);
+  }
+
+  /// Override for tests.
+  factory TalkerFailFastPolicy.forTests() {
+    return const TalkerFailFastPolicy(enabled: false);
+  }
+
+  /// When true, certain logging calls will rethrow after logging.
+  final bool enabled;
+
+  /// Fail fast only when the log message starts with one of these prefixes.
+  ///
+  /// This keeps debug fail-fast high-signal (e.g. repository/db failures)
+  /// without crashing the app for expected UI/auth/network errors.
+  final List<String> messagePrefixes;
+
+  bool shouldFailFastForMessage(String? message) {
+    final m = message;
+    if (m == null || m.isEmpty) return false;
+    return messagePrefixes.any(m.startsWith);
+  }
+
+  bool shouldFailFastFor(Object error) {
+    // Avoid turning common, expected user/validation issues into crashes.
+    // For repository invariants and unexpected exceptions, we prefer fail-fast.
+    if (error is RepositoryValidationException) return false;
+
+    // Avoid direct imports for external package exceptions; use type name.
+    final typeName = error.runtimeType.toString();
+    const allowlistedTypeNames = <String>{
+      'AuthException',
+      'PostgrestException',
+      'SocketException',
+      'TimeoutException',
+    };
+    if (allowlistedTypeNames.contains(typeName)) return false;
+
+    return true;
+  }
+}
+
+/// App-level Talker wrapper.
+///
+/// Keeps the existing logging API surface (`debug/info/warning/error/handle`)
+/// while enabling a debug-only fail-fast mode to surface errors early.
+class TasklyTalker {
+  TasklyTalker(
+    this._raw, {
+    TalkerFailFastPolicy? failFastPolicy,
+  }) : _failFastPolicy =
+           failFastPolicy ?? TalkerFailFastPolicy.fromEnvironment();
+
+  final Talker _raw;
+  TalkerFailFastPolicy _failFastPolicy;
+
+  /// Access to the underlying Talker instance.
+  ///
+  /// Use this when a package API requires `Talker` directly (e.g. TalkerScreen).
+  Talker get raw => _raw;
+
+  TalkerFailFastPolicy get failFastPolicy => _failFastPolicy;
+  set failFastPolicy(TalkerFailFastPolicy value) => _failFastPolicy = value;
+
+  // Basic logging passthroughs used across the app.
+  void verbose(String message, [Object? error, StackTrace? stackTrace]) =>
+      _raw.verbose(message, error, stackTrace);
+
+  void debug(String message, [Object? error, StackTrace? stackTrace]) =>
+      _raw.debug(message, error, stackTrace);
+
+  void info(String message, [Object? error, StackTrace? stackTrace]) =>
+      _raw.info(message, error, stackTrace);
+
+  void warning(String message, [Object? error, StackTrace? stackTrace]) =>
+      _raw.warning(message, error, stackTrace);
+
+  void error(String message, [Object? error, StackTrace? stackTrace]) {
+    _raw.error(message, error, stackTrace);
+
+    // Fail-fast on error-level logs when they include an exception.
+    if (_failFastPolicy.enabled &&
+        _failFastPolicy.shouldFailFastForMessage(message) &&
+        error != null &&
+        _failFastPolicy.shouldFailFastFor(error)) {
+      Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current);
+    }
+  }
+
+  void handle(Object exception, [StackTrace? stackTrace, String? msg]) {
+    _raw.handle(exception, stackTrace, msg);
+
+    // Fail-fast for handled exceptions in debug.
+    if (_failFastPolicy.enabled &&
+        _failFastPolicy.shouldFailFastForMessage(msg) &&
+        _failFastPolicy.shouldFailFastFor(exception)) {
+      Error.throwWithStackTrace(exception, stackTrace ?? StackTrace.current);
+    }
+  }
+
+  void logCustom(TalkerLog log) => _raw.logCustom(log);
+
+  void trace(String message) {
+    if (kDebugMode) {
+      verbose(message);
+    }
+  }
+
+  void logFor(
+    String component,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
+    if (error != null) {
+      handle(error, stackTrace, '[$component] $message');
+    } else {
+      debug('[$component] $message');
+    }
+  }
+
+  void blocLog(String blocName, String message) {
+    trace('[bloc.$blocName] $message');
+  }
+
+  void serviceLog(String serviceName, String message) {
+    trace('[service.$serviceName] $message');
+  }
+
+  void repositoryLog(String repoName, String message) {
+    trace('[repository.$repoName] $message');
+  }
+
+  void apiError(String endpoint, Object error, [StackTrace? stackTrace]) {
+    handle(error, stackTrace, 'API Error: $endpoint');
+  }
+
+  void databaseError(
+    String operation,
+    Object error, [
+    StackTrace? stackTrace,
+  ]) {
+    handle(error, stackTrace, 'Database Error: $operation');
+  }
+
+  void operationFailed(
+    String operation,
+    Object error, [
+    StackTrace? stackTrace,
+  ]) {
+    handle(error, stackTrace, 'Operation Failed: $operation');
+  }
+}
 
 /// Tracks the most recently observed route so crash logs can include context.
 ///
@@ -35,7 +217,8 @@ bool _isInitialized = false;
 void initializeTalker() {
   if (!_isInitialized) {
     final observer = kDebugMode ? DebugFileLogObserver() : null;
-    talker = TalkerFlutter.init(observer: observer);
+    final raw = TalkerFlutter.init(observer: observer);
+    talker = TasklyTalker(raw);
     _isInitialized = true;
   }
 }
@@ -45,79 +228,9 @@ void initializeTalker() {
 /// Creates a fresh talker instance for each test.
 @visibleForTesting
 void initializeTalkerForTest() {
-  talker = TalkerFlutter.init();
+  final raw = TalkerFlutter.init();
+  talker = TasklyTalker(raw, failFastPolicy: TalkerFailFastPolicy.forTests());
   _isInitialized = true;
-}
-
-/// Extension methods on Talker for consistent logging patterns.
-extension TalkerExtensions on Talker {
-  /// Log a trace message (finest detail).
-  ///
-  /// Use for very detailed debugging information.
-  void trace(String message) {
-    if (kDebugMode) {
-      verbose(message);
-    }
-  }
-
-  /// Log a message with component context.
-  ///
-  /// Provides hierarchical naming similar to the old AppLogger.
-  /// Example: `talker.logFor('bloc.TaskDetail', 'Loading task')`
-  void logFor(
-    String component,
-    String message, {
-    Object? error,
-    StackTrace? stackTrace,
-  }) {
-    if (error != null) {
-      handle(error, stackTrace, '[$component] $message');
-    } else {
-      debug('[$component] $message');
-    }
-  }
-
-  /// Log a BLoC-related message.
-  void blocLog(String blocName, String message) {
-    trace('[bloc.$blocName] $message');
-  }
-
-  /// Log a service-related message.
-  void serviceLog(String serviceName, String message) {
-    trace('[service.$serviceName] $message');
-  }
-
-  /// Log a repository-related message.
-  void repositoryLog(String repoName, String message) {
-    trace('[repository.$repoName] $message');
-  }
-
-  /// Log an API error with context.
-  void apiError(
-    String endpoint,
-    Object error, [
-    StackTrace? stackTrace,
-  ]) {
-    handle(error, stackTrace, 'API Error: $endpoint');
-  }
-
-  /// Log a database error with context.
-  void databaseError(
-    String operation,
-    Object error, [
-    StackTrace? stackTrace,
-  ]) {
-    handle(error, stackTrace, 'Database Error: $operation');
-  }
-
-  /// Log an operation failure with context.
-  void operationFailed(
-    String operation,
-    Object error, [
-    StackTrace? stackTrace,
-  ]) {
-    handle(error, stackTrace, 'Operation Failed: $operation');
-  }
 }
 
 /// Custom log type for Taskly-specific categories.

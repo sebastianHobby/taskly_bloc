@@ -233,7 +233,6 @@ class ProportionalAllocator implements AllocationStrategy {
         score *= AllocationScoring.overdueEmergencyFactor(
           daysOverdue: -daysUntilDeadline,
           overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
-          overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
         );
       }
     }

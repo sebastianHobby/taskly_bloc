@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 class SomedayBacklogSectionParams {
   const SomedayBacklogSectionParams();
 
-  factory SomedayBacklogSectionParams.fromJson(Map<String, dynamic> json) {
+  factory SomedayBacklogSectionParams.fromJson() {
     // Intentionally empty for now.
     return const SomedayBacklogSectionParams();
   }

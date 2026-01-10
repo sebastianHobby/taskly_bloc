@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/theme/app_colors.dart';
+import 'package:taskly_bloc/core/theme/taskly_typography.dart';
 
 /// Centralized application theme.
 ///
@@ -28,7 +29,7 @@ class AppTheme {
 
   /// Taskly (Stitch) theme configuration.
   static ThemeData tasklyTheme() {
-    return ThemeData(
+    final base = ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.tasklyDarkBg,
@@ -65,6 +66,16 @@ class AppTheme {
         ),
       ),
     );
+
+    return base.copyWith(
+      extensions: <ThemeExtension<dynamic>>[
+        ...base.extensions.values,
+        TasklyTypography.from(
+          textTheme: base.textTheme,
+          colorScheme: base.colorScheme,
+        ),
+      ],
+    );
   }
 
   /// Builds the theme data from a color scheme.
@@ -75,6 +86,9 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
+      extensions: <ThemeExtension<dynamic>>[
+        TasklyTypography.from(textTheme: textTheme, colorScheme: colorScheme),
+      ],
 
       // AppBar theme
       appBarTheme: AppBarTheme(

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/core/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
@@ -280,6 +281,12 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   Widget _buildMonthHeader(BuildContext context) {
     final theme = Theme.of(context);
+    final typography =
+        theme.extension<TasklyTypography>() ??
+        TasklyTypography.from(
+          textTheme: theme.textTheme,
+          colorScheme: theme.colorScheme,
+        );
     final selectedMonthLabel = DateFormat.yMMMM().format(_selectedMonth);
     final showTodayPill = !_selectedMonthContainsToday;
 
@@ -297,7 +304,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
                 children: [
                   Text(
                     selectedMonthLabel,
-                    style: theme.textTheme.titleMedium,
+                    style: typography.screenTitleTight,
                   ),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_drop_down),
@@ -893,8 +900,14 @@ class _DateChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final typography =
+        theme.extension<TasklyTypography>() ??
+        TasklyTypography.from(
+          textTheme: theme.textTheme,
+          colorScheme: theme.colorScheme,
+        );
 
-    final dayName = DateFormat.E().format(date);
+    final dayName = DateFormat.E().format(date).toUpperCase();
     final dayNumber = date.day.toString();
 
     return Transform.scale(
@@ -925,22 +938,24 @@ class _DateChip extends StatelessWidget {
             children: [
               Text(
                 dayName,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: typography.badgeTinyCaps.copyWith(
                   color: isSelected
                       ? colorScheme.onPrimaryContainer
                       : colorScheme.onSurfaceVariant,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 dayNumber,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: isSelected
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurface,
-                  fontWeight: FontWeight.bold,
-                ),
+                style:
+                    (isSelected
+                            ? typography.agendaChipDateNumberSelected
+                            : typography.agendaChipDateNumber)
+                        .copyWith(
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface,
+                        ),
               ),
               const SizedBox(height: 6),
               SizedBox(
@@ -1129,6 +1144,12 @@ class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
   ) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final typography =
+        theme.extension<TasklyTypography>() ??
+        TasklyTypography.from(
+          textTheme: theme.textTheme,
+          colorScheme: theme.colorScheme,
+        );
 
     return Container(
       color: theme.scaffoldBackgroundColor,
@@ -1164,9 +1185,7 @@ class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
                   Text(
                     title,
                     style: emphasize
-                        ? theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          )
+                        ? typography.agendaSectionHeaderHeavy
                         : theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -1176,11 +1195,7 @@ class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         subtitle!.toUpperCase(),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.8,
-                        ),
+                        style: typography.subHeaderCaps,
                       ),
                     ),
                 ],
@@ -1381,6 +1396,12 @@ class _TimelineDateMarker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final typography =
+        theme.extension<TasklyTypography>() ??
+        TasklyTypography.from(
+          textTheme: theme.textTheme,
+          colorScheme: theme.colorScheme,
+        );
     return Container(
       width: 44,
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -1391,13 +1412,14 @@ class _TimelineDateMarker extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(dayName, style: theme.textTheme.labelSmall),
+          Text(
+            dayName,
+            style: typography.badgeTinyCaps,
+          ),
           const SizedBox(height: 4),
           Text(
             dayNumber,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: typography.agendaChipDateNumber,
           ),
         ],
       ),

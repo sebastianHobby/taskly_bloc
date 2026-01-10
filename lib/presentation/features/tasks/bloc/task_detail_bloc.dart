@@ -110,7 +110,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final ValueRepositoryContract _valueRepository;
 
   @override
-  Talker get logger => talker;
+  Talker get logger => talker.raw;
 
   // DetailBlocMixin implementation
   @override

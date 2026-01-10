@@ -126,7 +126,6 @@ class NeglectBasedAllocator implements AllocationStrategy {
           urgencyFactor *= AllocationScoring.overdueEmergencyFactor(
             daysOverdue: -daysUntilDeadline,
             overdueEmergencyMultiplier: parameters.overdueEmergencyMultiplier,
-            overdueEmergencyGrowth: parameters.overdueEmergencyGrowth,
           );
         }
       }
