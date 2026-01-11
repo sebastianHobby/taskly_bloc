@@ -240,12 +240,12 @@ _$SaveTrackerCopyWith<_SaveTracker> get copyWith => __$SaveTrackerCopyWithImpl<_
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SaveTracker&&(identical(other.tracker, tracker) || other.tracker == tracker));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SaveTracker&&const DeepCollectionEquality().equals(other.tracker, tracker));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,tracker);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(tracker));
 
 @override
 String toString() {
@@ -264,7 +264,7 @@ $Res call({
 });
 
 
-$TrackerCopyWith<$Res> get tracker;
+
 
 }
 /// @nodoc
@@ -277,23 +277,14 @@ class __$SaveTrackerCopyWithImpl<$Res>
 
 /// Create a copy of TrackerManagementEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? tracker = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? tracker = freezed,}) {
   return _then(_SaveTracker(
-null == tracker ? _self.tracker : tracker // ignore: cast_nullable_to_non_nullable
+freezed == tracker ? _self.tracker : tracker // ignore: cast_nullable_to_non_nullable
 as Tracker,
   ));
 }
 
-/// Create a copy of TrackerManagementEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TrackerCopyWith<$Res> get tracker {
-  
-  return $TrackerCopyWith<$Res>(_self.tracker, (value) {
-    return _then(_self.copyWith(tracker: value));
-  });
-}
+
 }
 
 /// @nodoc

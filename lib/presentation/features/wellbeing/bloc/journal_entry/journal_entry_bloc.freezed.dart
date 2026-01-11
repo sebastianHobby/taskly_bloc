@@ -418,12 +418,12 @@ _$SaveCopyWith<_Save> get copyWith => __$SaveCopyWithImpl<_Save>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Save&&(identical(other.entry, entry) || other.entry == entry));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Save&&const DeepCollectionEquality().equals(other.entry, entry));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,entry);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(entry));
 
 @override
 String toString() {
@@ -442,7 +442,7 @@ $Res call({
 });
 
 
-$JournalEntryCopyWith<$Res> get entry;
+
 
 }
 /// @nodoc
@@ -455,23 +455,14 @@ class __$SaveCopyWithImpl<$Res>
 
 /// Create a copy of JournalEntryEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? entry = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? entry = freezed,}) {
   return _then(_Save(
-null == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
+freezed == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
 as JournalEntry,
   ));
 }
 
-/// Create a copy of JournalEntryEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$JournalEntryCopyWith<$Res> get entry {
-  
-  return $JournalEntryCopyWith<$Res>(_self.entry, (value) {
-    return _then(_self.copyWith(entry: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -500,12 +491,12 @@ _$SaveWithDailyResponsesCopyWith<_SaveWithDailyResponses> get copyWith => __$Sav
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SaveWithDailyResponses&&(identical(other.entry, entry) || other.entry == entry)&&const DeepCollectionEquality().equals(other._dailyResponses, _dailyResponses));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SaveWithDailyResponses&&const DeepCollectionEquality().equals(other.entry, entry)&&const DeepCollectionEquality().equals(other._dailyResponses, _dailyResponses));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,entry,const DeepCollectionEquality().hash(_dailyResponses));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(entry),const DeepCollectionEquality().hash(_dailyResponses));
 
 @override
 String toString() {
@@ -524,7 +515,7 @@ $Res call({
 });
 
 
-$JournalEntryCopyWith<$Res> get entry;
+
 
 }
 /// @nodoc
@@ -537,24 +528,15 @@ class __$SaveWithDailyResponsesCopyWithImpl<$Res>
 
 /// Create a copy of JournalEntryEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? entry = null,Object? dailyResponses = null,}) {
+@pragma('vm:prefer-inline') $Res call({Object? entry = freezed,Object? dailyResponses = null,}) {
   return _then(_SaveWithDailyResponses(
-entry: null == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
+entry: freezed == entry ? _self.entry : entry // ignore: cast_nullable_to_non_nullable
 as JournalEntry,dailyResponses: null == dailyResponses ? _self._dailyResponses : dailyResponses // ignore: cast_nullable_to_non_nullable
 as List<DailyTrackerResponse>,
   ));
 }
 
-/// Create a copy of JournalEntryEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$JournalEntryCopyWith<$Res> get entry {
-  
-  return $JournalEntryCopyWith<$Res>(_self.entry, (value) {
-    return _then(_self.copyWith(entry: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -896,12 +878,12 @@ _$LoadedCopyWith<_Loaded> get copyWith => __$LoadedCopyWithImpl<_Loaded>(this, _
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loaded&&(identical(other.entry, entry) || other.entry == entry));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Loaded&&const DeepCollectionEquality().equals(other.entry, entry));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,entry);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(entry));
 
 @override
 String toString() {
@@ -920,7 +902,7 @@ $Res call({
 });
 
 
-$JournalEntryCopyWith<$Res>? get entry;
+
 
 }
 /// @nodoc
@@ -940,19 +922,7 @@ as JournalEntry?,
   ));
 }
 
-/// Create a copy of JournalEntryState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$JournalEntryCopyWith<$Res>? get entry {
-    if (_self.entry == null) {
-    return null;
-  }
 
-  return $JournalEntryCopyWith<$Res>(_self.entry!, (value) {
-    return _then(_self.copyWith(entry: value));
-  });
-}
 }
 
 /// @nodoc

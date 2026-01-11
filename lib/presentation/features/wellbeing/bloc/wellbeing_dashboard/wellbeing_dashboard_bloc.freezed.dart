@@ -25,12 +25,12 @@ $WellbeingDashboardEventCopyWith<WellbeingDashboardEvent> get copyWith => _$Well
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WellbeingDashboardEvent&&(identical(other.dateRange, dateRange) || other.dateRange == dateRange));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WellbeingDashboardEvent&&const DeepCollectionEquality().equals(other.dateRange, dateRange));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,dateRange);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(dateRange));
 
 @override
 String toString() {
@@ -49,7 +49,7 @@ $Res call({
 });
 
 
-$DateRangeCopyWith<$Res> get dateRange;
+
 
 }
 /// @nodoc
@@ -62,22 +62,13 @@ class _$WellbeingDashboardEventCopyWithImpl<$Res>
 
 /// Create a copy of WellbeingDashboardEvent
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? dateRange = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? dateRange = freezed,}) {
   return _then(_self.copyWith(
-dateRange: null == dateRange ? _self.dateRange : dateRange // ignore: cast_nullable_to_non_nullable
+dateRange: freezed == dateRange ? _self.dateRange : dateRange // ignore: cast_nullable_to_non_nullable
 as DateRange,
   ));
 }
-/// Create a copy of WellbeingDashboardEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$DateRangeCopyWith<$Res> get dateRange {
-  
-  return $DateRangeCopyWith<$Res>(_self.dateRange, (value) {
-    return _then(_self.copyWith(dateRange: value));
-  });
-}
+
 }
 
 
@@ -230,12 +221,12 @@ _$LoadCopyWith<_Load> get copyWith => __$LoadCopyWithImpl<_Load>(this, _$identit
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Load&&(identical(other.dateRange, dateRange) || other.dateRange == dateRange));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Load&&const DeepCollectionEquality().equals(other.dateRange, dateRange));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,dateRange);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(dateRange));
 
 @override
 String toString() {
@@ -254,7 +245,7 @@ $Res call({
 });
 
 
-@override $DateRangeCopyWith<$Res> get dateRange;
+
 
 }
 /// @nodoc
@@ -267,23 +258,14 @@ class __$LoadCopyWithImpl<$Res>
 
 /// Create a copy of WellbeingDashboardEvent
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? dateRange = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? dateRange = freezed,}) {
   return _then(_Load(
-dateRange: null == dateRange ? _self.dateRange : dateRange // ignore: cast_nullable_to_non_nullable
+dateRange: freezed == dateRange ? _self.dateRange : dateRange // ignore: cast_nullable_to_non_nullable
 as DateRange,
   ));
 }
 
-/// Create a copy of WellbeingDashboardEvent
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$DateRangeCopyWith<$Res> get dateRange {
-  
-  return $DateRangeCopyWith<$Res>(_self.dateRange, (value) {
-    return _then(_self.copyWith(dateRange: value));
-  });
-}
+
 }
 
 /// @nodoc
@@ -300,12 +282,12 @@ $WellbeingDashboardStateCopyWith<WellbeingDashboardState> get copyWith => _$Well
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WellbeingDashboardState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.moodTrend, moodTrend) || other.moodTrend == moodTrend)&&const DeepCollectionEquality().equals(other.topCorrelations, topCorrelations)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is WellbeingDashboardState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.moodTrend, moodTrend)&&const DeepCollectionEquality().equals(other.topCorrelations, topCorrelations)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,moodTrend,const DeepCollectionEquality().hash(topCorrelations),error);
+int get hashCode => Object.hash(runtimeType,isLoading,const DeepCollectionEquality().hash(moodTrend),const DeepCollectionEquality().hash(topCorrelations),error);
 
 @override
 String toString() {
@@ -324,7 +306,7 @@ $Res call({
 });
 
 
-$TrendDataCopyWith<$Res>? get moodTrend;
+
 
 }
 /// @nodoc
@@ -346,19 +328,7 @@ as List<CorrelationResult>?,error: freezed == error ? _self.error : error // ign
 as String?,
   ));
 }
-/// Create a copy of WellbeingDashboardState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TrendDataCopyWith<$Res>? get moodTrend {
-    if (_self.moodTrend == null) {
-    return null;
-  }
 
-  return $TrendDataCopyWith<$Res>(_self.moodTrend!, (value) {
-    return _then(_self.copyWith(moodTrend: value));
-  });
-}
 }
 
 
@@ -522,12 +492,12 @@ _$WellbeingDashboardStateCopyWith<_WellbeingDashboardState> get copyWith => __$W
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WellbeingDashboardState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.moodTrend, moodTrend) || other.moodTrend == moodTrend)&&const DeepCollectionEquality().equals(other._topCorrelations, _topCorrelations)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _WellbeingDashboardState&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.moodTrend, moodTrend)&&const DeepCollectionEquality().equals(other._topCorrelations, _topCorrelations)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,isLoading,moodTrend,const DeepCollectionEquality().hash(_topCorrelations),error);
+int get hashCode => Object.hash(runtimeType,isLoading,const DeepCollectionEquality().hash(moodTrend),const DeepCollectionEquality().hash(_topCorrelations),error);
 
 @override
 String toString() {
@@ -546,7 +516,7 @@ $Res call({
 });
 
 
-@override $TrendDataCopyWith<$Res>? get moodTrend;
+
 
 }
 /// @nodoc
@@ -569,19 +539,7 @@ as String?,
   ));
 }
 
-/// Create a copy of WellbeingDashboardState
-/// with the given fields replaced by the non-null parameter values.
-@override
-@pragma('vm:prefer-inline')
-$TrendDataCopyWith<$Res>? get moodTrend {
-    if (_self.moodTrend == null) {
-    return null;
-  }
 
-  return $TrendDataCopyWith<$Res>(_self.moodTrend!, (value) {
-    return _then(_self.copyWith(moodTrend: value));
-  });
-}
 }
 
 // dart format on

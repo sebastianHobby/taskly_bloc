@@ -24,32 +24,32 @@ The system supports:
 
 ### Domain model (screen â€œlanguageâ€)
 - `ScreenDefinition`, `SectionRef`, `ScreenChrome`, template IDs + params
-  - [lib/domain/screens/language/models/](../lib/domain/screens/language/models/)
+  - [lib/domain/screens/language/models/](../../lib/domain/screens/language/models/)
 
 ### Domain pipeline (definition â†’ data)
 - Interpreters, params codec, registries, `ScreenData`, `SectionVm`
-  - [lib/domain/screens/runtime/](../lib/domain/screens/runtime/)
-  - [lib/domain/screens/templates/interpreters/](../lib/domain/screens/templates/interpreters/)
+  - [lib/domain/screens/runtime/](../../lib/domain/screens/runtime/)
+  - [lib/domain/screens/templates/interpreters/](../../lib/domain/screens/templates/interpreters/)
 
 ### Persistence + maintenance
 - Custom screen persistence, preferences, cleanup, repository implementation
-  - [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart)
-  - [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
-  - [lib/data/screens/repositories/screen_definitions_repository_impl.dart](../lib/data/screens/repositories/screen_definitions_repository_impl.dart)
+  - [lib/data/screens/maintenance/screen_seeder.dart](../../lib/data/screens/maintenance/screen_seeder.dart)
+  - [lib/data/screens/maintenance/system_data_cleanup_service.dart](../../lib/data/screens/maintenance/system_data_cleanup_service.dart)
+  - [lib/data/screens/repositories/screen_definitions_repository_impl.dart](../../lib/data/screens/repositories/screen_definitions_repository_impl.dart)
 
 ### Presentation (UI + BLoCs)
 - Unified screen view + renderers + tiles
-  - [lib/presentation/features/screens/](../lib/presentation/features/screens/)
+  - [lib/presentation/screens/](../../lib/presentation/screens/)
 - Per-section rendering switchboard
-  - [lib/presentation/widgets/section_widget.dart](../lib/presentation/widgets/section_widget.dart)
+  - [lib/presentation/widgets/section_widget.dart](../../lib/presentation/widgets/section_widget.dart)
 
 ### Routing
 - Single place for conventions and screen construction
-  - [lib/core/routing/routing.dart](../lib/core/routing/routing.dart)
+  - [lib/core/routing/routing.dart](../../lib/core/routing/routing.dart)
 
 ### Tests + migration guidance
 - Core tests: `test/domain/models/screens/*`, `test/presentation/features/screens/*`
-- Migration playbook: [unified_screen_test_migration/](../unified_screen_test_migration/)
+- Migration playbook: [doc/folder_refactor/](../folder_refactor/)
 
 ---
 
@@ -134,7 +134,7 @@ A `ScreenDefinition` is a *pure configuration model*:
 - Source: `screenSource` (system template vs user-defined)
 - Chrome: `chrome: ScreenChrome`
 
-See: [lib/domain/screens/language/models/screen_definition.dart](../lib/domain/screens/language/models/screen_definition.dart)
+See: [lib/domain/screens/language/models/screen_definition.dart](../../lib/domain/screens/language/models/screen_definition.dart)
 
 ### 4.2 `SectionRef` (the â€œscreen AST nodeâ€)
 
@@ -143,7 +143,7 @@ A `SectionRef` points at:
 - `params`: template params encoded as JSON
 - `overrides`: optional overrides applied on top (title, enabled)
 
-See: [lib/domain/screens/language/models/section_ref.dart](../lib/domain/screens/language/models/section_ref.dart)
+See: [lib/domain/screens/language/models/section_ref.dart](../../lib/domain/screens/language/models/section_ref.dart)
 
 ### 4.3 Interpreters
 
@@ -154,8 +154,8 @@ A section template interpreter is the domain-side implementation that can:
 The interpreter registry resolves `templateId â†’ interpreter`, and the params codec resolves `templateId â†’ params type`.
 
 See:
-- [lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart](../lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart)
-- [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
+- [lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart](../../lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart)
+- [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
 
 ### 4.4 Rendering
 
@@ -163,8 +163,8 @@ See:
 - `SectionWidget` performs the template switch, delegating to specific renderers.
 
 See:
-- [lib/presentation/features/screens/view/unified_screen_page.dart](../lib/presentation/features/screens/view/unified_screen_page.dart)
-- [lib/presentation/widgets/section_widget.dart](../lib/presentation/widgets/section_widget.dart)
+- [lib/presentation/screens/view/unified_screen_page.dart](../../lib/presentation/screens/view/unified_screen_page.dart)
+- [lib/presentation/widgets/section_widget.dart](../../lib/presentation/widgets/section_widget.dart)
 
 ---
 
@@ -179,15 +179,15 @@ The repo uses a Drift table to store all screen rows (system + custom). In the c
 - **Cleanup** removes DB rows for system templates that no longer exist in code.
 
 Key entry points:
-- Seeding: [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart)
-- Cleanup: [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
-- Post-auth maintenance: [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
+- Seeding: [lib/data/screens/maintenance/screen_seeder.dart](../../lib/data/screens/maintenance/screen_seeder.dart)
+- Cleanup: [lib/data/screens/maintenance/system_data_cleanup_service.dart](../../lib/data/screens/maintenance/system_data_cleanup_service.dart)
+- Post-auth maintenance: [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
 
 ### 5.2 `SystemScreenProvider` (validation only)
 
 `SystemScreenProvider` exists primarily to prevent custom screens from reusing system keys, and to support cleanup.
 
-See: [lib/domain/interfaces/system_screen_provider.dart](../lib/domain/interfaces/system_screen_provider.dart)
+See: [lib/domain/interfaces/system_screen_provider.dart](../../lib/domain/interfaces/system_screen_provider.dart)
 
 ---
 
@@ -210,7 +210,7 @@ This section summarizes the â€œconfiguration surface areaâ€ available t
 
 ### 6.2 Chrome configuration (`ScreenChrome`)
 
-See: [lib/domain/screens/language/models/screen_chrome.dart](../lib/domain/screens/language/models/screen_chrome.dart)
+See: [lib/domain/screens/language/models/screen_chrome.dart](../../lib/domain/screens/language/models/screen_chrome.dart)
 
 | Option | Type | Description | When to use |
 |---|---|---|---|
@@ -240,7 +240,7 @@ See: [lib/domain/screens/language/models/screen_chrome.dart](../lib/domain/scree
 
 The params codec is the canonical source of which templates accept which params.
 
-See: [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
+See: [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
 
 | Template ID | Params type | What it renders | When to use |
 |---|---|---|---|
@@ -313,7 +313,7 @@ These configs show up inside section params (especially list templates) and are 
 
 #### 6.6.1 `DataConfig` (what to fetch)
 
-See: [lib/domain/screens/language/models/data_config.dart](../lib/domain/screens/language/models/data_config.dart)
+See: [lib/domain/screens/language/models/data_config.dart](../../lib/domain/screens/language/models/data_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
@@ -324,7 +324,7 @@ See: [lib/domain/screens/language/models/data_config.dart](../lib/domain/screens
 
 #### 6.6.2 `DisplayConfig` (how to present/filter/sort)
 
-See: [lib/domain/screens/language/models/display_config.dart](../lib/domain/screens/language/models/display_config.dart)
+See: [lib/domain/screens/language/models/display_config.dart](../../lib/domain/screens/language/models/display_config.dart)
 
 | Option | Meaning | When to use |
 |---|---|---|
@@ -337,7 +337,7 @@ See: [lib/domain/screens/language/models/display_config.dart](../lib/domain/scre
 
 #### 6.6.3 `RelatedDataConfig` (fetch related entities)
 
-See: [lib/domain/screens/language/models/related_data_config.dart](../lib/domain/screens/language/models/related_data_config.dart)
+See: [lib/domain/screens/language/models/related_data_config.dart](../../lib/domain/screens/language/models/related_data_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
@@ -347,7 +347,7 @@ See: [lib/domain/screens/language/models/related_data_config.dart](../lib/domain
 
 #### 6.6.4 `EnrichmentConfig` (computed statistics)
 
-See: [lib/domain/screens/language/models/enrichment_config.dart](../lib/domain/screens/language/models/enrichment_config.dart)
+See: [lib/domain/screens/language/models/enrichment_config.dart](../../lib/domain/screens/language/models/enrichment_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
@@ -356,8 +356,8 @@ See: [lib/domain/screens/language/models/enrichment_config.dart](../lib/domain/s
 **Full-screen templates**
 - Some templates are treated as â€œfull-screen legacy pagesâ€ and are rendered without nesting a second Scaffold.
 - The list of full-screen template IDs is maintained in:
-  - [lib/presentation/features/screens/view/unified_screen_page.dart](../lib/presentation/features/screens/view/unified_screen_page.dart)
-  - [lib/presentation/widgets/section_widget.dart](../lib/presentation/widgets/section_widget.dart)
+  - [lib/presentation/screens/view/unified_screen_page.dart](../../lib/presentation/screens/view/unified_screen_page.dart)
+  - [lib/presentation/widgets/section_widget.dart](../../lib/presentation/widgets/section_widget.dart)
 
 ---
 
@@ -376,16 +376,16 @@ configuration types.
 Goal: a screen with an issues summary + task list, plus a task-create FAB.
 
 ```dart
-import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/fab_operation.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/issues_summary_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/attention_tile_variants.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 final screen = ScreenDefinition(
@@ -428,11 +428,11 @@ When to use:
 Goal: one screen showing two different task lists with clear titles.
 
 ```dart
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 final sections = <SectionRef>[
@@ -469,8 +469,8 @@ When to use:
 Some templates render as a full-screen page (to avoid nested scaffolds).
 
 ```dart
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 
 final definition = ScreenDefinition(
   id: 'settings_example',
@@ -505,7 +505,7 @@ When to use:
 4. **Register interpreter in DI**
    - Ensure `SectionTemplateInterpreterRegistry` is constructed with the new interpreter.
 5. **Implement the renderer**
-   - Add a renderer widget in `lib/presentation/features/screens/renderers/`.
+  - Add a renderer widget in `lib/presentation/screens/templates/renderers/`.
    - Wire it into `SectionWidget` (switch on `templateId` / result type).
 6. **Add tests**
    - Domain: params round-trip + interpreter behavior where feasible.
@@ -532,8 +532,8 @@ See: [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](
 
 ## 10) References
 
-- Unified UI entry point: [lib/presentation/features/screens/view/unified_screen_page.dart](../lib/presentation/features/screens/view/unified_screen_page.dart)
-- Interpreter pipeline: [lib/domain/screens/runtime/screen_data_interpreter.dart](../lib/domain/screens/runtime/screen_data_interpreter.dart)
-- System screens: [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
-- Seeding/cleanup: [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart), [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
-- Routing conventions: [lib/core/routing/routing.dart](../lib/core/routing/routing.dart)
+- Unified UI entry point: [lib/presentation/screens/view/unified_screen_page.dart](../../lib/presentation/screens/view/unified_screen_page.dart)
+- Interpreter pipeline: [lib/domain/screens/runtime/screen_data_interpreter.dart](../../lib/domain/screens/runtime/screen_data_interpreter.dart)
+- System screens: [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- Seeding/cleanup: [lib/data/screens/maintenance/screen_seeder.dart](../../lib/data/screens/maintenance/screen_seeder.dart), [lib/data/screens/maintenance/system_data_cleanup_service.dart](../../lib/data/screens/maintenance/system_data_cleanup_service.dart)
+- Routing conventions: [lib/core/routing/routing.dart](../../lib/core/routing/routing.dart)
