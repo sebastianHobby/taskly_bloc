@@ -1,12 +1,12 @@
-# Attention System — Architecture Overview
+﻿# Attention System â€” Architecture Overview
 
 > Audience: developers + architects
 >
-> Scope: the *current* attention system in this repo (rules → evaluation → persistence → section rendering), including where it plugs into the unified screen pipeline.
+> Scope: the *current* attention system in this repo (rules â†’ evaluation â†’ persistence â†’ section rendering), including where it plugs into the unified screen pipeline.
 
 ## 1) Executive Summary
 
-Taskly’s **attention system** is a rule-based mechanism that detects items that
+Tasklyâ€™s **attention system** is a rule-based mechanism that detects items that
 need user attention (e.g., overdue tasks, idle projects, periodic reviews) and
 surfaces them as **`AttentionItem`** view-models in multiple places:
 
@@ -22,8 +22,8 @@ The core idea:
   display it).
 - **`AttentionEngine`** is the reactive evaluation engine. Sections construct an
   **`AttentionQuery`** and subscribe to `AttentionEngine.watch(query)`.
-- User actions are stored as **`AttentionResolution`** rows. “Dismiss until
-  state changes” is implemented using engine-owned runtime state
+- User actions are stored as **`AttentionResolution`** rows. â€œDismiss until
+  state changesâ€ is implemented using engine-owned runtime state
   (state-hash + dismissal/snooze semantics).
 
 ---
@@ -55,17 +55,17 @@ Key files:
 - Repository impl:
   - [lib/data/repositories/attention_repository_v2.dart](../lib/data/repositories/attention_repository_v2.dart)
 - Drift tables (generated):
-  - [lib/data/drift/features/attention_tables.drift.dart](../lib/data/drift/features/attention_tables.drift.dart)
+  - [lib/data/infrastructure/drift/features/attention_tables.drift.dart](../lib/data/infrastructure/drift/features/attention_tables.drift.dart)
 - Seeder:
   - [lib/data/services/attention_seeder.dart](../lib/data/services/attention_seeder.dart)
 
 ### Screen integration (templates)
 - Issues summary:
-  - [lib/domain/services/screens/templates/issues_summary_section_interpreter.dart](../lib/domain/services/screens/templates/issues_summary_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart](../lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart)
 - Allocation alerts:
-  - [lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart](../lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
 - Check-in summary:
-  - [lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart](../lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart](../lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart)
 
 ### Presentation (widgets + settings)
 - Settings page:
@@ -80,47 +80,47 @@ Key files:
 ### 3.1 Component Diagram
 
 ```text
-┌───────────────────────────────────────────────────────────┐
-│                       Presentation                          │
-│  - AttentionRulesSettingsPage (toggle rules)                │
-│  - Support section renderers + AttentionItemTile            │
-└───────────────┬───────────────────────────────┬────────────┘
-                │                               │
-                │                               │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                       Presentation                          â”‚
+â”‚  - AttentionRulesSettingsPage (toggle rules)                â”‚
+â”‚  - Support section renderers + AttentionItemTile            â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚                               â”‚
+                â”‚                               â”‚
                 v                               v
-┌───────────────────────────────┐   ┌───────────────────────────────┐
-│  Screen Template Interpreters  │   │     Other domain pipelines     │
-│  - IssuesSummarySection...     │   │  (e.g. AllocationOrchestrator) │
-│  - CheckInSummarySection...    │   └───────────────────────────────┘
-│  - AllocationAlertsSection...  │
-└───────────────┬───────────────┘
-                │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚  Screen Template Interpreters  â”‚   â”‚     Other domain pipelines     â”‚
+â”‚  - IssuesSummarySection...     â”‚   â”‚  (e.g. AllocationOrchestrator) â”‚
+â”‚  - CheckInSummarySection...    â”‚   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+â”‚  - AllocationAlertsSection...  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚
                 v
-┌───────────────────────────────────────────────────────────┐
-│                       Domain Service                        │
-│                     AttentionEngine                          │
-│  - watches active rules + domain data                         │
-│  - evaluates rules into AttentionItems                        │
-│  - applies suppression via runtime state + resolutions         │
-└───────────────┬───────────────────────────────┬────────────┘
-                │                               │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                       Domain Service                        â”‚
+â”‚                     AttentionEngine                          â”‚
+â”‚  - watches active rules + domain data                         â”‚
+â”‚  - evaluates rules into AttentionItems                        â”‚
+â”‚  - applies suppression via runtime state + resolutions         â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚                               â”‚
                 v                               v
-┌───────────────────────────────┐   ┌───────────────────────────────┐
-│      AttentionRepository        │   │  Task/Project repositories     │
-│  - rules + resolutions          │   │  (data to evaluate rules on)   │
-│  - runtime state                │
-└───────────────┬───────────────┘   └───────────────┬───────────────┘
-                │                                   │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚      AttentionRepository        â”‚   â”‚  Task/Project repositories     â”‚
+â”‚  - rules + resolutions          â”‚   â”‚  (data to evaluate rules on)   â”‚
+â”‚  - runtime state                â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚                                   â”‚
                 v                                   v
-┌───────────────────────────────────────────────────────────┐
-│                     Drift / PowerSync DB                    │
-│  attention_rules, attention_resolutions, attention_rule_runtime_state │
-└───────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                     Drift / PowerSync DB                    â”‚
+â”‚  attention_rules, attention_resolutions, attention_rule_runtime_state â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ### 3.2 End-to-End Flow (Issues Summary)
 
-This is the most “canonical” attention flow because it uses persisted rules and
+This is the most â€œcanonicalâ€ attention flow because it uses persisted rules and
 dismissal tracking.
 
 ```text
@@ -191,7 +191,7 @@ attention_rule_runtime_state
 
 `AttentionRule` describes **what** to detect and **how** to present it.
 
-- `ruleType` is the high-level category (problem/review/allocationWarning/…)
+- `ruleType` is the high-level category (problem/review/allocationWarning/â€¦)
 - `entitySelector` identifies the target domain entities and predicate (e.g.
   `{"entity_type": "task", "predicate": "isOverdue"}`)
 - `triggerType`/`triggerConfig` describes cadence/thresholds
@@ -213,7 +213,7 @@ Important nuance in the current implementation:
 
 A resolution records user intent:
 
-- `dismissed`: hide until the entity’s “state hash” changes
+- `dismissed`: hide until the entityâ€™s â€œstate hashâ€ changes
 - `snoozed`: hide until a future time (stored in `actionDetails`)
 - `reviewed`/`skipped`: marks a review session as handled
 
@@ -223,7 +223,7 @@ In the current code, the engine uses:
 - `AttentionRepositoryContract.getRuntimeState(...)`
 
 to decide whether an item should be suppressed (dismissed/snoozed) until either
-time has passed or the entity’s computed state hash changes.
+time has passed or the entityâ€™s computed state hash changes.
 
 ### 4.4 `AttentionEngine` (reactive evaluation engine)
 
@@ -232,14 +232,14 @@ Primary responsibilities:
 - Watch the **active** rules and relevant domain data streams
 - Evaluate rule predicates against the **current** domain data
 - Apply suppression semantics (dismiss/snooze/state-hash) via runtime state
-- Apply “product policy” rules, for example:
+- Apply â€œproduct policyâ€ rules, for example:
   - Reviews: show a bounded set of due reviews (intentionally conservative)
 
 ### 4.5 `AttentionRepositoryContract` + Drift implementation
 
 Responsibilities:
 
-- Expose reactive views of rules (`watchAllRules`, `watchRulesByType`, …)
+- Expose reactive views of rules (`watchAllRules`, `watchRulesByType`, â€¦)
 - Persist user changes:
   - toggle active status
   - update configs
@@ -265,7 +265,7 @@ and can be seeded into the database using:
 Important nuance in the current repo state:
 
 - `AttentionSeeder.ensureSeeded()` is invoked from post-auth maintenance:
-  [lib/data/powersync/api_connector.dart](../lib/data/powersync/api_connector.dart)
+  [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
   (`runPostAuthMaintenance`).
 
 ---
@@ -274,14 +274,14 @@ Important nuance in the current repo state:
 
 ### 5.1 Support sections (unified screens)
 
-- `issuesSummary` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
-  - [lib/domain/services/screens/templates/issues_summary_section_interpreter.dart](../lib/domain/services/screens/templates/issues_summary_section_interpreter.dart)
+- `issuesSummary` â†’ subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
+  - [lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart](../lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart)
 
-- `checkInSummary` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
-  - [lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart](../lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart)
+- `checkInSummary` â†’ subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
+  - [lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart](../lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart)
 
-- `allocationAlerts` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
-  - [lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart](../lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart)
+- `allocationAlerts` â†’ subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
+  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
 
 ### 5.2 Settings: toggling attention rules
 
@@ -290,7 +290,7 @@ Important nuance in the current repo state:
 
 ### 5.3 Attention widgets
 
-- Rendering is currently “display-only” tiles:
+- Rendering is currently â€œdisplay-onlyâ€ tiles:
   - `AttentionItemTile` + `SeverityIcon`
   - [lib/presentation/features/screens/renderers/attention_support_section_widgets.dart](../lib/presentation/features/screens/renderers/attention_support_section_widgets.dart)
 
@@ -305,14 +305,14 @@ To support this without introducing OS notifications or server scheduling, the r
 - **Attention invalidation**: `AttentionTemporalInvalidationService`
   - converts temporal events into `Stream<void>` invalidation pulses
 - **Engine refresh**: the attention engine subscribes to invalidations and
-  re-evaluates even when domain data streams haven’t changed
+  re-evaluates even when domain data streams havenâ€™t changed
 
 This keeps attention evaluation driven by the unified screen pipeline (sections
 still subscribe to attention items via `AttentionEngine.watch(query)`), but
 ensures the UI re-checks on:
 
-- app resume (covers “user opens app”)
-- home-day boundary (covers “new day”)
+- app resume (covers â€œuser opens appâ€)
+- home-day boundary (covers â€œnew dayâ€)
 
 Important: `AttentionRule.triggerType`/`triggerConfig` remain **metadata** in this phase; the app does not run a background scheduler.
 
@@ -320,9 +320,9 @@ Future releases that require actual time-based reminders (firing while the app i
 
 ---
 
-## 6) Example Implementation: Add a New “Blocked Tasks” Problem Rule
+## 6) Example Implementation: Add a New â€œBlocked Tasksâ€ Problem Rule
 
-This example shows how to add a new rule that flags tasks as “blocked”, and how
+This example shows how to add a new rule that flags tasks as â€œblockedâ€, and how
 it gets surfaced automatically in the Issues Summary section.
 
 ### 6.1 Add a new system rule template
@@ -371,18 +371,18 @@ final matches = switch (predicate) {
 };
 ```
 
-Then add `_isTaskBlocked(...)` using whatever “blocked” signal exists in your
+Then add `_isTaskBlocked(...)` using whatever â€œblockedâ€ signal exists in your
 `Task` model (examples: a `blocked` boolean, a status enum, or a non-empty
 `blockedReason`).
 
-To support “dismiss until state changes”, ensure your task state hash includes
+To support â€œdismiss until state changesâ€, ensure your task state hash includes
 the fields that should cause resurfacing (e.g., `blockedReason`, `updatedAt`).
 
 ### 6.3 Ensure the rule exists in the database
 
 System templates are already seeded from post-auth maintenance via
 `AttentionSeeder.ensureSeeded()` (see
-[lib/data/powersync/api_connector.dart](../lib/data/powersync/api_connector.dart)
+[lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
 `runPostAuthMaintenance`). After adding a new template, it will be inserted on
 the next post-auth maintenance run.
 

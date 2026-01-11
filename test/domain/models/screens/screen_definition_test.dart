@@ -1,9 +1,9 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 
 void main() {
   group('ScreenDefinition', () {

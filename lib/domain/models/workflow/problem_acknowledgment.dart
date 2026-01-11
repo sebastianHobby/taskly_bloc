@@ -1,5 +1,5 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
 
 // Note: ProblemType enum moved to problem_type.dart

@@ -1,4 +1,4 @@
-/// Regression tests for "blank screen" and "infinite loading" scenarios.
+﻿/// Regression tests for "blank screen" and "infinite loading" scenarios.
 ///
 /// These tests verify that the UnifiedScreenPage renders appropriate content
 /// for various data states (success, empty, error) and fails fast if stuck.
@@ -13,16 +13,16 @@ import 'dart:async';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
-import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
 
 import '../../../../fixtures/test_data.dart';
 import '../../../../helpers/pump_app.dart';

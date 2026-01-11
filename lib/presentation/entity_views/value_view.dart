@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/models/screens/value_stats.dart' as domain;
+import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
+    as domain;
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
@@ -165,7 +166,7 @@ class ValueView extends StatelessWidget {
                   Text(
                     (value.iconName?.isNotEmpty ?? false)
                         ? value.iconName!
-                        : '⭐',
+                        : 'â­',
                     style: EmojiUtils.emojiTextStyle(fontSize: 18),
                   ),
                   const SizedBox(width: 6),
@@ -252,7 +253,7 @@ class ValueView extends StatelessWidget {
           const SizedBox(width: 8),
         ],
         Text(
-          (value.iconName?.isNotEmpty ?? false) ? value.iconName! : '⭐',
+          (value.iconName?.isNotEmpty ?? false) ? value.iconName! : 'â­',
           style: EmojiUtils.emojiTextStyle(fontSize: 22),
         ),
         const SizedBox(width: 8),

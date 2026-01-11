@@ -1,4 +1,4 @@
-import 'package:rxdart/rxdart.dart';
+﻿import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
     as v2;
@@ -7,15 +7,15 @@ import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule_runtime_state.dart';
 import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
+import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
+import 'package:taskly_bloc/domain/allocation/engine/urgency_detector.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:uuid/uuid.dart';

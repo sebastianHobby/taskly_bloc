@@ -1,4 +1,4 @@
-/// Contract tests for route generation.
+﻿/// Contract tests for route generation.
 ///
 /// These tests verify that the Routing utility and GoRouter agree on
 /// paths for all system screens.
@@ -9,11 +9,11 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 
 void main() {
   group('Route Contracts', () {
-    group('Routing.screenPath ↔ SystemScreenDefinitions', () {
+    group('Routing.screenPath â†” SystemScreenDefinitions', () {
       test('all system screens produce valid paths', () {
         for (final screen in SystemScreenDefinitions.all) {
           final path = Routing.screenPath(screen.screenKey);
@@ -60,7 +60,7 @@ void main() {
             screen.screenKey,
             reason:
                 'Round-trip failed: '
-                '"${screen.screenKey}" → "$path" → "$restored"',
+                '"${screen.screenKey}" â†’ "$path" â†’ "$restored"',
           );
         }
       });

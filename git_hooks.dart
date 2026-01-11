@@ -79,7 +79,7 @@ Future<bool> _validateTableRegistration() async {
     const idGeneratorPath = 'lib/data/id/id_generator.dart';
 
     // Path to PowerSync schema
-    const schemaPath = 'lib/data/powersync/schema.dart';
+    const schemaPath = 'lib/data/infrastructure/powersync/schema.dart';
 
     final idGeneratorFile = File(idGeneratorPath);
     final schemaFile = File(schemaPath);

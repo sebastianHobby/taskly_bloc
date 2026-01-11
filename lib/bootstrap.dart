@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +11,7 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
@@ -318,7 +318,7 @@ Future<void> _maybeDevAutoLogin() async {
 
 /// Register screen and entity builders with [Routing].
 ///
-/// This centralizes all screen→bloc mappings. Screens not registered here
+/// This centralizes all screenâ†’bloc mappings. Screens not registered here
 /// automatically use [UnifiedScreenPage] for convention-based rendering.
 void _registerRoutingBuilders() {
   final taskRepo = getIt<TaskRepositoryContract>();

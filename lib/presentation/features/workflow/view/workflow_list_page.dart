@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_creator_page.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
@@ -189,9 +189,9 @@ class _WorkflowListPageState extends State<WorkflowListPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
-              Text('• Manually - start when you want'),
-              Text('• On Schedule - daily, weekly, etc.'),
-              Text('• Based on Conditions - items not reviewed recently'),
+              Text('â€¢ Manually - start when you want'),
+              Text('â€¢ On Schedule - daily, weekly, etc.'),
+              Text('â€¢ Based on Conditions - items not reviewed recently'),
             ],
           ),
         ),

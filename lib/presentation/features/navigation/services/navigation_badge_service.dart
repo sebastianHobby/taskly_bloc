@@ -1,11 +1,11 @@
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+﻿import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/badge_config.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/language/models/badge_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 

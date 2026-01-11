@@ -1,4 +1,4 @@
-/// Helpers for integration tests.
+﻿/// Helpers for integration tests.
 ///
 /// Integration tests verify that multiple real components work together
 /// correctly. Unlike unit tests that isolate with mocks, integration tests
@@ -6,8 +6,8 @@
 ///
 /// ## When to use integration tests
 ///
-/// - Testing end-to-end flows (user action → database → UI update)
-/// - Verifying repository ↔ BLoC stream contracts
+/// - Testing end-to-end flows (user action â†’ database â†’ UI update)
+/// - Verifying repository â†” BLoC stream contracts
 /// - Testing complex state transitions across components
 ///
 /// ## Pattern
@@ -48,23 +48,23 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/data/features/screens/default_system_screen_provider.dart';
-import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/data/features/screens/repositories/screen_definitions_repository_impl.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_bloc/data/screens/default_system_screen_provider.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 
 import 'test_db.dart';
 
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Integration Test Wrapper
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 /// Default timeout for integration tests (45 seconds).
 ///
@@ -112,9 +112,9 @@ void testIntegration(
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Integration Test Context
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 /// Context for integration tests with real database and repositories.
 ///
@@ -248,9 +248,9 @@ class IntegrationTestContext {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // BLoC State Utilities
-// ═══════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 /// Waits for a BLoC to emit a state matching [predicate].
 ///

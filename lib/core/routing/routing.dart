@@ -1,12 +1,12 @@
-import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
 ///
@@ -16,11 +16,11 @@ import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_pa
 /// ## Route Patterns
 ///
 /// Only two route patterns exist:
-/// - **Screens**: `/:screenKey` → convention-based, handled by [buildScreen]
-/// - **Entities**: `/:entityType/:id` → parameterized, handled by [buildEntityDetail]
+/// - **Screens**: `/:screenKey` â†’ convention-based, handled by [buildScreen]
+/// - **Entities**: `/:entityType/:id` â†’ parameterized, handled by [buildEntityDetail]
 ///
-/// Screen paths use convention: `screenKey` → `/${screenKey}` with
-/// underscores converted to hyphens (e.g., `orphan_tasks` → `/orphan-tasks`).
+/// Screen paths use convention: `screenKey` â†’ `/${screenKey}` with
+/// underscores converted to hyphens (e.g., `orphan_tasks` â†’ `/orphan-tasks`).
 ///
 /// Entity paths use convention: `/${entityType}/${id}`
 /// (e.g., `/task/abc-123`, `/project/xyz-456`).

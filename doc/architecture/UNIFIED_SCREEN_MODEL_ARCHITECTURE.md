@@ -1,12 +1,12 @@
-# Unified Screen Model — Architecture Summary
+﻿# Unified Screen Model â€” Architecture Summary
 
 > Audience: developers + architects
 >
-> Scope: the *current* unified screen system in this repo (routing → persistence → interpretation → rendering).
+> Scope: the *current* unified screen system in this repo (routing â†’ persistence â†’ interpretation â†’ rendering).
 
 ## 1) Executive Summary
 
-Taskly renders most “screens” (Inbox, My Day, Projects, user-created screens, etc.) through a single, declarative model:
+Taskly renders most â€œscreensâ€ (Inbox, My Day, Projects, user-created screens, etc.) through a single, declarative model:
 
 - **`ScreenDefinition`**: describes *what* a screen is (identity + sections + chrome).
 - **`SectionRef`**: a screen is composed of ordered, templated sections.
@@ -22,20 +22,20 @@ The system supports:
 
 ## 2) Where Things Live (Folder Map)
 
-### Domain model (screen “language”)
+### Domain model (screen â€œlanguageâ€)
 - `ScreenDefinition`, `SectionRef`, `ScreenChrome`, template IDs + params
-  - [lib/domain/models/screens/](../lib/domain/models/screens/)
+  - [lib/domain/screens/language/models/](../lib/domain/screens/language/models/)
 
-### Domain pipeline (definition → data)
+### Domain pipeline (definition â†’ data)
 - Interpreters, params codec, registries, `ScreenData`, `SectionVm`
-  - [lib/domain/services/screens/](../lib/domain/services/screens/)
-  - [lib/domain/services/screens/templates/](../lib/domain/services/screens/templates/)
+  - [lib/domain/screens/runtime/](../lib/domain/screens/runtime/)
+  - [lib/domain/screens/templates/interpreters/](../lib/domain/screens/templates/interpreters/)
 
 ### Persistence + maintenance
 - Custom screen persistence, preferences, cleanup, repository implementation
-  - [lib/data/services/screen_seeder.dart](../lib/data/services/screen_seeder.dart)
-  - [lib/data/services/system_data_cleanup_service.dart](../lib/data/services/system_data_cleanup_service.dart)
-  - [lib/data/features/screens/repositories/screen_definitions_repository_impl.dart](../lib/data/features/screens/repositories/screen_definitions_repository_impl.dart)
+  - [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart)
+  - [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
+  - [lib/data/screens/repositories/screen_definitions_repository_impl.dart](../lib/data/screens/repositories/screen_definitions_repository_impl.dart)
 
 ### Presentation (UI + BLoCs)
 - Unified screen view + renderers + tiles
@@ -60,39 +60,39 @@ The system supports:
 The following diagram uses plain text so it renders in any Markdown viewer:
 
 ```text
-┌───────────────────────────────┐
-│            Routing            │
-│  GoRouter '/:screenKey'       │
-│  Routing.buildScreen(key)     │
-└───────────────┬───────────────┘
-                │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚            Routing            â”‚
+â”‚  GoRouter '/:screenKey'       â”‚
+â”‚  Routing.buildScreen(key)     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚
                 v
-┌───────────────────────────────┐
-│          Presentation         │
-│  UnifiedScreenPage(*)         │
-│    -> ScreenBloc              │
-│    -> SectionWidget(s)        │
-│    -> template renderers      │
-└───────────────┬───────────────┘
-                │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚          Presentation         â”‚
+â”‚  UnifiedScreenPage(*)         â”‚
+â”‚    -> ScreenBloc              â”‚
+â”‚    -> SectionWidget(s)        â”‚
+â”‚    -> template renderers      â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚
                 v
-┌───────────────────────────────┐
-│          Domain services       │
-│  ScreenDataInterpreter         │
-│    -> ParamsCodec              │
-│    -> InterpreterRegistry      │
-│       -> SectionInterpreters   │
-└───────────────┬───────────────┘
-                │
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚          Domain services       â”‚
+â”‚  ScreenDataInterpreter         â”‚
+â”‚    -> ParamsCodec              â”‚
+â”‚    -> InterpreterRegistry      â”‚
+â”‚       -> SectionInterpreters   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                â”‚
                 v
-┌───────────────────────────────┐
-│            Data layer          │
-│  ScreenDefinitionsRepository   │
-│    -> SystemScreenDefinitions  │
-│    <-> Drift/PowerSync DB      │
-│       (custom + prefs + legacy)│
-│  Cleanup (+ optional seeding)  │
-└───────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚            Data layer          â”‚
+â”‚  ScreenDefinitionsRepository   â”‚
+â”‚    -> SystemScreenDefinitions  â”‚
+â”‚    <-> Drift/PowerSync DB      â”‚
+â”‚       (custom + prefs + legacy)â”‚
+â”‚  Cleanup (+ optional seeding)  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 
 (*) Either UnifiedScreenPage(definition) or UnifiedScreenPageById(screenKey)
 ```
@@ -134,28 +134,28 @@ A `ScreenDefinition` is a *pure configuration model*:
 - Source: `screenSource` (system template vs user-defined)
 - Chrome: `chrome: ScreenChrome`
 
-See: [lib/domain/models/screens/screen_definition.dart](../lib/domain/models/screens/screen_definition.dart)
+See: [lib/domain/screens/language/models/screen_definition.dart](../lib/domain/screens/language/models/screen_definition.dart)
 
-### 4.2 `SectionRef` (the “screen AST node”)
+### 4.2 `SectionRef` (the â€œscreen AST nodeâ€)
 
 A `SectionRef` points at:
 - `templateId`: which section template to render
 - `params`: template params encoded as JSON
 - `overrides`: optional overrides applied on top (title, enabled)
 
-See: [lib/domain/models/screens/section_ref.dart](../lib/domain/models/screens/section_ref.dart)
+See: [lib/domain/screens/language/models/section_ref.dart](../lib/domain/screens/language/models/section_ref.dart)
 
 ### 4.3 Interpreters
 
 A section template interpreter is the domain-side implementation that can:
-- `fetch(params)` — one-shot data load
-- `watch(params)` — reactive data stream
+- `fetch(params)` â€” one-shot data load
+- `watch(params)` â€” reactive data stream
 
-The interpreter registry resolves `templateId → interpreter`, and the params codec resolves `templateId → params type`.
+The interpreter registry resolves `templateId â†’ interpreter`, and the params codec resolves `templateId â†’ params type`.
 
 See:
-- [lib/domain/services/screens/templates/section_template_interpreter_registry.dart](../lib/domain/services/screens/templates/section_template_interpreter_registry.dart)
-- [lib/domain/services/screens/templates/section_template_params_codec.dart](../lib/domain/services/screens/templates/section_template_params_codec.dart)
+- [lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart](../lib/domain/screens/templates/interpreters/section_template_interpreter_registry.dart)
+- [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
 
 ### 4.4 Rendering
 
@@ -179,9 +179,9 @@ The repo uses a Drift table to store all screen rows (system + custom). In the c
 - **Cleanup** removes DB rows for system templates that no longer exist in code.
 
 Key entry points:
-- Seeding: [lib/data/services/screen_seeder.dart](../lib/data/services/screen_seeder.dart)
-- Cleanup: [lib/data/services/system_data_cleanup_service.dart](../lib/data/services/system_data_cleanup_service.dart)
-- Post-auth maintenance: [lib/data/powersync/api_connector.dart](../lib/data/powersync/api_connector.dart)
+- Seeding: [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart)
+- Cleanup: [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
+- Post-auth maintenance: [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
 
 ### 5.2 `SystemScreenProvider` (validation only)
 
@@ -193,10 +193,10 @@ See: [lib/domain/interfaces/system_screen_provider.dart](../lib/domain/interface
 
 ## 6) Configuration Catalog (What you can configure, and when to use it)
 
-This section summarizes the “configuration surface area” available to build screens without adding new UI code.
+This section summarizes the â€œconfiguration surface areaâ€ available to build screens without adding new UI code.
 
 > Note on strictness: template params are decoded with `SectionTemplateParamsCodec` and are intentionally strict.
-> If a required field is missing (including “style keys” like tile variants), decode will fail and the section will not render.
+> If a required field is missing (including â€œstyle keysâ€ like tile variants), decode will fail and the section will not render.
 
 ### 6.1 Screen identity & composition (`ScreenDefinition`)
 
@@ -210,7 +210,7 @@ This section summarizes the “configuration surface area” available to build 
 
 ### 6.2 Chrome configuration (`ScreenChrome`)
 
-See: [lib/domain/models/screens/screen_chrome.dart](../lib/domain/models/screens/screen_chrome.dart)
+See: [lib/domain/screens/language/models/screen_chrome.dart](../lib/domain/screens/language/models/screen_chrome.dart)
 
 | Option | Type | Description | When to use |
 |---|---|---|---|
@@ -240,7 +240,7 @@ See: [lib/domain/models/screens/screen_chrome.dart](../lib/domain/models/screens
 
 The params codec is the canonical source of which templates accept which params.
 
-See: [lib/domain/services/screens/templates/section_template_params_codec.dart](../lib/domain/services/screens/templates/section_template_params_codec.dart)
+See: [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](../lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
 
 | Template ID | Params type | What it renders | When to use |
 |---|---|---|---|
@@ -249,8 +249,8 @@ See: [lib/domain/services/screens/templates/section_template_params_codec.dart](
 | `value_list` | `DataListSectionParams` | Value list driven by `ValueQuery?` | Value-centric dashboards and selection. |
 | `interleaved_list` | `InterleavedListSectionParams` | A single mixed list sourced from multiple list configs | When you need one feed combining tasks/projects/values. |
 | `agenda` | `AgendaSectionParams` | Date-grouped agenda view | Upcoming/scheduled screens, calendar-like views. |
-| `allocation` | `AllocationSectionParams` | Allocation/focus view for tasks | “My Day” / focus experiences. |
-| `issues_summary` | `IssuesSummarySectionParams` | Issues/warnings summary (attention items) | Top-of-screen “what needs attention” summary. |
+| `allocation` | `AllocationSectionParams` | Allocation/focus view for tasks | â€œMy Dayâ€ / focus experiences. |
+| `issues_summary` | `IssuesSummarySectionParams` | Issues/warnings summary (attention items) | Top-of-screen â€œwhat needs attentionâ€ summary. |
 | `check_in_summary` | `CheckInSummarySectionParams` | Check-in summary (review items) | Focus onboarding/summary at top of focus screens. |
 | `allocation_alerts` | `AllocationAlertsSectionParams` | Allocation-related alerts (attention items) | Warning banners/alerts near allocation sections. |
 | `entity_header` | `EntityHeaderSectionParams` | Header for an entity detail screen (project/value) | Top section for detail screens to show metadata/controls. |
@@ -266,12 +266,12 @@ See: [lib/domain/services/screens/templates/section_template_params_codec.dart](
 | `statistics_dashboard` | *(no params)* | Statistics dashboard screen | Full-screen template. |
 
 **Guidance**
-- Prefer *parameterized* templates (`*_list`, `agenda`, `allocation`) for screens where the primary purpose is “show data in a consistent, configurable way”.
-- Prefer *no-params* templates for screens that are effectively standalone “apps within the app” (settings dashboards, management screens). If these start needing data-driven variation, promote them to typed params instead of encoding flags into unrelated configs.
+- Prefer *parameterized* templates (`*_list`, `agenda`, `allocation`) for screens where the primary purpose is â€œshow data in a consistent, configurable wayâ€.
+- Prefer *no-params* templates for screens that are effectively standalone â€œapps within the appâ€ (settings dashboards, management screens). If these start needing data-driven variation, promote them to typed params instead of encoding flags into unrelated configs.
 
 ### 6.5 Styles & Tile Variants (mandatory style keys)
 
-To keep “what we display” separate from “how we display it”, templates that render entities require explicit **tile variant** fields.
+To keep â€œwhat we displayâ€ separate from â€œhow we display itâ€, templates that render entities require explicit **tile variant** fields.
 
 **Implementation note (UI architecture)**
 - Screen renderers should map these variants onto the canonical, entity-level UI entrypoints:
@@ -282,13 +282,13 @@ To keep “what we display” separate from “how we display it”, templates t
   - `DateLabelFormatter`: [lib/presentation/field_catalog/formatters/date_label_formatter.dart](../../lib/presentation/field_catalog/formatters/date_label_formatter.dart)
 
 **Where variants are defined**
-- Screen item tiles: [lib/domain/models/screens/templates/screen_item_tile_variants.dart](../../lib/domain/models/screens/templates/screen_item_tile_variants.dart)
-- Attention/review tiles: [lib/domain/models/screens/templates/attention_tile_variants.dart](../../lib/domain/models/screens/templates/attention_tile_variants.dart)
+- Screen item tiles: [lib/domain/screens/templates/params/screen_item_tile_variants.dart](../../lib/domain/screens/templates/params/screen_item_tile_variants.dart)
+- Attention/review tiles: [lib/domain/screens/templates/params/attention_tile_variants.dart](../../lib/domain/screens/templates/params/attention_tile_variants.dart)
 
 **Which templates require which style keys**
 | Template | Required style keys | Notes |
 |---|---|---|
-| `*_list` (`DataListSectionParams`) | `taskTileVariant`, `projectTileVariant`, `valueTileVariant` | Required even if the underlying `DataConfig` only yields one entity type. This is an intentional “explicit style” rule. |
+| `*_list` (`DataListSectionParams`) | `taskTileVariant`, `projectTileVariant`, `valueTileVariant` | Required even if the underlying `DataConfig` only yields one entity type. This is an intentional â€œexplicit styleâ€ rule. |
 | `interleaved_list` | `taskTileVariant`, `projectTileVariant`, `valueTileVariant` | Applied to the mixed list items. Each source also has its own nested `DataListSectionParams`. |
 | `agenda` | `taskTileVariant`, `projectTileVariant` | Agenda can render tasks and (optionally) project context. |
 | `allocation` | `taskTileVariant` | Allocation shows tasks. |
@@ -305,7 +305,7 @@ To keep “what we display” separate from “how we display it”, templates t
 
 **When to add a new variant**
 - Add a new enum value only when a *real* screen requires a distinct presentation and there is already (or will be) a concrete widget renderer for it.
-- Keep variants narrowly scoped to the entity they render (task/project/value/attention/review). Avoid “mega variants” that implicitly change multiple unrelated UI decisions.
+- Keep variants narrowly scoped to the entity they render (task/project/value/attention/review). Avoid â€œmega variantsâ€ that implicitly change multiple unrelated UI decisions.
 
 ### 6.6 Common nested config types (used by multiple templates)
 
@@ -313,48 +313,48 @@ These configs show up inside section params (especially list templates) and are 
 
 #### 6.6.1 `DataConfig` (what to fetch)
 
-See: [lib/domain/models/screens/data_config.dart](../lib/domain/models/screens/data_config.dart)
+See: [lib/domain/screens/language/models/data_config.dart](../lib/domain/screens/language/models/data_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
-| `task` | `query: TaskQuery` (required) | When the section’s primary entity is tasks. |
-| `project` | `query: ProjectQuery` (required) | When the section’s primary entity is projects. |
-| `value` | `query: ValueQuery?` (optional) | When the section’s primary entity is values; omit `query` to use defaults. |
+| `task` | `query: TaskQuery` (required) | When the sectionâ€™s primary entity is tasks. |
+| `project` | `query: ProjectQuery` (required) | When the sectionâ€™s primary entity is projects. |
+| `value` | `query: ValueQuery?` (optional) | When the sectionâ€™s primary entity is values; omit `query` to use defaults. |
 | `journal` | `query: JournalQuery?` (optional) | When rendering journal entries (currently not used by list templates in the codec). |
 
 #### 6.6.2 `DisplayConfig` (how to present/filter/sort)
 
-See: [lib/domain/models/screens/display_config.dart](../lib/domain/models/screens/display_config.dart)
+See: [lib/domain/screens/language/models/display_config.dart](../lib/domain/screens/language/models/display_config.dart)
 
 | Option | Meaning | When to use |
 |---|---|---|
 | `groupBy` | Grouping strategy (`none`, `project`, `value`, `label`, `date`, `priority`) | Use when the list needs structure (e.g., tasks grouped by project). |
 | `sorting` | List of `(field, direction)` | Prefer sorting over adding more specialized templates. |
 | `problemsToDetect` | Problem detectors to run | Use to power issue surfacing and section-level warnings. |
-| `showCompleted` / `showArchived` | Filtering toggles | Default values are usually correct; override when building “logbook” or archive-like screens. |
+| `showCompleted` / `showArchived` | Filtering toggles | Default values are usually correct; override when building â€œlogbookâ€ or archive-like screens. |
 | `groupByCompletion` / `completedCollapsed` | Completed grouping UX | Use when mixing completed and active tasks within one section. |
 | `enableSwipeToDelete` | Swipe delete affordance | Use sparingly; only on screens where delete is the primary action. |
 
 #### 6.6.3 `RelatedDataConfig` (fetch related entities)
 
-See: [lib/domain/models/screens/related_data_config.dart](../lib/domain/models/screens/related_data_config.dart)
+See: [lib/domain/screens/language/models/related_data_config.dart](../lib/domain/screens/language/models/related_data_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
 | `tasks` | `additionalFilter: TaskQuery?` | When you want tasks related to the primary entity (e.g., tasks for each project/value). |
 | `projects` | `additionalFilter: ProjectQuery?` | When you want projects related to the primary entity (e.g., projects for each value). |
-| `valueHierarchy` | `includeInheritedTasks`, `projectFilter`, `taskFilter` | When rendering Value → Project → Task hierarchies. |
+| `valueHierarchy` | `includeInheritedTasks`, `projectFilter`, `taskFilter` | When rendering Value â†’ Project â†’ Task hierarchies. |
 
 #### 6.6.4 `EnrichmentConfig` (computed statistics)
 
-See: [lib/domain/models/screens/enrichment_config.dart](../lib/domain/models/screens/enrichment_config.dart)
+See: [lib/domain/screens/language/models/enrichment_config.dart](../lib/domain/screens/language/models/enrichment_config.dart)
 
 | Variant | Fields | When to use |
 |---|---|---|
 | `valueStats` | `sparklineWeeks`, `gapWarningThreshold` | When value cards need computed progress/trend metadata. |
 
 **Full-screen templates**
-- Some templates are treated as “full-screen legacy pages” and are rendered without nesting a second Scaffold.
+- Some templates are treated as â€œfull-screen legacy pagesâ€ and are rendered without nesting a second Scaffold.
 - The list of full-screen template IDs is maintained in:
   - [lib/presentation/features/screens/view/unified_screen_page.dart](../lib/presentation/features/screens/view/unified_screen_page.dart)
   - [lib/presentation/widgets/section_widget.dart](../lib/presentation/widgets/section_widget.dart)
@@ -371,7 +371,7 @@ configuration types.
 > Note: system screens are authored in code under `SystemScreenDefinitions`.
 > Custom screens are created/updated via `ScreenDefinitionsRepositoryContract`.
 
-### 7.1 Example: “Inbox-like” task list screen
+### 7.1 Example: â€œInbox-likeâ€ task list screen
 
 Goal: a screen with an issues summary + task list, plus a task-create FAB.
 
@@ -421,7 +421,7 @@ final screen = ScreenDefinition(
 
 When to use:
 - Use `issuesSummary` when you want guardrails/alerts near the top.
-- Use `taskList` with a `TaskQuery` when the screen’s primary content is tasks.
+- Use `taskList` with a `TaskQuery` when the screenâ€™s primary content is tasks.
 
 ### 7.2 Example: Two task lists, labeled via section overrides
 
@@ -485,7 +485,7 @@ final definition = ScreenDefinition(
 ```
 
 When to use:
-- Use these templates for “pages” that already have their own internal layout
+- Use these templates for â€œpagesâ€ that already have their own internal layout
   and should not be embedded within another scaffold.
 
 ---
@@ -497,10 +497,10 @@ When to use:
 1. **Define a template ID**
    - Add to `SectionTemplateId`.
 2. **Define params (optional)**
-   - Create a params model in `lib/domain/models/screens/templates/` (Freezed + JSON).
+   - Create a params model in `lib/domain/screens/templates/params/` (Freezed + JSON).
    - Update the params codec switch in `SectionTemplateParamsCodec`.
 3. **Implement the interpreter**
-   - Add an interpreter in `lib/domain/services/screens/templates/`.
+   - Add an interpreter in `lib/domain/screens/templates/interpreters/`.
    - Ensure it supports `fetch` and/or `watch` (prefer `watch` for reactive UI).
 4. **Register interpreter in DI**
    - Ensure `SectionTemplateInterpreterRegistry` is constructed with the new interpreter.
@@ -515,15 +515,15 @@ When to use:
 
 - Edit/extend `SystemScreenDefinitions` to return a new `ScreenDefinition` with `sections`.
 - If it should appear in primary navigation order, update default sort order logic in `SystemScreenDefinitions`.
-- Ensure the seeder + cleanup semantics are considered (renames/removals create “orphans” that cleanup may delete).
+- Ensure the seeder + cleanup semantics are considered (renames/removals create â€œorphansâ€ that cleanup may delete).
 
-See: [lib/domain/models/screens/system_screen_definitions.dart](../lib/domain/models/screens/system_screen_definitions.dart)
+See: [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
 
 ---
 
 ## 9) Operational Notes & Common Pitfalls
 
-- **Unknown template IDs**: the interpreter registry throws if a template isn’t registered. Add codec + interpreter + renderer together.
+- **Unknown template IDs**: the interpreter registry throws if a template isnâ€™t registered. Add codec + interpreter + renderer together.
 - **Params mismatch**: if you add a params type but forget to update the codec, decoding will fall back to `EmptySectionParams`.
 - **System template renames**: changing a system `screenKey` affects deterministic IDs and routing paths; treat as a migration.
 - **Disabled sections**: `SectionOverrides.enabled=false` removes the section from the rendered `ScreenData`.
@@ -533,7 +533,7 @@ See: [lib/domain/models/screens/system_screen_definitions.dart](../lib/domain/mo
 ## 10) References
 
 - Unified UI entry point: [lib/presentation/features/screens/view/unified_screen_page.dart](../lib/presentation/features/screens/view/unified_screen_page.dart)
-- Interpreter pipeline: [lib/domain/services/screens/screen_data_interpreter.dart](../lib/domain/services/screens/screen_data_interpreter.dart)
-- System screens: [lib/domain/models/screens/system_screen_definitions.dart](../lib/domain/models/screens/system_screen_definitions.dart)
-- Seeding/cleanup: [lib/data/services/screen_seeder.dart](../lib/data/services/screen_seeder.dart), [lib/data/services/system_data_cleanup_service.dart](../lib/data/services/system_data_cleanup_service.dart)
+- Interpreter pipeline: [lib/domain/screens/runtime/screen_data_interpreter.dart](../lib/domain/screens/runtime/screen_data_interpreter.dart)
+- System screens: [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- Seeding/cleanup: [lib/data/screens/maintenance/screen_seeder.dart](../lib/data/screens/maintenance/screen_seeder.dart), [lib/data/screens/maintenance/system_data_cleanup_service.dart](../lib/data/screens/maintenance/system_data_cleanup_service.dart)
 - Routing conventions: [lib/core/routing/routing.dart](../lib/core/routing/routing.dart)

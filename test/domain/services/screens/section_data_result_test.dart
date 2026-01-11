@@ -1,11 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
-import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 import '../../../fixtures/test_data.dart';
 

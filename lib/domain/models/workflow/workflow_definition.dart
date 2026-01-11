@@ -1,5 +1,5 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 
 part 'workflow_definition.freezed.dart';

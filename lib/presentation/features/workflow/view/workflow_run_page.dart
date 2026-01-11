@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
@@ -7,7 +7,7 @@ import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart'
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/presentation/features/workflow/bloc/workflow_run_bloc.dart';
 
 /// Page for running a multi-step workflow
@@ -221,7 +221,7 @@ class _WorkflowRunView extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Workflow Complete! 🎉'),
+        title: const Text('Workflow Complete! ðŸŽ‰'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

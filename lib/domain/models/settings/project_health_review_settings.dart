@@ -1,5 +1,5 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+﻿import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 
 part 'project_health_review_settings.freezed.dart';
 part 'project_health_review_settings.g.dart';

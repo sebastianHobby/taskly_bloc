@@ -1,5 +1,5 @@
-import 'package:drift/drift.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+﻿import 'package:drift/drift.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/mappers/sql_comparison_builder.dart';
 import 'package:taskly_bloc/data/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';

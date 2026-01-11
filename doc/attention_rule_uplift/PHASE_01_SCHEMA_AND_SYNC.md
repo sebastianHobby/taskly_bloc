@@ -11,7 +11,7 @@
 - Supabase migrations: add a timestamped migration implementing the new attention schema.
 - PowerSync:
   - Ensure `supabase/powersync-sync-rules.yaml` includes the new table.
-  - Ensure `lib/data/powersync/schema.dart` matches the table columns.
+  - Ensure `lib/data/infrastructure/powersync/schema.dart` matches the table columns.
 
 ## Non-goals
 
@@ -45,7 +45,7 @@ Each must be filtered by `user_id = bucket.user_id` (server-owned user scoping).
 
 3) PowerSync client schema
 
-- Ensure `lib/data/powersync/schema.dart` includes matching tables and columns.
+- Ensure `lib/data/infrastructure/powersync/schema.dart` includes matching tables and columns.
 - Ensure any columns that exist in the DB but not in the PowerSync schema are either:
   - intentionally excluded (rare; must be justified), or
   - added so replication doesn’t fail.
