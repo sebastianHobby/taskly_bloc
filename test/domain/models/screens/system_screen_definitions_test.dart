@@ -21,7 +21,7 @@ void main() {
         final params = AllocationSectionParams.fromJson(allocationRef.params);
         expect(params.showExcludedSection, isTrue);
         expect(params.showExcludedWarnings, isTrue);
-        expect(params.displayMode, AllocationDisplayMode.groupedByProject);
+        expect(params.displayMode, AllocationDisplayMode.groupedByValue);
       });
     });
 

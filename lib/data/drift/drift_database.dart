@@ -201,19 +201,12 @@ class UserProfileTable extends Table {
 
   // Note: user_id not included - managed by Supabase, not synced to client
 
-  /// Individual settings columns for PowerSync field-level sync.
-  /// Each column syncs independently to prevent cross-device conflicts.
+  /// Settings override map (jsonb in Supabase, TEXT in SQLite).
   ///
-  /// These columns are nullable because PowerSync syncs data as JSON blobs,
-  /// and fields not present in the JSON will be NULL. The repository layer
-  /// handles null values by returning default settings objects.
-  TextColumn get globalSettings => text().nullable().named('global_settings')();
-  TextColumn get allocationSettings =>
-      text().nullable().named('allocation_settings')();
-  TextColumn get pageSortPreferences =>
-      text().nullable().named('page_sort_preferences')();
-  TextColumn get pageDisplaySettings =>
-      text().nullable().named('page_display_settings')();
+  /// This is nullable because PowerSync may omit unchanged fields.
+  /// The repository treats null/invalid as an empty map and repairs it.
+  TextColumn get settingsOverrides =>
+      text().nullable().named('settings_overrides')();
 
   DateTimeColumn get createdAt =>
       dateTime().clientDefault(DateTime.now).named('created_at')();

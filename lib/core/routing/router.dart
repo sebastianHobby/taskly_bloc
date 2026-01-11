@@ -1,18 +1,9 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/routing/widgets/scaffold_with_nested_navigation.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
-import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
 
 /// Router for authenticated app shell.
@@ -35,24 +26,9 @@ final router = GoRouter(
             ? Routing.parseScreenKey(segment)
             : null;
 
-        // Use a constant key to prevent NavigationBloc from being recreated
-        // on every ShellRoute builder call. Without a key, each navigation
-        // would dispose the old BlocProvider and create a new one, closing
-        // all child blocs (ScreenDefinitionBloc, TaskOverviewBloc, etc.)
-        return BlocProvider(
-          key: const ValueKey('navigation_bloc_provider'),
-          create: (_) => NavigationBloc(
-            screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
-            badgeService: NavigationBadgeService(
-              taskRepository: getIt<TaskRepositoryContract>(),
-              projectRepository: getIt<ProjectRepositoryContract>(),
-            ),
-            iconResolver: const NavigationIconResolver(),
-          )..add(const NavigationStarted()),
-          child: ScaffoldWithNestedNavigation(
-            activeScreenId: activeScreenId,
-            child: child,
-          ),
+        return ScaffoldWithNestedNavigation(
+          activeScreenId: activeScreenId,
+          child: child,
         );
       },
       routes: [

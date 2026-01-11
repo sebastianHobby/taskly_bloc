@@ -22,6 +22,7 @@ import 'package:taskly_bloc/domain/services/screens/templates/check_in_summary_s
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -62,6 +63,12 @@ void main() {
 
         final settingsRepository = SettingsRepository(driftDb: db);
 
+        final dayKeyService = HomeDayKeyService(
+          settingsRepository: settingsRepository,
+        );
+        await dayKeyService.ensureInitialized();
+        dayKeyService.start();
+
         final analyticsService = MockAnalyticsService();
         when(
           () => analyticsService.getRecentCompletionsByValue(
@@ -78,6 +85,7 @@ void main() {
           settingsRepository: settingsRepository,
           analyticsService: analyticsService,
           projectRepository: projectRepository,
+          dayKeyService: dayKeyService,
           allocationSnapshotRepository: allocationSnapshotRepository,
         );
 
@@ -94,6 +102,7 @@ void main() {
           allocationSnapshotRepository: allocationSnapshotRepository,
           agendaDataService: agendaDataService,
           settingsRepository: settingsRepository,
+          dayKeyService: dayKeyService,
         );
 
         final attentionRepository = AttentionRepository(db: db);
@@ -103,6 +112,7 @@ void main() {
           taskRepository: taskRepository,
           projectRepository: projectRepository,
           settingsRepository: settingsRepository,
+          dayKeyService: dayKeyService,
         );
 
         const systemScreenProvider = DefaultSystemScreenProvider();

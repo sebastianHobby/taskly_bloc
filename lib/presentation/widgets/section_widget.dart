@@ -4,6 +4,7 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/screens/display_config.dart';
 import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
@@ -31,6 +32,7 @@ import 'package:taskly_bloc/presentation/features/screens/renderers/value_list_r
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
+import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/screen_management_page.dart';
 import 'package:taskly_bloc/presentation/features/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
@@ -164,6 +166,15 @@ class SectionWidget extends StatelessWidget {
             data: d,
             title: section.title,
             compactTiles: compactTiles,
+            onProjectToggle: onProjectCheckboxChanged == null
+                ? null
+                : (projectId, val) {
+                    final project = d.items
+                        .whereType<ScreenItemProject>()
+                        .map((i) => i.project)
+                        .firstWhere((p) => p.id == projectId);
+                    onProjectCheckboxChanged?.call(project, val);
+                  },
           ),
           SectionTemplateId.valueList => ValueListRenderer(
             data: d,
@@ -229,6 +240,7 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.navigationSettings ||
       SectionTemplateId.attentionRules ||
       SectionTemplateId.focusSetupWizard ||
+      SectionTemplateId.browseHub ||
       SectionTemplateId.myDayFocusModeRequired => true,
       _ => false,
     };
@@ -236,6 +248,7 @@ class SectionWidget extends StatelessWidget {
 
   Widget _buildFullScreenTemplate() {
     return switch (section.templateId) {
+      SectionTemplateId.browseHub => const BrowseHubScreen(),
       SectionTemplateId.settingsMenu => const SettingsScreen(),
       SectionTemplateId.myDayFocusModeRequired =>
         const MyDayFocusModeRequiredPage(),

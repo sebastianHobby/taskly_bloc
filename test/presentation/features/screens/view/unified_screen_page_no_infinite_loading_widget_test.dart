@@ -20,6 +20,7 @@ import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
@@ -31,10 +32,13 @@ import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_helpers.dart';
 import '../../../../mocks/repository_mocks.dart';
 
+class MockEntityActionService extends Mock implements EntityActionService {}
+
 void main() {
   group('UnifiedScreenPageById (widget) infinite loading guards', () {
     late MockScreenDefinitionsRepositoryContract screensRepository;
     late MockSettingsRepositoryContract settingsRepository;
+    late MockEntityActionService entityActionService;
 
     setUp(() async {
       initializeTalkerForTest();
@@ -44,6 +48,7 @@ void main() {
 
       screensRepository = MockScreenDefinitionsRepositoryContract();
       settingsRepository = MockSettingsRepositoryContract();
+      entityActionService = MockEntityActionService();
 
       when(
         () =>
@@ -69,6 +74,7 @@ void main() {
           screensRepository,
         )
         ..registerSingleton(settingsRepository)
+        ..registerSingleton<EntityActionService>(entityActionService)
         ..registerSingleton<ScreenDataInterpreter>(interpreter);
     });
 

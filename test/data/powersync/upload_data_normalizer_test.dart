@@ -28,16 +28,11 @@ void main() {
         rowId: 'u1',
         opType: 'patch',
         data: {
-          'global_settings': '{"a":1}',
-          'allocation_settings': '{"b":2}',
-          'page_sort_preferences': '{"c":3}',
-          'page_display_settings': '{"d":4}',
+          'settings_overrides': '{"a":1}',
         },
       );
 
-      for (final v in normalized.values) {
-        expect(v, isA<Map>());
-      }
+      expect(normalized['settings_overrides'], isA<Map>());
     });
 
     test('decodes screen_definitions jsonb maps', () {

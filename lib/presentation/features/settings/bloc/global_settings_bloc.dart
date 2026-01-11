@@ -37,6 +37,11 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.dateFormatChanged(String pattern) =
       GlobalSettingsDateFormatChanged;
 
+  /// User changed the fixed home timezone offset.
+  const factory GlobalSettingsEvent.homeTimeZoneOffsetChanged(
+    int offsetMinutes,
+  ) = GlobalSettingsHomeTimeZoneOffsetChanged;
+
   /// User changed the text scale factor.
   const factory GlobalSettingsEvent.textScaleChanged(double textScaleFactor) =
       GlobalSettingsTextScaleChanged;
@@ -83,16 +88,8 @@ sealed class GlobalSettingsState with _$GlobalSettingsState {
 
 /// BLoC for managing global app settings.
 ///
-/// Provides optimistic UI updates for settings changes - the UI updates
-/// immediately when the user changes a setting, before the persistence
-/// completes. This prevents flicker that would occur with a pure
-/// StreamBuilder approach.
-///
-/// ## Sync Bounce Protection
-///
-/// The repository layer now handles sync bounce protection via `_pendingWrites`.
-/// This BLoC trusts the repository stream to deliver correct values - stale
-/// CDC data is filtered at the repository level, not here.
+/// Applies settings changes via the repository and relies on the repository
+/// stream as the single source of truth for the UI.
 ///
 /// ## Usage
 ///
@@ -135,6 +132,10 @@ class GlobalSettingsBloc
     );
     on<GlobalSettingsDateFormatChanged>(
       _onDateFormatChanged,
+      transformer: sequential(),
+    );
+    on<GlobalSettingsHomeTimeZoneOffsetChanged>(
+      _onHomeTimeZoneOffsetChanged,
       transformer: sequential(),
     );
     on<GlobalSettingsTextScaleChanged>(
@@ -180,12 +181,11 @@ class GlobalSettingsBloc
     GlobalSettingsStreamUpdated event,
     Emitter<GlobalSettingsState> emit,
   ) {
-    // Repository now handles sync bounce protection - we trust incoming data
     final isDifferent = event.settings != state.settings;
     final wasLoading = state.isLoading;
 
     // Persist high-signal settings changes to the debug file log so we can
-    // correlate "optimistic UI" updates with repository stream overwrites.
+    // correlate UI changes with repository stream emissions.
     final themeModeChanged =
         event.settings.themeMode != state.settings.themeMode;
 
@@ -227,9 +227,6 @@ class GlobalSettingsBloc
       '  old=${state.settings.themeMode}\n'
       '  new=${event.themeMode}',
     );
-    // Optimistic UI update
-    emit(state.copyWith(settings: updated));
-    // Repository handles sync bounce protection
     try {
       await _settingsRepository.save(SettingsKey.global, updated);
       talker.warning(
@@ -259,9 +256,6 @@ class GlobalSettingsBloc
       '  old color: ${state.settings.colorSchemeSeedArgb}\n'
       '  new color: ${event.colorArgb}',
     );
-    // Optimistic UI update
-    emit(state.copyWith(settings: updated));
-    // Repository handles sync bounce protection
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -270,7 +264,16 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(localeCode: event.localeCode);
-    emit(state.copyWith(settings: updated));
+    await _settingsRepository.save(SettingsKey.global, updated);
+  }
+
+  Future<void> _onHomeTimeZoneOffsetChanged(
+    GlobalSettingsHomeTimeZoneOffsetChanged event,
+    Emitter<GlobalSettingsState> emit,
+  ) async {
+    final updated = state.settings.copyWith(
+      homeTimeZoneOffsetMinutes: event.offsetMinutes,
+    );
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -279,7 +282,6 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(dateFormatPattern: event.pattern);
-    emit(state.copyWith(settings: updated));
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -290,7 +292,6 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       textScaleFactor: event.textScaleFactor,
     );
-    emit(state.copyWith(settings: updated));
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -299,7 +300,6 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(onboardingCompleted: true);
-    emit(state.copyWith(settings: updated));
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
@@ -308,7 +308,6 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     const defaults = GlobalSettings();
-    emit(state.copyWith(settings: defaults));
     await _settingsRepository.save(SettingsKey.global, defaults);
   }
 }

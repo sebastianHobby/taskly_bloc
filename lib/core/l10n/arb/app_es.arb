@@ -1169,5 +1169,36 @@
                 "type": "int"
             }
         }
-    }
+    },
+    "myDayTitle": "Mi día",
+    "myDayAlertBannerSingular": "1 elemento fuera de Focus",
+    "myDayAlertBannerPlural": "{count} elementos fuera de Focus",
+    "myDayAlertBannerReview": "Revisar",
+    "excludedSectionNeedsAlignment": "Necesita alineación",
+    "excludedSectionWorthConsidering": "Vale la pena considerar",
+    "excludedSectionOverdueAttention": "Atención atrasada",
+    "excludedSectionActiveFires": "Incendios activos",
+    "excludedSectionOutsideFocus": "Fuera de Focus",
+    "alertTypeUrgent": "Tareas urgentes",
+    "alertTypeOverdue": "Tareas vencidas",
+    "alertTypeNoValue": "Tareas sin valores",
+    "alertTypeLowPriority": "Tareas de baja prioridad",
+    "alertTypeQuotaFull": "Tareas que exceden la cuota",
+    "alertSeverityCritical": "Crítico",
+    "alertSeverityWarning": "Advertencia",
+    "alertSeverityNotice": "Aviso",
+    "dailyTaskLimitLabel": "Límite diario de tareas",
+    "dailyTaskLimitHelper": "Número máximo de tareas para programar por día",
+    "strategyTitle": "Estrategia",
+    "enableNeglectWeightingLabel": "Habilitar ponderación por descuido",
+    "enableNeglectWeightingHelper": "Prioriza las tareas que han sido descuidadas",
+    "displayTitle": "Visualización",
+    "showOrphanTaskCountLabel": "Mostrar cantidad de tareas huérfanas",
+    "showProjectNextTaskLabel": "Mostrar siguiente tarea del proyecto",
+    "settingsSaved": "Configuración guardada",
+    "settingsSaveError": "Error al guardar la configuración: {error}",
+    "settingsLoadError": "Error al cargar la configuración: {error}",
+    "deleteValue": "Eliminar valor",
+    "editValue": "Editar valor",
+    "valueNotFound": "No se encontró el valor."
 }

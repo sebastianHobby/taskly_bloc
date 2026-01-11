@@ -59,6 +59,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Language & Region',
                   children: [
                     _LanguageSelector(settings: settings),
+                    _HomeTimeZoneSelector(settings: settings),
                     _DateFormatSelector(settings: settings),
                   ],
                 ),
@@ -380,6 +381,60 @@ class _DateFormatSelector extends StatelessWidget {
     final now = DateTime(2025, 12, 30);
     final formatter = DateFormatPatterns.getFormat(pattern);
     return 'Example: ${formatter.format(now)}';
+  }
+}
+
+class _HomeTimeZoneSelector extends StatelessWidget {
+  const _HomeTimeZoneSelector({required this.settings});
+
+  final GlobalSettings settings;
+
+  static const int _minOffsetMinutes = -12 * 60;
+  static const int _maxOffsetMinutes = 14 * 60;
+  static const int _stepMinutes = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = <DropdownMenuItem<int>>[];
+    for (
+      var offset = _minOffsetMinutes;
+      offset <= _maxOffsetMinutes;
+      offset += _stepMinutes
+    ) {
+      items.add(
+        DropdownMenuItem<int>(
+          value: offset,
+          child: Text(_formatOffset(offset)),
+        ),
+      );
+    }
+
+    return ListTile(
+      title: const Text('Home Timezone'),
+      subtitle: const Text(
+        'Fixed day boundary for “today” and daily snapshots',
+      ),
+      trailing: DropdownButton<int>(
+        value: settings.homeTimeZoneOffsetMinutes,
+        items: items,
+        onChanged: (offsetMinutes) {
+          if (offsetMinutes == null) return;
+          context.read<GlobalSettingsBloc>().add(
+            GlobalSettingsEvent.homeTimeZoneOffsetChanged(offsetMinutes),
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatOffset(int offsetMinutes) {
+    final sign = offsetMinutes >= 0 ? '+' : '-';
+    final abs = offsetMinutes.abs();
+    final hours = abs ~/ 60;
+    final minutes = abs % 60;
+    final hh = hours.toString().padLeft(2, '0');
+    final mm = minutes.toString().padLeft(2, '0');
+    return minutes == 0 ? 'GMT$sign$hh' : 'GMT$sign$hh:$mm';
   }
 }
 

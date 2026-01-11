@@ -13,6 +13,7 @@
 env.g.dart
 migrate_working_dir/
 dart_defines.json
+dart_defines.local.json
 
 # Generated files (build_runner, freezed, json_serializable, drift)
 *.g.dart
@@ -123,3 +124,6 @@ app.*.map.json
 # Generated l10n files
 lib/l10n/gen/
 .env.example
+
+# Allow committed local-stack templates
+!infra/powersync_local/*.example

@@ -48,10 +48,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get createTaskTooltip => 'Crear tarea';
 
   @override
-  String get deleteValue => 'Delete value';
+  String get deleteValue => 'Eliminar valor';
 
   @override
-  String get editValue => 'Edit value';
+  String get editValue => 'Editar valor';
 
   @override
   String get createLabelTooltip => 'Crear etiqueta';
@@ -90,7 +90,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get labelNotFound => 'No se encontró la etiqueta.';
 
   @override
-  String get valueNotFound => 'Value not found.';
+  String get valueNotFound => 'No se encontró el valor.';
 
   @override
   String get taskFilterAll => 'Todas las tareas';
@@ -826,57 +826,57 @@ class AppLocalizationsEs extends AppLocalizations {
   String get setUpMyValues => 'Configurar Mis Valores';
 
   @override
-  String get myDayTitle => 'My Day';
+  String get myDayTitle => 'Mi día';
 
   @override
-  String get myDayAlertBannerSingular => '1 item outside Focus';
+  String get myDayAlertBannerSingular => '1 elemento fuera de Focus';
 
   @override
   String myDayAlertBannerPlural(int count) {
-    return '$count items outside Focus';
+    return '$count elementos fuera de Focus';
   }
 
   @override
-  String get myDayAlertBannerReview => 'Review';
+  String get myDayAlertBannerReview => 'Revisar';
 
   @override
-  String get excludedSectionNeedsAlignment => 'Needs Alignment';
+  String get excludedSectionNeedsAlignment => 'Necesita alineación';
 
   @override
-  String get excludedSectionWorthConsidering => 'Worth Considering';
+  String get excludedSectionWorthConsidering => 'Vale la pena considerar';
 
   @override
-  String get excludedSectionOverdueAttention => 'Overdue Attention';
+  String get excludedSectionOverdueAttention => 'Atención atrasada';
 
   @override
-  String get excludedSectionActiveFires => 'Active Fires';
+  String get excludedSectionActiveFires => 'Incendios activos';
 
   @override
-  String get excludedSectionOutsideFocus => 'Outside Focus';
+  String get excludedSectionOutsideFocus => 'Fuera de Focus';
 
   @override
-  String get alertTypeUrgent => 'Urgent tasks';
+  String get alertTypeUrgent => 'Tareas urgentes';
 
   @override
-  String get alertTypeOverdue => 'Overdue tasks';
+  String get alertTypeOverdue => 'Tareas vencidas';
 
   @override
-  String get alertTypeNoValue => 'Tasks without values';
+  String get alertTypeNoValue => 'Tareas sin valores';
 
   @override
-  String get alertTypeLowPriority => 'Low priority tasks';
+  String get alertTypeLowPriority => 'Tareas de baja prioridad';
 
   @override
-  String get alertTypeQuotaFull => 'Quota exceeded tasks';
+  String get alertTypeQuotaFull => 'Tareas que exceden la cuota';
 
   @override
-  String get alertSeverityCritical => 'Critical';
+  String get alertSeverityCritical => 'Crítico';
 
   @override
-  String get alertSeverityWarning => 'Warning';
+  String get alertSeverityWarning => 'Advertencia';
 
   @override
-  String get alertSeverityNotice => 'Notice';
+  String get alertSeverityNotice => 'Aviso';
 
   @override
   String get basicInfoSection => 'Información Básica';
@@ -926,39 +926,39 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyTaskLimitLabel => 'Daily Task Limit';
+  String get dailyTaskLimitLabel => 'Límite diario de tareas';
 
   @override
-  String get dailyTaskLimitHelper => 'Maximum number of tasks to schedule per day';
+  String get dailyTaskLimitHelper => 'Número máximo de tareas para programar por día';
 
   @override
-  String get strategyTitle => 'Strategy';
+  String get strategyTitle => 'Estrategia';
 
   @override
-  String get enableNeglectWeightingLabel => 'Enable Neglect Weighting';
+  String get enableNeglectWeightingLabel => 'Habilitar ponderación por descuido';
 
   @override
-  String get enableNeglectWeightingHelper => 'Prioritize tasks that have been neglected';
+  String get enableNeglectWeightingHelper => 'Prioriza las tareas que han sido descuidadas';
 
   @override
-  String get displayTitle => 'Display';
+  String get displayTitle => 'Visualización';
 
   @override
-  String get showOrphanTaskCountLabel => 'Show Orphan Task Count';
+  String get showOrphanTaskCountLabel => 'Mostrar cantidad de tareas huérfanas';
 
   @override
-  String get showProjectNextTaskLabel => 'Show Project Next Task';
+  String get showProjectNextTaskLabel => 'Mostrar siguiente tarea del proyecto';
 
   @override
-  String get settingsSaved => 'Settings saved';
+  String get settingsSaved => 'Configuración guardada';
 
   @override
   String settingsSaveError(Object error) {
-    return 'Error saving settings: $error';
+    return 'Error al guardar la configuración: $error';
   }
 
   @override
   String settingsLoadError(Object error) {
-    return 'Error loading settings: $error';
+    return 'Error al cargar la configuración: $error';
   }
 }

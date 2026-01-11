@@ -15,6 +15,7 @@ import 'package:taskly_bloc/domain/models/settings/project_health_review_setting
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_evaluator.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 import '../../../helpers/test_db.dart';
 import '../../../mocks/fake_id_generator.dart';
@@ -62,12 +63,19 @@ void main() {
       final allocationSnapshotRepository = AllocationSnapshotRepository(db: db);
       final attentionRepository = AttentionRepository(db: db);
 
+      final dayKeyService = HomeDayKeyService(
+        settingsRepository: settingsRepository,
+      );
+      await dayKeyService.ensureInitialized();
+      dayKeyService.start();
+
       final evaluator = AttentionEvaluator(
         attentionRepository: attentionRepository,
         allocationSnapshotRepository: allocationSnapshotRepository,
         taskRepository: taskRepository,
         projectRepository: projectRepository,
         settingsRepository: settingsRepository,
+        dayKeyService: dayKeyService,
       );
 
       return (

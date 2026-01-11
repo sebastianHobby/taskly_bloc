@@ -1,7 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -11,28 +11,16 @@ import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 
 /// Repository for managing application settings via [SettingsKey].
 ///
-/// Uses individual database columns for each settings type to enable
-/// PowerSync field-level sync (prevents cross-device conflicts).
+/// ## Storage model
+/// Settings are stored in a single `user_profiles.settings_overrides` JSON map:
+/// - Code provides defaults.
+/// - DB stores overrides only; missing/invalid data falls back to defaults.
+/// - If an override is invalid (bad JSON / wrong type), we self-heal by writing
+///   a repaired override map back to the DB.
 ///
-/// ## Architecture
-/// Each settings type is stored in its own column:
-/// - globalSettings, allocationSettings, softGatesSettings, etc.
-/// - Each column syncs independently via PowerSync
-/// - Changing one setting type doesn't conflict with others
-///
-/// ## Stream Pattern
-/// Uses the standard repository pattern aligned with TaskRepository,
-/// ProjectRepository, and LabelRepository:
-/// - Direct stream mapping (not async* generators)
-/// - Automatic initial value emission from Drift's .watch()
-/// - Synchronous transformation of database rows to domain objects
-///
-/// ## Sync Bounce Protection
-/// This repository uses debouncing to protect against PowerSync CDC "sync bounce".
-/// When a save occurs, CDC may rapidly deliver: local echo → stale bounce → fresh.
-/// A 250ms debounce ensures we emit only the last (fresh) value after the
-/// burst settles. The BLoC's optimistic update provides instant UI feedback,
-/// so the debounce delay is invisible to users.
+/// ## Sync bounce protection
+/// Debounces the user profile stream to reduce PowerSync CDC "bounce" where an
+/// older snapshot may briefly appear after a local save.
 class SettingsRepository implements SettingsRepositoryContract {
   SettingsRepository({required this.driftDb});
 
@@ -45,79 +33,9 @@ class SettingsRepository implements SettingsRepositoryContract {
   // (e.g. settings last changed days ago).
   DateTime? _lastSaveCompletedAtUtc;
   DateTime? _lastEmittedUpdatedAtUtc;
+  DateTime? _lastRepairAttemptAtUtc;
 
-  /// Debounce duration for sync bounce protection.
-  ///
-  /// 250ms is sufficient to catch the typical bounce pattern:
-  /// - T+0ms: Local echo
-  /// - T+50-100ms: CDC bounce (stale)
-  /// - T+100-200ms: CDC fresh
-  ///
-  /// After 250ms of quiet, we emit the last (fresh) value.
-  static const _syncBounceDebounce = Duration(milliseconds: 250);
-
-  /// Debug method to dump raw SQL data - helps identify PowerSync sync issues
-  Future<void> debugDumpRawProfileData() async {
-    talker.repositoryLog(
-      'Settings',
-      '=== DEBUG: Raw SQL user_profiles dump ===',
-    );
-    try {
-      // Query using raw SQL to bypass Drift mapping
-      final results = await driftDb
-          .customSelect(
-            'SELECT * FROM user_profiles LIMIT 10',
-          )
-          .get();
-
-      talker.repositoryLog(
-        'Settings',
-        'Raw SQL returned ${results.length} rows',
-      );
-      for (var i = 0; i < results.length; i++) {
-        final row = results[i].data;
-        talker.repositoryLog(
-          'Settings',
-          'RAW SQL row[$i]: ${row.entries.map((e) => '${e.key}=${e.value ?? "NULL"}').join(', ')}',
-        );
-      }
-
-      // Also check PowerSync's internal ps_crud table for pending uploads.
-      // This table won't exist in unit tests (in-memory DB), so guard it.
-      try {
-        final psCrudExists = await driftDb
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name='ps_crud' LIMIT 1",
-            )
-            .get();
-
-        if (psCrudExists.isNotEmpty) {
-          final crudResults = await driftDb
-              .customSelect(
-                "SELECT * FROM ps_crud WHERE data LIKE '%user_profiles%' LIMIT 5",
-              )
-              .get();
-          if (crudResults.isNotEmpty) {
-            talker.repositoryLog(
-              'Settings',
-              'ps_crud has ${crudResults.length} pending user_profiles uploads:',
-            );
-            for (final row in crudResults) {
-              talker.repositoryLog(
-                'Settings',
-                '  PENDING UPLOAD: ${row.data}',
-              );
-            }
-          }
-        }
-      } catch (_) {
-        // Best-effort debug helper; ignore ps_crud issues.
-      }
-    } catch (e, st) {
-      talker.databaseError('[Settings] debugDumpRawProfileData FAILED', e, st);
-    }
-    talker.repositoryLog('Settings', '=== END DEBUG dump ===');
-  }
+  static const _repairsKey = '_repairs';
 
   // =========================================================================
   // Public API (SettingsRepositoryContract)
@@ -125,51 +43,14 @@ class SettingsRepository implements SettingsRepositoryContract {
 
   @override
   Stream<T> watch<T>(SettingsKey<T> key) {
-    // Debounce protects against CDC sync bounce:
-    // After a save, CDC may emit: local echo → stale bounce → fresh value
-    // Debouncing ensures we wait for the burst to settle and emit only the
-    // final (fresh) value. BLoC optimistic updates provide instant UI feedback.
-    return _profileStream.debounceTime(_syncBounceDebounce).map((rows) {
-      final row = _latestRow(rows);
-      final value = _extractValue(key, row);
-
-      // Only persist high-signal settings to the debug file log.
-      if (identical(key, SettingsKey.global)) {
-        final global = value as GlobalSettings;
-        talker.warning(
-          '[settings.global] watch<$T> emitted\n'
-          '  themeMode=${global.themeMode}\n'
-          '  seed=${global.colorSchemeSeedArgb}\n'
-          '  rows.length=${rows.length}\n'
-          '  selectedRow.updatedAt=${row?.updatedAt.toUtc()}',
-        );
-      } else {
-        talker.repositoryLog(
-          'Settings',
-          'watch<$T>: emitting value for key=$key, '
-              'rows.length=${rows.length}, '
-              'selectedRow.updatedAt=${row?.updatedAt}',
-        );
-      }
-
-      return value;
-    }).distinct();
+    return _profileStream.map((row) => _extractValue(key, row)).distinct();
   }
 
   @override
   Future<T> load<T>(SettingsKey<T> key) async {
-    talker.repositoryLog('Settings', 'load<$T>: key=$key');
     try {
       final row = await _selectProfile();
-      talker.repositoryLog(
-        'Settings',
-        'load<$T>: _selectProfile returned ${row == null ? "null" : "row(id=${row.id})"}',
-      );
       final value = _extractValue(key, row);
-      talker.repositoryLog(
-        'Settings',
-        'load<$T>: extracted value successfully',
-      );
       return value;
     } catch (e, st) {
       talker.databaseError('[Settings] load<$T> FAILED for key=$key', e, st);
@@ -180,234 +61,24 @@ class SettingsRepository implements SettingsRepositoryContract {
   @override
   Future<void> save<T>(SettingsKey<T> key, T value) async {
     final saveStartTime = DateTime.now();
-
-    final shouldPersistToFile = identical(key, SettingsKey.global);
-    if (shouldPersistToFile) {
-      final global = value as GlobalSettings;
-      talker.warning(
-        '[settings.global] save<$T> START\n'
-        '  at=${saveStartTime.toUtc()}\n'
-        '  themeMode=${global.themeMode}\n'
-        '  seed=${global.colorSchemeSeedArgb}',
-      );
-    } else {
-      talker.repositoryLog(
-        'Settings',
-        '[SEQUENCE 1/3] save<$T> START at $saveStartTime\n'
-            '  key=$key\n'
-            '  value=$value',
-      );
-    }
-
     final profile = await _ensureProfile();
-    final companion = _buildCompanion(key, value, profile);
-    if (shouldPersistToFile) {
-      talker.warning(
-        '[settings.global] save<$T> writing\n'
-        '  profile.id=${profile.id}\n'
-        '  profile.updatedAt=${profile.updatedAt.toUtc()}\n'
-        '  newUpdatedAt=${DateTime.now().toUtc()}',
-      );
-    } else {
-      talker.repositoryLog(
-        'Settings',
-        '[SEQUENCE 2/3] save<$T>: about to write to Drift/SQLite\n'
-            '  profile.id=${profile.id}\n'
-            '  profile.updatedAt=${profile.updatedAt}\n'
-            '  companion will set updatedAt=${DateTime.now().toUtc()}',
-      );
-    }
-
-    // DRIFT WRITE - this updates local SQLite (owned by PowerSync)
-    await (driftDb.update(
-      driftDb.userProfileTable,
-    )..where((row) => row.id.equals(profile.id))).write(companion);
+    final overrides = _parseOverrides(
+      profile.settingsOverrides,
+      source: 'save<$T> key=$key',
+      profileId: profile.id,
+    );
+    final updated = _upsertOverride(key, value, overrides);
+    await _writeOverrides(
+      profileId: profile.id,
+      overrides: updated,
+    );
 
     final driftWriteTime = DateTime.now();
-
-    // Diagnostics: mark that a local save just completed.
     _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
-
-    if (shouldPersistToFile) {
-      talker.warning(
-        '[settings.global] save<$T> COMPLETE\n'
-        '  at=${driftWriteTime.toUtc()}\n'
-        '  durationMs=${driftWriteTime.difference(saveStartTime).inMilliseconds}\n'
-        '  note=PowerSync upload + stream debounce may follow',
-      );
-    } else {
-      talker.repositoryLog(
-        'Settings',
-        '[SEQUENCE 3/3] save<$T> COMPLETE at $driftWriteTime\n'
-            '  Duration: ${driftWriteTime.difference(saveStartTime).inMilliseconds}ms\n'
-            '  PowerSync will detect change and trigger upload\n'
-            '  Stream debounce will filter any CDC bounce',
-      );
-    }
-  }
-
-  // =========================================================================
-  // Key dispatch: extract value from row
-  // =========================================================================
-
-  T _extractValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
-    return switch (key) {
-      SettingsKey.global => _globalFromRow(row) as T,
-      SettingsKey.allocation => _allocationFromRow(row) as T,
-      SettingsKey.all => _rowToAppSettings(row) as T,
-      _ => _extractKeyedValue(key, row),
-    };
-  }
-
-  T _extractKeyedValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
-    // Handle keyed keys (pageSort, pageDisplay)
-    final keyedKey = key as dynamic;
-    final name = keyedKey.name as String;
-    final subKey = keyedKey.subKey as String;
-
-    return switch (name) {
-      'pageSort' => _pageSortFromRow(row, subKey) as T,
-      'pageDisplay' => _pageDisplayFromRow(row, subKey) as T,
-      _ => throw ArgumentError('Unknown keyed key: $name'),
-    };
-  }
-
-  // =========================================================================
-  // Key dispatch: build companion for save
-  // =========================================================================
-
-  UserProfileTableCompanion _buildCompanion<T>(
-    SettingsKey<T> key,
-    T value,
-    UserProfileTableData profile,
-  ) {
-    // Use UTC to match Supabase server timestamps and avoid timezone comparison issues
-    final now = Value(DateTime.now().toUtc());
-    return switch (key) {
-      SettingsKey.global => UserProfileTableCompanion(
-        globalSettings: Value(jsonEncode((value as GlobalSettings).toJson())),
-        updatedAt: now,
-      ),
-      SettingsKey.allocation => UserProfileTableCompanion(
-        allocationSettings: Value(
-          jsonEncode((value as AllocationConfig).toJson()),
-        ),
-        updatedAt: now,
-      ),
-      SettingsKey.all => throw UnsupportedError(
-        'Cannot save full AppSettings; save individual keys instead',
-      ),
-      _ => _buildKeyedCompanion(key, value, profile, now),
-    };
-  }
-
-  UserProfileTableCompanion _buildKeyedCompanion<T>(
-    SettingsKey<T> key,
-    T value,
-    UserProfileTableData profile,
-    Value<DateTime> now,
-  ) {
-    final keyedKey = key as dynamic;
-    final name = keyedKey.name as String;
-    final subKey = keyedKey.subKey as String;
-
-    return switch (name) {
-      'pageSort' => _buildPageSortCompanion(
-        subKey,
-        value as SortPreferences?,
-        profile,
-        now,
-      ),
-      'pageDisplay' => _buildPageDisplayCompanion(
-        subKey,
-        value as PageDisplaySettings,
-        profile,
-        now,
-      ),
-      _ => throw ArgumentError('Unknown keyed key: $name'),
-    };
-  }
-
-  // =========================================================================
-  // Value extractors
-  // =========================================================================
-
-  GlobalSettings _globalFromRow(UserProfileTableData? row) {
-    if (row == null) return const GlobalSettings();
-    return GlobalSettings.fromJson(_parseJson(row.globalSettings));
-  }
-
-  AllocationConfig _allocationFromRow(UserProfileTableData? row) {
-    if (row == null) return const AllocationConfig();
-    return AllocationConfig.fromJson(_parseJson(row.allocationSettings));
-  }
-
-  SortPreferences? _pageSortFromRow(UserProfileTableData? row, String subKey) {
-    if (row == null) return null;
-    final prefs = _parsePageSortPreferences(row.pageSortPreferences);
-    return prefs[subKey];
-  }
-
-  PageDisplaySettings _pageDisplayFromRow(
-    UserProfileTableData? row,
-    String subKey,
-  ) {
-    if (row == null) return const PageDisplaySettings();
-    final settings = _parsePageDisplaySettings(row.pageDisplaySettings);
-    return settings[subKey] ?? const PageDisplaySettings();
-  }
-
-  AppSettings _rowToAppSettings(UserProfileTableData? row) {
-    if (row == null) return const AppSettings();
-    return AppSettings(
-      global: GlobalSettings.fromJson(_parseJson(row.globalSettings)),
-      allocation: AllocationConfig.fromJson(
-        _parseJson(row.allocationSettings),
-      ),
-      pageSortPreferences: _parsePageSortPreferences(row.pageSortPreferences),
-      pageDisplaySettings: _parsePageDisplaySettings(row.pageDisplaySettings),
-    );
-  }
-
-  // =========================================================================
-  // Companion builders for keyed settings
-  // =========================================================================
-
-  UserProfileTableCompanion _buildPageSortCompanion(
-    String subKey,
-    SortPreferences? value,
-    UserProfileTableData profile,
-    Value<DateTime> now,
-  ) {
-    final current = _parsePageSortPreferences(profile.pageSortPreferences);
-    if (value == null) {
-      current.remove(subKey);
-    } else {
-      current[subKey] = value;
-    }
-    final json = jsonEncode(
-      current.map((key, v) => MapEntry(key, v.toJson())),
-    );
-    return UserProfileTableCompanion(
-      pageSortPreferences: Value(json),
-      updatedAt: now,
-    );
-  }
-
-  UserProfileTableCompanion _buildPageDisplayCompanion(
-    String subKey,
-    PageDisplaySettings value,
-    UserProfileTableData profile,
-    Value<DateTime> now,
-  ) {
-    final current = _parsePageDisplaySettings(profile.pageDisplaySettings);
-    current[subKey] = value;
-    final json = jsonEncode(
-      current.map((key, v) => MapEntry(key, v.toJson())),
-    );
-    return UserProfileTableCompanion(
-      pageDisplaySettings: Value(json),
-      updatedAt: now,
+    talker.repositoryLog(
+      'Settings',
+      'save<$T>: key=$key complete in '
+          '${driftWriteTime.difference(saveStartTime).inMilliseconds}ms',
     );
   }
 
@@ -415,46 +86,16 @@ class SettingsRepository implements SettingsRepositoryContract {
   // Private helpers
   // =========================================================================
 
-  /// Stream of user profile rows, filtering out ghost rows (all NULL values).
-  ///
-  /// Ghost rows can occur when PowerSync syncs orphaned rows from the server.
-  /// We filter them out at the SQL level to prevent Drift's mapper from
-  /// crashing on NULL values in non-nullable columns.
-  Stream<List<UserProfileTableData>> get _profileStream {
+  Stream<UserProfileTableData?> get _profileStream {
     final query = driftDb.select(driftDb.userProfileTable)
       ..where(
-        (row) =>
-            row.globalSettings.isNotNull() &
-            row.allocationSettings.isNotNull() &
-            row.pageSortPreferences.isNotNull() &
-            row.pageDisplaySettings.isNotNull(),
-      );
+        (row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull(),
+      )
+      ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
+      ..limit(1);
 
-    return query.watch().map((rows) {
-      final emitTime = DateTime.now();
-      talker.repositoryLog(
-        'Settings',
-        '[STREAM EMIT] _profileStream emitted at $emitTime\n'
-            '  rows.length=${rows.length} (ghost rows filtered)',
-      );
-
-      if (rows.length > 1) {
-        talker.warning(
-          '[settings] Multiple user_profiles rows observed\n'
-          '  rows.length=${rows.length}\n'
-          '  ids=${rows.map((r) => r.id).toList()}\n'
-          '  updatedAtUtc=${rows.map((r) => r.updatedAt.toUtc()).toList()}',
-        );
-      }
-
-      // Track the newest updatedAt in this emission.
-      final newestUpdatedAtUtc = rows.isEmpty
-          ? null
-          : rows
-                .map((r) => r.updatedAt.toUtc())
-                .reduce((a, b) => a.isAfter(b) ? a : b);
-
-      // Detect time-regression bounce: updatedAt going backwards shortly after a save.
+    return query.watchSingleOrNull().map((row) {
+      final newestUpdatedAtUtc = row?.updatedAt.toUtc();
       final previousEmittedUtc = _lastEmittedUpdatedAtUtc;
       if (newestUpdatedAtUtc != null && previousEmittedUtc != null) {
         final regressed = newestUpdatedAtUtc.isBefore(
@@ -471,153 +112,145 @@ class SettingsRepository implements SettingsRepositoryContract {
             '[SYNC BOUNCE?] updatedAt regressed after recent save\n'
             '  newestUpdatedAt=$newestUpdatedAtUtc\n'
             '  previousEmittedUpdatedAt=$previousEmittedUtc\n'
-            '  lastSaveCompletedAt=$_lastSaveCompletedAtUtc\n'
-            '  hint=Likely CDC delivered an older server snapshot briefly',
+            '  lastSaveCompletedAt=$_lastSaveCompletedAtUtc',
           );
         }
       }
 
-      // Update last-emitted marker (newest row wins for monotonicity).
-      if (newestUpdatedAtUtc != null) {
-        _lastEmittedUpdatedAtUtc = newestUpdatedAtUtc;
-      }
-
-      for (final row in rows) {
-        final updatedAt = row.updatedAt;
-        final age = emitTime.difference(updatedAt);
-
-        talker.repositoryLog(
-          'Settings',
-          '[STREAM EMIT] Row details:\n'
-              '  id=${row.id}\n'
-              '  updatedAt=$updatedAt\n'
-              '  age=${age.inMilliseconds}ms (${age.inSeconds}s)\n'
-              '  globalSettings first 80 chars: ${(row.globalSettings ?? "").substring(0, (row.globalSettings?.length ?? 0) > 80 ? 80 : (row.globalSettings?.length ?? 0))}',
-        );
-
-        // NOTE: "Old" settings are normal (user may not have changed them).
-        // Only treat this as suspicious if updatedAt regresses (handled above).
-        if (age.inSeconds < 2) {
-          talker.repositoryLog(
-            'Settings',
-            '[STREAM EMIT] FRESH data - likely our own save echoing back',
-          );
-        }
-      }
-      return rows;
+      _lastEmittedUpdatedAtUtc = newestUpdatedAtUtc;
+      return row;
     });
   }
 
   Future<UserProfileTableData?> _selectProfile() async {
-    talker.repositoryLog('Settings', '_selectProfile: querying user_profiles');
-
-    // First dump raw SQL to see what PowerSync actually has
-    await debugDumpRawProfileData();
-
-    // Filter out ghost rows (all NULL values) to prevent Drift mapper crash
     final query = driftDb.select(driftDb.userProfileTable)
       ..where(
-        (row) =>
-            row.globalSettings.isNotNull() &
-            row.allocationSettings.isNotNull() &
-            row.pageSortPreferences.isNotNull() &
-            row.pageDisplaySettings.isNotNull(),
+        (row) => row.createdAt.isNotNull() & row.updatedAt.isNotNull(),
       )
       ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
       ..limit(1);
 
+    return query.getSingleOrNull();
+  }
+
+  Map<String, dynamic> _parseOverrides(
+    String? json, {
+    required String source,
+    required String profileId,
+  }) {
+    if (json == null || json.isEmpty) return <String, dynamic>{};
     try {
-      final result = await query.getSingleOrNull();
-      if (result == null) {
-        talker.repositoryLog(
-          'Settings',
-          '_selectProfile: no valid rows found (ghost rows filtered)',
-        );
-      } else {
-        _logRawProfileData('_selectProfile', result);
-      }
-      return result;
-    } catch (e, st) {
-      talker.databaseError(
-        '[Settings] _selectProfile FAILED during getSingleOrNull',
-        e,
-        st,
+      final parsed = jsonDecode(json);
+      if (parsed is Map<String, dynamic>) return parsed;
+      talker.warning(
+        '[Settings] Invalid settings_overrides type from $source (expected map)',
       );
-      rethrow;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          const <String, dynamic>{},
+          repairKey: 'settings_overrides',
+          repairedFrom: parsed,
+          reason: 'settings_overrides_not_a_map',
+        ),
+      );
+      return <String, dynamic>{};
+    } catch (e) {
+      talker.warning(
+        '[Settings] Invalid settings_overrides JSON from $source ($e)',
+      );
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          const <String, dynamic>{},
+          repairKey: 'settings_overrides',
+          repairedFrom: json,
+          reason: 'settings_overrides_invalid_json',
+        ),
+      );
+      return <String, dynamic>{};
     }
   }
 
-  void _logRawProfileData(String source, UserProfileTableData row) {
-    talker.repositoryLog(
-      'Settings',
-      '[$source] RAW user_profile data: '
-          'id=${row.id}, '
-          'globalSettings="${row.globalSettings?.length ?? 0} chars", '
-          'allocationSettings="${row.allocationSettings?.length ?? 0} chars", '
-          'pageSortPreferences="${row.pageSortPreferences?.length ?? 0} chars", '
-          'pageDisplaySettings="${row.pageDisplaySettings?.length ?? 0} chars", '
-          'createdAt=${row.createdAt}, '
-          'updatedAt=${row.updatedAt}',
+  void _scheduleRepair({
+    required String profileId,
+    required Map<String, dynamic> repaired,
+  }) {
+    final nowUtc = DateTime.now().toUtc();
+    final last = _lastRepairAttemptAtUtc;
+    if (last != null && nowUtc.difference(last) < const Duration(seconds: 2)) {
+      return;
+    }
+    _lastRepairAttemptAtUtc = nowUtc;
+
+    unawaited(
+      _writeOverrides(
+        profileId: profileId,
+        overrides: repaired,
+      ).catchError((Object e, StackTrace st) {
+        talker.databaseError('[Settings] repair write failed', e, st);
+      }),
     );
   }
 
-  UserProfileTableData? _latestRow(List<UserProfileTableData> rows) {
-    if (rows.isEmpty) return null;
-    return rows.reduce(
-      (a, b) => a.updatedAt.isAfter(b.updatedAt) ? a : b,
-    );
+  Map<String, dynamic> _withRepairMeta(
+    Map<String, dynamic> overrides, {
+    required String repairKey,
+    required Object? repairedFrom,
+    required String reason,
+  }) {
+    final nowUtc = DateTime.now().toUtc();
+    final updated = Map<String, dynamic>.from(overrides);
+    final existing = updated[_repairsKey];
+    final repairs = existing is Map<String, dynamic>
+        ? Map<String, dynamic>.from(existing)
+        : <String, dynamic>{};
+
+    repairs[repairKey] = <String, dynamic>{
+      'repaired_at': nowUtc.toIso8601String(),
+      'repaired_from': _previewForStorage(repairedFrom),
+      'reason': reason,
+    };
+    updated[_repairsKey] = repairs;
+    return updated;
   }
 
-  Map<String, dynamic> _parseJson(String? json) {
-    if (json == null || json.isEmpty) return {};
+  String _previewForStorage(Object? value, {int maxChars = 500}) {
+    if (value == null) return '<null>';
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.length <= maxChars) return trimmed;
+      return '${trimmed.substring(0, maxChars)}…';
+    }
+
     try {
-      final parsed = jsonDecode(json);
-      return parsed is Map<String, dynamic> ? parsed : {};
-    } catch (e) {
-      talker.repositoryLog('Settings', '_parseJson error: $e');
-      return {};
+      final encoded = jsonEncode(value);
+      if (encoded.length <= maxChars) return encoded;
+      return '${encoded.substring(0, maxChars)}…';
+    } catch (_) {
+      final stringified = value.toString();
+      if (stringified.length <= maxChars) return stringified;
+      return '${stringified.substring(0, maxChars)}…';
     }
   }
 
   Future<UserProfileTableData> _ensureProfile() async {
-    talker.repositoryLog(
-      'Settings',
-      '_ensureProfile: checking for existing profile',
-    );
     final existing = await _selectProfile();
     if (existing != null) {
-      talker.repositoryLog(
-        'Settings',
-        '_ensureProfile: found existing profile id=${existing.id}',
-      );
       return existing;
     }
 
-    talker.repositoryLog(
-      'Settings',
-      '_ensureProfile: NO existing profile - creating new one',
-    );
-    final now = DateTime.now();
-    // IMPORTANT: Must explicitly provide ALL columns because PowerSync stores
-    // data as JSON blobs - any missing keys will be NULL when read back via
-    // the SQLite VIEW, regardless of Drift's withDefault() settings.
+    final nowUtc = DateTime.now().toUtc();
     await driftDb
         .into(driftDb.userProfileTable)
         .insert(
           UserProfileTableCompanion.insert(
-            globalSettings: const Value('{}'),
-            allocationSettings: const Value('{}'),
-            pageSortPreferences: const Value('{}'),
-            pageDisplaySettings: const Value('{}'),
-            createdAt: Value(now),
-            updatedAt: Value(now),
+            settingsOverrides: const Value('{}'),
+            createdAt: Value(nowUtc),
+            updatedAt: Value(nowUtc),
           ),
         );
 
-    talker.repositoryLog(
-      'Settings',
-      '_ensureProfile: inserted new profile, reading back',
-    );
     final newProfile = await _selectProfile();
     if (newProfile == null) {
       talker.databaseError(
@@ -627,31 +260,292 @@ class SettingsRepository implements SettingsRepositoryContract {
       );
       throw StateError('Failed to read back newly created profile');
     }
-
-    talker.repositoryLog(
-      'Settings',
-      '_ensureProfile: created new profile id=${newProfile.id}',
-    );
     return newProfile;
   }
 
-  Map<String, SortPreferences> _parsePageSortPreferences(String? json) {
-    final map = _parseJson(json);
-    return map.map(
-      (key, value) => MapEntry(
-        key,
-        SortPreferences.fromJson(value as Map<String, dynamic>),
-      ),
+  Future<void> _writeOverrides({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+  }) async {
+    final nowUtc = DateTime.now().toUtc();
+    final companion = UserProfileTableCompanion(
+      settingsOverrides: Value(jsonEncode(overrides)),
+      updatedAt: Value(nowUtc),
     );
+
+    await (driftDb.update(
+      driftDb.userProfileTable,
+    )..where((row) => row.id.equals(profileId))).write(companion);
   }
 
-  Map<String, PageDisplaySettings> _parsePageDisplaySettings(String? json) {
-    final map = _parseJson(json);
-    return map.map(
-      (key, value) => MapEntry(
-        key,
-        PageDisplaySettings.fromJson(value as Map<String, dynamic>),
-      ),
+  T _extractValue<T>(SettingsKey<T> key, UserProfileTableData? row) {
+    if (row == null) {
+      return _defaultForKey(key);
+    }
+
+    final overrides = _parseOverrides(
+      row.settingsOverrides,
+      source: 'extract key=$key',
+      profileId: row.id,
     );
+
+    if (identical(key, SettingsKey.global)) {
+      return _decodeSingleton(
+            keyName: 'global',
+            overrides: overrides,
+            profileId: row.id,
+            defaultValue: const GlobalSettings(),
+            fromJson: GlobalSettings.fromJson,
+          )
+          as T;
+    }
+    if (identical(key, SettingsKey.allocation)) {
+      return _decodeSingleton(
+            keyName: 'allocation',
+            overrides: overrides,
+            profileId: row.id,
+            defaultValue: const AllocationConfig(),
+            fromJson: AllocationConfig.fromJson,
+          )
+          as T;
+    }
+    if (identical(key, SettingsKey.softGates)) {
+      return _decodeSingleton(
+            keyName: 'softGates',
+            overrides: overrides,
+            profileId: row.id,
+            defaultValue: const SoftGatesSettings(),
+            fromJson: SoftGatesSettings.fromJson,
+          )
+          as T;
+    }
+
+    return _extractKeyedValue(key, row.id, overrides);
+  }
+
+  T _extractKeyedValue<T>(
+    SettingsKey<T> key,
+    String profileId,
+    Map<String, dynamic> overrides,
+  ) {
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
+
+    return switch (name) {
+      'pageSort' =>
+        _decodePageSort(
+              profileId: profileId,
+              overrides: overrides,
+              pageKey: subKey,
+            )
+            as T,
+      'pageDisplay' =>
+        _decodePageDisplay(
+              profileId: profileId,
+              overrides: overrides,
+              pageKey: subKey,
+            )
+            as T,
+      _ => throw ArgumentError('Unknown keyed key: $name'),
+    };
+  }
+
+  SortPreferences? _decodePageSort({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+    required String pageKey,
+  }) {
+    final group = overrides['pageSort'];
+    if (group == null) return null;
+    if (group is! Map<String, dynamic>) {
+      final repaired = Map<String, dynamic>.from(overrides)..remove('pageSort');
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageSort',
+          repairedFrom: group,
+          reason: 'pageSort_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    final value = group[pageKey];
+    if (value == null) return null;
+    if (value is! Map<String, dynamic>) {
+      final repairedGroup = Map<String, dynamic>.from(group)..remove(pageKey);
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..['pageSort'] = repairedGroup;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageSort:$pageKey',
+          repairedFrom: value,
+          reason: 'pageSort_entry_not_a_map',
+        ),
+      );
+      return null;
+    }
+
+    return SortPreferences.fromJson(value);
+  }
+
+  PageDisplaySettings _decodePageDisplay({
+    required String profileId,
+    required Map<String, dynamic> overrides,
+    required String pageKey,
+  }) {
+    final group = overrides['pageDisplay'];
+    if (group == null) return const PageDisplaySettings();
+    if (group is! Map<String, dynamic>) {
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..remove('pageDisplay');
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageDisplay',
+          repairedFrom: group,
+          reason: 'pageDisplay_not_a_map',
+        ),
+      );
+      return const PageDisplaySettings();
+    }
+
+    final value = group[pageKey];
+    if (value == null) return const PageDisplaySettings();
+    if (value is! Map<String, dynamic>) {
+      final repairedGroup = Map<String, dynamic>.from(group)..remove(pageKey);
+      final repaired = Map<String, dynamic>.from(overrides)
+        ..['pageDisplay'] = repairedGroup;
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: 'pageDisplay:$pageKey',
+          repairedFrom: value,
+          reason: 'pageDisplay_entry_not_a_map',
+        ),
+      );
+      return const PageDisplaySettings();
+    }
+
+    return PageDisplaySettings.fromJson(value);
+  }
+
+  T _decodeSingleton<T>({
+    required String keyName,
+    required Map<String, dynamic> overrides,
+    required String profileId,
+    required T defaultValue,
+    required T Function(Map<String, dynamic>) fromJson,
+  }) {
+    final value = overrides[keyName];
+    if (value == null) return defaultValue;
+    if (value is! Map<String, dynamic>) {
+      final repaired = Map<String, dynamic>.from(overrides)..remove(keyName);
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: keyName,
+          repairedFrom: value,
+          reason: '${keyName}_not_a_map',
+        ),
+      );
+      return defaultValue;
+    }
+    try {
+      return fromJson(value);
+    } catch (e) {
+      final repaired = Map<String, dynamic>.from(overrides)..remove(keyName);
+      _scheduleRepair(
+        profileId: profileId,
+        repaired: _withRepairMeta(
+          repaired,
+          repairKey: keyName,
+          repairedFrom: value,
+          reason: '${keyName}_fromJson_failed',
+        ),
+      );
+      return defaultValue;
+    }
+  }
+
+  Map<String, dynamic> _upsertOverride<T>(
+    SettingsKey<T> key,
+    T value,
+    Map<String, dynamic> overrides,
+  ) {
+    final updated = Map<String, dynamic>.from(overrides);
+
+    if (identical(key, SettingsKey.global)) {
+      updated['global'] = (value as GlobalSettings).toJson();
+      return updated;
+    }
+    if (identical(key, SettingsKey.allocation)) {
+      updated['allocation'] = (value as AllocationConfig).toJson();
+      return updated;
+    }
+    if (identical(key, SettingsKey.softGates)) {
+      updated['softGates'] = (value as SoftGatesSettings).toJson();
+      return updated;
+    }
+
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    final subKey = keyedKey.subKey as String;
+    switch (name) {
+      case 'pageSort':
+        final group = Map<String, dynamic>.from(
+          (updated['pageSort'] as Map<String, dynamic>?) ??
+              const <String, dynamic>{},
+        );
+        final prefs = value as SortPreferences?;
+        if (prefs == null) {
+          group.remove(subKey);
+        } else {
+          group[subKey] = prefs.toJson();
+        }
+        if (group.isEmpty) {
+          updated.remove('pageSort');
+        } else {
+          updated['pageSort'] = group;
+        }
+        return updated;
+
+      case 'pageDisplay':
+        final group = Map<String, dynamic>.from(
+          (updated['pageDisplay'] as Map<String, dynamic>?) ??
+              const <String, dynamic>{},
+        );
+        group[subKey] = (value as PageDisplaySettings).toJson();
+        updated['pageDisplay'] = group;
+        return updated;
+
+      default:
+        throw ArgumentError('Unknown keyed key: $name');
+    }
+  }
+
+  T _defaultForKey<T>(SettingsKey<T> key) {
+    if (identical(key, SettingsKey.global)) return const GlobalSettings() as T;
+    if (identical(key, SettingsKey.allocation)) {
+      return const AllocationConfig() as T;
+    }
+    if (identical(key, SettingsKey.softGates)) {
+      return const SoftGatesSettings() as T;
+    }
+
+    final keyedKey = key as dynamic;
+    final name = keyedKey.name as String;
+    return switch (name) {
+      'pageSort' => null as T,
+      'pageDisplay' => const PageDisplaySettings() as T,
+      _ => throw ArgumentError('Unknown SettingsKey default: $key'),
+    };
   }
 }

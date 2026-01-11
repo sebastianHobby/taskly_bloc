@@ -1,0 +1,63 @@
+# Local PowerSync service for use with Supabase CLI local dev.
+#
+# Requires the Supabase local stack to be running via `supabase start`.
+# This compose file joins the external Supabase network so it can reach
+# Postgres (`supabase_db_<project_id>`) and Kong (`kong`).
+
+services:
+  mongo:
+    image: mongo:7.0
+    command: --replSet rs0 --bind_ip_all --quiet
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo_storage:/data/db
+
+  mongo-rs-init:
+    image: mongo:7.0
+    depends_on:
+      - mongo
+    restart: on-failure
+    entrypoint:
+      - bash
+      - -c
+      - >
+        mongosh --host mongo:27017 --eval 'try{rs.status().ok && quit(0)} catch {} rs.initiate({_id:"rs0", version: 1, members: [{ _id: 0, host : "mongo:27017" }]})'
+
+  powersync:
+    image: journeyapps/powersync-service:latest
+    restart: unless-stopped
+    depends_on:
+      mongo-rs-init:
+        condition: service_completed_successfully
+    command: [ "start", "-r", "unified" ]
+    volumes:
+      - ./config:/config
+      - ../../supabase/powersync-sync-rules.yaml:/config/sync_rules.yaml:ro
+    environment:
+      POWERSYNC_CONFIG_PATH: /config/powersync.yaml
+      NODE_OPTIONS: --max-old-space-size=1000
+      PS_DATA_SOURCE_URI: ${PS_DATA_SOURCE_URI}
+      PS_MONGO_URI: ${PS_MONGO_URI}
+      PS_JWKS_URL: ${PS_JWKS_URL}
+      PS_PORT: ${PS_PORT}
+    healthcheck:
+      test: [ "CMD", "node", "-e", "fetch('http://localhost:' + process.env.PS_PORT + '/probes/liveness').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" ]
+      interval: 5s
+      timeout: 1s
+      retries: 15
+    ports:
+      - ${PS_PORT}:${PS_PORT}
+    networks:
+      - default
+      - supabase
+
+volumes:
+  mongo_storage:
+
+
+networks:
+  supabase:
+    external: true
+    name: ${SUPABASE_DOCKER_NETWORK:-supabase_network_taskly_bloc}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
@@ -10,6 +11,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 class ProjectListTile extends StatelessWidget {
   const ProjectListTile({
     required this.project,
+    this.onCheckboxChanged,
     this.onTap,
     this.compact = false,
     this.taskCount,
@@ -29,6 +31,11 @@ class ProjectListTile extends StatelessWidget {
 
   /// Optional tap handler. If null, navigates to project detail via EntityNavigator.
   final void Function(Project)? onTap;
+
+  /// Callback when a project's completion checkbox is toggled.
+  ///
+  /// If null, no checkbox is shown.
+  final void Function(Project, bool?)? onCheckboxChanged;
 
   /// Optional task count to show progress.
   final int? taskCount;
@@ -145,14 +152,25 @@ class ProjectListTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Progress ring (informational; not a completion toggle)
-              _ProjectProgressRing(
-                value: _progressValue,
-                isOverdue: isOverdue,
-                semanticsLabel: project.name,
-                taskCount: taskCount,
-                completedTaskCount: completedTaskCount,
-              ),
+              // Leading widget: optional completion checkbox, else progress ring.
+              if (onCheckboxChanged != null)
+                _ProjectCheckbox(
+                  completed: project.completed,
+                  isOverdue: isOverdue,
+                  onChanged: (value) {
+                    HapticFeedback.lightImpact();
+                    onCheckboxChanged?.call(project, value);
+                  },
+                  projectName: project.name,
+                )
+              else
+                _ProjectProgressRing(
+                  value: _progressValue,
+                  isOverdue: isOverdue,
+                  semanticsLabel: project.name,
+                  taskCount: taskCount,
+                  completedTaskCount: completedTaskCount,
+                ),
               const SizedBox(width: 12),
 
               // Main content
@@ -236,6 +254,54 @@ class ProjectListTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectCheckbox extends StatelessWidget {
+  const _ProjectCheckbox({
+    required this.completed,
+    required this.isOverdue,
+    required this.onChanged,
+    required this.projectName,
+  });
+
+  final bool completed;
+  final bool isOverdue;
+  final ValueChanged<bool?> onChanged;
+  final String projectName;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Semantics(
+      label: completed
+          ? 'Mark "$projectName" as active'
+          : 'Mark "$projectName" as complete',
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: Checkbox(
+          value: completed,
+          onChanged: onChanged,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+          ),
+          side: BorderSide(
+            color: isOverdue
+                ? colorScheme.error
+                : completed
+                ? colorScheme.primary
+                : colorScheme.outline,
+            width: 2,
+          ),
+          activeColor: colorScheme.primary,
+          checkColor: colorScheme.onPrimary,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
         ),
       ),
     );

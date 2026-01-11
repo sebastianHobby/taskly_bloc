@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 import '../../../helpers/fallback_values.dart';
 import '../../../mocks/feature_mocks.dart';
@@ -16,6 +17,8 @@ import '../../../mocks/repository_mocks.dart';
 
 class MockAllocationSnapshotRepositoryContract extends Mock
     implements AllocationSnapshotRepositoryContract {}
+
+class MockHomeDayKeyService extends Mock implements HomeDayKeyService {}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -55,6 +58,14 @@ void main() {
         final analyticsService = MockAnalyticsService();
         final projectRepository = MockProjectRepositoryContract();
         final snapshotRepository = MockAllocationSnapshotRepositoryContract();
+        final dayKeyService = MockHomeDayKeyService();
+
+        when(
+          () => dayKeyService.todayDayKeyUtc(nowUtc: any(named: 'nowUtc')),
+        ).thenReturn(DateTime.utc(2026, 1, 2));
+        when(dayKeyService.todayDayKeyUtc).thenReturn(
+          DateTime.utc(2026, 1, 2),
+        );
 
         final v = value(id: 'v1');
         final t1 = task(id: 't1', v: v);
@@ -119,6 +130,7 @@ void main() {
           settingsRepository: settingsRepository,
           analyticsService: analyticsService,
           projectRepository: projectRepository,
+          dayKeyService: dayKeyService,
           allocationSnapshotRepository: snapshotRepository,
         );
 
@@ -155,6 +167,14 @@ void main() {
         final analyticsService = MockAnalyticsService();
         final projectRepository = MockProjectRepositoryContract();
         final snapshotRepository = MockAllocationSnapshotRepositoryContract();
+        final dayKeyService = MockHomeDayKeyService();
+
+        when(
+          () => dayKeyService.todayDayKeyUtc(nowUtc: any(named: 'nowUtc')),
+        ).thenReturn(DateTime.utc(2026, 1, 2));
+        when(dayKeyService.todayDayKeyUtc).thenReturn(
+          DateTime.utc(2026, 1, 2),
+        );
 
         final v = value(id: 'v1');
         final t1 = task(id: 't1', v: v);
@@ -237,6 +257,7 @@ void main() {
           settingsRepository: settingsRepository,
           analyticsService: analyticsService,
           projectRepository: projectRepository,
+          dayKeyService: dayKeyService,
           allocationSnapshotRepository: snapshotRepository,
         );
 
@@ -270,6 +291,14 @@ void main() {
         final analyticsService = MockAnalyticsService();
         final projectRepository = MockProjectRepositoryContract();
         final snapshotRepository = MockAllocationSnapshotRepositoryContract();
+        final dayKeyService = MockHomeDayKeyService();
+
+        when(
+          () => dayKeyService.todayDayKeyUtc(nowUtc: any(named: 'nowUtc')),
+        ).thenReturn(DateTime.utc(2026, 1, 2));
+        when(dayKeyService.todayDayKeyUtc).thenReturn(
+          DateTime.utc(2026, 1, 2),
+        );
 
         final v = value(id: 'v1');
         final t1 = task(id: 't1', v: v);
@@ -353,6 +382,7 @@ void main() {
           settingsRepository: settingsRepository,
           analyticsService: analyticsService,
           projectRepository: projectRepository,
+          dayKeyService: dayKeyService,
           allocationSnapshotRepository: snapshotRepository,
         );
 

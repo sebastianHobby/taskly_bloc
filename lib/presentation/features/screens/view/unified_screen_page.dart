@@ -81,12 +81,14 @@ class _UnifiedScreenScaffold extends StatelessWidget {
     SectionTemplateId.settingsMenu,
     SectionTemplateId.screenManagement,
     SectionTemplateId.trackerManagement,
+    SectionTemplateId.statisticsDashboard,
     SectionTemplateId.wellbeingDashboard,
     SectionTemplateId.allocationSettings,
     SectionTemplateId.navigationSettings,
     SectionTemplateId.attentionRules,
     SectionTemplateId.focusSetupWizard,
     SectionTemplateId.myDayFocusModeRequired,
+    SectionTemplateId.browseHub,
   };
 
   @override
