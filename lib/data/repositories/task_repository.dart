@@ -1,9 +1,9 @@
-import 'package:taskly_bloc/shared/logging/app_log.dart';
+import 'package:taskly_bloc/core/logging/app_log.dart';
 
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -20,7 +20,7 @@ import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_filter_evaluator.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 class _OccurrenceRangeKey {
   const _OccurrenceRangeKey({

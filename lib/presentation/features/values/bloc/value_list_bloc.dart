@@ -6,7 +6,7 @@ import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 
 part 'value_list_bloc.freezed.dart';
 

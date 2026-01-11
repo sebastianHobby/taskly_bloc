@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
@@ -432,7 +432,7 @@ class _MetaLine extends StatelessWidget {
     if (primaryValue != null) {
       children.add(
         ValueChip(
-          value: primaryValue!,
+          value: primaryValue,
           variant: ValueChipVariant.solid,
         ),
       );

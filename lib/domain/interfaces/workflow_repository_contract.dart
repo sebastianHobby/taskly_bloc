@@ -1,5 +1,5 @@
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 
 /// Contract for workflow data operations.
 abstract class WorkflowRepositoryContract {

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
 import 'package:taskly_bloc/domain/queries/value_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 

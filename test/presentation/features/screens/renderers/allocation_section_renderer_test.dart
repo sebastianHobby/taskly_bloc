@@ -3,10 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_section_renderer.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 
 void main() {
   group('AllocationSectionRenderer', () {

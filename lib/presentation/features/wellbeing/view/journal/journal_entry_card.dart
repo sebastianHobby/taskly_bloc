@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/tracker_field_card.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/widgets/daily_tracker_section.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_mood_field.dart';

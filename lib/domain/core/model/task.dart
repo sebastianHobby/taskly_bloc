@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/domain/models/occurrence_data.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/core/model/occurrence_data.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
 
 /// Domain representation of a Task used across the app.
 ///

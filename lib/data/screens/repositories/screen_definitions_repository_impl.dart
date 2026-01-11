@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/daos/screen_preferences_dao.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart' as db;
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
+    as db;
 import 'package:taskly_bloc/data/infrastructure/drift/features/shared_enums.dart'
     as shared_enums;
 import 'package:taskly_bloc/data/id/id_generator.dart';

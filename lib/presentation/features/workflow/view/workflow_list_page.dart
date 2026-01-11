@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_creator_page.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';

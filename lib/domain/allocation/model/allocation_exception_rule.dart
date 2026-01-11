@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/settings/alert_severity.dart';
+import 'package:taskly_bloc/domain/settings/model/alert_severity.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
 part 'allocation_exception_rule.freezed.dart';

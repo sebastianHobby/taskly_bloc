@@ -2,7 +2,7 @@
 
 import 'package:taskly_bloc/domain/allocation/model/allocation_exception_rule.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
+import 'package:taskly_bloc/domain/settings/model/project_health_review_settings.dart';
 
 part 'allocation_config.freezed.dart';
 part 'allocation_config.g.dart';

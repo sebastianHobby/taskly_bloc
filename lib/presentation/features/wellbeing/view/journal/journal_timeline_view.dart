@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_empty_state.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_entry_card.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_new_entry_form.dart';

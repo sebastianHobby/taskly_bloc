@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
 
 part 'daily_tracker_response.freezed.dart';
 part 'daily_tracker_response.g.dart';

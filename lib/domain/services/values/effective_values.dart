@@ -1,5 +1,5 @@
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
 
 /// Helpers for computing a task's effective values.
 ///

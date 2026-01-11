@@ -2,7 +2,7 @@ import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as drift;
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 
 Value valueFromTable(drift.ValueTableData t) {
   return Value(

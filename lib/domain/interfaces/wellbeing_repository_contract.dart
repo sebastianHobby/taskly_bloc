@@ -1,7 +1,7 @@
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 /// Repository contract for wellbeing data

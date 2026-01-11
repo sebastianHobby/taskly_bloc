@@ -2,8 +2,8 @@ import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 import 'package:taskly_bloc/presentation/features/workflow/view/workflow_run_page.dart';
 
 /// Router for authenticated app shell.

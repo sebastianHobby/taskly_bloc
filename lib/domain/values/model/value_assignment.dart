@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
 
 /// Represents a value assignment to a task or project, including primary status.
 ///

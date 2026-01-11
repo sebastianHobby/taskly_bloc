@@ -36,8 +36,8 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/settings/settings.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:uuid/uuid.dart';
 
 import 'e2e_test_helpers.dart';

@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 
 part 'workflow.freezed.dart';
 part 'workflow.g.dart';

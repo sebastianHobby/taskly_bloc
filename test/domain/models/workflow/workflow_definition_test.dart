@@ -1,8 +1,8 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
 
 import '../../../helpers/fallback_values.dart';
 

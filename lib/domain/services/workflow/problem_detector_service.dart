@@ -1,11 +1,11 @@
 ﻿import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_acknowledgment.dart';
+import 'package:taskly_bloc/domain/settings/settings.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_acknowledgment.dart';
 
 /// Service for detecting problems in tasks and projects.
 ///

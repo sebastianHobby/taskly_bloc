@@ -3,8 +3,8 @@
 import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/infrastructure/drift/converters/json_converters.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 
 /// Workflow status for runtime instances
 enum WorkflowInstanceStatus { inProgress, completed, abandoned }

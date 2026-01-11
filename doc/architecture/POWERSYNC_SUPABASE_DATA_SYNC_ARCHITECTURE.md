@@ -1,8 +1,8 @@
-﻿# PowerSync + Supabase Data Sync â€” Architecture Overview
+﻿# PowerSync + Supabase Data Sync - Architecture Overview
 
 > Audience: developers + architects
 >
-> Scope: the *current* offline-first persistence + sync pipeline in this repo (Drift â†’ PowerSync client â†’ PowerSync server â†’ Supabase/Postgres/PostgREST), plus how we validate it in integration tests.
+> Scope: the *current* offline-first persistence + sync pipeline in this repo (Drift -> PowerSync client -> PowerSync server -> Supabase/Postgres/PostgREST), plus how we validate it in integration tests.
 
 ## 1) Executive Summary
 
@@ -17,8 +17,8 @@ Key implications:
 
 - The app can work while offline (Drift reads/writes remain available).
 - Sync boundaries are explicit:
-  - Client â†’ server writes: `SupabaseConnector.uploadData()` calls PostgREST.
-  - Server â†’ client reads: PowerSync server replicates Postgres and serves filtered buckets.
+  - Client -> server writes: `SupabaseConnector.uploadData()` calls PostgREST.
+  - Server -> client reads: PowerSync server replicates Postgres and serves filtered buckets.
 - Auth is real (no bypass): the same Supabase session JWT is used for:
   - Calling PostgREST
   - Authenticating to the PowerSync service
@@ -34,41 +34,41 @@ Important ownership rule:
 
 ### Client: Drift + PowerSync
 - PowerSync connector (auth + upload pipeline):
-  - [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
+  - [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
 - Local PowerSync schema (client-side tables/columns):
-  - [lib/data/infrastructure/powersync/schema.dart](../lib/data/infrastructure/powersync/schema.dart)
-- Upload-time JSON normalization (PowerSync TEXT â†’ PostgREST json/jsonb/arrays):
-  - [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
-- DI wiring: PowerSync DB â†” Drift `AppDatabase`:
-  - [lib/core/dependency_injection/dependency_injection.dart](../lib/core/dependency_injection/dependency_injection.dart)
+  - [lib/data/infrastructure/powersync/schema.dart](../../lib/data/infrastructure/powersync/schema.dart)
+- Upload-time JSON normalization (PowerSync TEXT -> PostgREST json/jsonb/arrays):
+  - [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
+- DI wiring: PowerSync DB <-> Drift `AppDatabase`:
+  - [lib/core/dependency_injection/dependency_injection.dart](../../lib/core/dependency_injection/dependency_injection.dart)
 
 ### Server (local dev): PowerSync service
 - Docker Compose stack:
-  - [infra/powersync_local/docker-compose.yml](../infra/powersync_local/docker-compose.yml)
+  - [infra/powersync_local/docker-compose.yml](../../infra/powersync_local/docker-compose.yml)
 - PowerSync service config:
-  - [infra/powersync_local/config/powersync.yaml](../infra/powersync_local/config/powersync.yaml)
+  - [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/config/powersync.yaml)
 - Sync rules (bucket definitions + per-user filters):
-  - [supabase/powersync-sync-rules.yaml](../supabase/powersync-sync-rules.yaml)
+  - [supabase/powersync-sync-rules.yaml](../../supabase/powersync-sync-rules.yaml)
 
 ### Supabase local
 - Migrations (schema is maintained via migrations):
-  - [supabase/migrations/](../supabase/migrations/)
+  - [supabase/migrations/](../../supabase/migrations/)
 - PowerSync publication migration (enables logical replication publication):
-  - [supabase/migrations/20260111000000_powersync_publication.sql](../supabase/migrations/20260111000000_powersync_publication.sql)
+  - [supabase/migrations/20260111000000_powersync_publication.sql](../../supabase/migrations/20260111000000_powersync_publication.sql)
 
 ### Local E2E scripts + docs
 - Deterministic local stack docs:
-  - [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../doc/LOCAL_SUPABASE_POWERSYNC_E2E.md)
+  - [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - PowerShell helpers:
-  - [tool/e2e/Start-LocalE2EStack.ps1](../tool/e2e/Start-LocalE2EStack.ps1)
-  - [tool/e2e/Run-LocalE2ETests.ps1](../tool/e2e/Run-LocalE2ETests.ps1)
-  - [tool/e2e/New-LocalE2EDefines.ps1](../tool/e2e/New-LocalE2EDefines.ps1)
+  - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
+  - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
+  - [tool/e2e/New-LocalE2EDefines.ps1](../../tool/e2e/New-LocalE2EDefines.ps1)
 
 ### Tests + CI
 - Pipeline integration test:
-  - [test/integration_test/powersync_supabase_pipeline_test.dart](../test/integration_test/powersync_supabase_pipeline_test.dart)
+  - [test/integration_test/powersync_supabase_pipeline_test.dart](../../test/integration_test/powersync_supabase_pipeline_test.dart)
 - GitHub Actions workflow that runs only pipeline-tagged tests:
-  - [.github/workflows/local-pipeline.yaml](../.github/workflows/local-pipeline.yaml)
+  - [.github/workflows/local-pipeline.yaml](../../.github/workflows/local-pipeline.yaml)
 
 ---
 
@@ -77,44 +77,46 @@ Important ownership rule:
 ### 3.1 Component Diagram
 
 ```text
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                               Flutter App                            â”‚
-â”‚                                                                      â”‚
-â”‚  Presentation / Domain uses repositories that read/write Drift        â”‚
-â”‚                                                                      â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”      â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
-â”‚  â”‚ Drift (AppDatabase)          â”‚      â”‚ PowerSync client runtime   â”‚ â”‚
-â”‚  â”‚ - queries + transactions     â”‚â—„â”€â”€â”€â”€â–ºâ”‚ - downloads buckets        â”‚ â”‚
-â”‚  â”‚ - local source of truth      â”‚      â”‚ - queues local CRUD        â”‚ â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜      â”‚ - calls upload connector   â”‚ â”‚
-â”‚                  â”‚                     â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
-â”‚                  â”‚ local SQLite (PowerSync-backed)                      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                   â”‚
-                   v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                          PowerSync server (Docker)                    â”‚
-â”‚  - validates Supabase JWT via JWKS                                    â”‚
-â”‚  - applies sync rules (bucket SQL filtered by token_parameters.user_idâ”‚
-â”‚    derived from the JWT; not from client-provided columns)            â”‚
-â”‚  - serves deltas to clients                                            â”‚
-â”‚  - consumes Postgres logical replication stream                        â”‚
-â”‚  - stores state in MongoDB                                             â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚ logical replication (publication: powersync)
-                v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                           Supabase Postgres                            â”‚
-â”‚  - canonical data store                                                 â”‚
-â”‚  - RLS + constraints enforced                                           â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                â”‚ HTTPS (PostgREST via Supabase client)
-                v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                           Supabase PostgREST                           â”‚
-â”‚  - client writes: upsert/update/delete                                  â”‚
-â”‚  - uses Supabase Auth JWT for RLS                                      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
++----------------------------+
+|         Flutter App         |
+| presentation/domain + repos |
++--------------+-------------+
+     |
+     v
++----------------------------+      +-----------------------------+
+| Drift (AppDatabase)        | <--> | PowerSync client runtime    |
+| - local source of truth    |      | - downloads buckets         |
+| - queries + transactions   |      | - queues local CRUD         |
++--------------+-------------+      | - calls upload connector    |
+     |                    +--------------+--------------+
+     |                                   |
+     | (same local SQLite file)          |
+     v                                   v
+   local SQLite (PowerSync-backed)
+     |
+     v
++----------------------------+
+| PowerSync server (Docker)  |
+| - validates Supabase JWT   |
+| - applies sync rules       |
+| - serves deltas to clients |
+| - consumes logical repl    |
+| - stores state in MongoDB  |
++--------------+-------------+
+     |
+     v logical replication (publication: powersync)
++----------------------------+
+| Supabase Postgres          |
+| - canonical data store     |
+| - RLS + constraints        |
++--------------+-------------+
+     |
+     v HTTPS (PostgREST via Supabase client)
++----------------------------+
+| Supabase PostgREST         |
+| - client writes            |
+| - uses Auth JWT for RLS    |
++----------------------------+
 ```
 
 ### 3.2 Local dev stack topology
@@ -124,13 +126,13 @@ When running locally, PowerSync joins the Supabase CLI docker network so it can 
 - Postgres (replication source)
 - Kong (used to access JWKS for JWT validation)
 
-See [infra/powersync_local/docker-compose.yml](../infra/powersync_local/docker-compose.yml).
+See [infra/powersync_local/docker-compose.yml](../../infra/powersync_local/docker-compose.yml).
 
 ---
 
 ## 4) Core Runtime Flows
 
-### 4.1 Startup + authentication â†’ PowerSync connection
+### 4.1 Startup + authentication -> PowerSync connection
 
 The app opens the PowerSync database first, then wraps it with Drift:
 
@@ -139,8 +141,8 @@ The app opens the PowerSync database first, then wraps it with Drift:
 - Drift uses `SqliteAsyncDriftConnection(syncDb)` as its database connection
 
 Entry points:
-- [lib/core/dependency_injection/dependency_injection.dart](../lib/core/dependency_injection/dependency_injection.dart)
-- [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
+- [lib/core/dependency_injection/dependency_injection.dart](../../lib/core/dependency_injection/dependency_injection.dart)
+- [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
 
 High-level sequence:
 
@@ -148,6 +150,8 @@ High-level sequence:
 1) App starts
 2) loadSupabase() initializes Supabase client
 3) openDatabase() initializes PowerSync SQLite file
+  - best-effort normalization of legacy attention_rules.rule_type values
+    (prevents Supabase enum rejections during upload)
 4) If already logged in:
    - db.connect(connector: SupabaseConnector)
    - onAuthenticated() callback runs (post-auth maintenance)
@@ -155,22 +159,24 @@ High-level sequence:
 6) Drift AppDatabase is created on top of PowerSync DB
 ```
 
-### 4.2 Upload flow (local â†’ Supabase)
+### 4.2 Upload flow (local -> Supabase)
 
 Local writes happen through repositories into Drift. PowerSync captures these changes as queued CRUD operations.
 
 Upload is implemented by `SupabaseConnector.uploadData()`:
 
-- Pull queued operations from PowerSync (`db.getCrudTransactions()`)
+- Pull the next queued transaction from PowerSync (`database.getNextCrudTransaction()`)
 - For each `CrudEntry`, call Supabase PostgREST (`rest.from(table)....`)
   - inserts/updates: `.upsert(...)` / `.update(...)`
   - deletes: `.delete()`
-- Acknowledge the transaction back to PowerSync (so it wonâ€™t retry) only after success
+- Acknowledge the transaction back to PowerSync (so it won't retry) only after success
 
 Important safeguards in the current implementation:
 
 - If there is no Supabase session, upload returns early without consuming data (prevents data loss when logged out).
 - JSON fields that are stored as TEXT locally are decoded back into objects/arrays before upload.
+- Some schema-mismatch operations are discarded (e.g. PostgREST schema cache misses after migrations) to avoid blocking the upload queue.
+- Some non-retryable constraint/RLS errors discard the remaining transaction to avoid permanently wedging the queue.
 
 Data ownership note:
 
@@ -178,12 +184,12 @@ Data ownership note:
   when the PostgREST request is executed, and should not be set/overridden by the app.
 
 Key code:
-- [lib/data/infrastructure/powersync/api_connector.dart](../lib/data/infrastructure/powersync/api_connector.dart)
-- [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
+- [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
+- [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
 
-### 4.3 Download flow (Supabase â†’ local)
+### 4.3 Download flow (Supabase -> local)
 
-Download is â€œserver-drivenâ€ via PowerSync replication:
+Download is "server-driven" via PowerSync replication:
 
 - PowerSync server reads Postgres changes via logical replication.
 - It evaluates bucket queries from `sync_rules.yaml` with `token_parameters.user_id`.
@@ -191,10 +197,10 @@ Download is â€œserver-drivenâ€ via PowerSync replication:
 - Drift then observes the updated local tables and the UI reacts.
 
 Key configuration:
-- Sync rules: [supabase/powersync-sync-rules.yaml](../supabase/powersync-sync-rules.yaml)
-- Server replication config: [infra/powersync_local/config/powersync.yaml](../infra/powersync_local/config/powersync.yaml)
+- Sync rules: [supabase/powersync-sync-rules.yaml](../../supabase/powersync-sync-rules.yaml)
+- Server replication config: [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/config/powersync.yaml)
 
-### 4.4 Auth, RLS, and â€œwhat enforces access control?â€
+### 4.4 Auth, RLS, and "what enforces access control?"
 
 Access control is enforced at two layers:
 
@@ -213,7 +219,7 @@ The PowerSync local server config sets:
 - `jwks_uri: PS_JWKS_URL`
 - `audience: ["authenticated"]`
 
-See [infra/powersync_local/config/powersync.yaml](../infra/powersync_local/config/powersync.yaml).
+See [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/config/powersync.yaml).
 
 ---
 
@@ -222,7 +228,7 @@ See [infra/powersync_local/config/powersync.yaml](../infra/powersync_local/confi
 PowerSync replication requires a Postgres publication named `powersync`.
 
 This repo ensures it exists via a migration:
-- [supabase/migrations/20260111000000_powersync_publication.sql](../supabase/migrations/20260111000000_powersync_publication.sql)
+- [supabase/migrations/20260111000000_powersync_publication.sql](../../supabase/migrations/20260111000000_powersync_publication.sql)
 
 That migration is designed to be safe to run multiple times.
 
@@ -230,9 +236,9 @@ That migration is designed to be safe to run multiple times.
 
 ## 6) End-to-End Scenarios (Concrete Examples)
 
-### 6.1 Scenario A â€” Upload: Drift write â†’ PostgREST row exists
+### 6.1 Scenario A - Upload: Drift write -> PostgREST row exists
 
-This is the core â€œlocal-first writeâ€ loop:
+This is the core "local-first write" loop:
 
 ```text
 1) Repository writes to Drift (local)
@@ -244,9 +250,9 @@ This is the core â€œlocal-first writeâ€ loop:
 7) Device(s) download the latest row state
 ```
 
-### 6.2 Scenario B â€” Download: PostgREST update â†’ Drift reflects change
+### 6.2 Scenario B - Download: PostgREST update -> Drift reflects change
 
-This proves the â€œremote change propagates locallyâ€ loop:
+This proves the "remote change propagates locally" loop:
 
 ```text
 1) A server-side update happens (e.g., PostgREST update)
@@ -270,19 +276,19 @@ The repo provides scripts to:
 - generate `dart_defines.local.json` from `supabase status`
 
 Entry points:
-- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../doc/LOCAL_SUPABASE_POWERSYNC_E2E.md)
-- [tool/e2e/Start-LocalE2EStack.ps1](../tool/e2e/Start-LocalE2EStack.ps1)
-- [tool/e2e/Run-LocalE2ETests.ps1](../tool/e2e/Run-LocalE2ETests.ps1)
+- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
+- [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
 
 ### 7.2 Pipeline integration test (ground-truth validation)
 
 The pipeline integration test validates *both directions*:
 
-- Upload: Drift write â†’ PowerSync upload â†’ PostgREST read validates row
-- Download: PostgREST update â†’ PowerSync download â†’ Drift read validates row
+- Upload: Drift write -> PowerSync upload -> PostgREST read validates row
+- Download: PostgREST update -> PowerSync download -> Drift read validates row
 
 See:
-- [test/integration_test/powersync_supabase_pipeline_test.dart](../test/integration_test/powersync_supabase_pipeline_test.dart)
+- [test/integration_test/powersync_supabase_pipeline_test.dart](../../test/integration_test/powersync_supabase_pipeline_test.dart)
 
 ### 7.3 CI workflow
 
@@ -293,15 +299,15 @@ GitHub Actions runs the pipeline-tagged test against a fully local stack on `ubu
 - `flutter test --tags=pipeline ... --dart-define=...`
 
 See:
-- [.github/workflows/local-pipeline.yaml](../.github/workflows/local-pipeline.yaml)
+- [.github/workflows/local-pipeline.yaml](../../.github/workflows/local-pipeline.yaml)
 
 ---
 
-## 8) Schema Sync Policy (Prod â†’ Local)
+## 8) Schema Sync Policy (Prod -> Local)
 
 Local schema is kept in sync with production by updating `supabase/migrations/*` (reviewable, commit-able).
 
 This repo intentionally avoids automatically pulling prod schema on each test run.
 
 See:
-- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../doc/LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)

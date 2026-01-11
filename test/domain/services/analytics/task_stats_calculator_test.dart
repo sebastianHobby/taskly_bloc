@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/models/occurrence_data.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 

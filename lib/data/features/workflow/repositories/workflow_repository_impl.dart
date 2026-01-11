@@ -1,13 +1,13 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as db;
 import 'package:taskly_bloc/data/infrastructure/drift/features/workflow_tables.drift.dart'
     as db_workflow;
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 
 /// Drift implementation of [WorkflowRepositoryContract].
 class WorkflowRepositoryImpl implements WorkflowRepositoryContract {

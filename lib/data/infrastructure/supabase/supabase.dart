@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/app/env/env.dart';
+import 'package:taskly_bloc/core/env/env.dart';
 
 Future<void> loadSupabase() async {
   final supabaseUrl = Env.supabaseUrl.trim();

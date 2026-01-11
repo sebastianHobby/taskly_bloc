@@ -1,6 +1,6 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 part 'allocation_result.freezed.dart';
 

@@ -1,7 +1,7 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_action.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_action.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 part 'problem_definition.freezed.dart';
 part 'problem_definition.g.dart';

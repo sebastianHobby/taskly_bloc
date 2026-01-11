@@ -1,5 +1,5 @@
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 
 /// Calculates time series trends
 class TrendCalculator {

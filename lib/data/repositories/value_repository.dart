@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart' as drift_pkg;
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as drift;
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -11,7 +11,7 @@ import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
 import 'package:taskly_bloc/domain/queries/value_predicate.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 
 class ValueRepository implements ValueRepositoryContract {
   ValueRepository({

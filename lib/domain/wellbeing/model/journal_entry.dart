@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
 
 part 'journal_entry.freezed.dart';
 part 'journal_entry.g.dart';

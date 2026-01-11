@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_action.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_action.dart';
 
 /// A button widget for executing a problem action.
 ///

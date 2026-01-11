@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_action.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_definition.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_action.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 import 'package:taskly_bloc/presentation/widgets/problem/problem_action_button.dart';
 
 /// A card widget displaying a detected problem with available actions.

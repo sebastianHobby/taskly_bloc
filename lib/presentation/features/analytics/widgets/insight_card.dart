@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
 
 class InsightCard extends StatelessWidget {
   const InsightCard({

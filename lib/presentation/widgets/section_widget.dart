@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
@@ -217,7 +217,7 @@ class SectionWidget extends StatelessWidget {
             final task = d.agendaData.groups
                 .expand((g) => g.items)
                 .where((item) => item.isTask && item.task?.id == taskId)
-                .map((item) => item.task!)
+                .map((item) => item.task)
                 .first;
             onTaskCheckboxChanged?.call(task, val);
           },

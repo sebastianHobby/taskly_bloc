@@ -1,7 +1,7 @@
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules/rule_types.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules/task_rule.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 /// Rule set containing multiple task rules with a boolean operator.
 class TaskRuleSet {

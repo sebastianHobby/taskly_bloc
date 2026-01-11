@@ -1,10 +1,10 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/journal_entry.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 
 part 'journal_entry_bloc.freezed.dart';

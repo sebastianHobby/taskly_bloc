@@ -1,5 +1,5 @@
 ﻿import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 /// Weights used for scoring tasks based on focus mode.
 class ScoringWeights {

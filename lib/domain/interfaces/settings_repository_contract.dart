@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 
 /// Repository contract for managing application settings.
 ///
