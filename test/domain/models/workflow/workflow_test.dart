@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 
 import '../../../fixtures/test_data.dart';
 import '../../../helpers/fallback_values.dart';

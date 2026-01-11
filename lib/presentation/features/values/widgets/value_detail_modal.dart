@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
-import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart'
     show SparklinePainter;
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';

@@ -1,5 +1,5 @@
 ﻿import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_scoring.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_strategy.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';

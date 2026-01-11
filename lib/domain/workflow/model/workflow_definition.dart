@@ -1,6 +1,6 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
 
 part 'workflow_definition.freezed.dart';
 part 'workflow_definition.g.dart';

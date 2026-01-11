@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';

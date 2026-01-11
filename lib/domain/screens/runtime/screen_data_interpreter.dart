@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';

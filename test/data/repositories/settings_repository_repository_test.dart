@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/models/settings/app_theme_mode.dart';
 import 'package:taskly_bloc/domain/models/settings/global_settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 
 import '../../helpers/base_repository_helpers.dart';
 

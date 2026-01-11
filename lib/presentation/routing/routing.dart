@@ -1,11 +1,11 @@
 ﻿import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.

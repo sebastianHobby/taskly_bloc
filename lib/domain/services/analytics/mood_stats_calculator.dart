@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/mood_summary.dart';
-import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/mood_summary.dart';
+import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/services/analytics/trend_calculator.dart';
 
 /// Calculates mood-related statistics

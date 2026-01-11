@@ -1,12 +1,12 @@
-import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
-import 'package:taskly_bloc/domain/models/analytics/correlation_request.dart';
-import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/analytics/mood_summary.dart';
-import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
-import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_snapshot.dart';
+import 'package:taskly_bloc/domain/analytics/model/correlation_request.dart';
+import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/mood_summary.dart';
+import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 
 /// Main entry point for all analytics
 abstract class AnalyticsService {

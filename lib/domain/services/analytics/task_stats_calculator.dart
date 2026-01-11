@@ -1,8 +1,8 @@
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
-import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/task_stat_type.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
 
 /// Default number of days after which a task is considered stale.
 const int kDefaultStaleThresholdDays = 14;

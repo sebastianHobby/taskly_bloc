@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 /// Score helpers for allocation strategies.
 class AllocationScoring {

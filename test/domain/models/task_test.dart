@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 import '../../fixtures/test_data.dart';
 import '../../helpers/fallback_values.dart';

@@ -1,5 +1,5 @@
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/queries/operators/operators.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';

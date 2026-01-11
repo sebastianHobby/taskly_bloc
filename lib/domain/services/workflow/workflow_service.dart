@@ -1,8 +1,8 @@
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 
 /// Service for orchestrating multi-step workflows.
 ///

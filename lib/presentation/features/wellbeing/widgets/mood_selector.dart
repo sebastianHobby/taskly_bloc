@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
 
 class MoodSelector extends StatelessWidget {
   const MoodSelector({

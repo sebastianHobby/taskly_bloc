@@ -10,9 +10,9 @@ import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/settings/model/project_health_review_settings.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_day_stats_service.dart';
 
 import '../../../helpers/test_db.dart';

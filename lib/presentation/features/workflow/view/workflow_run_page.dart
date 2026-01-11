@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/presentation/features/workflow/bloc/workflow_run_bloc.dart';
 
@@ -37,7 +37,7 @@ class WorkflowRunPage extends StatelessWidget {
         if (existingWorkflow != null) {
           bloc.add(
             WorkflowRunEvent.resumed(
-              workflow: existingWorkflow!,
+              workflow: existingWorkflow,
               definition: definition,
             ),
           );

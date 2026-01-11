@@ -1,8 +1,8 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/enrichment_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
@@ -158,7 +158,7 @@ sealed class SectionDataResult with _$SectionDataResult {
       agendaData.groups
           .expand((g) => g.items)
           .where((i) => i.isTask)
-          .map((i) => i.task!)
+          .map((i) => i.task)
           .toList(),
     _ => [],
   };
@@ -171,7 +171,7 @@ sealed class SectionDataResult with _$SectionDataResult {
       agendaData.groups
           .expand((g) => g.items)
           .where((i) => i.isProject)
-          .map((i) => i.project!)
+          .map((i) => i.project)
           .toList(),
     EntityHeaderProjectSectionResult(:final project) => [project],
     _ => [],

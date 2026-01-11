@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 /// A compact list of task previews for problem context.
 ///

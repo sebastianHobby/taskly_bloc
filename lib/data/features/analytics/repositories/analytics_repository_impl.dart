@@ -3,10 +3,10 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
-import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
-import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_snapshot.dart';
+import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 
 class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {

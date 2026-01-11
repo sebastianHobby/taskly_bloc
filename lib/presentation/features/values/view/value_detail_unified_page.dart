@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as screens;
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
@@ -23,7 +23,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';

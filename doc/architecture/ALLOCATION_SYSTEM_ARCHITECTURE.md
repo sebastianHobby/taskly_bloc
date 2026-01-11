@@ -1,12 +1,12 @@
-﻿# Allocation System â€” Architecture Overview
+﻿# Allocation System - Architecture Overview
 
 > Audience: developers + architects
 >
-> Scope: the *current* allocation system in this repo (inputs â†’ focus-mode config â†’ allocation computation â†’ daily snapshots â†’ unified screen integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
+> Scope: the *current* allocation system in this repo (inputs -> focus-mode config -> allocation computation -> daily snapshots -> unified screen integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
 
 ## 1) Executive Summary
 
-Tasklyâ€™s **allocation system** produces a daily â€œFocus listâ€ of tasks by combining:
+Taskly's **allocation system** produces a daily "Focus list" of tasks by combining:
 
 - **User configuration** (`AllocationConfig`, especially the selected `FocusMode`)
 - **Pinned tasks/projects** (always included)
@@ -70,7 +70,7 @@ A key UX invariant:
 - Section interpreters:
   - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
   - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
-- â€œData plumbingâ€ for templates:
+- "Data plumbing" for templates:
   - [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
   - [lib/domain/screens/runtime/section_data_result.dart](../../lib/domain/screens/runtime/section_data_result.dart)
 - Screen gating:
@@ -96,56 +96,56 @@ A key UX invariant:
 ### 3.1 Component Diagram
 
 ```text
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                         Presentation                           â”‚
-â”‚  - My Day (unified screen)                                     â”‚
-â”‚  - AllocationSectionRenderer                                   â”‚
-â”‚  - FocusSetupWizard (config writes)                            â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                        â”‚
-                        v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                     Unified Screen Pipeline                    â”‚
-â”‚  ScreenDataInterpreter                                          â”‚
-â”‚   - applies ScreenGateConfig (e.g., focus mode required)        â”‚
-â”‚   - runs section template interpreters                          â”‚
-â”‚     - allocation -> SectionDataService.watchAllocation()        â”‚
-â”‚     - allocation_alerts -> AttentionEngine                      â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                        â”‚
-                        v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                          Domain Layer                          â”‚
-â”‚  TemporalTriggerService                                         â”‚
-â”‚   - emits HomeDayBoundaryCrossed events                          â”‚
-â”‚   - re-checks on app resume (timers don't run while suspended)   â”‚
-â”‚                                                                â”‚
-â”‚  AllocationSnapshotCoordinator                                   â”‚
-â”‚   - owns WHEN to refresh today's snapshot                         â”‚
-â”‚   - debounces input changes                                      â”‚
-â”‚   - refreshes immediately on day boundary                         â”‚
-â”‚  AllocationOrchestrator                                         â”‚
-â”‚   - combines tasks/projects/settings                             â”‚
-â”‚   - computes allocation result (strategies)                      â”‚
-â”‚   - persists allocation snapshots (optional injection)           â”‚
-â”‚                                                                â”‚
-â”‚  AllocationSnapshotRepository                                   â”‚
-â”‚   - stores daily allocation membership                           â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                        â”‚
-                        v
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                       Drift / PowerSync DB                      â”‚
-â”‚  - allocation_snapshots + allocation_snapshot_entries            â”‚
-â”‚  - user settings (SettingsKey.allocation)                        â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
++---------------------------------------------------------------+
+|                        Presentation                            |
+|  - My Day (unified screen)                                     |
+|  - AllocationSectionRenderer                                   |
+|  - FocusSetupWizard (config writes)                            |
++---------------------------------------------------------------+
+                                |
+                                v
++---------------------------------------------------------------+
+|                    Unified Screen Pipeline                     |
+|  ScreenDataInterpreter                                         |
+|   - applies ScreenGateConfig (e.g., focus mode required)        |
+|   - runs section template interpreters                          |
+|     - allocation -> SectionDataService.watchAllocation()        |
+|     - allocation_alerts -> AttentionEngine                      |
++---------------------------------------------------------------+
+                                |
+                                v
++---------------------------------------------------------------+
+|                          Domain Layer                          |
+|  TemporalTriggerService                                        |
+|   - emits HomeDayBoundaryCrossed events                         |
+|   - re-checks on app resume (timers don't run while suspended)  |
+|                                                               |
+|  AllocationSnapshotCoordinator                                  |
+|   - owns WHEN to refresh today's snapshot                       |
+|   - debounces input changes                                     |
+|   - refreshes immediately on day boundary                       |
+|  AllocationOrchestrator                                        |
+|   - combines tasks/projects/settings                            |
+|   - computes allocation result (strategies)                     |
+|   - persists allocation snapshots (optional injection)          |
+|                                                               |
+|  AllocationSnapshotRepository                                  |
+|   - stores daily allocation membership                          |
++---------------------------------------------------------------+
+                                |
+                                v
++---------------------------------------------------------------+
+|                       Drift / PowerSync DB                     |
+|  - allocation_snapshots + allocation_snapshot_entries           |
+|  - user settings (SettingsKey.allocation)                       |
++---------------------------------------------------------------+
 ```
 
 ---
 
 ## 4) End-to-End Flows
 
-### 4.1 My Day: Focus-mode gate â†’ Focus setup â†’ Allocation sections
+### 4.1 My Day: Focus-mode gate -> Focus setup -> Allocation sections
 
 My Day is a **system screen** with a **screen-level gate**.
 
@@ -159,7 +159,7 @@ My Day is a **system screen** with a **screen-level gate**.
 - `ScreenDataInterpreter.watchScreen()` checks gate criteria.
 - For `allocationFocusModeNotSelected`, it watches settings:
   - `SettingsKey.allocation` and `AllocationConfig.hasSelectedFocusMode`.
-- While active, the screenâ€™s normal sections are replaced by the gate section:
+- While active, the screen's normal sections are replaced by the gate section:
   - `SectionTemplateId.myDayFocusModeRequired`.
 
 See gate evaluation:
@@ -189,7 +189,7 @@ See gate evaluation:
 Key save behavior:
 - [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
-Key post-save â€œrefreshâ€ call (requests an immediate snapshot refresh):
+Key post-save "refresh" call (requests an immediate snapshot refresh):
 - [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
 
 ---
@@ -222,8 +222,8 @@ The `allocation` template is interpreted by `AllocationSectionInterpreter`, whic
 
 **Snapshot-first behavior exists for stability**:
 
-- The userâ€™s Focus list should not churn due to incidental mid-day changes.
-- The allocator can still recompute, but the snapshot layer can â€œlockâ€ membership.
+- The user's Focus list should not churn due to incidental mid-day changes.
+- The allocator can still recompute, but the snapshot layer can "lock" membership.
 
 **Keeping snapshots fresh (top-up-only)**:
 
@@ -263,8 +263,8 @@ Repository implementation:
 
 The orchestrator includes a stabilization step:
 
-- When a snapshot already exists for today, regular (non-pinned) membership is treated as â€œlockedâ€.
-- A â€œtop-upâ€ is only allowed if the day was generated with an initial shortage (candidate pool < cap).
+- When a snapshot already exists for today, regular (non-pinned) membership is treated as "locked".
+- A "top-up" is only allowed if the day was generated with an initial shortage (candidate pool < cap).
 
 Implementation details:
 - [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
@@ -291,7 +291,7 @@ This section describes the current algorithm at the *architecture* level (not a 
    - If there are no values, allocation returns `requiresValueSetup = true`.
 
 2) **Pinned membership**
-   - A task is â€œpinnedâ€ if:
+  - A task is "pinned" if:
      - `task.isPinned == true`, or
      - its project is pinned.
    - Pinned tasks are always included.
@@ -348,7 +348,7 @@ Save behavior:
 
 - `AllocationOrchestrator` includes the active focus mode in `AllocationResult.activeFocusMode`.
 - `SectionDataService` passes that through to `SectionDataResult.allocation.activeFocusMode`.
-- The renderer can use it for labels/section titles (e.g., â€œOutside Focusâ€ copy).
+- The renderer can use it for labels/section titles (e.g., "Outside Focus" copy).
 
 ---
 
@@ -360,18 +360,17 @@ Instead:
 
 - `AllocationAlertsSectionInterpreter.fetch()` calls:
   - `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
-- Allocation alert rules are evaluated **against the current dayâ€™s snapshot**:
-  - â€œShow candidates that match predicate X but are not allocated today.â€
+- Allocation alert rules are evaluated **against the current day's snapshot**:
+  - "Show candidates that match predicate X but are not allocated today."
 
-Key implementation:
 Key implementation:
 - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
 - [lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
 
 Important design note (current state):
 
-- The allocation section result carries `excludedTasks` mainly for the optional â€œoutside focusâ€ section.
-- The â€œwarning banners / alertsâ€ UX is driven by the attention system so it can:
+- The allocation section result carries `excludedTasks` mainly for the optional "outside focus" section.
+- The "warning banners / alerts" UX is driven by the attention system so it can:
   - apply rule configuration,
   - support dismissals via state-hashes,
   - remain consistent with other attention surfaces.
@@ -433,6 +432,6 @@ See stream combination:
 ## 9) Notes / Invariants
 
 - Snapshots are keyed by **UTC day**.
-- Snapshots store **allocated membership** (not â€œexcludedâ€).
+- Snapshots store **allocated membership** (not "excluded").
 - App code intentionally does not filter snapshot rows by `user_id`; scoping is handled by Supabase RLS + PowerSync bucket rules.
-- â€œFirst runâ€ (no snapshot yet) uses live allocation fallback.
+- "First run" (no snapshot yet) uses live allocation fallback.

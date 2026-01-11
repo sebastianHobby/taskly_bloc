@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules.dart';
-import 'package:taskly_bloc/domain/models/value.dart';
+import 'package:taskly_bloc/domain/core/model/value.dart';
 
 import '../../../fixtures/test_data.dart';
 import '../../../helpers/fallback_values.dart';

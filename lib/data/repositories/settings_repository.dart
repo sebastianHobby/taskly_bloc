@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/settings/settings.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
 
 /// Repository for managing application settings via [SettingsKey].
 ///

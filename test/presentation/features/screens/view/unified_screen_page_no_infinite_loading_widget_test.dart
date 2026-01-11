@@ -18,7 +18,7 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';

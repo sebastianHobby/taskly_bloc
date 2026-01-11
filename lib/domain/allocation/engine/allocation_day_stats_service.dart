@@ -7,12 +7,12 @@ import 'package:taskly_bloc/domain/allocation/model/allocation_day_stats.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
+import 'package:taskly_bloc/domain/settings/model/project_health_review_settings.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_history_metrics.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 

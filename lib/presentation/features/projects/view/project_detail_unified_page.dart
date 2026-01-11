@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/allocation/engine/project_next_task_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
@@ -27,7 +27,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/entity_header.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
@@ -361,7 +361,7 @@ class _ProjectScreenView extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: ProjectNextTaskCard(
                   task: nextTask,
-                  onStartTap: () => _pinToFocus(context, nextTask!),
+                  onStartTap: () => _pinToFocus(context, nextTask),
                   onTaskTap: () =>
                       Routing.toEntity(context, EntityType.task, nextTask!.id),
                 ),

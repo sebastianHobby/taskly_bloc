@@ -14,7 +14,8 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart' as sp;
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart'
+    as sp;
 
 void main() {
   late ScreenQueryBuilder queryBuilder;

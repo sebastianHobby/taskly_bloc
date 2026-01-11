@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/sort_preferences.dart';
+import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
 
 void main() {
   group('SortField', () {

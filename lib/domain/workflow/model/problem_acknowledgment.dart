@@ -1,10 +1,10 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 // Note: ProblemType enum moved to problem_type.dart
 // Re-export for backward compatibility
-export 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
+export 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 part 'problem_acknowledgment.freezed.dart';
 part 'problem_acknowledgment.g.dart';

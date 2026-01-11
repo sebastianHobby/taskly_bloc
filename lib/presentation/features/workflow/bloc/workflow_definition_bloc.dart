@@ -4,10 +4,10 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
-import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
+import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 
 part 'workflow_definition_bloc.freezed.dart';
 

@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart'
     show ScreenDefinitionsRepositoryImpl;
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';

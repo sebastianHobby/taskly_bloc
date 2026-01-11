@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/analytics/stat_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
 
 class StatCard extends StatelessWidget {
   const StatCard({

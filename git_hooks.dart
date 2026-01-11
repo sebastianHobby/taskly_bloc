@@ -13,17 +13,9 @@ void main(List<String> arguments) {
 Future<bool> preCommit() async {
   print('🔍 Running pre-commit checks...\n');
 
-  // Pre-commit is lightweight - just auto-format staged files
-  final allPassed = await _runFormatCheck();
-
-  if (allPassed) {
-    print('\n✅ All pre-commit checks passed!');
-  } else {
-    print('\n❌ Pre-commit checks failed. Fix issues before committing.');
-    print('   Use "git commit --no-verify" to bypass (not recommended).');
-  }
-
-  return allPassed;
+  // Intentionally no auto-formatting in git hooks.
+  print('   ✓ No pre-commit checks configured.');
+  return true;
 }
 
 Future<bool> prePush() async {
@@ -407,59 +399,6 @@ Future<bool> _runAnalyze() async {
   } catch (e) {
     print('   ⚠️  Could not run analyzer: $e');
     return false;
-  }
-}
-
-Future<bool> _runFormatCheck() async {
-  print('🎨 Auto-formatting staged dart files...');
-
-  try {
-    // Get staged dart files
-    final gitResult = await Process.run(
-      'git',
-      ['diff', '--cached', '--name-only', '--diff-filter=ACM'],
-    );
-
-    final stagedFiles = (gitResult.stdout as String)
-        .split('\n')
-        .where((f) => f.endsWith('.dart') && File(f).existsSync())
-        .toList();
-
-    if (stagedFiles.isEmpty) {
-      print('   No Dart files staged.');
-      return true;
-    }
-
-    // Auto-format the staged files
-    final formatResult = await Process.run(
-      'dart',
-      ['format', ...stagedFiles],
-      runInShell: true,
-    );
-
-    if (formatResult.exitCode != 0) {
-      print('   ❌ Failed to format files.');
-      print(formatResult.stderr);
-      return false;
-    }
-
-    // Re-stage the formatted files
-    final stageResult = await Process.run(
-      'git',
-      ['add', ...stagedFiles],
-    );
-
-    if (stageResult.exitCode != 0) {
-      print('   ❌ Failed to re-stage formatted files.');
-      print(stageResult.stderr);
-      return false;
-    }
-
-    print('   ✓ Formatted and re-staged ${stagedFiles.length} files.');
-    return true;
-  } catch (e) {
-    print('   ⚠️  Could not format files: $e');
-    return true; // Don't block on check failure
   }
 }
 

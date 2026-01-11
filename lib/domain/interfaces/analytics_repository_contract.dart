@@ -1,7 +1,7 @@
-import 'package:taskly_bloc/domain/models/analytics/analytics_insight.dart';
-import 'package:taskly_bloc/domain/models/analytics/analytics_snapshot.dart';
-import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
+import 'package:taskly_bloc/domain/analytics/model/analytics_snapshot.dart';
+import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 
 /// Repository contract for analytics data
 abstract class AnalyticsRepositoryContract {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 
 /// A compact chip showing a date or indicator.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
+import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
 
 /// FormBuilder field for selecting a mood rating
 class FormBuilderMoodRatingField

@@ -1,6 +1,6 @@
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_project_history_window.dart';
-import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
+import 'package:taskly_bloc/domain/settings/model/project_health_review_settings.dart';
 
 /// Shared helpers for allocation-history-derived metrics.
 ///

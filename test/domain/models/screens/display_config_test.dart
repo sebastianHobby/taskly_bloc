@@ -1,6 +1,6 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
-import 'package:taskly_bloc/domain/models/workflow/problem_type.dart';
+import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 import '../../../helpers/fallback_values.dart';
 

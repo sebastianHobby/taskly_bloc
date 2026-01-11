@@ -1,5 +1,5 @@
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/models/value_priority.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 
 abstract class ValueRepositoryContract {

@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
 

@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:ml_linalg/linalg.dart';
 import 'package:statistics/statistics.dart';
-import 'package:taskly_bloc/domain/models/analytics/correlation_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
 
 /// Calculates correlations using Pearson coefficient with statistical rigor
 class CorrelationCalculator {

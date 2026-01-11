@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/analytics/date_range.dart';
+import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 
 import '../../../helpers/fallback_values.dart';
 

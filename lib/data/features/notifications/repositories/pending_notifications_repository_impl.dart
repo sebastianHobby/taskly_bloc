@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as db;
 import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';

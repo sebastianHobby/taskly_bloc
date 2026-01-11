@@ -1,7 +1,7 @@
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
 import 'package:taskly_bloc/domain/filtering/task_rules/rule_types.dart';
-import 'package:taskly_bloc/domain/models/task.dart';
+import 'package:taskly_bloc/domain/core/model/task.dart';
 
 /// Base class for all task filtering rules.
 abstract class TaskRule {
