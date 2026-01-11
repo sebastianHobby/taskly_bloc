@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/attention/attention_rule.dart';
+import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 /// Settings page for managing attention rules.

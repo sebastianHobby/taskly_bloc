@@ -8,7 +8,7 @@ import 'package:taskly_bloc/domain/models/screens/enrichment_result.dart';
 import 'package:taskly_bloc/domain/models/screens/agenda_data.dart';
 import 'package:taskly_bloc/domain/models/screens/screen_item.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
-import 'package:taskly_bloc/domain/models/attention/attention_item.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
 
 part 'section_data_result.freezed.dart';
 

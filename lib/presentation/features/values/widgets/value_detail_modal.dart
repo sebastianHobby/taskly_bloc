@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/models/screens/value_stats.dart' as domain;
 import 'package:taskly_bloc/domain/models/value.dart';
-import 'package:taskly_bloc/presentation/features/values/widgets/enhanced_value_card.dart';
+import 'package:taskly_bloc/presentation/entity_views/value_view.dart'
+    show SparklinePainter;
 import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// Modal showing detailed statistics for a value.
@@ -13,12 +15,12 @@ class ValueDetailModal extends StatelessWidget {
   });
 
   final Value value;
-  final ValueStats stats;
+  final domain.ValueStats stats;
 
   static Future<void> show(
     BuildContext context, {
     required Value value,
-    required ValueStats stats,
+    required domain.ValueStats stats,
   }) {
     return showModalBottomSheet(
       context: context,
@@ -159,7 +161,7 @@ class _LargeTrendChart extends StatelessWidget {
 class _StatsGrid extends StatelessWidget {
   const _StatsGrid({required this.stats});
 
-  final ValueStats stats;
+  final domain.ValueStats stats;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +239,7 @@ class _ActivitySection extends StatelessWidget {
     required this.l10n,
   });
 
-  final ValueStats stats;
+  final domain.ValueStats stats;
   final AppLocalizations l10n;
 
   @override

@@ -4,6 +4,7 @@ import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
+import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
 /// The canonical, entity-level task UI entrypoint.
@@ -109,22 +110,6 @@ class TaskView extends StatelessWidget {
     return null;
   }
 
-  String _formatRelativeDate(BuildContext context, DateTime date) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dateDay = DateTime(date.year, date.month, date.day);
-    final difference = dateDay.difference(today).inDays;
-
-    if (difference == 0) return 'Today';
-    if (difference == 1) return 'Tomorrow';
-    if (difference == -1) return 'Yesterday';
-    if (difference > 1 && difference <= 7) return 'In $difference days';
-    if (difference < -1 && difference >= -7) return '${-difference} days ago';
-
-    final localizations = MaterialLocalizations.of(context);
-    return localizations.formatShortDate(date);
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -219,7 +204,7 @@ class TaskView extends StatelessWidget {
                       isOverdue: isOverdue,
                       isDueToday: isDueToday,
                       isDueSoon: isDueSoon,
-                      formatDate: _formatRelativeDate,
+                      formatDate: DateLabelFormatter.format,
                       hasRepeat: task.repeatIcalRrule != null,
                       primaryValue: effectivePrimaryValue,
                       secondaryValues: effectiveSecondaryValues,
@@ -230,7 +215,7 @@ class TaskView extends StatelessWidget {
                         isOverdue: isOverdue,
                         isDueToday: isDueToday,
                         isDueSoon: isDueSoon,
-                        formatDate: _formatRelativeDate,
+                        formatDate: DateLabelFormatter.format,
                       ),
                     ),
                   ],

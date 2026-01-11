@@ -5,9 +5,9 @@ import 'package:taskly_bloc/data/drift/features/attention_tables.drift.dart'
     as drift_attention;
 import 'package:taskly_bloc/data/drift/features/shared_enums.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/models/attention/attention_rule.dart'
+import 'package:taskly_bloc/domain/attention/model/attention_rule.dart'
     as domain;
-import 'package:taskly_bloc/domain/models/attention/system_attention_rules.dart';
+import 'package:taskly_bloc/domain/attention/system_attention_rules.dart';
 
 /// Seeds system attention rules to database
 ///
