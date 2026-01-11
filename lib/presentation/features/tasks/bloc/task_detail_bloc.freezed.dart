@@ -856,12 +856,12 @@ $TaskDetailOperationSuccessCopyWith<TaskDetailOperationSuccess> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailOperationSuccess&&const DeepCollectionEquality().equals(other.operation, operation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailOperationSuccess&&(identical(other.operation, operation) || other.operation == operation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(operation));
+int get hashCode => Object.hash(runtimeType,operation);
 
 @override
 String toString() {
@@ -893,9 +893,9 @@ class _$TaskDetailOperationSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? operation = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? operation = null,}) {
   return _then(TaskDetailOperationSuccess(
-operation: freezed == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
+operation: null == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
 as EntityOperation,
   ));
 }
@@ -1034,12 +1034,12 @@ $TaskDetailLoadSuccessCopyWith<TaskDetailLoadSuccess> get copyWith => _$TaskDeta
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&const DeepCollectionEquality().equals(other.task, task));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableProjects, _availableProjects)&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&(identical(other.task, task) || other.task == task));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues),const DeepCollectionEquality().hash(task));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableProjects),const DeepCollectionEquality().hash(_availableValues),task);
 
 @override
 String toString() {
@@ -1071,11 +1071,11 @@ class _$TaskDetailLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of TaskDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,Object? task = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? availableProjects = null,Object? availableValues = null,Object? task = null,}) {
   return _then(TaskDetailLoadSuccess(
 availableProjects: null == availableProjects ? _self._availableProjects : availableProjects // ignore: cast_nullable_to_non_nullable
 as List<Project>,availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
-as List<Value>,task: freezed == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
+as List<Value>,task: null == task ? _self.task : task // ignore: cast_nullable_to_non_nullable
 as Task,
   ));
 }

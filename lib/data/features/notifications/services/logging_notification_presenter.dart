@@ -1,5 +1,5 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
+import 'package:taskly_bloc/domain/notifications/model/pending_notification.dart';
 
 /// Temporary presenter that logs notifications instead of displaying them.
 class LoggingNotificationPresenter {

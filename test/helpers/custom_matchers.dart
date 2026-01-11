@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/entity_operation.dart';
+import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
 
 /// Custom matchers for testing common patterns in the application.
 ///

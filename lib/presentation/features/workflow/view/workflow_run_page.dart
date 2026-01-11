@@ -26,6 +26,8 @@ class WorkflowRunPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final workflow = existingWorkflow;
+
     return BlocProvider(
       create: (context) {
         final bloc = WorkflowRunBloc(
@@ -34,10 +36,10 @@ class WorkflowRunPage extends StatelessWidget {
           sectionDataService: getIt<SectionDataService>(),
         );
 
-        if (existingWorkflow != null) {
+        if (workflow != null) {
           bloc.add(
             WorkflowRunEvent.resumed(
-              workflow: existingWorkflow,
+              workflow: workflow,
               definition: definition,
             ),
           );

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/settings/soft_gates_settings.dart';
+import 'package:taskly_bloc/domain/settings/model/soft_gates_settings.dart';
 
 void main() {
   group('SoftGatesSettings', () {

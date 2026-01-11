@@ -16,7 +16,7 @@ import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
+import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';

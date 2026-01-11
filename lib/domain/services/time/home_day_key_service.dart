@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings/global_settings.dart';
+import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 
 /// Computes the app's "today" day-key based on a fixed home timezone offset.

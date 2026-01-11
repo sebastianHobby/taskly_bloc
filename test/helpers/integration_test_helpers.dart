@@ -58,7 +58,7 @@ import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_cont
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
+import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
 
 import 'test_db.dart';
 

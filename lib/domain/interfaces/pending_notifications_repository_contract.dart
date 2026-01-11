@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
+import 'package:taskly_bloc/domain/notifications/model/pending_notification.dart';
 
 /// Repository contract for pending notifications
 abstract class PendingNotificationsRepositoryContract {

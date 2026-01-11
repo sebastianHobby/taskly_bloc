@@ -95,7 +95,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     try {
       final screenWithPrefs = await _screenRepository
           .watchScreen(event.screenId)
-          .first;
+          .firstWhere((_) => true, orElse: () => null);
 
       if (screenWithPrefs == null) {
         emit(

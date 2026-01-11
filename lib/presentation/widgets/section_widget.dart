@@ -218,6 +218,7 @@ class SectionWidget extends StatelessWidget {
                 .expand((g) => g.items)
                 .where((item) => item.isTask && item.task?.id == taskId)
                 .map((item) => item.task)
+                .whereType<Task>()
                 .first;
             onTaskCheckboxChanged?.call(task, val);
           },
