@@ -11,8 +11,11 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_auto_refresh_service.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
+import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
+import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -204,9 +207,16 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
         await dayKeyService.ensureInitialized();
         dayKeyService.start();
 
-        // Keep today's allocation snapshot fresh (shrink + top-up only) once a
-        // snapshot exists, without reshuffling My Day.
-        getIt<AllocationSnapshotAutoRefreshService>().start();
+        // Lifecycle + time-based triggers (e.g., home-day rollover).
+        getIt<AppLifecycleService>().start();
+        getIt<TemporalTriggerService>().start();
+
+        // In-app invalidation pulses for time-based attention sections.
+        getIt<AttentionTemporalInvalidationService>().start();
+
+        // Centralized trigger coordinator for keeping today's allocation
+        // snapshot generated and refreshed (debounced, no reshuffle policy).
+        getIt<AllocationSnapshotCoordinator>().start();
 
         // Register screen and entity builders with Routing
         _registerRoutingBuilders();

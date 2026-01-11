@@ -17,8 +17,38 @@ Write-Host "Starting Supabase local stack..."
 supabase start | Out-Host
 
 if ($ResetDb) {
-    Write-Host "Resetting local database (applies migrations + seed.sql)..."
-    supabase db reset | Out-Host
+    Write-Host "Resetting local database (fast truncate)..."
+    try {
+        & (Join-Path $PSScriptRoot "Truncate-LocalE2EDb.ps1") | Out-Host
+    }
+    catch {
+        Write-Host "Truncate failed (likely missing schema). Applying migrations and retrying..."
+        supabase db reset | Out-Host
+        & (Join-Path $PSScriptRoot "Truncate-LocalE2EDb.ps1") | Out-Host
+    }
+
+    # Validate expected tables exist. If not, the repo likely lacks schema migrations.
+    $dbContainer = (docker ps --filter "name=supabase_db" --format "{{.ID}}" | Select-Object -First 1)
+    if ([string]::IsNullOrWhiteSpace($dbContainer)) {
+        throw "Could not find Supabase Postgres container (name filter: supabase_db)."
+    }
+
+    $existsSql = "select " +
+    "coalesce(to_regclass('public.values')::text,'') || '|' || " +
+    "coalesce(to_regclass('public.projects')::text,'') || '|' || " +
+    "coalesce(to_regclass('public.tasks')::text,'') || '|' || " +
+    "coalesce(to_regclass('public.task_values')::text,'') || '|' || " +
+    "coalesce(to_regclass('public.project_values')::text,'') || '|' || " +
+    "coalesce(to_regclass('public.user_profiles')::text,'');"
+
+    $tablesLine = (docker exec $dbContainer psql -U postgres -d postgres -Atc $existsSql)
+    if ($tablesLine -eq '|||||') {
+        throw (
+            "Local Supabase schema is missing the app tables required for E2E tests. " +
+            "Generate/apply schema migrations first (see tool/schema/Pull-ProdSchema.ps1 and doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md), " +
+            "then rerun this script."
+        )
+    }
 }
 
 # Ensure PowerSync env file exists

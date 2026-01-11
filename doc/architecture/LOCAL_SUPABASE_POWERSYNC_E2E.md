@@ -20,26 +20,34 @@ The Flutter app already supports switching environments via `--dart-define-from-
 
 ### Start stack (optionally reset DB)
 - Start without reset:
-  - `pwsh -File tool/e2e/Start-LocalE2EStack.ps1`
+  - PowerShell 7: `pwsh -File tool/e2e/Start-LocalE2EStack.ps1`
+  - Windows PowerShell: `powershell -File tool/e2e/Start-LocalE2EStack.ps1`
 - Start + clean reset (recommended for deterministic runs):
-  - `pwsh -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
+  - PowerShell 7: `pwsh -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
+  - Windows PowerShell: `powershell -File tool/e2e/Start-LocalE2EStack.ps1 -ResetDb`
 
 What reset does:
 - `supabase db reset` recreates local Postgres and applies `supabase/migrations/*` + `supabase/seed.sql`.
 
 ### Run tests
-- `pwsh -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
+- PowerShell 7: `pwsh -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
+- Windows PowerShell: `powershell -File tool/e2e/Run-LocalE2ETests.ps1 -ResetDb`
 
 Notes:
 - The scripts generate `dart_defines.local.json` from `supabase status`.
+- Prefer `dart_defines.local.json` for local E2E runs. The checked-in `dart_defines.json` may point to non-local (e.g. hosted) environments.
 - PowerSync sync rules are mounted from `supabase/powersync-sync-rules.yaml`.
+
+What the test script runs:
+- `flutter test test/integration_test --dart-define-from-file=dart_defines.local.json`
 
 ## Workflow 2: Schema-only sync from prod (explicit + reviewable)
 
 The goal is to keep local schema aligned with production *via migrations*, not by pulling from prod on every test run.
 
 ### Pull prod schema into migrations
-- `pwsh -File tool/schema/Pull-ProdSchema.ps1 -ProjectRef <your-project-ref>`
+- PowerShell 7: `pwsh -File tool/schema/Pull-ProdSchema.ps1 -ProjectRef <your-project-ref>`
+- Windows PowerShell: `powershell -File tool/schema/Pull-ProdSchema.ps1 -ProjectRef <your-project-ref>`
 
 Guidelines:
 - Treat generated migrations like code: review, run locally, and commit deliberately.

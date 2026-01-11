@@ -252,6 +252,29 @@ If you want deterministic local “first-run” attention defaults, you can wire
 
 ## 5) Integration Points (How Attention Surfaces in UI)
 
+---
+
+## 5.4 Temporal Triggers Integration (In-App Only)
+
+Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a wellbeing review is now due).
+
+To support this without introducing OS notifications or server scheduling, the runtime uses a lightweight invalidation stream:
+
+- **Single time source**: `TemporalTriggerService`
+  - emits `AppResumed` and `HomeDayBoundaryCrossed`
+- **Attention invalidation**: `AttentionTemporalInvalidationService`
+  - converts temporal events into `Stream<void>` invalidation pulses
+- **Section refresh**: time-based attention sections (e.g. `checkInSummary`) subscribe to invalidations and re-run `fetch()` when a pulse arrives
+
+This keeps attention evaluation **pull-based** (section interpreters still call `AttentionEvaluator`), but ensures the UI re-checks on:
+
+- app resume (covers “user opens app”)
+- home-day boundary (covers “new day”)
+
+Important: `AttentionRule.triggerType`/`triggerConfig` remain **metadata** in this phase; the app does not run a background scheduler.
+
+Future releases that require actual time-based reminders (firing while the app is closed) should add a separate **delivery layer** (local notifications and/or server push), without coupling it tightly to evaluator logic.
+
 ### 5.1 Support sections (unified screens)
 
 - `issuesSummary` → calls evaluator `evaluateIssues(...)`

@@ -99,6 +99,8 @@ const schema = Schema([
   Table('attention_rules', [
     Column.text('rule_key'),
     Column.text('user_id'),
+    Column.text('domain'),
+    Column.text('category'),
     Column.text('rule_type'),
     Column.text('trigger_type'),
     Column.text('trigger_config'),
@@ -110,6 +112,19 @@ const schema = Schema([
     Column.text('created_at'),
     Column.text('updated_at'),
     Column.text('source'),
+  ]),
+  Table('attention_rule_runtime_state', [
+    Column.text('user_id'),
+    Column.text('rule_id'),
+    Column.text('entity_type'),
+    Column.text('entity_id'),
+    Column.text('state_hash'),
+    Column.text('dismissed_state_hash'),
+    Column.text('last_evaluated_at'),
+    Column.text('next_evaluate_after'),
+    Column.text('metadata'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
   ]),
   Table('task_completion_history', [
     Column.text('task_id'),
@@ -160,6 +175,17 @@ const schema = Schema([
     Column.text('resolution_action'),
     Column.text('action_details'),
     Column.text('created_at'),
+  ]),
+  Table('attention_condition_states', [
+    Column.text('user_id'),
+    Column.text('entity_type'),
+    Column.text('entity_id'),
+    Column.text('condition_key'),
+    Column.text('first_detected_at'),
+    Column.text('last_detected_at'),
+    Column.text('last_cleared_at'),
+    Column.text('created_at'),
+    Column.text('updated_at'),
   ]),
 
   // Allocation snapshots (daily, allocated membership only)

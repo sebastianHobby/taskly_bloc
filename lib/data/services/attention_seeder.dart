@@ -65,6 +65,8 @@ class AttentionSeeder {
           AttentionRulesCompanion.insert(
             id: Value(id),
             ruleKey: template.ruleKey,
+            domain: template.domain,
+            category: template.category,
             ruleType: _mapRuleType(template.ruleType),
             triggerType: _mapTriggerType(template.triggerType),
             triggerConfig: template.triggerConfig,

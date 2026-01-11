@@ -12,6 +12,7 @@ import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/services/screen_seeder.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_evaluator.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
 import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
 import 'package:taskly_bloc/domain/services/screens/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
@@ -22,7 +23,9 @@ import 'package:taskly_bloc/domain/services/screens/templates/check_in_summary_s
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
+import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
+import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -115,6 +118,16 @@ void main() {
           dayKeyService: dayKeyService,
         );
 
+        final lifecycleService = AppLifecycleService();
+        final temporalTriggerService = TemporalTriggerService(
+          dayKeyService: dayKeyService,
+          lifecycleService: lifecycleService,
+        );
+        final attentionTemporalInvalidationService =
+            AttentionTemporalInvalidationService(
+              temporalTriggerService: temporalTriggerService,
+            )..start();
+
         const systemScreenProvider = DefaultSystemScreenProvider();
         final screenRepository = ScreenDefinitionsRepository(
           databaseRepository: ScreenDefinitionsRepositoryImpl(
@@ -134,6 +147,8 @@ void main() {
           ),
           CheckInSummarySectionInterpreter(
             attentionEvaluator: attentionEvaluator,
+            attentionTemporalInvalidationService:
+                attentionTemporalInvalidationService,
           ),
           StaticSectionInterpreter(
             templateId: SectionTemplateId.myDayFocusModeRequired,
@@ -163,6 +178,9 @@ void main() {
           expect(terminalState, isA<ScreenLoadedState>());
         } finally {
           await bloc.close();
+          await attentionTemporalInvalidationService.dispose();
+          await temporalTriggerService.dispose();
+          await lifecycleService.dispose();
           await closeTestDb(db);
         }
       },

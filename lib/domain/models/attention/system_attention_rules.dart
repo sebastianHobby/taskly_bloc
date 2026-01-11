@@ -19,6 +19,8 @@ abstract class SystemAttentionRules {
 
   /// Detects overdue tasks (past deadline)
   static const problemTaskOverdue = AttentionRuleTemplate(
+    domain: 'issues',
+    category: 'problem_task_overdue',
     ruleKey: 'problem_task_overdue',
     ruleType: AttentionRuleType.problem,
     triggerType: AttentionTriggerType.realtime,
@@ -41,6 +43,8 @@ abstract class SystemAttentionRules {
 
   /// Detects stale tasks (no activity for 30+ days)
   static const problemTaskStale = AttentionRuleTemplate(
+    domain: 'issues',
+    category: 'problem_task_stale',
     ruleKey: 'problem_task_stale',
     ruleType: AttentionRuleType.problem,
     triggerType: AttentionTriggerType.scheduled,
@@ -63,6 +67,8 @@ abstract class SystemAttentionRules {
 
   /// Detects idle projects (no activity)
   static const problemProjectIdle = AttentionRuleTemplate(
+    domain: 'issues',
+    category: 'problem_project_idle',
     ruleKey: 'problem_project_idle',
     ruleType: AttentionRuleType.problem,
     triggerType: AttentionTriggerType.scheduled,
@@ -85,6 +91,8 @@ abstract class SystemAttentionRules {
 
   /// Detects overdue journal entries
   static const problemJournalOverdue = AttentionRuleTemplate(
+    domain: 'issues',
+    category: 'problem_journal_overdue',
     ruleKey: 'problem_journal_overdue',
     ruleType: AttentionRuleType.problem,
     triggerType: AttentionTriggerType.realtime,
@@ -111,6 +119,8 @@ abstract class SystemAttentionRules {
 
   /// Values alignment review
   static const reviewValuesAlignment = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_values_alignment',
     ruleKey: 'review_values_alignment',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
@@ -133,6 +143,8 @@ abstract class SystemAttentionRules {
 
   /// Progress review
   static const reviewProgress = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_progress',
     ruleKey: 'review_progress',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
@@ -155,6 +167,8 @@ abstract class SystemAttentionRules {
 
   /// Wellbeing review
   static const reviewWellbeing = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_wellbeing',
     ruleKey: 'review_wellbeing',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
@@ -177,6 +191,8 @@ abstract class SystemAttentionRules {
 
   /// Balance review
   static const reviewBalance = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_balance',
     ruleKey: 'review_balance',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
@@ -203,6 +219,8 @@ abstract class SystemAttentionRules {
 
   /// High-value project neglected (allocation-based).
   static const reviewProjectHighValueNeglected = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_project_high_value_neglected',
     ruleKey: 'review_project_high_value_neglected',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.realtime,
@@ -223,6 +241,8 @@ abstract class SystemAttentionRules {
 
   /// Project has not been allocated recently (portfolio hygiene).
   static const reviewProjectNoAllocatedRecently = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_project_no_allocated_recently',
     ruleKey: 'review_project_no_allocated_recently',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.realtime,
@@ -243,6 +263,8 @@ abstract class SystemAttentionRules {
 
   /// Project has no allocatable tasks for > 1 day (time gated).
   static const reviewProjectNoAllocatableTasks = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_project_no_allocatable_tasks',
     ruleKey: 'review_project_no_allocatable_tasks',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.realtime,
@@ -263,6 +285,8 @@ abstract class SystemAttentionRules {
 
   /// Pinned tasks review
   static const reviewPinnedTasks = AttentionRuleTemplate(
+    domain: 'reviews',
+    category: 'review_pinned_tasks',
     ruleKey: 'review_pinned_tasks',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
@@ -289,6 +313,8 @@ abstract class SystemAttentionRules {
 
   /// Warns about tasks that need allocation attention
   static const allocationExcludedTasks = AttentionRuleTemplate(
+    domain: 'allocation',
+    category: 'allocation_excluded_tasks',
     ruleKey: 'allocation_excluded_tasks',
     ruleType: AttentionRuleType.allocationWarning,
     triggerType: AttentionTriggerType.realtime,
@@ -313,6 +339,8 @@ abstract class SystemAttentionRules {
 
   /// Warns about urgent tasks that ARE value-aligned but still not allocated.
   static const allocationUrgentValueAligned = AttentionRuleTemplate(
+    domain: 'allocation',
+    category: 'allocation_urgent_value_aligned',
     ruleKey: 'allocation_urgent_value_aligned',
     ruleType: AttentionRuleType.allocationWarning,
     triggerType: AttentionTriggerType.realtime,
@@ -337,6 +365,8 @@ abstract class SystemAttentionRules {
 
   /// Warns about tasks under urgent projects that have no effective value.
   static const allocationProjectUrgentValueless = AttentionRuleTemplate(
+    domain: 'allocation',
+    category: 'allocation_project_urgent_valueless',
     ruleKey: 'allocation_project_urgent_valueless',
     ruleType: AttentionRuleType.allocationWarning,
     triggerType: AttentionTriggerType.realtime,
@@ -405,6 +435,8 @@ abstract class SystemAttentionRules {
 /// This exists only for seeding - never used directly in business logic
 class AttentionRuleTemplate {
   const AttentionRuleTemplate({
+    required this.domain,
+    required this.category,
     required this.ruleKey,
     required this.ruleType,
     required this.triggerType,
@@ -415,6 +447,8 @@ class AttentionRuleTemplate {
     required this.resolutionActions,
     required this.sortOrder,
   });
+  final String domain;
+  final String category;
   final String ruleKey;
   final AttentionRuleType ruleType;
   final AttentionTriggerType triggerType;

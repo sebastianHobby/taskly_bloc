@@ -11,7 +11,7 @@ import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
@@ -110,10 +110,10 @@ class AllocationSectionRenderer extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: data.pinnedTasks.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final allocatedTask = data.pinnedTasks[index];
-            return TaskListTile(
+            return TaskView(
               task: allocatedTask.task,
               onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
             );
@@ -226,10 +226,10 @@ class AllocationSectionRenderer extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: tasks.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const Divider(height: 1),
               itemBuilder: (context, index) {
                 final task = tasks[index];
-                return TaskListTile(
+                return TaskView(
                   task: task,
                   onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
                 );
@@ -334,10 +334,10 @@ class AllocationSectionRenderer extends StatelessWidget {
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: group.tasks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final allocatedTask = group.tasks[index];
-                  return TaskListTile(
+                  return TaskView(
                     task: allocatedTask.task,
                     onCheckboxChanged: (t, val) =>
                         onTaskToggle?.call(t.id, val),
@@ -357,10 +357,10 @@ class AllocationSectionRenderer extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: data.allocatedTasks.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, __) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final task = data.allocatedTasks[index];
-        return TaskListTile(
+        return TaskView(
           task: task,
           onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         );

@@ -391,10 +391,11 @@ Future<String> getDatabasePath() async {
 /// - On each signedIn event
 Future<PowerSyncDatabase> openDatabase({
   Future<void> Function()? onAuthenticated,
+  String? pathOverride,
 }) async {
   final db = PowerSyncDatabase(
     schema: schema,
-    path: await getDatabasePath(),
+    path: pathOverride ?? await getDatabasePath(),
     logger: attachedLogger,
   );
   await db.initialize();

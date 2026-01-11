@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 
 /// Section displaying pinned/next action tasks
 class PinnedSection extends StatelessWidget {
@@ -69,7 +69,7 @@ class PinnedSection extends StatelessWidget {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) {
               final allocatedTask = pinnedTasks[index];
-              return TaskListTile(
+              return TaskView(
                 task: allocatedTask.task,
                 onTap: (task) => onTaskTap(task.id),
                 onCheckboxChanged: (task, _) => onToggleComplete(task.id),

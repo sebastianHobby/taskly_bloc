@@ -54,4 +54,22 @@ class HomeDayKeyService {
     final shifted = utc.add(Duration(minutes: _offsetMinutes));
     return dateOnly(shifted);
   }
+
+  /// Returns the UTC instant when the *next* home-day starts.
+  ///
+  /// This is used for timer-based day-boundary triggers.
+  DateTime nextHomeDayBoundaryUtc({DateTime? nowUtc}) {
+    final utc = nowUtc ?? DateTime.now().toUtc();
+    final offset = Duration(minutes: _offsetMinutes);
+    final homeNow = utc.add(offset);
+
+    final homeStartOfToday = DateTime.utc(
+      homeNow.year,
+      homeNow.month,
+      homeNow.day,
+    );
+    final homeStartOfTomorrow = homeStartOfToday.add(const Duration(days: 1));
+
+    return homeStartOfTomorrow.subtract(offset);
+  }
 }

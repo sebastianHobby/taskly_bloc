@@ -27,6 +27,12 @@ class AttentionRules extends Table {
 
   TextColumn get userId => text().nullable().named('user_id')();
 
+  /// Stable grouping axes.
+  TextColumn get domain => text().named('domain')();
+
+  /// Stable sub-category within a domain.
+  TextColumn get category => text().named('category')();
+
   /// Rule type: problem, review, workflow_step, allocation_warning
   TextColumn get ruleType => textEnum<AttentionRuleType>().named('rule_type')();
 
@@ -72,6 +78,59 @@ class AttentionRules extends Table {
 
   @override
   Set<Column> get primaryKey => {id};
+}
+
+/// Engine-owned runtime state for attention rules.
+///
+/// This table holds dismiss/snooze/state-hash semantics independent of the
+/// immutable rule definition.
+class AttentionRuleRuntimeStates extends Table {
+  @override
+  String get tableName => 'attention_rule_runtime_state';
+
+  TextColumn get id => text().clientDefault(uuid.v4).named('id')();
+
+  TextColumn get userId => text().nullable().named('user_id')();
+
+  /// Foreign key to attention_rules.id
+  TextColumn get ruleId =>
+      text().named('rule_id').references(AttentionRules, #id)();
+
+  /// Optional scope to an entity (must be paired with entityId).
+  TextColumn get entityType => text().nullable().named('entity_type')();
+
+  /// Optional scope to an entity (must be paired with entityType).
+  TextColumn get entityId => text().nullable().named('entity_id')();
+
+  /// Current evaluation state hash for the rule+entity.
+  TextColumn get stateHash => text().nullable().named('state_hash')();
+
+  /// If set, indicates the last dismissed state hash.
+  TextColumn get dismissedStateHash =>
+      text().nullable().named('dismissed_state_hash')();
+
+  DateTimeColumn get lastEvaluatedAt =>
+      dateTime().nullable().named('last_evaluated_at')();
+
+  DateTimeColumn get nextEvaluateAfter =>
+      dateTime().nullable().named('next_evaluate_after')();
+
+  TextColumn get metadata =>
+      text().map(const JsonMapConverter()).named('metadata')();
+
+  DateTimeColumn get createdAt =>
+      dateTime().clientDefault(DateTime.now).named('created_at')();
+
+  DateTimeColumn get updatedAt =>
+      dateTime().clientDefault(DateTime.now).named('updated_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {ruleId, entityType, entityId},
+  ];
 }
 
 /// Attention resolutions (tracks when users resolve attention items, replaces last_reviewed_at columns)

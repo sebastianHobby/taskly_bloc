@@ -18,31 +18,7 @@ class TasklyTypography extends ThemeExtension<TasklyTypography> {
     required this.agendaChipDateNumberSelected,
   });
 
-  /// Tight, bold screen title (e.g. Someday / October 2023).
-  final TextStyle screenTitleTight;
-
-  /// Tiny uppercase badge label (e.g. Multi-Value, High Priority Value).
-  final TextStyle badgeTinyCaps;
-
-  /// Heavy section header (e.g. NO VALUE ASSIGNED).
-  final TextStyle sectionHeaderHeavy;
-
-  /// Heavy, prominent agenda section header (e.g. Today).
-  final TextStyle agendaSectionHeaderHeavy;
-
-  /// Small uppercase subheader (e.g. Project: X, Inbox (Value)).
-  final TextStyle subHeaderCaps;
-
-  /// Filter/sort control labels.
-  final TextStyle filterControl;
-
-  /// Agenda date chip number style (unselected).
-  final TextStyle agendaChipDateNumber;
-
-  /// Agenda date chip number style (selected).
-  final TextStyle agendaChipDateNumberSelected;
-
-  static TasklyTypography from({
+  factory TasklyTypography.from({
     required TextTheme textTheme,
     required ColorScheme colorScheme,
   }) {
@@ -95,6 +71,30 @@ class TasklyTypography extends ThemeExtension<TasklyTypography> {
           ),
     );
   }
+
+  /// Tight, bold screen title (e.g. Someday / October 2023).
+  final TextStyle screenTitleTight;
+
+  /// Tiny uppercase badge label (e.g. Multi-Value, High Priority Value).
+  final TextStyle badgeTinyCaps;
+
+  /// Heavy section header (e.g. NO VALUE ASSIGNED).
+  final TextStyle sectionHeaderHeavy;
+
+  /// Heavy, prominent agenda section header (e.g. Today).
+  final TextStyle agendaSectionHeaderHeavy;
+
+  /// Small uppercase subheader (e.g. Project: X, Inbox (Value)).
+  final TextStyle subHeaderCaps;
+
+  /// Filter/sort control labels.
+  final TextStyle filterControl;
+
+  /// Agenda date chip number style (unselected).
+  final TextStyle agendaChipDateNumber;
+
+  /// Agenda date chip number style (selected).
+  final TextStyle agendaChipDateNumberSelected;
 
   @override
   TasklyTypography copyWith({

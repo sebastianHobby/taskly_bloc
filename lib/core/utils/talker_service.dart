@@ -96,19 +96,17 @@ class TasklyTalker {
   TasklyTalker(
     this._raw, {
     TalkerFailFastPolicy? failFastPolicy,
-  }) : _failFastPolicy =
+  }) : failFastPolicy =
            failFastPolicy ?? TalkerFailFastPolicy.fromEnvironment();
 
   final Talker _raw;
-  TalkerFailFastPolicy _failFastPolicy;
+
+  TalkerFailFastPolicy failFastPolicy;
 
   /// Access to the underlying Talker instance.
   ///
   /// Use this when a package API requires `Talker` directly (e.g. TalkerScreen).
   Talker get raw => _raw;
-
-  TalkerFailFastPolicy get failFastPolicy => _failFastPolicy;
-  set failFastPolicy(TalkerFailFastPolicy value) => _failFastPolicy = value;
 
   // Basic logging passthroughs used across the app.
   void verbose(String message, [Object? error, StackTrace? stackTrace]) =>
@@ -127,10 +125,10 @@ class TasklyTalker {
     _raw.error(message, error, stackTrace);
 
     // Fail-fast on error-level logs when they include an exception.
-    if (_failFastPolicy.enabled &&
-        _failFastPolicy.shouldFailFastForMessage(message) &&
+    if (failFastPolicy.enabled &&
+        failFastPolicy.shouldFailFastForMessage(message) &&
         error != null &&
-        _failFastPolicy.shouldFailFastFor(error)) {
+        failFastPolicy.shouldFailFastFor(error)) {
       Error.throwWithStackTrace(error, stackTrace ?? StackTrace.current);
     }
   }
@@ -139,9 +137,9 @@ class TasklyTalker {
     _raw.handle(exception, stackTrace, msg);
 
     // Fail-fast for handled exceptions in debug.
-    if (_failFastPolicy.enabled &&
-        _failFastPolicy.shouldFailFastForMessage(msg) &&
-        _failFastPolicy.shouldFailFastFor(exception)) {
+    if (failFastPolicy.enabled &&
+        failFastPolicy.shouldFailFastForMessage(msg) &&
+        failFastPolicy.shouldFailFastFor(exception)) {
       Error.throwWithStackTrace(exception, stackTrace ?? StackTrace.current);
     }
   }
