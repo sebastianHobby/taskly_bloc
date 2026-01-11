@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_source.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
 
 /// View model for a navigation destination built from a ScreenDefinition.
 class NavigationDestinationVm {

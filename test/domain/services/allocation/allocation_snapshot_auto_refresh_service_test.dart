@@ -1,14 +1,14 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/models/priority/allocation_result.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
 import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 
 class MockAllocationOrchestrator extends Mock

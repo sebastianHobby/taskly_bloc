@@ -1,4 +1,4 @@
-/// PowerSync ⇄ Supabase local E2E pipeline tests.
+﻿/// PowerSync â‡„ Supabase local E2E pipeline tests.
 ///
 /// These tests are meant to run against the local stack:
 /// - Supabase started via `supabase start`
@@ -24,9 +24,9 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
     show getIt, setupDependencies;
 import 'package:taskly_bloc/core/environment/env.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/data/powersync/api_connector.dart';
+import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
@@ -113,7 +113,7 @@ void main() {
     await getIt.reset();
   });
 
-  group('PowerSync ⇄ Supabase local pipeline', () {
+  group('PowerSync â‡„ Supabase local pipeline', () {
     testWidgetsE2E(
       'upload: Drift write -> PowerSync upload -> PostgREST row matches',
       (tester) async {
@@ -683,7 +683,7 @@ void main() {
     );
 
     testWidgetsE2E(
-      'two-client: domain CRUD sync A→B and B→A (isolated local DBs)',
+      'two-client: domain CRUD sync Aâ†’B and Bâ†’A (isolated local DBs)',
       (tester) async {
         if (userId == null) {
           fail('Missing userId from setUpAll');

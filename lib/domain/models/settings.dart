@@ -5,7 +5,7 @@
 library;
 
 export 'settings/alert_severity.dart';
-export 'settings/allocation_config.dart';
+export '../allocation/model/allocation_config.dart';
 export 'settings/app_theme_mode.dart';
 export 'settings/date_format_patterns.dart';
 export 'settings/global_settings.dart';

@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
@@ -70,31 +70,31 @@ class TemplateDataService {
     await _valueRepository.create(
       name: 'Life Admin',
       color: '#455A64',
-      iconName: '🧾',
+      iconName: 'ðŸ§¾',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Home & Comfort',
       color: '#FB8C00',
-      iconName: '🏠',
+      iconName: 'ðŸ ',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Relationships',
       color: '#E91E63',
-      iconName: '🎉',
+      iconName: 'ðŸŽ‰',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Health & Energy',
       color: '#43A047',
-      iconName: '💪',
+      iconName: 'ðŸ’ª',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Learning & Curiosity',
       color: '#1E88E5',
-      iconName: '📚',
+      iconName: 'ðŸ“š',
       priority: ValuePriority.low,
     );
 
@@ -195,7 +195,7 @@ class TemplateDataService {
     pinnedTaskNames.add('Deep clean kitchen');
 
     await _taskRepository.create(
-      name: 'Declutter “misc” drawer',
+      name: 'Declutter â€œmiscâ€ drawer',
       projectId: projectIdByName['Home chores'],
       priority: 4,
       valueIds: [valueIdByName['Home & Comfort']!],
@@ -301,7 +301,7 @@ class TemplateDataService {
     );
 
     await _taskRepository.create(
-      name: 'List “hard ones” to revisit',
+      name: 'List â€œhard onesâ€ to revisit',
       projectId: projectIdByName['Learn capital city names'],
       priority: 4,
       valueIds: [valueIdByName['Learning & Curiosity']!],

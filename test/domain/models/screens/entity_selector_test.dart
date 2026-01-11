@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';

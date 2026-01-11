@@ -1,19 +1,19 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/data_config.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/screen_item_tile_variants.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart' as sp;
 
 void main() {

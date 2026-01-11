@@ -1,4 +1,4 @@
-/// Regression test for “infinite loading” on real unified screen rendering.
+﻿/// Regression test for â€œinfinite loadingâ€ on real unified screen rendering.
 ///
 /// This is a widget-level guard: it pumps the real `UnifiedScreenPageById`
 /// and fails fast if the page stays stuck on the loading spinner.
@@ -12,21 +12,21 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_chrome.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
-import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
-import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter_registry.dart';
-import 'package:taskly_bloc/domain/services/screens/templates/section_template_params_codec.dart';
-import 'package:taskly_bloc/domain/services/screens/templates/static_section_interpreter.dart';
-import 'package:taskly_bloc/presentation/features/screens/view/unified_screen_page.dart';
-import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
-import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_helpers.dart';

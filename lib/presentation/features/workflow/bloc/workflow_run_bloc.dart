@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -11,13 +11,13 @@ import 'package:taskly_bloc/domain/models/workflow/workflow.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_definition.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step.dart';
 import 'package:taskly_bloc/domain/models/workflow/workflow_step_state.dart';
-import 'package:taskly_bloc/domain/models/screens/section_ref.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 
 part 'workflow_run_bloc.freezed.dart';
 

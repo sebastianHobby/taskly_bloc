@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/models/screens/trigger_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
 
 /// A FormBuilder field for configuring workflow triggers.
 ///

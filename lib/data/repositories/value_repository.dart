@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart' as drift;
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
+    as drift;
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/query_stream_cache.dart';

@@ -1,6 +1,6 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 
 void main() {
   group('FocusMode', () {

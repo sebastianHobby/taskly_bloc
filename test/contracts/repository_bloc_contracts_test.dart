@@ -1,4 +1,4 @@
-/// Contract tests for repository and BLoC stream interactions.
+﻿/// Contract tests for repository and BLoC stream interactions.
 ///
 /// These tests verify that repositories emit data in formats
 /// that BLoCs can correctly consume and transform into UI states.
@@ -9,18 +9,18 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
 import '../helpers/contract_test_helpers.dart';
 
 void main() {
-  group('Repository ↔ BLoC Contracts', () {
-    // ═══════════════════════════════════════════════════════════════════════
+  group('Repository â†” BLoC Contracts', () {
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // ScreenWithPreferences Contract
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     group('ScreenWithPreferences', () {
       testContract(
@@ -57,11 +57,11 @@ void main() {
       });
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // NavigationBloc ↔ NavigationIconResolver Contract
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+    // NavigationBloc â†” NavigationIconResolver Contract
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    group('NavigationBloc ↔ NavigationIconResolver', () {
+    group('NavigationBloc â†” NavigationIconResolver', () {
       late NavigationIconResolver resolver;
 
       setUp(() {
@@ -99,9 +99,9 @@ void main() {
       );
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Screen Definition Type Contracts
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     group('ScreenDefinition types', () {
       testContract('all system screens are of expected types', () {
@@ -127,9 +127,9 @@ void main() {
       });
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
     // Sort Order Contracts
-    // ═══════════════════════════════════════════════════════════════════════
+    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     group('Sort order contracts', () {
       testContract('default sort order for settings is 100', () {

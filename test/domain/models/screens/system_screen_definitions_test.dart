@@ -1,9 +1,9 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/models/screens/section_template_id.dart';
-import 'package:taskly_bloc/domain/models/screens/templates/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 void main() {
   group('SystemScreenDefinitions', () {

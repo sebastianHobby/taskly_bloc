@@ -1,9 +1,9 @@
-import 'package:bloc_test/bloc_test.dart';
+﻿import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:test/test.dart';
 

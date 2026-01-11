@@ -1,19 +1,19 @@
-import 'package:drift/drift.dart' as drift;
+﻿import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/data/repositories/allocation_snapshot_repository.dart';
+import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/data/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
-import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_day_stats_service.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_day_stats_service.dart';
 
 import '../../../helpers/test_db.dart';
 import '../../../mocks/fake_id_generator.dart';

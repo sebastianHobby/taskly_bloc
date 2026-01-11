@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/models/screens/value_stats.dart' as domain;
+import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
+    as domain;
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart'
     show SparklinePainter;
@@ -69,7 +70,7 @@ class ValueDetailModal extends StatelessWidget {
                   Text(
                     (value.iconName?.isNotEmpty ?? false)
                         ? value.iconName!
-                        : '⭐',
+                        : 'â­',
                     style: EmojiUtils.emojiTextStyle(fontSize: 28),
                   ),
                   const SizedBox(width: 12),

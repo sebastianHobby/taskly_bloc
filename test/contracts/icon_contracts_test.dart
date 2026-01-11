@@ -1,4 +1,4 @@
-/// Contract tests for icon resolution.
+﻿/// Contract tests for icon resolution.
 ///
 /// These tests verify that the NavigationIconResolver correctly maps
 /// all system screen keys to specific icons (not the default fallback).
@@ -9,7 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
 void main() {
@@ -20,7 +20,7 @@ void main() {
       resolver = const NavigationIconResolver();
     });
 
-    group('SystemScreenDefinitions ↔ NavigationIconResolver', () {
+    group('SystemScreenDefinitions â†” NavigationIconResolver', () {
       test('all system screens have specific icons (not default fallback)', () {
         for (final screen in SystemScreenDefinitions.all) {
           final result = resolver.resolve(

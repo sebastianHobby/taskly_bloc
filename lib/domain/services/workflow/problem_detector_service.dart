@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/screens/display_config.dart';
-import 'package:taskly_bloc/domain/models/screens/entity_selector.dart';
+﻿import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';

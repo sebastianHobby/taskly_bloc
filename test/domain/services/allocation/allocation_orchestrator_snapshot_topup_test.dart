@@ -1,14 +1,14 @@
-import 'package:flutter_test/flutter_test.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
+import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 import '../../../helpers/fallback_values.dart';
