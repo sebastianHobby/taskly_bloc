@@ -11,5 +11,4 @@ export 'settings/date_format_patterns.dart';
 export 'settings/global_settings.dart';
 export 'settings/page_display_settings.dart';
 export 'settings/screen_preferences.dart';
-export 'settings/settings_page_key.dart';
 export 'settings/soft_gates_settings.dart';

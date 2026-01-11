@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 

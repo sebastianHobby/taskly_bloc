@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
-import 'package:taskly_bloc/core/theme/taskly_typography.dart';
+import 'package:taskly_bloc/presentation/theme/app_colors.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 
 /// Centralized application theme.
 ///

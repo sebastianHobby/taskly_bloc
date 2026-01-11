@@ -1,8 +1,8 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/theme/taskly_typography.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
+import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 
 /// A form field for selecting task priority (1-4).
 class FormBuilderPriorityPicker extends FormBuilderFieldDecoration<int?> {

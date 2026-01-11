@@ -1,6 +1,6 @@
-﻿import 'package:drift/drift.dart' as drift_pkg;
+import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/mappers/drift_to_domain.dart';
@@ -8,7 +8,7 @@ import 'package:taskly_bloc/data/repositories/mappers/project_predicate_mapper.d
 import 'package:taskly_bloc/data/repositories/query_stream_cache.dart';
 import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
 import 'package:taskly_bloc/data/repositories/repository_helpers.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';

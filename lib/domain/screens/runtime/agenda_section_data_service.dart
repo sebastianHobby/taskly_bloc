@@ -1,6 +1,6 @@
-﻿import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';

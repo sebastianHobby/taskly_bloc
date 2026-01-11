@@ -1,12 +1,12 @@
-﻿// This file performs setup of the PowerSync database
+// This file performs setup of the PowerSync database
 
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/core/environment/env.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/app/env/env.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/infrastructure/powersync/schema.dart';
@@ -18,10 +18,10 @@ import 'package:taskly_bloc/data/screens/maintenance/system_data_cleanup_service
 /// Postgres Response codes that we cannot recover from by retrying.
 /// Note: 23505 (unique violation) is handled separately in _handle23505.
 final List<RegExp> fatalResponseCodes = [
-  // Class 22 â€” Data Exception
+  // Class 22 — Data Exception
   // Examples include data type mismatch.
   RegExp(r'^22...$'),
-  // Class 23 â€” Integrity Constraint Violation (except 23505 handled separately)
+  // Class 23 — Integrity Constraint Violation (except 23505 handled separately)
   // 23502 = NOT NULL, 23503 = FOREIGN KEY, 23514 = CHECK
   RegExp(r'^2350[234]$'),
   RegExp(r'^23514$'),
@@ -257,8 +257,8 @@ class SupabaseConnector extends PowerSyncBackendConnector {
   /// Handle unique constraint violations (23505) based on ID strategy.
   ///
   /// For v5 (deterministic) tables:
-  /// - If ID exists: Expected duplicate, another device synced first â†’ OK
-  /// - If ID doesn't exist: Natural key conflict with different ID â†’ Bug
+  /// - If ID exists: Expected duplicate, another device synced first → OK
+  /// - If ID doesn't exist: Natural key conflict with different ID → Bug
   ///
   /// For v4 (random) tables:
   /// - Should never happen (UUID collision is astronomically unlikely)

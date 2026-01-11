@@ -1,4 +1,4 @@
-﻿/// Regression test for â€œinfinite loadingâ€ on real unified screen rendering.
+/// Regression test for “infinite loading” on real unified screen rendering.
 ///
 /// This is a widget-level guard: it pumps the real `UnifiedScreenPageById`
 /// and fails fast if the page stays stuck on the loading spinner.
@@ -8,8 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';

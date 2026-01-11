@@ -4,7 +4,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 
 import '../../../../mocks/repository_mocks.dart';

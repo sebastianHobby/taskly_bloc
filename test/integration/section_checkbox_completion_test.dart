@@ -1,4 +1,4 @@
-﻿/// Integration tests for SectionWidget checkbox completion callbacks.
+/// Integration tests for SectionWidget checkbox completion callbacks.
 ///
 /// Tests that checkbox clicks in SectionWidget properly propagate to callbacks
 /// for both tasks and projects.
@@ -6,9 +6,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/core/theme/app_theme.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';

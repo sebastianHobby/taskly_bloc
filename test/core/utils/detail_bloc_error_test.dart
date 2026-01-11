@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
 
 void main() {
   group('DetailBlocError', () {

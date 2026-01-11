@@ -114,7 +114,7 @@ abstract class SystemAttentionRules {
   );
 
   // ==========================================================================
-  // REVIEW RULES (5 rules - from existing ReviewSettings)
+  // REVIEW RULES (5 rules)
   // ==========================================================================
 
   /// Values alignment review

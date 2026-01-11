@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_priority_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';

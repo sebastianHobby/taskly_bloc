@@ -20,7 +20,7 @@ import 'dart:io';
 /// - `*.freezed.dart` - Immutable classes (freezed)
 ///
 /// ## 2. Localization Files
-/// - `lib/core/l10n/` - Auto-generated and manually-written l10n
+/// - `lib/l10n/` - Auto-generated and manually-written l10n
 /// - Testing localization provides low value; the strings are verified
 ///   by the translation process and runtime usage.
 ///

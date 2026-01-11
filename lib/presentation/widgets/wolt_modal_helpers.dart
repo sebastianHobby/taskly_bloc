@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/utils/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///

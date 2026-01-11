@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/view/screen_creator_page.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_icon_picker.dart';
 
@@ -188,10 +188,10 @@ class _ScreenManagementPageState extends State<ScreenManagementPage> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
-              Text('â€¢ Show specific types of items (tasks, projects, labels)'),
-              Text('â€¢ Group items by project, label, priority, etc.'),
-              Text('â€¢ Sort by various fields'),
-              Text('â€¢ Filter completed or archived items'),
+              Text('• Show specific types of items (tasks, projects, labels)'),
+              Text('• Group items by project, label, priority, etc.'),
+              Text('• Sort by various fields'),
+              Text('• Filter completed or archived items'),
               SizedBox(height: 16),
               Text(
                 'Custom screens appear in your navigation sidebar alongside '

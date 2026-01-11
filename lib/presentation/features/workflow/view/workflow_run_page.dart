@@ -1,7 +1,7 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
@@ -221,7 +221,7 @@ class _WorkflowRunView extends StatelessWidget {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Workflow Complete! ðŸŽ‰'),
+        title: const Text('Workflow Complete! 🎉'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

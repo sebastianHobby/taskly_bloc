@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -19,8 +19,8 @@ import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 /// Computes Phase 5 stats derived from allocation snapshots + completion history.
 ///
 /// Notes:
-/// - Allocation snapshot is authoritative for â€œplannedâ€.
-/// - Completion history is authoritative for â€œdoneâ€ (via TaskDateField.completedAt).
+/// - Allocation snapshot is authoritative for “planned”.
+/// - Completion history is authoritative for “done” (via TaskDateField.completedAt).
 /// - All day bucketing is UTC date-only.
 class AllocationDayStatsService {
   AllocationDayStatsService({

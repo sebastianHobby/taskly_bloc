@@ -1,7 +1,7 @@
 import 'dart:collection';
 
 import 'package:characters/characters.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 /// Centralized logging facade for the app.
 ///

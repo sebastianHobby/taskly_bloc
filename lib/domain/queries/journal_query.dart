@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/mood_rating.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';

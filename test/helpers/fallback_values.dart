@@ -1,5 +1,5 @@
-﻿import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/models/analytics/trend_data.dart';
 import 'package:taskly_bloc/domain/models/page_key.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 /// Full-screen gate shown when My Day requires focus-mode setup.
 class MyDayFocusModeRequiredPage extends StatelessWidget {

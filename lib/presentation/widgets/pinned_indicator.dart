@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 /// A compact visual indicator that an entity is pinned.
 class PinnedIndicator extends StatelessWidget {

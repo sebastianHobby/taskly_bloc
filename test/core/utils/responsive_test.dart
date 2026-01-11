@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/utils/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 
 void main() {
   group('Breakpoints', () {

@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings/global_settings.dart';
 import 'package:taskly_bloc/domain/models/settings_key.dart';

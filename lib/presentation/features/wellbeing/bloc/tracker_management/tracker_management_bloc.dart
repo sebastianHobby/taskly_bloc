@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/core/utils/friendly_error_message.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/models/wellbeing/tracker.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 

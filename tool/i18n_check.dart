@@ -128,8 +128,8 @@ Future<I18nCheckResult> runChecks() async {
   final syntaxErrors = <String>[];
 
   // Load ARB files
-  const enArbPath = 'lib/core/l10n/arb/app_en.arb';
-  const esArbPath = 'lib/core/l10n/arb/app_es.arb';
+  const enArbPath = 'lib/l10n/arb/app_en.arb';
+  const esArbPath = 'lib/l10n/arb/app_es.arb';
 
   Map<String, dynamic>? enArb;
   Map<String, dynamic>? esArb;
@@ -287,8 +287,8 @@ void printResults(I18nCheckResult result) {
 Future<void> addMissingKeys(List<String> missingKeys) async {
   print('🔧 Adding ${missingKeys.length} missing key(s) to Spanish ARB...\n');
 
-  const esArbPath = 'lib/core/l10n/arb/app_es.arb';
-  const enArbPath = 'lib/core/l10n/arb/app_en.arb';
+  const esArbPath = 'lib/l10n/arb/app_es.arb';
+  const enArbPath = 'lib/l10n/arb/app_en.arb';
 
   final esContent = await File(esArbPath).readAsString();
   final enContent = await File(enArbPath).readAsString();

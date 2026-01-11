@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {

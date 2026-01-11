@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
@@ -1180,7 +1180,7 @@ class _FinalizeStep extends StatelessWidget {
             title: const Text('Neglect Prevention'),
             subtitle: Text(
               state.effectiveNeglectEnabled
-                  ? 'On â€¢ ${state.effectiveNeglectLookbackDays}d lookback â€¢ ${state.effectiveNeglectInfluencePercent}% influence'
+                  ? 'On • ${state.effectiveNeglectLookbackDays}d lookback • ${state.effectiveNeglectInfluencePercent}% influence'
                   : 'Off',
             ),
           ),
@@ -1198,7 +1198,7 @@ class _FinalizeStep extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      'â€¢ ${(rule.displayConfig['title'] as String?) ?? rule.ruleKey}: '
+                      '• ${(rule.displayConfig['title'] as String?) ?? rule.ruleKey}: '
                       '${(state.draftRuleEnabled[rule.id] ?? rule.active) ? 'On' : 'Off'} '
                       '(${state.draftRuleFrequencyDays[rule.id] ?? (rule.triggerConfig['frequency_days'] as int? ?? 30)} days)',
                     ),
