@@ -4,17 +4,13 @@
 Remove all code superseded by the field-catalog/entity-view architecture, including the widgets previously marked RETIRE.
 
 ## Deletions
-- Delete the widgets in the RETIRE list from the audit:
-  - `FocusIndicator`
-  - `EntityCard`
-  - `EntityTapHandler`
-  - `showPageSettingsModal` / related modal content
-  - `showSortBottomSheet` / related bottom sheet content
-  - `TruncatedValueChips`
-  - `ValuesSection`
-  - `ValueEmojiIcons`
-  - `SectionHeader` (was test-only usage; update tests accordingly)
-- Delete/clean any legacy helper code made redundant by the new entrypoints.
+- Legacy compatibility wrappers removed once tests no longer depended on them:
+  - `TaskListTile` (removed file: `lib/presentation/features/tasks/widgets/task_list_tile.dart`)
+  - `ProjectListTile` (removed file: `lib/presentation/features/projects/widgets/project_list_tile.dart`)
+
+Note: The earlier audit's RETIRE list items (e.g. `FocusIndicator`, `EntityCard`,
+`EntityTapHandler`, etc.) are no longer present in `lib/` or `test/` in this
+repository state.
 
 ## Tests
 - This is the *only* phase where tests are run and test fixes are allowed.

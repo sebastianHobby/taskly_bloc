@@ -83,6 +83,10 @@ class NavigationIconResolver {
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
       ),
+      'browse' => (
+        icon: Icons.explore_outlined,
+        selectedIcon: Icons.explore,
+      ),
 
       // ─────────────────────────────────────────────────────────────────
       // Additional screens / settings pages

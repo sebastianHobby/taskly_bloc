@@ -11,7 +11,7 @@ Add the new entity-level entrypoints that are the *only* place where per-screen 
    in `lib/presentation/entity_views/`.
 2. Initially support the main “list tile” presentation.
 3. Implement these entrypoints by composing existing widgets (e.g. `DateChip`, `ValueChip`, `ValuesFooter`, `PriorityFlag`) to avoid diverging visual styles.
-4. Keep legacy widgets (`TaskListTile`, `ProjectListTile`) temporarily as thin wrappers that delegate to the new views.
+4. Keep legacy widgets (`TaskListTile`, `ProjectListTile`) temporarily as thin wrappers that delegate to the new views (removed later in Phase 05).
 5. Run `flutter analyze` and fix any issues.
 
 ## Exit criteria

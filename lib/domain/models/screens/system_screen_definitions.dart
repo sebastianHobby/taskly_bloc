@@ -556,6 +556,7 @@ abstract class SystemScreenDefinitions {
     'orphan_tasks': 7,
     'workflows': 8,
     'screen_management': 9,
+    'browse': 10,
   };
 
   /// Returns the default sort order for a screen key.
