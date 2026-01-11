@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/models/settings/app_theme_mode.dart';
-import 'package:taskly_bloc/domain/models/settings/date_format_patterns.dart';
+import 'package:taskly_bloc/domain/settings/model/app_theme_mode.dart';
+import 'package:taskly_bloc/domain/settings/model/date_format_patterns.dart';
 
 part 'global_settings.freezed.dart';
 

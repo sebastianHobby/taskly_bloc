@@ -152,13 +152,18 @@ sealed class SectionDataResult with _$SectionDataResult {
   /// Get all tasks from any result type
   List<Task> get allTasks => switch (this) {
     DataSectionResult(:final items) =>
-      items.whereType<ScreenItemTask>().map((i) => i.task).toList(),
+      items
+          .whereType<ScreenItemTask>()
+          .map((i) => i.task)
+          .whereType<Task>()
+          .toList(),
     AllocationSectionResult(:final allocatedTasks) => allocatedTasks,
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups
           .expand((g) => g.items)
           .where((i) => i.isTask)
           .map((i) => i.task)
+          .whereType<Task>()
           .toList(),
     _ => [],
   };
@@ -166,12 +171,17 @@ sealed class SectionDataResult with _$SectionDataResult {
   /// Get all projects from any result type
   List<Project> get allProjects => switch (this) {
     DataSectionResult(:final items) =>
-      items.whereType<ScreenItemProject>().map((i) => i.project).toList(),
+      items
+          .whereType<ScreenItemProject>()
+          .map((i) => i.project)
+          .whereType<Project>()
+          .toList(),
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups
           .expand((g) => g.items)
           .where((i) => i.isProject)
           .map((i) => i.project)
+          .whereType<Project>()
           .toList(),
     EntityHeaderProjectSectionResult(:final project) => [project],
     _ => [],

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/settings/date_format_patterns.dart';
+import 'package:taskly_bloc/domain/settings/model/date_format_patterns.dart';
 
 void main() {
   group('DateFormatPatterns', () {

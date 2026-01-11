@@ -15,7 +15,7 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/models/settings/global_settings.dart';
+import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';

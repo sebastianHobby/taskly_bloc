@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
+import 'package:taskly_bloc/domain/notifications/model/pending_notification.dart';
 
 /// Presents a notification to the user.
 ///

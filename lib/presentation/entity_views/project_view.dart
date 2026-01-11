@@ -425,14 +425,16 @@ class _MetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final primary = primaryValue;
+
     final dateToken = buildDateToken(context);
 
     final children = <Widget>[];
 
-    if (primaryValue != null) {
+    if (primary != null) {
       children.add(
         ValueChip(
-          value: primaryValue,
+          value: primary,
           variant: ValueChipVariant.solid,
         ),
       );

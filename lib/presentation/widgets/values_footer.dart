@@ -23,14 +23,16 @@ class ValuesFooter extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final primary = primaryValue;
+
     return Wrap(
       spacing: 8,
       runSpacing: 4,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (primaryValue != null)
+        if (primary != null)
           ValueChip(
-            value: primaryValue,
+            value: primary,
             variant: ValueChipVariant.solid,
             // You might add rank here if available in context, or keep generic
           ),

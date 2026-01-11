@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as db;
 import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart'
     show isLoggedIn;
-import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
+import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
 
 /// Drift DAO for the `screen_preferences` table.
 ///

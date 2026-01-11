@@ -844,12 +844,12 @@ $ProjectDetailOperationSuccessCopyWith<ProjectDetailOperationSuccess> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailOperationSuccess&&const DeepCollectionEquality().equals(other.operation, operation));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailOperationSuccess&&(identical(other.operation, operation) || other.operation == operation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(operation));
+int get hashCode => Object.hash(runtimeType,operation);
 
 @override
 String toString() {
@@ -881,9 +881,9 @@ class _$ProjectDetailOperationSuccessCopyWithImpl<$Res>
 
 /// Create a copy of ProjectDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? operation = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? operation = null,}) {
   return _then(ProjectDetailOperationSuccess(
-operation: freezed == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
+operation: null == operation ? _self.operation : operation // ignore: cast_nullable_to_non_nullable
 as EntityOperation,
   ));
 }
@@ -1015,12 +1015,12 @@ $ProjectDetailLoadSuccessCopyWith<ProjectDetailLoadSuccess> get copyWith => _$Pr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&const DeepCollectionEquality().equals(other.project, project));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailLoadSuccess&&const DeepCollectionEquality().equals(other._availableValues, _availableValues)&&(identical(other.project, project) || other.project == project));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableValues),const DeepCollectionEquality().hash(project));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableValues),project);
 
 @override
 String toString() {
@@ -1052,10 +1052,10 @@ class _$ProjectDetailLoadSuccessCopyWithImpl<$Res>
 
 /// Create a copy of ProjectDetailState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? availableValues = null,Object? project = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? availableValues = null,Object? project = null,}) {
   return _then(ProjectDetailLoadSuccess(
 availableValues: null == availableValues ? _self._availableValues : availableValues // ignore: cast_nullable_to_non_nullable
-as List<Value>,project: freezed == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
+as List<Value>,project: null == project ? _self.project : project // ignore: cast_nullable_to_non_nullable
 as Project,
   ));
 }

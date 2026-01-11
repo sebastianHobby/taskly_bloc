@@ -78,8 +78,6 @@ class SettingsScreen extends StatelessWidget {
                   context: context,
                   title: 'Advanced',
                   children: [
-                    _buildScreenManagementItem(context),
-                    _buildWorkflowManagementItem(context),
                     const _ResetButton(),
                   ],
                 ),
@@ -149,26 +147,6 @@ class SettingsScreen extends StatelessWidget {
       subtitle: const Text('Reorder sidebar items'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Routing.toScreenKey(context, 'navigation-settings'),
-    );
-  }
-
-  Widget _buildScreenManagementItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.dashboard_customize),
-      title: const Text('Custom Screens'),
-      subtitle: const Text('Create and manage custom screens'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'screen-management'),
-    );
-  }
-
-  Widget _buildWorkflowManagementItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.loop),
-      title: const Text('Review Workflows'),
-      subtitle: const Text('Create and manage review workflows'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'workflows'),
     );
   }
 

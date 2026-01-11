@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/screens/repositories/screen_definitions_reposit
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
+import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
 
 /// Repository wrapper that delegates to the database implementation.
 ///

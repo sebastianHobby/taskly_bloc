@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/occurrence_data.dart';
+import 'package:taskly_bloc/domain/core/model/occurrence_data.dart';
 
 void main() {
   group('OccurrenceData', () {
