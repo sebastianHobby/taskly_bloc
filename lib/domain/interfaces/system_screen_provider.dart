@@ -1,6 +1,6 @@
 ﻿import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
+import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 /// A screen with its associated user preferences.
 ///

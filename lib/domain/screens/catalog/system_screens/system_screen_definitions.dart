@@ -340,19 +340,6 @@ abstract class SystemScreenDefinitions {
     sections: const [SectionRef(templateId: SectionTemplateId.workflowList)],
   );
 
-  /// Screen management - customize screens and navigation
-  static final screenManagement = ScreenDefinition(
-    id: 'screen_management',
-    screenKey: 'screen_management',
-    name: 'Screens',
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    screenSource: ScreenSource.systemTemplate,
-    sections: const [
-      SectionRef(templateId: SectionTemplateId.screenManagement),
-    ],
-  );
-
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Sub-screens (not in main navigation, accessed via parent screens)
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -459,7 +446,7 @@ abstract class SystemScreenDefinitions {
 
   /// Get all system screens that appear in navigation.
   ///
-  /// Note: Some screens (logbook, workflows, screenManagement) are accessible
+  /// Note: Some screens (logbook, workflows) are accessible
   /// via settings but not shown in the main navigation.
   /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics,
   /// Settings
@@ -476,7 +463,6 @@ abstract class SystemScreenDefinitions {
     // Hidden/Sub-screens
     orphanTasks,
     workflows,
-    screenManagement,
   ];
 
   /// Canonical system screens shown in the main navigation UI.
@@ -510,7 +496,6 @@ abstract class SystemScreenDefinitions {
       'settings' => settings,
       'journal' => journal,
       'workflows' => workflows,
-      'screen_management' => screenManagement,
       'browse' => browse,
 
       // Settings screens
@@ -555,7 +540,6 @@ abstract class SystemScreenDefinitions {
     'settings': 100,
     'orphan_tasks': 7,
     'workflows': 8,
-    'screen_management': 9,
     'browse': 10,
   };
 

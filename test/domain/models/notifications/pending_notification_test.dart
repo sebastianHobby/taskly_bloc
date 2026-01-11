@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/models/notifications/pending_notification.dart';
+import 'package:taskly_bloc/domain/notifications/model/pending_notification.dart';
 
 void main() {
   group('PendingNotification', () {

@@ -1,7 +1,7 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
-import 'package:taskly_bloc/domain/preferences/model/page_key.dart';
+import 'package:taskly_bloc/presentation/routing/page_key.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
@@ -10,7 +10,7 @@ import 'package:taskly_bloc/domain/screens/language/models/section_template_id.d
 import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/workflow/model/problem_action.dart';
 import 'package:taskly_bloc/domain/workflow/model/problem_definition.dart';

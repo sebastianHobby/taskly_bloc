@@ -31,7 +31,6 @@ import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repos
 import 'package:taskly_bloc/data/screens/default_system_screen_provider.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/data/features/workflow/repositories/workflow_repository_impl.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -45,14 +44,11 @@ import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_c
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_grouper.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/trigger_evaluator.dart';
-import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
-import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart'
@@ -284,13 +280,6 @@ Future<void> setupDependencies() async {
     // Wellbeing
     ..registerLazySingleton<WellbeingRepositoryContract>(
       () => WellbeingRepositoryImpl(
-        getIt<AppDatabase>(),
-        getIt<IdGenerator>(),
-      ),
-    )
-    // New workflow system
-    ..registerLazySingleton<WorkflowRepositoryContract>(
-      () => WorkflowRepositoryImpl(
         getIt<AppDatabase>(),
         getIt<IdGenerator>(),
       ),
@@ -551,17 +540,6 @@ Future<void> setupDependencies() async {
         interpreterRegistry: getIt<SectionTemplateInterpreterRegistry>(),
         paramsCodec: getIt<SectionTemplateParamsCodec>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
-      ),
-    )
-    // Screen architecture services
-    ..registerLazySingleton<ProblemDetectorService>(
-      () => ProblemDetectorService(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-      ),
-    )
-    ..registerLazySingleton<WorkflowService>(
-      () => WorkflowService(
-        workflowRepository: getIt<WorkflowRepositoryContract>(),
       ),
     )
     // Notifications (server-enqueued + PowerSync synced)

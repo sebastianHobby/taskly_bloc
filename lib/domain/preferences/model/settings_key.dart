@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/domain/preferences/model/page_key.dart';
-import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
+import 'package:taskly_bloc/presentation/routing/page_key.dart';
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 
 /// Type-safe key for accessing settings.
 ///

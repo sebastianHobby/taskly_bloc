@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 part 'display_config.freezed.dart';
 part 'display_config.g.dart';
@@ -62,7 +61,6 @@ abstract class DisplayConfig with _$DisplayConfig {
   const factory DisplayConfig({
     @Default(GroupByField.none) GroupByField groupBy,
     @Default([]) List<SortCriterion> sorting,
-    @Default([]) List<ProblemType> problemsToDetect,
     @Default(true) bool showCompleted,
     @Default(false) bool showArchived,
 
