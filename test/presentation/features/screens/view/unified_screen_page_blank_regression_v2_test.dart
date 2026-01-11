@@ -1,4 +1,4 @@
-﻿/// Regression tests for "blank screen" and "infinite loading" scenarios.
+/// Regression tests for "blank screen" and "infinite loading" scenarios.
 ///
 /// These tests verify that the UnifiedScreenPage renders appropriate content
 /// for various data states (success, empty, error) and fails fast if stuck.
@@ -7,8 +7,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'dart:async';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';

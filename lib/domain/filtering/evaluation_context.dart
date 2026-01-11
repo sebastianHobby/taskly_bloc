@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 
 /// Context for evaluating task filters.
 ///

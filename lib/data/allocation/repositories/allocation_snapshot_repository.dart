@@ -1,7 +1,7 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart' as db;
 import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';

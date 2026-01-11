@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 
 /// Converts between a Dart [DateTime] (date-only, local midnight) and a
 /// Postgres-style date string (`YYYY-MM-DD`).

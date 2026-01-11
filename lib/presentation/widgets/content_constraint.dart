@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/utils/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 
 /// A widget that constrains its child to a maximum width and centers it.
 ///

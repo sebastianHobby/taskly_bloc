@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/taskly_typography.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/models/value_priority.dart';

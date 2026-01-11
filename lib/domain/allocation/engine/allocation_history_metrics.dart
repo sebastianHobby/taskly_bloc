@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_project_history_window.dart';
 import 'package:taskly_bloc/domain/models/settings/project_health_review_settings.dart';
 

@@ -1,6 +1,6 @@
-﻿import 'package:drift/drift.dart';
+import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 

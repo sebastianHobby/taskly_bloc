@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 /// Utility class for converting iCal RRULE strings to human-readable format.
 class RruleDisplayUtils {

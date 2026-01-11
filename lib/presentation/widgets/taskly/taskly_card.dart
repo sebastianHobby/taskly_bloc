@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_theme.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 
 class TasklyCard extends StatelessWidget {
   const TasklyCard({

@@ -1,8 +1,8 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/settings.dart';
@@ -220,17 +220,17 @@ class SettingsRepository implements SettingsRepositoryContract {
     if (value is String) {
       final trimmed = value.trim();
       if (trimmed.length <= maxChars) return trimmed;
-      return '${trimmed.substring(0, maxChars)}â€¦';
+      return '${trimmed.substring(0, maxChars)}…';
     }
 
     try {
       final encoded = jsonEncode(value);
       if (encoded.length <= maxChars) return encoded;
-      return '${encoded.substring(0, maxChars)}â€¦';
+      return '${encoded.substring(0, maxChars)}…';
     } catch (_) {
       final stringified = value.toString();
       if (stringified.length <= maxChars) return stringified;
-      return '${stringified.substring(0, maxChars)}â€¦';
+      return '${stringified.substring(0, maxChars)}…';
     }
   }
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/theme/app_colors.dart';
+import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 
 /// A small priority indicator using a flag icon.
 class PriorityFlag extends StatelessWidget {

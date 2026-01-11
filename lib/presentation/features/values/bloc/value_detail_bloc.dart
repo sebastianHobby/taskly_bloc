@@ -3,10 +3,10 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
-import 'package:taskly_bloc/core/utils/talker_service.dart';
-import 'package:taskly_bloc/core/utils/detail_bloc_error.dart';
-import 'package:taskly_bloc/core/utils/entity_operation.dart';
-import 'package:taskly_bloc/core/utils/not_found_entity.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
+import 'package:taskly_bloc/domain/models/entity_operation.dart';
+import 'package:taskly_bloc/domain/errors/not_found_entity.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/core/utils/responsive.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 /// A scaffold with responsive navigation that adapts to screen size.

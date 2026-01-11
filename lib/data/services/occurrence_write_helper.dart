@@ -1,6 +1,6 @@
-﻿import 'package:drift/drift.dart';
-import 'package:taskly_bloc/core/utils/app_log.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:drift/drift.dart';
+import 'package:taskly_bloc/shared/logging/app_log.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';

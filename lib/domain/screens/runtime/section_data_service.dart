@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -388,7 +388,7 @@ class SectionDataService {
   }
 
   Future<List<dynamic>> _fetchValueHierarchy(List<dynamic> values) async {
-    // Special 3-level hierarchy: Value â†’ Project â†’ Task
+    // Special 3-level hierarchy: Value → Project → Task
     // Returns a flat list but preserves the hierarchical context
     // Implementation can be expanded based on specific needs
     return [];
@@ -452,7 +452,7 @@ class SectionDataService {
         .first;
 
     // Allocation warnings are handled by the attention system.
-    // Keep excluded tasks data only for optional â€œoutside focusâ€ rendering.
+    // Keep excluded tasks data only for optional “outside focus” rendering.
     final excludedUrgentTasks = allocation.excludedTasks
         .where((e) => e.isUrgent ?? false)
         .toList();

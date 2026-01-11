@@ -1,9 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
-import 'package:taskly_bloc/core/l10n/l10n.dart';
-import 'package:taskly_bloc/core/utils/app_log.dart';
+import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/shared/logging/app_log.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -23,7 +23,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/core/routing/routing.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/analytics/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_banner.dart';
@@ -127,7 +127,7 @@ class _UnifiedScreenScaffold extends StatelessWidget {
         }
 
         // Scheduled uses a single agenda section that needs to own scrolling
-        // to support date-chip â†” timeline scroll synchronization.
+        // to support date-chip ↔ timeline scroll synchronization.
         final singleAgendaSection = switch (state) {
           ScreenLoadedState(:final data)
               when data.sections.length == 1 &&

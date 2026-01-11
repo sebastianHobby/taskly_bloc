@@ -29,7 +29,7 @@ analyzer:
     unnecessary_import: ignore
     avoid_dynamic_calls: ignore
   exclude:
-    - lib/core/l10n/gen/*
+    - lib/l10n/gen/*
     - "**/*.g.dart"
     - "**/*.freezed.dart"
 linter:

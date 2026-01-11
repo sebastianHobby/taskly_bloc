@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/core/utils/entity_operation.dart';
+import 'package:taskly_bloc/domain/models/entity_operation.dart';
 
 /// Custom matchers for testing common patterns in the application.
 ///
@@ -523,4 +523,4 @@ Matcher isListLoadedState({int? itemCount}) => predicate<dynamic>(
 // Import needed for EntityOperation
 // ============================================================================
 // Note: Add this import at the top of the file if not present:
-// import 'package:taskly_bloc/core/utils/entity_operation.dart';
+// import 'package:taskly_bloc/domain/models/entity_operation.dart';

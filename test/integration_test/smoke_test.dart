@@ -10,9 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
+import 'package:taskly_bloc/app/di/dependency_injection.dart'
     show getIt;
-import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/app/app.dart';
