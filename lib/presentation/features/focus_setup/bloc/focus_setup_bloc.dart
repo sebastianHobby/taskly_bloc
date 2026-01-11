@@ -458,7 +458,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     for (final rule in rules) {
       if (_resolutionSubs.containsKey(rule.id)) continue;
 
-      final sub = _attentionRepository
+      _resolutionSubs[rule.id] = _attentionRepository
           .watchResolutionsForRule(rule.id)
           .listen(
             (resolutions) {
@@ -476,8 +476,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
               talker.handle(e, st, '[FocusSetupBloc] resolution stream error');
             },
           );
-
-      _resolutionSubs[rule.id] = sub;
     }
   }
 

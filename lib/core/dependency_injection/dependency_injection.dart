@@ -36,8 +36,10 @@ import 'package:taskly_bloc/data/features/notifications/repositories/pending_not
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_auto_refresh_service.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
+import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
@@ -53,6 +55,7 @@ import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_evaluator.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
 import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
 import 'package:taskly_bloc/data/repositories/attention_repository.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
@@ -176,6 +179,18 @@ Future<void> setupDependencies() async {
         settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
+    ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
+    ..registerLazySingleton<TemporalTriggerService>(
+      () => TemporalTriggerService(
+        dayKeyService: getIt<HomeDayKeyService>(),
+        lifecycleService: getIt<AppLifecycleService>(),
+      ),
+    )
+    ..registerLazySingleton<AttentionTemporalInvalidationService>(
+      () => AttentionTemporalInvalidationService(
+        temporalTriggerService: getIt<TemporalTriggerService>(),
+      ),
+    )
     ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
       () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
@@ -205,9 +220,10 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    ..registerLazySingleton<AllocationSnapshotAutoRefreshService>(
-      () => AllocationSnapshotAutoRefreshService(
+    ..registerLazySingleton<AllocationSnapshotCoordinator>(
+      () => AllocationSnapshotCoordinator(
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
     )
     // Entity action service for unified screen model
@@ -370,6 +386,8 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<CheckInSummarySectionInterpreter>(
       () => CheckInSummarySectionInterpreter(
         attentionEvaluator: getIt<AttentionEvaluator>(),
+        attentionTemporalInvalidationService:
+            getIt<AttentionTemporalInvalidationService>(),
       ),
       instanceName: SectionTemplateId.checkInSummary,
     )

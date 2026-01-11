@@ -38,11 +38,21 @@ A key UX invariant:
 ### Domain services (allocation engine)
 - Orchestrator:
   - [lib/domain/services/allocation/allocation_orchestrator.dart](../lib/domain/services/allocation/allocation_orchestrator.dart)
+- Snapshot refresh coordinator (unified triggers):
+  - [lib/domain/services/allocation/allocation_snapshot_coordinator.dart](../lib/domain/services/allocation/allocation_snapshot_coordinator.dart)
 - Strategy implementations (selection is config-driven):
   - [lib/domain/services/allocation/proportional_allocator.dart](../lib/domain/services/allocation/proportional_allocator.dart)
   - [lib/domain/services/allocation/urgency_weighted_allocator.dart](../lib/domain/services/allocation/urgency_weighted_allocator.dart)
   - [lib/domain/services/allocation/neglect_based_allocator.dart](../lib/domain/services/allocation/neglect_based_allocator.dart)
   - [lib/domain/services/allocation/urgency_detector.dart](../lib/domain/services/allocation/urgency_detector.dart)
+
+### Time + lifecycle (day boundary triggers)
+- Home day-key computation:
+  - [lib/domain/services/time/home_day_key_service.dart](../lib/domain/services/time/home_day_key_service.dart)
+- Lifecycle events (resume/pause):
+  - [lib/domain/services/time/app_lifecycle_service.dart](../lib/domain/services/time/app_lifecycle_service.dart)
+- Central time-based triggers (timers, day rollover):
+  - [lib/domain/services/time/temporal_trigger_service.dart](../lib/domain/services/time/temporal_trigger_service.dart)
 
 ### Persistence (daily snapshots)
 - Contract + domain models:
@@ -106,6 +116,14 @@ A key UX invariant:
                         v
 ┌──────────────────────────────────────────────────────────────┐
 │                          Domain Layer                          │
+│  TemporalTriggerService                                         │
+│   - emits HomeDayBoundaryCrossed events                          │
+│   - re-checks on app resume (timers don't run while suspended)   │
+│                                                                │
+│  AllocationSnapshotCoordinator                                   │
+│   - owns WHEN to refresh today's snapshot                         │
+│   - debounces input changes                                      │
+│   - refreshes immediately on day boundary                         │
 │  AllocationOrchestrator                                         │
 │   - combines tasks/projects/settings                             │
 │   - computes allocation result (strategies)                      │
@@ -160,8 +178,8 @@ See gate evaluation:
      - hasSelectedFocusMode = true
      - focusMode = selected
      - strategySettings = preset or user-tuned
-4) After save, FocusSetupWizardPage triggers a fresh allocation computation
-   so snapshot-based screens refresh immediately.
+4) After save, FocusSetupWizardPage requests an immediate snapshot refresh via
+  `AllocationSnapshotCoordinator` so snapshot-based screens refresh immediately.
 5) Return to My Day; gate is now inactive; normal sections render:
    - check_in_summary
    - allocation_alerts
@@ -171,7 +189,7 @@ See gate evaluation:
 Key save behavior:
 - [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
-Key post-save “refresh” call:
+Key post-save “refresh” call (requests an immediate snapshot refresh):
 - [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
 
 ---
@@ -209,8 +227,12 @@ The `allocation` template is interpreted by `AllocationSectionInterpreter`, whic
 
 **Keeping snapshots fresh (top-up-only)**:
 
-- Once a snapshot exists for today, the app runs a debounced background refresh
-  (`AllocationSnapshotAutoRefreshService`) that triggers a recompute/persist pass.
+- Once running, `AllocationSnapshotCoordinator` keeps today's snapshot generated
+  and refreshed in the background.
+- It triggers refreshes based on:
+  - debounced allocation input changes (tasks/projects/settings)
+  - home-day boundary rollover (`TemporalTriggerService`)
+  - explicit requests (e.g., focus setup save)
 - Snapshot stabilization rules ensure **no reshuffle**:
   - If the day was generated without a shortage, allocation membership freezes
     (it may shrink as tasks become ineligible/completed, but it will not refill).
@@ -369,14 +391,32 @@ Allocation runs when a screen contains the `allocation` template.
 
 After saving focus-mode settings, the wizard triggers:
 
-- `AllocationOrchestrator.watchAllocation().first`
+- `AllocationSnapshotCoordinator.requestRefreshNow(AllocationSnapshotRefreshReason.focusSetupSaved)`
 
 This forces generation/persistence of a fresh snapshot so My Day updates immediately.
 
 See:
 - [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
 
-### 8.3 What changes can trigger recomputation
+### 8.3 Centralized snapshot refresh triggers (coordinator)
+
+The coordinator is started at bootstrap and unifies "when" decisions.
+
+It will attempt a refresh when:
+
+- Allocation inputs change (debounced): tasks/projects/settings streams emit.
+- Home day boundary crosses (immediate): `TemporalTriggerService` emits `HomeDayBoundaryCrossed`.
+
+Refreshes are gated to avoid unnecessary churn:
+
+- Requires `AllocationConfig.hasSelectedFocusMode == true`
+- Requires `AllocationConfig.dailyLimit > 0`
+- Requires at least one incomplete task
+
+See:
+- [lib/domain/services/allocation/allocation_snapshot_coordinator.dart](../lib/domain/services/allocation/allocation_snapshot_coordinator.dart)
+
+### 8.4 What changes can trigger recomputation (when orchestrator is used)
 
 When the orchestrator is used (snapshot missing / first-run), it recomputes when any of these streams emit:
 

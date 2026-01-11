@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +6,7 @@ import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart'
 import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/settings/focus_mode.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/next_action/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
@@ -22,9 +20,11 @@ class FocusSetupWizardPage extends StatelessWidget {
       listenWhen: (prev, next) => prev.saveSucceeded != next.saveSucceeded,
       listener: (context, state) {
         if (state.saveSucceeded) {
-          // Force a fresh allocation snapshot so screens that prefer persisted
-          // snapshots (like My Day) update immediately after saving.
-          unawaited(getIt<AllocationOrchestrator>().watchAllocation().first);
+          // Ask the centralized coordinator to generate/refresh today's
+          // allocation snapshot immediately after saving.
+          getIt<AllocationSnapshotCoordinator>().requestRefreshNow(
+            AllocationSnapshotRefreshReason.focusSetupSaved,
+          );
 
           final router = GoRouter.of(context);
           if (router.canPop()) {

@@ -40,17 +40,6 @@ class _SomedayBacklogRendererState extends State<SomedayBacklogRenderer> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final focusTaskIds =
-        widget.data.relatedEntities['focusTaskIds']
-            ?.whereType<String>()
-            .toSet() ??
-        const <String>{};
-    final focusProjectIds =
-        widget.data.relatedEntities['focusProjectIds']
-            ?.whereType<String>()
-            .toSet() ??
-        const <String>{};
-
     final allTasks = widget.data.items.whereType<ScreenItemTask>().toList();
     final allProjects = widget.data.items
         .whereType<ScreenItemProject>()
@@ -107,8 +96,6 @@ class _SomedayBacklogRendererState extends State<SomedayBacklogRenderer> {
               child: _tileRegistry.build(
                 context,
                 item: item,
-                focusTaskIds: focusTaskIds,
-                focusProjectIds: focusProjectIds,
                 onTaskToggle: widget.onTaskToggle,
                 onTap: () {
                   switch (item) {

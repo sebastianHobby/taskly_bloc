@@ -8,16 +8,21 @@ import 'package:taskly_bloc/domain/models/project.dart';
 import 'package:taskly_bloc/domain/models/settings/allocation_config.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_auto_refresh_service.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 
 class MockAllocationOrchestrator extends Mock
     implements AllocationOrchestrator {}
+
+class MockTemporalTriggerService extends Mock
+    implements TemporalTriggerService {}
 
 void main() {
   test(
     'does not refresh when allocation is not eligible',
     () async {
       final orchestrator = MockAllocationOrchestrator();
+      final temporal = MockTemporalTriggerService();
 
       final trigger =
           BehaviorSubject<(List<Task>, List<Project>, AllocationConfig)>.seeded(
@@ -36,13 +41,16 @@ void main() {
         (_) => trigger.stream,
       );
 
+      when(() => temporal.events).thenAnswer((_) => const Stream.empty());
+
       // If refresh runs, it would call watchAllocation().first.
       when(
         orchestrator.watchAllocation,
       ).thenAnswer((_) => const Stream.empty());
 
-      final service = AllocationSnapshotAutoRefreshService(
+      final service = AllocationSnapshotCoordinator(
         allocationOrchestrator: orchestrator,
+        temporalTriggerService: temporal,
         debounceWindow: const Duration(milliseconds: 1),
       );
 
@@ -64,6 +72,7 @@ void main() {
     'refreshes when allocation is eligible',
     () async {
       final orchestrator = MockAllocationOrchestrator();
+      final temporal = MockTemporalTriggerService();
 
       final now = DateTime.utc(2026, 1, 1);
       final task = Task(
@@ -88,6 +97,8 @@ void main() {
         (_) => trigger.stream,
       );
 
+      when(() => temporal.events).thenAnswer((_) => const Stream.empty());
+
       when(orchestrator.watchAllocation).thenAnswer(
         (_) => Stream.value(
           const AllocationResult(
@@ -103,8 +114,9 @@ void main() {
         ),
       );
 
-      final service = AllocationSnapshotAutoRefreshService(
+      final service = AllocationSnapshotCoordinator(
         allocationOrchestrator: orchestrator,
+        temporalTriggerService: temporal,
         debounceWindow: const Duration(milliseconds: 1),
       );
 

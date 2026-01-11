@@ -18,9 +18,7 @@ class ProjectListTile extends StatelessWidget {
     this.completedTaskCount,
     this.nextTask,
     this.showNextTask = false,
-    this.isInFocus = false,
     this.showPinnedIndicator = true,
-    this.showFocusIndicator = true,
     super.key,
   });
 
@@ -49,16 +47,8 @@ class ProjectListTile extends StatelessWidget {
   /// Whether to display the next task subtitle.
   final bool showNextTask;
 
-  /// Whether this project is part of today's focus allocation.
-  ///
-  /// If true and the project is not pinned, a focus indicator is shown.
-  final bool isInFocus;
-
   /// Whether to show a pinned indicator when the project is pinned.
   final bool showPinnedIndicator;
-
-  /// Whether to show a focus indicator when [isInFocus] is true.
-  final bool showFocusIndicator;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
@@ -82,7 +72,44 @@ class ProjectListTile extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     final daysUntil = deadlineDay.difference(today).inDays;
-    return daysUntil > 0 && daysUntil <= 7;
+    return daysUntil > 0 && daysUntil <= 3;
+  }
+
+  DateTime _today() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateChip? _buildStrictDateToken(
+    BuildContext context, {
+    required DateTime? startDate,
+    required DateTime? deadlineDate,
+    required bool isOverdue,
+    required bool isDueToday,
+    required bool isDueSoon,
+    required String Function(BuildContext, DateTime) formatDate,
+  }) {
+    if (deadlineDate != null) {
+      return DateChip.deadline(
+        context: context,
+        label: formatDate(context, deadlineDate),
+        isOverdue: isOverdue,
+        isDueToday: isDueToday,
+        isDueSoon: isDueSoon,
+      );
+    }
+
+    if (startDate != null) {
+      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
+      if (!startDay.isBefore(_today())) {
+        return DateChip.startDate(
+          context: context,
+          label: formatDate(context, startDate),
+        );
+      }
+    }
+
+    return null;
   }
 
   String _formatRelativeDate(BuildContext context, DateTime date) {
@@ -152,7 +179,7 @@ class ProjectListTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Leading widget: optional completion checkbox, else progress ring.
+              // Leading widget: optional completion checkbox.
               if (onCheckboxChanged != null)
                 _ProjectCheckbox(
                   completed: project.completed,
@@ -162,16 +189,8 @@ class ProjectListTile extends StatelessWidget {
                     onCheckboxChanged?.call(project, value);
                   },
                   projectName: project.name,
-                )
-              else
-                _ProjectProgressRing(
-                  value: _progressValue,
-                  isOverdue: isOverdue,
-                  semanticsLabel: project.name,
-                  taskCount: taskCount,
-                  completedTaskCount: completedTaskCount,
                 ),
-              const SizedBox(width: 12),
+              if (onCheckboxChanged != null) const SizedBox(width: 12),
 
               // Main content
               Expanded(
@@ -184,9 +203,6 @@ class ProjectListTile extends StatelessWidget {
                       children: [
                         if (showPinnedIndicator && project.isPinned) ...[
                           const PinnedIndicator(),
-                          const SizedBox(width: 8),
-                        ] else if (showFocusIndicator && isInFocus) ...[
-                          const FocusIndicator(),
                           const SizedBox(width: 8),
                         ],
                         Expanded(
@@ -205,17 +221,6 @@ class ProjectListTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        PriorityFlag(priority: project.priority),
-                        if (!compact &&
-                            taskCount != null &&
-                            taskCount! > 0) ...[
-                          const SizedBox(width: 8),
-                          _TaskCountBadge(
-                            total: taskCount!,
-                            completed: completedTaskCount ?? 0,
-                          ),
-                        ],
                       ],
                     ),
 
@@ -238,7 +243,7 @@ class ProjectListTile extends StatelessWidget {
                     ],
 
                     // Meta row: dates + values
-                    _MetaChips(
+                    _MetaLine(
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,
                       isOverdue: isOverdue,
@@ -248,9 +253,34 @@ class ProjectListTile extends StatelessWidget {
                       hasRepeat: project.repeatIcalRrule != null,
                       primaryValue: project.primaryValue,
                       secondaryValues: project.secondaryValues,
+                      buildDateToken: (context) => _buildStrictDateToken(
+                        context,
+                        startDate: project.startDate,
+                        deadlineDate: project.deadlineDate,
+                        isOverdue: isOverdue,
+                        isDueToday: isDueToday,
+                        isDueSoon: isDueSoon,
+                        formatDate: _formatRelativeDate,
+                      ),
                     ),
                   ],
                 ),
+              ),
+
+              const SizedBox(width: 12),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  PriorityFlag(priority: project.priority),
+                  const SizedBox(height: 8),
+                  _ProjectProgressRing(
+                    value: _progressValue,
+                    isOverdue: isOverdue,
+                    semanticsLabel: project.name,
+                    taskCount: taskCount,
+                    completedTaskCount: completedTaskCount,
+                  ),
+                ],
               ),
             ],
           ),
@@ -340,25 +370,35 @@ class _ProjectProgressRing extends StatelessWidget {
         ? '${(displayValue * 100).round()}%'
         : 'No tasks';
 
+    final percentLabel = '${(displayValue * 100).round()}%';
+
     return Semantics(
       label: 'Project progress for $semanticsLabel',
       value: semanticsValue,
       child: SizedBox.square(
-        dimension: 24,
+        dimension: 36,
         child: Stack(
           alignment: Alignment.center,
           children: [
             CircularProgressIndicator(
               value: 1,
-              strokeWidth: 2.5,
+              strokeWidth: 3,
               strokeCap: StrokeCap.round,
               valueColor: AlwaysStoppedAnimation<Color>(trackColor),
             ),
             CircularProgressIndicator(
               value: displayValue,
-              strokeWidth: 2.5,
+              strokeWidth: 3,
               strokeCap: StrokeCap.round,
               valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+            Text(
+              percentLabel,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurface,
+              ),
             ),
           ],
         ),
@@ -367,11 +407,12 @@ class _ProjectProgressRing extends StatelessWidget {
   }
 }
 
-class _MetaChips extends StatelessWidget {
-  const _MetaChips({
+class _MetaLine extends StatelessWidget {
+  const _MetaLine({
     required this.formatDate,
     required this.primaryValue,
     required this.secondaryValues,
+    required this.buildDateToken,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
@@ -389,11 +430,14 @@ class _MetaChips extends StatelessWidget {
   final String Function(BuildContext, DateTime) formatDate;
   final Value? primaryValue;
   final List<Value> secondaryValues;
+  final DateChip? Function(BuildContext context) buildDateToken;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
+
+    final dateToken = buildDateToken(context);
 
     final children = <Widget>[];
 
@@ -406,38 +450,11 @@ class _MetaChips extends StatelessWidget {
       );
     }
 
-    for (final value in secondaryValues) {
+    if (secondaryValues.isNotEmpty) {
       children.add(
         ValueChip(
-          value: value,
+          value: secondaryValues.first,
           variant: ValueChipVariant.outlined,
-        ),
-      );
-    }
-
-    if (startDate != null) {
-      children.add(
-        _InlineMetaItem(
-          icon: Icons.calendar_today_rounded,
-          label: formatDate(context, startDate!),
-          color: scheme.onSurfaceVariant,
-        ),
-      );
-    }
-
-    if (deadlineDate != null) {
-      final deadlineColor = isOverdue
-          ? scheme.error
-          : isDueToday
-          ? scheme.tertiary
-          : isDueSoon
-          ? scheme.secondary
-          : scheme.onSurfaceVariant;
-      children.add(
-        _InlineMetaItem(
-          icon: Icons.event_busy_rounded,
-          label: formatDate(context, deadlineDate!),
-          color: deadlineColor,
         ),
       );
     }
@@ -452,98 +469,25 @@ class _MetaChips extends StatelessWidget {
       );
     }
 
-    if (children.isEmpty) return const SizedBox.shrink();
+    if (children.isEmpty && dateToken == null) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _InlineMetaItem extends StatelessWidget {
-  const _InlineMetaItem({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Badge showing task completion count.
-class _TaskCountBadge extends StatelessWidget {
-  const _TaskCountBadge({
-    required this.total,
-    required this.completed,
-  });
-
-  final int total;
-  final int completed;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final isComplete = completed == total && total > 0;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isComplete
-            ? colorScheme.primaryContainer.withValues(alpha: 0.5)
-            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(10),
-      ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            isComplete ? Icons.check_circle : Icons.task_alt,
-            size: 12,
-            color: isComplete
-                ? colorScheme.primary
-                : colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '$completed/$total',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: isComplete
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: children,
             ),
           ),
+          if (dateToken != null) ...[
+            const SizedBox(width: 12),
+            dateToken,
+          ],
         ],
       ),
     );

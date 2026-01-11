@@ -43,14 +43,30 @@ jobs:
       - name: Pull Flutter dependencies
         run: flutter pub get
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
       - name: Start Supabase local stack
         run: supabase start
 
-      - name: Reset DB (migrations + seed)
-        run: supabase db reset
+      - name: Apply migrations (no seed)
+        run: supabase db reset --no-seed
+
+      - name: Truncate app tables (fast deterministic reset)
+        run: |
+          cat supabase/truncate_pipeline.sql | \
+            docker exec -i $(docker ps --filter "name=supabase_db" --format "{{.ID}}" | head -n 1) \
+              psql -U postgres -d postgres -v ON_ERROR_STOP=1
 
       - name: Write PowerSync env file
         run: |
@@ -85,7 +101,6 @@ jobs:
         run: |
           flutter test --reporter=expanded \
             --tags=pipeline \
-            test/integration_test/powersync_supabase_pipeline_test.dart \
             --dart-define=SUPABASE_URL="${{ steps.supabase.outputs.SUPABASE_URL }}" \
             --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ steps.supabase.outputs.SUPABASE_PUBLISHABLE_KEY }}" \
             --dart-define=POWERSYNC_URL="http://127.0.0.1:8080"

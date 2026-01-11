@@ -36,6 +36,9 @@ bucket_definitions:
       # Attention Rules (with UUID PK - clean sync)
       - SELECT * FROM attention_rules WHERE user_id = bucket.user_id
 
+      # Attention Rule Runtime State (per-rule/per-entity evaluation state)
+      - SELECT * FROM attention_rule_runtime_state WHERE user_id = bucket.user_id
+
       # Allocation Snapshots (daily, allocated membership only)
       - SELECT * FROM allocation_snapshots WHERE user_id = bucket.user_id
 

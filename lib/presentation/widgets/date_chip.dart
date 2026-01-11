@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 
 /// A compact chip showing a date or indicator.
 ///
@@ -23,7 +24,7 @@ class DateChip extends StatelessWidget {
     required String label,
     Key? key,
   }) : this(
-         icon: Icons.calendar_today_rounded,
+         icon: Icons.play_arrow_rounded,
          label: label,
          color: Theme.of(context).colorScheme.onSurfaceVariant,
          key: key,
@@ -47,16 +48,16 @@ class DateChip extends StatelessWidget {
       chipColor = colorScheme.error;
       chipBackground = colorScheme.errorContainer.withValues(alpha: 0.3);
     } else if (isDueToday) {
-      chipColor = colorScheme.tertiary;
-      chipBackground = colorScheme.tertiaryContainer.withValues(alpha: 0.3);
+      chipColor = colorScheme.primary;
+      chipBackground = colorScheme.primaryContainer.withValues(alpha: 0.3);
     } else if (isDueSoon) {
-      chipColor = colorScheme.secondary;
+      chipColor = colorScheme.primary;
     } else {
       chipColor = colorScheme.onSurfaceVariant;
     }
 
     return DateChip(
-      icon: Icons.flag_rounded,
+      icon: Icons.flag_outlined,
       label: label,
       color: chipColor,
       backgroundColor: chipBackground,
@@ -164,7 +165,6 @@ class DateChip extends StatelessWidget {
 class DatesRow extends StatelessWidget {
   /// Creates a dates row.
   const DatesRow({
-    required this.formatDate,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
@@ -172,6 +172,7 @@ class DatesRow extends StatelessWidget {
     this.isDueSoon = false,
     this.hasRepeat = false,
     this.rrule,
+    this.formatDate,
     super.key,
   });
 
@@ -197,13 +198,15 @@ class DatesRow extends StatelessWidget {
   final String? rrule;
 
   /// Function to format dates for display.
-  final String Function(BuildContext, DateTime) formatDate;
+  final String Function(BuildContext, DateTime)? formatDate;
 
   @override
   Widget build(BuildContext context) {
     if (startDate == null && deadlineDate == null && !hasRepeat) {
       return const SizedBox.shrink();
     }
+
+    final format = formatDate ?? DateLabelFormatter.format;
 
     return Padding(
       padding: const EdgeInsets.only(top: 8),
@@ -215,14 +218,14 @@ class DatesRow extends StatelessWidget {
           if (startDate != null)
             DateChip.startDate(
               context: context,
-              label: formatDate(context, startDate!),
+              label: format(context, startDate!),
             ),
 
           // Deadline date with status color
           if (deadlineDate != null)
             DateChip.deadline(
               context: context,
-              label: formatDate(context, deadlineDate!),
+              label: format(context, deadlineDate!),
               isOverdue: isOverdue,
               isDueToday: isDueToday,
               isDueSoon: isDueSoon,
