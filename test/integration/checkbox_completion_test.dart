@@ -12,8 +12,8 @@ import 'package:taskly_bloc/core/l10n/l10n.dart';
 import 'package:taskly_bloc/core/theme/app_theme.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/presentation/features/projects/widgets/project_list_tile.dart';
-import 'package:taskly_bloc/presentation/features/tasks/widgets/task_list_tile.dart';
+import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
+import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 
 import '../fixtures/test_data.dart';
 import '../helpers/test_helpers.dart';
@@ -441,7 +441,7 @@ Future<void> _pumpTaskListTile(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: TaskListTile(
+        body: TaskView(
           task: task,
           onCheckboxChanged: onCheckboxChanged,
           onTap: onTap,
@@ -464,10 +464,7 @@ Future<void> _pumpProjectListTile(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: ProjectListTile(
-          project: project,
-          onTap: onTap,
-        ),
+        body: ProjectView(project: project, onTap: onTap),
       ),
     ),
   );

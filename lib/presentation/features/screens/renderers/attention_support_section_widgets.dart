@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/models/attention/attention_item.dart';
-import 'package:taskly_bloc/domain/models/attention/attention_rule.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 
 class SupportSectionCard extends StatelessWidget {
   const SupportSectionCard({

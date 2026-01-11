@@ -273,9 +273,17 @@ See: [lib/domain/services/screens/templates/section_template_params_codec.dart](
 
 To keep “what we display” separate from “how we display it”, templates that render entities require explicit **tile variant** fields.
 
+**Implementation note (UI architecture)**
+- Screen renderers should map these variants onto the canonical, entity-level UI entrypoints:
+  - `TaskView`: [lib/presentation/entity_views/task_view.dart](../../lib/presentation/entity_views/task_view.dart)
+  - `ProjectView`: [lib/presentation/entity_views/project_view.dart](../../lib/presentation/entity_views/project_view.dart)
+  - `ValueView`: [lib/presentation/entity_views/value_view.dart](../../lib/presentation/entity_views/value_view.dart)
+- Field-level rendering policies (like date labeling) should not be duplicated per-tile; use the field catalog:
+  - `DateLabelFormatter`: [lib/presentation/field_catalog/formatters/date_label_formatter.dart](../../lib/presentation/field_catalog/formatters/date_label_formatter.dart)
+
 **Where variants are defined**
-- Screen item tiles: [lib/domain/models/screens/templates/screen_item_tile_variants.dart](../lib/domain/models/screens/templates/screen_item_tile_variants.dart)
-- Attention/review tiles: [lib/domain/models/screens/templates/attention_tile_variants.dart](../lib/domain/models/screens/templates/attention_tile_variants.dart)
+- Screen item tiles: [lib/domain/models/screens/templates/screen_item_tile_variants.dart](../../lib/domain/models/screens/templates/screen_item_tile_variants.dart)
+- Attention/review tiles: [lib/domain/models/screens/templates/attention_tile_variants.dart](../../lib/domain/models/screens/templates/attention_tile_variants.dart)
 
 **Which templates require which style keys**
 | Template | Required style keys | Notes |

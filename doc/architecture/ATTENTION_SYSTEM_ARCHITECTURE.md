@@ -20,36 +20,42 @@ The core idea:
 
 - **`AttentionRule`** is the persisted configuration (what to detect + how to
   display it).
-- **`AttentionEvaluator`** reads active rules and evaluates them against current
-  domain data to produce **`AttentionItem`**s.
-- User actions are stored as **`AttentionResolution`** rows, enabling
-  “dismiss until state changes” via a **state-hash**.
+- **`AttentionEngine`** is the reactive evaluation engine. Sections construct an
+  **`AttentionQuery`** and subscribe to `AttentionEngine.watch(query)`.
+- User actions are stored as **`AttentionResolution`** rows. “Dismiss until
+  state changes” is implemented using engine-owned runtime state
+  (state-hash + dismissal/snooze semantics).
 
 ---
 
 ## 2) Where Things Live (Folder Map)
 
-### Domain model (attention language)
-- Rules, items, resolutions, templates
-  - [lib/domain/models/attention/](../lib/domain/models/attention/)
+### Attention bounded context (single entrypoint)
+- Bounded-context entrypoint (barrel exports):
+  - [lib/domain/attention/attention.dart](../lib/domain/attention/attention.dart)
+
+Key subfolders:
+- Contracts: [lib/domain/attention/contracts/](../lib/domain/attention/contracts/)
+- Engine: [lib/domain/attention/engine/](../lib/domain/attention/engine/)
+- Models: [lib/domain/attention/model/](../lib/domain/attention/model/)
+- Query: [lib/domain/attention/query/](../lib/domain/attention/query/)
 
 Key files:
-- [lib/domain/models/attention/attention_rule.dart](../lib/domain/models/attention/attention_rule.dart)
-- [lib/domain/models/attention/attention_item.dart](../lib/domain/models/attention/attention_item.dart)
-- [lib/domain/models/attention/attention_resolution.dart](../lib/domain/models/attention/attention_resolution.dart)
-- [lib/domain/models/attention/system_attention_rules.dart](../lib/domain/models/attention/system_attention_rules.dart)
+- [lib/domain/attention/model/attention_rule.dart](../lib/domain/attention/model/attention_rule.dart)
+- [lib/domain/attention/model/attention_item.dart](../lib/domain/attention/model/attention_item.dart)
+- [lib/domain/attention/model/attention_resolution.dart](../lib/domain/attention/model/attention_resolution.dart)
+- [lib/domain/attention/model/attention_rule_runtime_state.dart](../lib/domain/attention/model/attention_rule_runtime_state.dart)
+- [lib/domain/attention/system_attention_rules.dart](../lib/domain/attention/system_attention_rules.dart)
+- [lib/domain/attention/engine/attention_engine.dart](../lib/domain/attention/engine/attention_engine.dart)
 
-### Domain services (evaluation)
-- [lib/domain/services/attention/attention_evaluator.dart](../lib/domain/services/attention/attention_evaluator.dart)
-- [lib/domain/services/attention/attention_context.dart](../lib/domain/services/attention/attention_context.dart)
+### Domain services (time-based invalidations)
+- [lib/domain/services/attention/attention_temporal_invalidation_service.dart](../lib/domain/services/attention/attention_temporal_invalidation_service.dart)
 
 ### Data layer (persistence + seeding)
 - Repository impl:
-  - [lib/data/repositories/attention_repository.dart](../lib/data/repositories/attention_repository.dart)
+  - [lib/data/repositories/attention_repository_v2.dart](../lib/data/repositories/attention_repository_v2.dart)
 - Drift tables (generated):
   - [lib/data/drift/features/attention_tables.drift.dart](../lib/data/drift/features/attention_tables.drift.dart)
-- Mappers:
-  - [lib/data/mappers/attention_converter.dart](../lib/data/mappers/attention_converter.dart)
 - Seeder:
   - [lib/data/services/attention_seeder.dart](../lib/data/services/attention_seeder.dart)
 
@@ -92,22 +98,23 @@ Key files:
                 v
 ┌───────────────────────────────────────────────────────────┐
 │                       Domain Service                        │
-│                    AttentionEvaluator                        │
-│  - loads active rules by type                                │
-│  - evaluates against tasks/projects                          │
-│  - checks dismissals via state hash                           │
+│                     AttentionEngine                          │
+│  - watches active rules + domain data                         │
+│  - evaluates rules into AttentionItems                        │
+│  - applies suppression via runtime state + resolutions         │
 └───────────────┬───────────────────────────────┬────────────┘
                 │                               │
                 v                               v
 ┌───────────────────────────────┐   ┌───────────────────────────────┐
 │      AttentionRepository        │   │  Task/Project repositories     │
 │  - rules + resolutions          │   │  (data to evaluate rules on)   │
+│  - runtime state                │
 └───────────────┬───────────────┘   └───────────────┬───────────────┘
                 │                                   │
                 v                                   v
 ┌───────────────────────────────────────────────────────────┐
 │                     Drift / PowerSync DB                    │
-│  attention_rules, attention_resolutions                      │
+│  attention_rules, attention_resolutions, attention_rule_runtime_state │
 └───────────────────────────────────────────────────────────┘
 ```
 
@@ -118,18 +125,15 @@ dismissal tracking.
 
 ```text
 1) Section interpreter runs: IssuesSummarySectionInterpreter.fetch(params)
-2) It calls AttentionEvaluator.evaluateIssues(entityTypes, minSeverity)
-3) Evaluator loads rules:
-   - attentionRepository.watchRulesByType(AttentionRuleType.problem).first
-   - filters to active rules
-4) For each rule:
-   - selects entity type + predicate from rule.entitySelector
-   - queries domain data (tasks/projects)
-   - computes a stateHash for each candidate entity
-   - attentionRepository.wasDismissed(ruleId, entityId, stateHash)
-     - if dismissed and hash unchanged -> keep hidden
-     - if hash changed -> resurface
-5) Evaluator returns List<AttentionItem>
+2) It builds an AttentionQuery (domains={'issues'}, optional entityTypes/minSeverity)
+3) It subscribes to AttentionEngine.watch(query)
+4) Engine combines:
+  - attentionRepository.watchActiveRules() filtered by query
+  - taskRepository.watchAll() + projectRepository.watchAll()
+  - temporal invalidation pulses (via AttentionTemporalInvalidationService)
+5) Engine evaluates matching rules into AttentionItems, applying suppression
+  semantics using runtime state (state hash + dismissal/snooze) and the latest
+  resolution.
 6) Interpreter packages items into SectionDataResult.issuesSummary(...)
 7) Renderer displays tiles (AttentionItemTile) and counts
 ```
@@ -142,6 +146,8 @@ The DB schema is intentionally small and generic.
 attention_rules
   - id (uuid)
   - rule_key
+  - domain
+  - category
   - rule_type (problem/review/workflowStep/allocationWarning)
   - trigger_type (realtime/scheduled)
   - trigger_config (json)
@@ -151,6 +157,8 @@ attention_rules
   - resolution_actions (json)
   - active (bool)
   - source (systemTemplate/userCreated/imported)
+  - created_at
+  - updated_at
 
 attention_resolutions
   - id (uuid)
@@ -160,6 +168,19 @@ attention_resolutions
   - resolved_at
   - resolution_action (reviewed/skipped/snoozed/dismissed)
   - action_details (json)   // e.g. snooze_until, state_hash
+
+attention_rule_runtime_state
+  - id (uuid)
+  - rule_id (FK to attention_rules.id)
+  - entity_type (nullable)
+  - entity_id (nullable)
+  - state_hash (nullable)
+  - dismissed_state_hash (nullable)
+  - last_evaluated_at (nullable)
+  - next_evaluate_after (nullable)
+  - metadata (json)
+  - created_at
+  - updated_at
 ```
 
 ---
@@ -177,9 +198,9 @@ attention_resolutions
 
 Important nuance in the current implementation:
 
-- `triggerType` is currently **metadata**. Evaluation occurs **on-demand** when
-  a section interpreter calls the evaluator. Background scheduling is not part of
-  the current runtime.
+- `triggerType`/`triggerConfig` are currently **metadata**. Evaluation runs while
+  the app is active (reactive streams + in-app invalidation pulses); there is no
+  background scheduler firing while the app is closed.
 
 ### 4.2 `AttentionItem` (evaluated output)
 
@@ -196,21 +217,23 @@ A resolution records user intent:
 - `snoozed`: hide until a future time (stored in `actionDetails`)
 - `reviewed`/`skipped`: marks a review session as handled
 
-In the current code, the evaluation layer uses:
+In the current code, the engine uses:
 
-- `AttentionRepositoryContract.wasDismissed(ruleId, entityId, stateHash)`
+- `AttentionRepositoryContract.getLatestResolution(ruleId, entityId)`
+- `AttentionRepositoryContract.getRuntimeState(...)`
 
-to decide if an item should remain hidden.
+to decide whether an item should be suppressed (dismissed/snoozed) until either
+time has passed or the entity’s computed state hash changes.
 
-### 4.4 `AttentionEvaluator` (rule evaluation engine)
+### 4.4 `AttentionEngine` (reactive evaluation engine)
 
 Primary responsibilities:
 
-- Load the **active** rules per category (problem/review/allocationWarning)
+- Watch the **active** rules and relevant domain data streams
 - Evaluate rule predicates against the **current** domain data
-- Exclude dismissed entities if the state hash is unchanged
+- Apply suppression semantics (dismiss/snooze/state-hash) via runtime state
 - Apply “product policy” rules, for example:
-  - Reviews: only show **one** due review at a time (the most overdue)
+  - Reviews: show a bounded set of due reviews (intentionally conservative)
 
 ### 4.5 `AttentionRepositoryContract` + Drift implementation
 
@@ -221,19 +244,19 @@ Responsibilities:
   - toggle active status
   - update configs
   - record resolutions
-- Provide helper queries needed by the evaluator:
-  - `wasDismissed` (state-hash based)
-  - `wasRecentlyResolved` (cooldown windows)
+- Provide helper reads/writes needed by the engine:
+  - `getLatestResolution` + resolution streams
+  - runtime state access (`getRuntimeState`, `upsertRuntimeState`)
 
 The Drift implementation is:
 
-- [lib/data/repositories/attention_repository.dart](../lib/data/repositories/attention_repository.dart)
+- [lib/data/repositories/attention_repository_v2.dart](../lib/data/repositories/attention_repository_v2.dart)
 
 ### 4.6 System Defaults (Templates + Seeding)
 
 The system defaults live in code as templates:
 
-- [lib/domain/models/attention/system_attention_rules.dart](../lib/domain/models/attention/system_attention_rules.dart)
+- [lib/domain/attention/system_attention_rules.dart](../lib/domain/attention/system_attention_rules.dart)
 
 and can be seeded into the database using:
 
@@ -241,50 +264,23 @@ and can be seeded into the database using:
 
 Important nuance in the current repo state:
 
-- There is a seeder (`AttentionSeeder.ensureSeeded()`), but
-  `runPostAuthMaintenance` currently seeds screens + runs attention cleanup.
-  It does **not** currently invoke the attention seeder.
-
-If you want deterministic local “first-run” attention defaults, you can wire
-`AttentionSeeder.ensureSeeded()` into the same post-auth maintenance flow.
+- `AttentionSeeder.ensureSeeded()` is invoked from post-auth maintenance:
+  [lib/data/powersync/api_connector.dart](../lib/data/powersync/api_connector.dart)
+  (`runPostAuthMaintenance`).
 
 ---
 
 ## 5) Integration Points (How Attention Surfaces in UI)
 
----
-
-## 5.4 Temporal Triggers Integration (In-App Only)
-
-Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a wellbeing review is now due).
-
-To support this without introducing OS notifications or server scheduling, the runtime uses a lightweight invalidation stream:
-
-- **Single time source**: `TemporalTriggerService`
-  - emits `AppResumed` and `HomeDayBoundaryCrossed`
-- **Attention invalidation**: `AttentionTemporalInvalidationService`
-  - converts temporal events into `Stream<void>` invalidation pulses
-- **Section refresh**: time-based attention sections (e.g. `checkInSummary`) subscribe to invalidations and re-run `fetch()` when a pulse arrives
-
-This keeps attention evaluation **pull-based** (section interpreters still call `AttentionEvaluator`), but ensures the UI re-checks on:
-
-- app resume (covers “user opens app”)
-- home-day boundary (covers “new day”)
-
-Important: `AttentionRule.triggerType`/`triggerConfig` remain **metadata** in this phase; the app does not run a background scheduler.
-
-Future releases that require actual time-based reminders (firing while the app is closed) should add a separate **delivery layer** (local notifications and/or server push), without coupling it tightly to evaluator logic.
-
 ### 5.1 Support sections (unified screens)
 
-- `issuesSummary` → calls evaluator `evaluateIssues(...)`
+- `issuesSummary` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
   - [lib/domain/services/screens/templates/issues_summary_section_interpreter.dart](../lib/domain/services/screens/templates/issues_summary_section_interpreter.dart)
 
-- `checkInSummary` → calls evaluator `evaluateReviews()`
+- `checkInSummary` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
   - [lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart](../lib/domain/services/screens/templates/check_in_summary_section_interpreter.dart)
 
-- `allocationAlerts` → currently derives attention-like items from allocation
-  results (not from persisted rules)
+- `allocationAlerts` → subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
   - [lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart](../lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart)
 
 ### 5.2 Settings: toggling attention rules
@@ -298,6 +294,30 @@ Future releases that require actual time-based reminders (firing while the app i
   - `AttentionItemTile` + `SeverityIcon`
   - [lib/presentation/features/screens/renderers/attention_support_section_widgets.dart](../lib/presentation/features/screens/renderers/attention_support_section_widgets.dart)
 
+### 5.4 Temporal Triggers Integration (In-App Only)
+
+Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a wellbeing review is now due).
+
+To support this without introducing OS notifications or server scheduling, the runtime uses a lightweight invalidation stream:
+
+- **Single time source**: `TemporalTriggerService`
+  - emits `AppResumed` and `HomeDayBoundaryCrossed`
+- **Attention invalidation**: `AttentionTemporalInvalidationService`
+  - converts temporal events into `Stream<void>` invalidation pulses
+- **Engine refresh**: the attention engine subscribes to invalidations and
+  re-evaluates even when domain data streams haven’t changed
+
+This keeps attention evaluation driven by the unified screen pipeline (sections
+still subscribe to attention items via `AttentionEngine.watch(query)`), but
+ensures the UI re-checks on:
+
+- app resume (covers “user opens app”)
+- home-day boundary (covers “new day”)
+
+Important: `AttentionRule.triggerType`/`triggerConfig` remain **metadata** in this phase; the app does not run a background scheduler.
+
+Future releases that require actual time-based reminders (firing while the app is closed) should add a separate **delivery layer** (local notifications and/or server push), without coupling it tightly to the attention engine.
+
 ---
 
 ## 6) Example Implementation: Add a New “Blocked Tasks” Problem Rule
@@ -308,7 +328,7 @@ it gets surfaced automatically in the Issues Summary section.
 ### 6.1 Add a new system rule template
 
 In
-[lib/domain/models/attention/system_attention_rules.dart](../lib/domain/models/attention/system_attention_rules.dart)
+[lib/domain/attention/system_attention_rules.dart](../lib/domain/attention/system_attention_rules.dart)
 add a template:
 
 ```dart
@@ -336,11 +356,11 @@ static const problemTaskBlocked = AttentionRuleTemplate(
 
 and include it in `SystemAttentionRules.all`.
 
-### 6.2 Implement the predicate in `AttentionEvaluator`
+### 6.2 Implement the predicate in `AttentionEngine`
 
 In
-[lib/domain/services/attention/attention_evaluator.dart](../lib/domain/services/attention/attention_evaluator.dart)
-extend the task predicate switch:
+[lib/domain/attention/engine/attention_engine.dart](../lib/domain/attention/engine/attention_engine.dart)
+extend `_evaluateTaskPredicate(...)`:
 
 ```dart
 final matches = switch (predicate) {
@@ -360,20 +380,17 @@ the fields that should cause resurfacing (e.g., `blockedReason`, `updatedAt`).
 
 ### 6.3 Ensure the rule exists in the database
 
-If you want templates to seed on first run, wire the seeder into the post-auth
-maintenance. A minimal approach is adding something like:
-
-```dart
-final attentionSeeder = AttentionSeeder(db: driftDb, idGenerator: idGenerator);
-await attentionSeeder.ensureSeeded();
-```
-
-into the post-auth maintenance flow.
+System templates are already seeded from post-auth maintenance via
+`AttentionSeeder.ensureSeeded()` (see
+[lib/data/powersync/api_connector.dart](../lib/data/powersync/api_connector.dart)
+`runPostAuthMaintenance`). After adding a new template, it will be inserted on
+the next post-auth maintenance run.
 
 ### 6.4 Result: Issues Summary picks it up automatically
 
-Because `IssuesSummarySectionInterpreter` reads active rules by type and then
-delegates to `AttentionEvaluator`, the new rule will be included as soon as:
+Because `IssuesSummarySectionInterpreter` builds an `AttentionQuery` and then
+subscribes to `AttentionEngine.watch(query)`, the new rule will be included as
+soon as:
 
 - it is present in `attention_rules`
 - it is `active=true`
@@ -385,127 +402,13 @@ delegates to `AttentionEvaluator`, the new rule will be included as soon as:
 
 These are observed from the current code structure:
 
-- **`AttentionContext` is not yet used** by the screen pipeline (it exists as a
-  helper for cross-section coordination, but is not wired in).
 - **Resolution recording is not yet surfaced in the UI** for attention tiles
   (the repo supports `recordResolution`, but current tiles do not expose actions).
-- **Allocation alerts currently bypass persisted rules** and build
-  `AttentionItem`s directly from allocation results.
+- **`workflowStep` rules are not implemented yet** in the engine (they currently
+  yield no items).
+- **No background scheduler**: `triggerType`/`triggerConfig` remain in-app
+  metadata; evaluation updates while the app is running.
 
 ---
 
-## 8) Allocation: Current Implementation vs. Proposed Snapshot Model
-
-This section documents how allocation works *today* in the repo and what it
-implies for the proposed “daily current-state snapshot” model.
-
-### 8.1 Current Allocation Pipeline (Today)
-
-**Where it lives**
-
-- Allocation engine orchestration:
-  - [lib/domain/services/allocation/allocation_orchestrator.dart](../lib/domain/services/allocation/allocation_orchestrator.dart)
-- Allocation strategies (compute allocated + excluded):
-  - [lib/domain/services/allocation/proportional_allocator.dart](../lib/domain/services/allocation/proportional_allocator.dart)
-  - [lib/domain/services/allocation/urgency_weighted_allocator.dart](../lib/domain/services/allocation/urgency_weighted_allocator.dart)
-  - [lib/domain/services/allocation/neglect_based_allocator.dart](../lib/domain/services/allocation/neglect_based_allocator.dart)
-- Unified screen data for the allocation section:
-  - [lib/domain/services/screens/section_data_service.dart](../lib/domain/services/screens/section_data_service.dart)
-- Allocation alerts support section (unified screen template):
-  - [lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart](../lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart)
-
-**Key behavior**
-
-- `AllocationOrchestrator.watchAllocation()` recomputes reactively when:
-  - incomplete tasks change (`TaskQuery.incomplete()`)
-  - projects change (pinning)
-  - allocation settings change (`SettingsKey.allocation`)
-- The orchestrator selects a strategy (proportional / urgency-weighted /
-  neglect-based) and returns an `AllocationResult` containing:
-  - `allocatedTasks`: selected tasks (plus pinned tasks added on top)
-  - `excludedTasks`: *everything the strategy did not allocate* (details below)
-- There is **no persisted allocation snapshot** today (everything is computed
-  in-memory from current DB state).
-
-**Important: what “excluded” means today**
-
-The current allocators treat “excluded” as “not allocated”, not “explicitly
-disqualified”. Examples:
-
-- `ProportionalAllocator`:
-  - marks tasks beyond a category’s allocated slots as
-    `ExclusionType.categoryLimitReached`
-  - marks tasks with no matching value category as `ExclusionType.noCategory`
-- `UrgencyWeightedAllocator` / `NeglectBasedAllocator`:
-  - score all eligible tasks, allocate top `maxTasks`, and mark the rest as
-    `ExclusionType.lowPriority`
-
-This means `excludedTasks` can be extremely large when the daily limit is small
-relative to the number of candidate tasks.
-
-**Allocation alerts in the unified screen model**
-
-- The `allocation_alerts` support section currently filters
-  `AllocationResult.excludedTasks` to tasks with `isUrgent == true` and maps
-  them to ad-hoc `AttentionItem`s with a hard-coded rule id/key
-  (`allocation_warning_excluded`).
-- These “attention” items do **not** come from `attention_rules` and do **not**
-  participate in the attention resolution persistence model.
-
-**Legacy alert configuration is currently inert**
-
-- There is a pure `AllocationAlertEvaluator`, but it is invoked with
-  `const AllocationAlertConfig()` (which defaults to `rules: []`), so it produces
-  no alerts. Comments indicate alert settings were migrated to the attention
-  system.
-
-**“Load more”**
-
-- There is a `loadMore(...)` concept in the agenda pipeline, but allocation does
-  not currently have a horizon/pagination concept. Allocation always uses the
-  full stream of incomplete tasks.
-
-### 8.2 Proposed Daily Snapshot Model (Recap)
-
-The proposed plan discussed in chat is:
-
-- Persist one “day snapshot” per scope/date (overwritable/updated during the
-  day).
-- Persist the final selected set (`allocated` items).
-- Persist a bounded set of “excluded” items, where “excluded” is intended to
-  mean **candidate exclusions** (explicitly filtered out by a constraint/rule),
-  not “everything that wasn’t selected because of the daily limit”.
-
-### 8.3 Mismatch to Resolve (What Needs to Change)
-
-Because the current allocator’s `excludedTasks` effectively equals
-`candidates - allocated`, the proposed “candidate exclusions” table cannot be
-fed directly from today’s `excludedTasks` without risking massive row counts.
-
-To align current behavior with the proposed persistence model, you will need at
-least one of:
-
-- **A semantic split in the allocation output**:
-  - “not selected due to ranking/limit” (outside focus) vs
-  - “excluded by rule/constraint” (true candidate exclusions)
-- **Or a persistence rule** that stores only a bounded subset of excluded tasks,
-  such as:
-  - only urgent excluded tasks
-  - only tasks excluded for specific reason codes (e.g., `noCategory`)
-  - only tasks that match DB-configured attention rules (warning-producing)
-
-### 8.4 Implications for Attention Integration
-
-To make allocation warnings data-driven via the attention system:
-
-- The current ad-hoc mapping in the allocation alerts interpreter should be
-  replaced by either:
-  - evaluating allocation-warning rules against the persisted allocation snapshot
-    (recommended if you adopt the snapshot model), or
-  - implementing `_evaluateAllocationRule(...)` in
-    [lib/domain/services/attention/attention_evaluator.dart](../lib/domain/services/attention/attention_evaluator.dart)
-    and having the interpreter delegate to `AttentionEvaluator`.
-
-If you want dismissals/snoozes to work for allocation warnings, you’ll need a
-stable `rule_id` + `entity_id` + `state_hash` for the warning items you produce
-(today’s ad-hoc `AttentionItem`s are not wired into resolution persistence).
+See also: [doc/architecture/ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md) for allocation snapshot behavior and how allocation feeds the `allocationAlerts` section.

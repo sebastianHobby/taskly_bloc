@@ -3,7 +3,7 @@ import 'package:taskly_bloc/core/utils/talker_service.dart';
 import 'package:taskly_bloc/data/drift/drift_database.dart';
 import 'package:taskly_bloc/data/drift/features/shared_enums.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/models/attention/system_attention_rules.dart';
+import 'package:taskly_bloc/domain/attention/system_attention_rules.dart';
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 
 /// Result of a cleanup operation.

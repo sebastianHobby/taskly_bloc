@@ -11,7 +11,8 @@ import 'package:taskly_bloc/domain/models/screens/templates/agenda_section_param
 import 'package:taskly_bloc/domain/models/screens/templates/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/section_vm.dart';
-import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
+import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
+    as attention_repo_v2;
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -255,7 +256,8 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.allocationSettings => BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository: getIt<AttentionRepositoryContract>(),
+          attentionRepository:
+              getIt<attention_repo_v2.AttentionRepositoryContract>(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),
@@ -265,14 +267,16 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.attentionRules => BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository: getIt<AttentionRepositoryContract>(),
+          attentionRepository:
+              getIt<attention_repo_v2.AttentionRepositoryContract>(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),
       SectionTemplateId.focusSetupWizard => BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository: getIt<AttentionRepositoryContract>(),
+          attentionRepository:
+              getIt<attention_repo_v2.AttentionRepositoryContract>(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),

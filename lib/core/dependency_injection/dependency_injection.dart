@@ -54,10 +54,15 @@ import 'package:taskly_bloc/domain/services/screens/trigger_evaluator.dart';
 import 'package:taskly_bloc/domain/services/workflow/workflow_service.dart';
 import 'package:taskly_bloc/domain/services/workflow/problem_detector_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_evaluator.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
-import 'package:taskly_bloc/domain/interfaces/attention_repository_contract.dart';
-import 'package:taskly_bloc/data/repositories/attention_repository.dart';
+import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart'
+    as attention_engine_v2;
+import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
+    as attention_repo_v2;
+import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart'
+    as attention_engine_v2_impl;
+import 'package:taskly_bloc/data/repositories/attention_repository_v2.dart'
+    as attention_repo_v2_impl;
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_service.dart';
@@ -294,19 +299,24 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
     ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
-    // Attention system
-    ..registerLazySingleton<AttentionRepositoryContract>(
-      () => AttentionRepository(db: getIt<AppDatabase>()),
+    // Attention system (v2 bounded context)
+    ..registerLazySingleton<attention_repo_v2.AttentionRepositoryContract>(
+      () => attention_repo_v2_impl.AttentionRepositoryV2(
+        db: getIt<AppDatabase>(),
+      ),
     )
-    ..registerLazySingleton<AttentionEvaluator>(
-      () => AttentionEvaluator(
-        attentionRepository: getIt<AttentionRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
+    ..registerLazySingleton<attention_engine_v2.AttentionEngineContract>(
+      () => attention_engine_v2_impl.AttentionEngine(
+        attentionRepository:
+            getIt<attention_repo_v2.AttentionRepositoryContract>(),
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
+        invalidations:
+            getIt<AttentionTemporalInvalidationService>().invalidations,
       ),
     )
     ..registerLazySingleton<SectionTemplateParamsCodec>(
@@ -373,21 +383,19 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<IssuesSummarySectionInterpreter>(
       () => IssuesSummarySectionInterpreter(
-        attentionEvaluator: getIt<AttentionEvaluator>(),
+        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
       ),
       instanceName: SectionTemplateId.issuesSummary,
     )
     ..registerLazySingleton<AllocationAlertsSectionInterpreter>(
       () => AllocationAlertsSectionInterpreter(
-        attentionEvaluator: getIt<AttentionEvaluator>(),
+        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
       ),
       instanceName: SectionTemplateId.allocationAlerts,
     )
     ..registerLazySingleton<CheckInSummarySectionInterpreter>(
       () => CheckInSummarySectionInterpreter(
-        attentionEvaluator: getIt<AttentionEvaluator>(),
-        attentionTemporalInvalidationService:
-            getIt<AttentionTemporalInvalidationService>(),
+        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
       ),
       instanceName: SectionTemplateId.checkInSummary,
     )

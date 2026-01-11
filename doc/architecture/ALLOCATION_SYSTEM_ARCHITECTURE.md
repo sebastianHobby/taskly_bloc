@@ -110,7 +110,7 @@ A key UX invariant:
 │   - applies ScreenGateConfig (e.g., focus mode required)        │
 │   - runs section template interpreters                          │
 │     - allocation -> SectionDataService.watchAllocation()        │
-│     - allocation_alerts -> AttentionEvaluator                   │
+│     - allocation_alerts -> AttentionEngine                      │
 └───────────────────────┬───────────────────────────────────────┘
                         │
                         v
@@ -359,13 +359,13 @@ My Day includes an `allocation_alerts` section. This is *not* computed by the al
 Instead:
 
 - `AllocationAlertsSectionInterpreter.fetch()` calls:
-  - `AttentionEvaluator.evaluateAllocationAlerts()`
+  - `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
 - Allocation alert rules are evaluated **against the current day’s snapshot**:
   - “Show candidates that match predicate X but are not allocated today.”
 
 Key implementation:
 - [lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart](../lib/domain/services/screens/templates/allocation_alerts_section_interpreter.dart)
-- [lib/domain/services/attention/attention_evaluator.dart](../lib/domain/services/attention/attention_evaluator.dart)
+- [lib/domain/attention/engine/attention_engine.dart](../lib/domain/attention/engine/attention_engine.dart)
 
 Important design note (current state):
 

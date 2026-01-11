@@ -9,14 +9,15 @@ import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/value.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/models/project.dart';
+import 'package:taskly_bloc/domain/models/screens/value_stats.dart' as screens;
 import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/entity_action_service.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data.dart';
 import 'package:taskly_bloc/domain/services/screens/screen_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
-import 'package:taskly_bloc/presentation/features/values/widgets/enhanced_value_card.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/features/screens/bloc/screen_state.dart';
@@ -148,7 +149,7 @@ class _ValueScreenView extends StatefulWidget {
 }
 
 class _ValueScreenViewState extends State<_ValueScreenView> {
-  ValueStats? _valueStats;
+  screens.ValueStats? _valueStats;
   bool _isLoadingStats = true;
 
   Value get value => widget.value;
@@ -191,7 +192,7 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
 
       if (mounted) {
         setState(() {
-          _valueStats = ValueStats(
+          _valueStats = screens.ValueStats(
             targetPercent: 0, // No longer tracking target allocation
             actualPercent: actualPercent,
             taskCount: activity.taskCount,
@@ -318,14 +319,14 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
       ),
       body: Column(
         children: [
-          // Entity header - use EnhancedValueCard for values
+          // Entity header - use ValueView for values
           if (_isLoadingStats)
             const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator()),
             )
           else
-            EnhancedValueCard(
+            ValueView(
               value: value,
               stats: _valueStats,
               onTap: () => _showEditValueSheet(context),
