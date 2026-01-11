@@ -30,6 +30,7 @@ import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.d
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/screens/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Service for fetching data for screen sections.
@@ -44,6 +45,7 @@ class SectionDataService {
     required ValueRepositoryContract valueRepository,
     required AllocationOrchestrator allocationOrchestrator,
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
+    required HomeDayKeyService dayKeyService,
     required AgendaSectionDataService agendaDataService,
     WellbeingRepositoryContract? wellbeingRepository,
     AnalyticsService? analyticsService,
@@ -54,6 +56,7 @@ class SectionDataService {
        _wellbeingRepository = wellbeingRepository,
        _allocationOrchestrator = allocationOrchestrator,
        _allocationSnapshotRepository = allocationSnapshotRepository,
+       _dayKeyService = dayKeyService,
        _agendaDataService = agendaDataService,
        _analyticsService = analyticsService,
        _settingsRepository = settingsRepository;
@@ -64,14 +67,12 @@ class SectionDataService {
   final WellbeingRepositoryContract? _wellbeingRepository;
   final AllocationOrchestrator _allocationOrchestrator;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
+  final HomeDayKeyService _dayKeyService;
   final AgendaSectionDataService _agendaDataService;
   final AnalyticsService? _analyticsService;
   final SettingsRepositoryContract? _settingsRepository;
 
-  DateTime _todayUtcDay() {
-    final nowUtc = DateTime.now().toUtc();
-    return DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
-  }
+  DateTime _todayUtcDay() => _dayKeyService.todayDayKeyUtc();
 
   Future<SectionDataResult> fetchDataList(DataListSectionParams params) async {
     return _fetchDataSection(

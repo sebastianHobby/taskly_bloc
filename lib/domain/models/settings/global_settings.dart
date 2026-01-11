@@ -11,6 +11,15 @@ abstract class GlobalSettings with _$GlobalSettings {
     @Default(AppThemeMode.system) AppThemeMode themeMode,
     @Default(GlobalSettings.defaultSeedArgb) int colorSchemeSeedArgb,
     String? localeCode,
+
+    /// Fixed "home" timezone offset in minutes.
+    ///
+    /// This is intentionally stored as an offset (not device-local timezone) so
+    /// the app's notion of "day" can be stable across travel.
+    ///
+    /// Note: this does not model DST transitions; it's a fixed offset.
+    @Default(GlobalSettings.defaultHomeTimeZoneOffsetMinutes)
+    int homeTimeZoneOffsetMinutes,
     @Default(DateFormatPatterns.defaultPattern) String dateFormatPattern,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
@@ -24,6 +33,9 @@ abstract class GlobalSettings with _$GlobalSettings {
         fallbackArgb: defaultSeedArgb,
       ),
       localeCode: json['locale'] as String?,
+      homeTimeZoneOffsetMinutes:
+          (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
+          defaultHomeTimeZoneOffsetMinutes,
       dateFormatPattern:
           json['dateFormatPattern'] as String? ??
           DateFormatPatterns.defaultPattern,
@@ -31,6 +43,11 @@ abstract class GlobalSettings with _$GlobalSettings {
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
   }
+
+  /// Default home timezone offset minutes (GMT+10).
+  ///
+  /// This matches Australia (AEST) as a sensible product default.
+  static const int defaultHomeTimeZoneOffsetMinutes = 10 * 60;
 
   /// Default seed color (Material Purple).
   static const int defaultSeedArgb = 0xFF6750A4;
@@ -72,6 +89,7 @@ extension GlobalSettingsJson on GlobalSettings {
       colorSchemeSeedArgb,
     ),
     'locale': localeCode,
+    'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
     'dateFormatPattern': dateFormatPattern,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,

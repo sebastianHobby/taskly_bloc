@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
 import 'package:taskly_bloc/core/utils/talker_service.dart';
+import 'dart:async';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
@@ -201,8 +202,11 @@ void main() {
       'fails fast if loading indicator persists (infinite loading regression)',
       (tester) async {
         // Arrange - Stream never emits
-        when(() => screensRepository.watchScreen('test-screen')).thenAnswer(
-          (_) => const Stream.empty(),
+        final controller = StreamController<ScreenWithPreferences>();
+        addTearDown(controller.close);
+
+        when(() => screensRepository.watchScreen(any())).thenAnswer(
+          (_) => controller.stream,
         );
 
         // Act

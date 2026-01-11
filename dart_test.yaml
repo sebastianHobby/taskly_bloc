@@ -36,6 +36,10 @@ tags:
   tasks:
   parity:
 
+  # Local-stack pipeline tests (Supabase + PowerSync + real network)
+  pipeline:
+    timeout: 180s
+
 # Define test name patterns
 presets:
   # Run only fast unit tests (for CI quick checks)

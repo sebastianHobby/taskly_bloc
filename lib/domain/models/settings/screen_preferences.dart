@@ -4,7 +4,7 @@ part 'screen_preferences.freezed.dart';
 
 /// User preferences for a specific screen.
 ///
-/// Stored in `AppSettings.screenPreferences` keyed by screenKey.
+/// Stored directly in `screen_definitions`.
 /// This replaces the `sort_order` and `is_active` columns from the
 /// screen_definitions table for system screens.
 @freezed

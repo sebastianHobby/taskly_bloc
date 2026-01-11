@@ -17,10 +17,7 @@ enum UploadJsonExpectation {
 final Map<String, Map<String, UploadJsonExpectation>>
 uploadJsonExpectationsByTable = {
   'user_profiles': {
-    'global_settings': UploadJsonExpectation.map,
-    'allocation_settings': UploadJsonExpectation.map,
-    'page_sort_preferences': UploadJsonExpectation.map,
-    'page_display_settings': UploadJsonExpectation.map,
+    'settings_overrides': UploadJsonExpectation.map,
   },
   'screen_definitions': {
     'content_config': UploadJsonExpectation.map,

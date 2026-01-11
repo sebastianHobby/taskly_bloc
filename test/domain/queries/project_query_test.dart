@@ -265,7 +265,7 @@ void main() {
             rangeEnd: rangeEnd,
           );
 
-          expect(query.filter.shared, hasLength(2));
+          expect(query.filter.shared, hasLength(1));
 
           // Check for incomplete filter
           final boolPred = query.filter.shared
@@ -273,14 +273,24 @@ void main() {
               .first;
           expect(boolPred.operator, BoolOperator.isFalse);
 
-          // Check for date predicate on start date
-          final datePred = query.filter.shared
+          // Schedule matches when start OR deadline are in range.
+          expect(query.filter.orGroups, hasLength(2));
+
+          final startGroup = query.filter.orGroups[0]
               .whereType<ProjectDatePredicate>()
-              .first;
-          expect(datePred.field, ProjectDateField.startDate);
-          expect(datePred.operator, DateOperator.between);
-          expect(datePred.startDate, rangeStart);
-          expect(datePred.endDate, rangeEnd);
+              .single;
+          expect(startGroup.field, ProjectDateField.startDate);
+          expect(startGroup.operator, DateOperator.between);
+          expect(startGroup.startDate, rangeStart);
+          expect(startGroup.endDate, rangeEnd);
+
+          final deadlineGroup = query.filter.orGroups[1]
+              .whereType<ProjectDatePredicate>()
+              .single;
+          expect(deadlineGroup.field, ProjectDateField.deadlineDate);
+          expect(deadlineGroup.operator, DateOperator.between);
+          expect(deadlineGroup.startDate, rangeStart);
+          expect(deadlineGroup.endDate, rangeEnd);
         });
 
         test('schedule includes occurrence expansion', () {

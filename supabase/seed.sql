@@ -1,0 +1,3 @@
+-- Seed data for local Supabase reset.
+--
+-- This file is intentionally empty by default.

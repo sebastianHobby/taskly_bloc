@@ -15,6 +15,7 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 import 'package:taskly_bloc/domain/services/screens/templates/section_template_interpreter.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 /// Section template for Someday backlog: unscheduled tasks and projects.
 ///
@@ -26,13 +27,16 @@ class SomedayBacklogSectionInterpreter
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
+    required HomeDayKeyService dayKeyService,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _allocationSnapshotRepository = allocationSnapshotRepository;
+       _allocationSnapshotRepository = allocationSnapshotRepository,
+       _dayKeyService = dayKeyService;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
+  final HomeDayKeyService _dayKeyService;
 
   @override
   String get templateId => SectionTemplateId.somedayBacklog;
@@ -45,7 +49,7 @@ class SomedayBacklogSectionInterpreter
     final tasksStream = _taskRepository.watchAll(_taskQuery());
     final projectsStream = _projectRepository.watchAll(_projectQuery());
 
-    final dayUtc = _todayUtcDay();
+    final dayUtc = _dayKeyService.todayDayKeyUtc();
     final snapshotStream = _allocationSnapshotRepository.watchLatestForUtcDay(
       dayUtc,
     );
@@ -70,15 +74,10 @@ class SomedayBacklogSectionInterpreter
     final projects = await _projectRepository.getAll(_projectQuery());
 
     final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
-      _todayUtcDay(),
+      _dayKeyService.todayDayKeyUtc(),
     );
 
     return _buildResult(tasks: tasks, projects: projects, snapshot: snapshot);
-  }
-
-  static DateTime _todayUtcDay() {
-    final nowUtc = DateTime.now().toUtc();
-    return DateTime.utc(nowUtc.year, nowUtc.month, nowUtc.day);
   }
 
   static TaskQuery _taskQuery() {

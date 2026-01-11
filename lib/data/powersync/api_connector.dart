@@ -360,9 +360,7 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 bool isLoggedIn() {
   try {
     return Supabase.instance.client.auth.currentSession?.accessToken != null;
-  } on AssertionError {
-    return false;
-  } on StateError {
+  } on Exception {
     return false;
   }
 }
@@ -371,9 +369,7 @@ bool isLoggedIn() {
 String? getUserId() {
   try {
     return Supabase.instance.client.auth.currentSession?.user.id;
-  } on AssertionError {
-    return null;
-  } on StateError {
+  } on Exception {
     return null;
   }
 }
@@ -416,7 +412,7 @@ Future<PowerSyncDatabase> openDatabase({
     try {
       final results = await database.execute(
         'SELECT id, updated_at, '
-        'substr(global_settings, 1, 80) as global_preview '
+        'substr(settings_overrides, 1, 80) as overrides_preview '
         'FROM user_profiles LIMIT 1',
       );
       if (results.rows.isNotEmpty) {
@@ -425,7 +421,7 @@ Future<PowerSyncDatabase> openDatabase({
           '[POWERSYNC CHECKPOINT] user_profiles state AFTER sync at $syncTime\n'
           '  id=${row[0]}\n'
           '  updated_at=${row[1]}\n'
-          '  global_settings preview: ${row[2]}...',
+          '  settings_overrides preview: ${row[2]}...',
         );
       }
     } catch (e) {

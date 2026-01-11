@@ -830,40 +830,6 @@ class TestData {
     );
   }
 
-  /// Creates NextActionsSettings for next actions configuration.
-  static NextActionsSettings nextActionsSettings({
-    int tasksPerProject = 2,
-    bool includeInboxTasks = true,
-    bool excludeFutureStartDates = true,
-    SortPreferences sortPreferences = const SortPreferences(),
-  }) {
-    return NextActionsSettings(
-      tasksPerProject: tasksPerProject,
-      includeInboxTasks: includeInboxTasks,
-      excludeFutureStartDates: excludeFutureStartDates,
-      sortPreferences: sortPreferences,
-    );
-  }
-
-  /// Creates AppSettings with optional overrides.
-  static AppSettings appSettings({
-    GlobalSettings global = const GlobalSettings(),
-    Map<String, SortPreferences> pageSortPreferences = const {},
-    Map<String, PageDisplaySettings> pageDisplaySettings = const {},
-    AllocationConfig allocation = const AllocationConfig(),
-    SoftGatesSettings? softGates,
-    NextActionsSettings? nextActions,
-  }) {
-    return AppSettings(
-      global: global,
-      pageSortPreferences: pageSortPreferences,
-      pageDisplaySettings: pageDisplaySettings,
-      allocation: allocation,
-      softGates: softGates,
-      nextActions: nextActions,
-    );
-  }
-
   // === Query Predicates ===
 
   /// Creates a TaskBoolPredicate for boolean field filtering.

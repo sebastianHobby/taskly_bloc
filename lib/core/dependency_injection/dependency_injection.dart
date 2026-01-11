@@ -36,6 +36,8 @@ import 'package:taskly_bloc/data/features/notifications/repositories/pending_not
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_orchestrator.dart';
+import 'package:taskly_bloc/domain/services/allocation/allocation_snapshot_auto_refresh_service.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
@@ -169,6 +171,11 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<SettingsRepositoryContract>(
       () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
+    ..registerLazySingleton<HomeDayKeyService>(
+      () => HomeDayKeyService(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+      ),
+    )
     ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
       () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
@@ -195,6 +202,12 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         allocationSnapshotRepository:
             getIt<AllocationSnapshotRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+      ),
+    )
+    ..registerLazySingleton<AllocationSnapshotAutoRefreshService>(
+      () => AllocationSnapshotAutoRefreshService(
+        allocationOrchestrator: getIt<AllocationOrchestrator>(),
       ),
     )
     // Entity action service for unified screen model
@@ -228,6 +241,7 @@ Future<void> setupDependencies() async {
         analyticsService: getIt<AnalyticsService>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
     // Analytics
@@ -276,6 +290,7 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
     ..registerLazySingleton<SectionTemplateParamsCodec>(
@@ -314,6 +329,7 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         allocationSnapshotRepository:
             getIt<AllocationSnapshotRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
       instanceName: SectionTemplateId.somedayNullDates,
     )
@@ -323,6 +339,7 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
         allocationSnapshotRepository:
             getIt<AllocationSnapshotRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
       instanceName: SectionTemplateId.somedayBacklog,
     )

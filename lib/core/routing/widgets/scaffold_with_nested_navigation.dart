@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:taskly_bloc/core/routing/routing.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/core/routing/widgets/navigation_rail_scaffold.dart';
 import 'package:taskly_bloc/core/utils/app_log.dart';
 import 'package:taskly_bloc/core/utils/responsive.dart';
-import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
+import 'package:taskly_bloc/domain/models/screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
+import 'package:taskly_bloc/core/dependency_injection/dependency_injection.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 class ScaffoldWithNestedNavigation extends StatelessWidget {
   const ScaffoldWithNestedNavigation({
@@ -26,67 +31,88 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'navigation',
       'ScaffoldWithNestedNavigation.build(): activeScreenId=$activeScreenId',
     );
-    return BlocBuilder<NavigationBloc, NavigationState>(
-      builder: (context, state) {
-        return switch (state.status) {
-          NavigationStatus.loading => const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          ),
-          NavigationStatus.failure => Scaffold(
-            body: Center(
-              child: Text(state.error ?? 'Failed to load navigation'),
-            ),
-          ),
-          NavigationStatus.ready => LayoutBuilder(
-            builder: (context, constraints) {
-              final destinations = state.destinations;
-              if (destinations.isEmpty) return child;
 
-              if (Breakpoints.isCompact(constraints.maxWidth)) {
-                return ScaffoldWithNavigationBar(
-                  body: child,
-                  destinations: destinations,
-                  activeScreenId: activeScreenId,
-                  bottomVisibleCount: bottomVisibleCount,
-                  onDestinationSelected: (screenId) =>
-                      _goTo(context, destinations, screenId),
-                );
-              }
+    final badgeService = NavigationBadgeService(
+      taskRepository: getIt<TaskRepositoryContract>(),
+      projectRepository: getIt<ProjectRepositoryContract>(),
+    );
+    const iconResolver = NavigationIconResolver();
 
-              return ScaffoldWithNavigationRail(
-                body: child,
-                destinations: destinations,
-                activeScreenId: activeScreenId,
-                onDestinationSelected: (screenId) =>
-                    _goTo(context, destinations, screenId),
-              );
-            },
-          ),
-        };
+    final systemDestinations = SystemScreenDefinitions.navigationScreens
+        .map(
+          (screen) {
+            final iconSet = iconResolver.resolve(
+              screenId: screen.screenKey,
+              iconName: screen.chrome.iconName,
+            );
+            return NavigationDestinationVm(
+              id: screen.id,
+              screenId: screen.screenKey,
+              label: screen.name,
+              icon: iconSet.icon,
+              selectedIcon: iconSet.selectedIcon,
+              route: Routing.screenPath(screen.screenKey),
+              screenSource: screen.screenSource,
+              badgeStream: badgeService.badgeStreamFor(screen),
+              sortOrder: SystemScreenDefinitions.getDefaultSortOrder(
+                screen.screenKey,
+              ),
+            );
+          },
+        )
+        .toList(growable: false);
+
+    final browseScreen = SystemScreenDefinitions.browse;
+    final browseIconSet = iconResolver.resolve(
+      screenId: browseScreen.screenKey,
+      iconName: browseScreen.chrome.iconName,
+    );
+    final browseDestination = NavigationDestinationVm(
+      id: browseScreen.id,
+      screenId: browseScreen.screenKey,
+      label: browseScreen.name,
+      icon: browseIconSet.icon,
+      selectedIcon: browseIconSet.selectedIcon,
+      route: Routing.screenPath(browseScreen.screenKey),
+      screenSource: browseScreen.screenSource,
+      badgeStream: null,
+      sortOrder: 1000,
+    );
+
+    final railDestinations = <NavigationDestinationVm>[
+      ...systemDestinations,
+      browseDestination,
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (Breakpoints.isCompact(constraints.maxWidth)) {
+          return ScaffoldWithNavigationBar(
+            body: child,
+            destinations: systemDestinations,
+            activeScreenId: activeScreenId,
+            bottomVisibleCount: bottomVisibleCount,
+            onDestinationSelected: (screenId) => _goTo(context, screenId),
+          );
+        }
+
+        return ScaffoldWithNavigationRail(
+          body: child,
+          destinations: railDestinations,
+          activeScreenId: activeScreenId,
+          onDestinationSelected: (screenId) => _goTo(context, screenId),
+        );
       },
     );
   }
 
-  void _goTo(
-    BuildContext context,
-    List<NavigationDestinationVm> destinations,
-    String screenId,
-  ) {
+  void _goTo(BuildContext context, String screenId) {
     AppLog.routine('navigation', '_goTo: screenId="$screenId"');
-    final dest = destinations.firstWhere(
-      (d) => d.screenId == screenId,
-      orElse: () => destinations.first,
-    );
 
-    // Debug: log current location before navigating
     final currentLocation = GoRouterState.of(context).uri.toString();
     AppLog.routine('navigation', 'Current location: $currentLocation');
-    AppLog.routine('navigation', 'Navigating to route: ${dest.route}');
-
-    context.go(dest.route);
-
-    // Debug: log location after go() call
-    final newLocation = GoRouterState.of(context).uri.toString();
-    AppLog.routine('navigation', 'After go(): location is: $newLocation');
+    final route = Routing.screenPath(screenId);
+    AppLog.routine('navigation', 'Navigating to route: $route');
+    context.go(route);
   }
 }

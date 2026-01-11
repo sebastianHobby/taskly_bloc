@@ -16,6 +16,7 @@ import 'package:taskly_bloc/domain/models/settings_key.dart';
 import 'package:taskly_bloc/domain/models/task.dart';
 import 'package:taskly_bloc/domain/services/allocation/allocation_history_metrics.dart';
 import 'package:taskly_bloc/domain/services/allocation/urgency_detector.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:uuid/uuid.dart';
 
@@ -32,17 +33,20 @@ class AttentionEvaluator {
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required SettingsRepositoryContract settingsRepository,
+    required HomeDayKeyService dayKeyService,
   }) : _attentionRepository = attentionRepository,
        _allocationSnapshotRepository = allocationSnapshotRepository,
        _taskRepository = taskRepository,
        _projectRepository = projectRepository,
-       _settingsRepository = settingsRepository;
+       _settingsRepository = settingsRepository,
+       _dayKeyService = dayKeyService;
 
   final AttentionRepositoryContract _attentionRepository;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final SettingsRepositoryContract _settingsRepository;
+  final HomeDayKeyService _dayKeyService;
   final _uuid = const Uuid();
 
   // ==========================================================================
@@ -306,7 +310,7 @@ class AttentionEvaluator {
       return const <AttentionItem>[];
     }
 
-    final todayDayUtc = _dateOnlyUtc(DateTime.now().toUtc());
+    final todayDayUtc = _dayKeyService.todayDayKeyUtc();
 
     final scored =
         <
@@ -393,7 +397,7 @@ class AttentionEvaluator {
       return const <AttentionItem>[];
     }
 
-    final todayDayUtc = _dateOnlyUtc(DateTime.now().toUtc());
+    final todayDayUtc = _dayKeyService.todayDayKeyUtc();
 
     final scored = <({Project project, int daysSince, DateTime? lastDay})>[];
     for (final project in projects) {
@@ -461,7 +465,7 @@ class AttentionEvaluator {
   }) async {
     if (!settings.enableNoAllocatableTasksGated) return const [];
 
-    final todayDayUtc = _dateOnlyUtc(DateTime.now().toUtc());
+    final todayDayUtc = _dayKeyService.todayDayKeyUtc();
     final todayIso = todayDayUtc.toIso8601String();
 
     final persisted = allocationConfig.projectHealthReviewSettings;
@@ -779,7 +783,7 @@ class AttentionEvaluator {
     final entityType = _parseEntityType(entityTypeStr);
     if (entityType != AttentionEntityType.task) return [];
 
-    final dayUtc = _dateOnlyUtc(DateTime.now().toUtc());
+    final dayUtc = _dayKeyService.todayDayKeyUtc();
     final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
       dayUtc,
     );

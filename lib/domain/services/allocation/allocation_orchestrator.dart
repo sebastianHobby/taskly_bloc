@@ -18,7 +18,7 @@ import 'package:taskly_bloc/domain/services/allocation/urgency_weighted_allocato
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/interfaces/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/models/allocation/allocation_snapshot.dart';
-import 'package:taskly_bloc/core/utils/date_only.dart';
+import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
@@ -26,7 +26,7 @@ import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 ///
 /// Now uses settings-based allocation configuration instead of separate
 /// database tables. Allocation preferences and value rankings are stored
-/// in AppSettings.
+/// in user profile settings overrides.
 class AllocationOrchestrator {
   AllocationOrchestrator({
     required TaskRepositoryContract taskRepository,
@@ -34,12 +34,14 @@ class AllocationOrchestrator {
     required SettingsRepositoryContract settingsRepository,
     required AnalyticsService analyticsService,
     required ProjectRepositoryContract projectRepository,
+    required HomeDayKeyService dayKeyService,
     AllocationSnapshotRepositoryContract? allocationSnapshotRepository,
   }) : _taskRepository = taskRepository,
        _valueRepository = valueRepository,
        _settingsRepository = settingsRepository,
        _analyticsService = analyticsService,
        _projectRepository = projectRepository,
+       _dayKeyService = dayKeyService,
        _allocationSnapshotRepository = allocationSnapshotRepository;
 
   final TaskRepositoryContract _taskRepository;
@@ -47,6 +49,7 @@ class AllocationOrchestrator {
   final SettingsRepositoryContract _settingsRepository;
   final AnalyticsService _analyticsService;
   final ProjectRepositoryContract _projectRepository;
+  final HomeDayKeyService _dayKeyService;
   final AllocationSnapshotRepositoryContract? _allocationSnapshotRepository;
 
   /// Watch the full allocation result (pinned + allocated tasks)
@@ -63,7 +66,7 @@ class AllocationOrchestrator {
           // IMPORTANT: App code does not filter on `user_id`; RLS + PowerSync buckets
           // handle scoping.
           final repo = _allocationSnapshotRepository;
-          if (repo != null) {
+          if (repo != null && !computed.result.requiresValueSetup) {
             final allocated = computed.result.allocatedTasks
                 .map(
                   (a) => AllocationSnapshotEntryInput(
@@ -107,7 +110,7 @@ class AllocationOrchestrator {
     final projects = combined.$2;
     final allocationConfig = combined.$3;
 
-    final todayUtc = dateOnly(DateTime.now().toUtc());
+    final todayUtc = _dayKeyService.todayDayKeyUtc();
 
     AppLog.routineThrottled(
       'allocation.stream_update',

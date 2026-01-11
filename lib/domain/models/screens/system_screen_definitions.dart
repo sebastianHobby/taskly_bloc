@@ -34,6 +34,26 @@ import 'package:taskly_bloc/domain/services/screens/section_data_result.dart';
 abstract class SystemScreenDefinitions {
   SystemScreenDefinitions._();
 
+  /// Browse screen - navigation hub.
+  ///
+  /// In L4, navigation shows only fixed system screens. Browse provides access
+  /// to the remaining system screens (beyond the compact bottom bar) and
+  /// user-created screens.
+  static final browse = ScreenDefinition(
+    id: 'browse',
+    screenKey: 'browse',
+    name: 'Browse',
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    screenSource: ScreenSource.systemTemplate,
+    sections: const [
+      SectionRef(
+        templateId: SectionTemplateId.browseHub,
+        params: <String, dynamic>{},
+      ),
+    ],
+  );
+
   /// My Day screen - unified Focus view with allocation alerts
   ///
   /// Replaces both Today and Next Actions screens.
@@ -452,10 +472,25 @@ abstract class SystemScreenDefinitions {
     projects,
     statistics,
     settings,
+    browse,
     // Hidden/Sub-screens
     orphanTasks,
     workflows,
     screenManagement,
+  ];
+
+  /// Canonical system screens shown in the main navigation UI.
+  ///
+  /// Order is fixed and cannot be changed by user preferences.
+  static List<ScreenDefinition> get navigationScreens => [
+    myDay,
+    scheduled,
+    someday,
+    journal,
+    values,
+    projects,
+    statistics,
+    settings,
   ];
 
   /// Get a system screen by screenKey.
@@ -476,6 +511,7 @@ abstract class SystemScreenDefinitions {
       'journal' => journal,
       'workflows' => workflows,
       'screen_management' => screenManagement,
+      'browse' => browse,
 
       // Settings screens
       // Legacy entrypoints (allocation/attention settings) route to the

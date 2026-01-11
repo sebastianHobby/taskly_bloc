@@ -23,9 +23,6 @@ sealed class SettingsKey<T> {
   /// Soft gates threshold settings.
   static const softGates = _SingletonKey<SoftGatesSettings>('softGates');
 
-  /// Next actions display settings.
-  static const nextActions = _SingletonKey<NextActionsSettings>('nextActions');
-
   // ─────────────────────────────────────────────────────────────────────────
   // Keyed keys (parameterized by identifier)
   // ─────────────────────────────────────────────────────────────────────────
@@ -41,9 +38,6 @@ sealed class SettingsKey<T> {
   // ─────────────────────────────────────────────────────────────────────────
   // Aggregate keys
   // ─────────────────────────────────────────────────────────────────────────
-
-  /// Full AppSettings (for migration/debugging).
-  static const all = _SingletonKey<AppSettings>('all');
 }
 
 /// A singleton key with no sub-identifier.

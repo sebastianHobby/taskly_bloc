@@ -63,15 +63,16 @@ const schema = Schema([
     Column.text('user_id'),
     Column.integer('is_primary'),
   ]),
-  Table('user_profiles', [
-    Column.text('user_id'),
-    Column.text('global_settings'),
-    Column.text('allocation_settings'),
-    Column.text('page_sort_preferences'),
-    Column.text('page_display_settings'),
-    Column.text('created_at'),
-    Column.text('updated_at'),
-  ]),
+  Table(
+    'user_profiles',
+    [
+      Column.text('user_id'),
+      Column.text('settings_overrides'),
+      Column.text('created_at'),
+      Column.text('updated_at'),
+    ],
+    ignoreEmptyUpdates: true,
+  ),
   Table('screen_definitions', [
     Column.text('user_id'),
     Column.text('screen_key'),

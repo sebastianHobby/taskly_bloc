@@ -20,6 +20,7 @@ class ScreenItemTileRegistry {
     Set<String> focusTaskIds = const {},
     Set<String> focusProjectIds = const {},
     void Function(String taskId, bool? value)? onTaskToggle,
+    void Function(String projectId, bool? value)? onProjectToggle,
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
@@ -38,6 +39,9 @@ class ScreenItemTileRegistry {
         isInFocus: focusProjectIds.contains(project.id),
         taskCount: projectStats?.taskCount,
         completedTaskCount: projectStats?.completedTaskCount,
+        onCheckboxChanged: onProjectToggle == null
+            ? null
+            : (p, val) => onProjectToggle(p.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
       ),
       ScreenItemValue(:final value) => enhanced.EnhancedValueCard.compact(

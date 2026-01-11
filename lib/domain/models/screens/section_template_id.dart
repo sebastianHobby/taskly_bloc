@@ -31,6 +31,9 @@ abstract final class SectionTemplateId {
   static const wellbeingDashboard = 'wellbeing_dashboard';
   static const statisticsDashboard = 'statistics_dashboard';
 
+  // Navigation hub / browse
+  static const browseHub = 'browse_hub';
+
   // Screen-level gates (full-screen)
   static const myDayFocusModeRequired = 'my_day_focus_mode_required';
 }

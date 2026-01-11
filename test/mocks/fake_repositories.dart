@@ -273,11 +273,25 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
 /// Fake settings repository for integration tests.
 class FakeSettingsRepository implements SettingsRepositoryContract {
-  FakeSettingsRepository({AppSettings initial = const AppSettings()})
-    : _current = initial;
+  FakeSettingsRepository({
+    GlobalSettings global = const GlobalSettings(),
+    AllocationConfig allocation = const AllocationConfig(),
+    SoftGatesSettings softGates = const SoftGatesSettings(),
+    Map<String, SortPreferences> pageSort = const <String, SortPreferences>{},
+    Map<String, PageDisplaySettings> pageDisplay =
+        const <String, PageDisplaySettings>{},
+  }) : _global = global,
+       _allocation = allocation,
+       _softGates = softGates,
+       _pageSort = Map<String, SortPreferences>.from(pageSort),
+       _pageDisplay = Map<String, PageDisplaySettings>.from(pageDisplay);
 
-  final _controller = StreamController<AppSettings>.broadcast();
-  AppSettings _current;
+  final _controller = StreamController<void>.broadcast();
+  GlobalSettings _global;
+  AllocationConfig _allocation;
+  SoftGatesSettings _softGates;
+  final Map<String, SortPreferences> _pageSort;
+  final Map<String, PageDisplaySettings> _pageDisplay;
 
   @override
   Stream<T> watch<T>(SettingsKey<T> key) async* {
@@ -290,17 +304,15 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
   @override
   Future<void> save<T>(SettingsKey<T> key, T value) async {
-    _current = _applyValue(key, value);
-    _controller.add(_current);
+    _applyValue(key, value);
+    _controller.add(null);
   }
 
   T _extractValue<T>(SettingsKey<T> key) {
     return switch (key) {
-      SettingsKey.global => _current.global as T,
-      SettingsKey.allocation => _current.allocation as T,
-      SettingsKey.softGates => _current.softGates as T,
-      SettingsKey.nextActions => _current.nextActions as T,
-      SettingsKey.all => _current as T,
+      SettingsKey.global => _global as T,
+      SettingsKey.allocation => _allocation as T,
+      SettingsKey.softGates => _softGates as T,
       _ => _extractKeyedValue(key),
     };
   }
@@ -311,45 +323,45 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     final subKey = keyedKey.subKey as String;
 
     return switch (name) {
-      'pageSort' => _current.sortFor(subKey) as T,
-      'pageDisplay' => _current.displaySettingsFor(subKey) as T,
+      'pageSort' => _pageSort[subKey] as T,
+      'pageDisplay' =>
+        (_pageDisplay[subKey] ?? const PageDisplaySettings()) as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
 
-  AppSettings _applyValue<T>(SettingsKey<T> key, T value) {
-    return switch (key) {
-      SettingsKey.global => _current.updateGlobal(value as GlobalSettings),
-      SettingsKey.allocation => _current.updateAllocation(
-        value as AllocationConfig,
-      ),
-      SettingsKey.softGates => _current.updateSoftGates(
-        value as SoftGatesSettings,
-      ),
-      SettingsKey.nextActions => _current.updateNextActions(
-        value as NextActionsSettings,
-      ),
-      SettingsKey.all => value as AppSettings,
-      _ => _applyKeyedValue(key, value),
-    };
-  }
+  void _applyValue<T>(SettingsKey<T> key, T value) {
+    if (identical(key, SettingsKey.global)) {
+      _global = value as GlobalSettings;
+      return;
+    }
+    if (identical(key, SettingsKey.allocation)) {
+      _allocation = value as AllocationConfig;
+      return;
+    }
+    if (identical(key, SettingsKey.softGates)) {
+      _softGates = value as SoftGatesSettings;
+      return;
+    }
 
-  AppSettings _applyKeyedValue<T>(SettingsKey<T> key, T value) {
     final keyedKey = key as dynamic;
     final name = keyedKey.name as String;
     final subKey = keyedKey.subKey as String;
-
-    return switch (name) {
-      'pageSort' => _current.upsertPageSort(
-        pageKey: subKey,
-        preferences: value as SortPreferences,
-      ),
-      'pageDisplay' => _current.upsertPageDisplaySettings(
-        pageKey: subKey,
-        settings: value as PageDisplaySettings,
-      ),
-      _ => throw ArgumentError('Unknown keyed key: $name'),
-    };
+    switch (name) {
+      case 'pageSort':
+        final prefs = value as SortPreferences?;
+        if (prefs == null) {
+          _pageSort.remove(subKey);
+        } else {
+          _pageSort[subKey] = prefs;
+        }
+        return;
+      case 'pageDisplay':
+        _pageDisplay[subKey] = value as PageDisplaySettings;
+        return;
+      default:
+        throw ArgumentError('Unknown keyed key: $name');
+    }
   }
 
   void dispose() {

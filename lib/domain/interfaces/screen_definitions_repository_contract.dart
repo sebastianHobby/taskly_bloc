@@ -12,7 +12,7 @@ import 'package:taskly_bloc/domain/models/settings/screen_preferences.dart';
 /// 2. **Custom screens**: User-created screens stored in the database.
 ///
 /// User preferences (sortOrder, isActive) for ALL screens are stored in
-/// `AppSettings.screenPreferences` keyed by screenKey.
+/// Preferences are stored directly in `screen_definitions`.
 ///
 /// ## Why System Screens Are Code-Based
 ///
@@ -62,7 +62,7 @@ abstract class ScreenDefinitionsRepositoryContract {
 
   /// Update preferences for any screen (system or custom).
   ///
-  /// Preferences are stored in AppSettings.screenPreferences.
+  /// Preferences are stored directly in `screen_definitions`.
   Future<void> updateScreenPreferences(
     String screenKey,
     ScreenPreferences preferences,
