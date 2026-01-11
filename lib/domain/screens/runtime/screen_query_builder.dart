@@ -9,7 +9,7 @@ import 'package:taskly_bloc/domain/screens/language/models/section_template_id.d
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
-import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart'
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart'
     as sort_preferences;
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';

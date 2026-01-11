@@ -177,7 +177,6 @@ class AttentionEngine implements AttentionEngineContract {
         projects: projects,
         snapshot: snapshot,
       ),
-      AttentionRuleType.workflowStep => const <AttentionItem>[],
     };
   }
 

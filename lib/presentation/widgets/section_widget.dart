@@ -34,7 +34,6 @@ import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_b
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.dart';
-import 'package:taskly_bloc/presentation/screens/view/screen_management_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
@@ -235,7 +234,6 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.statisticsDashboard ||
       SectionTemplateId.journalTimeline ||
       SectionTemplateId.workflowList ||
-      SectionTemplateId.screenManagement ||
       SectionTemplateId.trackerManagement ||
       SectionTemplateId.wellbeingDashboard ||
       SectionTemplateId.allocationSettings ||
@@ -280,9 +278,6 @@ class SectionWidget extends StatelessWidget {
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
-      ),
-      SectionTemplateId.screenManagement => ScreenManagementPage(
-        userId: getIt<AuthRepositoryContract>().currentUser!.id,
       ),
       SectionTemplateId.workflowList => WorkflowListPage(
         userId: getIt<AuthRepositoryContract>().currentUser!.id,

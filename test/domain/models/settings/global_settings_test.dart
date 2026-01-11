@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:taskly_bloc/domain/settings/model/app_theme_mode.dart';
-import 'package:taskly_bloc/domain/settings/model/date_format_patterns.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
+import 'package:taskly_bloc/presentation/shared/utils/date_format_patterns.dart';
 import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 
 void main() {

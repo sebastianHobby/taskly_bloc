@@ -80,28 +80,96 @@ Key files:
 ### 3.1 Component Diagram
 
 ```text
-Presentation
-  - AttentionRulesSettingsPage (toggle rules)
-  - Support section renderers + AttentionItemTile
-        |
-        v
-Screen Template Interpreters
-  - IssuesSummarySectionInterpreter
-  - CheckInSummarySectionInterpreter
-  - AllocationAlertsSectionInterpreter
-        |
-        v
-Domain Service: AttentionEngine
-  - watches active rules + domain data
-  - evaluates rules into AttentionItems
-  - applies suppression via runtime state + resolutions
-        |
-        +--> AttentionRepository (rules + resolutions + runtime state)
-        |         |
-        |         v
-        |     Drift / PowerSync DB
-        |
-        +--> Task/Project repositories (data to evaluate rules on)
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              PRESENTATION LAYER                                  │
+│  ┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────────┐  │
+│  │AttentionRulesSettings│  │ AttentionItemTile  │  │ SeverityIcon / Widgets │  │
+│  │        Page         │  │                     │  │                         │  │
+│  └──────────┬──────────┘  └──────────┬──────────┘  └───────────┬─────────────┘  │
+└─────────────│───────────────────────│──────────────────────────│────────────────┘
+              │                        │                          │
+              │ toggle active          │ render items             │
+              v                        v                          v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          SECTION INTERPRETERS                                    │
+│  ┌─────────────────────┐  ┌──────────────────────┐  ┌─────────────────────────┐ │
+│  │IssuesSummarySection │  │CheckInSummarySection │  │AllocationAlertsSection  │ │
+│  │    Interpreter      │  │    Interpreter       │  │    Interpreter          │ │
+│  │                     │  │                      │  │                         │ │
+│  │ domains: {'issues'} │  │ domains: {'reviews'} │  │ domains: {'allocation'} │ │
+│  └──────────┬──────────┘  └──────────┬───────────┘  └───────────┬─────────────┘ │
+└─────────────│───────────────────────│───────────────────────────│───────────────┘
+              │                        │                          │
+              │ AttentionQuery         │ AttentionQuery           │ AttentionQuery
+              v                        v                          v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            ATTENTION ENGINE                                      │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐ │
+│  │                      watch(AttentionQuery query)                           │ │
+│  │                                                                            │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐  │ │
+│  │  │               CombineLatest4 (RxDart)                               │  │ │
+│  │  │  ┌─────────────┐ ┌─────────┐ ┌──────────┐ ┌──────────────────────┐ │  │ │
+│  │  │  │ rules$     │ │ tasks$ │ │ projects$│ │ snapshotOrPulse$     │ │  │ │
+│  │  │  │ (filtered) │ │        │ │          │ │ (allocation+temporal)│ │  │ │
+│  │  │  └─────────────┘ └─────────┘ └──────────┘ └──────────────────────┘ │  │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘  │ │
+│  │                                    │                                       │ │
+│  │                                    v                                       │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐  │ │
+│  │  │                     _evaluate(query, inputs)                        │  │ │
+│  │  │                                                                     │  │ │
+│  │  │  switch (rule.ruleType) {                                          │  │ │
+│  │  │    problem           → _evaluateProblemRule()                      │  │ │
+│  │  │    review            → _evaluateReviewRule()                       │  │ │
+│  │  │    allocationWarning → _evaluateAllocationRule()                   │  │ │
+│  │  │    workflowStep      → [] (not implemented)                        │  │ │
+│  │  │  }                                                                  │  │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘  │ │
+│  │                                    │                                       │ │
+│  │                                    v                                       │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐  │ │
+│  │  │                   SUPPRESSION LOGIC (_isSuppressed)                 │  │ │
+│  │  │                                                                     │  │ │
+│  │  │  • Check runtime state (nextEvaluateAfter, dismissedStateHash)     │  │ │
+│  │  │  • Fallback to resolution records (dismissed/snoozed)              │  │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘  │ │
+│  └────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+└────────────────────────────────────────────────────────────────────────────────┬─┘
+                                                                                 │
+         ┌───────────────────────────────────────┬────────────────────────────────┘
+         │                                       │
+         v                                       v
+┌─────────────────────────────────┐    ┌─────────────────────────────────────────┐
+│   AttentionRepository           │    │   AttentionTemporalInvalidationService  │
+│                                 │    │                                         │
+│  • watchActiveRules()           │    │   invalidations$ ◄─── TemporalTrigger   │
+│  • getLatestResolution()        │    │                       Service           │
+│  • watchRuntimeStateForRule()   │    │                          │              │
+│  • upsertRuntimeState()         │    │   Emits pulses on:       │              │
+│                                 │    │   • HomeDayBoundaryCrossed              │
+└────────────┬────────────────────┘    │   • AppResumed                          │
+             │                         └─────────────────────────────────────────┘
+             v
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         DRIFT / POWERSYNC DATABASE                               │
+│  ┌─────────────────────────┐  ┌────────────────────────┐  ┌──────────────────┐  │
+│  │    attention_rules      │  │ attention_resolutions │  │attention_rule_   │  │
+│  │                         │  │                        │  │runtime_state     │  │
+│  │ • id                    │  │ • id                   │  │                  │  │
+│  │ • rule_key              │  │ • rule_id              │  │ • rule_id        │  │
+│  │ • domain                │  │ • entity_id            │  │ • entity_type    │  │
+│  │ • category              │  │ • entity_type          │  │ • entity_id      │  │
+│  │ • rule_type             │  │ • resolved_at          │  │ • state_hash     │  │
+│  │ • trigger_type          │  │ • resolution_action    │  │ • dismissed_hash │  │
+│  │ • trigger_config        │  │ • action_details       │  │ • next_evaluate_ │  │
+│  │ • entity_selector       │  │                        │  │   after          │  │
+│  │ • severity              │  └────────────────────────┘  └──────────────────┘  │
+│  │ • active                │                                                    │
+│  └─────────────────────────┘                                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 End-to-End Flow (Issues Summary)
@@ -394,6 +462,58 @@ These are observed from the current code structure:
   yield no items).
 - **No background scheduler**: `triggerType`/`triggerConfig` remain in-app
   metadata; evaluation updates while the app is running.
+
+---
+
+## 8) Scheduled vs Realtime Rules — Implementation Details
+
+### 8.1 Current Behavior
+
+The `AttentionTriggerType` enum defines two values:
+
+| Trigger Type | Used By | Semantic Intent |
+|--------------|---------|-----------------|
+| `realtime` | `problemTaskOverdue`, `problemJournalOverdue`, allocation warnings | Detect immediately when condition is true |
+| `scheduled` | `problemTaskStale`, `problemProjectIdle`, all `review*` rules | Detect based on time thresholds or periodic cadence |
+
+**Important**: In the current implementation, `triggerType` is **metadata only**.
+Both realtime and scheduled rules evaluate with the same cadence:
+
+1. When **domain data streams emit** (tasks/projects/allocations change)
+2. When **temporal invalidation pulses** fire (app resume, day boundary)
+
+### 8.2 How Each Rule Type Evaluates
+
+```text
+AttentionEngine._evaluateRule(rule, ...)
+    │
+    └── switch (rule.ruleType) {
+            problem           → _evaluateProblemRule()
+            review            → _evaluateReviewRule()
+            allocationWarning → _evaluateAllocationRule()
+            workflowStep      → [] (not implemented)
+        }
+```
+
+The engine dispatches by `ruleType`, not `triggerType`. The `triggerConfig` is
+used within specific evaluators:
+
+- **Problem rules**: Use `triggerConfig.threshold_days` or `threshold_hours` to
+  determine staleness/overdue thresholds
+- **Review rules**: Use `triggerConfig.frequency_days` to compute due date based
+  on last resolution
+
+### 8.3 Future: True Scheduled Behavior
+
+A true scheduled implementation would require:
+
+1. **Background scheduling** (local notifications, WorkManager, or server push)
+2. **Per-rule next-evaluation-time tracking** in `attention_rule_runtime_state`
+3. **Engine awareness of `triggerType`** to skip expensive predicates until due
+
+Current state: all rules are effectively **realtime-reactive** while the app is
+open, with temporal invalidation pulses providing day-boundary and app-resume
+refresh.
 
 ---
 

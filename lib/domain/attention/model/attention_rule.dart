@@ -11,9 +11,6 @@ enum AttentionRuleType {
   @JsonValue('review')
   review,
 
-  @JsonValue('workflowStep')
-  workflowStep,
-
   @JsonValue('allocationWarning')
   allocationWarning,
 }

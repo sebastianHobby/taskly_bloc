@@ -7,7 +7,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 
 /// Repository for managing application settings via [SettingsKey].
 ///

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
@@ -95,6 +96,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     try {
       final screenWithPrefs = await _screenRepository
           .watchScreen(event.screenId)
+          .cast<ScreenWithPreferences?>()
           .firstWhere((_) => true, orElse: () => null);
 
       if (screenWithPrefs == null) {

@@ -6,9 +6,9 @@ library;
 
 export 'model/alert_severity.dart';
 export '../allocation/model/allocation_config.dart';
-export 'model/app_theme_mode.dart';
-export 'model/date_format_patterns.dart';
+export '../../presentation/theme/app_theme_mode.dart';
+export '../../presentation/shared/utils/date_format_patterns.dart';
 export 'model/global_settings.dart';
-export 'model/page_display_settings.dart';
-export 'model/screen_preferences.dart';
+export '../../presentation/shared/models/page_display_settings.dart';
+export '../../presentation/shared/models/screen_preferences.dart';
 export 'model/soft_gates_settings.dart';

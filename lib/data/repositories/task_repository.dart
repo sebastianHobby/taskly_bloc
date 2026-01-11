@@ -3,7 +3,7 @@ import 'package:taskly_bloc/core/logging/app_log.dart';
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/preferences/model/sort_preferences.dart';
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';

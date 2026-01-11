@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/settings/model/app_theme_mode.dart';
+import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 

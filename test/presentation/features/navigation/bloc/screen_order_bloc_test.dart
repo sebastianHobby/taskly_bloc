@@ -2,7 +2,7 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/settings/model/screen_preferences.dart';
+import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/screen_order_bloc.dart';
 
 import '../../../../helpers/bloc_test_patterns.dart';

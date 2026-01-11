@@ -75,10 +75,6 @@ class NavigationIconResolver {
         icon: Icons.account_tree_outlined,
         selectedIcon: Icons.account_tree,
       ),
-      'screen_management' || 'screen-management' || 'screens' => (
-        icon: Icons.dashboard_customize_outlined,
-        selectedIcon: Icons.dashboard_customize,
-      ),
       'settings' => (
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,

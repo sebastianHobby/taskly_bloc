@@ -361,9 +361,16 @@ class _ProjectScreenView extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: ProjectNextTaskCard(
                   task: nextTask,
-                  onStartTap: () => _pinToFocus(context, nextTask),
-                  onTaskTap: () =>
-                      Routing.toEntity(context, EntityType.task, nextTask!.id),
+                  onStartTap: () {
+                    final task = nextTask;
+                    if (task == null) return;
+                    _pinToFocus(context, task);
+                  },
+                  onTaskTap: () {
+                    final task = nextTask;
+                    if (task == null) return;
+                    Routing.toEntity(context, EntityType.task, task.id);
+                  },
                 ),
               ),
             ),

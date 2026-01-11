@@ -11,8 +11,8 @@ import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 /// repo.watch(SettingsKey.global).listen((settings) => ...);
 ///
 /// // Load/save page sort preferences
-/// final sort = await repo.load(SettingsKey.pageSort(PageKey.inbox));
-/// await repo.save(SettingsKey.pageSort(PageKey.inbox), newSort);
+/// final sort = await repo.load(SettingsKey.pageSort(PageKey.tasksInbox));
+/// await repo.save(SettingsKey.pageSort(PageKey.tasksInbox), newSort);
 /// ```
 abstract class SettingsRepositoryContract {
   /// Watch a setting for changes.
