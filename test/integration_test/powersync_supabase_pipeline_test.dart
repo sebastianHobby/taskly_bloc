@@ -5,7 +5,7 @@
 /// - PowerSync started via `tool/e2e/Start-LocalE2EStack.ps1`
 ///
 /// Run (example):
-/// `flutter test test/integration_test/powersync_supabase_pipeline_test.dart --dart-define-from-file=dart_defines.local.json`
+/// `flutter test test/integration_test/powersync_supabase_pipeline_test.dart --dart-define-from-file=dart_defines.local.json --dart-define=RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS=true`
 library;
 
 import 'dart:async';
@@ -45,7 +45,11 @@ import 'e2e_test_helpers.dart';
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 const _powersyncUrl = String.fromEnvironment('POWERSYNC_URL');
+const _runPipelineTests = bool.fromEnvironment(
+  'RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS',
+);
 final bool _canRunAgainstLocalStack =
+    _runPipelineTests &&
     _supabaseUrl.trim().isNotEmpty &&
     _supabaseAnonKey.trim().isNotEmpty &&
     _powersyncUrl.trim().isNotEmpty;
