@@ -29,65 +29,65 @@ A key UX invariant:
 
 ### Domain model (settings + outputs)
 - Settings:
-  - [lib/domain/allocation/model/allocation_config.dart](../lib/domain/allocation/model/allocation_config.dart)
-  - [lib/domain/models/settings/focus_mode.dart](../lib/domain/models/settings/focus_mode.dart)
-  - [lib/domain/models/settings_key.dart](../lib/domain/models/settings_key.dart)
+  - [lib/domain/allocation/model/allocation_config.dart](../../lib/domain/allocation/model/allocation_config.dart)
+  - [lib/domain/allocation/model/focus_mode.dart](../../lib/domain/allocation/model/focus_mode.dart)
+  - [lib/domain/models/settings_key.dart](../../lib/domain/models/settings_key.dart)
 - Allocation output model:
-  - [lib/domain/models/priority/allocation_result.dart](../lib/domain/models/priority/allocation_result.dart)
+  - [lib/domain/allocation/model/allocation_result.dart](../../lib/domain/allocation/model/allocation_result.dart)
 
 ### Domain services (allocation engine)
 - Orchestrator:
-  - [lib/domain/allocation/engine/allocation_orchestrator.dart](../lib/domain/allocation/engine/allocation_orchestrator.dart)
+  - [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
 - Snapshot refresh coordinator (unified triggers):
-  - [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
+  - [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
 - Strategy implementations (selection is config-driven):
-  - [lib/domain/allocation/engine/proportional_allocator.dart](../lib/domain/allocation/engine/proportional_allocator.dart)
-  - [lib/domain/allocation/engine/urgency_weighted_allocator.dart](../lib/domain/allocation/engine/urgency_weighted_allocator.dart)
-  - [lib/domain/allocation/engine/neglect_based_allocator.dart](../lib/domain/allocation/engine/neglect_based_allocator.dart)
-  - [lib/domain/allocation/engine/urgency_detector.dart](../lib/domain/allocation/engine/urgency_detector.dart)
+  - [lib/domain/allocation/engine/proportional_allocator.dart](../../lib/domain/allocation/engine/proportional_allocator.dart)
+  - [lib/domain/allocation/engine/urgency_weighted_allocator.dart](../../lib/domain/allocation/engine/urgency_weighted_allocator.dart)
+  - [lib/domain/allocation/engine/neglect_based_allocator.dart](../../lib/domain/allocation/engine/neglect_based_allocator.dart)
+  - [lib/domain/allocation/engine/urgency_detector.dart](../../lib/domain/allocation/engine/urgency_detector.dart)
 
 ### Time + lifecycle (day boundary triggers)
 - Home day-key computation:
-  - [lib/domain/services/time/home_day_key_service.dart](../lib/domain/services/time/home_day_key_service.dart)
+  - [lib/domain/services/time/home_day_key_service.dart](../../lib/domain/services/time/home_day_key_service.dart)
 - Lifecycle events (resume/pause):
-  - [lib/domain/services/time/app_lifecycle_service.dart](../lib/domain/services/time/app_lifecycle_service.dart)
+  - [lib/domain/services/time/app_lifecycle_service.dart](../../lib/domain/services/time/app_lifecycle_service.dart)
 - Central time-based triggers (timers, day rollover):
-  - [lib/domain/services/time/temporal_trigger_service.dart](../lib/domain/services/time/temporal_trigger_service.dart)
+  - [lib/domain/services/time/temporal_trigger_service.dart](../../lib/domain/services/time/temporal_trigger_service.dart)
 
 ### Persistence (daily snapshots)
 - Contract + domain models:
-  - [lib/domain/interfaces/allocation_snapshot_repository_contract.dart](../lib/domain/interfaces/allocation_snapshot_repository_contract.dart)
-  - [lib/domain/models/allocation/allocation_snapshot.dart](../lib/domain/models/allocation/allocation_snapshot.dart)
+  - [lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart](../../lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart)
+  - [lib/domain/allocation/model/allocation_snapshot.dart](../../lib/domain/allocation/model/allocation_snapshot.dart)
 - Drift repository implementation:
-  - [lib/data/repositories/allocation_snapshot_repository.dart](../lib/data/repositories/allocation_snapshot_repository.dart)
+  - [lib/data/allocation/repositories/allocation_snapshot_repository.dart](../../lib/data/allocation/repositories/allocation_snapshot_repository.dart)
 
 ### Unified screen integration (templates + gating)
 - Section template IDs:
-  - [lib/domain/screens/language/models/section_template_id.dart](../lib/domain/screens/language/models/section_template_id.dart)
+  - [lib/domain/screens/language/models/section_template_id.dart](../../lib/domain/screens/language/models/section_template_id.dart)
 - Section params:
-  - [lib/domain/screens/templates/params/allocation_section_params.dart](../lib/domain/screens/templates/params/allocation_section_params.dart)
-  - [lib/domain/screens/templates/params/allocation_alerts_section_params.dart](../lib/domain/screens/templates/params/allocation_alerts_section_params.dart)
+  - [lib/domain/screens/templates/params/allocation_section_params.dart](../../lib/domain/screens/templates/params/allocation_section_params.dart)
+  - [lib/domain/screens/templates/params/allocation_alerts_section_params.dart](../../lib/domain/screens/templates/params/allocation_alerts_section_params.dart)
 - Section interpreters:
-  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
-  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
 - â€œData plumbingâ€ for templates:
-  - [lib/domain/screens/runtime/section_data_service.dart](../lib/domain/screens/runtime/section_data_service.dart)
-  - [lib/domain/screens/runtime/section_data_result.dart](../lib/domain/screens/runtime/section_data_result.dart)
+  - [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
+  - [lib/domain/screens/runtime/section_data_result.dart](../../lib/domain/screens/runtime/section_data_result.dart)
 - Screen gating:
-  - [lib/domain/screens/language/models/screen_gate_config.dart](../lib/domain/screens/language/models/screen_gate_config.dart)
-  - [lib/domain/screens/runtime/screen_data_interpreter.dart](../lib/domain/screens/runtime/screen_data_interpreter.dart)
+  - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
+  - [lib/domain/screens/runtime/screen_data_interpreter.dart](../../lib/domain/screens/runtime/screen_data_interpreter.dart)
 
 ### System screen definition (My Day)
-- [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
 
 ### Presentation (My Day gate + allocation rendering + focus setup)
 - Gate page shown when focus mode is not selected:
-  - [lib/presentation/features/screens/view/my_day_focus_mode_required_page.dart](../lib/presentation/features/screens/view/my_day_focus_mode_required_page.dart)
+  - [lib/presentation/screens/view/my_day_focus_mode_required_page.dart](../../lib/presentation/screens/view/my_day_focus_mode_required_page.dart)
 - Allocation section renderer:
-  - [lib/presentation/features/screens/renderers/allocation_section_renderer.dart](../lib/presentation/features/screens/renderers/allocation_section_renderer.dart)
+  - [lib/presentation/screens/templates/renderers/allocation_section_renderer.dart](../../lib/presentation/screens/templates/renderers/allocation_section_renderer.dart)
 - Focus Setup wizard (select focus mode + save allocation config):
-  - [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
-  - [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
+  - [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
+  - [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
 ---
 
@@ -150,9 +150,9 @@ A key UX invariant:
 My Day is a **system screen** with a **screen-level gate**.
 
 - Definition: `SystemScreenDefinitions.myDay`
-  - [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+  - [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
 - Gate criteria: `allocationFocusModeNotSelected`
-  - [lib/domain/screens/language/models/screen_gate_config.dart](../lib/domain/screens/language/models/screen_gate_config.dart)
+  - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
 
 **Reactive gating logic** (domain-side):
 
@@ -163,7 +163,7 @@ My Day is a **system screen** with a **screen-level gate**.
   - `SectionTemplateId.myDayFocusModeRequired`.
 
 See gate evaluation:
-- [lib/domain/screens/runtime/screen_data_interpreter.dart](../lib/domain/screens/runtime/screen_data_interpreter.dart)
+- [lib/domain/screens/runtime/screen_data_interpreter.dart](../../lib/domain/screens/runtime/screen_data_interpreter.dart)
 
 **What the user experiences**:
 
@@ -187,10 +187,10 @@ See gate evaluation:
 ```
 
 Key save behavior:
-- [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
+- [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
 Key post-save â€œrefreshâ€ call (requests an immediate snapshot refresh):
-- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
+- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
 
 ---
 
@@ -199,9 +199,9 @@ Key post-save â€œrefreshâ€ call (requests an immediate snapshot refresh
 The `allocation` template is interpreted by `AllocationSectionInterpreter`, which delegates to `SectionDataService`.
 
 - Interpreter:
-  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
+  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
 - Data service:
-  - [lib/domain/screens/runtime/section_data_service.dart](../lib/domain/screens/runtime/section_data_service.dart)
+  - [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
 
 **Runtime sequence (watch path):**
 
@@ -245,7 +245,7 @@ The `allocation` template is interpreted by `AllocationSectionInterpreter`, whic
 Allocation snapshots are **daily**, keyed by **UTC day**, and are **allocated-membership only**.
 
 - Domain contract:
-  - [lib/domain/interfaces/allocation_snapshot_repository_contract.dart](../lib/domain/interfaces/allocation_snapshot_repository_contract.dart)
+  - [lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart](../../lib/domain/allocation/contracts/allocation_snapshot_repository_contract.dart)
 
 **Who writes snapshots?**
 
@@ -257,7 +257,7 @@ Allocation snapshots are **daily**, keyed by **UTC day**, and are **allocated-me
 - The Drift implementation checks set equality before inserting a new version.
 
 Repository implementation:
-- [lib/data/repositories/allocation_snapshot_repository.dart](../lib/data/repositories/allocation_snapshot_repository.dart)
+- [lib/data/allocation/repositories/allocation_snapshot_repository.dart](../../lib/data/allocation/repositories/allocation_snapshot_repository.dart)
 
 **Mid-day stability rules (membership locking):**
 
@@ -267,7 +267,7 @@ The orchestrator includes a stabilization step:
 - A â€œtop-upâ€ is only allowed if the day was generated with an initial shortage (candidate pool < cap).
 
 Implementation details:
-- [lib/domain/allocation/engine/allocation_orchestrator.dart](../lib/domain/allocation/engine/allocation_orchestrator.dart)
+- [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
 
 ---
 
@@ -305,7 +305,7 @@ Strategy is chosen from config (feature flags), currently:
 - Otherwise proportional allocation
 
 See:
-- [lib/domain/allocation/engine/allocation_orchestrator.dart](../lib/domain/allocation/engine/allocation_orchestrator.dart)
+- [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
 
 4) **Regular allocation**
 
@@ -331,7 +331,7 @@ Focus mode is stored in `AllocationConfig`:
 - `focusMode`: which preset is active
 
 Definition:
-- [lib/domain/models/settings/focus_mode.dart](../lib/domain/models/settings/focus_mode.dart)
+- [lib/domain/allocation/model/focus_mode.dart](../../lib/domain/allocation/model/focus_mode.dart)
 
 ### 6.1 Presets vs personalized
 
@@ -342,7 +342,7 @@ In the Focus Setup wizard:
 - `personalized` keeps existing persisted strategy settings and lets the user adjust.
 
 Save behavior:
-- [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
+- [lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart](../../lib/presentation/features/focus_setup/bloc/focus_setup_bloc.dart)
 
 ### 6.2 Propagation to UI
 
@@ -364,8 +364,9 @@ Instead:
   - â€œShow candidates that match predicate X but are not allocated today.â€
 
 Key implementation:
-- [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
-- [lib/domain/attention/engine/attention_engine.dart](../lib/domain/attention/engine/attention_engine.dart)
+Key implementation:
+- [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
+- [lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
 
 Important design note (current state):
 
@@ -396,7 +397,7 @@ After saving focus-mode settings, the wizard triggers:
 This forces generation/persistence of a fresh snapshot so My Day updates immediately.
 
 See:
-- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
+- [lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart](../../lib/presentation/features/focus_setup/view/focus_setup_wizard_page.dart)
 
 ### 8.3 Centralized snapshot refresh triggers (coordinator)
 
@@ -414,7 +415,7 @@ Refreshes are gated to avoid unnecessary churn:
 - Requires at least one incomplete task
 
 See:
-- [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
+- [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
 
 ### 8.4 What changes can trigger recomputation (when orchestrator is used)
 
@@ -425,7 +426,7 @@ When the orchestrator is used (snapshot missing / first-run), it recomputes when
 - allocation settings stream (daily limit, focus mode, strategy flags)
 
 See stream combination:
-- [lib/domain/allocation/engine/allocation_orchestrator.dart](../lib/domain/allocation/engine/allocation_orchestrator.dart)
+- [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
 
 ---
 
