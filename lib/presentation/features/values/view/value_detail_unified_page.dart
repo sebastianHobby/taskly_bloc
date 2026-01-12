@@ -17,8 +17,8 @@ import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
@@ -28,7 +28,6 @@ import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 
 /// Unified value detail page using the screen model.
 ///
@@ -214,22 +213,17 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
   }
 
   void _showEditValueSheet(BuildContext context) {
+    final launcher = EditorLauncher.fromGetIt();
     unawaited(
-      showDetailModal<void>(
-        context: context,
-        childBuilder: (modalSheetContext) => SafeArea(
-          top: false,
-          child: ValueDetailSheetPage(
-            valueId: value.id,
-            valueRepository: getIt<ValueRepositoryContract>(),
-            onSaved: (savedValueId) {
-              // Refresh the value details after edit
-              context.read<ValueDetailBloc>().add(
-                ValueDetailEvent.loadById(valueId: savedValueId),
-              );
-            },
-          ),
-        ),
+      launcher.openValueEditor(
+        context,
+        valueId: value.id,
+        onSaved: (savedValueId) {
+          // Refresh the value details after edit
+          context.read<ValueDetailBloc>().add(
+            ValueDetailEvent.loadById(valueId: savedValueId),
+          );
+        },
         showDragHandle: true,
       ),
     );

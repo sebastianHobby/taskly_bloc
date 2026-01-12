@@ -3,7 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'trigger_config.freezed.dart';
 part 'trigger_config.g.dart';
 
-/// Trigger configuration for workflow screens
+/// Trigger configuration for screens.
 @freezed
 abstract class TriggerConfig with _$TriggerConfig {
   /// Trigger based on RRULE schedule

@@ -2,7 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'soft_gates_settings.freezed.dart';
 
-/// Settings controlling workflow-run soft gates (warnings).
+/// Settings controlling soft gates (warnings).
 @freezed
 abstract class SoftGatesSettings with _$SoftGatesSettings {
   const factory SoftGatesSettings({

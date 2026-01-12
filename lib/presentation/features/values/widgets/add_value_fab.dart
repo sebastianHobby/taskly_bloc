@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 
 /// A FAB that opens a value creation modal sheet.
 ///
@@ -24,12 +25,11 @@ class AddValueFab extends StatelessWidget {
     return FloatingActionButton(
       tooltip: tooltip,
       onPressed: () async {
-        await showDetailModal<void>(
-          context: fabContext,
-          childBuilder: (modalSheetContext) => ValueDetailSheetPage(
-            valueRepository: valueRepository,
-          ),
+        final launcher = EditorLauncher(
+          projectRepository: getIt<ProjectRepositoryContract>(),
+          valueRepository: valueRepository,
         );
+        await launcher.openValueEditor(fabContext);
       },
       heroTag: heroTag,
       child: const Icon(Icons.add),

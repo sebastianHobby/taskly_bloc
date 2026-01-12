@@ -1,18 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
-import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
-import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 class AllocationSectionRenderer extends StatelessWidget {
@@ -391,17 +384,8 @@ class AllocationSectionRenderer extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton(
               onPressed: () async {
-                await showDetailModal<void>(
-                  context: context,
-                  childBuilder: (modalSheetContext) => BlocProvider(
-                    create: (_) => TaskDetailBloc(
-                      taskRepository: getIt<TaskRepositoryContract>(),
-                      projectRepository: getIt<ProjectRepositoryContract>(),
-                      valueRepository: getIt<ValueRepositoryContract>(),
-                    ),
-                    child: const TaskDetailSheet(),
-                  ),
-                );
+                final launcher = EditorLauncher.fromGetIt();
+                await launcher.openTaskEditor(context);
               },
               child: const Text('Add First Task'),
             ),

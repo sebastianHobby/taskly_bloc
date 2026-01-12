@@ -2,10 +2,10 @@
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
 
-/// A FormBuilder field for configuring workflow triggers.
+/// A FormBuilder field for configuring screen triggers.
 ///
 /// Provides presets for common schedules (daily, weekly, monthly)
-/// and allows manual-only workflows.
+/// and supports manual-only triggers.
 class FormBuilderTriggerConfig
     extends FormBuilderFieldDecoration<TriggerConfig> {
   FormBuilderTriggerConfig({

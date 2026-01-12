@@ -328,14 +328,13 @@ const List<IconCategory> defaultIconCategories = [
   ),
   IconCategory(
     name: 'review',
-    label: 'Review & Workflow',
+    label: 'Review',
     icons: [
       IconItem(name: 'rate_review', label: 'Review', icon: Icons.rate_review),
       IconItem(name: 'review', label: 'Reviews', icon: Icons.reviews),
       IconItem(name: 'refresh', label: 'Refresh', icon: Icons.refresh),
       IconItem(name: 'sync', label: 'Sync', icon: Icons.sync),
       IconItem(name: 'loop', label: 'Loop', icon: Icons.loop),
-      IconItem(name: 'workflow', label: 'Workflow', icon: Icons.account_tree),
     ],
   ),
   IconCategory(

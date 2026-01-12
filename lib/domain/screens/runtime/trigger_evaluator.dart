@@ -2,9 +2,9 @@ import 'package:taskly_bloc/domain/screens/language/models/trigger_config.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:rrule/rrule.dart';
 
-/// Evaluates when workflow screens should trigger based on their configuration
+/// Evaluates when screens should trigger based on their configuration.
 class TriggerEvaluator {
-  /// Checks if a workflow should trigger now based on its trigger config
+  /// Checks if a screen should trigger now based on its trigger config.
   bool shouldTrigger(
     TriggerConfig trigger,
     DateTime? lastReviewedAt,
@@ -24,7 +24,7 @@ class TriggerEvaluator {
     );
   }
 
-  /// Calculates the next trigger date for a workflow
+  /// Calculates the next trigger date for a screen.
   DateTime? nextTriggerDate(
     TriggerConfig trigger,
     DateTime? lastReviewedAt,

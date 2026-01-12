@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 
 class ScaffoldWithNavigationBar extends StatelessWidget {
   const ScaffoldWithNavigationBar({
     required this.body,
     required this.destinations,
+    required this.browseDestination,
     required this.activeScreenId,
     required this.bottomVisibleCount,
     required this.onDestinationSelected,
@@ -14,6 +14,7 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
 
   final Widget body;
   final List<NavigationDestinationVm> destinations;
+  final NavigationDestinationVm browseDestination;
   final String? activeScreenId;
   final int bottomVisibleCount;
   final ValueChanged<String> onDestinationSelected;
@@ -31,18 +32,14 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         selectedIndex: selectedIndex,
         destinations: [
           ...visible.map(_toNavDestination),
-          NavigationDestination(
-            label: context.l10n.browseTitle,
-            icon: const Icon(Icons.grid_view_rounded),
-            selectedIcon: const Icon(Icons.grid_view_rounded),
-          ),
+          _toNavDestination(browseDestination),
         ],
         onDestinationSelected: (index) {
           if (index < visible.length) {
             onDestinationSelected(visible[index].screenId);
             return;
           }
-          onDestinationSelected('browse');
+          onDestinationSelected(browseDestination.screenId);
         },
       ),
     );
