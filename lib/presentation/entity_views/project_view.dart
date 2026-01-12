@@ -150,6 +150,8 @@ class ProjectView extends StatelessWidget {
                     ),
 
                     // Row 2 (full only): Description or next task
+                    // Explicitly removed description logic to align with list view mockup
+                    /* 
                     if (!compact && subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -166,6 +168,7 @@ class ProjectView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    */
 
                     // Values row
                     _ValueLine(

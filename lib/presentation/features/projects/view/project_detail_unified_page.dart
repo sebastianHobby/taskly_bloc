@@ -19,8 +19,8 @@ import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_next_task_card.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
@@ -33,7 +33,6 @@ import 'package:taskly_bloc/presentation/widgets/entity_header.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 
 /// Unified project detail page using the screen model.
 ///
@@ -150,20 +149,17 @@ class _ProjectScreenView extends StatelessWidget {
   final Project project;
 
   void _showEditProjectSheet(BuildContext context) {
+    final launcher = EditorLauncher.fromGetIt();
     unawaited(
-      showDetailModal<void>(
-        context: context,
-        childBuilder: (modalSheetContext) => ProjectEditSheetPage(
-          projectId: project.id,
-          projectRepository: getIt<ProjectRepositoryContract>(),
-          valueRepository: getIt<ValueRepositoryContract>(),
-          onSaved: (savedProjectId) {
-            // Refresh the project details after edit
-            context.read<ProjectDetailBloc>().add(
-              ProjectDetailEvent.loadById(projectId: savedProjectId),
-            );
-          },
-        ),
+      launcher.openProjectEditor(
+        context,
+        projectId: project.id,
+        onSaved: (savedProjectId) {
+          // Refresh the project details after edit
+          context.read<ProjectDetailBloc>().add(
+            ProjectDetailEvent.loadById(projectId: savedProjectId),
+          );
+        },
         showDragHandle: true,
       ),
     );

@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
@@ -179,7 +181,14 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   @override
   Widget build(BuildContext context) {
+    final buildStart = DateTime.now();
     final agendaData = widget.data.agendaData;
+
+    developer.log(
+      '🎨 Scheduled UI: Building renderer - '
+      'Groups: ${agendaData.groups.length}, Items: ${agendaData.totalItemCount}',
+      name: 'perf.scheduled.ui',
+    );
 
     final allItemsCount = agendaData.totalItemCount;
     if (allItemsCount == 0) {
@@ -191,7 +200,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       );
     }
 
-    return Column(
+    final result = Column(
       children: [
         _buildMonthHeader(context),
         _buildDatePicker(context, agendaData),
@@ -206,6 +215,21 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         ),
       ],
     );
+
+    final buildMs = DateTime.now().difference(buildStart).inMilliseconds;
+    if (buildMs > 100) {
+      final slowBuildMsg = '⚠️ Scheduled UI: Slow build - ${buildMs}ms';
+      developer.log(
+        slowBuildMsg,
+        name: 'perf.scheduled.ui',
+        level: 900,
+      );
+      talker.warning('[Perf] $slowBuildMsg');
+    } else if (buildMs > 50) {
+      talker.debug('[Perf] Scheduled UI: Build - ${buildMs}ms');
+    }
+
+    return result;
   }
 
   Widget _buildMonthHeader(BuildContext context) {

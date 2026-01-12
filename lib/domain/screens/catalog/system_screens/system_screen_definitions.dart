@@ -38,7 +38,7 @@ abstract class SystemScreenDefinitions {
   ///
   /// In L4, navigation shows only fixed system screens. Browse provides access
   /// to the remaining system screens (beyond the compact bottom bar) and
-  /// user-created screens.
+  /// additional system screens.
   static final browse = ScreenDefinition(
     id: 'browse',
     screenKey: 'browse',
@@ -359,7 +359,7 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Check-in workflow - review and resolve attention items
+  /// Check-in - review and resolve attention items
   /// Accessed via checkInSummary support block on My Day
   static final checkIn = ScreenDefinition(
     id: 'check_in',

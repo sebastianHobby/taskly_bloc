@@ -441,6 +441,12 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.myDayFocusModeRequired,
     )
+    ..registerLazySingleton<StaticSectionInterpreter>(
+      () => StaticSectionInterpreter(
+        templateId: SectionTemplateId.browseHub,
+      ),
+      instanceName: SectionTemplateId.browseHub,
+    )
     ..registerLazySingleton<SectionTemplateInterpreterRegistry>(
       () => SectionTemplateInterpreterRegistry([
         getIt<DataListSectionInterpreter>(
@@ -506,6 +512,9 @@ Future<void> setupDependencies() async {
         ),
         getIt<StaticSectionInterpreter>(
           instanceName: SectionTemplateId.myDayFocusModeRequired,
+        ),
+        getIt<StaticSectionInterpreter>(
+          instanceName: SectionTemplateId.browseHub,
         ),
       ]),
     )

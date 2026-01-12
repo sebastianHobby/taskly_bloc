@@ -90,6 +90,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
           return ScaffoldWithNavigationBar(
             body: child,
             destinations: systemDestinations,
+            browseDestination: browseDestination,
             activeScreenId: activeScreenId,
             bottomVisibleCount: bottomVisibleCount,
             onDestinationSelected: (screenId) => _goTo(context, screenId),

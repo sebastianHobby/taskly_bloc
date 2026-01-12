@@ -194,6 +194,8 @@ class TaskView extends StatelessWidget {
                         PriorityFlag(priority: task.priority),
                       ],
                     ),
+                    // Explicitly removed subtitle/description logic to align with list view mockup
+                    /*
                     if (!compact && subtitle != null) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -208,6 +210,7 @@ class TaskView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    */
                     _MetaLine(
                       projectName: task.project?.name,
                       startDate: task.startDate,

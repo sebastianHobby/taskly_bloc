@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,7 +67,12 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     ScreenLoadEvent event,
     Emitter<ScreenState> emit,
   ) async {
+    final loadStart = DateTime.now();
     talker.blocLog('ScreenBloc', 'load: ${event.definition.id}');
+    developer.log(
+      '📱 Screen: Loading screen "${event.definition.name}" (${event.definition.id})',
+      name: 'perf.screen',
+    );
 
     final definition = event.definition;
 
@@ -80,8 +86,32 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     }
 
     emit(ScreenState.loading(definition: definition));
+    final loadingEmittedAt = DateTime.now();
+    final loadingEmitMs = loadingEmittedAt.difference(loadStart).inMilliseconds;
+    talker.debug(
+      '[Perf] Screen "${definition.name}": Loading state emitted after ${loadingEmitMs}ms',
+    );
 
-    await _subscribeToData(definition, emit);
+    await _subscribeToData(definition, emit, loadingEmittedAt);
+
+    final loadMs = DateTime.now().difference(loadStart).inMilliseconds;
+    final loadCompleteMsg =
+        '✅ Screen: Loaded "${definition.name}" - ${loadMs}ms';
+    developer.log(
+      loadCompleteMsg,
+      name: 'perf.screen',
+      level: loadMs > 1000 ? 900 : 800,
+    );
+
+    if (loadMs > 1000) {
+      talker.warning(
+        '[Perf] Screen "${definition.name}" slow load: ${loadMs}ms',
+      );
+    } else if (loadMs > 500) {
+      talker.info('[Perf] $loadCompleteMsg');
+    } else {
+      talker.debug('[Perf] $loadCompleteMsg');
+    }
   }
 
   Future<void> _onLoadById(
@@ -119,8 +149,9 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
       }
 
       emit(ScreenState.loading(definition: screen));
+      final loadingEmittedAt = DateTime.now();
 
-      await _subscribeToData(screen, emit);
+      await _subscribeToData(screen, emit, loadingEmittedAt);
     } catch (e, st) {
       talker.handle(e, st, '[ScreenBloc] loadById failed');
       emit(
@@ -136,11 +167,40 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   Future<void> _subscribeToData(
     ScreenDefinition definition,
     Emitter<ScreenState> emit,
+    DateTime loadingEmittedAt,
   ) async {
+    var firstDataReceived = false;
     // Subscribe to interpreter stream
     await emit.forEach(
       _interpreter.watchScreen(definition),
       onData: (data) {
+        if (!firstDataReceived) {
+          firstDataReceived = true;
+          final timeToFirstData = DateTime.now()
+              .difference(loadingEmittedAt)
+              .inMilliseconds;
+          final firstDataMsg =
+              '⏱️ Screen "${definition.name}": First data after ${timeToFirstData}ms';
+          developer.log(
+            firstDataMsg,
+            name: 'perf.screen.firstdata',
+          );
+
+          if (timeToFirstData > 3000) {
+            talker.warning(
+              '[Perf] Screen "${definition.name}": VERY SLOW first data: ${timeToFirstData}ms',
+            );
+          } else if (timeToFirstData > 1000) {
+            talker.warning(
+              '[Perf] Screen "${definition.name}": Slow first data: ${timeToFirstData}ms',
+            );
+          } else if (timeToFirstData > 500) {
+            talker.info('[Perf] $firstDataMsg');
+          } else {
+            talker.debug('[Perf] $firstDataMsg');
+          }
+        }
+
         if (data.error != null) {
           return ScreenState.error(
             message: data.error!,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
@@ -57,6 +58,10 @@ class ScreenDataInterpreter {
       'ScreenDataInterpreter',
       'watchScreen: ${definition.id} with ${definition.sections.length} sections',
     );
+    developer.log(
+      '🔄 Interpreter: Starting watchScreen for "${definition.name}"',
+      name: 'perf.interpreter',
+    );
 
     try {
       for (final ref in definition.sections) {
@@ -77,7 +82,7 @@ class ScreenDataInterpreter {
 
     final gate = definition.gate;
     if (gate == null) {
-      return _watchUngatedScreen(definition);
+      return _watchUngatedScreenWithTiming(definition);
     }
 
     return _watchGateActive(gate.criteria)
@@ -86,7 +91,7 @@ class ScreenDataInterpreter {
           if (isActive) {
             return _watchGateScreen(definition, gate.section);
           }
-          return _watchUngatedScreen(definition);
+          return _watchUngatedScreenWithTiming(definition);
         })
         .transform(
           StreamTransformer.fromHandlers(
@@ -154,6 +159,43 @@ class ScreenDataInterpreter {
     }
   }
 
+  Stream<ScreenData> _watchUngatedScreenWithTiming(
+    ScreenDefinition definition,
+  ) {
+    final watchStartTime = DateTime.now();
+    return _watchUngatedScreen(definition).transform(
+      StreamTransformer.fromHandlers(
+        handleData: (ScreenData data, EventSink<ScreenData> sink) {
+          if (!data.sections.any((s) => s.data != null)) {
+            // Skip timing for empty initial states
+            sink.add(data);
+            return;
+          }
+
+          final interpreterMs = DateTime.now()
+              .difference(watchStartTime)
+              .inMilliseconds;
+
+          // Only log once per stream
+          if (interpreterMs < 100000) {
+            // Reasonable cutoff to prevent re-logging
+            developer.log(
+              '✅ Interpreter: First data for "${definition.name}" - ${interpreterMs}ms',
+              name: 'perf.interpreter',
+              level: interpreterMs > 1000 ? 900 : 800,
+            );
+            if (interpreterMs > 1000) {
+              talker.warning(
+                '[Perf] Interpreter slow for "${definition.name}": ${interpreterMs}ms',
+              );
+            }
+          }
+          sink.add(data);
+        },
+      ),
+    );
+  }
+
   Stream<ScreenData> _watchUngatedScreen(ScreenDefinition definition) {
     if (definition.sections.isEmpty) {
       return Stream.value(
@@ -179,7 +221,7 @@ class ScreenDataInterpreter {
 
     final sectionStreams = enabledSections
         .map((entry) {
-          return _watchSection(entry.$1, entry.$2);
+          return _watchSection(entry.$1, entry.$2, definition.name);
         })
         .toList(growable: false);
 
@@ -218,16 +260,44 @@ class ScreenDataInterpreter {
     return false;
   }
 
-  Stream<SectionVm> _watchSection(int index, SectionRef ref) {
+  Stream<SectionVm> _watchSection(
+    int index,
+    SectionRef ref, [
+    String? screenName,
+  ]) {
+    final sectionStartTime = DateTime.now();
+    developer.log(
+      '📦 Section: Starting watch for ${ref.templateId} (screen: $screenName)',
+      name: 'perf.section',
+    );
+
     final interpreter = _interpreterRegistry.get(ref.templateId);
     final params = _paramsCodec.decode(ref.templateId, ref.params);
     final title = ref.overrides?.title;
 
     final stream = interpreter.watch(params).cast<Object?>();
 
+    var firstSectionEmit = true;
     return stream.transform(
       StreamTransformer<Object?, SectionVm>.fromHandlers(
         handleData: (data, EventSink<SectionVm> sink) {
+          if (firstSectionEmit) {
+            firstSectionEmit = false;
+            final sectionMs = DateTime.now()
+                .difference(sectionStartTime)
+                .inMilliseconds;
+            developer.log(
+              '✅ Section: First data for ${ref.templateId} - ${sectionMs}ms',
+              name: 'perf.section',
+              level: sectionMs > 500 ? 900 : 800,
+            );
+            if (sectionMs > 1000) {
+              talker.warning(
+                '[Perf] Section ${ref.templateId} slow: ${sectionMs}ms',
+              );
+            }
+          }
+
           sink.add(
             SectionVm(
               index: index,

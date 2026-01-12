@@ -3,15 +3,15 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'action.freezed.dart';
 part 'action.g.dart';
 
-/// Actions that can be performed during workflow screen reviews
+/// Actions that can be performed during screen reviews.
 @freezed
 sealed class Action with _$Action {
-  /// Mark item as reviewed, updates lastReviewedAt timestamp
+  /// Mark an item as reviewed.
   const factory Action.markReviewed({
     String? notes,
   }) = MarkReviewedAction;
 
-  /// Skip item in this review cycle (no timestamp update)
+  /// Skip an item in this review cycle.
   const factory Action.skip({
     String? reason,
   }) = SkipAction;

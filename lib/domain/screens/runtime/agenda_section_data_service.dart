@@ -1,5 +1,8 @@
+import 'dart:developer' as developer;
+
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -47,6 +50,18 @@ class AgendaSectionDataService {
     required DateTime rangeEnd,
     int? nearTermDaysOverride,
   }) {
+    final watchStartTime = DateTime.now();
+    final rangeDays = rangeEnd.difference(rangeStart).inDays;
+    final logMsg =
+        '🚀 Scheduled: Starting watchAgendaData (range: $rangeDays days)';
+    developer.log(logMsg, name: 'perf.scheduled');
+    talker.debug(logMsg);
+
+    developer.log(
+      '🔍 Scheduled: Subscribing to repository streams...',
+      name: 'perf.scheduled.query',
+    );
+
     final today = DateTime(
       referenceDate.year,
       referenceDate.month,
@@ -54,92 +69,165 @@ class AgendaSectionDataService {
     );
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
 
-    final overdueTasksStream = taskRepository.watchAll(TaskQuery.overdue());
-    final overdueProjectsStream = projectRepository.watchAll(
-      ProjectQuery(
-        filter: QueryFilter<ProjectPredicate>(
-          shared: [
-            ProjectDatePredicate(
-              field: ProjectDateField.deadlineDate,
-              operator: DateOperator.before,
-              date: dateOnly(today),
-            ),
-            const ProjectBoolPredicate(
-              field: ProjectBoolField.completed,
-              operator: BoolOperator.isFalse,
-            ),
-          ],
-        ),
-      ),
+    final overdueTasksStream = taskRepository.watchAll(TaskQuery.overdue()).map(
+      (tasks) {
+        developer.log(
+          '📊 Scheduled: Overdue tasks fetched: ${tasks.length}',
+          name: 'perf.scheduled.query',
+        );
+        return tasks;
+      },
     );
+    final overdueProjectsStream = projectRepository
+        .watchAll(
+          ProjectQuery(
+            filter: QueryFilter<ProjectPredicate>(
+              shared: [
+                ProjectDatePredicate(
+                  field: ProjectDateField.deadlineDate,
+                  operator: DateOperator.before,
+                  date: dateOnly(today),
+                ),
+                const ProjectBoolPredicate(
+                  field: ProjectBoolField.completed,
+                  operator: BoolOperator.isFalse,
+                ),
+              ],
+            ),
+          ),
+        )
+        .map((projects) {
+          developer.log(
+            '📊 Scheduled: Overdue projects fetched: ${projects.length}',
+            name: 'perf.scheduled.query',
+          );
+          return projects;
+        });
 
     // Use the Schedule queries (completed=false AND (start OR deadline in
     // range) + occurrence expansion). This keeps streaming behavior consistent
     // with getAgendaData() and ensures deadline-only tasks appear.
-    final scheduledTasksStream = taskRepository.watchAll(
-      TaskQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
-    );
-    final scheduledProjectsStream = projectRepository.watchAll(
-      ProjectQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
-    );
-
-    return Rx.combineLatest4<
-          List<Task>,
-          List<Project>,
-          List<Task>,
-          List<Project>,
-          AgendaData
-        >(
-          overdueTasksStream,
-          overdueProjectsStream,
-          scheduledTasksStream,
-          scheduledProjectsStream,
-          (overdueTasks, overdueProjects, tasksWithDates, projectsWithDates) {
-            // 1. Build overdue items list
-            final overdueItems = [
-              ...overdueTasks.map(
-                (t) => _createAgendaItem(
-                  task: t,
-                  displayDate: today,
-                  tag: AgendaDateTag.due,
-                ),
-              ),
-              ...overdueProjects.map(
-                (p) => _createAgendaItem(
-                  project: p,
-                  displayDate: today,
-                  tag: AgendaDateTag.due,
-                ),
-              ),
-            ];
-
-            // 2. Expand items into per-day entries and group by date
-            final itemsByDate = <DateTime, List<AgendaItem>>{};
-
-            for (final task in tasksWithDates) {
-              _addTaskToDateMap(task, itemsByDate, today, rangeEnd);
-            }
-
-            for (final project in projectsWithDates) {
-              _addProjectToDateMap(project, itemsByDate, today, rangeEnd);
-            }
-
-            final groups = _generateDateGroups(
-              itemsByDate: itemsByDate,
-              today: today,
-              nearTermDays: effectiveNearTermDays,
-              horizonEnd: rangeEnd,
-            );
-
-            return AgendaData(
-              groups: groups,
-              focusDate: focusDate,
-              overdueItems: overdueItems,
-              loadedHorizonEnd: rangeEnd,
-            );
-          },
+    final scheduledTasksStream = taskRepository
+        .watchAll(
+          TaskQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
         )
-        .debounceTime(const Duration(milliseconds: 50));
+        .map((tasks) {
+          final repeatingCount = tasks.where((t) => t.isRepeating).length;
+          developer.log(
+            '📊 Scheduled: Scheduled tasks fetched: ${tasks.length} (repeating: $repeatingCount)',
+            name: 'perf.scheduled.query',
+          );
+          return tasks;
+        });
+    final scheduledProjectsStream = projectRepository
+        .watchAll(
+          ProjectQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
+        )
+        .map((projects) {
+          final repeatingCount = projects.where((p) => p.isRepeating).length;
+          developer.log(
+            '📊 Scheduled: Scheduled projects fetched: ${projects.length} (repeating: $repeatingCount)',
+            name: 'perf.scheduled.query',
+          );
+          return projects;
+        });
+
+    return Rx.combineLatest4<List<Task>, List<Project>, List<Task>, List<Project>, AgendaData>(
+      overdueTasksStream,
+      overdueProjectsStream,
+      scheduledTasksStream,
+      scheduledProjectsStream,
+      (overdueTasks, overdueProjects, tasksWithDates, projectsWithDates) {
+        final processingStart = DateTime.now();
+        developer.log(
+          '⚙️ Scheduled: Processing data - '
+          'OD Tasks: ${overdueTasks.length}, OD Projects: ${overdueProjects.length}, '
+          'Scheduled Tasks: ${tasksWithDates.length}, Scheduled Projects: ${projectsWithDates.length}',
+          name: 'perf.scheduled.processing',
+        );
+
+        // 1. Build overdue items list
+        final overdueItems = [
+          ...overdueTasks.map(
+            (t) => _createAgendaItem(
+              task: t,
+              displayDate: today,
+              tag: AgendaDateTag.due,
+            ),
+          ),
+          ...overdueProjects.map(
+            (p) => _createAgendaItem(
+              project: p,
+              displayDate: today,
+              tag: AgendaDateTag.due,
+            ),
+          ),
+        ];
+
+        // 2. Expand items into per-day entries and group by date
+        final itemsByDate = <DateTime, List<AgendaItem>>{};
+
+        final expansionStart = DateTime.now();
+        for (final task in tasksWithDates) {
+          _addTaskToDateMap(task, itemsByDate, today, rangeEnd);
+        }
+
+        for (final project in projectsWithDates) {
+          _addProjectToDateMap(project, itemsByDate, today, rangeEnd);
+        }
+        final expansionMs = DateTime.now()
+            .difference(expansionStart)
+            .inMilliseconds;
+
+        final totalAgendaItems = itemsByDate.values.fold<int>(
+          0,
+          (sum, items) => sum + items.length,
+        );
+
+        final groupingStart = DateTime.now();
+        final groups = _generateDateGroups(
+          itemsByDate: itemsByDate,
+          today: today,
+          nearTermDays: effectiveNearTermDays,
+          horizonEnd: rangeEnd,
+        );
+        final groupingMs = DateTime.now()
+            .difference(groupingStart)
+            .inMilliseconds;
+
+        final processingMs = DateTime.now()
+            .difference(processingStart)
+            .inMilliseconds;
+        final totalMs = DateTime.now()
+            .difference(watchStartTime)
+            .inMilliseconds;
+
+        final completionMsg =
+            '✅ Scheduled: Complete - '
+            'Total: ${totalMs}ms (processing: ${processingMs}ms, expansion: ${expansionMs}ms, grouping: ${groupingMs}ms) | '
+            'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
+        developer.log(
+          completionMsg,
+          name: 'perf.scheduled',
+          level: totalMs > 500 ? 900 : 800,
+        );
+
+        if (totalMs > 500) {
+          talker.warning('[Perf] Scheduled screen slow: ${totalMs}ms');
+        } else if (totalMs > 300) {
+          talker.info('[Perf] $completionMsg');
+        } else {
+          talker.debug('[Perf] $completionMsg');
+        }
+
+        return AgendaData(
+          groups: groups,
+          focusDate: focusDate,
+          overdueItems: overdueItems,
+          loadedHorizonEnd: rangeEnd,
+        );
+      },
+    ).debounceTime(const Duration(milliseconds: 50));
   }
 
   /// Fetches agenda data for the Scheduled view.
@@ -152,6 +240,13 @@ class AgendaSectionDataService {
     required DateTime rangeEnd,
     int? nearTermDaysOverride,
   }) async {
+    final fetchStartTime = DateTime.now();
+    final rangeDays = rangeEnd.difference(rangeStart).inDays;
+    developer.log(
+      '🚀 Scheduled: Starting getAgendaData (range: $rangeDays days)',
+      name: 'perf.scheduled.fetch',
+    );
+
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
     final today = DateTime(
       referenceDate.year,
@@ -161,14 +256,27 @@ class AgendaSectionDataService {
     final horizonEnd = rangeEnd;
 
     // 1. Fetch overdue items
+    final overdueStart = DateTime.now();
     final overdueTasks = await _getOverdueTasks(today);
     final overdueProjects = await _getOverdueProjects(today);
+    final overdueMs = DateTime.now().difference(overdueStart).inMilliseconds;
 
     // 2. Fetch items with dates within horizon
+    final scheduledStart = DateTime.now();
     final tasksWithDates = await _getTasksWithDates(rangeStart, horizonEnd);
     final projectsWithDates = await _getProjectsWithDates(
       rangeStart,
       horizonEnd,
+    );
+    final scheduledMs = DateTime.now()
+        .difference(scheduledStart)
+        .inMilliseconds;
+
+    developer.log(
+      '📊 Scheduled: Queries complete - '
+      'Overdue: ${overdueMs}ms (T:${overdueTasks.length} P:${overdueProjects.length}), '
+      'Scheduled: ${scheduledMs}ms (T:${tasksWithDates.length} P:${projectsWithDates.length})',
+      name: 'perf.scheduled.fetch',
     );
 
     // 3. Build overdue items list
@@ -201,12 +309,36 @@ class AgendaSectionDataService {
     }
 
     // 5. Generate date groups with empty day handling
+    final groupingStart = DateTime.now();
     final groups = _generateDateGroups(
       itemsByDate: itemsByDate,
       today: today,
       nearTermDays: effectiveNearTermDays,
       horizonEnd: horizonEnd,
     );
+    final groupingMs = DateTime.now().difference(groupingStart).inMilliseconds;
+
+    final totalAgendaItems = itemsByDate.values.fold<int>(
+      0,
+      (sum, items) => sum + items.length,
+    );
+    final totalMs = DateTime.now().difference(fetchStartTime).inMilliseconds;
+
+    final fetchCompleteMsg =
+        '✅ Scheduled: Fetch complete - '
+        'Total: ${totalMs}ms (grouping: ${groupingMs}ms) | '
+        'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
+    developer.log(
+      fetchCompleteMsg,
+      name: 'perf.scheduled.fetch',
+      level: totalMs > 500 ? 900 : 800,
+    );
+
+    if (totalMs > 500) {
+      talker.warning('[Perf] Scheduled fetch slow: ${totalMs}ms');
+    } else if (totalMs > 300) {
+      talker.info('[Perf] $fetchCompleteMsg');
+    }
 
     return AgendaData(
       groups: groups,
@@ -321,6 +453,17 @@ class AgendaSectionDataService {
     DateTime horizonEnd,
   ) {
     final dates = _getTaskDisplayDates(task, today, horizonEnd);
+
+    if (dates.length > 10) {
+      final expansionMsg =
+          '⚠️ Scheduled: Task "${task.name}" expanding to ${dates.length} dates';
+      developer.log(
+        expansionMsg,
+        name: 'perf.scheduled.expansion',
+        level: 900,
+      );
+      talker.warning('[Perf] $expansionMsg');
+    }
 
     for (final entry in dates.entries) {
       final date = entry.key;

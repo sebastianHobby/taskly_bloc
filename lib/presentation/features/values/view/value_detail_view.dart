@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
-import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
@@ -128,22 +129,23 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
       listener: (context, state) {
         state.mapOrNull(
           operationSuccess: (success) {
-            if (success.operation == EntityOperation.delete) {
-              Navigator.of(context).pop(); // Close modal
-            } else {
-              Navigator.of(context).pop();
+            final message = switch (success.operation) {
+              EntityOperation.create => context.l10n.valueCreatedSuccessfully,
+              EntityOperation.update => context.l10n.valueUpdatedSuccessfully,
+              EntityOperation.delete => context.l10n.valueDeletedSuccessfully,
+            };
+
+            showEditorSuccessSnackBar(context, message);
+
+            // Call onSaved callback if provided (edit scenarios that need refresh)
+            if (widget.valueId != null) {
+              widget.onSaved?.call(widget.valueId!);
             }
+
+            unawaited(closeEditor(context));
           },
           operationFailure: (failure) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  friendlyErrorMessage(
-                    failure.errorDetails.error,
-                  ),
-                ),
-              ),
-            );
+            showEditorErrorSnackBar(context, failure.errorDetails.error);
           },
         );
       },
@@ -156,8 +158,8 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
               initialData: success.value,
               onSubmit: () => _onSubmit(success.value.id),
               onDelete: () => _onDelete(success.value.id),
-              submitTooltip: 'Save Changes',
-              onClose: () => Navigator.of(context).pop(),
+              submitTooltip: context.l10n.actionUpdate,
+              onClose: () => unawaited(closeEditor(context)),
             );
           },
           loadInProgress: (_) =>
@@ -170,8 +172,8 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
                 formKey: _formKey,
                 initialData: null,
                 onSubmit: () => _onSubmit(null),
-                submitTooltip: 'Create Value',
-                onClose: () => Navigator.of(context).pop(),
+                submitTooltip: context.l10n.actionCreate,
+                onClose: () => unawaited(closeEditor(context)),
               );
             }
             return const Center(child: Text('Something went wrong'));
