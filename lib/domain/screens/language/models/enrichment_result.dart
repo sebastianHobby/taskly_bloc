@@ -20,9 +20,6 @@ sealed class EnrichmentResult with _$EnrichmentResult {
 
     /// Total recent completions across all values (for percentage calc).
     @Default(0) int totalRecentCompletions,
-
-    /// Count of tasks not assigned to any value.
-    @Default(0) int unassignedTaskCount,
   }) = ValueStatsEnrichmentResult;
 
   factory EnrichmentResult.fromJson(Map<String, dynamic> json) =>

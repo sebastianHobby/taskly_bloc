@@ -26,7 +26,6 @@ class FakeIdGenerator implements IdGenerator {
   int _taskIdCounter = 0;
   int _projectIdCounter = 0;
   int _journalEntryIdCounter = 0;
-  int _workflowRunIdCounter = 0;
   int _userProfileIdCounter = 0;
   int _pendingNotificationIdCounter = 0;
   int _analyticsCorrelationIdCounter = 0;
@@ -36,7 +35,6 @@ class FakeIdGenerator implements IdGenerator {
   int get taskIdCallCount => _taskIdCounter;
   int get projectIdCallCount => _projectIdCounter;
   int get journalEntryIdCallCount => _journalEntryIdCounter;
-  int get workflowRunIdCallCount => _workflowRunIdCounter;
 
   @override
   String get userId => _userId;
@@ -53,9 +51,6 @@ class FakeIdGenerator implements IdGenerator {
 
   @override
   String journalEntryId() => 'journal-${_journalEntryIdCounter++}';
-
-  @override
-  String workflowRunId() => 'workflow-run-${_workflowRunIdCounter++}';
 
   @override
   String userProfileId() => 'user-profile-${_userProfileIdCounter++}';
@@ -133,10 +128,6 @@ class FakeIdGenerator implements IdGenerator {
   String screenDefinitionId({required String screenKey}) => 'screen-$screenKey';
 
   @override
-  String workflowDefinitionId({required String name}) =>
-      'workflow-def-${name.toLowerCase().replaceAll(' ', '-')}';
-
-  @override
   String trackerResponseId({
     required String journalEntryId,
     required String trackerId,
@@ -180,7 +171,6 @@ class FakeIdGenerator implements IdGenerator {
     _taskIdCounter = 0;
     _projectIdCounter = 0;
     _journalEntryIdCounter = 0;
-    _workflowRunIdCounter = 0;
     _userProfileIdCounter = 0;
     _pendingNotificationIdCounter = 0;
     _analyticsCorrelationIdCounter = 0;

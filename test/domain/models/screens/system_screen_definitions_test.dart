@@ -66,9 +66,10 @@ void main() {
             'journal',
           ]),
         );
-        // Hidden/sub-screens are included in all
-        expect(keys.contains('workflows'), isTrue);
-        expect(keys.contains('screen_management'), isTrue);
+
+        // Legacy / removed screens are not included.
+        expect(keys.contains('workflows'), isFalse);
+        expect(keys.contains('screen_management'), isFalse);
       });
     });
 
@@ -123,13 +124,8 @@ void main() {
         expect(SystemScreenDefinitions.defaultSortOrders['values'], 4);
         expect(SystemScreenDefinitions.defaultSortOrders['projects'], 5);
         expect(SystemScreenDefinitions.defaultSortOrders['statistics'], 6);
-        expect(SystemScreenDefinitions.defaultSortOrders['orphan_tasks'], 7);
-        expect(SystemScreenDefinitions.defaultSortOrders['workflows'], 8);
-        expect(
-          SystemScreenDefinitions.defaultSortOrders['screen_management'],
-          9,
-        );
         expect(SystemScreenDefinitions.defaultSortOrders['settings'], 100);
+        expect(SystemScreenDefinitions.defaultSortOrders['browse'], 10);
 
         // Sub-screens that exist but don't appear in navigation ordering.
         expect(SystemScreenDefinitions.defaultSortOrders['logbook'], isNull);

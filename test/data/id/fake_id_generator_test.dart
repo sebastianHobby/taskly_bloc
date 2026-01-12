@@ -27,11 +27,6 @@ void main() {
         expect(idGenerator.journalEntryId(), 'journal-1');
       });
 
-      test('workflowRunId generates sequential IDs', () {
-        expect(idGenerator.workflowRunId(), 'workflow-run-0');
-        expect(idGenerator.workflowRunId(), 'workflow-run-1');
-      });
-
       test('userProfileId generates sequential IDs', () {
         expect(idGenerator.userProfileId(), 'user-profile-0');
         expect(idGenerator.userProfileId(), 'user-profile-1');
@@ -138,11 +133,6 @@ void main() {
         expect(id, 'screen-inbox');
       });
 
-      test('workflowDefinitionId generates based on name', () {
-        final id = idGenerator.workflowDefinitionId(name: 'Morning Review');
-        expect(id, 'workflow-def-morning-review');
-      });
-
       test('trackerResponseId generates based on entry and tracker', () {
         final id = idGenerator.trackerResponseId(
           journalEntryId: 'journal-1',
@@ -200,12 +190,6 @@ void main() {
         idGenerator.journalEntryId();
         expect(idGenerator.journalEntryIdCallCount, 1);
       });
-
-      test('tracks workflowRunId call count', () {
-        expect(idGenerator.workflowRunIdCallCount, 0);
-        idGenerator.workflowRunId();
-        expect(idGenerator.workflowRunIdCallCount, 1);
-      });
     });
 
     group('utilities', () {
@@ -213,14 +197,12 @@ void main() {
         idGenerator.taskId();
         idGenerator.projectId();
         idGenerator.journalEntryId();
-        idGenerator.workflowRunId();
 
         idGenerator.reset();
 
         expect(idGenerator.taskIdCallCount, 0);
         expect(idGenerator.projectIdCallCount, 0);
         expect(idGenerator.journalEntryIdCallCount, 0);
-        expect(idGenerator.workflowRunIdCallCount, 0);
       });
 
       test('peekNextTaskId shows next ID without incrementing', () {

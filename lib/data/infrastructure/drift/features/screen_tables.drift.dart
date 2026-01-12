@@ -17,7 +17,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/features/shared_enums.dart
 ///
 /// This table supports:
 /// - System screens (inbox, my_day, scheduled, etc.)
-/// - User-created custom screens (via ScreenCreatorPage)
+/// - User-created screen metadata (legacy; screen creation UI removed)
 /// - Focus-optimized screens
 /// - Future: Imported/shared screens (source='imported')
 @DataClassName('ScreenDefinitionEntity')

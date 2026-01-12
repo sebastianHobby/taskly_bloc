@@ -62,13 +62,6 @@ abstract class ProjectRepositoryContract {
 
   Future<void> delete(String id);
 
-  /// Update the lastReviewedAt timestamp for a project.
-  /// Used by workflow completion to track when entities were last reviewed.
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  });
-
   // =========================================================================
   // OCCURRENCE METHODS
   // =========================================================================

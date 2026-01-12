@@ -285,18 +285,6 @@ class ValueRepository implements ValueRepositoryContract {
   }
 
   @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    // TODO(attention-migration): This is now handled by AttentionResolutions table
-    // The method is kept for interface compatibility but is a no-op
-    talker.debug(
-      '[ValueRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
-    );
-  }
-
-  @override
   Future<void> addValueToTask({
     required String taskId,
     required String valueId,

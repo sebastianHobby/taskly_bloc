@@ -21,7 +21,6 @@ class Project {
     this.deadlineDate,
     this.priority,
     this.isPinned = false,
-    this.lastReviewedAt,
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
@@ -44,9 +43,6 @@ class Project {
 
   /// Whether this project is pinned to the top of lists
   final bool isPinned;
-
-  /// Last time this project was reviewed in a workflow
-  final DateTime? lastReviewedAt;
 
   final String? repeatIcalRrule;
 

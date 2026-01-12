@@ -71,13 +71,6 @@ void main() {
         );
         expect(path, '/my-day');
       });
-
-      test('screen_management has /screen-management path', () {
-        final path = Routing.screenPath(
-          SystemScreenDefinitions.screenManagement.screenKey,
-        );
-        expect(path, '/screen-management');
-      });
     });
 
     group('SystemScreenDefinitions.getById', () {

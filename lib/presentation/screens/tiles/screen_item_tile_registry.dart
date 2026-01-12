@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart' as domain;
+import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
+    as domain;
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
@@ -17,7 +18,6 @@ class ScreenItemTileRegistry {
     required ScreenItem item,
     bool compactTiles = false,
     void Function(String taskId, bool? value)? onTaskToggle,
-    void Function(String projectId, bool? value)? onProjectToggle,
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
@@ -34,9 +34,6 @@ class ScreenItemTileRegistry {
         compact: compactTiles,
         taskCount: projectStats?.taskCount,
         completedTaskCount: projectStats?.completedTaskCount,
-        onCheckboxChanged: onProjectToggle == null
-            ? null
-            : (p, val) => onProjectToggle(p.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
       ),
       ScreenItemValue(:final value) => ValueView(

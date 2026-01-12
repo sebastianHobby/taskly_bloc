@@ -32,7 +32,6 @@ const schema = Schema([
     Column.text('start_date'),
     Column.text('deadline_date'),
     Column.text('repeat_ical_rrule'),
-    Column.text('last_review_date'),
     Column.integer('series_ended'),
     Column.integer('repeat_from_completion'),
     Column.integer('priority'),

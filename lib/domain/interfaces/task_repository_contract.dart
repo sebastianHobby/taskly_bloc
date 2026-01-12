@@ -64,14 +64,6 @@ abstract class TaskRepositoryContract {
     required bool isPinned,
   });
 
-  /// Update the lastReviewedAt timestamp for a task.
-  ///
-  /// Used by workflow completion to mark tasks as reviewed.
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  });
-
   Future<void> delete(String id);
 
   // =========================================================================

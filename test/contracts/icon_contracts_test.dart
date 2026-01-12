@@ -117,24 +117,6 @@ void main() {
         expect(result.icon, Icons.book_outlined);
         expect(result.selectedIcon, Icons.book);
       });
-
-      test('workflows screen has account_tree icon', () {
-        final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.workflows.screenKey,
-          iconName: SystemScreenDefinitions.workflows.chrome.iconName,
-        );
-        expect(result.icon, Icons.account_tree_outlined);
-        expect(result.selectedIcon, Icons.account_tree);
-      });
-
-      test('screen_management screen has dashboard_customize icon', () {
-        final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.screenManagement.screenKey,
-          iconName: SystemScreenDefinitions.screenManagement.chrome.iconName,
-        );
-        expect(result.icon, Icons.dashboard_customize_outlined);
-        expect(result.selectedIcon, Icons.dashboard_customize);
-      });
     });
 
     group('defaultSortOrders contract', () {

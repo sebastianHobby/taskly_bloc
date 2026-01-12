@@ -474,18 +474,6 @@ class ProjectRepository implements ProjectRepositoryContract {
     await _deleteProject(ProjectTableCompanion(id: drift_pkg.Value(id)));
   }
 
-  @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    // TODO(attention-migration): This is now handled by AttentionResolutions table
-    // The method is kept for interface compatibility but is a no-op
-    talker.debug(
-      '[ProjectRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
-    );
-  }
-
   // ===========================================================================
   // OCCURRENCE METHODS
   // ===========================================================================

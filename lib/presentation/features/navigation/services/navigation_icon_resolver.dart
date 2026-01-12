@@ -63,17 +63,9 @@ class NavigationIconResolver {
       'projects' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'labels' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'values' => (icon: Icons.star_outline, selectedIcon: Icons.star),
-      'orphan_tasks' || 'orphan-tasks' => (
-        icon: Icons.label_off_outlined,
-        selectedIcon: Icons.label_off,
-      ),
       'wellbeing' => (
         icon: Icons.self_improvement_outlined,
         selectedIcon: Icons.self_improvement,
-      ),
-      'workflows' => (
-        icon: Icons.account_tree_outlined,
-        selectedIcon: Icons.account_tree,
       ),
       'settings' => (
         icon: Icons.settings_outlined,

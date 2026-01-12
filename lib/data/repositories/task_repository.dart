@@ -392,18 +392,6 @@ class TaskRepository implements TaskRepositoryContract {
         .delete(TaskTableCompanion(id: drift_pkg.Value(id)));
   }
 
-  @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    // TODO(attention-migration): This is now handled by AttentionResolutions table
-    // The method is kept for interface compatibility but is a no-op
-    talker.debug(
-      '[TaskRepository] updateLastReviewedAt: id=$id (no-op - migrated to AttentionResolutions)',
-    );
-  }
-
   // ===========================================================================
   // OCCURRENCE METHODS
   // ===========================================================================

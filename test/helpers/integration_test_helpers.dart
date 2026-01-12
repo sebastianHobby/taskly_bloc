@@ -49,10 +49,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/data/screens/default_system_screen_provider.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
@@ -150,16 +148,11 @@ class IntegrationTestContext {
   static Future<IntegrationTestContext> create() async {
     initializeTalkerForTest();
     final db = createTestDb();
-
-    final idGenerator = IdGenerator.withUserId('test-user');
-    const systemScreenProvider = DefaultSystemScreenProvider();
     final settingsRepository = SettingsRepository(driftDb: db);
 
     final screensRepository = ScreenDefinitionsRepository(
       databaseRepository: ScreenDefinitionsRepositoryImpl(
         db,
-        idGenerator,
-        systemScreenProvider,
       ),
     );
 
@@ -199,21 +192,19 @@ class IntegrationTestContext {
   ///
   /// For system screens, use [seedSystemScreens] or update preferences
   /// directly via [screensRepository.updateScreenPreferences].
+  @Deprecated(
+    'Custom screen creation was removed. Use seedSystemScreens() or '
+    'screensRepository.updateScreenPreferences() for existing screenKeys.',
+  )
   Future<void> seedScreen({
     required ScreenDefinition screen,
     String userId = 'test-user',
     bool isActive = true,
     int sortOrder = 0,
   }) async {
-    // Create the custom screen first
-    await screensRepository.createCustomScreen(screen);
-    // Then set its preferences
     await screensRepository.updateScreenPreferences(
       screen.screenKey,
-      ScreenPreferences(
-        isActive: isActive,
-        sortOrder: sortOrder,
-      ),
+      ScreenPreferences(isActive: isActive, sortOrder: sortOrder),
     );
   }
 

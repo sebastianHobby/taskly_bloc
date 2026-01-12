@@ -79,7 +79,6 @@ class _UnifiedScreenScaffold extends StatelessWidget {
 
   static const _fullScreenTemplateIds = <String>{
     SectionTemplateId.settingsMenu,
-    SectionTemplateId.screenManagement,
     SectionTemplateId.trackerManagement,
     SectionTemplateId.statisticsDashboard,
     SectionTemplateId.wellbeingDashboard,

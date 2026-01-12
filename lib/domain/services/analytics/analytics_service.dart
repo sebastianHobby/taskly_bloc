@@ -77,18 +77,6 @@ abstract class AnalyticsService {
     String? entityId,
   });
 
-  // === Orphan Tasks ===
-
-  /// Returns count of incomplete tasks without a value assigned.
-  ///
-  /// Counts tasks where:
-  /// - `completed == false`
-  /// - Has no labels of type `LabelType.value`
-  ///
-  /// If [excludeWithDeadline] is true, tasks with deadlines are
-  /// not counted (they may still appear via urgency handling).
-  Future<int> getOrphanTaskCount({bool excludeWithDeadline = false});
-
   // === Reflector Mode Analytics ===
 
   /// Returns count of completed tasks per value over the last [days] days.

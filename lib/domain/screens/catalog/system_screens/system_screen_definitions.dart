@@ -247,49 +247,6 @@ abstract class SystemScreenDefinitions {
     ],
   );
 
-  /// Orphan Tasks screen - incomplete tasks without any value assigned
-  static final orphanTasks = ScreenDefinition(
-    id: 'orphan_tasks',
-    screenKey: 'orphan_tasks',
-    name: 'Unassigned Tasks',
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    screenSource: ScreenSource.systemTemplate,
-    sections: [
-      SectionRef(
-        templateId: SectionTemplateId.taskList,
-        params: DataListSectionParams(
-          config: DataConfig.task(
-            query: const TaskQuery(
-              filter: QueryFilter<TaskPredicate>(
-                shared: [
-                  TaskBoolPredicate(
-                    field: TaskBoolField.completed,
-                    operator: BoolOperator.isFalse,
-                  ),
-                  TaskValuePredicate(
-                    operator: ValueOperator.isNull,
-                    valueIds: [],
-                    includeInherited: true,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          display: DisplayConfig(
-            groupByCompletion: false,
-            enableSwipeToDelete: false,
-            showCompleted: false,
-          ),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-        ).toJson(),
-        overrides: const SectionOverrides(title: 'Tasks without values'),
-      ),
-    ],
-  );
-
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // Navigation-only screens (no sections, route to standalone pages)
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -327,17 +284,6 @@ abstract class SystemScreenDefinitions {
     updatedAt: DateTime(2024),
     screenSource: ScreenSource.systemTemplate,
     sections: const [SectionRef(templateId: SectionTemplateId.journalTimeline)],
-  );
-
-  /// Workflows - automation and scheduled tasks
-  static final workflows = ScreenDefinition(
-    id: 'workflows',
-    screenKey: 'workflows',
-    name: 'Workflows',
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024),
-    screenSource: ScreenSource.systemTemplate,
-    sections: const [SectionRef(templateId: SectionTemplateId.workflowList)],
   );
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -446,7 +392,7 @@ abstract class SystemScreenDefinitions {
 
   /// Get all system screens that appear in navigation.
   ///
-  /// Note: Some screens (logbook, workflows) are accessible
+  /// Note: Some screens (logbook) are accessible
   /// via settings but not shown in the main navigation.
   /// Order: My Day, Scheduled, Someday, Journal, Values, Projects, Statistics,
   /// Settings
@@ -460,9 +406,6 @@ abstract class SystemScreenDefinitions {
     statistics,
     settings,
     browse,
-    // Hidden/Sub-screens
-    orphanTasks,
-    workflows,
   ];
 
   /// Canonical system screens shown in the main navigation UI.
@@ -492,10 +435,8 @@ abstract class SystemScreenDefinitions {
       'statistics' => statistics,
       'projects' => projects,
       'values' => values,
-      'orphan_tasks' => orphanTasks,
       'settings' => settings,
       'journal' => journal,
-      'workflows' => workflows,
       'browse' => browse,
 
       // Settings screens
@@ -538,8 +479,6 @@ abstract class SystemScreenDefinitions {
     'projects': 5,
     'statistics': 6,
     'settings': 100,
-    'orphan_tasks': 7,
-    'workflows': 8,
     'browse': 10,
   };
 

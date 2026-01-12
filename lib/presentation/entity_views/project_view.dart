@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
 /// The canonical, entity-level project UI entrypoint.
@@ -15,7 +14,6 @@ import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 class ProjectView extends StatelessWidget {
   const ProjectView({
     required this.project,
-    this.onCheckboxChanged,
     this.onTap,
     this.compact = false,
     this.taskCount,
@@ -33,11 +31,6 @@ class ProjectView extends StatelessWidget {
 
   /// Optional tap handler. If null, navigates to project detail via EntityNavigator.
   final void Function(Project)? onTap;
-
-  /// Callback when a project's completion checkbox is toggled.
-  ///
-  /// If null, no checkbox is shown.
-  final void Function(Project, bool?)? onCheckboxChanged;
 
   /// Optional task count to show progress.
   final int? taskCount;
@@ -62,58 +55,9 @@ class ProjectView extends StatelessWidget {
     return deadlineDay.isBefore(today);
   }
 
-  bool _isDueToday(DateTime? deadline) {
-    if (deadline == null || project.completed) return false;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-    return deadlineDay.isAtSameMomentAs(today);
-  }
-
-  bool _isDueSoon(DateTime? deadline) {
-    if (deadline == null || project.completed) return false;
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
-    final daysUntil = deadlineDay.difference(today).inDays;
-    return daysUntil > 0 && daysUntil <= 3;
-  }
-
-  DateTime _today() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }
-
-  DateChip? _buildStrictDateToken(
-    BuildContext context, {
-    required DateTime? startDate,
-    required DateTime? deadlineDate,
-    required bool isOverdue,
-    required bool isDueToday,
-    required bool isDueSoon,
-    required String Function(BuildContext, DateTime) formatDate,
-  }) {
-    if (deadlineDate != null) {
-      return DateChip.deadline(
-        context: context,
-        label: formatDate(context, deadlineDate),
-        isOverdue: isOverdue,
-        isDueToday: isDueToday,
-        isDueSoon: isDueSoon,
-      );
-    }
-
-    if (startDate != null) {
-      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-      if (!startDay.isBefore(_today())) {
-        return DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate),
-        );
-      }
-    }
-
-    return null;
+  String _formatMonthDay(BuildContext context, DateTime date) {
+    final locale = Localizations.localeOf(context);
+    return DateFormat.MMMd(locale.toLanguageTag()).format(date);
   }
 
   double? get _progressValue {
@@ -127,8 +71,6 @@ class ProjectView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final isOverdue = _isOverdue(project.deadlineDate);
-    final isDueToday = _isDueToday(project.deadlineDate);
-    final isDueSoon = _isDueSoon(project.deadlineDate);
 
     final hasDescription =
         project.description != null && project.description!.trim().isNotEmpty;
@@ -141,44 +83,37 @@ class ProjectView extends StatelessWidget {
     final isNextTaskSubtitle =
         subtitle != null && !hasDescription && canShowNextTask;
 
-    return Card(
+    return Container(
       key: Key('project-${project.id}'),
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isOverdue
-              ? colorScheme.error.withValues(alpha: 0.3)
-              : colorScheme.outlineVariant.withValues(alpha: 0.5),
-          width: isOverdue ? 1.5 : 1,
+      decoration: BoxDecoration(
+        color: project.completed
+            ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.5)
+            : colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
+          ),
         ),
       ),
-      color: project.completed
-          ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.5)
-          : colorScheme.surface,
       child: InkWell(
         onTap: () => onTap != null
             ? onTap!(project)
             : Routing.toEntity(context, EntityType.project, project.id),
-        borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Leading widget: optional completion checkbox.
-              if (onCheckboxChanged != null)
-                _ProjectCheckbox(
-                  completed: project.completed,
-                  isOverdue: isOverdue,
-                  onChanged: (value) {
-                    HapticFeedback.lightImpact();
-                    onCheckboxChanged?.call(project, value);
-                  },
-                  projectName: project.name,
-                ),
-              if (onCheckboxChanged != null) const SizedBox(width: 12),
+              // Leading: progress ring.
+              _ProjectProgressRing(
+                value: _progressValue,
+                isOverdue: isOverdue,
+                semanticsLabel: project.name,
+                taskCount: taskCount,
+                completedTaskCount: completedTaskCount,
+              ),
+              const SizedBox(width: 12),
 
               // Main content
               Expanded(
@@ -209,6 +144,8 @@ class ProjectView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        PriorityFlag(priority: project.priority),
                       ],
                     ),
 
@@ -230,45 +167,21 @@ class ProjectView extends StatelessWidget {
                       ),
                     ],
 
-                    // Meta row: dates + values
-                    _MetaLine(
-                      startDate: project.startDate,
-                      deadlineDate: project.deadlineDate,
-                      isOverdue: isOverdue,
-                      isDueToday: isDueToday,
-                      isDueSoon: isDueSoon,
-                      formatDate: DateLabelFormatter.format,
-                      hasRepeat: project.repeatIcalRrule != null,
+                    // Values row
+                    _ValueLine(
                       primaryValue: project.primaryValue,
                       secondaryValues: project.secondaryValues,
-                      buildDateToken: (context) => _buildStrictDateToken(
-                        context,
-                        startDate: project.startDate,
-                        deadlineDate: project.deadlineDate,
-                        isOverdue: isOverdue,
-                        isDueToday: isDueToday,
-                        isDueSoon: isDueSoon,
-                        formatDate: DateLabelFormatter.format,
-                      ),
+                    ),
+
+                    // Dates row (Start + Deadline + Repeat)
+                    _ProjectDatesRow(
+                      startDate: project.startDate,
+                      deadlineDate: project.deadlineDate,
+                      hasRepeat: project.repeatIcalRrule != null,
+                      formatMonthDay: (date) => _formatMonthDay(context, date),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(width: 12),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PriorityFlag(priority: project.priority),
-                  const SizedBox(height: 8),
-                  _ProjectProgressRing(
-                    value: _progressValue,
-                    isOverdue: isOverdue,
-                    semanticsLabel: project.name,
-                    taskCount: taskCount,
-                    completedTaskCount: completedTaskCount,
-                  ),
-                ],
               ),
             ],
           ),
@@ -278,50 +191,145 @@ class ProjectView extends StatelessWidget {
   }
 }
 
-class _ProjectCheckbox extends StatelessWidget {
-  const _ProjectCheckbox({
-    required this.completed,
-    required this.isOverdue,
-    required this.onChanged,
-    required this.projectName,
+class _ValueLine extends StatelessWidget {
+  const _ValueLine({
+    required this.primaryValue,
+    required this.secondaryValues,
   });
 
-  final bool completed;
-  final bool isOverdue;
-  final ValueChanged<bool?> onChanged;
-  final String projectName;
+  final Value? primaryValue;
+  final List<Value> secondaryValues;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final primary = primaryValue;
+    final children = <Widget>[];
 
-    return Semantics(
-      label: completed
-          ? 'Mark "$projectName" as active'
-          : 'Mark "$projectName" as complete',
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: Checkbox(
-          value: completed,
-          onChanged: onChanged,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-          ),
-          side: BorderSide(
-            color: isOverdue
-                ? colorScheme.error
-                : completed
-                ? colorScheme.primary
-                : colorScheme.outline,
-            width: 2,
-          ),
-          activeColor: colorScheme.primary,
-          checkColor: colorScheme.onPrimary,
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
+    if (primary != null) {
+      children.add(
+        ValueChip(
+          value: primary,
+          variant: ValueChipVariant.solid,
         ),
+      );
+    }
+
+    if (secondaryValues.isNotEmpty) {
+      children.add(
+        ValueChip(
+          value: secondaryValues.first,
+          variant: ValueChipVariant.outlined,
+        ),
+      );
+    }
+
+    if (children.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: children,
       ),
+    );
+  }
+}
+
+class _ProjectDatesRow extends StatelessWidget {
+  const _ProjectDatesRow({
+    required this.formatMonthDay,
+    this.startDate,
+    this.deadlineDate,
+    this.hasRepeat = false,
+  });
+
+  final DateTime? startDate;
+  final DateTime? deadlineDate;
+  final bool hasRepeat;
+  final String Function(DateTime date) formatMonthDay;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    if (startDate == null && deadlineDate == null && !hasRepeat) {
+      return const SizedBox.shrink();
+    }
+
+    final children = <Widget>[];
+
+    if (startDate != null) {
+      children.add(
+        _IconLabel(
+          icon: Icons.calendar_today,
+          label: formatMonthDay(startDate!),
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    if (deadlineDate != null) {
+      children.add(
+        _IconLabel(
+          icon: Icons.sports_score,
+          label: formatMonthDay(deadlineDate!),
+          color: scheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    if (hasRepeat) {
+      children.add(
+        Icon(
+          Icons.repeat,
+          size: 16,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: children,
+      ),
+    );
+  }
+}
+
+class _IconLabel extends StatelessWidget {
+  const _IconLabel({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -364,7 +372,7 @@ class _ProjectProgressRing extends StatelessWidget {
       label: 'Project progress for $semanticsLabel',
       value: semanticsValue,
       child: SizedBox.square(
-        dimension: 36,
+        dimension: 44,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -384,101 +392,12 @@ class _ProjectProgressRing extends StatelessWidget {
               percentLabel,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
                 color: scheme.onSurface,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _MetaLine extends StatelessWidget {
-  const _MetaLine({
-    required this.formatDate,
-    required this.primaryValue,
-    required this.secondaryValues,
-    required this.buildDateToken,
-    this.startDate,
-    this.deadlineDate,
-    this.isOverdue = false,
-    this.isDueToday = false,
-    this.isDueSoon = false,
-    this.hasRepeat = false,
-  });
-
-  final DateTime? startDate;
-  final DateTime? deadlineDate;
-  final bool isOverdue;
-  final bool isDueToday;
-  final bool isDueSoon;
-  final bool hasRepeat;
-  final String Function(BuildContext, DateTime) formatDate;
-  final Value? primaryValue;
-  final List<Value> secondaryValues;
-  final DateChip? Function(BuildContext context) buildDateToken;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    final primary = primaryValue;
-
-    final dateToken = buildDateToken(context);
-
-    final children = <Widget>[];
-
-    if (primary != null) {
-      children.add(
-        ValueChip(
-          value: primary,
-          variant: ValueChipVariant.solid,
-        ),
-      );
-    }
-
-    if (secondaryValues.isNotEmpty) {
-      children.add(
-        ValueChip(
-          value: secondaryValues.first,
-          variant: ValueChipVariant.outlined,
-        ),
-      );
-    }
-
-    if (hasRepeat) {
-      children.add(
-        Icon(
-          Icons.sync_rounded,
-          size: 14,
-          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-        ),
-      );
-    }
-
-    if (children.isEmpty && dateToken == null) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: children,
-            ),
-          ),
-          if (dateToken != null) ...[
-            const SizedBox(width: 12),
-            dateToken,
-          ],
-        ],
       ),
     );
   }

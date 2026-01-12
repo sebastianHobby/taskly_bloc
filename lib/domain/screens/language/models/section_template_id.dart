@@ -20,13 +20,11 @@ abstract final class SectionTemplateId {
 
   // Former custom screens (now templated)
   static const settingsMenu = 'settings_menu';
-  static const workflowList = 'workflow_list';
   static const journalTimeline = 'journal_timeline';
   static const navigationSettings = 'navigation_settings';
   static const allocationSettings = 'allocation_settings';
   static const attentionRules = 'attention_rules';
   static const focusSetupWizard = 'focus_setup_wizard';
-  static const screenManagement = 'screen_management';
   static const trackerManagement = 'tracker_management';
   static const wellbeingDashboard = 'wellbeing_dashboard';
   static const statisticsDashboard = 'statistics_dashboard';

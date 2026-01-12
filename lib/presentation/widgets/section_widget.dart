@@ -4,7 +4,6 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
@@ -13,7 +12,6 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
     as attention_repo_v2;
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
@@ -42,7 +40,6 @@ import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashb
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
-import 'package:taskly_bloc/presentation/features/workflow/view/workflow_list_page.dart';
 
 /// Widget that renders a section from ScreenBloc state.
 ///
@@ -166,15 +163,6 @@ class SectionWidget extends StatelessWidget {
             data: d,
             title: section.title,
             compactTiles: compactTiles,
-            onProjectToggle: onProjectCheckboxChanged == null
-                ? null
-                : (projectId, val) {
-                    final project = d.items
-                        .whereType<ScreenItemProject>()
-                        .map((i) => i.project)
-                        .firstWhere((p) => p.id == projectId);
-                    onProjectCheckboxChanged?.call(project, val);
-                  },
           ),
           SectionTemplateId.valueList => ValueListRenderer(
             data: d,
@@ -233,7 +221,6 @@ class SectionWidget extends StatelessWidget {
       SectionTemplateId.settingsMenu ||
       SectionTemplateId.statisticsDashboard ||
       SectionTemplateId.journalTimeline ||
-      SectionTemplateId.workflowList ||
       SectionTemplateId.trackerManagement ||
       SectionTemplateId.wellbeingDashboard ||
       SectionTemplateId.allocationSettings ||
@@ -278,9 +265,6 @@ class SectionWidget extends StatelessWidget {
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
-      ),
-      SectionTemplateId.workflowList => WorkflowListPage(
-        userId: getIt<AuthRepositoryContract>().currentUser!.id,
       ),
       SectionTemplateId.journalTimeline => BlocProvider(
         create: (_) => JournalEntryBloc(

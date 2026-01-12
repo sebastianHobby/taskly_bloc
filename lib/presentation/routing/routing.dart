@@ -20,7 +20,7 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
 /// - **Entities**: `/:entityType/:id` â†’ parameterized, handled by [buildEntityDetail]
 ///
 /// Screen paths use convention: `screenKey` â†’ `/${screenKey}` with
-/// underscores converted to hyphens (e.g., `orphan_tasks` â†’ `/orphan-tasks`).
+/// underscores converted to hyphens (e.g., `my_day` â†’ `/my-day`).
 ///
 /// Entity paths use convention: `/${entityType}/${id}`
 /// (e.g., `/task/abc-123`, `/project/xyz-456`).

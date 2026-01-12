@@ -1,6 +1,5 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
-import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
 
 import '../../../helpers/fallback_values.dart';
 
@@ -144,12 +143,6 @@ void main() {
         expect(config.sorting, isEmpty);
       });
 
-      test('problemsToDetect defaults to empty list', () {
-        final config = DisplayConfig();
-
-        expect(config.problemsToDetect, isEmpty);
-      });
-
       test('showCompleted defaults to true', () {
         final config = DisplayConfig();
 
@@ -183,16 +176,6 @@ void main() {
         expect(config.sorting, hasLength(2));
         expect(config.sorting[0].field, SortField.priority);
         expect(config.sorting[1].field, SortField.name);
-      });
-
-      test('creates with problemsToDetect', () {
-        final problems = [
-          ProblemType.taskStale,
-          ProblemType.taskOrphan,
-        ];
-        final config = DisplayConfig(problemsToDetect: problems);
-
-        expect(config.problemsToDetect, problems);
       });
 
       test('creates with showCompleted false', () {
