@@ -103,7 +103,6 @@ void main() {
             isTrue,
           );
           expect(IdGenerator.isDeterministic('screen_definitions'), isTrue);
-          expect(IdGenerator.isDeterministic('workflow_definitions'), isTrue);
           expect(IdGenerator.isDeterministic('analytics_snapshots'), isTrue);
         });
 
@@ -122,7 +121,6 @@ void main() {
           expect(IdGenerator.isRandom('tasks'), isTrue);
           expect(IdGenerator.isRandom('projects'), isTrue);
           expect(IdGenerator.isRandom('journal_entries'), isTrue);
-          expect(IdGenerator.isRandom('workflows'), isTrue);
           expect(IdGenerator.isRandom('user_profiles'), isTrue);
           expect(IdGenerator.isRandom('pending_notifications'), isTrue);
           expect(IdGenerator.isRandom('analytics_correlations'), isTrue);
@@ -171,14 +169,6 @@ void main() {
       test('journalEntryId returns unique UUID', () {
         final id1 = idGenerator.journalEntryId();
         final id2 = idGenerator.journalEntryId();
-
-        expect(id1, isNot(equals(id2)));
-        expect(id1.length, 36);
-      });
-
-      test('workflowRunId returns unique UUID', () {
-        final id1 = idGenerator.workflowRunId();
-        final id2 = idGenerator.workflowRunId();
 
         expect(id1, isNot(equals(id2)));
         expect(id1.length, 36);
@@ -492,38 +482,6 @@ void main() {
         test('generates deterministic ID from screen key', () {
           final id1 = idGenerator.screenDefinitionId(screenKey: 'inbox');
           final id2 = idGenerator.screenDefinitionId(screenKey: 'inbox');
-
-          expect(id1, equals(id2));
-        });
-      });
-
-      group('workflowDefinitionId', () {
-        test('generates deterministic ID from name', () {
-          final id1 = idGenerator.workflowDefinitionId(name: 'Morning Review');
-          final id2 = idGenerator.workflowDefinitionId(name: 'Morning Review');
-
-          expect(id1, equals(id2));
-        });
-
-        test('normalizes name (case insensitive)', () {
-          final id1 = idGenerator.workflowDefinitionId(name: 'Morning Review');
-          final id2 = idGenerator.workflowDefinitionId(name: 'morning review');
-
-          expect(id1, equals(id2));
-        });
-
-        test('normalizes whitespace', () {
-          final id1 = idGenerator.workflowDefinitionId(name: 'Morning  Review');
-          final id2 = idGenerator.workflowDefinitionId(name: 'Morning Review');
-
-          expect(id1, equals(id2));
-        });
-
-        test('trims whitespace', () {
-          final id1 = idGenerator.workflowDefinitionId(
-            name: '  Morning Review  ',
-          );
-          final id2 = idGenerator.workflowDefinitionId(name: 'Morning Review');
 
           expect(id1, equals(id2));
         });

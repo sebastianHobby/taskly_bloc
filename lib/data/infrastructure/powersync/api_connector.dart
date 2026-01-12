@@ -348,7 +348,6 @@ class SupabaseConnector extends PowerSyncBackendConnector {
       'daily_tracker_responses' =>
         'trackerId="${data['tracker_id']}", date="${data['response_date']}"',
       'screen_definitions' => 'screenKey="${data['screen_key']}"',
-      'workflow_definitions' => 'workflowKey="${data['workflow_key']}"',
       'analytics_snapshots' =>
         'entityType="${data['entity_type']}", entityId="${data['entity_id']}",'
             ' date="${data['snapshot_date']}"',
@@ -484,9 +483,12 @@ Future<PowerSyncDatabase> openDatabase({
 
 Future<void> _migrateLegacyAttentionRuleTypeValues(PowerSyncDatabase db) async {
   try {
+    // Legacy versions stored enum names as snake_case (and some clients
+    // may have persisted camelCase values directly). Normalize to current
+    // canonical values so enum decoding doesn't fail.
     await db.execute(
-      "UPDATE attention_rules SET rule_type='workflowStep' "
-      "WHERE rule_type='workflow_step'",
+      "UPDATE attention_rules SET rule_type='problem' "
+      "WHERE rule_type IN ('workflow_step','workflowStep')",
     );
     await db.execute(
       "UPDATE attention_rules SET rule_type='allocationWarning' "

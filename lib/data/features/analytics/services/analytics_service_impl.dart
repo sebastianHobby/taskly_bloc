@@ -332,28 +332,6 @@ class AnalyticsServiceImpl implements AnalyticsService {
   }
 
   @override
-  Future<int> getOrphanTaskCount({bool excludeWithDeadline = false}) async {
-    // Query incomplete tasks
-    final tasks = await _taskRepo.watchAll().first;
-
-    return tasks.where((task) {
-      // Skip completed tasks
-      if (task.completed) return false;
-
-      // Check if task has no values
-      final hasNoValue = task.values.isEmpty;
-      if (!hasNoValue) return false;
-
-      // Optionally exclude tasks with deadlines
-      if (excludeWithDeadline && task.deadlineDate != null) {
-        return false;
-      }
-
-      return true;
-    }).length;
-  }
-
-  @override
   Future<Map<String, int>> getRecentCompletionsByValue({
     required int days,
   }) async {

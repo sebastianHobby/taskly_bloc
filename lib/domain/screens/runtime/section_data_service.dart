@@ -897,14 +897,12 @@ class SectionDataService {
           days: sparklineWeeks * 7,
         ),
         _analyticsService.getTotalRecentCompletions(days: sparklineWeeks * 7),
-        _analyticsService.getOrphanTaskCount(),
       ]);
 
       final weeklyTrends = results[0] as Map<String, List<double>>;
       final activityStats = results[1] as Map<String, ValueActivityStats>;
       final recentCompletions = results[2] as Map<String, int>;
       final totalRecentCompletions = results[3] as int;
-      final unassignedTaskCount = results[4] as int;
 
       final values = entities.cast<Value>();
 
@@ -950,7 +948,6 @@ class SectionDataService {
       return EnrichmentResult.valueStats(
         statsByValueId: statsByValueId,
         totalRecentCompletions: totalRecentCompletions,
-        unassignedTaskCount: unassignedTaskCount,
       );
     } catch (e, st) {
       talker.handle(

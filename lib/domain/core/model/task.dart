@@ -26,7 +26,6 @@ class Task {
     this.repeatIcalRrule,
     this.repeatFromCompletion = false,
     this.seriesEnded = false,
-    this.lastReviewedAt,
     this.project,
     this.values = const <Value>[],
     this.primaryValueId,
@@ -57,9 +56,6 @@ class Task {
 
   /// When true, stops generating future occurrences for this repeating task.
   final bool seriesEnded;
-
-  /// Timestamp of when this task was last reviewed in a workflow.
-  final DateTime? lastReviewedAt;
 
   final Project? project;
   final List<Value> values;
@@ -112,7 +108,6 @@ class Task {
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
     bool? seriesEnded,
-    DateTime? lastReviewedAt,
     Project? project,
     List<Value>? values,
     String? primaryValueId,
@@ -133,7 +128,6 @@ class Task {
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
       repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
       seriesEnded: seriesEnded ?? this.seriesEnded,
-      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
       project: project ?? this.project,
       values: values ?? this.values,
       primaryValueId: primaryValueId ?? this.primaryValueId,
@@ -159,7 +153,6 @@ class Task {
         other.repeatIcalRrule == repeatIcalRrule &&
         other.repeatFromCompletion == repeatFromCompletion &&
         other.seriesEnded == seriesEnded &&
-        other.lastReviewedAt == lastReviewedAt &&
         other.project == project &&
         listEquals(other.values, values) &&
         other.primaryValueId == primaryValueId &&
@@ -182,7 +175,6 @@ class Task {
     repeatIcalRrule,
     repeatFromCompletion,
     seriesEnded,
-    lastReviewedAt,
     project,
     Object.hashAll(values),
     primaryValueId,

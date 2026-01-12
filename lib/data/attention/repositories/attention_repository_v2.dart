@@ -390,8 +390,6 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
         return domain_rule.AttentionRuleType.problem;
       case drift_attention.AttentionRuleType.review:
         return domain_rule.AttentionRuleType.review;
-      case drift_attention.AttentionRuleType.workflowStep:
-        return domain_rule.AttentionRuleType.workflowStep;
       case drift_attention.AttentionRuleType.allocationWarning:
         return domain_rule.AttentionRuleType.allocationWarning;
     }
@@ -405,8 +403,6 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
         return drift_attention.AttentionRuleType.problem;
       case domain_rule.AttentionRuleType.review:
         return drift_attention.AttentionRuleType.review;
-      case domain_rule.AttentionRuleType.workflowStep:
-        return drift_attention.AttentionRuleType.workflowStep;
       case domain_rule.AttentionRuleType.allocationWarning:
         return drift_attention.AttentionRuleType.allocationWarning;
     }

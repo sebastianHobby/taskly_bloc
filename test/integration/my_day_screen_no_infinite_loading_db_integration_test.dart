@@ -1,6 +1,5 @@
 ﻿import 'package:mocktail/mocktail.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/screens/default_system_screen_provider.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
@@ -115,13 +114,9 @@ void main() {
           dayKeyService: dayKeyService,
           invalidations: const Stream<void>.empty(),
         );
-
-        const systemScreenProvider = DefaultSystemScreenProvider();
         final screenRepository = ScreenDefinitionsRepository(
           databaseRepository: ScreenDefinitionsRepositoryImpl(
             db,
-            idGenerator,
-            systemScreenProvider,
           ),
         );
 

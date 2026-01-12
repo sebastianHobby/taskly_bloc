@@ -12,13 +12,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_var
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/workflow/model/problem_action.dart';
-import 'package:taskly_bloc/domain/workflow/model/problem_definition.dart';
-import 'package:taskly_bloc/domain/workflow/model/problem_type.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/analytics/model/correlation_request.dart';
 
@@ -27,22 +20,9 @@ import '../fixtures/test_data.dart';
 /// Fake implementations for mocktail's any() matcher.
 class FakeTaskQuery extends Fake implements TaskQuery {}
 
-// Note: ViewDefinition is sealed, so we use a real instance as fallback
-// Note: ProblemAction is sealed, so we use a real instance as fallback
-
-class FakeWorkflowDefinition extends Fake implements WorkflowDefinition {}
-
-class FakeWorkflow extends Fake implements Workflow {}
-
 class FakeEntitySelector extends Fake implements EntitySelector {}
 
 class FakeDisplayConfig extends Fake implements DisplayConfig {}
-
-class FakeWorkflowStep extends Fake implements WorkflowStep {}
-
-class FakeWorkflowStepState extends Fake implements WorkflowStepState {}
-
-class FakeProblemDefinition extends Fake implements ProblemDefinition {}
 
 /// Registers fallback values for mocktail's `any()` matcher.
 ///
@@ -67,16 +47,8 @@ void registerAllFallbackValues() {
 
   // === Fake Types ===
   registerFallbackValue(FakeTaskQuery());
-  registerFallbackValue(FakeWorkflowDefinition());
-  registerFallbackValue(FakeWorkflow());
   registerFallbackValue(FakeEntitySelector());
   registerFallbackValue(FakeDisplayConfig());
-  registerFallbackValue(FakeWorkflowStep());
-  registerFallbackValue(FakeWorkflowStepState());
-  registerFallbackValue(FakeProblemDefinition());
-
-  // === Sealed Classes (use real instances) ===
-  registerFallbackValue(const ProblemAction.rescheduleToday());
   registerFallbackValue(
     SectionRef(
       templateId: SectionTemplateId.taskList,
@@ -105,14 +77,6 @@ void registerAllFallbackValues() {
   registerFallbackValue(const DisplayConfig());
   registerFallbackValue(const SortPreferences());
   registerFallbackValue(const PageDisplaySettings());
-
-  // === Workflows ===
-  registerFallbackValue(TestData.workflowDefinition());
-  registerFallbackValue(TestData.workflow());
-  registerFallbackValue(TestData.workflowStep());
-  registerFallbackValue(TestData.workflowStepState());
-  registerFallbackValue(WorkflowStatus.inProgress);
-  registerFallbackValue(ProblemType.taskStale);
 
   // === Analytics ===
   registerFallbackValue(TestData.correlation());

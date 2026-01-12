@@ -9,7 +9,6 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 
 /// Shared mock implementations for repository contracts.
 ///
@@ -42,9 +41,6 @@ class MockOccurrenceWriteHelperContract extends Mock
 
 class MockScreenDefinitionsRepositoryContract extends Mock
     implements ScreenDefinitionsRepositoryContract {}
-
-class MockWorkflowRepositoryContract extends Mock
-    implements WorkflowRepositoryContract {}
 
 // === Notifications ===
 

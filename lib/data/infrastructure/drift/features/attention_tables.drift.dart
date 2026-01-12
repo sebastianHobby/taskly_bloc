@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/converters/json_converters
 import 'package:taskly_bloc/data/infrastructure/drift/features/shared_enums.dart';
 
 /// Attention rule types
-enum AttentionRuleType { problem, review, workflowStep, allocationWarning }
+enum AttentionRuleType { problem, review, allocationWarning }
 
 /// Attention trigger types (when rules are evaluated)
 enum AttentionTriggerType { realtime, scheduled }
@@ -33,7 +33,7 @@ class AttentionRules extends Table {
   /// Stable sub-category within a domain.
   TextColumn get category => text().named('category')();
 
-  /// Rule type: problem, review, workflow_step, allocation_warning
+  /// Rule type: problem, review, allocation_warning
   TextColumn get ruleType => textEnum<AttentionRuleType>().named('rule_type')();
 
   /// Trigger type: realtime or scheduled

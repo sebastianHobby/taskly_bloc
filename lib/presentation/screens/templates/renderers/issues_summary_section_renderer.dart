@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 
@@ -62,13 +61,6 @@ class IssuesSummarySectionRenderer extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...data.items.take(3).map((item) => AttentionItemTile(item: item)),
-          if (data.items.length > 3)
-            TextButton(
-              onPressed: () {
-                Routing.toScreenKey(context, 'orphan_tasks');
-              },
-              child: Text('View all ${data.items.length} issues'),
-            ),
         ],
       ),
     );

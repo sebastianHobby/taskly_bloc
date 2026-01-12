@@ -163,7 +163,7 @@ void main() {
 
   group('SectionWidget project checkbox completion', () {
     testWidgetsSafe(
-      'passes checkbox callback through to ProjectListTile',
+      'does not render a checkbox for project list tiles',
       (tester) async {
         final project = TestData.project(
           id: 'project-1',
@@ -171,132 +171,13 @@ void main() {
           completed: false,
         );
 
-        Project? receivedProject;
-        bool? receivedValue;
-
         await _pumpSectionWidget(
           tester,
           section: _createProjectSection(projects: [project]),
-          onProjectCheckboxChanged: (p, v) {
-            receivedProject = p;
-            receivedValue = v;
-          },
+          onProjectCheckboxChanged: (_, __) {},
         );
 
-        // Find and tap the checkbox
-        final checkbox = find.byType(Checkbox);
-        expect(checkbox, findsOneWidget);
-        await tester.tap(checkbox);
-        await tester.pumpForStream();
-
-        // Verify callback was received
-        expect(receivedProject, isNotNull);
-        expect(receivedProject!.id, equals('project-1'));
-        expect(receivedValue, isTrue);
-      },
-    );
-
-    testWidgetsSafe(
-      'handles multiple projects with individual checkboxes',
-      (tester) async {
-        final project1 = TestData.project(
-          id: 'project-1',
-          name: 'Project One',
-          completed: false,
-        );
-        final project2 = TestData.project(
-          id: 'project-2',
-          name: 'Project Two',
-          completed: false,
-        );
-
-        final callbackLog = <(String, bool?)>[];
-
-        await _pumpSectionWidget(
-          tester,
-          section: _createProjectSection(projects: [project1, project2]),
-          onProjectCheckboxChanged: (p, v) {
-            callbackLog.add((p.id, v));
-          },
-        );
-
-        // Find all checkboxes
-        final checkboxes = find.byType(Checkbox);
-        expect(checkboxes, findsNWidgets(2));
-
-        // Tap the first checkbox
-        await tester.tap(checkboxes.first);
-        await tester.pumpForStream();
-
-        // Verify the first project's callback was triggered
-        expect(callbackLog, hasLength(1));
-        expect(callbackLog.first.$1, equals('project-1'));
-        expect(callbackLog.first.$2, isTrue);
-      },
-    );
-
-    testWidgetsSafe(
-      'handles uncomplete flow for completed projects',
-      (tester) async {
-        final completedProject = TestData.project(
-          id: 'project-1',
-          name: 'Completed Project',
-          completed: true,
-        );
-
-        Project? receivedProject;
-        bool? receivedValue;
-
-        await _pumpSectionWidget(
-          tester,
-          section: _createProjectSection(projects: [completedProject]),
-          onProjectCheckboxChanged: (p, v) {
-            receivedProject = p;
-            receivedValue = v;
-          },
-        );
-
-        // Tap the checkbox to uncomplete
-        await tester.tap(find.byType(Checkbox));
-        await tester.pumpForStream();
-
-        // Verify callback received false (uncomplete)
-        expect(receivedProject, isNotNull);
-        expect(receivedProject!.id, equals('project-1'));
-        expect(receivedValue, isFalse);
-      },
-    );
-
-    testWidgetsSafe(
-      'handles repeating project checkbox correctly',
-      (tester) async {
-        final repeatingProject = TestData.project(
-          id: 'repeating-project',
-          name: 'Weekly Project',
-          completed: false,
-          repeatIcalRrule: 'FREQ=WEEKLY',
-        );
-
-        Project? receivedProject;
-        bool? receivedValue;
-
-        await _pumpSectionWidget(
-          tester,
-          section: _createProjectSection(projects: [repeatingProject]),
-          onProjectCheckboxChanged: (p, v) {
-            receivedProject = p;
-            receivedValue = v;
-          },
-        );
-
-        await tester.tap(find.byType(Checkbox));
-        await tester.pumpForStream();
-
-        // Verify repeating project data was passed correctly
-        expect(receivedProject, isNotNull);
-        expect(receivedProject!.id, equals('repeating-project'));
-        expect(receivedProject!.repeatIcalRrule, equals('FREQ=WEEKLY'));
-        expect(receivedValue, isTrue);
+        expect(find.byType(Checkbox), findsNothing);
       },
     );
   });

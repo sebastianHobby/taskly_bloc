@@ -12,7 +12,6 @@ class Value {
     this.color,
     this.iconName,
     this.priority = ValuePriority.medium,
-    this.lastReviewedAt,
   });
 
   final String id;
@@ -23,9 +22,6 @@ class Value {
   final String? iconName;
   final ValuePriority priority;
 
-  /// Last time this value was reviewed in a workflow
-  final DateTime? lastReviewedAt;
-
   /// Creates a copy of this Value with the given fields replaced.
   Value copyWith({
     String? id,
@@ -35,7 +31,6 @@ class Value {
     String? color,
     String? iconName,
     ValuePriority? priority,
-    DateTime? lastReviewedAt,
   }) {
     return Value(
       id: id ?? this.id,
@@ -45,7 +40,6 @@ class Value {
       color: color ?? this.color,
       iconName: iconName ?? this.iconName,
       priority: priority ?? this.priority,
-      lastReviewedAt: lastReviewedAt ?? this.lastReviewedAt,
     );
   }
 
@@ -59,8 +53,7 @@ class Value {
         other.name == name &&
         other.color == color &&
         other.iconName == iconName &&
-        other.priority == priority &&
-        other.lastReviewedAt == lastReviewedAt;
+        other.priority == priority;
   }
 
   @override
@@ -72,11 +65,10 @@ class Value {
     color,
     iconName,
     priority,
-    lastReviewedAt,
   );
 
   @override
   String toString() {
-    return 'Value(id: $id, name: $name, color: $color, iconName: $iconName, priority: $priority, lastReviewedAt: $lastReviewedAt)';
+    return 'Value(id: $id, name: $name, color: $color, iconName: $iconName, priority: $priority)';
   }
 }

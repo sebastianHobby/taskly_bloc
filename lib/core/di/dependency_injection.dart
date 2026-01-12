@@ -28,7 +28,6 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
-import 'package:taskly_bloc/data/screens/default_system_screen_provider.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
@@ -42,7 +41,6 @@ import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
@@ -195,17 +193,11 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
       () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
-    // System screen provider - validates system screens
-    ..registerLazySingleton<SystemScreenProvider>(
-      () => const DefaultSystemScreenProvider(),
-    )
     // Screens - all screens come from DB (system seeded + custom)
     ..registerLazySingleton<ScreenDefinitionsRepositoryContract>(
       () => ScreenDefinitionsRepository(
         databaseRepository: ScreenDefinitionsRepositoryImpl(
           getIt<AppDatabase>(),
-          getIt<IdGenerator>(),
-          getIt<SystemScreenProvider>(),
         ),
       ),
     )
@@ -402,11 +394,6 @@ Future<void> setupDependencies() async {
       instanceName: SectionTemplateId.settingsMenu,
     )
     ..registerLazySingleton<StaticSectionInterpreter>(
-      () =>
-          StaticSectionInterpreter(templateId: SectionTemplateId.workflowList),
-      instanceName: SectionTemplateId.workflowList,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
       () => StaticSectionInterpreter(
         templateId: SectionTemplateId.journalTimeline,
       ),
@@ -435,12 +422,6 @@ Future<void> setupDependencies() async {
         templateId: SectionTemplateId.focusSetupWizard,
       ),
       instanceName: SectionTemplateId.focusSetupWizard,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.screenManagement,
-      ),
-      instanceName: SectionTemplateId.screenManagement,
     )
     ..registerLazySingleton<StaticSectionInterpreter>(
       () => StaticSectionInterpreter(
@@ -503,9 +484,6 @@ Future<void> setupDependencies() async {
           instanceName: SectionTemplateId.statisticsDashboard,
         ),
         getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.workflowList,
-        ),
-        getIt<StaticSectionInterpreter>(
           instanceName: SectionTemplateId.journalTimeline,
         ),
         getIt<StaticSectionInterpreter>(
@@ -519,9 +497,6 @@ Future<void> setupDependencies() async {
         ),
         getIt<StaticSectionInterpreter>(
           instanceName: SectionTemplateId.focusSetupWizard,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.screenManagement,
         ),
         getIt<StaticSectionInterpreter>(
           instanceName: SectionTemplateId.trackerManagement,

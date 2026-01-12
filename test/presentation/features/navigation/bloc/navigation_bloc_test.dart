@@ -8,7 +8,6 @@ import '../../../../helpers/bloc_test_patterns.dart';
 import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
@@ -430,21 +429,6 @@ void main() {
       // Journal uses book icon
       expect(result.icon, Icons.book_outlined);
       expect(result.selectedIcon, Icons.book);
-    });
-
-    test('resolves workflows icon by screenId', () {
-      final result = resolver.resolve(screenId: 'workflows', iconName: null);
-      expect(result.icon, Icons.account_tree_outlined);
-      expect(result.selectedIcon, Icons.account_tree);
-    });
-
-    test('resolves screen_management icon by screenId', () {
-      final result = resolver.resolve(
-        screenId: 'screen_management',
-        iconName: null,
-      );
-      expect(result.icon, Icons.dashboard_customize_outlined);
-      expect(result.selectedIcon, Icons.dashboard_customize);
     });
 
     test('resolves settings icon by screenId', () {

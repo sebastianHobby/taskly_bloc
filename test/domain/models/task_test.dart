@@ -43,7 +43,6 @@ void main() {
           repeatIcalRrule: 'FREQ=DAILY',
           repeatFromCompletion: true,
           seriesEnded: true,
-          lastReviewedAt: now,
         );
 
         expect(task.description, 'A description');
@@ -54,7 +53,6 @@ void main() {
         expect(task.repeatIcalRrule, 'FREQ=DAILY');
         expect(task.repeatFromCompletion, true);
         expect(task.seriesEnded, true);
-        expect(task.lastReviewedAt, now);
       });
 
       test('defaults values to empty list', () {

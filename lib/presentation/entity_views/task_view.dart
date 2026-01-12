@@ -137,16 +137,27 @@ class TaskView extends StatelessWidget {
         onTap: () => onTap != null
             ? onTap!(task)
             : Routing.toEntity(context, EntityType.task, task.id),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _TaskCheckbox(
-                completed: task.completed,
-                isOverdue: isOverdue,
-                onChanged: (value) => onCheckboxChanged(task, value),
-                taskName: task.name,
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: _TaskCheckbox(
+                  completed: task.completed,
+                  isOverdue: isOverdue,
+                  onChanged: (value) => onCheckboxChanged(task, value),
+                  taskName: task.name,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -297,13 +308,22 @@ class _MetaLine extends StatelessWidget {
 
     final pName = projectName?.trim();
     if (pName != null && pName.isNotEmpty) {
+      if (children.isNotEmpty) {
+        children.add(
+          Container(
+            height: 14,
+            width: 1,
+            color: scheme.outlineVariant,
+          ),
+        );
+      }
       children.add(
         Text(
-          pName,
+          'Project: $pName',
           style: theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w500,
             fontSize: 11,
-            color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+            color: scheme.primary,
           ),
           overflow: TextOverflow.ellipsis,
         ),
@@ -313,22 +333,14 @@ class _MetaLine extends StatelessWidget {
     if (children.isEmpty && dateToken == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      padding: const EdgeInsets.only(top: 6),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: children,
-            ),
-          ),
-          if (dateToken != null) ...[
-            const SizedBox(width: 12),
-            dateToken,
-          ],
+          ...children,
+          ?dateToken,
         ],
       ),
     );

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hybrid List Percentage Progress</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "surface-dark": "#111a22",
+                        "border-dark": "#233648",
+                        "text-secondary": "#92adc9"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #101922; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #233648; 
+            border-radius: 3px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center">
+<div class="relative w-full max-w-md h-full min-h-screen bg-surface-dark overflow-hidden flex flex-col shadow-2xl">
+<div class="h-10 bg-surface-dark w-full shrink-0"></div>
+<div class="flex items-center bg-surface-dark px-4 py-2 justify-between shrink-0 z-10 sticky top-0 border-b border-border-dark/30">
+<div class="text-white flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-white/5 cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-2">My Tasks</h2>
+<div class="flex items-center justify-end">
+<button class="text-text-secondary hover:text-white text-sm font-semibold tracking-wide transition-colors">Edit</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto pb-20">
+<div class="flex flex-col">
+<div class="group flex gap-3 bg-surface-dark px-4 py-4 border-b border-border-dark hover:bg-white/[0.02] transition-colors cursor-pointer">
+<div class="shrink-0 pt-0.5">
+<div class="relative size-10 flex items-center justify-center">
+<svg class="size-full -rotate-90" viewBox="0 0 36 36">
+<path class="text-border-dark" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-primary drop-shadow-[0_0_2px_rgba(19,127,236,0.5)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="30, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[10px] font-bold text-white tracking-tighter">30%</span>
+</div>
+</div>
+<div class="flex flex-1 flex-col gap-1.5 min-w-0">
+<div class="flex justify-between items-start gap-2 h-6 items-center">
+<h3 class="text-white text-[16px] font-semibold leading-tight truncate">Q4 Health Goals</h3>
+<span class="material-symbols-outlined text-red-500 text-[20px] shrink-0" title="High Priority">flag</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full mt-0.5">
+<div class="bg-primary text-white h-5 px-2 rounded-full flex items-center gap-1 shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[12px] font-bold">monitor_heart</span>
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">health</span>
+</div>
+<div class="border border-border-dark text-text-secondary h-5 px-2 rounded-full flex items-center gap-1 shrink-0">
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">career</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-text-secondary overflow-hidden mt-0.5">
+<div class="flex items-center gap-1 shrink-0">
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+<span class="text-[12px] font-medium whitespace-nowrap">Oct 1</span>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<span class="material-symbols-outlined text-[16px]">sports_score</span>
+<span class="text-[12px] font-medium whitespace-nowrap">Nov 15</span>
+</div>
+<span class="material-symbols-outlined text-[16px] shrink-0">repeat</span>
+</div>
+</div>
+</div>
+<div class="group flex gap-3 bg-surface-dark px-4 py-4 border-b border-border-dark hover:bg-white/[0.02] transition-colors cursor-pointer">
+<div class="shrink-0 pt-0.5">
+<div class="relative size-10 flex items-center justify-center">
+<svg class="size-full -rotate-90" viewBox="0 0 36 36">
+<path class="text-border-dark" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+<path class="text-primary drop-shadow-[0_0_2px_rgba(19,127,236,0.5)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="50, 100" stroke-linecap="round" stroke-width="3"></path>
+</svg>
+<span class="absolute text-[10px] font-bold text-white tracking-tighter">50%</span>
+</div>
+</div>
+<div class="flex flex-1 flex-col gap-1.5 min-w-0">
+<div class="flex justify-between items-start gap-2 h-6 items-center">
+<h3 class="text-white text-[16px] font-semibold leading-tight truncate">Website Redesign</h3>
+<span class="material-symbols-outlined text-orange-400 text-[20px] shrink-0" title="Medium Priority">flag</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full mt-0.5">
+<div class="bg-primary text-white h-5 px-2 rounded-full flex items-center gap-1 shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[12px] font-bold">code</span>
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">dev</span>
+</div>
+<div class="border border-border-dark text-text-secondary h-5 px-2 rounded-full flex items-center gap-1 shrink-0">
+<span class="material-symbols-outlined text-[12px]">palette</span>
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">design</span>
+</div>
+</div>
+<div class="flex items-center gap-3 text-text-secondary overflow-hidden mt-0.5">
+<div class="flex items-center gap-1 shrink-0">
+<span class="material-symbols-outlined text-[16px]">calendar_month</span>
+<span class="text-[12px] font-medium whitespace-nowrap">Oct 5</span>
+</div>
+<div class="flex items-center gap-1 shrink-0">
+<span class="material-symbols-outlined text-[16px]">sports_score</span>
+<span class="text-[12px] font-medium whitespace-nowrap">Dec 1</span>
+</div>
+</div>
+</div>
+</div>
+<div class="group flex gap-3 bg-surface-dark px-4 py-3 border-b border-border-dark hover:bg-white/[0.02] transition-colors cursor-pointer">
+<div class="shrink-0 pt-0.5 flex items-start justify-center size-6">
+<input class="size-5 rounded border-2 border-text-secondary/50 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" style="--tw-border-opacity: 0.5;" type="checkbox"/>
+</div>
+<div class="flex flex-1 flex-col gap-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h3 class="text-white text-[15px] font-medium leading-tight truncate">Morning Jog</h3>
+<span class="material-symbols-outlined text-text-secondary/50 text-[20px] shrink-0 group-hover:text-text-secondary transition-colors">flag</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full mt-0.5">
+<div class="bg-primary text-white h-5 px-2 rounded-full flex items-center gap-1 shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[12px] font-bold">directions_run</span>
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">health</span>
+</div>
+<div class="w-[1px] h-3 bg-border-dark mx-0.5"></div>
+<div class="flex items-center gap-3 text-text-secondary overflow-hidden flex-wrap">
+<span class="text-[11px] font-medium text-primary/80 whitespace-nowrap">Project: Fitness</span>
+<div class="flex items-center gap-1 shrink-0 text-white/90">
+<span class="material-symbols-outlined text-[14px]">today</span>
+<span class="text-[11px] font-medium whitespace-nowrap">Today 08:00 AM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="group flex gap-3 bg-surface-dark px-4 py-3 border-b border-border-dark hover:bg-white/[0.02] transition-colors cursor-pointer">
+<div class="shrink-0 pt-0.5 flex items-start justify-center size-6">
+<input class="size-5 rounded border-2 border-text-secondary/50 bg-transparent text-primary checked:bg-primary checked:border-primary focus:ring-0 focus:ring-offset-0 transition-all cursor-pointer" style="--tw-border-opacity: 0.5;" type="checkbox"/>
+</div>
+<div class="flex flex-1 flex-col gap-1 min-w-0">
+<div class="flex justify-between items-start gap-2">
+<h3 class="text-white text-[15px] font-medium leading-tight truncate">Submit Q3 Report</h3>
+<span class="material-symbols-outlined text-red-500 text-[20px] shrink-0">flag</span>
+</div>
+<div class="flex flex-wrap items-center gap-2 w-full mt-0.5">
+<div class="bg-primary text-white h-5 px-2 rounded-full flex items-center gap-1 shadow-sm shrink-0">
+<span class="material-symbols-outlined text-[12px] font-bold">work</span>
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">work</span>
+</div>
+<div class="border border-border-dark text-text-secondary h-5 px-2 rounded-full flex items-center gap-1 shrink-0">
+<span class="text-[10px] font-medium leading-none lowercase pb-[1px]">career</span>
+</div>
+<div class="w-[1px] h-3 bg-border-dark mx-0.5"></div>
+<div class="flex items-center gap-3 text-text-secondary overflow-hidden flex-wrap">
+<span class="text-[11px] font-medium text-primary/80 whitespace-nowrap">Project: Marketing</span>
+<div class="flex items-center gap-1 shrink-0 text-orange-400">
+<span class="material-symbols-outlined text-[14px]">flag</span>
+<span class="text-[11px] font-medium whitespace-nowrap">Tomorrow</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="absolute bottom-6 right-6">
+<button class="bg-primary hover:bg-blue-600 text-white size-14 rounded-full flex items-center justify-center shadow-lg shadow-black/40 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[28px]">add</span>
+</button>
+</div>
+<div class="h-16 bg-surface-dark border-t border-border-dark w-full shrink-0 flex items-center justify-around px-2 z-10">
+<div class="flex flex-col items-center gap-1 p-2 text-primary cursor-pointer">
+<span class="material-symbols-outlined fill-1">format_list_bulleted</span>
+<span class="text-[10px] font-medium">Tasks</span>
+</div>
+<div class="flex flex-col items-center gap-1 p-2 text-text-secondary hover:text-white cursor-pointer transition-colors">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-[10px] font-medium">Calendar</span>
+</div>
+<div class="flex flex-col items-center gap-1 p-2 text-text-secondary hover:text-white cursor-pointer transition-colors">
+<span class="material-symbols-outlined">search</span>
+<span class="text-[10px] font-medium">Search</span>
+</div>
+<div class="flex flex-col items-center gap-1 p-2 text-text-secondary hover:text-white cursor-pointer transition-colors">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</div>
+</div>
+</div>
+
+</body></html>

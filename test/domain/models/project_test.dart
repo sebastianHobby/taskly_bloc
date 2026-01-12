@@ -39,7 +39,6 @@ void main() {
           startDate: now,
           deadlineDate: deadline,
           priority: 2,
-          lastReviewedAt: now,
           repeatIcalRrule: 'FREQ=MONTHLY',
           repeatFromCompletion: true,
           seriesEnded: true,
@@ -49,7 +48,6 @@ void main() {
         expect(project.startDate, now);
         expect(project.deadlineDate, deadline);
         expect(project.priority, 2);
-        expect(project.lastReviewedAt, now);
         expect(project.repeatIcalRrule, 'FREQ=MONTHLY');
         expect(project.repeatFromCompletion, true);
         expect(project.seriesEnded, true);

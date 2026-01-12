@@ -22,10 +22,6 @@ import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_step.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_step_state.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
@@ -148,7 +144,6 @@ class TestData {
     ValuePriority priority = ValuePriority.medium,
     DateTime? createdAt,
     DateTime? updatedAt,
-    DateTime? lastReviewedAt,
   }) {
     final now = DateTime.now();
     return Value(
@@ -159,7 +154,6 @@ class TestData {
       color: color,
       iconName: iconName,
       priority: priority,
-      lastReviewedAt: lastReviewedAt,
     );
   }
 
@@ -381,106 +375,6 @@ class TestData {
   }
 
   // === Enums and Simple Types ===
-
-  // === Workflows ===
-
-  /// Creates a workflow definition for testing
-  static WorkflowDefinition workflowDefinition({
-    String? id,
-    String name = 'Test Workflow',
-    List<WorkflowStep>? steps,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    DateTime? lastCompletedAt,
-    String? description,
-    String? iconName,
-    bool isSystem = false,
-    bool isActive = true,
-  }) {
-    final now = DateTime.now();
-    return WorkflowDefinition(
-      id: id ?? _nextId('workflow-def'),
-      name: name,
-      steps: steps ?? [workflowStep()],
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      lastCompletedAt: lastCompletedAt,
-      description: description,
-      iconName: iconName,
-      isSystem: isSystem,
-      isActive: isActive,
-    );
-  }
-
-  /// Creates a workflow step for testing
-  static WorkflowStep workflowStep({
-    String? id,
-    String name = 'Test Step',
-    int order = 0,
-    List<SectionRef>? sections,
-    String? description,
-  }) {
-    return WorkflowStep(
-      id: id ?? _nextId('workflow-step'),
-      name: name,
-      order: order,
-      sections:
-          sections ??
-          [
-            SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
-                config: DataConfig.task(query: TaskQuery.all()),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-                display: const display.DisplayConfig(),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Test Section'),
-            ),
-          ],
-      description: description,
-    );
-  }
-
-  /// Creates a workflow (runtime instance) for testing
-  static Workflow workflow({
-    String? id,
-    String? workflowDefinitionId,
-    WorkflowStatus status = WorkflowStatus.inProgress,
-    List<WorkflowStepState>? stepStates,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    DateTime? completedAt,
-    int currentStepIndex = 0,
-  }) {
-    final now = DateTime.now();
-    return Workflow(
-      id: id ?? _nextId('workflow'),
-      workflowDefinitionId: workflowDefinitionId ?? 'workflow-def-1',
-      status: status,
-      stepStates: stepStates ?? [workflowStepState()],
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      completedAt: completedAt,
-      currentStepIndex: currentStepIndex,
-    );
-  }
-
-  /// Creates a workflow step state for testing
-  static WorkflowStepState workflowStepState({
-    int stepIndex = 0,
-    List<String> reviewedEntityIds = const [],
-    List<String> skippedEntityIds = const [],
-    List<String> pendingEntityIds = const [],
-  }) {
-    return WorkflowStepState(
-      stepIndex: stepIndex,
-      reviewedEntityIds: reviewedEntityIds,
-      skippedEntityIds: skippedEntityIds,
-      pendingEntityIds: pendingEntityIds,
-    );
-  }
 
   // === Screens ===
 

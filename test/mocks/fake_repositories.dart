@@ -5,11 +5,8 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/workflow_repository_contract.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow.dart';
-import 'package:taskly_bloc/domain/workflow/model/workflow_definition.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
@@ -108,25 +105,6 @@ class FakeTaskRepository implements TaskRepositoryContract {
     final old = _last[idx];
     final updated = [..._last];
     updated[idx] = old.copyWith(isPinned: isPinned, updatedAt: DateTime.now());
-
-    _last = updated;
-    _controller.add(_last);
-  }
-
-  @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    final idx = _last.indexWhere((t) => t.id == id);
-    if (idx == -1) return;
-
-    final old = _last[idx];
-    final updated = [..._last];
-    updated[idx] = old.copyWith(
-      lastReviewedAt: reviewedAt,
-      updatedAt: DateTime.now(),
-    );
 
     _last = updated;
     _controller.add(_last);
@@ -495,39 +473,6 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    final idx = _last.indexWhere((p) => p.id == id);
-    if (idx == -1) return;
-
-    final old = _last[idx];
-    final updated = [..._last];
-    // Project.copyWith doesn't include lastReviewedAt, so construct manually
-    updated[idx] = Project(
-      id: old.id,
-      createdAt: old.createdAt,
-      updatedAt: DateTime.now(),
-      name: old.name,
-      completed: old.completed,
-      description: old.description,
-      startDate: old.startDate,
-      deadlineDate: old.deadlineDate,
-      priority: old.priority,
-      lastReviewedAt: reviewedAt,
-      repeatIcalRrule: old.repeatIcalRrule,
-      repeatFromCompletion: old.repeatFromCompletion,
-      seriesEnded: old.seriesEnded,
-      values: old.values,
-      occurrence: old.occurrence,
-    );
-
-    _last = updated;
-    _controller.add(_last);
-  }
-
-  @override
   Future<void> delete(String id) async {
     _last = _last.where((p) => p.id != id).toList();
     _controller.add(_last);
@@ -663,26 +608,6 @@ class FakeValueRepository implements ValueRepositoryContract {
       color: color,
       iconName: iconName,
       priority: priority ?? old.priority,
-      lastReviewedAt: old.lastReviewedAt,
-    );
-
-    _last = updated;
-    _controller.add(_last);
-  }
-
-  @override
-  Future<void> updateLastReviewedAt({
-    required String id,
-    required DateTime reviewedAt,
-  }) async {
-    final idx = _last.indexWhere((v) => v.id == id);
-    if (idx == -1) return;
-
-    final old = _last[idx];
-    final updated = [..._last];
-    updated[idx] = old.copyWith(
-      lastReviewedAt: reviewedAt,
-      updatedAt: DateTime.now(),
     );
 
     _last = updated;
@@ -713,197 +638,5 @@ class FakeValueRepository implements ValueRepositoryContract {
 
   void dispose() {
     _controller.close();
-  }
-}
-
-/// Minimal in-memory fake repository for workflow operations.
-class FakeWorkflowRepository implements WorkflowRepositoryContract {
-  FakeWorkflowRepository();
-
-  final _definitionsController =
-      BehaviorSubject<List<WorkflowDefinition>>.seeded([]);
-  final _workflowControllers = <String, BehaviorSubject<Workflow>>{};
-  final _activeWorkflowsController = BehaviorSubject<List<Workflow>>.seeded([]);
-
-  List<WorkflowDefinition> get _definitions => _definitionsController.value;
-  set _definitions(List<WorkflowDefinition> value) =>
-      _definitionsController.add(value);
-
-  List<Workflow> _workflows = [];
-
-  // === Test Helpers ===
-
-  void pushWorkflowDefinitions(List<WorkflowDefinition> definitions) {
-    _definitionsController.add(definitions);
-  }
-
-  void pushWorkflows(List<Workflow> workflows) {
-    _workflows = workflows;
-    _activeWorkflowsController.add(
-      workflows.where((w) => w.status == WorkflowStatus.inProgress).toList(),
-    );
-    // Also update individual workflow controllers
-    for (final workflow in workflows) {
-      _workflowControllers.putIfAbsent(
-        workflow.id,
-        () => BehaviorSubject<Workflow>.seeded(workflow),
-      );
-      _workflowControllers[workflow.id]!.add(workflow);
-    }
-  }
-
-  // === Workflow Definitions ===
-
-  @override
-  Future<WorkflowDefinition> createWorkflowDefinition(
-    WorkflowDefinition definition,
-  ) async {
-    final id = definition.id.isEmpty
-        ? 'workflow-def-${DateTime.now().microsecondsSinceEpoch}'
-        : definition.id;
-    final created = definition.id.isEmpty
-        ? WorkflowDefinition(
-            id: id,
-            name: definition.name,
-            steps: definition.steps,
-            createdAt: definition.createdAt,
-            updatedAt: definition.updatedAt,
-            triggerConfig: definition.triggerConfig,
-            lastCompletedAt: definition.lastCompletedAt,
-            description: definition.description,
-            iconName: definition.iconName,
-            isSystem: definition.isSystem,
-            isActive: definition.isActive,
-          )
-        : definition;
-    _definitions = [..._definitions, created];
-    _definitionsController.add(_definitions);
-    return created;
-  }
-
-  @override
-  Future<void> updateWorkflowDefinition(WorkflowDefinition definition) async {
-    final idx = _definitions.indexWhere((d) => d.id == definition.id);
-    if (idx == -1) return;
-
-    final updated = [..._definitions];
-    updated[idx] = definition;
-    _definitions = updated;
-    _definitionsController.add(_definitions);
-  }
-
-  @override
-  Future<void> deleteWorkflowDefinition(String id) async {
-    _definitions = _definitions.where((d) => d.id != id).toList();
-    _definitionsController.add(_definitions);
-  }
-
-  @override
-  Future<WorkflowDefinition?> getWorkflowDefinition(String id) async {
-    try {
-      return _definitions.firstWhere((d) => d.id == id);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Future<List<WorkflowDefinition>> getAllWorkflowDefinitions() async {
-    return _definitions;
-  }
-
-  @override
-  Stream<List<WorkflowDefinition>> watchWorkflowDefinitions() {
-    return _definitionsController.stream;
-  }
-
-  // === Workflow Instances ===
-
-  @override
-  Future<Workflow> createWorkflow(Workflow workflow) async {
-    final id = workflow.id.isEmpty
-        ? 'workflow-${DateTime.now().microsecondsSinceEpoch}'
-        : workflow.id;
-    final created = workflow.id.isEmpty
-        ? Workflow(
-            id: id,
-            workflowDefinitionId: workflow.workflowDefinitionId,
-            status: workflow.status,
-            stepStates: workflow.stepStates,
-            createdAt: workflow.createdAt,
-            updatedAt: workflow.updatedAt,
-            completedAt: workflow.completedAt,
-            currentStepIndex: workflow.currentStepIndex,
-          )
-        : workflow;
-    _workflows = [..._workflows, created];
-    _activeWorkflowsController.add(
-      _workflows.where((w) => w.status == WorkflowStatus.inProgress).toList(),
-    );
-    return created;
-  }
-
-  @override
-  Future<void> updateWorkflow(Workflow workflow) async {
-    final idx = _workflows.indexWhere((w) => w.id == workflow.id);
-    if (idx == -1) return;
-
-    final updated = [..._workflows];
-    updated[idx] = workflow;
-    _workflows = updated;
-
-    // Update individual workflow stream
-    _workflowControllers[workflow.id]?.add(workflow);
-
-    // Update active workflows stream
-    _activeWorkflowsController.add(
-      _workflows.where((w) => w.status == WorkflowStatus.inProgress).toList(),
-    );
-  }
-
-  @override
-  Future<void> deleteWorkflow(String id) async {
-    _workflows = _workflows.where((w) => w.id != id).toList();
-    _activeWorkflowsController.add(
-      _workflows.where((w) => w.status == WorkflowStatus.inProgress).toList(),
-    );
-  }
-
-  @override
-  Future<Workflow?> getWorkflow(String id) async {
-    try {
-      return _workflows.firstWhere((w) => w.id == id);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  @override
-  Stream<Workflow> watchWorkflow(String id) {
-    _workflowControllers.putIfAbsent(
-      id,
-      BehaviorSubject<Workflow>.new,
-    );
-    return _workflowControllers[id]!.stream;
-  }
-
-  @override
-  Stream<List<Workflow>> watchActiveWorkflows() {
-    return _activeWorkflowsController.stream;
-  }
-
-  @override
-  Future<List<Workflow>> getWorkflowsByDefinition(String definitionId) async {
-    return _workflows
-        .where((w) => w.workflowDefinitionId == definitionId)
-        .toList();
-  }
-
-  void dispose() {
-    _definitionsController.close();
-    _activeWorkflowsController.close();
-    for (final controller in _workflowControllers.values) {
-      controller.close();
-    }
   }
 }

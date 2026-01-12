@@ -50,7 +50,6 @@ class IdGenerator {
     'tracker_responses',
     'daily_tracker_responses',
     'screen_definitions',
-    'workflow_definitions',
     'analytics_snapshots',
     'attention_rules',
   };
@@ -60,7 +59,6 @@ class IdGenerator {
     'tasks',
     'projects',
     'journal_entries',
-    'workflows',
     'user_profiles',
     'pending_notifications',
     'analytics_correlations',
@@ -92,9 +90,6 @@ class IdGenerator {
 
   /// Generate random ID for a new journal entry.
   String journalEntryId() => _uuid.v4();
-
-  /// Generate random ID for a workflow run instance.
-  String workflowRunId() => _uuid.v4();
 
   /// Generate random ID for user profile.
   String userProfileId() => _uuid.v4();
@@ -202,17 +197,6 @@ class IdGenerator {
   /// Natural key: userId + screenKey
   String screenDefinitionId({required String screenKey}) {
     return _v5('screens/$screenKey');
-  }
-
-  /// Generate deterministic ID for workflow definition.
-  /// Natural key: userId + name (normalized as key)
-  String workflowDefinitionId({required String name}) {
-    // Normalize name to create stable key: lowercase, replace spaces with dashes
-    final normalizedKey = name.toLowerCase().trim().replaceAll(
-      RegExp(r'\s+'),
-      '-',
-    );
-    return _v5('workflows/$normalizedKey');
   }
 
   /// Generate deterministic ID for analytics snapshot.

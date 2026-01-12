@@ -101,7 +101,7 @@ class AttentionSeeder {
     // Normalize locally so PowerSync uploads don't fail.
     try {
       await _db.customStatement(
-        "UPDATE attention_rules SET rule_type='workflowStep' WHERE rule_type='workflow_step'",
+        "UPDATE attention_rules SET rule_type='problem' WHERE rule_type IN ('workflow_step','workflowStep')",
       );
       await _db.customStatement(
         "UPDATE attention_rules SET rule_type='allocationWarning' WHERE rule_type='allocation_warning'",
@@ -125,8 +125,6 @@ class AttentionSeeder {
         return drift_attention.AttentionRuleType.problem;
       case domain.AttentionRuleType.review:
         return drift_attention.AttentionRuleType.review;
-      case domain.AttentionRuleType.workflowStep:
-        return drift_attention.AttentionRuleType.workflowStep;
       case domain.AttentionRuleType.allocationWarning:
         return drift_attention.AttentionRuleType.allocationWarning;
     }

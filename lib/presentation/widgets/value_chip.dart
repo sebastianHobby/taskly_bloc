@@ -71,30 +71,44 @@ class ValueChip extends StatelessWidget {
     final chip = Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(
+          variant == ValueChipVariant.solid ? 8 : 12,
+        ),
         border: border,
         boxShadow: boxShadow,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.symmetric(
+        horizontal: variant == ValueChipVariant.solid ? 8 : 8,
+        vertical: variant == ValueChipVariant.solid ? 2 : 2,
+      ),
+      constraints: BoxConstraints(
+        minHeight: variant == ValueChipVariant.solid ? 20 : 20,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Emoji icon (smaller)
-          Text(
-            emoji,
-            style: EmojiUtils.emojiTextStyle(fontSize: 11),
-          ),
-          const SizedBox(width: 4),
+          if (variant == ValueChipVariant.solid) ...[
+            Text(
+              emoji,
+              style: EmojiUtils.emojiTextStyle(fontSize: 10),
+            ),
+            const SizedBox(width: 4),
+          ],
           // Value name (smaller, less bold)
           Flexible(
-            child: Text(
-              value.name,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: textColor, // Use contrasting color
-                fontWeight: FontWeight.w500, // Less bold
-                fontSize: 11, // Smaller
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 1),
+              child: Text(
+                value.name,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: textColor, // Use contrasting color
+                  fontWeight: FontWeight.w600, // Less bold
+                  fontSize: 10, // Smaller
+                  height: 1.1,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

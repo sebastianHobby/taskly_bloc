@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
@@ -34,63 +33,49 @@ class BrowseHubScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: StreamBuilder<List<ScreenDefinition>>(
-          stream: getIt<ScreenDefinitionsRepositoryContract>()
-              .watchCustomScreens(),
-          builder: (context, snapshot) {
-            final customScreens = snapshot.data ?? const <ScreenDefinition>[];
-
-            final tiles = <_BrowseTileVm>[
-              ...systemTiles.map(_BrowseTileVm.fromSystem),
-              ...customScreens.map(_BrowseTileVm.fromCustom),
-            ];
-
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          children: [
+            Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        context.l10n.browseTitle,
-                        style: theme.textTheme.headlineLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                Expanded(
+                  child: Text(
+                    context.l10n.browseTitle,
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    IconButton.filledTonal(
-                      onPressed: null,
-                      icon: const Icon(Icons.search_rounded),
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).searchFieldLabel,
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.7,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    for (final tile in tiles)
-                      _BrowseTile(
-                        tile: tile,
-                        backgroundColor: _tileColor(
-                          colorScheme,
-                          tile.screenKey,
-                        ),
-                        onTap: () =>
-                            context.go(Routing.screenPath(tile.screenKey)),
-                      ),
-                  ],
+                IconButton.filledTonal(
+                  onPressed: null,
+                  icon: const Icon(Icons.search_rounded),
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).searchFieldLabel,
                 ),
               ],
-            );
-          },
+            ),
+            const SizedBox(height: 16),
+            GridView.count(
+              crossAxisCount: 2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 1.7,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                for (final tile in systemTiles.map(_BrowseTileVm.fromSystem))
+                  _BrowseTile(
+                    tile: tile,
+                    backgroundColor: _tileColor(
+                      colorScheme,
+                      tile.screenKey,
+                    ),
+                    onTap: () => context.go(Routing.screenPath(tile.screenKey)),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -121,26 +106,6 @@ class _BrowseTileVm {
       iconName: screen.chrome.iconName,
     );
 
-    final badgeStream = NavigationBadgeService(
-      taskRepository: getIt<TaskRepositoryContract>(),
-      projectRepository: getIt<ProjectRepositoryContract>(),
-    ).badgeStreamFor(screen);
-
-    return _BrowseTileVm(
-      screenKey: screen.screenKey,
-      title: screen.name,
-      icon: iconSet.icon,
-      badgeStream: badgeStream,
-    );
-  }
-
-  factory _BrowseTileVm.fromCustom(ScreenDefinition screen) {
-    final iconSet = const NavigationIconResolver().resolve(
-      screenId: screen.screenKey,
-      iconName: screen.chrome.iconName,
-    );
-
-    // Custom screens can support badges in the future via their chrome config.
     final badgeStream = NavigationBadgeService(
       taskRepository: getIt<TaskRepositoryContract>(),
       projectRepository: getIt<ProjectRepositoryContract>(),

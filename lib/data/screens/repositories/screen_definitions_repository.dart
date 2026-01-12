@@ -2,8 +2,6 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart'
     show ScreenDefinitionsRepositoryImpl;
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/system_screen_provider.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 /// Repository wrapper that delegates to the database implementation.
@@ -32,42 +30,9 @@ class ScreenDefinitionsRepository
   }
 
   @override
-  Stream<List<ScreenDefinition>> watchCustomScreens() {
-    talker.repositoryLog('Screens', 'watchCustomScreens');
-    return _dbRepo.watchCustomScreens();
-  }
-
-  @override
   Stream<ScreenWithPreferences?> watchScreen(String screenKey) {
     talker.repositoryLog('Screens', 'watchScreen: screenKey="$screenKey"');
     return _dbRepo.watchScreen(screenKey);
-  }
-
-  @override
-  Future<bool> screenKeyExists(String screenKey) {
-    talker.repositoryLog('Screens', 'screenKeyExists: screenKey="$screenKey"');
-    return _dbRepo.screenKeyExists(screenKey);
-  }
-
-  @override
-  Future<String> createCustomScreen(ScreenDefinition screen) {
-    talker.repositoryLog('Screens', 'createCustomScreen: ${screen.screenKey}');
-    return _dbRepo.createCustomScreen(screen);
-  }
-
-  @override
-  Future<void> updateCustomScreen(ScreenDefinition screen) {
-    talker.repositoryLog('Screens', 'updateCustomScreen: ${screen.screenKey}');
-    return _dbRepo.updateCustomScreen(screen);
-  }
-
-  @override
-  Future<void> deleteCustomScreen(String screenKey) {
-    talker.repositoryLog(
-      'Screens',
-      'deleteCustomScreen: screenKey="$screenKey"',
-    );
-    return _dbRepo.deleteCustomScreen(screenKey);
   }
 
   @override
