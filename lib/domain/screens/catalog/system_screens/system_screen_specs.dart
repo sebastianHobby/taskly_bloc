@@ -256,7 +256,7 @@ abstract class SystemScreenSpecs {
     id: 'journal',
     screenKey: 'journal',
     name: 'Journal',
-    template: const ScreenTemplateSpec.journalTimeline(),
+    template: const ScreenTemplateSpec.journalHub(),
   );
 
   static final trackers = ScreenSpec(

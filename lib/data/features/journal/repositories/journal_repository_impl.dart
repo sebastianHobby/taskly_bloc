@@ -269,6 +269,33 @@ class JournalRepositoryImpl
   }
 
   @override
+  Future<void> saveTrackerDefinitionChoice(
+    TrackerDefinitionChoice choice,
+  ) async {
+    final id = choice.id.isEmpty
+        ? _idGenerator.trackerDefinitionChoiceId(
+            trackerId: choice.trackerId,
+            choiceKey: choice.choiceKey,
+          )
+        : choice.id;
+
+    await _database
+        .into(_database.trackerDefinitionChoices)
+        .insertOnConflictUpdate(
+          TrackerDefinitionChoicesCompanion(
+            id: Value(id),
+            trackerId: Value(choice.trackerId),
+            choiceKey: Value(choice.choiceKey),
+            label: Value(choice.label),
+            sortOrder: Value(choice.sortOrder),
+            isActive: Value(choice.isActive),
+            createdAt: Value(choice.createdAt),
+            updatedAt: Value(choice.updatedAt),
+          ),
+        );
+  }
+
+  @override
   Future<void> appendTrackerEvent(TrackerEvent event) async {
     final id = event.id.isEmpty ? _idGenerator.trackerEventId() : event.id;
 

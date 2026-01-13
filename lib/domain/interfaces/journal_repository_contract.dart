@@ -67,6 +67,8 @@ abstract class JournalRepositoryContract {
 
   Future<void> saveTrackerPreference(TrackerPreference preference);
 
+  Future<void> saveTrackerDefinitionChoice(TrackerDefinitionChoice choice);
+
   Future<void> appendTrackerEvent(TrackerEvent event);
 
   /// Watch raw tracker events for building B1 Journal UIs.

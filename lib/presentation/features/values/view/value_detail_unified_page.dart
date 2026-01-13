@@ -304,7 +304,7 @@ class _ValueScreenView extends StatelessWidget {
     if (sections.isEmpty) {
       return EmptyStateWidget.noTasks(
         title: context.l10n.emptyTasksTitle,
-        description: 'No tasks or projects associated with this value.',
+        description: context.l10n.emptyTasksDescription,
       );
     }
 

@@ -76,8 +76,8 @@ class NavigationIconResolver {
       // Additional screens / settings pages
       // ─────────────────────────────────────────────────────────────────
       'journal' => (
-        icon: Icons.self_improvement_outlined,
-        selectedIcon: Icons.self_improvement,
+        icon: Icons.book_outlined,
+        selectedIcon: Icons.book,
       ),
       'trackers' => (
         icon: Icons.timeline_outlined,
