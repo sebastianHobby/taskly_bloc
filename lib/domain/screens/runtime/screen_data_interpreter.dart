@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/core/performance/performance_trace_context.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
@@ -58,10 +60,18 @@ class ScreenDataInterpreter {
       'ScreenDataInterpreter',
       'watchScreen: ${definition.id} with ${definition.sections.length} sections',
     );
-    developer.log(
-      '🔄 Interpreter: Starting watchScreen for "${definition.name}"',
-      name: 'perf.interpreter',
-    );
+    final traceId = PerformanceTraceContext.instance.currentTraceId;
+    if (kDebugMode) {
+      developer.log(
+        '🔄 Interpreter: Starting watchScreen for "${definition.name}" '
+        '(trace=${traceId ?? "-"})',
+        name: 'perf.interpreter',
+      );
+      talker.perf(
+        'Interpreter: start watchScreen "${definition.name}" (trace=${traceId ?? "-"})',
+        category: 'interpreter',
+      );
+    }
 
     try {
       for (final ref in definition.sections) {
@@ -162,12 +172,17 @@ class ScreenDataInterpreter {
   Stream<ScreenData> _watchUngatedScreenWithTiming(
     ScreenDefinition definition,
   ) {
-    final watchStartTime = DateTime.now();
+    final watchStartTime = kDebugMode ? DateTime.now() : null;
     return _watchUngatedScreen(definition).transform(
       StreamTransformer.fromHandlers(
         handleData: (ScreenData data, EventSink<ScreenData> sink) {
           if (!data.sections.any((s) => s.data != null)) {
             // Skip timing for empty initial states
+            sink.add(data);
+            return;
+          }
+
+          if (!kDebugMode || watchStartTime == null) {
             sink.add(data);
             return;
           }
@@ -179,15 +194,18 @@ class ScreenDataInterpreter {
           // Only log once per stream
           if (interpreterMs < 100000) {
             // Reasonable cutoff to prevent re-logging
-            developer.log(
-              '✅ Interpreter: First data for "${definition.name}" - ${interpreterMs}ms',
-              name: 'perf.interpreter',
-              level: interpreterMs > 1000 ? 900 : 800,
-            );
-            if (interpreterMs > 1000) {
-              talker.warning(
-                '[Perf] Interpreter slow for "${definition.name}": ${interpreterMs}ms',
+            if (kDebugMode) {
+              developer.log(
+                '✅ Interpreter: First data for "${definition.name}" - ${interpreterMs}ms',
+                name: 'perf.interpreter',
+                level: interpreterMs > 1000 ? 900 : 800,
               );
+              if (interpreterMs > 1000) {
+                talker.perf(
+                  'Interpreter slow for "${definition.name}": ${interpreterMs}ms',
+                  category: 'interpreter',
+                );
+              }
             }
           }
           sink.add(data);
@@ -265,11 +283,19 @@ class ScreenDataInterpreter {
     SectionRef ref, [
     String? screenName,
   ]) {
-    final sectionStartTime = DateTime.now();
-    developer.log(
-      '📦 Section: Starting watch for ${ref.templateId} (screen: $screenName)',
-      name: 'perf.section',
-    );
+    final sectionStartTime = kDebugMode ? DateTime.now() : null;
+    final traceId = PerformanceTraceContext.instance.currentTraceId;
+    if (kDebugMode) {
+      developer.log(
+        '📦 Section: Starting watch for ${ref.templateId} '
+        '(screen: $screenName, trace=${traceId ?? "-"})',
+        name: 'perf.section',
+      );
+      talker.perf(
+        'Section: start watch ${ref.templateId} (screen=$screenName, trace=${traceId ?? "-"})',
+        category: 'section',
+      );
+    }
 
     final interpreter = _interpreterRegistry.get(ref.templateId);
     final params = _paramsCodec.decode(ref.templateId, ref.params);
@@ -283,18 +309,22 @@ class ScreenDataInterpreter {
         handleData: (data, EventSink<SectionVm> sink) {
           if (firstSectionEmit) {
             firstSectionEmit = false;
-            final sectionMs = DateTime.now()
-                .difference(sectionStartTime)
-                .inMilliseconds;
-            developer.log(
-              '✅ Section: First data for ${ref.templateId} - ${sectionMs}ms',
-              name: 'perf.section',
-              level: sectionMs > 500 ? 900 : 800,
-            );
-            if (sectionMs > 1000) {
-              talker.warning(
-                '[Perf] Section ${ref.templateId} slow: ${sectionMs}ms',
+            if (kDebugMode && sectionStartTime != null) {
+              final sectionMs = DateTime.now()
+                  .difference(sectionStartTime)
+                  .inMilliseconds;
+              developer.log(
+                '✅ Section: First data for ${ref.templateId} - ${sectionMs}ms '
+                '(trace=${traceId ?? "-"})',
+                name: 'perf.section',
+                level: sectionMs > 500 ? 900 : 800,
               );
+              if (sectionMs > 1000) {
+                talker.perf(
+                  'Section ${ref.templateId} slow: ${sectionMs}ms',
+                  category: 'section',
+                );
+              }
             }
           }
 

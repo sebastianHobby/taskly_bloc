@@ -20,6 +20,8 @@ Project projectFromTable(
   drift.ProjectTableData t, {
   List<Value>? values,
   String? primaryValueId,
+  int taskCount = 0,
+  int completedTaskCount = 0,
 }) {
   return Project(
     id: t.id,
@@ -27,6 +29,8 @@ Project projectFromTable(
     updatedAt: t.updatedAt,
     name: t.name,
     completed: t.completed,
+    taskCount: taskCount,
+    completedTaskCount: completedTaskCount,
     description: t.description,
     startDate: dateOnlyOrNull(t.startDate),
     deadlineDate: dateOnlyOrNull(t.deadlineDate),

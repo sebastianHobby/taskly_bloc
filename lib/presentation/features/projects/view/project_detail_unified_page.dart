@@ -22,8 +22,10 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_next_task_card.dart';
+import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -137,8 +139,19 @@ class _ProjectScreenWithData extends StatelessWidget {
       create: (context) => ScreenBloc(
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
+        performanceLogger: getIt<PerformanceLogger>(),
       )..add(ScreenEvent.load(definition: definition)),
-      child: _ProjectScreenView(project: project),
+      child: BlocListener<ScreenBloc, ScreenState>(
+        listenWhen: (previous, current) {
+          return previous is! ScreenLoadedState && current is ScreenLoadedState;
+        },
+        listener: (context, state) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            getIt<PerformanceLogger>().markFirstPaint();
+          });
+        },
+        child: _ProjectScreenView(project: project),
+      ),
     );
   }
 }
@@ -167,30 +180,14 @@ class _ProjectScreenView extends StatelessWidget {
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
     final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDeleteConfirmationDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteProjectAction),
-        content: Text(
-          'Are you sure you want to delete "${project.name}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancelLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: Text(l10n.deleteLabel),
-          ),
-        ],
-      ),
+      title: l10n.deleteProjectAction,
+      itemName: project.name,
+      description: l10n.deleteProjectCascadeDescription,
     );
 
-    if ((confirmed ?? false) && context.mounted) {
+    if (confirmed && context.mounted) {
       context.read<ProjectDetailBloc>().add(
         ProjectDetailEvent.delete(id: project.id),
       );
@@ -349,6 +346,7 @@ class _ProjectScreenView extends StatelessWidget {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       },
       child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           // Next task recommendation card
           if (nextTask != null)
@@ -371,43 +369,36 @@ class _ProjectScreenView extends StatelessWidget {
               ),
             ),
           // Task sections
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final section = data.sections[index];
-                return SectionWidget(
-                  section: section,
-                  displayConfig: section.displayConfig,
-                  onEntityTap: (entity) {
-                    if (entity is Task) {
-                      Routing.toEntity(
-                        context,
-                        EntityType.task,
-                        entity.id,
-                      );
-                    } else if (entity is Project) {
-                      Routing.toEntity(
-                        context,
-                        EntityType.project,
-                        entity.id,
-                      );
-                    }
-                  },
-                  onTaskCheckboxChanged: (task, value) async {
-                    if (value ?? false) {
-                      await entityActionService.completeTask(task.id);
-                    } else {
-                      await entityActionService.uncompleteTask(task.id);
-                    }
-                  },
-                  onTaskDelete: (task) async {
-                    await entityActionService.deleteTask(task.id);
-                  },
-                );
+          for (final section in data.sections)
+            SectionWidget(
+              section: section,
+              displayConfig: section.displayConfig,
+              onEntityTap: (entity) {
+                if (entity is Task) {
+                  Routing.toEntity(
+                    context,
+                    EntityType.task,
+                    entity.id,
+                  );
+                } else if (entity is Project) {
+                  Routing.toEntity(
+                    context,
+                    EntityType.project,
+                    entity.id,
+                  );
+                }
               },
-              childCount: data.sections.length,
+              onTaskCheckboxChanged: (task, value) async {
+                if (value ?? false) {
+                  await entityActionService.completeTask(task.id);
+                } else {
+                  await entityActionService.uncompleteTask(task.id);
+                }
+              },
+              onTaskDelete: (task) async {
+                await entityActionService.deleteTask(task.id);
+              },
             ),
-          ),
           // Bottom padding for FAB
           const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
         ],

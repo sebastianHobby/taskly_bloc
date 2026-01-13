@@ -5,7 +5,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/app/di/dependency_injection.dart';
@@ -24,8 +23,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/section_templa
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_helpers.dart';
@@ -74,7 +72,8 @@ void main() {
         )
         ..registerSingleton(settingsRepository)
         ..registerSingleton<EntityActionService>(entityActionService)
-        ..registerSingleton<ScreenDataInterpreter>(interpreter);
+        ..registerSingleton<ScreenDataInterpreter>(interpreter)
+        ..registerSingleton<PerformanceLogger>(PerformanceLogger());
     });
 
     tearDown(() async {
@@ -118,38 +117,26 @@ void main() {
         // Expect initial loading state.
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        // Wait for the underlying ScreenBloc to reach a loaded state.
-        final element = tester.element(find.byType(CircularProgressIndicator));
-        final bloc = BlocProvider.of<ScreenBloc>(element);
-
         // Fail fast if we never reach a rendered state.
         //
         // Use a deterministic number of pumps instead of time-based loops,
         // since widget tests run under a fake clock.
-        var didLoad = false;
         for (var i = 0; i < 40; i++) {
           await tester.pump(const Duration(milliseconds: 50));
 
-          switch (bloc.state) {
-            case ScreenLoadedState():
-              didLoad = true;
-            case ScreenErrorState(:final message):
-              fail('Screen entered error state: $message');
-            default:
-              break;
+          if (find.text('Failed to load screen').evaluate().isNotEmpty) {
+            fail('Screen entered error UI');
           }
 
-          if (didLoad) {
+          if (find.byType(CircularProgressIndicator).evaluate().isEmpty) {
             break;
           }
         }
 
         expect(
-          didLoad,
-          isTrue,
-          reason:
-              'Screen stayed in loading too long (possible infinite load). '
-              'Current state: ${bloc.state}',
+          find.byType(CircularProgressIndicator),
+          findsNothing,
+          reason: 'Screen stayed in loading too long (possible infinite load).',
         );
 
         // Rebuild after state transition.

@@ -40,7 +40,7 @@ Important ownership rule:
 - Upload-time JSON normalization (PowerSync TEXT -> PostgREST json/jsonb/arrays):
   - [lib/data/infrastructure/powersync/upload_data_normalizer.dart](../../lib/data/infrastructure/powersync/upload_data_normalizer.dart)
 - DI wiring: PowerSync DB <-> Drift `AppDatabase`:
-  - [lib/core/dependency_injection/dependency_injection.dart](../../lib/core/dependency_injection/dependency_injection.dart)
+  - [lib/core/di/dependency_injection.dart](../../lib/core/di/dependency_injection.dart)
 
 ### Server (local dev): PowerSync service
 - Docker Compose stack:
@@ -53,8 +53,8 @@ Important ownership rule:
 ### Supabase local
 - Migrations (schema is maintained via migrations):
   - [supabase/migrations/](../../supabase/migrations/)
-- PowerSync publication migration (enables logical replication publication):
-  - [supabase/migrations/20260111000000_powersync_publication.sql](../../supabase/migrations/20260111000000_powersync_publication.sql)
+
+Note: this repo currently does not ship a dedicated migration for PowerSync replication/publication setup.
 
 ### Local E2E scripts + docs
 - Deterministic local stack docs:
@@ -141,7 +141,7 @@ The app opens the PowerSync database first, then wraps it with Drift:
 - Drift uses `SqliteAsyncDriftConnection(syncDb)` as its database connection
 
 Entry points:
-- [lib/core/dependency_injection/dependency_injection.dart](../../lib/core/dependency_injection/dependency_injection.dart)
+- [lib/core/di/dependency_injection.dart](../../lib/core/di/dependency_injection.dart)
 - [lib/data/infrastructure/powersync/api_connector.dart](../../lib/data/infrastructure/powersync/api_connector.dart)
 
 High-level sequence:
@@ -225,12 +225,13 @@ See [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/co
 
 ## 5) PowerSync Server: Replication Requirements
 
-PowerSync replication requires a Postgres publication named `powersync`.
+PowerSync replication requires logical replication to be enabled/configured on the target Postgres.
 
-This repo ensures it exists via a migration:
-- [supabase/migrations/20260111000000_powersync_publication.sql](../../supabase/migrations/20260111000000_powersync_publication.sql)
+In this repo, local stack orchestration lives under:
+- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [infra/powersync_local/](../../infra/powersync_local/)
 
-That migration is designed to be safe to run multiple times.
+If replication setup becomes a recurring source of drift, add a Supabase migration under `supabase/migrations/` to make the required publication/permissions explicit and reviewable.
 
 ---
 

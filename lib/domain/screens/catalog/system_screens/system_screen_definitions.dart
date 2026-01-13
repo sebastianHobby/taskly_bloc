@@ -1,9 +1,6 @@
 ﻿import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/enrichment_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
-import 'package:taskly_bloc/domain/screens/language/models/related_data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
@@ -11,13 +8,14 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
@@ -114,12 +112,24 @@ abstract class SystemScreenDefinitions {
     ),
     sections: [
       SectionRef(
-        templateId: SectionTemplateId.agenda,
-        params: const AgendaSectionParams(
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          dateField: AgendaDateField.deadlineDate,
-          grouping: AgendaGrouping.byDate,
+        templateId: SectionTemplateId.agendaV2,
+        params: const AgendaSectionParamsV2(
+          dateField: AgendaDateFieldV2.deadlineDate,
+          tiles: TilePolicyV2(
+            task: TaskTileVariant.agenda,
+            project: ProjectTileVariant.listTile,
+            value: ValueTileVariant.compactCard,
+          ),
+          layout: SectionLayoutSpecV2.timelineMonthSections(
+            pinnedSectionHeaders: true,
+          ),
+          enrichment: EnrichmentPlanV2(
+            items: [
+              EnrichmentPlanItemV2.agendaTags(
+                dateField: AgendaDateFieldV2.deadlineDate,
+              ),
+            ],
+          ),
         ).toJson(),
       ),
     ],
@@ -145,8 +155,46 @@ abstract class SystemScreenDefinitions {
         ).toJson(),
       ),
       SectionRef(
-        templateId: SectionTemplateId.somedayBacklog,
-        params: const <String, dynamic>{},
+        templateId: SectionTemplateId.interleavedListV2,
+        params: InterleavedListSectionParamsV2(
+          sources: [
+            DataConfig.task(
+              query: const TaskQuery(
+                filter: QueryFilter<TaskPredicate>(
+                  shared: [
+                    TaskBoolPredicate(
+                      field: TaskBoolField.completed,
+                      operator: BoolOperator.isFalse,
+                    ),
+                    TaskDatePredicate(
+                      field: TaskDateField.startDate,
+                      operator: DateOperator.isNull,
+                    ),
+                    TaskDatePredicate(
+                      field: TaskDateField.deadlineDate,
+                      operator: DateOperator.isNull,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          tiles: const TilePolicyV2(
+            task: TaskTileVariant.listTile,
+            project: ProjectTileVariant.listTile,
+            value: ValueTileVariant.compactCard,
+          ),
+          layout: const SectionLayoutSpecV2.hierarchyValueProjectTask(
+            pinnedValueHeaders: true,
+            pinnedProjectHeaders: false,
+            singleInboxGroupForNoProjectTasks: true,
+          ),
+          filters: const SectionFilterSpecV2(
+            enableValueDropdown: true,
+            enableProjectsOnlyToggle: true,
+            valueFilterMode: ValueFilterModeV2.anyValues,
+          ),
+        ).toJson(),
       ),
     ],
   );
@@ -161,8 +209,8 @@ abstract class SystemScreenDefinitions {
     screenSource: ScreenSource.systemTemplate,
     sections: [
       SectionRef(
-        templateId: SectionTemplateId.taskList,
-        params: DataListSectionParams(
+        templateId: SectionTemplateId.taskListV2,
+        params: ListSectionParamsV2(
           config: DataConfig.task(
             query: const TaskQuery(
               filter: QueryFilter<TaskPredicate>(
@@ -175,9 +223,14 @@ abstract class SystemScreenDefinitions {
               ),
             ),
           ),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
+          tiles: const TilePolicyV2(
+            task: TaskTileVariant.listTile,
+            project: ProjectTileVariant.listTile,
+            value: ValueTileVariant.compactCard,
+          ),
+          layout: const SectionLayoutSpecV2.flatList(
+            separator: ListSeparatorV2.divider,
+          ),
         ).toJson(),
         overrides: const SectionOverrides(title: 'Completed'),
       ),
@@ -197,26 +250,17 @@ abstract class SystemScreenDefinitions {
     ),
     sections: [
       SectionRef(
-        templateId: SectionTemplateId.projectList,
-        params: DataListSectionParams(
+        templateId: SectionTemplateId.projectListV2,
+        params: ListSectionParamsV2(
           config: DataConfig.project(query: const ProjectQuery()),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-          relatedData: [
-            RelatedDataConfig.tasks(
-              additionalFilter: TaskQuery(
-                filter: QueryFilter(
-                  shared: const [
-                    TaskBoolPredicate(
-                      field: TaskBoolField.completed,
-                      operator: BoolOperator.isFalse,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          tiles: const TilePolicyV2(
+            task: TaskTileVariant.listTile,
+            project: ProjectTileVariant.listTile,
+            value: ValueTileVariant.compactCard,
+          ),
+          layout: const SectionLayoutSpecV2.flatList(
+            separator: ListSeparatorV2.spaced8,
+          ),
         ).toJson(),
       ),
     ],
@@ -235,13 +279,20 @@ abstract class SystemScreenDefinitions {
     ),
     sections: [
       SectionRef(
-        templateId: SectionTemplateId.valueList,
-        params: DataListSectionParams(
+        templateId: SectionTemplateId.valueListV2,
+        params: ListSectionParamsV2(
           config: DataConfig.value(query: const ValueQuery()),
-          taskTileVariant: TaskTileVariant.listTile,
-          projectTileVariant: ProjectTileVariant.listTile,
-          valueTileVariant: ValueTileVariant.compactCard,
-          enrichment: const EnrichmentConfig.valueStats(),
+          tiles: const TilePolicyV2(
+            task: TaskTileVariant.listTile,
+            project: ProjectTileVariant.listTile,
+            value: ValueTileVariant.compactCard,
+          ),
+          layout: const SectionLayoutSpecV2.flatList(
+            separator: ListSeparatorV2.spaced8,
+          ),
+          enrichment: const EnrichmentPlanV2(
+            items: [EnrichmentPlanItemV2.valueStats()],
+          ),
         ).toJson(),
       ),
     ],
@@ -514,19 +565,18 @@ abstract class SystemScreenDefinitions {
           ).toJson(),
         ),
         SectionRef(
-          templateId: SectionTemplateId.taskList,
-          params: DataListSectionParams(
+          templateId: SectionTemplateId.taskListV2,
+          params: ListSectionParamsV2(
             config: DataConfig.task(
               query: TaskQuery.forProject(projectId: projectId),
             ),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
-            display: const DisplayConfig(
-              groupByCompletion: true,
-              completedCollapsed: true,
-              enableSwipeToDelete: true,
-              showCompleted: true,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.flatList(
+              separator: ListSeparatorV2.divider,
             ),
           ).toJson(),
           overrides: const SectionOverrides(title: 'Tasks'),
@@ -560,33 +610,36 @@ abstract class SystemScreenDefinitions {
           ).toJson(),
         ),
         SectionRef(
-          templateId: SectionTemplateId.taskList,
-          params: DataListSectionParams(
+          templateId: SectionTemplateId.taskListV2,
+          params: ListSectionParamsV2(
             config: DataConfig.task(
               query: TaskQuery.forValue(valueId: valueId),
             ),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
-            display: const DisplayConfig(
-              groupByCompletion: true,
-              completedCollapsed: true,
-              enableSwipeToDelete: true,
-              showCompleted: true,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.flatList(
+              separator: ListSeparatorV2.divider,
             ),
           ).toJson(),
           overrides: const SectionOverrides(title: 'Tasks'),
         ),
         SectionRef(
-          templateId: SectionTemplateId.projectList,
-          params: DataListSectionParams(
+          templateId: SectionTemplateId.projectListV2,
+          params: ListSectionParamsV2(
             config: DataConfig.project(
               query: ProjectQuery.byValues([valueId]),
             ),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
-            display: const DisplayConfig(enableSwipeToDelete: false),
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.flatList(
+              separator: ListSeparatorV2.spaced8,
+            ),
           ).toJson(),
           overrides: const SectionOverrides(title: 'Projects'),
         ),

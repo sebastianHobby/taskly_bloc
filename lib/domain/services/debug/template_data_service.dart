@@ -70,75 +70,102 @@ class TemplateDataService {
     await _valueRepository.create(
       name: 'Life Admin',
       color: '#455A64',
-      iconName: 'ðŸ§¾',
+      iconName: '🧾',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Home & Comfort',
       color: '#FB8C00',
-      iconName: 'ðŸ ',
+      iconName: '🏠',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Relationships',
       color: '#E91E63',
-      iconName: 'ðŸŽ‰',
+      iconName: '🎉',
       priority: ValuePriority.medium,
     );
     await _valueRepository.create(
       name: 'Health & Energy',
       color: '#43A047',
-      iconName: 'ðŸ’ª',
+      iconName: '💪',
       priority: ValuePriority.high,
     );
     await _valueRepository.create(
       name: 'Learning & Curiosity',
       color: '#1E88E5',
-      iconName: 'ðŸ“š',
+      iconName: '📚',
       priority: ValuePriority.low,
     );
 
     final valueIdByName = await _loadValueIdByName();
 
     // 4) Create Projects (linked to values via valueIds; first value is primary).
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    DateTime day(int offset) => today.add(Duration(days: offset));
+
     await _projectRepository.create(
       name: 'Get a passport',
       description: 'Everything needed to renew/apply',
       priority: 1,
-      valueIds: [valueIdByName['Life Admin']!],
+      startDate: day(-14),
+      deadlineDate: day(21),
+      valueIds: [
+        valueIdByName['Life Admin']!,
+        valueIdByName['Relationships']!,
+      ],
     );
     await _projectRepository.create(
       name: 'Home chores',
       description: 'Household admin + weekly chores',
       priority: 2,
-      valueIds: [valueIdByName['Home & Comfort']!],
+      startDate: day(-30),
+      deadlineDate: day(60),
+      valueIds: [
+        valueIdByName['Home & Comfort']!,
+        valueIdByName['Life Admin']!,
+      ],
     );
     await _projectRepository.create(
       name: 'Organise birthday for Sam',
       description: 'Plan, invite, gifts, and schedule',
       priority: 2,
-      valueIds: [valueIdByName['Relationships']!],
+      startDate: day(-10),
+      deadlineDate: day(10),
+      valueIds: [
+        valueIdByName['Relationships']!,
+        valueIdByName['Home & Comfort']!,
+      ],
     );
     await _projectRepository.create(
       name: 'Exercise Routines',
       description: 'Recurring training and mobility habits',
       priority: 2,
-      valueIds: [valueIdByName['Health & Energy']!],
+      startDate: day(-21),
+      deadlineDate: day(90),
+      valueIds: [
+        valueIdByName['Health & Energy']!,
+        valueIdByName['Learning & Curiosity']!,
+      ],
     );
     await _projectRepository.create(
       name: 'Learn capital city names',
       description: 'Flashcards and weekly quizzes',
       priority: 3,
-      valueIds: [valueIdByName['Learning & Curiosity']!],
+      startDate: day(-5),
+      deadlineDate: day(45),
+      valueIds: [
+        valueIdByName['Learning & Curiosity']!,
+        valueIdByName['Health & Energy']!,
+      ],
     );
 
     final projectIdByName = await _loadProjectIdByName();
 
     // 5) Create Tasks.
-    // IMPORTANT: Allocation strategies currently use *direct* task values.
-    // So we assign valueIds on tasks (not only on projects).
-    final now = DateTime.now();
-    DateTime inDays(int days) => now.add(Duration(days: days));
+    // Most tasks inherit their effective values from their project.
+    // Only a few tasks explicitly override project values to demo that behavior.
 
     final pinnedTaskNames = <String>[];
 
@@ -147,8 +174,8 @@ class TemplateDataService {
       name: 'Book passport photo',
       projectId: projectIdByName['Get a passport'],
       priority: 2,
-      deadlineDate: inDays(3),
-      valueIds: [valueIdByName['Life Admin']!],
+      startDate: day(-1),
+      deadlineDate: day(2),
     );
     pinnedTaskNames.add('Book passport photo');
 
@@ -156,8 +183,8 @@ class TemplateDataService {
       name: 'Submit application',
       projectId: projectIdByName['Get a passport'],
       priority: 1,
-      deadlineDate: inDays(12),
-      valueIds: [valueIdByName['Life Admin']!],
+      startDate: day(9),
+      deadlineDate: day(12),
     );
     pinnedTaskNames.add('Submit application');
 
@@ -165,14 +192,12 @@ class TemplateDataService {
       name: 'Check renewal requirements',
       projectId: projectIdByName['Get a passport'],
       priority: 3,
-      valueIds: [valueIdByName['Life Admin']!],
     );
 
     await _taskRepository.create(
       name: 'Make a documents checklist',
       projectId: projectIdByName['Get a passport'],
       priority: 4,
-      valueIds: [valueIdByName['Life Admin']!],
     );
 
     // --- Home chores
@@ -180,8 +205,10 @@ class TemplateDataService {
       name: 'Laundry + bedding',
       projectId: projectIdByName['Home chores'],
       priority: 3,
-      deadlineDate: inDays(2),
-      valueIds: [valueIdByName['Home & Comfort']!],
+      startDate: day(-7),
+      deadlineDate: day(-1),
+      // Explicit override (not inherited from project).
+      valueIds: [valueIdByName['Health & Energy']!],
     );
     pinnedTaskNames.add('Laundry + bedding');
 
@@ -189,23 +216,21 @@ class TemplateDataService {
       name: 'Deep clean kitchen',
       projectId: projectIdByName['Home chores'],
       priority: 2,
-      deadlineDate: inDays(16),
-      valueIds: [valueIdByName['Home & Comfort']!],
+      startDate: day(14),
+      deadlineDate: day(16),
     );
     pinnedTaskNames.add('Deep clean kitchen');
 
     await _taskRepository.create(
-      name: 'Declutter â€œmiscâ€ drawer',
+      name: 'Declutter “misc” drawer',
       projectId: projectIdByName['Home chores'],
       priority: 4,
-      valueIds: [valueIdByName['Home & Comfort']!],
     );
 
     await _taskRepository.create(
       name: 'Organize cleaning supplies',
       projectId: projectIdByName['Home chores'],
       priority: 3,
-      valueIds: [valueIdByName['Home & Comfort']!],
     );
 
     // --- Organise birthday for Sam
@@ -213,8 +238,8 @@ class TemplateDataService {
       name: 'Book dinner reservation',
       projectId: projectIdByName['Organise birthday for Sam'],
       priority: 2,
-      deadlineDate: inDays(5),
-      valueIds: [valueIdByName['Relationships']!],
+      startDate: day(2),
+      deadlineDate: day(5),
     );
     pinnedTaskNames.add('Book dinner reservation');
 
@@ -222,8 +247,10 @@ class TemplateDataService {
       name: 'Buy birthday gift for Sam',
       projectId: projectIdByName['Organise birthday for Sam'],
       priority: 1,
-      deadlineDate: inDays(14),
-      valueIds: [valueIdByName['Relationships']!],
+      startDate: day(-5),
+      deadlineDate: day(3),
+      // Explicit override (not inherited from project).
+      valueIds: [valueIdByName['Life Admin']!],
     );
     pinnedTaskNames.add('Buy birthday gift for Sam');
 
@@ -231,14 +258,12 @@ class TemplateDataService {
       name: 'Draft invite message',
       projectId: projectIdByName['Organise birthday for Sam'],
       priority: 3,
-      valueIds: [valueIdByName['Relationships']!],
     );
 
     await _taskRepository.create(
       name: 'Ideas list: gift + activities',
       projectId: projectIdByName['Organise birthday for Sam'],
       priority: 4,
-      valueIds: [valueIdByName['Relationships']!],
     );
 
     // --- Exercise Routines
@@ -246,8 +271,8 @@ class TemplateDataService {
       name: 'Plan workouts for next week',
       projectId: projectIdByName['Exercise Routines'],
       priority: 2,
-      deadlineDate: inDays(4),
-      valueIds: [valueIdByName['Health & Energy']!],
+      startDate: day(1),
+      deadlineDate: day(4),
     );
     pinnedTaskNames.add('Plan workouts for next week');
 
@@ -255,8 +280,10 @@ class TemplateDataService {
       name: 'Buy resistance bands',
       projectId: projectIdByName['Exercise Routines'],
       priority: 3,
-      deadlineDate: inDays(18),
-      valueIds: [valueIdByName['Health & Energy']!],
+      startDate: day(20),
+      deadlineDate: day(25),
+      // Explicit override (not inherited from project).
+      valueIds: [valueIdByName['Home & Comfort']!],
     );
     pinnedTaskNames.add('Buy resistance bands');
 
@@ -264,14 +291,12 @@ class TemplateDataService {
       name: 'Create a warm-up checklist',
       projectId: projectIdByName['Exercise Routines'],
       priority: 4,
-      valueIds: [valueIdByName['Health & Energy']!],
     );
 
     await _taskRepository.create(
       name: 'Research a beginner mobility routine',
       projectId: projectIdByName['Exercise Routines'],
       priority: 3,
-      valueIds: [valueIdByName['Health & Energy']!],
     );
 
     // --- Learn capital city names
@@ -279,8 +304,8 @@ class TemplateDataService {
       name: 'Europe capitals: set 1 (15)',
       projectId: projectIdByName['Learn capital city names'],
       priority: 3,
-      deadlineDate: inDays(6),
-      valueIds: [valueIdByName['Learning & Curiosity']!],
+      startDate: day(4),
+      deadlineDate: day(6),
     );
     pinnedTaskNames.add('Europe capitals: set 1 (15)');
 
@@ -288,8 +313,8 @@ class TemplateDataService {
       name: 'Africa capitals: set 1 (12)',
       projectId: projectIdByName['Learn capital city names'],
       priority: 3,
-      deadlineDate: inDays(20),
-      valueIds: [valueIdByName['Learning & Curiosity']!],
+      startDate: day(35),
+      deadlineDate: day(40),
     );
     pinnedTaskNames.add('Africa capitals: set 1 (12)');
 
@@ -297,14 +322,12 @@ class TemplateDataService {
       name: 'Make flashcards format (template)',
       projectId: projectIdByName['Learn capital city names'],
       priority: 4,
-      valueIds: [valueIdByName['Learning & Curiosity']!],
     );
 
     await _taskRepository.create(
-      name: 'List â€œhard onesâ€ to revisit',
+      name: 'List “hard ones” to revisit',
       projectId: projectIdByName['Learn capital city names'],
       priority: 4,
-      valueIds: [valueIdByName['Learning & Curiosity']!],
     );
 
     // 6) Pin the two "Scheduled" tasks per project (10 total).

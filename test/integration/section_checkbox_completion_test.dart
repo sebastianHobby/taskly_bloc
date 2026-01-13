@@ -10,10 +10,15 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
@@ -229,9 +234,17 @@ SectionVm _createTaskSection({
   return SectionVm(
     index: 0,
     title: title,
-    templateId: SectionTemplateId.taskList,
-    params: const <String, dynamic>{},
-    data: SectionDataResult.data(
+    templateId: SectionTemplateId.taskListV2,
+    params: ListSectionParamsV2(
+      config: DataConfig.task(query: TaskQuery()),
+      tiles: const TilePolicyV2(
+        task: TaskTileVariant.listTile,
+        project: ProjectTileVariant.listTile,
+        value: ValueTileVariant.compactCard,
+      ),
+      layout: const SectionLayoutSpecV2.flatList(),
+    ),
+    data: SectionDataResult.dataV2(
       items: tasks.map(ScreenItem.task).toList(),
     ),
     isLoading: false,
@@ -246,9 +259,17 @@ SectionVm _createProjectSection({
   return SectionVm(
     index: 0,
     title: title,
-    templateId: SectionTemplateId.projectList,
-    params: const <String, dynamic>{},
-    data: SectionDataResult.data(
+    templateId: SectionTemplateId.projectListV2,
+    params: ListSectionParamsV2(
+      config: DataConfig.project(query: ProjectQuery()),
+      tiles: const TilePolicyV2(
+        task: TaskTileVariant.listTile,
+        project: ProjectTileVariant.listTile,
+        value: ValueTileVariant.compactCard,
+      ),
+      layout: const SectionLayoutSpecV2.flatList(),
+    ),
+    data: SectionDataResult.dataV2(
       items: projects.map(ScreenItem.project).toList(),
     ),
     isLoading: false,
@@ -269,13 +290,15 @@ Future<void> _pumpSectionWidget(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
-        body: SingleChildScrollView(
-          child: SectionWidget(
-            section: section,
-            onTaskCheckboxChanged: onTaskCheckboxChanged,
-            onProjectCheckboxChanged: onProjectCheckboxChanged,
-            onEntityTap: onEntityTap,
-          ),
+        body: CustomScrollView(
+          slivers: [
+            SectionWidget(
+              section: section,
+              onTaskCheckboxChanged: onTaskCheckboxChanged,
+              onProjectCheckboxChanged: onProjectCheckboxChanged,
+              onEntityTap: onEntityTap,
+            ),
+          ],
         ),
       ),
     ),

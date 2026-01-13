@@ -74,6 +74,66 @@ flutter test test/presentation/features/tasks/bloc/task_detail_bloc_test.dart
 flutter test --watch
 ```
 
+## Recording Test Runs (results + timings)
+
+For a single command that:
+- runs tests
+- writes one folder per run (raw machine output + summary)
+- keeps only the latest few runs
+
+Use the recorder:
+
+```bash
+dart run tool/test_run_recorder.dart
+```
+
+Artifacts are written to `build_out/test_runs/<timestamp>/`:
+- `machine.jsonl`: raw `flutter test --machine` output (line-delimited JSON)
+- `stderr.txt`: anything emitted to stderr
+- `summary.json`: structured summary (totals, failures, slowest tests)
+- `summary.md`: human-readable summary
+
+If the run fails, the recorder also reruns once with `-r expanded` (by default)
+to capture full human-readable failure details:
+- `expanded_stdout.txt`
+- `expanded_stderr.txt`
+
+### Keeping the latest N runs
+
+```bash
+dart run tool/test_run_recorder.dart --keep 5
+```
+
+### Passing through flutter test args
+
+Everything after `--` is passed to `flutter test`:
+
+```bash
+dart run tool/test_run_recorder.dart -- --tags=unit
+dart run tool/test_run_recorder.dart -- --exclude-tags=integration,slow
+dart run tool/test_run_recorder.dart -- test/presentation/features/tasks/
+```
+
+### Performance metrics captured
+
+The machine protocol includes a monotonic `time` (ms since run start) for each
+`testStart`/`testDone` event. The recorder computes per-test duration as:
+
+$$durationMs = testDone.time - testStart.time$$
+
+The summary includes:
+- total wall-clock duration for the run
+- per-test durations
+- top slowest tests (by duration)
+
+### Controlling expanded output capture
+
+```bash
+dart run tool/test_run_recorder.dart --expanded failure
+dart run tool/test_run_recorder.dart --expanded never
+dart run tool/test_run_recorder.dart --expanded always
+```
+
 ## Writing Tests
 
 ### Test Structure

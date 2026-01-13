@@ -63,19 +63,18 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/someday_null_dates_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/someday_backlog_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -179,6 +178,7 @@ Future<void> setupDependencies() async {
       ),
     )
     ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
+    ..registerLazySingleton<PerformanceLogger>(PerformanceLogger.new)
     ..registerLazySingleton<TemporalTriggerService>(
       () => TemporalTriggerService(
         dayKeyService: getIt<HomeDayKeyService>(),
@@ -303,52 +303,32 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<SectionTemplateParamsCodec>(
       SectionTemplateParamsCodec.new,
     )
-    ..registerLazySingleton<DataListSectionInterpreter>(
-      () => DataListSectionInterpreter(
-        templateId: SectionTemplateId.taskList,
+    ..registerLazySingleton<DataListSectionInterpreterV2>(
+      () => DataListSectionInterpreterV2(
+        templateId: SectionTemplateId.taskListV2,
         sectionDataService: getIt<SectionDataService>(),
       ),
-      instanceName: SectionTemplateId.taskList,
+      instanceName: SectionTemplateId.taskListV2,
     )
-    ..registerLazySingleton<DataListSectionInterpreter>(
-      () => DataListSectionInterpreter(
-        templateId: SectionTemplateId.projectList,
+    ..registerLazySingleton<DataListSectionInterpreterV2>(
+      () => DataListSectionInterpreterV2(
+        templateId: SectionTemplateId.projectListV2,
         sectionDataService: getIt<SectionDataService>(),
       ),
-      instanceName: SectionTemplateId.projectList,
+      instanceName: SectionTemplateId.projectListV2,
     )
-    ..registerLazySingleton<DataListSectionInterpreter>(
-      () => DataListSectionInterpreter(
-        templateId: SectionTemplateId.valueList,
+    ..registerLazySingleton<DataListSectionInterpreterV2>(
+      () => DataListSectionInterpreterV2(
+        templateId: SectionTemplateId.valueListV2,
         sectionDataService: getIt<SectionDataService>(),
       ),
-      instanceName: SectionTemplateId.valueList,
+      instanceName: SectionTemplateId.valueListV2,
     )
-    ..registerLazySingleton<InterleavedListSectionInterpreter>(
-      () => InterleavedListSectionInterpreter(
+    ..registerLazySingleton<InterleavedListSectionInterpreterV2>(
+      () => InterleavedListSectionInterpreterV2(
         sectionDataService: getIt<SectionDataService>(),
       ),
-      instanceName: SectionTemplateId.interleavedList,
-    )
-    ..registerLazySingleton<SomedayNullDatesSectionInterpreter>(
-      () => SomedayNullDatesSectionInterpreter(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-      instanceName: SectionTemplateId.somedayNullDates,
-    )
-    ..registerLazySingleton<SomedayBacklogSectionInterpreter>(
-      () => SomedayBacklogSectionInterpreter(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-        dayKeyService: getIt<HomeDayKeyService>(),
-      ),
-      instanceName: SectionTemplateId.somedayBacklog,
+      instanceName: SectionTemplateId.interleavedListV2,
     )
     ..registerLazySingleton<AllocationSectionInterpreter>(
       () => AllocationSectionInterpreter(
@@ -356,11 +336,11 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.allocation,
     )
-    ..registerLazySingleton<AgendaSectionInterpreter>(
-      () => AgendaSectionInterpreter(
+    ..registerLazySingleton<AgendaSectionInterpreterV2>(
+      () => AgendaSectionInterpreterV2(
         sectionDataService: getIt<SectionDataService>(),
       ),
-      instanceName: SectionTemplateId.agenda,
+      instanceName: SectionTemplateId.agendaV2,
     )
     ..registerLazySingleton<IssuesSummarySectionInterpreter>(
       () => IssuesSummarySectionInterpreter(
@@ -449,28 +429,24 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<SectionTemplateInterpreterRegistry>(
       () => SectionTemplateInterpreterRegistry([
-        getIt<DataListSectionInterpreter>(
-          instanceName: SectionTemplateId.taskList,
+        getIt<DataListSectionInterpreterV2>(
+          instanceName: SectionTemplateId.taskListV2,
         ),
-        getIt<DataListSectionInterpreter>(
-          instanceName: SectionTemplateId.projectList,
+        getIt<DataListSectionInterpreterV2>(
+          instanceName: SectionTemplateId.projectListV2,
         ),
-        getIt<DataListSectionInterpreter>(
-          instanceName: SectionTemplateId.valueList,
+        getIt<DataListSectionInterpreterV2>(
+          instanceName: SectionTemplateId.valueListV2,
         ),
-        getIt<InterleavedListSectionInterpreter>(
-          instanceName: SectionTemplateId.interleavedList,
-        ),
-        getIt<SomedayNullDatesSectionInterpreter>(
-          instanceName: SectionTemplateId.somedayNullDates,
-        ),
-        getIt<SomedayBacklogSectionInterpreter>(
-          instanceName: SectionTemplateId.somedayBacklog,
+        getIt<InterleavedListSectionInterpreterV2>(
+          instanceName: SectionTemplateId.interleavedListV2,
         ),
         getIt<AllocationSectionInterpreter>(
           instanceName: SectionTemplateId.allocation,
         ),
-        getIt<AgendaSectionInterpreter>(instanceName: SectionTemplateId.agenda),
+        getIt<AgendaSectionInterpreterV2>(
+          instanceName: SectionTemplateId.agendaV2,
+        ),
         getIt<IssuesSummarySectionInterpreter>(
           instanceName: SectionTemplateId.issuesSummary,
         ),

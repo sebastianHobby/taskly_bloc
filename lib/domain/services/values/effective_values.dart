@@ -23,9 +23,12 @@ extension TaskEffectiveValuesX on Task {
 
   /// The primary value id to treat as effective for this task.
   ///
-  /// Task-level primary overrides project-level primary.
+  /// Primary value inheritance follows the same override rules as values:
+  /// - If the task has explicit values, primary is task-only (no project fallback).
+  /// - Otherwise primary is inherited from the project.
   String? get effectivePrimaryValueId {
-    return primaryValueId ?? project?.primaryValueId;
+    if (values.isNotEmpty) return primaryValueId;
+    return project?.primaryValueId;
   }
 
   /// The primary value that should be displayed/used for this task.

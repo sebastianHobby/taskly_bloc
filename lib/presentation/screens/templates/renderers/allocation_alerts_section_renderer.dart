@@ -4,9 +4,14 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 
 class AllocationAlertsSectionRenderer extends StatelessWidget {
-  const AllocationAlertsSectionRenderer({required this.data, super.key});
+  const AllocationAlertsSectionRenderer({
+    required this.data,
+    super.key,
+    this.title,
+  });
 
   final AllocationAlertsSectionResult data;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -14,11 +19,13 @@ class AllocationAlertsSectionRenderer extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final effectiveTitle = title ?? 'Allocation Alerts';
+
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return SupportSectionCard(
-      title: 'Allocation Alerts',
+      title: effectiveTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
@@ -50,17 +51,19 @@ class AgendaSectionDataService {
     required DateTime rangeEnd,
     int? nearTermDaysOverride,
   }) {
-    final watchStartTime = DateTime.now();
+    final watchStartTime = kDebugMode ? DateTime.now() : null;
     final rangeDays = rangeEnd.difference(rangeStart).inDays;
     final logMsg =
         '🚀 Scheduled: Starting watchAgendaData (range: $rangeDays days)';
-    developer.log(logMsg, name: 'perf.scheduled');
-    talker.debug(logMsg);
+    if (kDebugMode) {
+      developer.log(logMsg, name: 'perf.scheduled');
+      talker.perf(logMsg, category: 'scheduled');
 
-    developer.log(
-      '🔍 Scheduled: Subscribing to repository streams...',
-      name: 'perf.scheduled.query',
-    );
+      developer.log(
+        '🔍 Scheduled: Subscribing to repository streams...',
+        name: 'perf.scheduled.query',
+      );
+    }
 
     final today = DateTime(
       referenceDate.year,
@@ -71,10 +74,12 @@ class AgendaSectionDataService {
 
     final overdueTasksStream = taskRepository.watchAll(TaskQuery.overdue()).map(
       (tasks) {
-        developer.log(
-          '📊 Scheduled: Overdue tasks fetched: ${tasks.length}',
-          name: 'perf.scheduled.query',
-        );
+        if (kDebugMode) {
+          developer.log(
+            '📊 Scheduled: Overdue tasks fetched: ${tasks.length}',
+            name: 'perf.scheduled.query',
+          );
+        }
         return tasks;
       },
     );
@@ -97,10 +102,12 @@ class AgendaSectionDataService {
           ),
         )
         .map((projects) {
-          developer.log(
-            '📊 Scheduled: Overdue projects fetched: ${projects.length}',
-            name: 'perf.scheduled.query',
-          );
+          if (kDebugMode) {
+            developer.log(
+              '📊 Scheduled: Overdue projects fetched: ${projects.length}',
+              name: 'perf.scheduled.query',
+            );
+          }
           return projects;
         });
 
@@ -113,10 +120,12 @@ class AgendaSectionDataService {
         )
         .map((tasks) {
           final repeatingCount = tasks.where((t) => t.isRepeating).length;
-          developer.log(
-            '📊 Scheduled: Scheduled tasks fetched: ${tasks.length} (repeating: $repeatingCount)',
-            name: 'perf.scheduled.query',
-          );
+          if (kDebugMode) {
+            developer.log(
+              '📊 Scheduled: Scheduled tasks fetched: ${tasks.length} (repeating: $repeatingCount)',
+              name: 'perf.scheduled.query',
+            );
+          }
           return tasks;
         });
     final scheduledProjectsStream = projectRepository
@@ -125,10 +134,12 @@ class AgendaSectionDataService {
         )
         .map((projects) {
           final repeatingCount = projects.where((p) => p.isRepeating).length;
-          developer.log(
-            '📊 Scheduled: Scheduled projects fetched: ${projects.length} (repeating: $repeatingCount)',
-            name: 'perf.scheduled.query',
-          );
+          if (kDebugMode) {
+            developer.log(
+              '📊 Scheduled: Scheduled projects fetched: ${projects.length} (repeating: $repeatingCount)',
+              name: 'perf.scheduled.query',
+            );
+          }
           return projects;
         });
 
@@ -138,13 +149,15 @@ class AgendaSectionDataService {
       scheduledTasksStream,
       scheduledProjectsStream,
       (overdueTasks, overdueProjects, tasksWithDates, projectsWithDates) {
-        final processingStart = DateTime.now();
-        developer.log(
-          '⚙️ Scheduled: Processing data - '
-          'OD Tasks: ${overdueTasks.length}, OD Projects: ${overdueProjects.length}, '
-          'Scheduled Tasks: ${tasksWithDates.length}, Scheduled Projects: ${projectsWithDates.length}',
-          name: 'perf.scheduled.processing',
-        );
+        final processingStart = kDebugMode ? DateTime.now() : null;
+        if (kDebugMode) {
+          developer.log(
+            '⚙️ Scheduled: Processing data - '
+            'OD Tasks: ${overdueTasks.length}, OD Projects: ${overdueProjects.length}, '
+            'Scheduled Tasks: ${tasksWithDates.length}, Scheduled Projects: ${projectsWithDates.length}',
+            name: 'perf.scheduled.processing',
+          );
+        }
 
         // 1. Build overdue items list
         final overdueItems = [
@@ -167,7 +180,7 @@ class AgendaSectionDataService {
         // 2. Expand items into per-day entries and group by date
         final itemsByDate = <DateTime, List<AgendaItem>>{};
 
-        final expansionStart = DateTime.now();
+        final expansionStart = kDebugMode ? DateTime.now() : null;
         for (final task in tasksWithDates) {
           _addTaskToDateMap(task, itemsByDate, today, rangeEnd);
         }
@@ -175,49 +188,56 @@ class AgendaSectionDataService {
         for (final project in projectsWithDates) {
           _addProjectToDateMap(project, itemsByDate, today, rangeEnd);
         }
-        final expansionMs = DateTime.now()
-            .difference(expansionStart)
-            .inMilliseconds;
+        final expansionMs = (kDebugMode && expansionStart != null)
+            ? DateTime.now().difference(expansionStart).inMilliseconds
+            : null;
 
         final totalAgendaItems = itemsByDate.values.fold<int>(
           0,
           (sum, items) => sum + items.length,
         );
 
-        final groupingStart = DateTime.now();
+        final groupingStart = kDebugMode ? DateTime.now() : null;
         final groups = _generateDateGroups(
           itemsByDate: itemsByDate,
           today: today,
           nearTermDays: effectiveNearTermDays,
           horizonEnd: rangeEnd,
         );
-        final groupingMs = DateTime.now()
-            .difference(groupingStart)
-            .inMilliseconds;
+        final groupingMs = (kDebugMode && groupingStart != null)
+            ? DateTime.now().difference(groupingStart).inMilliseconds
+            : null;
 
-        final processingMs = DateTime.now()
-            .difference(processingStart)
-            .inMilliseconds;
-        final totalMs = DateTime.now()
-            .difference(watchStartTime)
-            .inMilliseconds;
+        if (kDebugMode &&
+            watchStartTime != null &&
+            processingStart != null &&
+            expansionMs != null &&
+            groupingMs != null) {
+          final processingMs = DateTime.now()
+              .difference(processingStart)
+              .inMilliseconds;
+          final totalMs = DateTime.now()
+              .difference(watchStartTime)
+              .inMilliseconds;
 
-        final completionMsg =
-            '✅ Scheduled: Complete - '
-            'Total: ${totalMs}ms (processing: ${processingMs}ms, expansion: ${expansionMs}ms, grouping: ${groupingMs}ms) | '
-            'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
-        developer.log(
-          completionMsg,
-          name: 'perf.scheduled',
-          level: totalMs > 500 ? 900 : 800,
-        );
+          final completionMsg =
+              '✅ Scheduled: Complete - '
+              'Total: ${totalMs}ms (processing: ${processingMs}ms, expansion: ${expansionMs}ms, grouping: ${groupingMs}ms) | '
+              'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
+          developer.log(
+            completionMsg,
+            name: 'perf.scheduled',
+            level: totalMs > 500 ? 900 : 800,
+          );
 
-        if (totalMs > 500) {
-          talker.warning('[Perf] Scheduled screen slow: ${totalMs}ms');
-        } else if (totalMs > 300) {
-          talker.info('[Perf] $completionMsg');
-        } else {
-          talker.debug('[Perf] $completionMsg');
+          if (totalMs > 500) {
+            talker.perf(
+              'Scheduled screen slow: ${totalMs}ms',
+              category: 'scheduled',
+            );
+          } else if (totalMs > 300) {
+            talker.perf(completionMsg, category: 'scheduled');
+          }
         }
 
         return AgendaData(
@@ -240,12 +260,18 @@ class AgendaSectionDataService {
     required DateTime rangeEnd,
     int? nearTermDaysOverride,
   }) async {
-    final fetchStartTime = DateTime.now();
+    final fetchStartTime = kDebugMode ? DateTime.now() : null;
     final rangeDays = rangeEnd.difference(rangeStart).inDays;
-    developer.log(
-      '🚀 Scheduled: Starting getAgendaData (range: $rangeDays days)',
-      name: 'perf.scheduled.fetch',
-    );
+    if (kDebugMode) {
+      developer.log(
+        '🚀 Scheduled: Starting getAgendaData (range: $rangeDays days)',
+        name: 'perf.scheduled.fetch',
+      );
+      talker.perf(
+        'Scheduled: start getAgendaData (rangeDays=$rangeDays)',
+        category: 'scheduled',
+      );
+    }
 
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
     final today = DateTime(
@@ -256,28 +282,36 @@ class AgendaSectionDataService {
     final horizonEnd = rangeEnd;
 
     // 1. Fetch overdue items
-    final overdueStart = DateTime.now();
+    final overdueStart = kDebugMode ? DateTime.now() : null;
     final overdueTasks = await _getOverdueTasks(today);
     final overdueProjects = await _getOverdueProjects(today);
-    final overdueMs = DateTime.now().difference(overdueStart).inMilliseconds;
+    final overdueMs = (kDebugMode && overdueStart != null)
+        ? DateTime.now().difference(overdueStart).inMilliseconds
+        : null;
 
     // 2. Fetch items with dates within horizon
-    final scheduledStart = DateTime.now();
+    final scheduledStart = kDebugMode ? DateTime.now() : null;
     final tasksWithDates = await _getTasksWithDates(rangeStart, horizonEnd);
     final projectsWithDates = await _getProjectsWithDates(
       rangeStart,
       horizonEnd,
     );
-    final scheduledMs = DateTime.now()
-        .difference(scheduledStart)
-        .inMilliseconds;
+    final scheduledMs = (kDebugMode && scheduledStart != null)
+        ? DateTime.now().difference(scheduledStart).inMilliseconds
+        : null;
 
-    developer.log(
-      '📊 Scheduled: Queries complete - '
-      'Overdue: ${overdueMs}ms (T:${overdueTasks.length} P:${overdueProjects.length}), '
-      'Scheduled: ${scheduledMs}ms (T:${tasksWithDates.length} P:${projectsWithDates.length})',
-      name: 'perf.scheduled.fetch',
-    );
+    if (kDebugMode && overdueMs != null && scheduledMs != null) {
+      developer.log(
+        '📊 Scheduled: Queries complete - '
+        'Overdue: ${overdueMs}ms (T:${overdueTasks.length} P:${overdueProjects.length}), '
+        'Scheduled: ${scheduledMs}ms (T:${tasksWithDates.length} P:${projectsWithDates.length})',
+        name: 'perf.scheduled.fetch',
+      );
+      talker.perf(
+        'Scheduled: queries complete (overdue=${overdueMs}ms, scheduled=${scheduledMs}ms)',
+        category: 'scheduled',
+      );
+    }
 
     // 3. Build overdue items list
     final overdueItems = [
@@ -309,35 +343,44 @@ class AgendaSectionDataService {
     }
 
     // 5. Generate date groups with empty day handling
-    final groupingStart = DateTime.now();
+    final groupingStart = kDebugMode ? DateTime.now() : null;
     final groups = _generateDateGroups(
       itemsByDate: itemsByDate,
       today: today,
       nearTermDays: effectiveNearTermDays,
       horizonEnd: horizonEnd,
     );
-    final groupingMs = DateTime.now().difference(groupingStart).inMilliseconds;
+    final groupingMs = (kDebugMode && groupingStart != null)
+        ? DateTime.now().difference(groupingStart).inMilliseconds
+        : null;
 
     final totalAgendaItems = itemsByDate.values.fold<int>(
       0,
       (sum, items) => sum + items.length,
     );
-    final totalMs = DateTime.now().difference(fetchStartTime).inMilliseconds;
+    final totalMs = (kDebugMode && fetchStartTime != null)
+        ? DateTime.now().difference(fetchStartTime).inMilliseconds
+        : null;
 
-    final fetchCompleteMsg =
-        '✅ Scheduled: Fetch complete - '
-        'Total: ${totalMs}ms (grouping: ${groupingMs}ms) | '
-        'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
-    developer.log(
-      fetchCompleteMsg,
-      name: 'perf.scheduled.fetch',
-      level: totalMs > 500 ? 900 : 800,
-    );
+    if (kDebugMode && totalMs != null && groupingMs != null) {
+      final fetchCompleteMsg =
+          '✅ Scheduled: Fetch complete - '
+          'Total: ${totalMs}ms (grouping: ${groupingMs}ms) | '
+          'Groups: ${groups.length}, Total Items: $totalAgendaItems, Overdue: ${overdueItems.length}';
+      developer.log(
+        fetchCompleteMsg,
+        name: 'perf.scheduled.fetch',
+        level: totalMs > 500 ? 900 : 800,
+      );
 
-    if (totalMs > 500) {
-      talker.warning('[Perf] Scheduled fetch slow: ${totalMs}ms');
-    } else if (totalMs > 300) {
-      talker.info('[Perf] $fetchCompleteMsg');
+      if (totalMs > 500) {
+        talker.perf(
+          'Scheduled fetch slow: ${totalMs}ms',
+          category: 'scheduled',
+        );
+      } else if (totalMs > 300) {
+        talker.perf(fetchCompleteMsg, category: 'scheduled');
+      }
     }
 
     return AgendaData(
@@ -454,7 +497,7 @@ class AgendaSectionDataService {
   ) {
     final dates = _getTaskDisplayDates(task, today, horizonEnd);
 
-    if (dates.length > 10) {
+    if (kDebugMode && dates.length > 10) {
       final expansionMsg =
           '⚠️ Scheduled: Task "${task.name}" expanding to ${dates.length} dates';
       developer.log(
@@ -462,7 +505,7 @@ class AgendaSectionDataService {
         name: 'perf.scheduled.expansion',
         level: 900,
       );
-      talker.warning('[Perf] $expansionMsg');
+      talker.perf(expansionMsg, category: 'scheduled');
     }
 
     for (final entry in dates.entries) {

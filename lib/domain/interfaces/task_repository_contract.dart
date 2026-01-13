@@ -5,6 +5,12 @@ abstract class TaskRepositoryContract {
   /// Watch tasks with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all tasks with related entities.
+  ///
+  /// Hydration contract:
+  /// - [Task.project] is populated when [Task.projectId] is non-null.
+  /// - [Task.values] contains the task's explicitly assigned values.
+  /// - When [Task.project] is populated, it includes its values so callers can
+  ///   reliably compute effective values via `Task.effectiveValues`.
   /// Query configuration determines:
   /// - Which tasks to include (via rules)
   /// - How to sort results (via sortCriteria)
@@ -16,6 +22,8 @@ abstract class TaskRepositoryContract {
   /// Get tasks with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all tasks with related entities.
+  ///
+  /// See [watchAll] for the hydration contract.
   Future<List<Task>> getAll([TaskQuery? query]);
 
   /// Watch the count of tasks matching the optional [query].
@@ -25,9 +33,13 @@ abstract class TaskRepositoryContract {
   Stream<int> watchAllCount([TaskQuery? query]);
 
   /// Get a single task by ID with related entities.
+  ///
+  /// See [watchAll] for the hydration contract.
   Future<Task?> getById(String id);
 
   /// Watch a single task by ID with related entities.
+  ///
+  /// See [watchAll] for the hydration contract.
   Stream<Task?> watchById(String id);
 
   Future<void> create({

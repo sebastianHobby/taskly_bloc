@@ -2,24 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 
+import '../../helpers/pump_app.dart';
 import '../../helpers/test_helpers.dart';
 
 void main() {
   group('showDeleteConfirmationDialog', () {
     testWidgetsSafe('displays dialog with title', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -31,19 +31,18 @@ void main() {
     });
 
     testWidgetsSafe('displays item name in confirmation text', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -63,20 +62,19 @@ void main() {
     });
 
     testWidgetsSafe('displays description when provided', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                  description: 'This action cannot be undone',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+                description: 'This action cannot be undone',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -88,19 +86,18 @@ void main() {
     });
 
     testWidgetsSafe('shows Cancel button', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -112,19 +109,18 @@ void main() {
     });
 
     testWidgetsSafe('shows Delete button', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -137,19 +133,18 @@ void main() {
 
     testWidgetsSafe('returns false when Cancel is pressed', (tester) async {
       bool? result;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                result = await showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () async {
+              result = await showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -165,19 +160,18 @@ void main() {
 
     testWidgetsSafe('returns true when Delete is pressed', (tester) async {
       bool? result;
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () async {
-                result = await showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () async {
+              result = await showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );
@@ -192,19 +186,18 @@ void main() {
     });
 
     testWidgetsSafe('displays delete icon', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => ElevatedButton(
-              onPressed: () {
-                showDeleteConfirmationDialog(
-                  context: context,
-                  title: 'Delete Task',
-                  itemName: 'My Task',
-                );
-              },
-              child: const Text('Show Dialog'),
-            ),
+      await pumpLocalizedApp(
+        tester,
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () {
+              showDeleteConfirmationDialog(
+                context: context,
+                title: 'Delete Task',
+                itemName: 'My Task',
+              );
+            },
+            child: const Text('Show Dialog'),
           ),
         ),
       );

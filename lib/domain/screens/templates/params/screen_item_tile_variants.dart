@@ -6,6 +6,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 enum TaskTileVariant {
   @JsonValue('list_tile')
   listTile,
+
+  /// Agenda-style tile (supports title-prefix tags when enrichment provides
+  /// them).
+  @JsonValue('agenda')
+  agenda,
 }
 
 /// Project tile variant for list rendering.

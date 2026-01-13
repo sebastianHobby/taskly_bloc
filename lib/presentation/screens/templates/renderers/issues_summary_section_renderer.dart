@@ -3,15 +3,22 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 
 class IssuesSummarySectionRenderer extends StatelessWidget {
-  const IssuesSummarySectionRenderer({required this.data, super.key});
+  const IssuesSummarySectionRenderer({
+    required this.data,
+    super.key,
+    this.title,
+  });
 
   final IssuesSummarySectionResult data;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTitle = title ?? 'Issues';
+
     if (data.items.isEmpty) {
       return SupportSectionCard(
-        title: 'Issues',
+        title: effectiveTitle,
         child: Row(
           children: [
             Icon(
@@ -29,7 +36,7 @@ class IssuesSummarySectionRenderer extends StatelessWidget {
         data.items.length - data.criticalCount - data.warningCount;
 
     return SupportSectionCard(
-      title: 'Issues',
+      title: effectiveTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

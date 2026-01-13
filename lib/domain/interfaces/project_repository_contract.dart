@@ -5,6 +5,10 @@ abstract class ProjectRepositoryContract {
   /// Watch projects with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all projects with related labels.
+  ///
+  /// Hydration contract:
+  /// - [Project.values] is populated for all returned projects.
+  /// - [Project.primaryValueId] is present when set.
   /// Query configuration determines:
   /// - Which projects to include (via filter)
   /// - How to sort results (via sortCriteria)
@@ -20,12 +24,18 @@ abstract class ProjectRepositoryContract {
   /// Get projects with optional filtering, sorting, and occurrence expansion.
   ///
   /// If [query] is null, returns all projects with related labels.
+  ///
+  /// See [watchAll] for the hydration contract.
   Future<List<Project>> getAll([ProjectQuery? query]);
 
   /// Watch a project by ID with its related labels.
+  ///
+  /// See [watchAll] for the hydration contract.
   Stream<Project?> watchById(String id);
 
   /// Get a project by ID with its related labels.
+  ///
+  /// See [watchAll] for the hydration contract.
   Future<Project?> getById(String id);
 
   Future<void> create({

@@ -16,6 +16,8 @@ class Project {
     required this.updatedAt,
     required this.name,
     required this.completed,
+    this.taskCount = 0,
+    this.completedTaskCount = 0,
     this.description,
     this.startDate,
     this.deadlineDate,
@@ -34,6 +36,17 @@ class Project {
   final DateTime updatedAt;
   final String name;
   final bool completed;
+
+  /// Total number of tasks linked to this project.
+  ///
+  /// This is hydrated by the repository and is intended for UI summaries
+  /// (e.g. progress rings, counts).
+  final int taskCount;
+
+  /// Number of completed tasks linked to this project.
+  ///
+  /// This is hydrated by the repository and is intended for UI summaries.
+  final int completedTaskCount;
   final String? description;
   final DateTime? startDate;
   final DateTime? deadlineDate;
@@ -94,6 +107,8 @@ class Project {
     DateTime? updatedAt,
     String? name,
     bool? completed,
+    int? taskCount,
+    int? completedTaskCount,
     String? description,
     DateTime? startDate,
     DateTime? deadlineDate,
@@ -112,6 +127,8 @@ class Project {
       updatedAt: updatedAt ?? this.updatedAt,
       name: name ?? this.name,
       completed: completed ?? this.completed,
+      taskCount: taskCount ?? this.taskCount,
+      completedTaskCount: completedTaskCount ?? this.completedTaskCount,
       description: description ?? this.description,
       startDate: startDate ?? this.startDate,
       deadlineDate: deadlineDate ?? this.deadlineDate,
@@ -135,6 +152,8 @@ class Project {
         other.updatedAt == updatedAt &&
         other.name == name &&
         other.completed == completed &&
+        other.taskCount == taskCount &&
+        other.completedTaskCount == completedTaskCount &&
         other.description == description &&
         other.startDate == startDate &&
         other.deadlineDate == deadlineDate &&
@@ -155,6 +174,8 @@ class Project {
     updatedAt,
     name,
     completed,
+    taskCount,
+    completedTaskCount,
     description,
     startDate,
     deadlineDate,
@@ -170,7 +191,9 @@ class Project {
 
   @override
   String toString() {
-    return 'Project(id: $id, name: $name, completed: $completed, isPinned: $isPinned, '
+    return 'Project(id: $id, name: $name, completed: $completed, '
+        'taskCount: $taskCount, completedTaskCount: $completedTaskCount, '
+        'isPinned: $isPinned, '
         'values: ${values.length} values, primaryValueId: $primaryValueId, '
         'isOccurrence: $isOccurrenceInstance)';
   }

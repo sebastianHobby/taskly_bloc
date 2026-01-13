@@ -7,7 +7,9 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
@@ -16,6 +18,7 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
+import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 
@@ -156,6 +159,14 @@ class _AuthenticatedApp extends StatelessWidget {
         Provider<TodayBadgeService>(
           create: (_) => TodayBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
+          ),
+        ),
+
+        Provider<NavigationBadgeService>(
+          create: (_) => NavigationBadgeService(
+            taskRepository: getIt<TaskRepositoryContract>(),
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            screenQueryBuilder: getIt<ScreenQueryBuilder>(),
           ),
         ),
       ],

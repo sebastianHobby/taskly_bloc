@@ -4,9 +4,14 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 
 class CheckInSummarySectionRenderer extends StatelessWidget {
-  const CheckInSummarySectionRenderer({required this.data, super.key});
+  const CheckInSummarySectionRenderer({
+    required this.data,
+    super.key,
+    this.title,
+  });
 
   final CheckInSummarySectionResult data;
+  final String? title;
 
   @override
   Widget build(BuildContext context) {
@@ -14,8 +19,10 @@ class CheckInSummarySectionRenderer extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final effectiveTitle = title ?? 'Reviews Due';
+
     return SupportSectionCard(
-      title: 'Reviews Due',
+      title: effectiveTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

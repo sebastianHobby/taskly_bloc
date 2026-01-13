@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
@@ -9,9 +10,6 @@ import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 class ScaffoldWithNestedNavigation extends StatelessWidget {
   const ScaffoldWithNestedNavigation({
@@ -32,10 +30,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       'ScaffoldWithNestedNavigation.build(): activeScreenId=$activeScreenId',
     );
 
-    final badgeService = NavigationBadgeService(
-      taskRepository: getIt<TaskRepositoryContract>(),
-      projectRepository: getIt<ProjectRepositoryContract>(),
-    );
+    final badgeService = context.read<NavigationBadgeService>();
     const iconResolver = NavigationIconResolver();
 
     final systemDestinations = SystemScreenDefinitions.navigationScreens

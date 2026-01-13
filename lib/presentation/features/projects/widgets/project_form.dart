@@ -120,7 +120,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       color: colorScheme.error,
                     ),
                     onPressed: widget.onDelete,
-                    tooltip: 'Delete Project',
+                    tooltip: l10n.deleteProjectAction,
                   ),
 
                 // Close button (X) in top right
@@ -128,7 +128,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: handleClose,
-                    tooltip: 'Close',
+                    tooltip: l10n.closeLabel,
                     style: IconButton.styleFrom(
                       foregroundColor: colorScheme.onSurfaceVariant,
                     ),

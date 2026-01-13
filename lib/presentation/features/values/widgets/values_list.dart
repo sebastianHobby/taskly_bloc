@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -30,10 +31,9 @@ class ValuesListView extends StatelessWidget {
             enabled: enableSwipeToDelete,
             confirmDismiss: () => showDeleteConfirmationDialog(
               context: context,
-              title: 'Delete Value',
+              title: context.l10n.deleteValue,
               itemName: value.name,
-              description:
-                  'This value will be removed from all tasks. This action cannot be undone.',
+              description: context.l10n.deleteValueCascadeDescription,
             ),
             onDismissed: () {
               context.read<ValueListBloc>().add(
@@ -41,7 +41,7 @@ class ValuesListView extends StatelessWidget {
               );
               showDeleteSnackBar(
                 context: context,
-                message: 'Value deleted',
+                message: context.l10n.valueDeletedSuccessfully,
               );
             },
             child: ListTile(

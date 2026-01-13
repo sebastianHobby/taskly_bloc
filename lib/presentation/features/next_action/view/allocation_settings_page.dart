@@ -137,7 +137,7 @@ class _AllocationSettingsPageState extends State<AllocationSettingsPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.settingsSaveError(e))),
+          SnackBar(content: Text(context.l10n.settingsSaveError(e.toString()))),
         );
       }
     } finally {

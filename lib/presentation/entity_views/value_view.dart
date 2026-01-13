@@ -19,6 +19,7 @@ class ValueView extends StatelessWidget {
     this.compact = false,
     this.notRankedMessage,
     this.showDragHandle = false,
+    this.titlePrefix,
     super.key,
   });
 
@@ -30,6 +31,7 @@ class ValueView extends StatelessWidget {
     this.onTap,
     this.notRankedMessage,
     this.showDragHandle = false,
+    this.titlePrefix,
     super.key,
   }) : compact = true;
 
@@ -53,6 +55,12 @@ class ValueView extends StatelessWidget {
   /// Whether to show a drag handle for reordering.
   /// Only set to true when inside a ReorderableListView.
   final bool showDragHandle;
+
+  /// Optional widget shown inline before the title.
+  ///
+  /// Used for per-screen chrome (e.g. small tags/badges) without forking the
+  /// core entity view.
+  final Widget? titlePrefix;
 
   @override
   Widget build(BuildContext context) {
@@ -153,6 +161,10 @@ class ValueView extends StatelessWidget {
                       size: 20,
                     ),
                   const SizedBox(width: 6),
+                  if (titlePrefix != null) ...[
+                    titlePrefix!,
+                    const SizedBox(width: 6),
+                  ],
                   if (rank != null) ...[
                     Text(
                       '$rank.',
@@ -257,6 +269,10 @@ class ValueView extends StatelessWidget {
           style: EmojiUtils.emojiTextStyle(fontSize: 22),
         ),
         const SizedBox(width: 8),
+        if (titlePrefix != null) ...[
+          titlePrefix!,
+          const SizedBox(width: 6),
+        ],
         Expanded(
           child: Text(
             value.name,

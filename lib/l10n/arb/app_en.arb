@@ -12,9 +12,39 @@
     "@cancelLabel": {
         "description": "Generic cancel action label"
     },
+    "closeLabel": "Close",
+    "@closeLabel": {
+        "description": "Generic close action label"
+    },
     "deleteLabel": "Delete",
     "@deleteLabel": {
         "description": "Generic delete action label"
+    },
+    "deleteTaskAction": "Delete task",
+    "@deleteTaskAction": {
+        "description": "Delete task action label"
+    },
+    "deleteConfirmationQuestion": "Are you sure you want to delete \"{itemName}\"?",
+    "@deleteConfirmationQuestion": {
+        "description": "Delete confirmation question shown in delete dialogs.",
+        "placeholders": {
+            "itemName": {
+                "type": "String",
+                "example": "My Task"
+            }
+        }
+    },
+    "deleteConfirmationIrreversibleDescription": "This action cannot be undone.",
+    "@deleteConfirmationIrreversibleDescription": {
+        "description": "Delete confirmation description indicating the action cannot be undone."
+    },
+    "deleteProjectCascadeDescription": "All tasks in this project will also be deleted. This action cannot be undone.",
+    "@deleteProjectCascadeDescription": {
+        "description": "Delete confirmation description warning that deleting a project also deletes its tasks."
+    },
+    "deleteValueCascadeDescription": "This value will be removed from all tasks. This action cannot be undone.",
+    "@deleteValueCascadeDescription": {
+        "description": "Delete confirmation description warning that deleting a value removes it from tasks."
     },
     "projectsTitle": "Projects",
     "@projectsTitle": {
@@ -1296,7 +1326,7 @@
         "description": "Message shown when settings fail to save",
         "placeholders": {
             "error": {
-                "type": "Object"
+                "type": "String"
             }
         }
     },
@@ -1305,28 +1335,8 @@
         "description": "Message shown when settings fail to load",
         "placeholders": {
             "error": {
-                "type": "Object"
+                "type": "String"
             }
         }
-    },
-    "deleteProjectAction": "Delete Project",
-    "@deleteProjectAction": {
-        "description": "Delete project action label"
-    },
-    "valueRankingsTitle": "Value Rankings",
-    "@valueRankingsTitle": {
-        "description": "Title for Value Rankings section"
-    },
-    "valueRankingsDescription": "Drag and drop to rank your values. Higher ranked values are prioritized in task allocation.",
-    "@valueRankingsDescription": {
-        "description": "Description for Value Rankings section"
-    },
-    "noValuesForRanking": "No values available for ranking.",
-    "@noValuesForRanking": {
-        "description": "Message shown when no values are available for ranking"
-    },
-    "notRankedDragToRank": "Not Ranked (Drag to rank)",
-    "@notRankedDragToRank": {
-        "description": "Message for unranked values"
     }
 }

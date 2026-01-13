@@ -31,7 +31,7 @@ A key UX invariant:
 - Settings:
   - [lib/domain/allocation/model/allocation_config.dart](../../lib/domain/allocation/model/allocation_config.dart)
   - [lib/domain/allocation/model/focus_mode.dart](../../lib/domain/allocation/model/focus_mode.dart)
-  - [lib/domain/models/settings_key.dart](../../lib/domain/models/settings_key.dart)
+  - [lib/domain/preferences/model/settings_key.dart](../../lib/domain/preferences/model/settings_key.dart)
 - Allocation output model:
   - [lib/domain/allocation/model/allocation_result.dart](../../lib/domain/allocation/model/allocation_result.dart)
 

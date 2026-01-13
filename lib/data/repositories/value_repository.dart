@@ -206,6 +206,47 @@ class ValueRepository implements ValueRepositoryContract {
     return driftDb.into(driftDb.valueTable).insert(createCompanion);
   }
 
+  Future<void> _repairTaskPrimaryValueIfNeeded(String taskId) async {
+    final rows =
+        await (driftDb.select(driftDb.taskValuesTable)
+              ..where((t) => t.taskId.equals(taskId))
+              ..orderBy([
+                (t) => drift_pkg.OrderingTerm(expression: t.createdAt),
+              ]))
+            .get();
+
+    if (rows.isEmpty) return;
+
+    final primaryRows = rows.where((r) => r.isPrimary).toList();
+    final selectedPrimaryId =
+        (primaryRows.isNotEmpty ? primaryRows.first.id : rows.first.id).trim();
+    if (selectedPrimaryId.isEmpty) return;
+
+    if (primaryRows.length == 1) return;
+
+    final now = DateTime.now();
+
+    if (primaryRows.length > 1) {
+      await (driftDb.update(driftDb.taskValuesTable)
+            ..where((t) => t.taskId.equals(taskId) & t.isPrimary.equals(true)))
+          .write(
+            drift.TaskValuesTableCompanion(
+              isPrimary: const drift_pkg.Value(false),
+              updatedAt: drift_pkg.Value(now),
+            ),
+          );
+    }
+
+    await (driftDb.update(
+      driftDb.taskValuesTable,
+    )..where((t) => t.id.equals(selectedPrimaryId))).write(
+      drift.TaskValuesTableCompanion(
+        isPrimary: const drift_pkg.Value(true),
+        updatedAt: drift_pkg.Value(now),
+      ),
+    );
+  }
+
   String _normalizeColorOrThrow(String input) {
     final trimmed = input.trim();
     final normalized = trimmed.startsWith('#') ? trimmed : '#$trimmed';
@@ -289,32 +330,42 @@ class ValueRepository implements ValueRepositoryContract {
     required String taskId,
     required String valueId,
   }) async {
-    // Check if value association already exists
-    final existing =
-        await (driftDb.select(driftDb.taskValuesTable)..where(
-              (tl) => tl.taskId.equals(taskId) & tl.valueId.equals(valueId),
-            ))
-            .getSingleOrNull();
+    await driftDb.transaction(() async {
+      // Check if value association already exists
+      final existing =
+          await (driftDb.select(driftDb.taskValuesTable)..where(
+                (tl) => tl.taskId.equals(taskId) & tl.valueId.equals(valueId),
+              ))
+              .getSingleOrNull();
 
-    if (existing != null) return; // Already exists
+      if (existing != null) return; // Already exists
 
-    // Generate deterministic v5 ID for junction
-    final junctionId = idGenerator.taskValueId(
-      taskId: taskId,
-      valueId: valueId,
-    );
+      final existingForTask = await (driftDb.select(
+        driftDb.taskValuesTable,
+      )..where((t) => t.taskId.equals(taskId))).get();
+      final shouldBePrimary = existingForTask.isEmpty;
 
-    // Add new value association
-    await driftDb
-        .into(driftDb.taskValuesTable)
-        .insert(
-          drift.TaskValuesTableCompanion(
-            id: drift_pkg.Value(junctionId),
-            taskId: drift_pkg.Value(taskId),
-            valueId: drift_pkg.Value(valueId),
-          ),
-          mode: drift_pkg.InsertMode.insertOrIgnore,
-        );
+      // Generate deterministic v5 ID for junction
+      final junctionId = idGenerator.taskValueId(
+        taskId: taskId,
+        valueId: valueId,
+      );
+
+      // Add new value association
+      await driftDb
+          .into(driftDb.taskValuesTable)
+          .insert(
+            drift.TaskValuesTableCompanion(
+              id: drift_pkg.Value(junctionId),
+              taskId: drift_pkg.Value(taskId),
+              valueId: drift_pkg.Value(valueId),
+              isPrimary: drift_pkg.Value(shouldBePrimary),
+            ),
+            mode: drift_pkg.InsertMode.insertOrIgnore,
+          );
+
+      await _repairTaskPrimaryValueIfNeeded(taskId);
+    });
   }
 
   @override
@@ -322,9 +373,14 @@ class ValueRepository implements ValueRepositoryContract {
     required String taskId,
     required String valueId,
   }) async {
-    await (driftDb.delete(
-          driftDb.taskValuesTable,
-        )..where((tl) => tl.taskId.equals(taskId) & tl.valueId.equals(valueId)))
-        .go();
+    await driftDb.transaction(() async {
+      await (driftDb.delete(
+            driftDb.taskValuesTable,
+          )..where(
+            (tl) => tl.taskId.equals(taskId) & tl.valueId.equals(valueId),
+          ))
+          .go();
+      await _repairTaskPrimaryValueIfNeeded(taskId);
+    });
   }
 }

@@ -27,6 +27,11 @@ class ProjectRepository implements ProjectRepositoryContract {
     required this.idGenerator,
   }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
 
+  // Task counts are merged into Project domain objects. We intentionally keep
+  // the project+values join separate from task counting to avoid join row
+  // multiplication (projects with multiple values would otherwise distort
+  // counts).
+
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
@@ -38,6 +43,149 @@ class ProjectRepository implements ProjectRepositoryContract {
 
   final QueryStreamCache<ProjectQuery, List<Project>> _sharedWatchAllCache =
       QueryStreamCache(maxEntries: 16);
+
+  Stream<List<Project>> _attachTaskCounts(
+    Stream<List<Project>> projectsStream,
+  ) {
+    return projectsStream.switchMap((projects) {
+      if (projects.isEmpty) return Stream.value(const <Project>[]);
+      final ids = projects.map((p) => p.id).toSet();
+      return _watchTaskCountsForProjectIds(ids).map((countsById) {
+        return projects
+            .map((p) {
+              final counts = countsById[p.id];
+              return p.copyWith(
+                taskCount: counts?.taskCount ?? 0,
+                completedTaskCount: counts?.completedTaskCount ?? 0,
+              );
+            })
+            .toList(growable: false);
+      });
+    });
+  }
+
+  Future<List<Project>> _mergeTaskCountsOnce(List<Project> projects) async {
+    if (projects.isEmpty) return const <Project>[];
+    final ids = projects.map((p) => p.id).toSet();
+    final countsById = await _getTaskCountsForProjectIds(ids);
+    return projects
+        .map((p) {
+          final counts = countsById[p.id];
+          return p.copyWith(
+            taskCount: counts?.taskCount ?? 0,
+            completedTaskCount: counts?.completedTaskCount ?? 0,
+          );
+        })
+        .toList(growable: false);
+  }
+
+  /// Task counts grouped by project ID.
+  ///
+  /// Used to hydrate [Project.taskCount] and [Project.completedTaskCount] for
+  /// all project reads.
+  Future<Map<String, _ProjectTaskCounts>> _getTaskCountsForProjectIds(
+    Set<String> projectIds,
+  ) async {
+    if (projectIds.isEmpty) return const <String, _ProjectTaskCounts>{};
+    final ids = projectIds.toList(growable: false);
+
+    final totalCountExp = driftDb.taskTable.id.count();
+    final totalStmt = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([driftDb.taskTable.projectId, totalCountExp])
+      ..where(driftDb.taskTable.projectId.isIn(ids))
+      ..groupBy([driftDb.taskTable.projectId]);
+
+    final completedCountExp = driftDb.taskTable.id.count();
+    final completedStmt = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([driftDb.taskTable.projectId, completedCountExp])
+      ..where(driftDb.taskTable.projectId.isIn(ids))
+      ..where(driftDb.taskTable.completed.equals(true))
+      ..groupBy([driftDb.taskTable.projectId]);
+
+    final totalRows = await totalStmt.get();
+    final completedRows = await completedStmt.get();
+
+    final totalById = <String, int>{};
+    for (final row in totalRows) {
+      final projectId = row.read(driftDb.taskTable.projectId);
+      if (projectId == null) continue;
+      totalById[projectId] = row.read(totalCountExp) ?? 0;
+    }
+
+    final completedById = <String, int>{};
+    for (final row in completedRows) {
+      final projectId = row.read(driftDb.taskTable.projectId);
+      if (projectId == null) continue;
+      completedById[projectId] = row.read(completedCountExp) ?? 0;
+    }
+
+    final result = <String, _ProjectTaskCounts>{};
+    for (final id in ids) {
+      result[id] = _ProjectTaskCounts(
+        taskCount: totalById[id] ?? 0,
+        completedTaskCount: completedById[id] ?? 0,
+      );
+    }
+
+    return result;
+  }
+
+  Stream<Map<String, _ProjectTaskCounts>> _watchTaskCountsForProjectIds(
+    Set<String> projectIds,
+  ) {
+    if (projectIds.isEmpty) {
+      return Stream.value(const <String, _ProjectTaskCounts>{});
+    }
+    final ids = projectIds.toList(growable: false);
+
+    final totalCountExp = driftDb.taskTable.id.count();
+    final totalStmt = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([driftDb.taskTable.projectId, totalCountExp])
+      ..where(driftDb.taskTable.projectId.isIn(ids))
+      ..groupBy([driftDb.taskTable.projectId]);
+
+    final completedCountExp = driftDb.taskTable.id.count();
+    final completedStmt = driftDb.selectOnly(driftDb.taskTable)
+      ..addColumns([driftDb.taskTable.projectId, completedCountExp])
+      ..where(driftDb.taskTable.projectId.isIn(ids))
+      ..where(driftDb.taskTable.completed.equals(true))
+      ..groupBy([driftDb.taskTable.projectId]);
+
+    final totalStream = totalStmt.watch().map((rows) {
+      final totalById = <String, int>{};
+      for (final row in rows) {
+        final projectId = row.read(driftDb.taskTable.projectId);
+        if (projectId == null) continue;
+        totalById[projectId] = row.read(totalCountExp) ?? 0;
+      }
+      return totalById;
+    });
+
+    final completedStream = completedStmt.watch().map((rows) {
+      final completedById = <String, int>{};
+      for (final row in rows) {
+        final projectId = row.read(driftDb.taskTable.projectId);
+        if (projectId == null) continue;
+        completedById[projectId] = row.read(completedCountExp) ?? 0;
+      }
+      return completedById;
+    });
+
+    return Rx.combineLatest2(
+      totalStream,
+      completedStream,
+      (Map<String, int> totalById, Map<String, int> completedById) {
+        final result = <String, _ProjectTaskCounts>{};
+        for (final id in ids) {
+          result[id] = _ProjectTaskCounts(
+            taskCount: totalById[id] ?? 0,
+            completedTaskCount: completedById[id] ?? 0,
+          );
+        }
+        return result;
+      },
+    );
+  }
 
   Future<ProjectTableData?> _getProjectById(String id) async {
     return driftDb.managers.projectTable
@@ -64,7 +212,7 @@ class ProjectRepository implements ProjectRepositoryContract {
           driftDb: driftDb,
         ).toProjects();
       }).shareValue();
-      return _sharedProjectsWithRelated!;
+      return _attachTaskCounts(_sharedProjectsWithRelated!);
     }
 
     // With query = use query-specific logic
@@ -74,15 +222,18 @@ class ProjectRepository implements ProjectRepositoryContract {
 
     // Conservative policy: don't cache date-based queries by default.
     if (query.hasDateFilter) {
-      return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
+      final base = _projectWithRelatedJoin(filter: query.filter).watch().map((
+        rows,
+      ) {
         return ProjectAggregation.fromRows(
           rows: rows,
           driftDb: driftDb,
         ).toProjects();
       });
+      return _attachTaskCounts(base);
     }
 
-    return _sharedWatchAllCache.getOrCreate(query, () {
+    final base = _sharedWatchAllCache.getOrCreate(query, () {
       return _projectWithRelatedJoin(filter: query.filter).watch().map((rows) {
         return ProjectAggregation.fromRows(
           rows: rows,
@@ -90,6 +241,8 @@ class ProjectRepository implements ProjectRepositoryContract {
         ).toProjects();
       });
     });
+
+    return _attachTaskCounts(base);
   }
 
   @override
@@ -97,10 +250,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     // No query = return all projects
     if (query == null) {
       final rows = await _projectWithRelatedJoin().get();
-      return ProjectAggregation.fromRows(
+      final projects = ProjectAggregation.fromRows(
         rows: rows,
         driftDb: driftDb,
       ).toProjects();
+
+      return _mergeTaskCountsOnce(projects);
     }
 
     // With query = use query-specific logic
@@ -109,10 +264,12 @@ class ProjectRepository implements ProjectRepositoryContract {
     }
 
     final rows = await _projectWithRelatedJoin(filter: query.filter).get();
-    return ProjectAggregation.fromRows(
+    final projects = ProjectAggregation.fromRows(
       rows: rows,
       driftDb: driftDb,
     ).toProjects();
+
+    return _mergeTaskCountsOnce(projects);
   }
 
   @override
@@ -257,11 +414,22 @@ class ProjectRepository implements ProjectRepositoryContract {
           ),
         ]);
 
-    return joined.watch().map((rows) {
+    final base = joined.watch().map((rows) {
       return ProjectAggregation.fromRows(
         rows: rows,
         driftDb: driftDb,
       ).toSingleProject();
+    });
+
+    return base.switchMap((project) {
+      if (project == null) return Stream.value(null);
+      return _watchTaskCountsForProjectIds({project.id}).map((countsById) {
+        final counts = countsById[project.id];
+        return project.copyWith(
+          taskCount: counts?.taskCount ?? 0,
+          completedTaskCount: counts?.completedTaskCount ?? 0,
+        );
+      });
     });
   }
 
@@ -284,10 +452,18 @@ class ProjectRepository implements ProjectRepositoryContract {
         ]);
 
     final rows = await joined.get();
-    return ProjectAggregation.fromRows(
+    final project = ProjectAggregation.fromRows(
       rows: rows,
       driftDb: driftDb,
     ).toSingleProject();
+
+    if (project == null) return null;
+    final countsById = await _getTaskCountsForProjectIds({project.id});
+    final counts = countsById[project.id];
+    return project.copyWith(
+      taskCount: counts?.taskCount ?? 0,
+      completedTaskCount: counts?.completedTaskCount ?? 0,
+    );
   }
 
   Future<void> _updateProject(ProjectTableCompanion updateCompanion) async {
@@ -626,4 +802,14 @@ class ProjectRepository implements ProjectRepositoryContract {
   Future<void> convertToOneTime(String projectId) {
     return occurrenceWriteHelper.convertProjectToOneTime(projectId);
   }
+}
+
+class _ProjectTaskCounts {
+  const _ProjectTaskCounts({
+    required this.taskCount,
+    required this.completedTaskCount,
+  });
+
+  final int taskCount;
+  final int completedTaskCount;
 }

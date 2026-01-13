@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
+
+enum ProjectViewVariant {
+  /// Default list-row style used across most list templates.
+  list,
+
+  /// Rounded card variant intended for the Scheduled agenda timeline.
+  agendaCard,
+}
 
 /// The canonical, entity-level project UI entrypoint.
 ///
@@ -22,6 +29,8 @@ class ProjectView extends StatelessWidget {
     this.showNextTask = false,
     this.showPinnedIndicator = true,
     super.key,
+    this.titlePrefix,
+    this.variant = ProjectViewVariant.list,
   });
 
   final Project project;
@@ -47,6 +56,15 @@ class ProjectView extends StatelessWidget {
   /// Whether to show a pinned indicator when the project is pinned.
   final bool showPinnedIndicator;
 
+  /// Optional widget shown inline before the project title.
+  ///
+  /// Used by some list templates (e.g. Agenda) to display a tag pill like
+  /// START/DUE without overlaying the tile content.
+  final Widget? titlePrefix;
+
+  /// Visual variant used to align with the Scheduled agenda mock.
+  final ProjectViewVariant variant;
+
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || project.completed) return false;
     final now = DateTime.now();
@@ -67,21 +85,17 @@ class ProjectView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return switch (variant) {
+      ProjectViewVariant.list => _buildListRow(context),
+      ProjectViewVariant.agendaCard => _buildAgendaCard(context),
+    };
+  }
+
+  Widget _buildListRow(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     final isOverdue = _isOverdue(project.deadlineDate);
-
-    final hasDescription =
-        project.description != null && project.description!.trim().isNotEmpty;
-    final canShowNextTask = showNextTask && nextTask != null;
-    final subtitle = (!compact && (hasDescription || canShowNextTask))
-        ? (hasDescription
-              ? project.description!.trim()
-              : '${context.l10n.projectNextTaskPrefix} ${nextTask!.name}')
-        : null;
-    final isNextTaskSubtitle =
-        subtitle != null && !hasDescription && canShowNextTask;
 
     return Container(
       key: Key('project-${project.id}'),
@@ -128,6 +142,10 @@ class ProjectView extends StatelessWidget {
                           const PinnedIndicator(),
                           const SizedBox(width: 8),
                         ],
+                        if (titlePrefix != null) ...[
+                          titlePrefix!,
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: Text(
                             project.name,
@@ -149,27 +167,6 @@ class ProjectView extends StatelessWidget {
                       ],
                     ),
 
-                    // Row 2 (full only): Description or next task
-                    // Explicitly removed description logic to align with list view mockup
-                    /* 
-                    if (!compact && subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isNextTaskSubtitle
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant,
-                          fontStyle: isNextTaskSubtitle
-                              ? FontStyle.italic
-                              : null,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    */
-
                     // Values row
                     _ValueLine(
                       primaryValue: project.primaryValue,
@@ -177,6 +174,90 @@ class ProjectView extends StatelessWidget {
                     ),
 
                     // Dates row (Start + Deadline + Repeat)
+                    _ProjectDatesRow(
+                      startDate: project.startDate,
+                      deadlineDate: project.deadlineDate,
+                      hasRepeat: project.repeatIcalRrule != null,
+                      formatMonthDay: (date) => _formatMonthDay(context, date),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgendaCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isOverdue = _isOverdue(project.deadlineDate);
+
+    return Material(
+      key: Key('project-${project.id}'),
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTap != null
+            ? onTap!(project)
+            : Routing.toEntity(context, EntityType.project, project.id),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ProjectProgressRing(
+                value: _progressValue,
+                isOverdue: isOverdue,
+                semanticsLabel: project.name,
+                taskCount: taskCount,
+                completedTaskCount: completedTaskCount,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (titlePrefix != null) ...[
+                          titlePrefix!,
+                          const SizedBox(width: 10),
+                        ],
+                        Expanded(
+                          child: Text(
+                            project.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              decoration: project.completed
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: project.completed
+                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
+                                  : colorScheme.onSurface,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    _ValueLine(
+                      primaryValue: project.primaryValue,
+                      secondaryValues: project.secondaryValues,
+                    ),
                     _ProjectDatesRow(
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,

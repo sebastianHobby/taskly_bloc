@@ -140,7 +140,9 @@ class TaskFilterEvaluator {
   bool _evaluateValue(TaskValuePredicate p, Task task) {
     final taskValueIds = task.values.map((v) => v.id).toSet();
 
-    if (p.includeInherited && task.project != null) {
+    // If a task has explicit values, it is treated as overriding project values.
+    // In that case, inherited values should not be considered.
+    if (p.includeInherited && taskValueIds.isEmpty && task.project != null) {
       for (final v in task.project!.values) {
         taskValueIds.add(v.id);
       }
