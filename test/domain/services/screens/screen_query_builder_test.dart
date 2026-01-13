@@ -4,9 +4,9 @@ import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -452,14 +452,17 @@ void main() {
     });
 
     group('buildTaskQueryFromSectionRef', () {
-      test('builds query from task_list section ref', () {
+      test('builds query from task_list_v2 section ref', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.taskList,
-          params: DataListSectionParams(
+          templateId: SectionTemplateId.taskListV2,
+          params: ListSectionParamsV2(
             config: DataConfig.task(query: TaskQuery.incomplete()),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
 
@@ -474,12 +477,15 @@ void main() {
 
       test('returns null for non-task sections', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.projectList,
-          params: DataListSectionParams(
+          templateId: SectionTemplateId.projectListV2,
+          params: ListSectionParamsV2(
             config: DataConfig.project(query: ProjectQuery.all()),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
 
@@ -491,55 +497,8 @@ void main() {
         expect(query, isNull);
       });
 
-      test('applies display config showCompleted=false filter', () {
-        final section = SectionRef(
-          templateId: SectionTemplateId.taskList,
-          params: DataListSectionParams(
-            config: DataConfig.task(query: TaskQuery.all()),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
-            display: const DisplayConfig(showCompleted: false),
-          ).toJson(),
-        );
-
-        final query = queryBuilder.buildTaskQueryFromSectionRef(
-          section: section,
-          now: now,
-        );
-
-        expect(query, isNotNull);
-        final hasIncompletePredicate = query!.filter.shared.any(
-          (p) =>
-              p is TaskBoolPredicate &&
-              p.field == TaskBoolField.completed &&
-              p.operator == BoolOperator.isFalse,
-        );
-        expect(hasIncompletePredicate, isTrue);
-      });
-
-      test('preserves display sorting when query has no sort criteria', () {
-        final section = SectionRef(
-          templateId: SectionTemplateId.taskList,
-          params: const DataListSectionParams(
-            config: TaskDataConfig(query: TaskQuery()),
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            valueTileVariant: ValueTileVariant.compactCard,
-            display: DisplayConfig(
-              sorting: [SortCriterion(field: SortField.name)],
-            ),
-          ).toJson(),
-        );
-
-        final query = queryBuilder.buildTaskQueryFromSectionRef(
-          section: section,
-          now: now,
-        );
-
-        expect(query, isNotNull);
-        expect(query!.sortCriteria, isNotEmpty);
-      });
+      // Note: V2 section refs include a fully-specified query in `DataConfig`.
+      // Display/filter/sort is not derived from section params at runtime.
     });
 
     group('buildTaskQueryFromAllocationSectionRef', () {
@@ -588,12 +547,15 @@ void main() {
     group('buildTaskQueryFromAgendaSectionRef', () {
       test('builds query with date filter for deadlineDate field', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.agenda,
-          params: const AgendaSectionParams(
-            dateField: AgendaDateField.deadlineDate,
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            grouping: AgendaGrouping.standard,
+          templateId: SectionTemplateId.agendaV2,
+          params: AgendaSectionParamsV2(
+            dateField: AgendaDateFieldV2.deadlineDate,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -612,12 +574,15 @@ void main() {
 
       test('builds query with date filter for startDate field', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.agenda,
-          params: const AgendaSectionParams(
-            dateField: AgendaDateField.startDate,
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            grouping: AgendaGrouping.standard,
+          templateId: SectionTemplateId.agendaV2,
+          params: AgendaSectionParamsV2(
+            dateField: AgendaDateFieldV2.startDate,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -636,12 +601,15 @@ void main() {
 
       test('includes incomplete filter', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.agenda,
-          params: const AgendaSectionParams(
-            dateField: AgendaDateField.deadlineDate,
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            grouping: AgendaGrouping.standard,
+          templateId: SectionTemplateId.agendaV2,
+          params: AgendaSectionParamsV2(
+            dateField: AgendaDateFieldV2.deadlineDate,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -671,12 +639,15 @@ void main() {
           ),
         );
         final section = SectionRef(
-          templateId: SectionTemplateId.agenda,
-          params: AgendaSectionParams(
-            dateField: AgendaDateField.deadlineDate,
-            taskTileVariant: TaskTileVariant.listTile,
-            projectTileVariant: ProjectTileVariant.listTile,
-            grouping: AgendaGrouping.standard,
+          templateId: SectionTemplateId.agendaV2,
+          params: AgendaSectionParamsV2(
+            dateField: AgendaDateFieldV2.deadlineDate,
+            tiles: const TilePolicyV2(
+              task: TaskTileVariant.listTile,
+              project: ProjectTileVariant.listTile,
+              value: ValueTileVariant.compactCard,
+            ),
+            layout: const SectionLayoutSpecV2.timelineMonthSections(),
             additionalFilter: additionalQuery,
           ).toJson(),
         );

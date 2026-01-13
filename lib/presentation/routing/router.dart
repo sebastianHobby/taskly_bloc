@@ -3,6 +3,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/core/performance/performance_route_observer.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -14,7 +15,11 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 /// No legacy redirects - all paths are canonical.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
-  observers: [TalkerRouteObserver(talker.raw), appRouteObserver],
+  observers: [
+    TalkerRouteObserver(talker.raw),
+    appRouteObserver,
+    PerformanceRouteObserver(),
+  ],
   routes: [
     ShellRoute(
       builder: (context, state, child) {

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/core/logging/app_log.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -17,6 +18,10 @@ import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
@@ -27,6 +32,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_banner.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 
 /// Unified page for rendering all screen types.
 ///
@@ -47,6 +53,7 @@ class UnifiedScreenPage extends StatelessWidget {
       create: (context) => ScreenBloc(
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
+        performanceLogger: getIt<PerformanceLogger>(),
       )..add(ScreenEvent.load(definition: definition)),
       child: const _UnifiedScreenScaffold(),
     );
@@ -68,6 +75,7 @@ class UnifiedScreenPageById extends StatelessWidget {
       create: (context) => ScreenBloc(
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
+        performanceLogger: getIt<PerformanceLogger>(),
       )..add(ScreenEvent.loadById(screenId: screenId)),
       child: const _UnifiedScreenScaffold(),
     );
@@ -92,136 +100,118 @@ class _UnifiedScreenScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ScreenBloc, ScreenState>(
-      builder: (context, state) {
-        // Extract data from state if loaded
-        final data = switch (state) {
-          ScreenLoadedState(:final data) => data,
-          _ => null,
-        };
-
-        // Extract title/definition info
-        final title = switch (state) {
-          ScreenLoadingState(:final definition) => definition?.name,
-          ScreenLoadedState(:final data) => data.definition.name,
-          ScreenErrorState(:final definition) => definition?.name,
-          _ => null,
-        };
-
-        // Some sections represent full-screen legacy pages (with their own
-        // Scaffold/AppBar/FAB). In those cases, render the section directly
-        // to avoid nested scaffolds and duplicated chrome.
-        final fullScreenSection = switch (state) {
-          ScreenLoadedState(:final data)
-              when data.sections.length == 1 &&
-                  _fullScreenTemplateIds.contains(
-                    data.sections.first.templateId,
-                  ) =>
-            data.sections.first,
-          _ => null,
-        };
-
-        if (fullScreenSection != null) {
-          return SectionWidget(section: fullScreenSection);
-        }
-
-        // Scheduled uses a single agenda section that needs to own scrolling
-        // to support date-chip ↔ timeline scroll synchronization.
-        final singleAgendaSection = switch (state) {
-          ScreenLoadedState(:final data)
-              when data.sections.length == 1 &&
-                  data.sections.first.templateId == SectionTemplateId.agenda =>
-            data.sections.first,
-          _ => null,
-        };
-
-        // Build body based on state
-        final body = switch (state) {
-          ScreenInitialState() || ScreenLoadingState() => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          ScreenLoadedState() when singleAgendaSection != null => SectionWidget(
-            section: singleAgendaSection,
-            onEntityTap: (entity) {
-              if (entity is Task) {
-                Routing.toEntity(
-                  context,
-                  EntityType.task,
-                  entity.id,
-                );
-              } else if (entity is Project) {
-                Routing.toEntity(
-                  context,
-                  EntityType.project,
-                  entity.id,
-                );
-              }
-            },
-            onTaskCheckboxChanged: (task, value) async {
-              if (value ?? false) {
-                await getIt<EntityActionService>().completeTask(task.id);
-              } else {
-                await getIt<EntityActionService>().uncompleteTask(task.id);
-              }
-            },
-            onProjectCheckboxChanged: (project, value) async {
-              if (value ?? false) {
-                await getIt<EntityActionService>().completeProject(project.id);
-              } else {
-                await getIt<EntityActionService>().uncompleteProject(
-                  project.id,
-                );
-              }
-            },
-          ),
-          ScreenLoadedState(:final data) => _ScreenContent(
-            data: data,
-            entityActionService: getIt<EntityActionService>(),
-          ),
-          ScreenErrorState(:final message) => _ErrorContent(message: message),
-        };
-
-        final isSystemScheduled = switch (state) {
-          ScreenLoadedState(:final data) => data.definition.id == 'scheduled',
-          ScreenLoadingState(:final definition) =>
-            definition?.id == 'scheduled',
-          ScreenErrorState(:final definition) => definition?.id == 'scheduled',
-          _ => false,
-        };
-
-        // Build FAB only when loaded (returns null otherwise)
-        final fab = data != null ? _buildFab(context, data) : null;
-
-        // Build app bar actions only when loaded
-        final appBarActions = data != null
-            ? _buildAppBarActions(context, data.definition)
-            : <Widget>[];
-
-        final theme = Theme.of(context);
-
-        // Use Scaffold here - this is the inner content page scaffold.
-        // The shell navigation scaffold wraps this but doesn't have a FAB slot,
-        // so this Scaffold's FAB is the primary one for the screen.
-        return Scaffold(
-          backgroundColor: theme.scaffoldBackgroundColor,
-          appBar: isSystemScheduled
-              ? null
-              : AppBar(
-                  title: Text(title ?? 'Loading...'),
-                  actions: appBarActions,
-                  backgroundColor: theme.scaffoldBackgroundColor,
-                  elevation: 0,
-                ),
-          body: isSystemScheduled
-              ? SafeArea(top: true, bottom: false, child: body)
-              : body,
-          // Use AnimatedSwitcher to smoothly transition FAB and avoid layout race
-          floatingActionButton: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: fab ?? const SizedBox.shrink(key: ValueKey('no-fab')),
-          ),
-        );
+    return BlocListener<ScreenBloc, ScreenState>(
+      listenWhen: (previous, current) {
+        return previous is! ScreenLoadedState && current is ScreenLoadedState;
       },
+      listener: (context, state) {
+        // Record *first paint* as a separate, user-visible milestone.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          getIt<PerformanceLogger>().markFirstPaint();
+        });
+      },
+      child: BlocBuilder<ScreenBloc, ScreenState>(
+        builder: (context, state) {
+          // Extract data from state if loaded
+          final data = switch (state) {
+            ScreenLoadedState(:final data) => data,
+            _ => null,
+          };
+
+          // Extract title/definition info
+          final title = switch (state) {
+            ScreenLoadingState(:final definition) => definition?.name,
+            ScreenLoadedState(:final data) => data.definition.name,
+            ScreenErrorState(:final definition) => definition?.name,
+            _ => null,
+          };
+
+          // Some sections represent full-screen legacy pages (with their own
+          // Scaffold/AppBar/FAB). In those cases, render the section directly
+          // to avoid nested scaffolds and duplicated chrome.
+          final fullScreenSection = switch (state) {
+            ScreenLoadedState(:final data)
+                when data.sections.length == 1 &&
+                    _fullScreenTemplateIds.contains(
+                      data.sections.first.templateId,
+                    ) =>
+              data.sections.first,
+            _ => null,
+          };
+
+          if (fullScreenSection != null) {
+            return buildFullScreenTemplateSection(fullScreenSection);
+          }
+
+          // Scheduled uses a single agenda section that needs to own scrolling
+          // to support date-chip ↔ timeline scroll synchronization.
+          final singleAgendaSection = switch (state) {
+            ScreenLoadedState(:final data)
+                when data.sections.length == 1 &&
+                    data.sections.first.templateId ==
+                        SectionTemplateId.agendaV2 =>
+              data.sections.first,
+            _ => null,
+          };
+
+          // Build body based on state
+          final body = switch (state) {
+            ScreenInitialState() || ScreenLoadingState() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            ScreenLoadedState() when singleAgendaSection != null => _AgendaBody(
+              section: singleAgendaSection,
+            ),
+            ScreenLoadedState(:final data) => _ScreenContent(
+              data: data,
+              entityActionService: getIt<EntityActionService>(),
+            ),
+            ScreenErrorState(:final message) => _ErrorContent(message: message),
+          };
+
+          final isSystemScheduled = switch (state) {
+            ScreenLoadedState(:final data) => data.definition.id == 'scheduled',
+            ScreenLoadingState(:final definition) =>
+              definition?.id == 'scheduled',
+            ScreenErrorState(:final definition) =>
+              definition?.id == 'scheduled',
+            _ => false,
+          };
+
+          // Build FAB only when loaded (returns null otherwise)
+          final fab = data != null ? _buildFab(context, data) : null;
+
+          // Build app bar actions only when loaded
+          final appBarActions = data != null
+              ? _buildAppBarActions(context, data.definition)
+              : <Widget>[];
+
+          final theme = Theme.of(context);
+
+          // Use Scaffold here - this is the inner content page scaffold.
+          // The shell navigation scaffold wraps this but doesn't have a FAB slot,
+          // so this Scaffold's FAB is the primary one for the screen.
+          return Scaffold(
+            backgroundColor: theme.scaffoldBackgroundColor,
+            appBar: isSystemScheduled
+                ? null
+                : AppBar(
+                    title: Text(title ?? 'Loading...'),
+                    actions: appBarActions,
+                    backgroundColor: theme.scaffoldBackgroundColor,
+                    elevation: 0,
+                  ),
+            body: isSystemScheduled
+                ? SafeArea(top: true, bottom: false, child: body)
+                : body,
+            // Use AnimatedSwitcher to smoothly transition FAB and avoid layout race
+            floatingActionButton: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              child: fab ?? const SizedBox.shrink(key: ValueKey('no-fab')),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -323,111 +313,152 @@ class _ScreenContent extends StatelessWidget {
         builder: (context, configSnapshot) {
           final config = configSnapshot.data ?? const AllocationConfig();
 
-          return ListView.builder(
-            padding: const EdgeInsets.only(bottom: 80),
-            itemCount: sections.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                if (config.hasSelectedFocusMode) {
-                  return FocusModeBanner(
+          final focusBannerSliver = config.hasSelectedFocusMode
+              ? SliverToBoxAdapter(
+                  child: FocusModeBanner(
                     focusMode: config.focusMode,
                     onTap: () =>
                         context.push(Routing.screenPath('focus_setup')),
-                  );
-                }
+                  ),
+                )
+              : null;
 
-                return const SizedBox.shrink();
-              }
-
-              final section = sections[index - 1];
-              return SectionWidget(
-                section: section,
-                onEntityTap: (entity) {
-                  if (entity is Task) {
-                    Routing.toEntity(
-                      context,
-                      EntityType.task,
-                      entity.id,
+          return CustomScrollView(
+            slivers: [
+              ?focusBannerSliver,
+              for (final section in sections)
+                SectionWidget(
+                  section: section,
+                  onEntityTap: (entity) {
+                    if (entity is Task) {
+                      Routing.toEntity(
+                        context,
+                        EntityType.task,
+                        entity.id,
+                      );
+                    } else if (entity is Project) {
+                      Routing.toEntity(
+                        context,
+                        EntityType.project,
+                        entity.id,
+                      );
+                    }
+                  },
+                  onTaskCheckboxChanged: (task, value) async {
+                    AppLog.routine(
+                      'ui.unified_screen',
+                      'Task checkbox changed: ${task.id} -> $value',
                     );
-                  } else if (entity is Project) {
-                    Routing.toEntity(
-                      context,
-                      EntityType.project,
-                      entity.id,
-                    );
-                  }
-                },
-                onTaskCheckboxChanged: (task, value) async {
-                  AppLog.routine(
-                    'ui.unified_screen',
-                    'Task checkbox changed: ${task.id} -> $value',
-                  );
-                  if (value ?? false) {
-                    await entityActionService.completeTask(task.id);
-                  } else {
-                    await entityActionService.uncompleteTask(task.id);
-                  }
-                },
-              );
-            },
+                    if (value ?? false) {
+                      await entityActionService.completeTask(task.id);
+                    } else {
+                      await entityActionService.uncompleteTask(task.id);
+                    }
+                  },
+                ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+            ],
           );
         },
       );
     }
 
     if (sections.isEmpty && !isFocusScreen) {
-      return const Center(
-        child: Text('No sections configured'),
+      return const CustomScrollView(
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(child: Text('No sections configured')),
+          ),
+        ],
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: sections.length,
-      itemBuilder: (context, index) {
-        final section = sections[index];
-        return SectionWidget(
-          section: section,
-          onEntityTap: (entity) {
-            if (entity is Task) {
-              Routing.toEntity(
-                context,
-                EntityType.task,
-                entity.id,
+    return CustomScrollView(
+      slivers: [
+        for (final section in sections)
+          SectionWidget(
+            section: section,
+            onEntityTap: (entity) {
+              if (entity is Task) {
+                Routing.toEntity(
+                  context,
+                  EntityType.task,
+                  entity.id,
+                );
+              } else if (entity is Project) {
+                Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  entity.id,
+                );
+              }
+            },
+            onTaskCheckboxChanged: (task, value) async {
+              AppLog.routine(
+                'ui.unified_screen',
+                'CHECKBOX: task=${task.id}, newValue=$value, '
+                    'task.completed=${task.completed}',
               );
-            } else if (entity is Project) {
-              Routing.toEntity(
-                context,
-                EntityType.project,
-                entity.id,
+              if (value ?? false) {
+                await entityActionService.completeTask(task.id);
+              } else {
+                await entityActionService.uncompleteTask(task.id);
+              }
+              AppLog.routine(
+                'ui.unified_screen',
+                'CHECKBOX: action complete, data will update automatically',
               );
-            }
-          },
-          onTaskCheckboxChanged: (task, value) async {
-            AppLog.routine(
-              'ui.unified_screen',
-              'CHECKBOX: task=${task.id}, newValue=$value, '
-                  'task.completed=${task.completed}',
-            );
-            if (value ?? false) {
-              await entityActionService.completeTask(task.id);
-            } else {
-              await entityActionService.uncompleteTask(task.id);
-            }
-            AppLog.routine(
-              'ui.unified_screen',
-              'CHECKBOX: action complete, data will update automatically',
-            );
-          },
-          onProjectCheckboxChanged: (project, value) async {
-            if (value ?? false) {
-              await entityActionService.completeProject(project.id);
-            } else {
-              await entityActionService.uncompleteProject(project.id);
-            }
-          },
-        );
+            },
+            onProjectCheckboxChanged: (project, value) async {
+              if (value ?? false) {
+                await entityActionService.completeProject(project.id);
+              } else {
+                await entityActionService.uncompleteProject(project.id);
+              }
+            },
+          ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+      ],
+    );
+  }
+}
+
+class _AgendaBody extends StatelessWidget {
+  const _AgendaBody({required this.section});
+
+  final SectionVm section;
+
+  @override
+  Widget build(BuildContext context) {
+    final agendaResult = section.data;
+    if (agendaResult is! AgendaSectionResult) {
+      return const Center(child: Text('Agenda data not available'));
+    }
+
+    final sectionParams = section.params;
+    if (sectionParams is! AgendaSectionParamsV2) {
+      return const Center(child: Text('Agenda params not available'));
+    }
+
+    return AgendaSectionRenderer(
+      data: agendaResult,
+      showTagPills: sectionParams.tiles.task == TaskTileVariant.agenda,
+      onTaskToggle: (taskId, val) async {
+        final task = agendaResult.agendaData.groups
+            .expand((g) => g.items)
+            .where((item) => item.isTask && item.task?.id == taskId)
+            .map((item) => item.task)
+            .whereType<Task>()
+            .first;
+        final entityActionService = getIt<EntityActionService>();
+        if (val ?? false) {
+          await entityActionService.completeTask(task.id);
+        } else {
+          await entityActionService.uncompleteTask(task.id);
+        }
       },
+      onTaskTap: (task) => Routing.toEntity(context, EntityType.task, task.id),
     );
   }
 }

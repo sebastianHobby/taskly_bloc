@@ -5,7 +5,8 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -31,6 +32,18 @@ ScreenDefinition _makeScreen({
   );
 }
 
+ListSectionParamsV2 _listParamsV2(DataConfig config) {
+  return ListSectionParamsV2(
+    config: config,
+    tiles: const TilePolicyV2(
+      task: TaskTileVariant.listTile,
+      project: ProjectTileVariant.listTile,
+      value: ValueTileVariant.compactCard,
+    ),
+    layout: const SectionLayoutSpecV2.flatList(),
+  );
+}
+
 void main() {
   late NavigationBadgeService badgeService;
   late MockTaskRepositoryContract taskRepo;
@@ -42,6 +55,7 @@ void main() {
     badgeService = NavigationBadgeService(
       taskRepository: taskRepo,
       projectRepository: projectRepo,
+      screenQueryBuilder: ScreenQueryBuilder(),
     );
   });
 
@@ -73,13 +87,8 @@ void main() {
           name: 'Inbox',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
-                config: DataConfig.task(query: taskQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-              ).toJson(),
+              templateId: SectionTemplateId.taskListV2,
+              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
               overrides: const SectionOverrides(title: 'Tasks'),
             ),
           ],
@@ -102,12 +111,9 @@ void main() {
           name: 'Projects',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.projectList,
-              params: DataListSectionParams(
-                config: DataConfig.project(query: projectQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
+              templateId: SectionTemplateId.projectListV2,
+              params: _listParamsV2(
+                DataConfig.project(query: projectQuery),
               ).toJson(),
               overrides: const SectionOverrides(title: 'Projects'),
             ),
@@ -130,13 +136,8 @@ void main() {
           name: 'Values',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.valueList,
-              params: DataListSectionParams(
-                config: DataConfig.value(),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-              ).toJson(),
+              templateId: SectionTemplateId.valueListV2,
+              params: _listParamsV2(DataConfig.value()).toJson(),
               overrides: const SectionOverrides(title: 'Values'),
             ),
           ],
@@ -155,22 +156,14 @@ void main() {
           name: 'Mixed',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
-                config: DataConfig.task(query: taskQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-              ).toJson(),
+              templateId: SectionTemplateId.taskListV2,
+              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
               overrides: const SectionOverrides(title: 'Tasks First'),
             ),
             SectionRef(
-              templateId: SectionTemplateId.projectList,
-              params: DataListSectionParams(
-                config: DataConfig.project(query: projectQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
+              templateId: SectionTemplateId.projectListV2,
+              params: _listParamsV2(
+                DataConfig.project(query: projectQuery),
               ).toJson(),
               overrides: const SectionOverrides(title: 'Projects Second'),
             ),
@@ -215,13 +208,8 @@ void main() {
           name: 'Inbox',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
-                config: DataConfig.task(query: taskQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-              ).toJson(),
+              templateId: SectionTemplateId.taskListV2,
+              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
               overrides: const SectionOverrides(title: 'Tasks'),
             ),
           ],
@@ -233,19 +221,16 @@ void main() {
       });
 
       test('returns null for project data section', () {
+        final projectQuery = ProjectQuery.incomplete();
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.projectList,
-              params: DataListSectionParams(
-                config: DataConfig.project(query: ProjectQuery.all()),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
+              templateId: SectionTemplateId.projectListV2,
+              params: _listParamsV2(
+                DataConfig.project(query: projectQuery),
               ).toJson(),
-              overrides: const SectionOverrides(title: 'Projects'),
             ),
           ],
         );
@@ -283,12 +268,9 @@ void main() {
           name: 'Projects',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.projectList,
-              params: DataListSectionParams(
-                config: DataConfig.project(query: projectQuery),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
+              templateId: SectionTemplateId.projectListV2,
+              params: _listParamsV2(
+                DataConfig.project(query: projectQuery),
               ).toJson(),
               overrides: const SectionOverrides(title: 'Projects'),
             ),
@@ -306,12 +288,9 @@ void main() {
           name: 'Tasks',
           sections: [
             SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
-                config: DataConfig.task(query: TaskQuery.all()),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
+              templateId: SectionTemplateId.taskListV2,
+              params: _listParamsV2(
+                DataConfig.task(query: TaskQuery.all()),
               ).toJson(),
               overrides: const SectionOverrides(title: 'Tasks'),
             ),

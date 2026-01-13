@@ -15,14 +15,27 @@ class EntityHeaderSectionRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (data) {
-      EntityHeaderProjectSectionResult(:final project, :final showCheckbox) =>
+      EntityHeaderProjectSectionResult(
+        :final project,
+        :final showCheckbox,
+        :final showMetadata,
+      ) =>
         EntityHeader.project(
           project: project,
           showCheckbox: showCheckbox,
+          showMetadata: showMetadata,
           onCheckboxChanged: onProjectCheckboxChanged,
         ),
-      EntityHeaderValueSectionResult(:final value, :final taskCount) =>
-        EntityHeader.value(value: value, taskCount: taskCount),
+      EntityHeaderValueSectionResult(
+        :final value,
+        :final taskCount,
+        :final showMetadata,
+      ) =>
+        EntityHeader.value(
+          value: value,
+          taskCount: taskCount,
+          showMetadata: showMetadata,
+        ),
       EntityHeaderMissingSectionResult(:final entityType) => Padding(
         padding: const EdgeInsets.all(16),
         child: Text('Missing $entityType'),

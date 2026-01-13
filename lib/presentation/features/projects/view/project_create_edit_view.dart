@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
-import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
@@ -108,27 +107,20 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               });
             });
           case ProjectDetailOperationSuccess(:final operation):
-            final message = switch (operation) {
-              EntityOperation.create => context.l10n.projectCreatedSuccessfully,
-              EntityOperation.update => context.l10n.projectUpdatedSuccessfully,
-              EntityOperation.delete => context.l10n.projectDeletedSuccessfully,
-            };
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message)),
-            );
-            // Call onSaved callback if provided (for edit scenarios that need refresh)
-            if (widget.projectId != null) {
-              widget.onSaved?.call(widget.projectId!);
-            }
-            unawaited(Navigator.of(context).maybePop());
-          case ProjectDetailOperationFailure(:final errorDetails):
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  friendlyErrorMessageForUi(errorDetails.error, context.l10n),
-                ),
+            unawaited(
+              handleEditorOperationSuccess(
+                context,
+                operation: operation,
+                createdMessage: context.l10n.projectCreatedSuccessfully,
+                updatedMessage: context.l10n.projectUpdatedSuccessfully,
+                deletedMessage: context.l10n.projectDeletedSuccessfully,
+                onSaved: widget.projectId != null
+                    ? () => widget.onSaved?.call(widget.projectId!)
+                    : null,
               ),
             );
+          case ProjectDetailOperationFailure(:final errorDetails):
+            showEditorErrorSnackBar(context, errorDetails.error);
           default:
             return;
         }
@@ -188,7 +180,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 );
               },
               submitTooltip: context.l10n.actionCreate,
-              onClose: () => Navigator.of(context).maybePop(),
+              onClose: () => unawaited(closeEditor(context)),
             );
           },
           loadSuccess: (availableValues, project) {
@@ -238,10 +230,9 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               onDelete: () async {
                 final confirmed = await showDeleteConfirmationDialog(
                   context: context,
-                  title: 'Delete Project',
+                  title: context.l10n.deleteProjectAction,
                   itemName: project.name,
-                  description:
-                      'All tasks in this project will also be deleted. This action cannot be undone.',
+                  description: context.l10n.deleteProjectCascadeDescription,
                 );
                 if (confirmed && context.mounted) {
                   context.read<ProjectDetailBloc>().add(
@@ -250,7 +241,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 }
               },
               submitTooltip: context.l10n.actionUpdate,
-              onClose: () => Navigator.of(context).maybePop(),
+              onClose: () => unawaited(closeEditor(context)),
             );
           },
           operationSuccess: (_) => const SizedBox.shrink(),

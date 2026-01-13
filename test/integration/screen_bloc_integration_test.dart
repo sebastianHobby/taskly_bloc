@@ -7,6 +7,7 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
@@ -18,9 +19,13 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart'
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 import '../helpers/bloc_test_patterns.dart';
 
@@ -52,7 +57,7 @@ ScreenDefinition _createScreenDefinition({
     updatedAt: _fixedTime,
     screenSource: ScreenSource.systemTemplate,
     sections: const [
-      SectionRef(templateId: SectionTemplateId.taskList),
+      SectionRef(templateId: SectionTemplateId.taskListV2),
     ],
   );
 }
@@ -98,6 +103,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
         expect: () => [
@@ -116,6 +122,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
         expect: () => [
@@ -148,6 +155,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) => bloc.add(const ScreenEvent.loadById(screenId: 'my_day')),
         expect: () => [
@@ -171,6 +179,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) =>
             bloc.add(const ScreenEvent.loadById(screenId: 'missing')),
@@ -201,6 +210,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
         expect: () => [
@@ -219,12 +229,20 @@ void main() {
           final data1 = testScreenData;
           final data2 = ScreenData(
             definition: testDefinition,
-            sections: const [
+            sections: [
               SectionVm(
                 index: 0,
-                templateId: SectionTemplateId.taskList,
-                params: <String, dynamic>{},
-                data: SectionDataResult.data(items: <ScreenItem>[]),
+                templateId: SectionTemplateId.taskListV2,
+                params: ListSectionParamsV2(
+                  config: DataConfig.task(query: TaskQuery.all()),
+                  tiles: const TilePolicyV2(
+                    task: TaskTileVariant.listTile,
+                    project: ProjectTileVariant.listTile,
+                    value: ValueTileVariant.compactCard,
+                  ),
+                  layout: const SectionLayoutSpecV2.flatList(),
+                ),
+                data: const SectionDataResult.dataV2(items: <ScreenItem>[]),
               ),
             ],
           );
@@ -236,6 +254,7 @@ void main() {
         build: () => ScreenBloc(
           screenRepository: mockScreenRepo,
           interpreter: mockInterpreter,
+          performanceLogger: PerformanceLogger(),
         ),
         act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
         expect: () => [

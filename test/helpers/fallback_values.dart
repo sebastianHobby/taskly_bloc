@@ -7,7 +7,7 @@ import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
@@ -51,13 +51,15 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeDisplayConfig());
   registerFallbackValue(
     SectionRef(
-      templateId: SectionTemplateId.taskList,
-      params: DataListSectionParams(
+      templateId: SectionTemplateId.taskListV2,
+      params: ListSectionParamsV2(
         config: DataConfig.task(query: TaskQuery.all()),
-        taskTileVariant: TaskTileVariant.listTile,
-        projectTileVariant: ProjectTileVariant.listTile,
-        valueTileVariant: ValueTileVariant.compactCard,
-        display: const DisplayConfig(),
+        tiles: const TilePolicyV2(
+          task: TaskTileVariant.listTile,
+          project: ProjectTileVariant.listTile,
+          value: ValueTileVariant.compactCard,
+        ),
+        layout: const SectionLayoutSpecV2.flatList(),
       ).toJson(),
       overrides: const SectionOverrides(title: 'Fallback Section'),
     ),

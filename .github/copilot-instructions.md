@@ -23,6 +23,66 @@ mobile platforms.
 * **Linting:** Use the Dart linter with a recommended set of rules to catch
   common issues. Use the `analyze_files` tool to run the linter.
 
+## Repo Workflow Rules (Taskly)
+
+### Architecture-first (required)
+
+* Before doing any repository analysis (beyond a quick scan to locate the relevant files) or making any significant change, first review the architecture docs under `doc/architecture/`.
+* Use that architecture context to guide recommendations, naming, layering, and where new code should live.
+* When changes affect architecture (new module boundaries, responsibilities, data flow, storage/sync behavior, cross-feature patterns), update the relevant files under `doc/architecture/` in the same PR.
+* If a change introduces a new architectural pattern or approach get explicit confirmation from user before implementing.
+
+### Testing (preferred workflow)
+
+* Prefer the recorded test runner so every run produces artifacts and timings.
+  * **VS Code Task:** Run the task named `flutter_test_record`.
+    * How: Command Palette -> Tasks: Run Task -> flutter_test_record.
+    * If it exits with code `42`, a previous recorded test run is still active.
+      * Do not retry the task.
+      * Skip running tests for this turn.
+      * In your work summary, explicitly say tests were not executed and why.
+  * **CLI equivalent:** `dart run tool/test_run_recorder.dart`
+    * Pass `flutter test` args after `--`, e.g. `dart run tool/test_run_recorder.dart -- --tags=unit`.
+    * Captures machine output + summary under `build_out/test_runs/<timestamp>/`.
+    * By default, if the machine run fails it also captures `-r expanded` output for failures.
+
+### Test execution timing (strict)
+
+* When implementing a change, run tests only once: at the very end of the final implementation phase.
+* Do not run tests after each intermediate step; use `flutter analyze` as the primary feedback loop while iterating.
+* Exceptions: only run tests earlier if the user explicitly asks, or if it is required to unblock progress.
+
+### Analysis first (strict)
+
+* Always run `flutter analyze` and fix **all** errors and warnings before working on failing tests.
+* Do not attempt to "fix tests to make them pass" while `flutter analyze` is reporting problems.
+
+### Planning docs (required)
+
+* When creating a plan, always create a new folder under `doc/plans/` with a meaningful plan name.
+* Inside that folder, create **one file per phase** (split plans into manageable phases).
+* Every plan phase file must include:
+  * `Created at:` (UTC)
+  * `Last updated at:` (UTC)
+* Every phase file must include an **AI instructions** section that includes:
+  * Run `flutter analyze` for the phase.
+  * Ensure any errors or warnings introduced (or discovered) are fixed by the end of the phase.
+  * Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
+
+### Plan completion workflow (required)
+
+* When a plan is fully implemented, move its plan folder to `doc/plans/completed/<plan-name>/` (create `doc/plans/completed/` if needed).
+* Add a summary document in that completed folder stating:
+  * Implementation date (UTC)
+  * What shipped (high-level)
+  * Any known issues/gaps and follow-ups
+
+### Freezed troubleshooting
+
+* If Freezed code generation is not producing output, assume the problem is in the source file.
+  * Specifically check whether the model needs `abstract` or `sealed` syntax based on the Freezed docs.
+  * Review the Freezed documentation when uncertain about the correct annotations/syntax.
+
 ## Project Structure
 * **Standard Structure:** Assumes a standard Flutter project structure with
   `lib/main.dart` as the primary application entry point.

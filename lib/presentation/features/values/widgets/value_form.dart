@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -48,6 +49,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     final isCreating = widget.initialData == null;
 
@@ -111,7 +113,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                       size: 20,
                     ),
                     onPressed: widget.onDelete,
-                    tooltip: 'Delete $entityName',
+                    tooltip: l10n.deleteValue,
                     visualDensity: VisualDensity.compact,
                   ),
 
@@ -120,7 +122,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: handleClose,
-                    tooltip: 'Close',
+                    tooltip: l10n.closeLabel,
                     style: IconButton.styleFrom(
                       foregroundColor: colorScheme.onSurfaceVariant,
                     ),

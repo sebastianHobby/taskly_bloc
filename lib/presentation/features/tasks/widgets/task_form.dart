@@ -127,7 +127,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                       color: colorScheme.error,
                     ),
                     onPressed: widget.onDelete,
-                    tooltip: 'Delete Task',
+                    tooltip: l10n.deleteTaskAction,
                   ),
 
                 // Close button (X) in top right
@@ -135,7 +135,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                   IconButton(
                     icon: const Icon(Icons.close),
                     onPressed: handleClose,
-                    tooltip: 'Close',
+                    tooltip: l10n.closeLabel,
                     style: IconButton.styleFrom(
                       foregroundColor: colorScheme.onSurfaceVariant,
                     ),

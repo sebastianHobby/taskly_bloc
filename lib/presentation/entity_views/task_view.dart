@@ -7,6 +7,14 @@ import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
+enum TaskViewVariant {
+  /// Default list-row style used across most list templates.
+  list,
+
+  /// Rounded card variant intended for the Scheduled agenda timeline.
+  agendaCard,
+}
+
 /// The canonical, entity-level task UI entrypoint.
 ///
 /// Per-screen customization should happen by selecting an entity-level
@@ -21,6 +29,8 @@ class TaskView extends StatelessWidget {
     this.showNextActionIndicator = true,
     this.reasonText,
     this.reasonColor,
+    this.titlePrefix,
+    this.variant = TaskViewVariant.list,
     super.key,
   });
 
@@ -47,6 +57,15 @@ class TaskView extends StatelessWidget {
   /// Custom color for the reason text.
   /// If null, uses onSurfaceVariant.
   final Color? reasonColor;
+
+  /// Optional widget shown inline before the task title.
+  ///
+  /// Used by some list templates (e.g. Agenda) to display a tag pill like
+  /// START/DUE without overlaying the tile content.
+  final Widget? titlePrefix;
+
+  /// Visual variant used to align with the Scheduled agenda mock.
+  final TaskViewVariant variant;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || task.completed) return false;
@@ -112,6 +131,13 @@ class TaskView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return switch (variant) {
+      TaskViewVariant.list => _buildListRow(context),
+      TaskViewVariant.agendaCard => _buildAgendaCard(context),
+    };
+  }
+
+  Widget _buildListRow(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -121,14 +147,6 @@ class TaskView extends StatelessWidget {
     final isOverdue = _isOverdue(task.deadlineDate);
     final isDueToday = _isDueToday(task.deadlineDate);
     final isDueSoon = _isDueSoon(task.deadlineDate);
-
-    final subtitle = !compact
-        ? (reasonText ??
-              ((task.description != null && task.description!.trim().isNotEmpty)
-                  ? task.description!.trim()
-                  : null))
-        : null;
-    final isReasonSubtitle = subtitle != null && subtitle == reasonText;
 
     return Material(
       key: Key('task-${task.id}'),
@@ -174,6 +192,10 @@ class TaskView extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                         ],
+                        if (titlePrefix != null) ...[
+                          titlePrefix!,
+                          const SizedBox(width: 8),
+                        ],
                         Expanded(
                           child: Text(
                             task.name,
@@ -211,6 +233,111 @@ class TaskView extends StatelessWidget {
                       ),
                     ],
                     */
+                    _MetaLine(
+                      projectName: task.project?.name,
+                      startDate: task.startDate,
+                      deadlineDate: task.deadlineDate,
+                      isOverdue: isOverdue,
+                      isDueToday: isDueToday,
+                      isDueSoon: isDueSoon,
+                      formatDate: DateLabelFormatter.format,
+                      hasRepeat: task.repeatIcalRrule != null,
+                      primaryValue: effectivePrimaryValue,
+                      secondaryValues: effectiveSecondaryValues,
+                      buildDateToken: (context) => _buildStrictDateToken(
+                        context,
+                        startDate: task.startDate,
+                        deadlineDate: task.deadlineDate,
+                        isOverdue: isOverdue,
+                        isDueToday: isDueToday,
+                        isDueSoon: isDueSoon,
+                        formatDate: DateLabelFormatter.format,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgendaCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final effectivePrimaryValue = task.effectivePrimaryValue;
+    final effectiveSecondaryValues = task.effectiveSecondaryValues;
+
+    final isOverdue = _isOverdue(task.deadlineDate);
+    final isDueToday = _isDueToday(task.deadlineDate);
+    final isDueSoon = _isDueSoon(task.deadlineDate);
+
+    // Keep checkbox interaction (important affordance), but switch the container
+    // and hierarchy to a card style that matches the Scheduled mock better.
+    return Material(
+      key: Key('task-${task.id}'),
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => onTap != null
+            ? onTap!(task)
+            : Routing.toEntity(context, EntityType.task, task.id),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: _TaskCheckbox(
+                  completed: task.completed,
+                  isOverdue: isOverdue,
+                  onChanged: (value) => onCheckboxChanged(task, value),
+                  taskName: task.name,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (titlePrefix != null) ...[
+                          titlePrefix!,
+                          const SizedBox(width: 10),
+                        ],
+                        Expanded(
+                          child: Text(
+                            task.name,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                              decoration: task.completed
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: task.completed
+                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
+                                  : colorScheme.onSurface,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     _MetaLine(
                       projectName: task.project?.name,
                       startDate: task.startDate,

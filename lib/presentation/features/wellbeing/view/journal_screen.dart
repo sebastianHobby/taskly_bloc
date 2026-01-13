@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -190,31 +192,16 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
-  void _deleteEntry(String entryId) {
-    showDialog<void>(
+  Future<void> _deleteEntry(String entryId) async {
+    final l10n = context.l10n;
+    final confirmed = await showDeleteConfirmationDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Entry'),
-        content: const Text('Are you sure you want to delete this entry?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(context);
-              this.context.read<JournalEntryBloc>().add(
-                JournalEntryEvent.delete(entryId),
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+      title: l10n.deleteLabel,
+      itemName: 'this entry',
+      description: l10n.deleteConfirmationIrreversibleDescription,
     );
+
+    if (!confirmed || !mounted) return;
+    context.read<JournalEntryBloc>().add(JournalEntryEvent.delete(entryId));
   }
 }

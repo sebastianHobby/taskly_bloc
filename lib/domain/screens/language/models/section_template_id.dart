@@ -1,16 +1,14 @@
 /// Canonical template IDs for all section templates.
 abstract final class SectionTemplateId {
-  // Core list/section templates
-  static const taskList = 'task_list';
-  static const projectList = 'project_list';
-  static const valueList = 'value_list';
-  static const interleavedList = 'interleaved_list';
-  static const agenda = 'agenda';
+  // Core section templates
   static const allocation = 'allocation';
 
-  // System composites
-  static const somedayNullDates = 'someday_null_dates';
-  static const somedayBacklog = 'someday_backlog';
+  // V2 list/section templates
+  static const taskListV2 = 'task_list_v2';
+  static const projectListV2 = 'project_list_v2';
+  static const valueListV2 = 'value_list_v2';
+  static const interleavedListV2 = 'interleaved_list_v2';
+  static const agendaV2 = 'agenda_v2';
 
   // Former support-block behaviors (now inline sections)
   static const issuesSummary = 'issues_summary';

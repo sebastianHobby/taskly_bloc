@@ -4,33 +4,37 @@ import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
+
+typedef _RowBuilder = Widget Function(BuildContext context);
 
 class AllocationSectionRenderer extends StatelessWidget {
   const AllocationSectionRenderer({
     required this.data,
     super.key,
     this.onTaskToggle,
+    this.onSetupValues,
   });
   final AllocationSectionResult data;
   final void Function(String, bool?)? onTaskToggle;
+  final VoidCallback? onSetupValues;
 
   @override
   Widget build(BuildContext context) {
     final focusMode = data.activeFocusMode ?? FocusMode.sustainable;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Content based on Focus Mode
-        if (data.allocatedTasks.isEmpty)
-          _buildEmptyState(context)
-        else
-          _buildContent(context, focusMode),
-      ],
-    );
+    if (data.requiresValueSetup) {
+      return SliverToBoxAdapter(child: _buildRequiresValueSetup(context));
+    }
+
+    if (data.allocatedTasks.isEmpty) {
+      return SliverToBoxAdapter(child: _buildEmptyState(context));
+    }
+
+    return _buildContent(context, focusMode);
   }
 
   Widget _buildContent(BuildContext context, FocusMode focusMode) {
@@ -59,62 +63,61 @@ class AllocationSectionRenderer extends StatelessWidget {
     };
   }
 
-  Widget _buildPinnedTasks(BuildContext context) {
-    if (data.pinnedTasks.isEmpty) return const SizedBox.shrink();
+  void _appendPinnedTasks(BuildContext context, List<_RowBuilder> rows) {
+    if (data.pinnedTasks.isEmpty) return;
 
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Text(
-                'PINNED',
+    rows.add(
+      (context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Text(
+              'PINNED',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${data.pinnedTasks.length}',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                  color: colorScheme.primary,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+                  fontSize: 10,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '${data.pinnedTasks.length}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: data.pinnedTasks.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final allocatedTask = data.pinnedTasks[index];
-            return TaskView(
-              task: allocatedTask.task,
-              onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-            );
-          },
-        ),
-        const SizedBox(height: 16),
-      ],
+      ),
     );
+
+    for (var i = 0; i < data.pinnedTasks.length; i++) {
+      final allocatedTask = data.pinnedTasks[i];
+      rows.add(
+        (context) => TaskView(
+          task: allocatedTask.task,
+          onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+        ),
+      );
+
+      if (i != data.pinnedTasks.length - 1) {
+        rows.add((context) => const Divider(height: 1));
+      }
+    }
+
+    rows.add((context) => const SizedBox(height: 16));
   }
 
   Widget _buildProjectGroupedList(BuildContext context) {
@@ -151,88 +154,92 @@ class AllocationSectionRenderer extends StatelessWidget {
       return a.compareTo(b);
     });
 
-    return Column(
-      children: groupKeys.map((key) {
-        final tasks = groups[key] ?? const <Task>[];
-        if (tasks.isEmpty) return const SizedBox.shrink();
+    final rows = <_RowBuilder>[];
 
-        final Project? project = tasks
-            .map((t) => t.project)
-            .cast<Project?>()
-            .firstWhere(
-              (p) => p != null,
-              orElse: () => null,
-            );
+    for (final key in groupKeys) {
+      final tasks = groups[key] ?? const <Task>[];
+      if (tasks.isEmpty) continue;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      key.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
+      final Project? project = tasks
+          .map((t) => t.project)
+          .cast<Project?>()
+          .firstWhere(
+            (p) => p != null,
+            orElse: () => null,
+          );
+
+      rows.add(
+        (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  key.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      '${tasks.length}',
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (project != null &&
-                (project.primaryValue != null ||
-                    project.secondaryValues.isNotEmpty))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: ValuesFooter(
-                  primaryValue: project.primaryValue,
-                  secondaryValues: project.secondaryValues,
                 ),
               ),
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: tasks.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return TaskView(
-                  task: task,
-                  onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-                );
-              },
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${tasks.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (project != null &&
+          (project.primaryValue != null ||
+              project.secondaryValues.isNotEmpty)) {
+        rows.add(
+          (context) => Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ValuesFooter(
+              primaryValue: project.primaryValue,
+              secondaryValues: project.secondaryValues,
             ),
-            const SizedBox(height: 16),
-          ],
+          ),
         );
-      }).toList(),
-    );
+      }
+
+      for (var i = 0; i < tasks.length; i++) {
+        final task = tasks[i];
+        rows.add(
+          (context) => TaskView(
+            task: task,
+            onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+          ),
+        );
+        if (i != tasks.length - 1) {
+          rows.add((context) => const Divider(height: 1));
+        }
+      }
+
+      rows.add((context) => const SizedBox(height: 16));
+    }
+
+    return _sliverFromBuilders(rows);
   }
 
   String _projectGroupKey(Task task) {
@@ -280,84 +287,98 @@ class AllocationSectionRenderer extends StatelessWidget {
             );
           });
 
-    return Column(
-      children: [
-        if (includePinned) _buildPinnedTasks(context),
-        ...groups.map((group) {
-          if (group.tasks.isEmpty) return const SizedBox.shrink();
+    final rows = <_RowBuilder>[];
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    if (includePinned) {
+      _appendPinnedTasks(context, rows);
+    }
+
+    for (final group in groups) {
+      if (group.tasks.isEmpty) continue;
+
+      rows.add(
+        (context) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  children: [
-                    Text(
-                      group.valueName.toUpperCase(),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${group.tasks.length}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
+              Text(
+                group.valueName.toUpperCase(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1,
                 ),
               ),
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: group.tasks.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final allocatedTask = group.tasks[index];
-                  return TaskView(
-                    task: allocatedTask.task,
-                    onCheckboxChanged: (t, val) =>
-                        onTaskToggle?.call(t.id, val),
-                  );
-                },
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '${group.tasks.length}',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10,
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
             ],
-          );
-        }),
-      ],
-    );
+          ),
+        ),
+      );
+
+      for (var i = 0; i < group.tasks.length; i++) {
+        final allocatedTask = group.tasks[i];
+        rows.add(
+          (context) => TaskView(
+            task: allocatedTask.task,
+            onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+          ),
+        );
+        if (i != group.tasks.length - 1) {
+          rows.add((context) => const Divider(height: 1));
+        }
+      }
+
+      rows.add((context) => const SizedBox(height: 16));
+    }
+
+    return _sliverFromBuilders(rows);
   }
 
   Widget _buildFlatList() {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: data.allocatedTasks.length,
-      separatorBuilder: (_, __) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        final task = data.allocatedTasks[index];
-        return TaskView(
+    final rows = <_RowBuilder>[];
+    for (var i = 0; i < data.allocatedTasks.length; i++) {
+      final task = data.allocatedTasks[i];
+      rows.add(
+        (context) => TaskView(
           task: task,
           onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-        );
-      },
+        ),
+      );
+      if (i != data.allocatedTasks.length - 1) {
+        rows.add((context) => const Divider(height: 1));
+      }
+    }
+    return _sliverFromBuilders(rows);
+  }
+
+  Widget _sliverFromBuilders(List<_RowBuilder> rows) {
+    if (rows.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => rows[index](context),
+        childCount: rows.length,
+      ),
     );
   }
 
@@ -399,6 +420,46 @@ class AllocationSectionRenderer extends StatelessWidget {
       child: Text(
         'No tasks allocated for today.',
         style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+      ),
+    );
+  }
+
+  Widget _buildRequiresValueSetup(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Set up values to use focus mode',
+              style: theme.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Focus allocation needs at least one value so it can prioritize '
+              'your tasks. Add a value, then come back here.',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed:
+                  onSetupValues ??
+                  () {
+                    Routing.toScreenKey(context, 'focus_setup');
+                  },
+              icon: const Icon(Icons.tune),
+              label: const Text('Set up focus'),
+            ),
+          ],
+        ),
       ),
     );
   }

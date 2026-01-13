@@ -19,6 +19,7 @@ class EntityHeader extends StatelessWidget {
     this.onTap,
     this.onCheckboxChanged,
     this.showCheckbox = true,
+    this.showMetadata = true,
     this.metadata,
     this.primaryValue,
     this.secondaryValues = const [],
@@ -31,6 +32,7 @@ class EntityHeader extends StatelessWidget {
     VoidCallback? onTap,
     ValueChanged<bool?>? onCheckboxChanged,
     bool showCheckbox = true,
+    bool showMetadata = true,
   }) {
     return EntityHeader._(
       title: project.name,
@@ -39,6 +41,7 @@ class EntityHeader extends StatelessWidget {
       onTap: onTap,
       onCheckboxChanged: onCheckboxChanged,
       showCheckbox: showCheckbox,
+      showMetadata: showMetadata,
       metadata: _ProjectMetadata(project: project),
       primaryValue: project.primaryValue,
       secondaryValues: project.secondaryValues,
@@ -51,6 +54,7 @@ class EntityHeader extends StatelessWidget {
     required Value value,
     VoidCallback? onTap,
     int? taskCount,
+    bool showMetadata = true,
   }) {
     return EntityHeader._(
       title: value.name,
@@ -58,6 +62,7 @@ class EntityHeader extends StatelessWidget {
       color: value.color,
       onTap: onTap,
       showCheckbox: false,
+      showMetadata: showMetadata,
       metadata: _ValueMetadata(value: value, taskCount: taskCount),
     );
   }
@@ -69,6 +74,7 @@ class EntityHeader extends StatelessWidget {
   final VoidCallback? onTap;
   final ValueChanged<bool?>? onCheckboxChanged;
   final bool showCheckbox;
+  final bool showMetadata;
   final Widget? metadata;
   final Value? primaryValue;
   final List<Value> secondaryValues;
@@ -144,45 +150,47 @@ class EntityHeader extends StatelessWidget {
                 ],
               ),
 
-              // Values (preferred: primary/secondary footer)
-              if (primaryValue != null || secondaryValues.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                ValuesFooter(
-                  primaryValue: primaryValue,
-                  secondaryValues: secondaryValues,
-                ),
-              ],
+              if (showMetadata) ...[
+                // Values (preferred: primary/secondary footer)
+                if (primaryValue != null || secondaryValues.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  ValuesFooter(
+                    primaryValue: primaryValue,
+                    secondaryValues: secondaryValues,
+                  ),
+                ],
 
-              // Values (legacy fallback: list-of-values chips)
-              if ((primaryValue == null && secondaryValues.isEmpty) &&
-                  values != null &&
-                  values!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: values!.map((value) {
-                    return Chip(
-                      label: Text(value.name),
-                      backgroundColor: ColorUtils.fromHex(
-                        value.color,
-                      ).withValues(alpha: 0.2),
-                      side: BorderSide.none,
-                      labelStyle: TextStyle(
-                        color: ColorUtils.fromHex(value.color),
-                        fontSize: 12,
-                      ),
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                    );
-                  }).toList(),
-                ),
-              ],
+                // Values (legacy fallback: list-of-values chips)
+                if ((primaryValue == null && secondaryValues.isEmpty) &&
+                    values != null &&
+                    values!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: values!.map((value) {
+                      return Chip(
+                        label: Text(value.name),
+                        backgroundColor: ColorUtils.fromHex(
+                          value.color,
+                        ).withValues(alpha: 0.2),
+                        side: BorderSide.none,
+                        labelStyle: TextStyle(
+                          color: ColorUtils.fromHex(value.color),
+                          fontSize: 12,
+                        ),
+                        padding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
+                      );
+                    }).toList(),
+                  ),
+                ],
 
-              // Entity-specific metadata
-              if (metadata != null) ...[
-                const SizedBox(height: 12),
-                metadata!,
+                // Entity-specific metadata
+                if (metadata != null) ...[
+                  const SizedBox(height: 12),
+                  metadata!,
+                ],
               ],
             ],
           ),

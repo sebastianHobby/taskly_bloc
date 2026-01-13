@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/presentation/screens/prototypes/modern_my_day_prototype.dart';
 
 /// Single source of truth for navigation conventions and screen building.
 ///
@@ -91,6 +92,10 @@ abstract final class Routing {
   ///
   /// This is the single entry point for all screen construction.
   static Widget buildScreen(String screenKey) {
+    if (screenKey == 'my_day') {
+      return const ModernMyDayPrototype();
+    }
+
     final systemScreen = SystemScreenDefinitions.getByKey(screenKey);
     if (systemScreen != null) {
       return UnifiedScreenPage(

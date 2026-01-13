@@ -21,7 +21,9 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -133,8 +135,19 @@ class _ValueScreenWithData extends StatelessWidget {
       create: (context) => ScreenBloc(
         screenRepository: getIt(),
         interpreter: getIt<ScreenDataInterpreter>(),
+        performanceLogger: getIt<PerformanceLogger>(),
       )..add(ScreenEvent.load(definition: definition)),
-      child: _ValueScreenView(value: value),
+      child: BlocListener<ScreenBloc, ScreenState>(
+        listenWhen: (previous, current) {
+          return previous is! ScreenLoadedState && current is ScreenLoadedState;
+        },
+        listener: (context, state) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            getIt<PerformanceLogger>().markFirstPaint();
+          });
+        },
+        child: _ValueScreenView(value: value),
+      ),
     );
   }
 }
@@ -231,30 +244,14 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
     final l10n = context.l10n;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showDeleteConfirmationDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteValue),
-        content: Text(
-          'Are you sure you want to delete "${value.name}"?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancelLabel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: Text(l10n.deleteValue),
-          ),
-        ],
-      ),
+      title: l10n.deleteValue,
+      itemName: value.name,
+      description: l10n.deleteValueCascadeDescription,
     );
 
-    if ((confirmed ?? false) && context.mounted) {
+    if (confirmed && context.mounted) {
       context.read<ValueDetailBloc>().add(
         ValueDetailEvent.delete(id: value.id),
       );
@@ -369,41 +366,41 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
         // Data updates automatically via reactive streams
         await Future<void>.delayed(const Duration(milliseconds: 300));
       },
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 80),
-        itemCount: data.sections.length,
-        itemBuilder: (context, index) {
-          final section = data.sections[index];
-          return SectionWidget(
-            section: section,
-            displayConfig: section.displayConfig,
-            onEntityTap: (entity) {
-              if (entity is Task) {
-                Routing.toEntity(
-                  context,
-                  EntityType.task,
-                  entity.id,
-                );
-              } else if (entity is Project) {
-                Routing.toEntity(
-                  context,
-                  EntityType.project,
-                  entity.id,
-                );
-              }
-            },
-            onTaskCheckboxChanged: (task, value) async {
-              if (value ?? false) {
-                await entityActionService.completeTask(task.id);
-              } else {
-                await entityActionService.uncompleteTask(task.id);
-              }
-            },
-            onTaskDelete: (task) async {
-              await entityActionService.deleteTask(task.id);
-            },
-          );
-        },
+      child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        slivers: [
+          for (final section in data.sections)
+            SectionWidget(
+              section: section,
+              displayConfig: section.displayConfig,
+              onEntityTap: (entity) {
+                if (entity is Task) {
+                  Routing.toEntity(
+                    context,
+                    EntityType.task,
+                    entity.id,
+                  );
+                } else if (entity is Project) {
+                  Routing.toEntity(
+                    context,
+                    EntityType.project,
+                    entity.id,
+                  );
+                }
+              },
+              onTaskCheckboxChanged: (task, value) async {
+                if (value ?? false) {
+                  await entityActionService.completeTask(task.id);
+                } else {
+                  await entityActionService.uncompleteTask(task.id);
+                }
+              },
+              onTaskDelete: (task) async {
+                await entityActionService.deleteTask(task.id);
+              },
+            ),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+        ],
       ),
     );
   }

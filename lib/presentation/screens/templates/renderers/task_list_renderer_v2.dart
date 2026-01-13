@@ -1,0 +1,288 @@
+import 'package:flutter/material.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
+import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
+
+class TaskListRendererV2 extends StatelessWidget {
+  const TaskListRendererV2({
+    required this.data,
+    required this.params,
+    super.key,
+    this.title,
+    this.compactTiles = false,
+    this.onTaskToggle,
+  });
+
+  final DataV2SectionResult data;
+  final ListSectionParamsV2 params;
+  final String? title;
+  final bool compactTiles;
+  final void Function(String, bool?)? onTaskToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    const registry = ScreenItemTileRegistry();
+    final tasks = data.items.whereType<ScreenItemTask>().toList(
+      growable: false,
+    );
+
+    if (tasks.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    final header = title == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: TasklyHeader(title: title!),
+          );
+
+    return params.layout.when(
+      flatList: (separator) {
+        return SliverSeparatedList(
+          header: header,
+          itemCount: tasks.length,
+          separatorBuilder: (context, index) => _separatorFor(
+            separator: separator,
+            current: tasks[index],
+            next: tasks[index + 1],
+          ),
+          itemBuilder: (context, index) {
+            final item = tasks[index];
+            final prefix = _titlePrefixForTask(item);
+
+            return registry.build(
+              context,
+              item: item,
+              onTaskToggle: onTaskToggle,
+              compactTiles: compactTiles,
+              titlePrefix: prefix,
+            );
+          },
+        );
+      },
+      timelineMonthSections: (pinnedSectionHeaders) {
+        return _buildTaskMonthSections(
+          tasks: tasks,
+          pinnedHeaders: pinnedSectionHeaders,
+          header: header,
+          tileBuilder: (context, item) {
+            final prefix = _titlePrefixForTask(item);
+            return registry.build(
+              context,
+              item: item,
+              onTaskToggle: onTaskToggle,
+              compactTiles: compactTiles,
+              titlePrefix: prefix,
+            );
+          },
+        );
+      },
+      hierarchyValueProjectTask: (_, __, ___) {
+        // This renderer only receives tasks; hierarchy is implemented in the
+        // interleaved renderer where values/projects are available.
+        return SliverSeparatedList(
+          header: header,
+          itemCount: tasks.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final item = tasks[index];
+            final prefix = _titlePrefixForTask(item);
+            return registry.build(
+              context,
+              item: item,
+              onTaskToggle: onTaskToggle,
+              compactTiles: compactTiles,
+              titlePrefix: prefix,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget? _titlePrefixForTask(ScreenItemTask item) {
+    if (params.tiles.task != TaskTileVariant.agenda) return null;
+    final tag = data.enrichment?.agendaTagByTaskId[item.task.id];
+    if (tag == null) return null;
+
+    final label = switch (tag) {
+      AgendaTagV2.starts => 'Starts',
+      AgendaTagV2.due => 'Due',
+      AgendaTagV2.inProgress => 'In progress',
+    };
+
+    return _TagPill(label: label);
+  }
+}
+
+Widget _separatorFor({
+  required ListSeparatorV2 separator,
+  required ScreenItem current,
+  required ScreenItem next,
+}) {
+  return switch (separator) {
+    ListSeparatorV2.divider => const Divider(height: 1),
+    ListSeparatorV2.spaced8 => const SizedBox(height: 8),
+    ListSeparatorV2.interleavedAuto =>
+      current is ScreenItemTask && next is ScreenItemTask
+          ? const Divider(height: 1)
+          : const SizedBox(height: 8),
+  };
+}
+
+SliverMainAxisGroup _buildTaskMonthSections({
+  required List<ScreenItemTask> tasks,
+  required bool pinnedHeaders,
+  required Widget? header,
+  required Widget Function(BuildContext context, ScreenItemTask item)
+  tileBuilder,
+}) {
+  final buckets = <DateTime, List<ScreenItemTask>>{};
+  for (final item in tasks) {
+    final date =
+        item.task.deadlineDate ?? item.task.startDate ?? item.task.updatedAt;
+    final monthKey = DateTime(date.year, date.month);
+    (buckets[monthKey] ??= <ScreenItemTask>[]).add(item);
+  }
+
+  final keys = buckets.keys.toList(growable: false)
+    ..sort((a, b) => -a.compareTo(b));
+
+  final slivers = <Widget>[];
+  if (header != null) {
+    slivers.add(SliverToBoxAdapter(child: header));
+  }
+
+  for (final key in keys) {
+    final monthItems = buckets[key]!;
+    final monthTitle = '${_monthName(key.month)} ${key.year}';
+
+    slivers.add(
+      pinnedHeaders
+          ? SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedHeaderDelegate(title: monthTitle),
+            )
+          : SliverToBoxAdapter(child: _InlineHeader(title: monthTitle)),
+    );
+
+    slivers.add(
+      SliverSeparatedList(
+        itemCount: monthItems.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) =>
+            tileBuilder(context, monthItems[index]),
+      ),
+    );
+  }
+
+  return SliverMainAxisGroup(slivers: slivers);
+}
+
+String _monthName(int month) {
+  return const <int, String>{
+        1: 'Jan',
+        2: 'Feb',
+        3: 'Mar',
+        4: 'Apr',
+        5: 'May',
+        6: 'Jun',
+        7: 'Jul',
+        8: 'Aug',
+        9: 'Sep',
+        10: 'Oct',
+        11: 'Nov',
+        12: 'Dec',
+      }[month] ??
+      '';
+}
+
+class _InlineHeader extends StatelessWidget {
+  const _InlineHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+    );
+  }
+}
+
+class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedHeaderDelegate({required this.title});
+
+  final String title;
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      color: theme.scaffoldBackgroundColor,
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+      alignment: Alignment.bottomLeft,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: colorScheme.outlineVariant.withOpacity(0.6),
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(title, style: theme.textTheme.titleMedium),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
+    return title != oldDelegate.title;
+  }
+}
+
+class _TagPill extends StatelessWidget {
+  const _TagPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSecondaryContainer,
+        ),
+      ),
+    );
+  }
+}

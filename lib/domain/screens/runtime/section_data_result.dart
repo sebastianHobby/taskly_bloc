@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/enrichment_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
 
@@ -48,15 +49,22 @@ abstract class AllocationValueGroup with _$AllocationValueGroup {
 /// Used by ScreenBloc to populate section UIs with their data.
 @freezed
 sealed class SectionDataResult with _$SectionDataResult {
-  /// Data section result - generic entity list with optional related data
+  /// Data section result - generic entity list with optional enrichment.
   const factory SectionDataResult.data({
     required List<ScreenItem> items,
-    @Default({}) Map<String, List<Object>> relatedEntities,
 
     /// Computed enrichment data (e.g., value statistics).
     /// Present when the section requested enrichment via EnrichmentConfig.
     EnrichmentResult? enrichment,
   }) = DataSectionResult;
+
+  /// V2 data section result - generic entity list with typed V2 enrichment.
+  ///
+  /// Unlike the `data` variant, this carries no related-entities sidecar.
+  const factory SectionDataResult.dataV2({
+    required List<ScreenItem> items,
+    EnrichmentResultV2? enrichment,
+  }) = DataV2SectionResult;
 
   /// Allocation section result - tasks allocated for focus/next actions (DR-020)
   ///
@@ -157,6 +165,12 @@ sealed class SectionDataResult with _$SectionDataResult {
           .map((i) => i.task)
           .whereType<Task>()
           .toList(),
+    DataV2SectionResult(:final items) =>
+      items
+          .whereType<ScreenItemTask>()
+          .map((i) => i.task)
+          .whereType<Task>()
+          .toList(),
     AllocationSectionResult(:final allocatedTasks) => allocatedTasks,
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups
@@ -171,6 +185,12 @@ sealed class SectionDataResult with _$SectionDataResult {
   /// Get all projects from any result type
   List<Project> get allProjects => switch (this) {
     DataSectionResult(:final items) =>
+      items
+          .whereType<ScreenItemProject>()
+          .map((i) => i.project)
+          .whereType<Project>()
+          .toList(),
+    DataV2SectionResult(:final items) =>
       items
           .whereType<ScreenItemProject>()
           .map((i) => i.project)
@@ -191,6 +211,8 @@ sealed class SectionDataResult with _$SectionDataResult {
   List<Value> get allValues => switch (this) {
     DataSectionResult(:final items) =>
       items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
+    DataV2SectionResult(:final items) =>
+      items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
     EntityHeaderValueSectionResult(:final value) => [value],
     _ => [],
   };
@@ -198,24 +220,11 @@ sealed class SectionDataResult with _$SectionDataResult {
   /// Count of primary entities for logging
   int get primaryCount => switch (this) {
     DataSectionResult(:final items) => items.length,
+    DataV2SectionResult(:final items) => items.length,
     AllocationSectionResult(:final allocatedTasks) => allocatedTasks.length,
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups.fold(0, (sum, g) => sum + g.items.length) +
           agendaData.overdueItems.length,
     _ => 0,
-  };
-
-  /// Get related tasks (if any)
-  List<Task> get relatedTasks => switch (this) {
-    DataSectionResult(:final relatedEntities) =>
-      (relatedEntities['tasks'] as List<Task>?) ?? [],
-    _ => [],
-  };
-
-  /// Get related projects (if any)
-  List<Project> get relatedProjects => switch (this) {
-    DataSectionResult(:final relatedEntities) =>
-      (relatedEntities['projects'] as List<Project>?) ?? [],
-    _ => [],
   };
 }

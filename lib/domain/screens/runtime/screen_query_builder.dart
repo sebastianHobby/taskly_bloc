@@ -6,9 +6,9 @@ import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart'
     as screen_models;
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart'
     as sort_preferences;
 import 'package:taskly_bloc/domain/queries/project_query.dart';
@@ -159,32 +159,15 @@ class ScreenQueryBuilder {
     required SectionRef section,
     required DateTime now,
   }) {
-    if (section.templateId != SectionTemplateId.taskList) return null;
+    if (section.templateId != SectionTemplateId.taskListV2) return null;
 
-    final params = DataListSectionParams.fromJson(section.params);
+    final params = ListSectionParamsV2.fromJson(section.params);
     final config = params.config;
-    final display = params.display ?? const screen_models.DisplayConfig();
 
     return switch (config) {
-      TaskDataConfig(:final query) => _applyDisplay(query, display),
+      TaskDataConfig(:final query) => query,
       _ => null,
     };
-  }
-
-  TaskQuery _applyDisplay(
-    TaskQuery query,
-    screen_models.DisplayConfig display,
-  ) {
-    final filter = display.showCompleted
-        ? query.filter
-        : _ensureIncomplete(query.filter);
-
-    return TaskQuery(
-      filter: filter,
-      sortCriteria: query.sortCriteria.isEmpty
-          ? _mapSortCriteria(display.sorting)
-          : query.sortCriteria,
-    );
   }
 
   /// Builds a [TaskQuery] from a [SectionRef] if it represents an allocation.
@@ -216,9 +199,9 @@ class ScreenQueryBuilder {
     required SectionRef section,
     required DateTime now,
   }) {
-    if (section.templateId != SectionTemplateId.agenda) return null;
+    if (section.templateId != SectionTemplateId.agendaV2) return null;
 
-    final params = AgendaSectionParams.fromJson(section.params);
+    final params = AgendaSectionParamsV2.fromJson(section.params);
     final baseFilter =
         params.additionalFilter?.filter ?? const QueryFilter.matchAll();
 
@@ -227,9 +210,9 @@ class ScreenQueryBuilder {
 
     // Add date field predicate based on dateField
     final dateField = switch (params.dateField) {
-      AgendaDateField.deadlineDate => TaskDateField.deadlineDate,
-      AgendaDateField.startDate => TaskDateField.startDate,
-      AgendaDateField.scheduledFor => TaskDateField.deadlineDate,
+      AgendaDateFieldV2.deadlineDate => TaskDateField.deadlineDate,
+      AgendaDateFieldV2.startDate => TaskDateField.startDate,
+      AgendaDateFieldV2.scheduledFor => TaskDateField.deadlineDate,
     };
 
     // Only include tasks that have the date field set

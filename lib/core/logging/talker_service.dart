@@ -146,6 +146,23 @@ class TasklyTalker {
 
   void logCustom(TalkerLog log) => _raw.logCustom(log);
 
+  /// Logs a performance-related message.
+  ///
+  /// Performance logging is intentionally **debug-only** to avoid overhead and
+  /// noise in release builds.
+  ///
+  /// In debug builds, performance logs are written to a dedicated file via
+  /// [DebugPerfFileLogObserver].
+  void perf(
+    String message, {
+    String category = 'general',
+  }) {
+    // Keep perf logging out of release builds, but allow it in profile builds
+    // so we can measure realistic performance without turning on full tracing.
+    if (kReleaseMode) return;
+    logCustom(PerfLog(message, category: category));
+  }
+
   void trace(String message) {
     if (kDebugMode) {
       verbose(message);
@@ -214,7 +231,14 @@ bool _isInitialized = false;
 /// Can be called multiple times safely (for tests).
 void initializeTalker() {
   if (!_isInitialized) {
-    final observer = kDebugMode ? DebugFileLogObserver() : null;
+    final observer = kDebugMode
+        ? MultiTalkerObserver(
+            observers: [
+              DebugFileLogObserver(),
+              DebugPerfFileLogObserver(),
+            ],
+          )
+        : null;
     final raw = TalkerFlutter.init(observer: observer);
     talker = TasklyTalker(raw);
     _isInitialized = true;
@@ -253,6 +277,60 @@ class TasklyLog extends TalkerLog {
 
   @override
   AnsiPen get pen => AnsiPen()..green();
+}
+
+/// Custom log type for performance metrics.
+///
+/// These are always debug-only (enforced by [TasklyTalker.perf]).
+class PerfLog extends TalkerLog {
+  PerfLog(
+    super.message, {
+    this.category = 'general',
+  });
+
+  final String category;
+
+  @override
+  String get title => 'PERF';
+
+  @override
+  String get key => 'perf_$category';
+
+  @override
+  AnsiPen get pen => AnsiPen()..cyan();
+}
+
+/// A Talker observer that fans out events to multiple observers.
+///
+/// TalkerFlutter accepts a single observer; this allows us to keep dedicated
+/// observers for errors and performance logs.
+class MultiTalkerObserver extends TalkerObserver {
+  MultiTalkerObserver({
+    required List<TalkerObserver> observers,
+  }) : _observers = observers;
+
+  final List<TalkerObserver> _observers;
+
+  @override
+  void onError(TalkerError err) {
+    for (final o in _observers) {
+      o.onError(err);
+    }
+  }
+
+  @override
+  void onException(TalkerException err) {
+    for (final o in _observers) {
+      o.onException(err);
+    }
+  }
+
+  @override
+  void onLog(TalkerData log) {
+    for (final o in _observers) {
+      o.onLog(log);
+    }
+  }
 }
 
 /// Observer that writes warnings and errors to a file in debug mode.
@@ -400,6 +478,89 @@ class DebugFileLogObserver extends TalkerObserver {
   }
 
   /// Get the path to the log file.
+  String? get logFilePath => _logFile?.path;
+}
+
+/// Observer that writes performance logs to a dedicated file in debug mode.
+///
+/// Log file location: `{app_support_directory}/debug_perf.log` (debug only)
+class DebugPerfFileLogObserver extends TalkerObserver {
+  DebugPerfFileLogObserver({
+    this.maxFileSizeBytes = 1024 * 1024, // 1 MB
+  });
+
+  final int maxFileSizeBytes;
+
+  File? _logFile;
+  bool _isInitialized = false;
+  bool _initStarted = false;
+
+  static bool get isSupported => !kIsWeb;
+
+  Future<void> _initFile() async {
+    if (_initStarted) return;
+    _initStarted = true;
+
+    if (!isSupported) {
+      debugPrint('Debug perf file logging not available on web platform');
+      return;
+    }
+
+    try {
+      final dir = await getApplicationSupportDirectory();
+      _logFile = File('${dir.path}/debug_perf.log');
+      _isInitialized = true;
+
+      debugPrint('Debug perf log file: ${_logFile!.path}');
+
+      if (await _logFile!.exists()) {
+        final size = await _logFile!.length();
+        if (size > maxFileSizeBytes) {
+          await _logFile!.writeAsString(
+            '--- Perf log cleared at ${DateTime.now()} (was ${size ~/ 1024} KB) ---\n',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to initialize debug perf log file: $e');
+    }
+  }
+
+  @override
+  void onLog(TalkerData log) {
+    _ensureInitialized();
+
+    final title = (log.title ?? 'LOG').toUpperCase();
+    if (title != 'PERF') return;
+
+    _writeLog('PERF', log.message);
+  }
+
+  void _ensureInitialized() {
+    if (!_initStarted) {
+      _initFile();
+    }
+  }
+
+  void _writeLog(String level, String? message) {
+    if (!_isInitialized || _logFile == null) return;
+
+    try {
+      final buffer = StringBuffer()
+        ..writeln('[$level] ${DateTime.now().toIso8601String()}')
+        ..writeln(message ?? 'No message')
+        ..writeln('---');
+
+      _logFile!.writeAsStringSync(
+        buffer.toString(),
+        mode: FileMode.append,
+        flush: true,
+      );
+    } catch (e) {
+      debugPrint('Failed to write to debug perf log: $e');
+    }
+  }
+
   String? get logFilePath => _logFile?.path;
 }
 

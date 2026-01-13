@@ -25,6 +25,7 @@ import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 import '../helpers/test_db.dart';
 import '../helpers/integration_test_helpers.dart';
@@ -145,6 +146,7 @@ void main() {
         final bloc = ScreenBloc(
           screenRepository: screenRepository,
           interpreter: interpreter,
+          performanceLogger: PerformanceLogger(),
         );
 
         try {

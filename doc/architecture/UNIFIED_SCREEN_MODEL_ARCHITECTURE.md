@@ -50,7 +50,7 @@ The system supports:
 
 ### Tests + migration guidance
 - Core tests: `test/domain/models/screens/*`, `test/presentation/features/screens/*`
-- Migration playbook: [doc/folder_refactor/](../folder_refactor/)
+- Migration history/reference: [doc/plans/completed/unified_screen_model_v2_full_cutover/](../plans/completed/unified_screen_model_v2_full_cutover/)
 
 ---
 
@@ -189,12 +189,6 @@ Key entry points:
 
 Note: [lib/data/screens/maintenance/screen_seeder.dart](../../lib/data/screens/maintenance/screen_seeder.dart) exists but is not currently invoked by the runtime code path.
 
-### 5.2 `SystemScreenProvider` (validation only)
-
-`SystemScreenProvider` exists primarily to prevent custom screens from reusing system keys, and to support cleanup.
-
-See: [lib/domain/interfaces/system_screen_provider.dart](../../lib/domain/interfaces/system_screen_provider.dart)
-
 ---
 
 ## 6) Configuration Catalog (What you can configure, and when to use it)
@@ -250,39 +244,38 @@ See: [lib/domain/screens/templates/interpreters/section_template_params_codec.da
 
 | Template ID | Params type | What it renders | When to use |
 |---|---|---|---|
-| `task_list` | `DataListSectionParams` | Task list driven by `TaskQuery` + display config | Default for task-based screens (Inbox, etc.). |
-| `project_list` | `DataListSectionParams` | Project list driven by `ProjectQuery` | Project overviews, dashboards, selection. |
-| `value_list` | `DataListSectionParams` | Value list driven by `ValueQuery?` | Value-centric dashboards and selection. |
-| `interleaved_list` | `InterleavedListSectionParams` | A single mixed list sourced from multiple list configs | When you need one feed combining tasks/projects/values. |
-| `agenda` | `AgendaSectionParams` | Date-grouped agenda view | Upcoming/scheduled screens, calendar-like views. |
+| `task_list_v2` | `ListSectionParamsV2` | Task list driven by `TaskQuery` with typed layout + enrichment | Default for task-based screens (Inbox, etc.). |
+| `project_list_v2` | `ListSectionParamsV2` | Project list driven by `ProjectQuery` with typed layout + enrichment | Project overviews, dashboards, selection. |
+| `value_list_v2` | `ListSectionParamsV2` | Value list driven by `ValueQuery?` with typed enrichment | Value-centric dashboards and selection. |
+| `interleaved_list_v2` | `InterleavedListSectionParamsV2` | A mixed list sourced from multiple V2 list configs | When you need one feed combining tasks/projects/values. |
+| `agenda_v2` | `AgendaSectionParamsV2` | Date-grouped agenda view with typed enrichment | Upcoming/scheduled screens, calendar-like views. |
 | `allocation` | `AllocationSectionParams` | Allocation/focus view for tasks | "My Day" / focus experiences. |
 | `issues_summary` | `IssuesSummarySectionParams` | Issues/warnings summary (attention items) | Top-of-screen "what needs attention" summary. |
 | `check_in_summary` | `CheckInSummarySectionParams` | Check-in summary (review items) | Focus onboarding/summary at top of focus screens. |
 | `allocation_alerts` | `AllocationAlertsSectionParams` | Allocation-related alerts (attention items) | Warning banners/alerts near allocation sections. |
 | `entity_header` | `EntityHeaderSectionParams` | Header for an entity detail screen (project/value) | Top section for detail screens to show metadata/controls. |
 | `settings_menu` | *(no params)* | Settings menu screen | Use as a full-screen settings entry point. |
-| `workflow_list` | *(no params)* | Workflow list screen | Full-screen template. |
 | `journal_timeline` | *(no params)* | Journal timeline screen | Full-screen template. |
 | `navigation_settings` | *(no params)* | Navigation settings screen | Full-screen template. |
 | `allocation_settings` | *(no params)* | Allocation settings screen | Full-screen template. |
 | `attention_rules` | *(no params)* | Attention rules screen | Full-screen template. |
-| `screen_management` | *(no params)* | Screen management screen | Full-screen template. |
 | `tracker_management` | *(no params)* | Tracker management screen | Full-screen template. |
 | `wellbeing_dashboard` | *(no params)* | Wellbeing dashboard screen | Full-screen template. |
 | `statistics_dashboard` | *(no params)* | Statistics dashboard screen | Full-screen template. |
 | `browse_hub` | *(no params)* | Browse hub screen | Full-screen template. |
 | `focus_setup_wizard` | *(no params)* | Focus setup wizard screen | Full-screen template. |
 | `my_day_focus_mode_required` | *(no params)* | My Day gate screen (focus mode required) | Screen-level gate template. |
-| `someday_null_dates` | `SomedayNullDatesSectionParams` | Someday list variant (null dates) | Used by Someday-style system screens. |
-| `someday_backlog` | `SomedayBacklogSectionParams` | Someday list variant (backlog) | Used by Someday-style system screens. |
 
 **Guidance**
-- Prefer *parameterized* templates (`*_list`, `agenda`, `allocation`) for screens where the primary purpose is "show data in a consistent, configurable way".
+- Prefer *parameterized* templates (`*_list_v2`, `agenda_v2`, `allocation`) for screens where the primary purpose is "show data in a consistent, configurable way".
 - Prefer *no-params* templates for screens that are effectively standalone "apps within the app" (settings dashboards, management screens). If these start needing data-driven variation, promote them to typed params instead of encoding flags into unrelated configs.
 
 ### 6.5 Styles & Tile Variants (mandatory style keys)
 
 To keep "what we display" separate from "how we display it", templates that render entities require explicit **tile variant** fields.
+
+**Related backlog**
+- Someday consolidated inbox alignment (post-migration UI alignment): [doc/backlog/SOMEDAY_CONSOLIDATED_INBOX_ALIGNMENT.md](../backlog/SOMEDAY_CONSOLIDATED_INBOX_ALIGNMENT.md)
 
 **Implementation note (UI architecture)**
 - Screen renderers should map these variants onto the canonical, entity-level UI entrypoints:
@@ -299,9 +292,9 @@ To keep "what we display" separate from "how we display it", templates that rend
 **Which templates require which style keys**
 | Template | Required style keys | Notes |
 |---|---|---|
-| `*_list` (`DataListSectionParams`) | `taskTileVariant`, `projectTileVariant`, `valueTileVariant` | Required even if the underlying `DataConfig` only yields one entity type. This is an intentional "explicit style" rule. |
-| `interleaved_list` | `taskTileVariant`, `projectTileVariant`, `valueTileVariant` | Applied to the mixed list items. Each source also has its own nested `DataListSectionParams`. |
-| `agenda` | `taskTileVariant`, `projectTileVariant` | Agenda can render tasks and (optionally) project context. |
+| `*_list_v2` (`ListSectionParamsV2`) | `tiles.task`, `tiles.project`, `tiles.value` | Required even if the underlying `DataConfig` only yields one entity type. This is an intentional "explicit style" rule. |
+| `interleaved_list_v2` (`InterleavedListSectionParamsV2`) | `tiles.task`, `tiles.project`, `tiles.value` | Applied to the mixed list items shared across all sources. |
+| `agenda_v2` (`AgendaSectionParamsV2`) | `tiles.task`, `tiles.project`, `tiles.value` | Agenda renders tasks; project/value variants are used when those entities appear as context/links. |
 | `allocation` | `taskTileVariant` | Allocation shows tasks. |
 | `issues_summary` | `attentionItemTileVariant` | Controls which attention-item widget style is used. |
 | `allocation_alerts` | `attentionItemTileVariant` | Controls which alert widget style is used. |
@@ -333,7 +326,7 @@ See: [lib/domain/screens/language/models/data_config.dart](../../lib/domain/scre
 | `value` | `query: ValueQuery?` (optional) | When the section's primary entity is values; omit `query` to use defaults. |
 | `journal` | `query: JournalQuery?` (optional) | When rendering journal entries (currently not used by list templates in the codec). |
 
-#### 6.6.2 `DisplayConfig` (how to present/filter/sort)
+#### 6.6.2 `DisplayConfig` (legacy list grouping/sort/filter)
 
 See: [lib/domain/screens/language/models/display_config.dart](../../lib/domain/screens/language/models/display_config.dart)
 
@@ -346,17 +339,18 @@ See: [lib/domain/screens/language/models/display_config.dart](../../lib/domain/s
 | `groupByCompletion` / `completedCollapsed` | Completed grouping UX | Use when mixing completed and active tasks within one section. |
 | `enableSwipeToDelete` | Swipe delete affordance | Use sparingly; only on screens where delete is the primary action. |
 
-#### 6.6.3 `RelatedDataConfig` (fetch related entities)
+Notes:
+- V2 list templates (`*_list_v2`, `interleaved_list_v2`, `agenda_v2`) use typed layout via `SectionLayoutSpecV2` and typed computed metadata via `EnrichmentPlanV2` (not `DisplayConfig`).
 
-See: [lib/domain/screens/language/models/related_data_config.dart](../../lib/domain/screens/language/models/related_data_config.dart)
+#### 6.6.3 Related data (removed)
 
-| Variant | Fields | When to use |
-|---|---|---|
-| `tasks` | `additionalFilter: TaskQuery?` | When you want tasks related to the primary entity (e.g., tasks for each project/value). |
-| `projects` | `additionalFilter: ProjectQuery?` | When you want projects related to the primary entity (e.g., projects for each value). |
-| `valueHierarchy` | `includeInheritedTasks`, `projectFilter`, `taskFilter` | When rendering Value -> Project -> Task hierarchies. |
+The legacy "related entities sidecar" (`RelatedDataConfig` / `relatedEntities`) has been removed.
 
-#### 6.6.4 `EnrichmentConfig` (computed statistics)
+Use one of:
+- `SectionLayoutSpecV2.hierarchyValueProjectTask` when you need a structured Value → Project → Task presentation.
+- `EnrichmentPlanV2` / `EnrichmentResultV2` when you need computed, typed metadata (counts, value stats, agenda tags).
+
+#### 6.6.4 `EnrichmentConfig` (legacy computed statistics)
 
 See: [lib/domain/screens/language/models/enrichment_config.dart](../../lib/domain/screens/language/models/enrichment_config.dart)
 
@@ -388,6 +382,11 @@ Goal: a screen with an issues summary + task list, plus a task-create FAB.
 
 ```dart
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
@@ -418,12 +417,15 @@ final screen = ScreenDefinition(
       ).toJson(),
     ),
     SectionRef(
-      templateId: SectionTemplateId.taskList,
-      params: DataListSectionParams(
+      templateId: SectionTemplateId.taskListV2,
+      params: ListSectionParamsV2(
         config: DataConfig.task(query: TaskQuery.inbox()),
-        taskTileVariant: TaskTileVariant.listTile,
-        projectTileVariant: ProjectTileVariant.listTile,
-        valueTileVariant: ValueTileVariant.compactCard,
+        tiles: const TilePolicyV2(
+          task: TaskTileVariant.listTile,
+          project: ProjectTileVariant.listTile,
+          value: ValueTileVariant.compactCard,
+        ),
+        layout: const SectionLayoutSpecV2.flatList(),
       ).toJson(),
     ),
   ],
@@ -432,7 +434,7 @@ final screen = ScreenDefinition(
 
 When to use:
 - Use `issuesSummary` when you want guardrails/alerts near the top.
-- Use `taskList` with a `TaskQuery` when the screen's primary content is tasks.
+- Use `taskListV2` with a `TaskQuery` when the screen's primary content is tasks.
 
 ### 7.2 Example: Two task lists, labeled via section overrides
 
@@ -442,28 +444,34 @@ Goal: one screen showing two different task lists with clear titles.
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 final sections = <SectionRef>[
   SectionRef(
-    templateId: SectionTemplateId.taskList,
-    params: DataListSectionParams(
+    templateId: SectionTemplateId.taskListV2,
+    params: ListSectionParamsV2(
       config: DataConfig.task(query: TaskQuery.inbox()),
-      taskTileVariant: TaskTileVariant.listTile,
-      projectTileVariant: ProjectTileVariant.listTile,
-      valueTileVariant: ValueTileVariant.compactCard,
+      tiles: const TilePolicyV2(
+        task: TaskTileVariant.listTile,
+        project: ProjectTileVariant.listTile,
+        value: ValueTileVariant.compactCard,
+      ),
+      layout: const SectionLayoutSpecV2.flatList(),
     ).toJson(),
     overrides: const SectionOverrides(title: 'Inbox'),
   ),
   SectionRef(
-    templateId: SectionTemplateId.taskList,
-    params: DataListSectionParams(
+    templateId: SectionTemplateId.taskListV2,
+    params: ListSectionParamsV2(
       config: DataConfig.task(query: TaskQuery.scheduled()),
-      taskTileVariant: TaskTileVariant.listTile,
-      projectTileVariant: ProjectTileVariant.listTile,
-      valueTileVariant: ValueTileVariant.compactCard,
+      tiles: const TilePolicyV2(
+        task: TaskTileVariant.listTile,
+        project: ProjectTileVariant.listTile,
+        value: ValueTileVariant.compactCard,
+      ),
+      layout: const SectionLayoutSpecV2.flatList(),
     ).toJson(),
     overrides: const SectionOverrides(title: 'Scheduled'),
   ),

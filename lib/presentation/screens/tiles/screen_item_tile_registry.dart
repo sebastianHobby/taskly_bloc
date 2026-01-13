@@ -21,6 +21,7 @@ class ScreenItemTileRegistry {
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
+    Widget? titlePrefix,
   }) {
     return switch (item) {
       ScreenItemTask(:final task) => TaskView(
@@ -28,19 +29,23 @@ class ScreenItemTileRegistry {
         compact: compactTiles,
         onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
+        titlePrefix: titlePrefix,
       ),
       ScreenItemProject(:final project) => ProjectView(
         project: project,
         compact: compactTiles,
-        taskCount: projectStats?.taskCount,
-        completedTaskCount: projectStats?.completedTaskCount,
+        taskCount: projectStats?.taskCount ?? project.taskCount,
+        completedTaskCount:
+            projectStats?.completedTaskCount ?? project.completedTaskCount,
         onTap: onTap == null ? null : (_) => onTap(),
+        titlePrefix: titlePrefix,
       ),
       ScreenItemValue(:final value) => ValueView(
         value: value,
         stats: valueStats,
         onTap: onTap,
         compact: true,
+        titlePrefix: titlePrefix,
       ),
       ScreenItemHeader(:final title) => Padding(
         padding: const EdgeInsets.only(bottom: 12),

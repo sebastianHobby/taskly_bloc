@@ -13,15 +13,16 @@ import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/enrichment_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/enrichment_result.dart';
-import 'package:taskly_bloc/domain/screens/language/models/related_data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -74,20 +75,24 @@ class SectionDataService {
 
   DateTime _todayUtcDay() => _dayKeyService.todayDayKeyUtc();
 
-  Future<SectionDataResult> fetchDataList(DataListSectionParams params) async {
-    return _fetchDataSection(
-      params.config,
-      params.relatedData,
-      params.enrichment,
-    );
+  Future<SectionDataResult> fetchDataListV2(ListSectionParamsV2 params) {
+    return _fetchDataSectionV2(params);
   }
 
-  Stream<SectionDataResult> watchDataList(DataListSectionParams params) {
-    return _watchDataSection(
-      params.config,
-      params.relatedData,
-      params.enrichment,
-    );
+  Stream<SectionDataResult> watchDataListV2(ListSectionParamsV2 params) {
+    return _watchDataSectionV2(params);
+  }
+
+  Future<SectionDataResult> fetchInterleavedListV2(
+    InterleavedListSectionParamsV2 params,
+  ) {
+    return _fetchInterleavedListSectionV2(params);
+  }
+
+  Stream<SectionDataResult> watchInterleavedListV2(
+    InterleavedListSectionParamsV2 params,
+  ) {
+    return _watchInterleavedListSectionV2(params);
   }
 
   Future<SectionDataResult> fetchAllocation(AllocationSectionParams params) {
@@ -108,12 +113,12 @@ class SectionDataService {
     );
   }
 
-  Future<SectionDataResult> fetchAgenda(AgendaSectionParams params) {
-    return _fetchAgendaSection(params);
+  Future<SectionDataResult> fetchAgendaV2(AgendaSectionParamsV2 params) {
+    return _fetchAgendaSectionV2(params);
   }
 
-  Stream<SectionDataResult> watchAgenda(AgendaSectionParams params) {
-    return _watchAgendaSection(params);
+  Stream<SectionDataResult> watchAgendaV2(AgendaSectionParamsV2 params) {
+    return _watchAgendaSectionV2(params);
   }
 
   // ===========================================================================
@@ -144,67 +149,153 @@ class SectionDataService {
     };
   }
 
-  Future<SectionDataResult> _fetchDataSection(
-    DataConfig config,
-    List<RelatedDataConfig> relatedData,
-    EnrichmentConfig? enrichmentConfig,
-  ) async {
-    final kind = _kindFor(config);
-    final entities = await _fetchPrimaryEntities(config);
-    final related = await _fetchRelatedData(entities, kind, relatedData);
-    final enrichment = await _computeEnrichment(
-      enrichmentConfig,
-      entities,
-      kind,
-    );
+  // ===========================================================================
+  // DATA SECTION (V2)
+  // ===========================================================================
 
-    return SectionDataResult.data(
-      items: _toScreenItems(kind, entities),
-      relatedEntities: related,
-      enrichment: enrichment,
-    );
+  Future<SectionDataResult> _fetchDataSectionV2(
+    ListSectionParamsV2 params,
+  ) async {
+    final kind = _kindFor(params.config);
+    final entities = await _fetchPrimaryEntities(params.config);
+    final items = _toScreenItems(kind, entities);
+    final enrichment = await _computeEnrichmentV2(params.enrichment, items);
+
+    return SectionDataResult.dataV2(items: items, enrichment: enrichment);
   }
 
-  Stream<SectionDataResult> _watchDataSection(
-    DataConfig config,
-    List<RelatedDataConfig> relatedData,
-    EnrichmentConfig? enrichmentConfig,
-  ) {
-    final kind = _kindFor(config);
+  Stream<SectionDataResult> _watchDataSectionV2(ListSectionParamsV2 params) {
+    final kind = _kindFor(params.config);
 
-    // Latest snapshot wins: if the primary entities stream emits again while
-    // related/enrichment computation is still running, cancel the in-flight
-    // computation and start a new one for the latest entities.
-    return _watchPrimaryEntities(config).switchMap(
+    return _watchPrimaryEntities(params.config).switchMap(
       (entities) => Stream.fromFuture(
-        _buildDataSectionResult(
+        _buildDataSectionResultV2(
           kind: kind,
           entities: entities,
-          relatedData: relatedData,
-          enrichmentConfig: enrichmentConfig,
+          enrichmentPlan: params.enrichment,
         ),
       ),
     );
   }
 
-  Future<SectionDataResult> _buildDataSectionResult({
+  Future<SectionDataResult> _buildDataSectionResultV2({
     required _PrimaryEntityKind kind,
     required List<Object> entities,
-    required List<RelatedDataConfig> relatedData,
-    required EnrichmentConfig? enrichmentConfig,
+    required EnrichmentPlanV2 enrichmentPlan,
   }) async {
-    final related = await _fetchRelatedData(entities, kind, relatedData);
-    final enrichment = await _computeEnrichment(
-      enrichmentConfig,
-      entities,
-      kind,
+    final items = _toScreenItems(kind, entities);
+    final enrichment = await _computeEnrichmentV2(enrichmentPlan, items);
+
+    return SectionDataResult.dataV2(items: items, enrichment: enrichment);
+  }
+
+  // ===========================================================================
+  // INTERLEAVED LIST (V2)
+  // ===========================================================================
+
+  Future<SectionDataResult> _fetchInterleavedListSectionV2(
+    InterleavedListSectionParamsV2 params,
+  ) async {
+    if (params.sources.isEmpty) {
+      return const SectionDataResult.dataV2(items: <ScreenItem>[]);
+    }
+
+    final results = await Future.wait(
+      params.sources.map(
+        (config) async {
+          final kind = _kindFor(config);
+          final entities = await _fetchPrimaryEntities(config);
+          return _toScreenItems(kind, entities);
+        },
+      ),
     );
 
-    return SectionDataResult.data(
-      items: _toScreenItems(kind, entities),
-      relatedEntities: related,
-      enrichment: enrichment,
+    final items = results.expand((e) => e).toList(growable: false);
+    final sorted = _sortInterleavedItemsV2(items);
+    final enrichment = await _computeEnrichmentV2(params.enrichment, sorted);
+    return SectionDataResult.dataV2(items: sorted, enrichment: enrichment);
+  }
+
+  Stream<SectionDataResult> _watchInterleavedListSectionV2(
+    InterleavedListSectionParamsV2 params,
+  ) {
+    if (params.sources.isEmpty) {
+      return Stream.value(
+        const SectionDataResult.dataV2(items: <ScreenItem>[]),
+      );
+    }
+
+    final streams = params.sources
+        .map(
+          (config) => _watchPrimaryEntities(config).map(
+            (entities) {
+              final kind = _kindFor(config);
+              return _toScreenItems(kind, entities);
+            },
+          ),
+        )
+        .toList(growable: false);
+
+    return Rx.combineLatestList<List<ScreenItem>>(streams).switchMap(
+      (lists) {
+        final items = lists.expand((e) => e).toList(growable: false);
+        final sorted = _sortInterleavedItemsV2(items);
+        return Stream.fromFuture(
+          _buildInterleavedResultV2(sorted, params.enrichment),
+        );
+      },
     );
+  }
+
+  Future<SectionDataResult> _buildInterleavedResultV2(
+    List<ScreenItem> items,
+    EnrichmentPlanV2 enrichmentPlan,
+  ) async {
+    final enrichment = await _computeEnrichmentV2(enrichmentPlan, items);
+    return SectionDataResult.dataV2(items: items, enrichment: enrichment);
+  }
+
+  List<ScreenItem> _sortInterleavedItemsV2(List<ScreenItem> items) {
+    final entityItems = <ScreenItem>[];
+    final structuralItems = <ScreenItem>[];
+
+    for (final item in items) {
+      switch (item) {
+        case ScreenItemTask() || ScreenItemProject() || ScreenItemValue():
+          entityItems.add(item);
+        default:
+          structuralItems.add(item);
+      }
+    }
+
+    entityItems.sort((a, b) {
+      final aKey = _updatedAtKeyFor(a);
+      final bKey = _updatedAtKeyFor(b);
+      final byKey = -aKey.compareTo(bKey);
+      if (byKey != 0) return byKey;
+      return _stableIdFor(a).compareTo(_stableIdFor(b));
+    });
+
+    return <ScreenItem>[...entityItems, ...structuralItems];
+  }
+
+  DateTime _updatedAtKeyFor(ScreenItem item) {
+    return switch (item) {
+      ScreenItemTask(:final task) => task.updatedAt,
+      ScreenItemProject(:final project) => project.updatedAt,
+      ScreenItemValue(:final value) => value.updatedAt,
+      _ => DateTime.utc(0),
+    };
+  }
+
+  String _stableIdFor(ScreenItem item) {
+    return switch (item) {
+      ScreenItemTask(:final task) => 't:${task.id}',
+      ScreenItemProject(:final project) => 'p:${project.id}',
+      ScreenItemValue(:final value) => 'v:${value.id}',
+      ScreenItemHeader(:final title) => 'h:$title',
+      ScreenItemDivider() => 'd',
+    };
   }
 
   Future<List<Object>> _fetchPrimaryEntities(DataConfig config) async {
@@ -213,7 +304,9 @@ class SectionDataService {
         (await _taskRepository.watchAll(query).first).cast<Object>(),
       ProjectDataConfig(:final query) =>
         (await _projectRepository.watchAll(query).first).cast<Object>(),
-      ValueDataConfig() => (await _valueRepository.getAll()).cast<Object>(),
+      ValueDataConfig(:final query) => (await _valueRepository.getAll(
+        query,
+      )).cast<Object>(),
       JournalDataConfig(:final query) => (await _fetchJournalEntries(
         query,
       )).cast<Object>(),
@@ -241,9 +334,8 @@ class SectionDataService {
         _taskRepository.watchAll(query).map((items) => items.cast<Object>()),
       ProjectDataConfig(:final query) =>
         _projectRepository.watchAll(query).map((items) => items.cast<Object>()),
-      ValueDataConfig() => _valueRepository.watchAll().map(
-        (i) => i.cast<Object>(),
-      ),
+      ValueDataConfig(:final query) =>
+        _valueRepository.watchAll(query).map((items) => items.cast<Object>()),
       JournalDataConfig(:final query) => _watchJournalEntries(
         query,
       ).map((items) => items.cast<Object>()),
@@ -260,138 +352,6 @@ class SectionDataService {
     return _wellbeingRepository.watchJournalEntriesByQuery(
       query ?? JournalQuery.all(),
     );
-  }
-
-  Future<Map<String, List<Object>>> _fetchRelatedData(
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-    List<RelatedDataConfig> relatedData,
-  ) async {
-    final result = <String, List<Object>>{};
-
-    for (final config in relatedData) {
-      final key = _getRelatedDataKey(config);
-      result[key] = await _fetchRelatedEntities(
-        entities,
-        entityKind,
-        config,
-      );
-    }
-
-    return result;
-  }
-
-  String _getRelatedDataKey(RelatedDataConfig config) {
-    return switch (config) {
-      RelatedTasksConfig() => 'tasks',
-      RelatedProjectsConfig() => 'projects',
-      ValueHierarchyConfig() => 'valueHierarchy',
-    };
-  }
-
-  Future<List<Object>> _fetchRelatedEntities(
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-    RelatedDataConfig config,
-  ) async {
-    return switch (config) {
-      RelatedTasksConfig(:final additionalFilter) => await _fetchRelatedTasks(
-        entities,
-        entityKind,
-        additionalFilter,
-      ),
-      RelatedProjectsConfig() => await _fetchRelatedProjects(
-        entities,
-        entityKind,
-      ),
-      ValueHierarchyConfig() => (await _fetchValueHierarchy(
-        entities,
-      )).cast<Object>(),
-    };
-  }
-
-  Future<List<Task>> _fetchRelatedTasks(
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-    TaskQuery? filter,
-  ) async {
-    final allTasks = <Task>[];
-
-    switch (entityKind) {
-      case _PrimaryEntityKind.task:
-        break;
-      case _PrimaryEntityKind.project:
-        for (final project in entities.cast<Project>()) {
-          // Get tasks belonging to this project using TaskQuery
-          final projectQuery = TaskQuery.byProject(project.id);
-          final tasks = await _taskRepository.watchAll(projectQuery).first;
-          allTasks.addAll(tasks);
-        }
-      case _PrimaryEntityKind.value:
-        for (final value in entities.cast<Value>()) {
-          // Get tasks with this value using TaskQuery
-          final valueQuery = TaskQuery.forValue(valueId: value.id);
-          final tasks = await _taskRepository.watchAll(valueQuery).first;
-          allTasks.addAll(tasks);
-        }
-      case _PrimaryEntityKind.journal:
-        break;
-    }
-
-    // Remove duplicates
-    final uniqueTasks = <String, Task>{};
-    for (final task in allTasks) {
-      uniqueTasks[task.id] = task;
-    }
-
-    var result = uniqueTasks.values.toList();
-
-    // Apply additional filter if provided
-    if (filter != null) {
-      result = _applyTaskFilter(result, filter);
-    }
-
-    return result;
-  }
-
-  Future<List<Project>> _fetchRelatedProjects(
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-  ) async {
-    final projectIds = <String>{};
-
-    switch (entityKind) {
-      case _PrimaryEntityKind.task:
-        for (final task in entities.cast<Task>()) {
-          if (task.projectId != null) {
-            projectIds.add(task.projectId!);
-          }
-        }
-      case _PrimaryEntityKind.project:
-      case _PrimaryEntityKind.value:
-      case _PrimaryEntityKind.journal:
-        break;
-    }
-
-    if (projectIds.isEmpty) return [];
-
-    // Fetch projects by IDs
-    final projects = <Project>[];
-    for (final id in projectIds) {
-      final project = await _projectRepository.getById(id);
-      if (project != null) {
-        projects.add(project);
-      }
-    }
-
-    return projects;
-  }
-
-  Future<List<dynamic>> _fetchValueHierarchy(List<dynamic> values) async {
-    // Special 3-level hierarchy: Value → Project → Task
-    // Returns a flat list but preserves the hierarchical context
-    // Implementation can be expanded based on specific needs
-    return [];
   }
 
   // ===========================================================================
@@ -440,7 +400,7 @@ class SectionDataService {
       maxTasks,
     );
 
-    // Extract just the Task objects for backward compatibility
+    // Flatten tasks for UI consumption.
     final tasks = [
       ...pinnedTasks,
       ...tasksByValue.values.expand((g) => g.tasks),
@@ -533,7 +493,7 @@ class SectionDataService {
       maxTasks,
     );
 
-    // Extract just the Task objects for backward compatibility
+    // Flatten tasks for UI consumption.
     final tasks = [
       ...pinnedTasks,
       ...tasksByValue.values.expand((g) => g.tasks),
@@ -799,8 +759,8 @@ class SectionDataService {
   // AGENDA SECTION
   // ===========================================================================
 
-  Future<SectionDataResult> _fetchAgendaSection(
-    AgendaSectionParams params,
+  Future<SectionDataResult> _fetchAgendaSectionV2(
+    AgendaSectionParamsV2 params,
   ) async {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -812,13 +772,11 @@ class SectionDataService {
       rangeEnd: rangeEnd,
     );
 
-    return SectionDataResult.agenda(
-      agendaData: agendaData,
-    );
+    return SectionDataResult.agenda(agendaData: agendaData);
   }
 
-  Stream<SectionDataResult> _watchAgendaSection(
-    AgendaSectionParams params,
+  Stream<SectionDataResult> _watchAgendaSectionV2(
+    AgendaSectionParamsV2 params,
   ) async* {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -832,6 +790,192 @@ class SectionDataService {
           rangeEnd: rangeEnd,
         )
         .map((agendaData) => SectionDataResult.agenda(agendaData: agendaData));
+  }
+
+  // ===========================================================================
+  // ENRICHMENT COMPUTATION (V2)
+  // ===========================================================================
+
+  Future<EnrichmentResultV2?> _computeEnrichmentV2(
+    EnrichmentPlanV2 plan,
+    List<ScreenItem> items,
+  ) async {
+    if (plan.items.isEmpty) return null;
+
+    final wantsValueStats = plan.items.any(
+      (i) => i.maybeWhen(valueStats: () => true, orElse: () => false),
+    );
+    final wantsOpenTaskCounts = plan.items.any(
+      (i) => i.maybeWhen(openTaskCounts: () => true, orElse: () => false),
+    );
+
+    final agendaDateFields = plan.items
+        .map(
+          (i) => i.maybeWhen(
+            agendaTags: (dateField) => dateField,
+            orElse: () => null,
+          ),
+        )
+        .whereType<AgendaDateFieldV2>()
+        .toList(growable: false);
+    final AgendaDateFieldV2? agendaDateField = agendaDateFields.isEmpty
+        ? null
+        : agendaDateFields.first;
+
+    final values = items
+        .whereType<ScreenItemValue>()
+        .map((i) => i.value)
+        .toList();
+    final projects = items
+        .whereType<ScreenItemProject>()
+        .map((i) => i.project)
+        .toList();
+    final tasks = items.whereType<ScreenItemTask>().map((i) => i.task).toList();
+
+    Map<String, ValueStats> valueStatsByValueId = const {};
+    int? totalRecentCompletions;
+    OpenTaskCountsV2? openTaskCounts;
+    Map<String, AgendaTagV2> agendaTagByTaskId = const {};
+
+    if (wantsValueStats && values.isNotEmpty) {
+      final valueStatsResult = await _computeEnrichment(
+        const EnrichmentConfig.valueStats(),
+        values.cast<Object>(),
+        _PrimaryEntityKind.value,
+      );
+
+      if (valueStatsResult case ValueStatsEnrichmentResult(
+        statsByValueId: final statsByValueId,
+        totalRecentCompletions: final legacyTotalRecentCompletions,
+      )) {
+        valueStatsByValueId = statsByValueId;
+        totalRecentCompletions = legacyTotalRecentCompletions;
+      }
+    }
+
+    if (wantsOpenTaskCounts && (projects.isNotEmpty || values.isNotEmpty)) {
+      openTaskCounts = await _computeOpenTaskCountsV2(projects, values);
+    }
+
+    if (agendaDateField != null && tasks.isNotEmpty) {
+      agendaTagByTaskId = _computeAgendaTagsV2(tasks, agendaDateField);
+    }
+
+    final hasAny =
+        valueStatsByValueId.isNotEmpty ||
+        totalRecentCompletions != null ||
+        openTaskCounts != null ||
+        agendaTagByTaskId.isNotEmpty;
+    if (!hasAny) return null;
+
+    return EnrichmentResultV2(
+      valueStatsByValueId: valueStatsByValueId,
+      totalRecentCompletions: totalRecentCompletions,
+      openTaskCounts: openTaskCounts,
+      agendaTagByTaskId: agendaTagByTaskId,
+    );
+  }
+
+  Future<OpenTaskCountsV2> _computeOpenTaskCountsV2(
+    List<Project> projects,
+    List<Value> values,
+  ) async {
+    final projectCounts = await Future.wait(
+      projects.map((p) async {
+        final query = TaskQuery(
+          filter: QueryFilter<TaskPredicate>(
+            shared: [
+              TaskProjectPredicate(
+                operator: ProjectOperator.matches,
+                projectId: p.id,
+              ),
+              const TaskBoolPredicate(
+                field: TaskBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+            ],
+          ),
+        );
+        final tasks = await _taskRepository.watchAll(query).first;
+        return MapEntry(p.id, tasks.length);
+      }),
+    );
+
+    final valueCounts = await Future.wait(
+      values.map((v) async {
+        final query = TaskQuery(
+          filter: QueryFilter<TaskPredicate>(
+            shared: [
+              TaskValuePredicate(
+                operator: ValueOperator.hasAll,
+                valueIds: [v.id],
+                includeInherited: true,
+              ),
+              const TaskBoolPredicate(
+                field: TaskBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+            ],
+          ),
+        );
+        final tasks = await _taskRepository.watchAll(query).first;
+        return MapEntry(v.id, tasks.length);
+      }),
+    );
+
+    return OpenTaskCountsV2(
+      byProjectId: Map<String, int>.fromEntries(projectCounts),
+      byValueId: Map<String, int>.fromEntries(valueCounts),
+    );
+  }
+
+  Map<String, AgendaTagV2> _computeAgendaTagsV2(
+    List<Task> tasks,
+    AgendaDateFieldV2 dateField,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final map = <String, AgendaTagV2>{};
+    for (final task in tasks) {
+      final start = task.startDate;
+      final deadline = task.deadlineDate;
+
+      final hasSameStartAndDeadline =
+          start != null &&
+          deadline != null &&
+          DateTime(start.year, start.month, start.day) ==
+              DateTime(deadline.year, deadline.month, deadline.day);
+
+      final isInProgressToday =
+          !hasSameStartAndDeadline &&
+          start != null &&
+          deadline != null &&
+          today.isAfter(DateTime(start.year, start.month, start.day)) &&
+          today.isBefore(DateTime(deadline.year, deadline.month, deadline.day));
+
+      if (isInProgressToday) {
+        map[task.id] = AgendaTagV2.inProgress;
+        continue;
+      }
+
+      final startsToday =
+          start != null &&
+          DateTime(start.year, start.month, start.day) == today;
+      final dueToday =
+          deadline != null &&
+          DateTime(deadline.year, deadline.month, deadline.day) == today;
+
+      // Prefer starts/due over dateField-driven behavior so tags are consistent
+      // anywhere `TaskTileVariant.agenda` is used.
+      if (startsToday) {
+        map[task.id] = AgendaTagV2.starts;
+      } else if (dueToday) {
+        map[task.id] = AgendaTagV2.due;
+      }
+    }
+
+    return map;
   }
 
   // ===========================================================================

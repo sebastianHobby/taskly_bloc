@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
+import 'package:taskly_bloc/core/performance/screen_performance_trace.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
@@ -23,8 +24,10 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   ScreenBloc({
     required ScreenDefinitionsRepositoryContract screenRepository,
     required ScreenDataInterpreter interpreter,
+    required PerformanceLogger performanceLogger,
   }) : _screenRepository = screenRepository,
        _interpreter = interpreter,
+       _performanceLogger = performanceLogger,
        super(const ScreenState.initial()) {
     on<ScreenLoadEvent>(_onLoad, transformer: restartable());
     on<ScreenLoadByIdEvent>(_onLoadById, transformer: restartable());
@@ -32,6 +35,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
 
   final ScreenDefinitionsRepositoryContract _screenRepository;
   final ScreenDataInterpreter _interpreter;
+  final PerformanceLogger _performanceLogger;
 
   bool _hasAnyEnabledSection(ScreenDefinition definition) {
     return definition.sections.any((s) => s.overrides?.enabled ?? true);
@@ -67,16 +71,17 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     ScreenLoadEvent event,
     Emitter<ScreenState> emit,
   ) async {
-    final loadStart = DateTime.now();
     talker.blocLog('ScreenBloc', 'load: ${event.definition.id}');
-    developer.log(
-      '📱 Screen: Loading screen "${event.definition.name}" (${event.definition.id})',
-      name: 'perf.screen',
-    );
 
     final definition = event.definition;
 
+    final trace = _performanceLogger.startScreenTrace(
+      screenName: definition.name,
+      screenId: definition.id,
+    );
+
     if (!_hasAnyEnabledSection(definition)) {
+      trace.endError('Screen has no enabled sections configured.');
       _failFastOrEmitError(
         emit: emit,
         definition: definition,
@@ -86,32 +91,10 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
     }
 
     emit(ScreenState.loading(definition: definition));
-    final loadingEmittedAt = DateTime.now();
-    final loadingEmitMs = loadingEmittedAt.difference(loadStart).inMilliseconds;
-    talker.debug(
-      '[Perf] Screen "${definition.name}": Loading state emitted after ${loadingEmitMs}ms',
-    );
 
-    await _subscribeToData(definition, emit, loadingEmittedAt);
+    trace.markLoadingEmitted();
 
-    final loadMs = DateTime.now().difference(loadStart).inMilliseconds;
-    final loadCompleteMsg =
-        '✅ Screen: Loaded "${definition.name}" - ${loadMs}ms';
-    developer.log(
-      loadCompleteMsg,
-      name: 'perf.screen',
-      level: loadMs > 1000 ? 900 : 800,
-    );
-
-    if (loadMs > 1000) {
-      talker.warning(
-        '[Perf] Screen "${definition.name}" slow load: ${loadMs}ms',
-      );
-    } else if (loadMs > 500) {
-      talker.info('[Perf] $loadCompleteMsg');
-    } else {
-      talker.debug('[Perf] $loadCompleteMsg');
-    }
+    await _subscribeToData(definition, emit, trace);
   }
 
   Future<void> _onLoadById(
@@ -139,7 +122,13 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
 
       final screen = screenWithPrefs.screen;
 
+      final trace = _performanceLogger.startScreenTrace(
+        screenName: screen.name,
+        screenId: screen.id,
+      );
+
       if (!_hasAnyEnabledSection(screen)) {
+        trace.endError('Screen has no enabled sections configured.');
         _failFastOrEmitError(
           emit: emit,
           definition: screen,
@@ -149,9 +138,9 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
       }
 
       emit(ScreenState.loading(definition: screen));
-      final loadingEmittedAt = DateTime.now();
+      trace.markLoadingEmitted();
 
-      await _subscribeToData(screen, emit, loadingEmittedAt);
+      await _subscribeToData(screen, emit, trace);
     } catch (e, st) {
       talker.handle(e, st, '[ScreenBloc] loadById failed');
       emit(
@@ -167,7 +156,7 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
   Future<void> _subscribeToData(
     ScreenDefinition definition,
     Emitter<ScreenState> emit,
-    DateTime loadingEmittedAt,
+    ScreenPerformanceTrace trace,
   ) async {
     var firstDataReceived = false;
     // Subscribe to interpreter stream
@@ -176,32 +165,11 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
       onData: (data) {
         if (!firstDataReceived) {
           firstDataReceived = true;
-          final timeToFirstData = DateTime.now()
-              .difference(loadingEmittedAt)
-              .inMilliseconds;
-          final firstDataMsg =
-              '⏱️ Screen "${definition.name}": First data after ${timeToFirstData}ms';
-          developer.log(
-            firstDataMsg,
-            name: 'perf.screen.firstdata',
-          );
-
-          if (timeToFirstData > 3000) {
-            talker.warning(
-              '[Perf] Screen "${definition.name}": VERY SLOW first data: ${timeToFirstData}ms',
-            );
-          } else if (timeToFirstData > 1000) {
-            talker.warning(
-              '[Perf] Screen "${definition.name}": Slow first data: ${timeToFirstData}ms',
-            );
-          } else if (timeToFirstData > 500) {
-            talker.info('[Perf] $firstDataMsg');
-          } else {
-            talker.debug('[Perf] $firstDataMsg');
-          }
+          trace.markFirstData();
         }
 
         if (data.error != null) {
+          trace.endError(data.error!);
           return ScreenState.error(
             message: data.error!,
             definition: definition,
@@ -210,6 +178,11 @@ class ScreenBloc extends Bloc<ScreenEvent, ScreenState> {
         return ScreenState.loaded(data: data);
       },
       onError: (error, stackTrace) {
+        trace.endError(
+          'Stream error: $error',
+          error: error,
+          stackTrace: stackTrace,
+        );
         talker.handle(error, stackTrace, '[ScreenBloc] Stream error');
         return ScreenState.error(
           message: 'Stream error: $error',

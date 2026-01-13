@@ -12,7 +12,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dar
 import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/data_list_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
@@ -402,13 +402,15 @@ class TestData {
           sections ??
           [
             SectionRef(
-              templateId: SectionTemplateId.taskList,
-              params: DataListSectionParams(
+              templateId: SectionTemplateId.taskListV2,
+              params: ListSectionParamsV2(
                 config: DataConfig.task(query: TaskQuery.all()),
-                taskTileVariant: TaskTileVariant.listTile,
-                projectTileVariant: ProjectTileVariant.listTile,
-                valueTileVariant: ValueTileVariant.compactCard,
-                display: displayConfig ?? const display.DisplayConfig(),
+                tiles: const TilePolicyV2(
+                  task: TaskTileVariant.listTile,
+                  project: ProjectTileVariant.listTile,
+                  value: ValueTileVariant.compactCard,
+                ),
+                layout: const SectionLayoutSpecV2.flatList(),
               ).toJson(),
               overrides: const SectionOverrides(title: 'Test Section'),
             ),

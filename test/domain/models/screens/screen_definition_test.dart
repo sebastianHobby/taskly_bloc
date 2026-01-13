@@ -48,7 +48,7 @@ void main() {
         screenSource: ScreenSource.systemTemplate,
         chrome: const ScreenChrome(iconName: 'inbox'),
         sections: const [
-          SectionRef(templateId: SectionTemplateId.taskList, params: {}),
+          SectionRef(templateId: SectionTemplateId.taskListV2, params: {}),
         ],
       );
 

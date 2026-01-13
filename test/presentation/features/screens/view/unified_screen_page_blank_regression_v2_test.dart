@@ -22,6 +22,7 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 import '../../../../fixtures/test_data.dart';
 import '../../../../helpers/pump_app.dart';
@@ -54,7 +55,8 @@ void main() {
         )
         ..registerSingleton<ScreenDataInterpreter>(mockInterpreter)
         ..registerSingleton<EntityActionService>(mockEntityActionService)
-        ..registerSingleton<SettingsRepositoryContract>(mockSettingsRepository);
+        ..registerSingleton<SettingsRepositoryContract>(mockSettingsRepository)
+        ..registerSingleton<PerformanceLogger>(PerformanceLogger());
 
       registerFallbackValue(TestData.screenDefinition());
     });

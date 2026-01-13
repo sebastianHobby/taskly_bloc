@@ -33,8 +33,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: AllocationSectionRenderer(data: data),
+            body: CustomScrollView(
+              slivers: [
+                AllocationSectionRenderer(data: data),
+              ],
             ),
           ),
         ),
@@ -65,8 +67,10 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: AllocationSectionRenderer(data: data),
+              body: CustomScrollView(
+                slivers: [
+                  AllocationSectionRenderer(data: data),
+                ],
               ),
             ),
           ),
@@ -156,8 +160,10 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: SingleChildScrollView(
-                child: AllocationSectionRenderer(data: data),
+              body: CustomScrollView(
+                slivers: [
+                  AllocationSectionRenderer(data: data),
+                ],
               ),
             ),
           ),

@@ -5,6 +5,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
@@ -109,6 +110,7 @@ class _BrowseTileVm {
     final badgeStream = NavigationBadgeService(
       taskRepository: getIt<TaskRepositoryContract>(),
       projectRepository: getIt<ProjectRepositoryContract>(),
+      screenQueryBuilder: getIt<ScreenQueryBuilder>(),
     ).badgeStreamFor(screen);
 
     return _BrowseTileVm(

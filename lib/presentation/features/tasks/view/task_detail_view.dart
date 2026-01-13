@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
-import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
 
@@ -37,24 +36,18 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       listener: (context, state) {
         state.maybeWhen(
           operationSuccess: (operation) {
-            final message = switch (operation) {
-              EntityOperation.create => context.l10n.taskCreatedSuccessfully,
-              EntityOperation.update => context.l10n.taskUpdatedSuccessfully,
-              EntityOperation.delete => context.l10n.taskDeletedSuccessfully,
-            };
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message)),
+            unawaited(
+              handleEditorOperationSuccess(
+                context,
+                operation: operation,
+                createdMessage: context.l10n.taskCreatedSuccessfully,
+                updatedMessage: context.l10n.taskUpdatedSuccessfully,
+                deletedMessage: context.l10n.taskDeletedSuccessfully,
+              ),
             );
-            unawaited(Navigator.of(context).maybePop());
           },
           operationFailure: (errorDetails) {
-            final message = friendlyErrorMessageForUi(
-              errorDetails.error,
-              context.l10n,
-            );
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message)),
-            );
+            showEditorErrorSnackBar(context, errorDetails.error);
           },
           orElse: () {},
         );
@@ -129,7 +122,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
-                onClose: () => Navigator.of(context).maybePop(),
+                onClose: () => unawaited(closeEditor(context)),
               ),
           loadSuccess:
               (
@@ -195,9 +188,10 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 onDelete: () async {
                   final confirmed = await showDeleteConfirmationDialog(
                     context: context,
-                    title: 'Delete Task',
+                    title: context.l10n.deleteTaskAction,
                     itemName: task.name,
-                    description: 'This action cannot be undone.',
+                    description:
+                        context.l10n.deleteConfirmationIrreversibleDescription,
                   );
                   if (confirmed && context.mounted) {
                     context.read<TaskDetailBloc>().add(
@@ -209,7 +203,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
-                onClose: () => Navigator.of(context).maybePop(),
+                onClose: () => unawaited(closeEditor(context)),
               ),
           operationSuccess: (_) => const SizedBox.shrink(),
           operationFailure: (_) => const SizedBox.shrink(),

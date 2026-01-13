@@ -1,8 +1,6 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -20,18 +18,6 @@ void main() {
         expect(result, isA<DataSectionResult>());
         final dataResult = result as DataSectionResult;
         expect(dataResult.items, hasLength(1));
-      });
-
-      test('creates with related entities', () {
-        final result = SectionDataResult.data(
-          items: [ScreenItem.task(TestData.task())],
-          relatedEntities: {
-            'projects': [TestData.project()],
-          },
-        );
-
-        final dataResult = result as DataSectionResult;
-        expect(dataResult.relatedEntities['projects'], hasLength(1));
       });
 
       group('allTasks', () {
@@ -104,48 +90,6 @@ void main() {
           },
         );
       });
-
-      group('relatedTasks', () {
-        test('returns related tasks from relatedEntities', () {
-          final result = SectionDataResult.data(
-            items: [ScreenItem.project(TestData.project())],
-            relatedEntities: {
-              'tasks': <Task>[TestData.task(), TestData.task()],
-            },
-          );
-
-          expect(result.relatedTasks, hasLength(2));
-        });
-
-        test('returns empty list when no related tasks', () {
-          final result = SectionDataResult.data(
-            items: [ScreenItem.project(TestData.project())],
-          );
-
-          expect(result.relatedTasks, isEmpty);
-        });
-      });
-
-      group('relatedProjects', () {
-        test('returns related projects from relatedEntities', () {
-          final result = SectionDataResult.data(
-            items: [ScreenItem.task(TestData.task())],
-            relatedEntities: {
-              'projects': <Project>[TestData.project()],
-            },
-          );
-
-          expect(result.relatedProjects, hasLength(1));
-        });
-
-        test('returns empty list when no related projects', () {
-          final result = SectionDataResult.data(
-            items: [ScreenItem.task(TestData.task())],
-          );
-
-          expect(result.relatedProjects, isEmpty);
-        });
-      });
     });
 
     group('AllocationSectionResult', () {
@@ -217,28 +161,6 @@ void main() {
           );
 
           expect(result.allValues, isEmpty);
-        });
-      });
-
-      group('relatedTasks', () {
-        test('returns empty list for allocation results', () {
-          final result = SectionDataResult.allocation(
-            allocatedTasks: [TestData.task()],
-            totalAvailable: 10,
-          );
-
-          expect(result.relatedTasks, isEmpty);
-        });
-      });
-
-      group('relatedProjects', () {
-        test('returns empty list for allocation results', () {
-          final result = SectionDataResult.allocation(
-            allocatedTasks: [TestData.task()],
-            totalAvailable: 10,
-          );
-
-          expect(result.relatedProjects, isEmpty);
         });
       });
     });
@@ -353,28 +275,6 @@ void main() {
           );
 
           expect(result.allValues, isEmpty);
-        });
-      });
-
-      group('relatedTasks', () {
-        test('returns empty list for agenda results', () {
-          final today = DateTime.utc(2025, 1, 1);
-          final result = SectionDataResult.agenda(
-            agendaData: AgendaData(focusDate: today, groups: const []),
-          );
-
-          expect(result.relatedTasks, isEmpty);
-        });
-      });
-
-      group('relatedProjects', () {
-        test('returns empty list for agenda results', () {
-          final today = DateTime.utc(2025, 1, 1);
-          final result = SectionDataResult.agenda(
-            agendaData: AgendaData(focusDate: today, groups: const []),
-          );
-
-          expect(result.relatedProjects, isEmpty);
         });
       });
     });
