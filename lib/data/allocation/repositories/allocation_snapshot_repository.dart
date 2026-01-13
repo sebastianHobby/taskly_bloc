@@ -208,6 +208,14 @@ class AllocationSnapshotRepository
     );
   }
 
+  @override
+  Future<void> deleteAll() async {
+    await _db.transaction(() async {
+      await _db.delete(_db.allocationSnapshotEntries).go();
+      await _db.delete(_db.allocationSnapshots).go();
+    });
+  }
+
   Future<db.AllocationSnapshot?> _getLatestSnapshotRow(DateTime dayUtc) {
     return (_db.select(_db.allocationSnapshots)
           ..where((t) => t.dayUtc.equalsValue(dayUtc))

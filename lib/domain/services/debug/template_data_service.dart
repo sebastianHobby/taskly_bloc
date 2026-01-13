@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/foundation.dart';
+import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
@@ -20,15 +21,18 @@ class TemplateDataService {
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
     required SettingsRepositoryContract settingsRepository,
+    required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
-       _settingsRepository = settingsRepository;
+       _settingsRepository = settingsRepository,
+       _allocationSnapshotRepository = allocationSnapshotRepository;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final SettingsRepositoryContract _settingsRepository;
+  final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
 
   /// Deletes all user Tasks/Projects/Values and recreates template demo data.
   ///
@@ -39,6 +43,10 @@ class TemplateDataService {
     }
 
     // 1) Wipe existing entity data.
+    // Allocation snapshots are snapshot-first for My Day; clearing them ensures
+    // the allocator produces a fresh snapshot for the new demo dataset.
+    await _allocationSnapshotRepository.deleteAll();
+
     // Delete tasks first to avoid FK/join constraints.
     final tasks = await _taskRepository.getAll(TaskQuery.all());
     for (final task in tasks) {
@@ -330,8 +338,8 @@ class TemplateDataService {
       priority: 4,
     );
 
-    // 6) Pin the two "Scheduled" tasks per project (10 total).
-    await _pinTasksByName(pinnedTaskNames);
+    // 6) Pin only one task total to keep the demo focused.
+    await _pinTasksByName(pinnedTaskNames.take(1).toList());
   }
 
   Future<Map<String, String>> _loadValueIdByName() async {
