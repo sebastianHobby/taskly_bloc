@@ -27,7 +27,7 @@ abstract final class SectionTemplateId {
   static const attentionRules = 'attention_rules';
   static const focusSetupWizard = 'focus_setup_wizard';
   static const trackerManagement = 'tracker_management';
-  static const wellbeingDashboard = 'wellbeing_dashboard';
+  static const journalDashboard = 'journal_dashboard';
   static const statisticsDashboard = 'statistics_dashboard';
 
   // Navigation hub / browse

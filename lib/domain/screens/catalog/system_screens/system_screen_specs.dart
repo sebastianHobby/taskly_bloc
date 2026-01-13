@@ -266,11 +266,11 @@ abstract class SystemScreenSpecs {
     template: const ScreenTemplateSpec.trackerManagement(),
   );
 
-  static final wellbeingDashboard = ScreenSpec(
-    id: 'wellbeing_dashboard',
-    screenKey: 'wellbeing_dashboard',
-    name: 'Wellbeing',
-    template: const ScreenTemplateSpec.wellbeingDashboard(),
+  static final journalDashboard = ScreenSpec(
+    id: 'journal_dashboard',
+    screenKey: 'journal_dashboard',
+    name: 'Journal Dashboard',
+    template: const ScreenTemplateSpec.journalDashboard(),
   );
 
   static final allocationSettings = ScreenSpec(
@@ -366,7 +366,7 @@ abstract class SystemScreenSpecs {
     statistics.screenKey: statistics,
     journal.screenKey: journal,
     trackers.screenKey: trackers,
-    wellbeingDashboard.screenKey: wellbeingDashboard,
+    journalDashboard.screenKey: journalDashboard,
     allocationSettings.screenKey: allocationSettings,
     navigationSettings.screenKey: navigationSettings,
     focusSetup.screenKey: focusSetup,

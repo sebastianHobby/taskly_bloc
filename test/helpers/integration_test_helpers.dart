@@ -28,15 +28,10 @@
 ///     // Arrange
 ///     await ctx.seedSystemScreens();
 ///
-///     // Act
-///     final bloc = ctx.createScreenDefinitionBloc('inbox');
-///     bloc.add(ScreenDefinitionEvent.subscriptionRequested(screenKey: 'inbox'));
-///
-///     // Assert
-///     await expectBlocState<ScreenDefinitionState>(
-///       bloc,
-///       (s) => s is ScreenDefinitionLoaded,
-///     );
+///     // Act / Assert
+///     final screenStream = ctx.screensRepository.watchScreen('inbox');
+///     final screen = await screenStream.first;
+///     expect(screen, isNotNull);
 ///   });
 /// });
 /// ```

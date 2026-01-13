@@ -187,29 +187,6 @@ void main() {
         await bloc.close();
       });
 
-      testSafe('wellbeing screen uses direct route', () async {
-        final bloc = NavigationBloc(
-          screensRepository: mockScreensRepository,
-          badgeService: mockBadgeService,
-          iconResolver: iconResolver,
-        );
-
-        bloc.add(const NavigationStarted());
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        screensController.emit([
-          createScreen(
-            id: '1',
-            screenKey: 'wellbeing',
-            name: 'Wellbeing',
-          ),
-        ]);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-
-        expect(bloc.state.destinations.first.route, '/wellbeing');
-        await bloc.close();
-      });
-
       testSafe('journal screen uses convention-based route', () async {
         final bloc = NavigationBloc(
           screensRepository: mockScreensRepository,
@@ -380,12 +357,6 @@ void main() {
       final result = resolver.resolve(screenId: 'values', iconName: null);
       expect(result.icon, Icons.star_outline);
       expect(result.selectedIcon, Icons.star);
-    });
-
-    test('resolves wellbeing icon by screenId', () {
-      final result = resolver.resolve(screenId: 'wellbeing', iconName: null);
-      expect(result.icon, Icons.self_improvement_outlined);
-      expect(result.selectedIcon, Icons.self_improvement);
     });
 
     test('resolves journal icon by screenId', () {

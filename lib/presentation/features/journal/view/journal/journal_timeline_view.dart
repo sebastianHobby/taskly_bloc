@@ -3,10 +3,10 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_empty_state.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_entry_card.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_new_entry_form.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/widgets/daily_tracker_section.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal/journal_empty_state.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal/journal_entry_card.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal/journal_new_entry_form.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/daily_tracker_section.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 /// Timeline view showing all journal entries for a selected date.

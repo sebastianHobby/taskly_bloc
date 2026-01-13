@@ -280,7 +280,6 @@ String _screenKeyToTitle(String screenKey) {
     'values': 'Values',
     'next_actions': 'Next Actions',
     'settings': 'Settings',
-    'wellbeing': 'Wellbeing',
     'workflows': 'Workflows',
     'screen_management': 'Screens',
     'statistics': 'Statistics',

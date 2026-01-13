@@ -1,7 +1,7 @@
 # Phase 1 — Screen Templates + Slots (Additive)
 
 Created at: 2026-01-13T00:00:00Z  
-Last updated at: 2026-01-13T00:30:00Z
+Last updated at: 2026-01-14T00:00:00Z
 
 ## AI instructions
 - Before implementing this phase, review `doc/architecture/`.
@@ -55,6 +55,10 @@ This phase establishes the core types and the rendering entry points.
    - Introduce a rendering entry point that renders **from typed specs**:
      - either a new `UnifiedScreenPageFromSpec`, or
      - extend existing `UnifiedScreenPage` with a `ScreenSpec` input.
+
+  Note (2026-01-14): `UnifiedScreenPage` was a legacy ScreenDefinition-based
+  widget and has since been deleted. The supported path is
+  `UnifiedScreenPageFromSpec`.
    - Rendering path:
      - `ScreenSpec` -> partition into slots -> `ScreenTemplateWidget`
 

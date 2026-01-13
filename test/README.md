@@ -301,7 +301,7 @@ Available tags (defined in `dart_test.yaml`):
 - `integration` - Tests with real database
 - `widget` - Flutter widget tests
 - `slow` - Tests that take longer to run
-- `analytics`, `auth`, `wellbeing`, `tasks` - Feature-specific tags
+- `analytics`, `auth`, `journal`, `tasks` - Feature-specific tags
 
 ## Best Practices
 

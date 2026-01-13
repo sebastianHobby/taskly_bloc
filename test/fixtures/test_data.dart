@@ -6,12 +6,12 @@ import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
 
 /// Test data builders using the Object Mother pattern.
@@ -270,7 +270,7 @@ class TestData {
     );
   }
 
-  // === Wellbeing ===
+  // === Journal ===
 
   static JournalEntry journalEntry({
     String? id,

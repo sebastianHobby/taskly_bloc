@@ -1,7 +1,7 @@
 # ED/RD + V2 Cutover (Core) — Phase 04: Validation & Documentation
 
 Created at: 2026-01-13T00:00:00Z
-Last updated at: 2026-01-13T00:00:00Z
+Last updated at: 2026-01-14T00:00:00Z
 
 ## Goal
 
@@ -24,6 +24,8 @@ Last updated at: 2026-01-13T00:00:00Z
 - The migration backlog docs remain accurate for the core entities/screens.
 - **Completion definition**: no legacy ScreenDefinition stack files remain in the repo.
 
+Note (2026-01-14): this completion definition is now met on `main`.
+
 ## Implementation Notes
 
 - If Phase 03 removed legacy files, also ensure:
@@ -38,6 +40,9 @@ Last updated at: 2026-01-13T00:00:00Z
     - `lib/presentation/screens/view/unified_screen_page.dart`
     - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
     - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+
+  Note: references to these paths may still appear in historical plan files
+  under `doc/plans/**`; those are archival and do not indicate runtime usage.
   - Task remains editor-only (route `/task/:id` opens editor sheet).
 
 ## AI instructions

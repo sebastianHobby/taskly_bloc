@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 /// Repository contract for journal data.
 ///
-/// This is a rename of the legacy wellbeing repository contract.
 /// Phase 02 replaces the tracker-related APIs.
 abstract class JournalRepositoryContract {
   // === Journal Entries ===

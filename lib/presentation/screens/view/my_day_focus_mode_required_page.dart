@@ -179,7 +179,7 @@ class MyDayFocusModeRequiredPage extends StatelessWidget {
                             Text(
                               'Stop drowning in to-dos. Taskly helps you align '
                               'your daily tasks with your personal values and '
-                              'wellbeing, so you can focus on growth.',
+                              'journaling, so you can focus on growth.',
                               textAlign: TextAlign.center,
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,

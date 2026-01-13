@@ -162,7 +162,7 @@ class BlocTestContext {
     valueRepo = MockValueRepositoryContract();
     settingsRepo = MockSettingsRepositoryContract();
     analyticsRepo = MockAnalyticsRepositoryContract();
-    wellbeingRepo = MockWellbeingRepositoryContract();
+    journalRepo = MockJournalRepositoryContract();
 
     // Default stubs for common repository calls
     _stubDefaultBehaviors();
@@ -172,7 +172,7 @@ class BlocTestContext {
   late MockValueRepositoryContract valueRepo;
   late MockSettingsRepositoryContract settingsRepo;
   late MockAnalyticsRepositoryContract analyticsRepo;
-  late MockWellbeingRepositoryContract wellbeingRepo;
+  late MockJournalRepositoryContract journalRepo;
 
   void _stubDefaultBehaviors() {
     // Empty lists for get operations
@@ -296,10 +296,10 @@ class AnalyticsBlocTestContext extends BlocTestContext {
   AnalyticsBlocTestContext() : super();
 }
 
-/// Helper for wellbeing-specific BLoC tests
-class WellbeingBlocTestContext extends BlocTestContext {
-  WellbeingBlocTestContext() : super() {
-    // Add wellbeing-specific default stubs if needed
+/// Helper for journal-specific BLoC tests
+class JournalBlocTestContext extends BlocTestContext {
+  JournalBlocTestContext() : super() {
+    // Add journal-specific default stubs if needed
   }
 }
 

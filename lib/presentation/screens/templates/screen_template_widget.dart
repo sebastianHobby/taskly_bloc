@@ -21,12 +21,6 @@ import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_b
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
@@ -48,23 +42,22 @@ class ScreenTemplateWidget extends StatelessWidget {
     return data.template.when(
       standardScaffoldV1: () => _StandardScaffoldV1Template(data: data),
       settingsMenu: () => const SettingsScreen(),
-      trackerManagement: () => BlocProvider(
-        create: (_) =>
-            TrackerManagementBloc(getIt<JournalRepositoryContract>()),
-        child: const TrackerManagementScreen(),
+      trackerManagement: () => const _PlaceholderTemplate(
+        title: 'Trackers',
+        message: 'Tracker management is being rebuilt.',
       ),
       statisticsDashboard: () => const Scaffold(
         body: Center(
           child: Text('Statistics dashboard not implemented yet.'),
         ),
       ),
-      wellbeingDashboard: () => BlocProvider(
-        create: (_) => WellbeingDashboardBloc(getIt<AnalyticsService>()),
-        child: const WellbeingDashboardScreen(),
+      journalDashboard: () => const _PlaceholderTemplate(
+        title: 'Journal Dashboard',
+        message: 'Journal insights are being rebuilt.',
       ),
-      journalTimeline: () => BlocProvider(
-        create: (_) => JournalEntryBloc(getIt<JournalRepositoryContract>()),
-        child: const JournalScreen(),
+      journalTimeline: () => const _PlaceholderTemplate(
+        title: 'Journal',
+        message: 'Journal is being rebuilt into a hub.',
       ),
       navigationSettings: () => NavigationSettingsPage(
         screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
@@ -95,6 +88,29 @@ class ScreenTemplateWidget extends StatelessWidget {
       ),
       browseHub: () => const BrowseHubScreen(),
       myDayFocusModeRequired: () => const MyDayFocusModeRequiredPage(),
+    );
+  }
+}
+
+class _PlaceholderTemplate extends StatelessWidget {
+  const _PlaceholderTemplate({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -63,10 +63,6 @@ class NavigationIconResolver {
       'projects' => (icon: Icons.folder_outlined, selectedIcon: Icons.folder),
       'labels' => (icon: Icons.label_outline, selectedIcon: Icons.label),
       'values' => (icon: Icons.star_outline, selectedIcon: Icons.star),
-      'wellbeing' => (
-        icon: Icons.self_improvement_outlined,
-        selectedIcon: Icons.self_improvement,
-      ),
       'settings' => (
         icon: Icons.settings_outlined,
         selectedIcon: Icons.settings,
@@ -79,7 +75,10 @@ class NavigationIconResolver {
       // ─────────────────────────────────────────────────────────────────
       // Additional screens / settings pages
       // ─────────────────────────────────────────────────────────────────
-      'journal' => (icon: Icons.book_outlined, selectedIcon: Icons.book),
+      'journal' => (
+        icon: Icons.self_improvement_outlined,
+        selectedIcon: Icons.self_improvement,
+      ),
       'trackers' => (
         icon: Icons.timeline_outlined,
         selectedIcon: Icons.timeline,
