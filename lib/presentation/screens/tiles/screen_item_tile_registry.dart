@@ -2,9 +2,11 @@
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 /// Presentation helpers for rendering a [ScreenItem] as a tile.
 ///
@@ -22,6 +24,8 @@ class ScreenItemTileRegistry {
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
     Widget? titlePrefix,
+    Widget? projectTrailing,
+    bool showProjectTrailingProgressLabel = false,
   }) {
     return switch (item) {
       ScreenItemTask(:final task) => TaskView(
@@ -39,11 +43,15 @@ class ScreenItemTileRegistry {
             projectStats?.completedTaskCount ?? project.completedTaskCount,
         onTap: onTap == null ? null : (_) => onTap(),
         titlePrefix: titlePrefix,
+        trailing: projectTrailing,
+        showTrailingProgressLabel: showProjectTrailingProgressLabel,
       ),
       ScreenItemValue(:final value) => ValueView(
         value: value,
         stats: valueStats,
-        onTap: onTap,
+        onTap:
+            onTap ??
+            () => Routing.toEntity(context, EntityType.value, value.id),
         compact: true,
         titlePrefix: titlePrefix,
       ),

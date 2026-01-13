@@ -3,6 +3,9 @@ abstract final class SectionTemplateId {
   // Core section templates
   static const allocation = 'allocation';
 
+  // Dedicated hierarchy templates
+  static const hierarchyValueProjectTaskV2 = 'hierarchy_value_project_task_v2';
+
   // V2 list/section templates
   static const taskListV2 = 'task_list_v2';
   static const projectListV2 = 'project_list_v2';

@@ -69,6 +69,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_ale
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
@@ -330,6 +331,12 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.interleavedListV2,
     )
+    ..registerLazySingleton<HierarchyValueProjectTaskSectionInterpreterV2>(
+      () => HierarchyValueProjectTaskSectionInterpreterV2(
+        sectionDataService: getIt<SectionDataService>(),
+      ),
+      instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
+    )
     ..registerLazySingleton<AllocationSectionInterpreter>(
       () => AllocationSectionInterpreter(
         sectionDataService: getIt<SectionDataService>(),
@@ -440,6 +447,9 @@ Future<void> setupDependencies() async {
         ),
         getIt<InterleavedListSectionInterpreterV2>(
           instanceName: SectionTemplateId.interleavedListV2,
+        ),
+        getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
+          instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
         ),
         getIt<AllocationSectionInterpreter>(
           instanceName: SectionTemplateId.allocation,

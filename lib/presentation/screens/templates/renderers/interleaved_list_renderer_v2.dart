@@ -8,7 +8,10 @@ import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_sec
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -36,6 +39,19 @@ class InterleavedListRendererV2 extends StatefulWidget {
 class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   bool _projectsOnly = false;
   String? _selectedValueId;
+  final Set<String> _collapsedProjectIds = <String>{};
+
+  bool _isProjectCollapsed(String projectId) {
+    return _collapsedProjectIds.contains(projectId);
+  }
+
+  void _toggleProjectCollapsed(String projectId) {
+    setState(() {
+      if (!_collapsedProjectIds.add(projectId)) {
+        _collapsedProjectIds.remove(projectId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -237,8 +253,13 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     BuildContext context, {
     required ScreenItemTileRegistry registry,
     required ScreenItem item,
+    Widget? titlePrefix,
+    Widget? projectTrailing,
+    bool showProjectTrailingProgressLabel = false,
   }) {
-    final prefix = item is ScreenItemTask ? _titlePrefixForTask(item) : null;
+    final prefix =
+        titlePrefix ??
+        (item is ScreenItemTask ? _titlePrefixForTask(item) : null);
     final valueStats = item is ScreenItemValue
         ? widget.data.enrichment?.valueStatsByValueId[item.value.id]
         : null;
@@ -250,6 +271,8 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       compactTiles: widget.compactTiles,
       valueStats: valueStats,
       titlePrefix: prefix,
+      projectTrailing: projectTrailing,
+      showProjectTrailingProgressLabel: showProjectTrailingProgressLabel,
     );
   }
 
@@ -375,13 +398,24 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
       if (groupProjects.isEmpty && groupTasks.isEmpty) return;
 
+      final valueColorHex = valueId == null
+          ? null
+          : embeddedValueById[valueId]?.color;
       slivers.add(
         pinnedValueHeaders
             ? SliverPersistentHeader(
                 pinned: true,
-                delegate: _PinnedHeaderDelegate(title: title),
+                delegate: _PinnedHeaderDelegate(
+                  title: title,
+                  dotColorHex: valueColorHex,
+                ),
               )
-            : SliverToBoxAdapter(child: _InlineHeader(title: title)),
+            : SliverToBoxAdapter(
+                child: _InlineHeader(
+                  title: title,
+                  dotColorHex: valueColorHex,
+                ),
+              ),
       );
 
       final projectsInGroupById = {
@@ -398,11 +432,13 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         final projectTasks =
             tasksByProjectId.remove(projectId) ?? const <ScreenItemTask>[];
 
+        final collapsed = _isProjectCollapsed(projectId);
+
         slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
 
         slivers.add(
           SliverSeparatedList(
-            itemCount: 1 + projectTasks.length,
+            itemCount: 1 + (collapsed ? 0 : projectTasks.length),
             separatorBuilder: (context, index) {
               if (index == 0) return const SizedBox(height: 8);
               return const Divider(height: 1);
@@ -413,6 +449,11 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                   context,
                   registry: registry,
                   item: projectItem,
+                  projectTrailing: _CollapseChevron(
+                    collapsed: collapsed,
+                    onPressed: () => _toggleProjectCollapsed(projectId),
+                  ),
+                  showProjectTrailingProgressLabel: true,
                 );
               }
               return _buildItem(
@@ -458,6 +499,8 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             tasksByProjectId[orphanProjectId] ?? const <ScreenItemTask>[];
         if (projectTasks.isEmpty) continue;
 
+        final collapsed = _isProjectCollapsed(orphanProjectId);
+
         final projectTitleFallback = (project?.name.trim().isNotEmpty ?? false)
             ? project!.name
             : (projectTasks
@@ -469,47 +512,74 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                       .firstWhere((_) => true, orElse: () => null) ??
                   'Unknown project');
 
-        // If we can render a project tile, that becomes the "header".
-        // Otherwise, keep a text header so tasks are still grouped/labeled.
-        if (project == null) {
+        // Match My Day spacing: small gap before each project block.
+        slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
+
+        // If we can render a project tile, that becomes the header.
+        // If not, render a folder row with count (still navigable by id).
+        if (project == null && pinnedProjectHeaders) {
+          // Preserve pinned text-header behavior for other screens.
           slivers.add(
-            pinnedProjectHeaders
-                ? SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _PinnedHeaderDelegate(
-                      title: projectTitleFallback,
-                    ),
-                  )
-                : SliverToBoxAdapter(
-                    child: _InlineHeader(title: projectTitleFallback),
-                  ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _PinnedHeaderDelegate(title: projectTitleFallback),
+            ),
           );
-        } else {
-          slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
+          if (!collapsed) {
+            slivers.add(
+              SliverSeparatedList(
+                itemCount: projectTasks.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) => _buildItem(
+                  context,
+                  registry: registry,
+                  item: projectTasks[index],
+                ),
+              ),
+            );
+          }
+          continue;
         }
 
         slivers.add(
           SliverSeparatedList(
-            itemCount: (project == null ? 0 : 1) + projectTasks.length,
+            itemCount: 1 + (collapsed ? 0 : projectTasks.length),
             separatorBuilder: (context, index) {
-              if (project != null && index == 0) {
-                return const SizedBox(height: 8);
-              }
+              if (index == 0) return const SizedBox(height: 8);
               return const Divider(height: 1);
             },
             itemBuilder: (context, index) {
-              if (project != null && index == 0) {
-                return _buildItem(
-                  context,
-                  registry: registry,
-                  item: ScreenItem.project(project),
+              if (index == 0) {
+                if (project != null) {
+                  return _buildItem(
+                    context,
+                    registry: registry,
+                    item: ScreenItem.project(project),
+                    projectTrailing: _CollapseChevron(
+                      collapsed: collapsed,
+                      onPressed: () => _toggleProjectCollapsed(orphanProjectId),
+                    ),
+                    showProjectTrailingProgressLabel: true,
+                  );
+                }
+
+                return _FallbackProjectHeaderRow(
+                  title: projectTitleFallback,
+                  count: projectTasks.length,
+                  collapsed: collapsed,
+                  onToggle: () => _toggleProjectCollapsed(orphanProjectId),
+                  onOpen: () => Routing.toEntity(
+                    context,
+                    EntityType.project,
+                    orphanProjectId,
+                  ),
                 );
               }
-              final offset = project == null ? 0 : 1;
+
               return _buildItem(
                 context,
                 registry: registry,
-                item: projectTasks[index - offset],
+                item: projectTasks[index - 1],
               );
             },
           ),
@@ -555,6 +625,94 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     };
 
     return _TagPill(label: label);
+  }
+}
+
+class _CollapseChevron extends StatelessWidget {
+  const _CollapseChevron({
+    required this.collapsed,
+    required this.onPressed,
+  });
+
+  final bool collapsed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      tooltip: collapsed ? 'Expand project' : 'Collapse project',
+      onPressed: onPressed,
+      icon: AnimatedRotation(
+        turns: collapsed ? -0.25 : 0,
+        duration: const Duration(milliseconds: 160),
+        child: Icon(
+          Icons.expand_more,
+          size: 20,
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
+class _FallbackProjectHeaderRow extends StatelessWidget {
+  const _FallbackProjectHeaderRow({
+    required this.title,
+    required this.count,
+    required this.collapsed,
+    required this.onToggle,
+    required this.onOpen,
+  });
+
+  final String title;
+  final int count;
+  final bool collapsed;
+  final VoidCallback onToggle;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return InkWell(
+      onTap: onOpen,
+      child: Padding(
+        padding: const EdgeInsets.only(top: 8, bottom: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.folder_outlined, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '$count',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            _CollapseChevron(collapsed: collapsed, onPressed: onToggle),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -677,23 +835,58 @@ Widget _separatorFor({
 }
 
 class _InlineHeader extends StatelessWidget {
-  const _InlineHeader({required this.title});
+  const _InlineHeader({required this.title, this.dotColorHex});
 
   final String title;
+  final String? dotColorHex;
 
   @override
   Widget build(BuildContext context) {
+    if (dotColorHex == null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+      );
+    }
+
+    final dotColor = ColorUtils.fromHexWithThemeFallback(context, dotColorHex);
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: dotColor,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedHeaderDelegate({required this.title});
+  _PinnedHeaderDelegate({required this.title, this.dotColorHex});
 
   final String title;
+  final String? dotColorHex;
 
   @override
   double get minExtent => 48;
@@ -708,11 +901,45 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final theme = Theme.of(context);
+    if (dotColorHex == null) {
+      return Container(
+        color: theme.scaffoldBackgroundColor,
+        padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
+        alignment: Alignment.bottomLeft,
+        child: Text(title, style: theme.textTheme.titleMedium),
+      );
+    }
+
+    final dotColor = ColorUtils.fromHexWithThemeFallback(context, dotColorHex);
+
     return Container(
       color: theme.scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
       alignment: Alignment.bottomLeft,
-      child: Text(title, style: theme.textTheme.titleMedium),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: dotColor,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

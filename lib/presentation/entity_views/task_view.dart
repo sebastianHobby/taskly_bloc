@@ -27,6 +27,10 @@ class TaskView extends StatelessWidget {
     this.compact = false,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
+    this.showProjectNameInMeta = true,
+    this.showPrimaryValueChip = true,
+    this.maxSecondaryValueChips = 1,
+    this.excludeValueIdFromChips,
     this.reasonText,
     this.reasonColor,
     this.titlePrefix,
@@ -49,6 +53,27 @@ class TaskView extends StatelessWidget {
 
   /// Whether to show the Next Action indicator for pinned tasks.
   final bool showNextActionIndicator;
+
+  /// Whether to show the project name in the meta line.
+  ///
+  /// Useful when the task is already displayed under a project header.
+  final bool showProjectNameInMeta;
+
+  /// Whether to show the primary value chip in the meta line.
+  ///
+  /// Useful when tasks are displayed under a value grouping where the value is
+  /// already implied by the section header.
+  final bool showPrimaryValueChip;
+
+  /// Maximum number of secondary value chips to show.
+  ///
+  /// Defaults to 1 to keep list rows compact.
+  final int maxSecondaryValueChips;
+
+  /// When set, excludes this value id from any chips shown in the meta line.
+  ///
+  /// This is typically the current value group id.
+  final String? excludeValueIdFromChips;
 
   /// Optional reason text to display below the task name.
   /// Used for excluded task alerts (e.g., "Overdue by 2 days").
@@ -234,7 +259,9 @@ class TaskView extends StatelessWidget {
                     ],
                     */
                     _MetaLine(
-                      projectName: task.project?.name,
+                      projectName: showProjectNameInMeta
+                          ? task.project?.name
+                          : null,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -244,6 +271,9 @@ class TaskView extends StatelessWidget {
                       hasRepeat: task.repeatIcalRrule != null,
                       primaryValue: effectivePrimaryValue,
                       secondaryValues: effectiveSecondaryValues,
+                      showPrimaryValueChip: showPrimaryValueChip,
+                      maxSecondaryValueChips: maxSecondaryValueChips,
+                      excludeValueIdFromChips: excludeValueIdFromChips,
                       buildDateToken: (context) => _buildStrictDateToken(
                         context,
                         startDate: task.startDate,
@@ -339,7 +369,9 @@ class TaskView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     _MetaLine(
-                      projectName: task.project?.name,
+                      projectName: showProjectNameInMeta
+                          ? task.project?.name
+                          : null,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -349,6 +381,9 @@ class TaskView extends StatelessWidget {
                       hasRepeat: task.repeatIcalRrule != null,
                       primaryValue: effectivePrimaryValue,
                       secondaryValues: effectiveSecondaryValues,
+                      showPrimaryValueChip: showPrimaryValueChip,
+                      maxSecondaryValueChips: maxSecondaryValueChips,
+                      excludeValueIdFromChips: excludeValueIdFromChips,
                       buildDateToken: (context) => _buildStrictDateToken(
                         context,
                         startDate: task.startDate,
@@ -376,6 +411,9 @@ class _MetaLine extends StatelessWidget {
     required this.primaryValue,
     required this.secondaryValues,
     required this.buildDateToken,
+    required this.showPrimaryValueChip,
+    required this.maxSecondaryValueChips,
+    required this.excludeValueIdFromChips,
     this.projectName,
     this.startDate,
     this.deadlineDate,
@@ -396,6 +434,9 @@ class _MetaLine extends StatelessWidget {
   final Value? primaryValue;
   final List<Value> secondaryValues;
   final DateChip? Function(BuildContext context) buildDateToken;
+  final bool showPrimaryValueChip;
+  final int maxSecondaryValueChips;
+  final String? excludeValueIdFromChips;
 
   @override
   Widget build(BuildContext context) {
@@ -408,7 +449,9 @@ class _MetaLine extends StatelessWidget {
 
     final children = <Widget>[];
 
-    if (primary != null) {
+    if (showPrimaryValueChip &&
+        primary != null &&
+        primary.id != excludeValueIdFromChips) {
       children.add(
         ValueChip(
           value: primary,
@@ -417,13 +460,19 @@ class _MetaLine extends StatelessWidget {
       );
     }
 
-    if (secondaryValues.isNotEmpty) {
-      children.add(
-        ValueChip(
-          value: secondaryValues.first,
-          variant: ValueChipVariant.outlined,
-        ),
-      );
+    if (maxSecondaryValueChips > 0) {
+      final filteredSecondary = secondaryValues
+          .where((v) => v.id != excludeValueIdFromChips)
+          .take(maxSecondaryValueChips);
+
+      for (final v in filteredSecondary) {
+        children.add(
+          ValueChip(
+            value: v,
+            variant: ValueChipVariant.outlined,
+          ),
+        );
+      }
     }
 
     if (hasRepeat) {

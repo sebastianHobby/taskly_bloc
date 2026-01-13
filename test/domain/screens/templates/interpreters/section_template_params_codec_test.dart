@@ -1,9 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
 
@@ -27,6 +30,19 @@ void main() {
         'entity_id': 'p1',
       });
       expect(entityHeader, isA<EntityHeaderSectionParams>());
+
+      final hierarchy = codec.decode(
+        SectionTemplateId.hierarchyValueProjectTaskV2,
+        {
+          'sources': const <Map<String, dynamic>>[],
+          'tiles': {
+            'task': 'list_tile',
+            'project': 'list_tile',
+            'value': 'compact_card',
+          },
+        },
+      );
+      expect(hierarchy, isA<HierarchyValueProjectTaskSectionParamsV2>());
     });
 
     test('throws when required fields are missing (strict decode)', () {
@@ -92,6 +108,25 @@ void main() {
           ),
         ),
         isA<EntityHeaderSectionParams>(),
+      );
+
+      const hierarchy = HierarchyValueProjectTaskSectionParamsV2(
+        sources: <DataConfig>[],
+        tiles: TilePolicyV2(
+          task: TaskTileVariant.listTile,
+          project: ProjectTileVariant.listTile,
+          value: ValueTileVariant.compactCard,
+        ),
+      );
+      expect(
+        codec.decode(
+          SectionTemplateId.hierarchyValueProjectTaskV2,
+          codec.encode(
+            SectionTemplateId.hierarchyValueProjectTaskV2,
+            hierarchy,
+          ),
+        ),
+        isA<HierarchyValueProjectTaskSectionParamsV2>(),
       );
     });
   });

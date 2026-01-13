@@ -88,7 +88,6 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Developer',
                   children: [
                     _buildViewLogsItem(context),
-                    if (kDebugMode) const _PrototypeMenuItem(),
                     if (kDebugMode) const _GenerateTemplateDataItem(),
                     if (kDebugMode) const _ClearLocalDataItem(),
                   ],
@@ -216,21 +215,6 @@ class _ThemeModeSelector extends StatelessWidget {
           );
         },
       ),
-    );
-  }
-}
-
-class _PrototypeMenuItem extends StatelessWidget {
-  const _PrototypeMenuItem();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.science_outlined),
-      title: const Text('Prototype'),
-      subtitle: const Text('Open My Day prototype UI'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'my_day_proto'),
     );
   }
 }
