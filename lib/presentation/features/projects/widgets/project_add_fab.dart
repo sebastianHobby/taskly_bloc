@@ -7,7 +7,7 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 /// A FAB that opens a project creation modal sheet.
 ///
 /// Encapsulates all modal handling internally, consistent with
-/// `AddTaskFab` and `AddLabelFab`.
+/// `AddTaskFab` and `AddValueFab`.
 class AddProjectFab extends StatelessWidget {
   const AddProjectFab({
     required this.projectRepository,

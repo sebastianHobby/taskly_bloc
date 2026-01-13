@@ -37,6 +37,12 @@ abstract class JournalRepositoryContract {
 
   Future<void> saveJournalEntry(JournalEntry entry);
 
+  /// Upsert a journal entry and return the ID that was used.
+  ///
+  /// This is useful for workflows that need a stable entry ID to attach
+  /// tracker events (e.g. mood) to the entry.
+  Future<String> upsertJournalEntry(JournalEntry entry);
+
   Future<void> deleteJournalEntry(String id);
 
   // === Trackers (OPT-A: event-log + projections) ===
@@ -62,6 +68,18 @@ abstract class JournalRepositoryContract {
   Future<void> saveTrackerPreference(TrackerPreference preference);
 
   Future<void> appendTrackerEvent(TrackerEvent event);
+
+  /// Watch raw tracker events for building B1 Journal UIs.
+  ///
+  /// Prefer projections for heavy analytics, but the hub UI needs to reflect
+  /// local writes immediately (before server-side projections update).
+  Stream<List<TrackerEvent>> watchTrackerEvents({
+    DateRange? range,
+    String? anchorType,
+    String? entryId,
+    DateTime? anchorDate,
+    String? trackerId,
+  });
 
   // === Analytics Helpers ===
 

@@ -325,13 +325,11 @@ class _ProjectScreenView extends StatelessWidget {
               }
             },
             onProjectCheckboxChanged: (project, value) {
-              context.read<ProjectDetailBloc>().add(
-                ProjectDetailEvent.update(
-                  id: project.id,
-                  name: project.name,
-                  completed: value ?? !project.completed,
-                ),
-              );
+              if (value ?? false) {
+                unawaited(entityActionService.completeProject(project.id));
+              } else {
+                unawaited(entityActionService.uncompleteProject(project.id));
+              }
             },
             onTaskCheckboxChanged: (task, value) async {
               if (value ?? false) {
@@ -342,6 +340,9 @@ class _ProjectScreenView extends StatelessWidget {
             },
             onTaskDelete: (task) async {
               await entityActionService.deleteTask(task.id);
+            },
+            onProjectDelete: (project) {
+              unawaited(entityActionService.deleteProject(project.id));
             },
           ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 80)),

@@ -110,6 +110,11 @@ class JournalRepositoryImpl
 
   @override
   Future<void> saveJournalEntry(JournalEntry entry) async {
+    await upsertJournalEntry(entry);
+  }
+
+  @override
+  Future<String> upsertJournalEntry(JournalEntry entry) async {
     final entryId = entry.id.isEmpty ? _idGenerator.journalEntryId() : entry.id;
 
     await _database
@@ -127,6 +132,8 @@ class JournalRepositoryImpl
             deletedAt: Value(entry.deletedAt),
           ),
         );
+
+    return entryId;
   }
 
   @override
@@ -289,6 +296,41 @@ class JournalRepositoryImpl
         );
   }
 
+  @override
+  Stream<List<TrackerEvent>> watchTrackerEvents({
+    DateRange? range,
+    String? anchorType,
+    String? entryId,
+    DateTime? anchorDate,
+    String? trackerId,
+  }) {
+    final query = _database.select(_database.trackerEvents);
+
+    if (range != null) {
+      query.where(
+        (e) =>
+            e.occurredAt.isBiggerOrEqualValue(range.start) &
+            e.occurredAt.isSmallerOrEqualValue(range.end),
+      );
+    }
+    if (anchorType != null) {
+      query.where((e) => e.anchorType.equals(anchorType));
+    }
+    if (entryId != null) {
+      query.where((e) => e.entryId.equals(entryId));
+    }
+    if (anchorDate != null) {
+      query.where((e) => e.anchorDate.equals(anchorDate));
+    }
+    if (trackerId != null) {
+      query.where((e) => e.trackerId.equals(trackerId));
+    }
+
+    query.orderBy([(e) => OrderingTerm.desc(e.occurredAt)]);
+
+    return query.watch().map((rows) => rows.map(_mapToTrackerEvent).toList());
+  }
+
   // === Analytics Helpers ===
 
   @override
@@ -386,6 +428,30 @@ class JournalRepositoryImpl
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
+  }
+
+  TrackerEvent _mapToTrackerEvent(TrackerEventEntity row) {
+    return TrackerEvent(
+      id: row.id,
+      userId: row.userId,
+      trackerId: row.trackerId,
+      anchorType: row.anchorType,
+      entryId: row.entryId,
+      anchorDate: row.anchorDate,
+      op: row.op,
+      value: _tryDecodeJsonValue(row.value),
+      occurredAt: row.occurredAt,
+      recordedAt: row.recordedAt,
+    );
+  }
+
+  Object? _tryDecodeJsonValue(String? raw) {
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return raw;
+    }
   }
 
   TrackerStateDay _mapToTrackerStateDay(TrackerStateDayEntity row) {
