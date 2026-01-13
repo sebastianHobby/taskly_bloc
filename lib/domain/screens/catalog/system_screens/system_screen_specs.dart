@@ -266,13 +266,6 @@ abstract class SystemScreenSpecs {
     template: const ScreenTemplateSpec.trackerManagement(),
   );
 
-  static final journalDashboard = ScreenSpec(
-    id: 'journal_dashboard',
-    screenKey: 'journal_dashboard',
-    name: 'Journal Dashboard',
-    template: const ScreenTemplateSpec.journalDashboard(),
-  );
-
   static final allocationSettings = ScreenSpec(
     id: 'allocation_settings',
     screenKey: 'allocation_settings',
@@ -366,7 +359,6 @@ abstract class SystemScreenSpecs {
     statistics.screenKey: statistics,
     journal.screenKey: journal,
     trackers.screenKey: trackers,
-    journalDashboard.screenKey: journalDashboard,
     allocationSettings.screenKey: allocationSettings,
     navigationSettings.screenKey: navigationSettings,
     focusSetup.screenKey: focusSetup,

@@ -78,7 +78,6 @@ void main() {
       group('v5 tables (deterministic)', () {
         test('isDeterministic returns true for v5 tables', () {
           expect(IdGenerator.isDeterministic('values'), isTrue);
-          expect(IdGenerator.isDeterministic('trackers'), isTrue);
           expect(IdGenerator.isDeterministic('task_values'), isTrue);
           expect(IdGenerator.isDeterministic('project_values'), isTrue);
           expect(
@@ -97,9 +96,10 @@ void main() {
             IdGenerator.isDeterministic('project_recurrence_exceptions'),
             isTrue,
           );
-          expect(IdGenerator.isDeterministic('tracker_responses'), isTrue);
+          expect(IdGenerator.isDeterministic('tracker_definitions'), isTrue);
+          expect(IdGenerator.isDeterministic('tracker_preferences'), isTrue);
           expect(
-            IdGenerator.isDeterministic('daily_tracker_responses'),
+            IdGenerator.isDeterministic('tracker_definition_choices'),
             isTrue,
           );
           expect(IdGenerator.isDeterministic('analytics_snapshots'), isTrue);

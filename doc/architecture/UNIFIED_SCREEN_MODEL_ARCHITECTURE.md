@@ -147,7 +147,7 @@ Templates determine the page-level layout and how slots are arranged.
 
 Examples:
 - `standardScaffoldV1`: scaffold with `header` + `primary` slots
-- Full-screen feature templates: `settingsMenu`, `journalTimeline`, `browseHub`, …
+- Full-screen feature templates: `settingsMenu`, `journalHub`, `browseHub`, …
 
 See: [lib/domain/screens/language/models/screen_spec.dart](../../lib/domain/screens/language/models/screen_spec.dart)
 
@@ -264,7 +264,8 @@ do not rely on section modules.
 | ScreenTemplateSpec | Params | What it renders |
 |---|---|---|
 | `settingsMenu` | none | Settings feature UI. |
-| `journalTimeline` | none | Journal feature UI. |
+| `journalHub` | none | Journal hub UI (Today / History / Trackers). |
+| `journalTimeline` | none | Legacy placeholder Journal timeline UI (being phased out). |
 | `navigationSettings` | none | Navigation settings UI. |
 | `allocationSettings` | none | Allocation/focus setup UI. |
 | `attentionRules` | none | Attention rules UI. |

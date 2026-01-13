@@ -28,9 +28,6 @@ class JournalRepositoryImpl
   final JournalPredicateMapper _predicateMapper =
       const JournalPredicateMapper();
 
-  BigInt? _bigIntOrNull(int? value) =>
-      value == null ? null : BigInt.from(value);
-
   @override
   Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) {
     final query = _database.select(_database.journalEntries);
@@ -234,9 +231,9 @@ class JournalRepositoryImpl
             opKind: Value(definition.opKind),
             valueKind: Value(definition.valueKind),
             unitKind: Value(definition.unitKind),
-            minInt: Value(_bigIntOrNull(definition.minInt)),
-            maxInt: Value(_bigIntOrNull(definition.maxInt)),
-            stepInt: Value(_bigIntOrNull(definition.stepInt)),
+            minInt: Value(definition.minInt),
+            maxInt: Value(definition.maxInt),
+            stepInt: Value(definition.stepInt),
             linkedValueId: Value(definition.linkedValueId),
             isOutcome: Value(definition.isOutcome),
             isInsightEnabled: Value(definition.isInsightEnabled),
@@ -416,9 +413,9 @@ class JournalRepositoryImpl
       opKind: row.opKind,
       valueKind: row.valueKind,
       unitKind: row.unitKind,
-      minInt: row.minInt?.toInt(),
-      maxInt: row.maxInt?.toInt(),
-      stepInt: row.stepInt?.toInt(),
+      minInt: row.minInt,
+      maxInt: row.maxInt,
+      stepInt: row.stepInt,
       linkedValueId: row.linkedValueId,
       isOutcome: row.isOutcome,
       isInsightEnabled: row.isInsightEnabled,

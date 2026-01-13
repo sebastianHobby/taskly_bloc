@@ -48,43 +48,47 @@ void main() {
       expect(normalized['payload'], isA<List>());
     });
 
-    test('decodes trackers response_config as map', () {
+    test('decodes tracker_definitions roles/config/goal', () {
       final normalized = normalizeUploadData(
-        table: 'trackers',
-        rowId: 't1',
+        table: 'tracker_definitions',
+        rowId: 'td1',
         opType: 'put',
         data: {
-          'response_config': '{"type":"scale"}',
+          'roles': '["journal"]',
+          'config': '{"scale":{"min":1,"max":5}}',
+          'goal': '{"target":3}',
         },
       );
 
-      expect(normalized['response_config'], isA<Map>());
+      expect(normalized['roles'], isA<List>());
+      expect(normalized['config'], isA<Map>());
+      expect(normalized['goal'], isA<Map>());
     });
 
-    test('decodes tracker_responses response_value as any JSON', () {
+    test('decodes tracker_events value as any JSON', () {
       final normalized = normalizeUploadData(
-        table: 'tracker_responses',
-        rowId: 'tr1',
+        table: 'tracker_events',
+        rowId: 'te1',
         opType: 'put',
         data: {
-          'response_value': '3',
+          'value': '3',
         },
       );
 
-      expect(normalized['response_value'], 3);
+      expect(normalized['value'], 3);
     });
 
-    test('decodes daily_tracker_responses response_value as any JSON', () {
+    test('decodes tracker_events value booleans', () {
       final normalized = normalizeUploadData(
-        table: 'daily_tracker_responses',
-        rowId: 'dtr1',
+        table: 'tracker_events',
+        rowId: 'te2',
         opType: 'put',
         data: {
-          'response_value': 'true',
+          'value': 'true',
         },
       );
 
-      expect(normalized['response_value'], true);
+      expect(normalized['value'], true);
     });
 
     test('decodes analytics_snapshots metrics as map', () {
