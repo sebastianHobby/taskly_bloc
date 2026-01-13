@@ -1030,8 +1030,8 @@ class _ReviewRuleRow extends StatelessWidget {
         foregroundColor: cs.secondary,
         backgroundColor: cs.secondary.withOpacity(0.14),
       ),
-      'review_wellbeing' => _RuleVisual(
-        icon: Icons.spa,
+      'review_journal' => _RuleVisual(
+        icon: Icons.book_outlined,
         foregroundColor: cs.primary,
         backgroundColor: cs.primary.withOpacity(0.14),
       ),

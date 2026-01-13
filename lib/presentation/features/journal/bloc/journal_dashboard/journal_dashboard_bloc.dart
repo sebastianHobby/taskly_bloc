@@ -1,44 +1,40 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 
-part 'wellbeing_dashboard_bloc.freezed.dart';
+part 'journal_dashboard_bloc.freezed.dart';
 
-// Events
 @freezed
-abstract class WellbeingDashboardEvent with _$WellbeingDashboardEvent {
-  const factory WellbeingDashboardEvent.load({
+abstract class JournalDashboardEvent with _$JournalDashboardEvent {
+  const factory JournalDashboardEvent.load({
     required DateRange dateRange,
   }) = _Load;
 }
 
-// State
 @freezed
-abstract class WellbeingDashboardState with _$WellbeingDashboardState {
-  const factory WellbeingDashboardState({
+abstract class JournalDashboardState with _$JournalDashboardState {
+  const factory JournalDashboardState({
     @Default(true) bool isLoading,
     TrendData? moodTrend,
     List<CorrelationResult>? topCorrelations,
     String? error,
-  }) = _WellbeingDashboardState;
+  }) = _JournalDashboardState;
 }
 
-// BLoC
-class WellbeingDashboardBloc
-    extends Bloc<WellbeingDashboardEvent, WellbeingDashboardState> {
-  WellbeingDashboardBloc(this._analyticsService)
-    : super(const WellbeingDashboardState()) {
+class JournalDashboardBloc
+    extends Bloc<JournalDashboardEvent, JournalDashboardState> {
+  JournalDashboardBloc(this._analyticsService)
+    : super(const JournalDashboardState()) {
     on<_Load>(_onLoad, transformer: restartable());
 
-    // Automatically load dashboard data on initialization
     add(
-      WellbeingDashboardEvent.load(
+      JournalDashboardEvent.load(
         dateRange: DateRange.last30Days(),
       ),
     );
@@ -67,7 +63,7 @@ class WellbeingDashboardBloc
         ),
       );
     } catch (e, stack) {
-      talker.handle(e, stack, 'Failed to load wellbeing dashboard');
+      talker.handle(e, stack, 'Failed to load journal dashboard');
       emit(
         state.copyWith(
           isLoading: false,

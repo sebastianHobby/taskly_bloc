@@ -29,14 +29,24 @@ uploadJsonExpectationsByTable = {
   'pending_notifications': {
     'payload': UploadJsonExpectation.any,
   },
-  'trackers': {
-    'response_config': UploadJsonExpectation.map,
+  'tracker_definitions': {
+    // Supabase: text[] (PostgREST expects a JSON array)
+    'roles': UploadJsonExpectation.list,
+    // Supabase: jsonb
+    'config': UploadJsonExpectation.map,
+    'goal': UploadJsonExpectation.map,
   },
-  'tracker_responses': {
-    'response_value': UploadJsonExpectation.any,
+  'tracker_events': {
+    // Supabase: jsonb
+    'value': UploadJsonExpectation.any,
   },
-  'daily_tracker_responses': {
-    'response_value': UploadJsonExpectation.any,
+  'tracker_state_day': {
+    // Supabase: jsonb
+    'value': UploadJsonExpectation.any,
+  },
+  'tracker_state_entry': {
+    // Supabase: jsonb
+    'value': UploadJsonExpectation.any,
   },
   'analytics_snapshots': {
     'metrics': UploadJsonExpectation.map,

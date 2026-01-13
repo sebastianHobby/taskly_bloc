@@ -1,7 +1,8 @@
 ﻿import 'package:drift/drift.dart';
 import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/infrastructure/drift/features/analytics_tables.drift.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/features/wellbeing_tables.drift.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/features/journal_tables.drift.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/features/tracker_tables.drift.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/features/screen_tables.drift.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/features/attention_tables.drift.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/features/allocation_tables.drift.dart';
@@ -381,11 +382,15 @@ class ProjectRecurrenceExceptionsTable extends Table {
     AnalyticsSnapshots,
     AnalyticsCorrelations,
     AnalyticsInsights,
-    // Wellbeing tables
+    // Journal tables
     JournalEntries,
-    Trackers,
-    TrackerResponses,
-    DailyTrackerResponses,
+    // Tracker model (OPT-A): event-log + projections
+    TrackerDefinitions,
+    TrackerPreferences,
+    TrackerDefinitionChoices,
+    TrackerEvents,
+    TrackerStateDay,
+    TrackerStateEntry,
     // Screen preferences (per-user ordering/visibility)
     ScreenPreferencesTable,
     PendingNotifications,
@@ -402,7 +407,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

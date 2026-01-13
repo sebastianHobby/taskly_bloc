@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/correlation_card.dart';
 import 'package:taskly_bloc/presentation/features/analytics/widgets/trend_chart.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_dashboard/journal_dashboard_bloc.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
-class WellbeingDashboardScreen extends StatelessWidget {
-  const WellbeingDashboardScreen({super.key});
+class JournalDashboardScreen extends StatelessWidget {
+  const JournalDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wellbeing Dashboard'),
+        title: const Text('Journal Dashboard'),
       ),
-      body: BlocBuilder<WellbeingDashboardBloc, WellbeingDashboardState>(
+      body: BlocBuilder<JournalDashboardBloc, JournalDashboardState>(
         builder: (context, state) {
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
@@ -37,8 +37,8 @@ class WellbeingDashboardScreen extends StatelessWidget {
 
           return RefreshIndicator(
             onRefresh: () async {
-              context.read<WellbeingDashboardBloc>().add(
-                WellbeingDashboardEvent.load(
+              context.read<JournalDashboardBloc>().add(
+                JournalDashboardEvent.load(
                   dateRange: DateRange.last30Days(),
                 ),
               );

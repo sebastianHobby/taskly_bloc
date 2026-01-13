@@ -330,7 +330,6 @@ class SupabaseConnector extends PowerSyncBackendConnector {
 
     return switch (table) {
       'labels' => 'name="${data['name']}", type="${data['type']}"',
-      'trackers' => 'name="${data['name']}"',
       'task_labels' =>
         'taskId="${data['task_id']}", labelId="${data['label_id']}"',
       'project_labels' =>
@@ -343,11 +342,12 @@ class SupabaseConnector extends PowerSyncBackendConnector {
         'taskId="${data['task_id']}", date="${data['original_date']}"',
       'project_recurrence_exceptions' =>
         'projectId="${data['project_id']}", date="${data['original_date']}"',
-      'tracker_responses' =>
-        'entryId="${data['journal_entry_id']}", '
-            'trackerId="${data['tracker_id']}"',
-      'daily_tracker_responses' =>
-        'trackerId="${data['tracker_id']}", date="${data['response_date']}"',
+      'tracker_definitions' =>
+        'name="${data['name']}", scope="${data['scope']}", '
+            'systemKey="${data['system_key']}"',
+      'tracker_preferences' => 'trackerId="${data['tracker_id']}"',
+      'tracker_definition_choices' =>
+        'trackerId="${data['tracker_id']}", choiceKey="${data['choice_key']}"',
       'analytics_snapshots' =>
         'entityType="${data['entity_type']}", entityId="${data['entity_id']}",'
             ' date="${data['snapshot_date']}"',

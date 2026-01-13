@@ -87,7 +87,7 @@ void registerAllFallbackValues() {
     ),
   );
 
-  // === Wellbeing ===
+  // === Journal ===
   registerFallbackValue(TestData.journalEntry());
   registerFallbackValue(TestData.tracker());
   registerFallbackValue(TestData.dailyTrackerResponse());

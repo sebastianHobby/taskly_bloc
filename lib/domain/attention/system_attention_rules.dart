@@ -165,11 +165,11 @@ abstract class SystemAttentionRules {
     sortOrder: 110,
   );
 
-  /// Wellbeing review
-  static const reviewWellbeing = AttentionRuleTemplate(
+  /// Journal review
+  static const reviewJournal = AttentionRuleTemplate(
     domain: 'reviews',
-    category: 'review_wellbeing',
-    ruleKey: 'review_wellbeing',
+    category: 'review_journal',
+    ruleKey: 'review_journal',
     ruleType: AttentionRuleType.review,
     triggerType: AttentionTriggerType.scheduled,
     triggerConfig: {
@@ -177,13 +177,13 @@ abstract class SystemAttentionRules {
     },
     entitySelector: {
       'entity_type': 'review_session',
-      'review_type': 'wellbeing',
+      'review_type': 'journal',
     },
     severity: AttentionSeverity.info,
     displayConfig: {
-      'title': 'Wellbeing Check-in',
-      'description': 'Check in on your wellbeing',
-      'icon': 'favorite',
+      'title': 'Journal Check-in',
+      'description': 'Reflect on your journal patterns',
+      'icon': 'journal',
     },
     resolutionActions: ['reviewed', 'snoozed'],
     sortOrder: 120,
@@ -403,7 +403,7 @@ abstract class SystemAttentionRules {
     // Reviews (5 + 3 project health)
     reviewValuesAlignment,
     reviewProgress,
-    reviewWellbeing,
+    reviewJournal,
     reviewBalance,
     reviewPinnedTasks,
     reviewProjectHighValueNeglected,

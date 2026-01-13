@@ -5,8 +5,8 @@ import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/tracker_field_card.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/widgets/daily_tracker_section.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal/tracker_field_card.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/daily_tracker_section.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_mood_field.dart';
 
 /// Form widget for creating a new journal entry.

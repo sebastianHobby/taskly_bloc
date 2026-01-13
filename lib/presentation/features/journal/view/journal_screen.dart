@@ -12,8 +12,8 @@ import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_timeline_view.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry/journal_entry_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal/journal_timeline_view.dart';
 
 /// Main journal screen supporting multiple entries per day.
 ///

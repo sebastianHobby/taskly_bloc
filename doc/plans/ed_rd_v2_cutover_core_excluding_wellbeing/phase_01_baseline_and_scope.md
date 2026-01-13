@@ -1,7 +1,7 @@
 # ED/RD + V2 Cutover (Core) — Phase 01: Baseline & Scope
 
 Created at: 2026-01-13T00:00:00Z
-Last updated at: 2026-01-13T00:00:00Z
+Last updated at: 2026-01-14T00:00:00Z
 
 ## Goal
 
@@ -23,7 +23,12 @@ Last updated at: 2026-01-13T00:00:00Z
 - System screens are routed via a convention-based catch-all route (`/:segment`) and built through `Routing.buildScreen`.
 - System screens are defined as typed `ScreenSpec`s (see `SystemScreenSpecs`) and rendered via `UnifiedScreenPageFromSpec`.
 - Entity detail routes exist for `/task/:id`, `/project/:id`, `/value/:id`.
-- A legacy/parallel ScreenDefinition-based pipeline still exists in the codebase (e.g. `ScreenDefinitionBloc`, `UnifiedScreenPage`, `SystemScreenDefinitions`), but appears to be unused by current routing.
+- A legacy/parallel screen-definition pipeline existed but was unused by current routing (removed as part of Phase 03 cleanup).
+
+Note (2026-01-14): the legacy ScreenDefinition-based files referenced by this
+plan (e.g. `UnifiedScreenPage`, `ScreenDefinitionBloc`,
+`SystemScreenDefinitions`) are now deleted; only the typed `ScreenSpec` pipeline
+remains.
 - There is still a `/label/:id` route, but the entity builder registry and `Routing.buildEntityDetail` do not include `label`.
 
 ## Decisions / Constraints

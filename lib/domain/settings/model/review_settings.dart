@@ -11,8 +11,8 @@ enum ReviewType {
   @JsonValue('progress')
   progress,
 
-  @JsonValue('wellbeingInsights')
-  wellbeingInsights,
+  @JsonValue('journalInsights')
+  journalInsights,
 
   @JsonValue('balance')
   balance,
@@ -27,7 +27,7 @@ extension ReviewTypeX on ReviewType {
   String get displayName => switch (this) {
     ReviewType.valuesAlignment => 'Values Alignment',
     ReviewType.progress => 'Progress',
-    ReviewType.wellbeingInsights => 'Wellbeing Insights',
+    ReviewType.journalInsights => 'Journal Insights',
     ReviewType.balance => 'Balance',
     ReviewType.pinnedTasksCheck => 'Pinned Tasks Check',
   };
@@ -37,7 +37,7 @@ extension ReviewTypeX on ReviewType {
     ReviewType.valuesAlignment =>
       'Reflect on whether tasks align with your values',
     ReviewType.progress => 'Review completed tasks and achievements',
-    ReviewType.wellbeingInsights => 'Check-in on energy and mood patterns',
+    ReviewType.journalInsights => 'Review mood and journaling patterns',
     ReviewType.balance => 'Assess value distribution and neglect',
     ReviewType.pinnedTasksCheck => 'Review and update pinned tasks',
   };
@@ -46,7 +46,7 @@ extension ReviewTypeX on ReviewType {
   int get defaultFrequencyDays => switch (this) {
     ReviewType.valuesAlignment => 14,
     ReviewType.progress => 7,
-    ReviewType.wellbeingInsights => 7,
+    ReviewType.journalInsights => 7,
     ReviewType.balance => 14,
     ReviewType.pinnedTasksCheck => 7,
   };
@@ -84,9 +84,9 @@ abstract class ReviewSettings with _$ReviewSettings {
     /// Configuration for progress review.
     @Default(ReviewTypeConfig(frequencyDays: 7)) ReviewTypeConfig progress,
 
-    /// Configuration for wellbeing insights review.
+    /// Configuration for journal insights review.
     @Default(ReviewTypeConfig(frequencyDays: 7))
-    ReviewTypeConfig wellbeingInsights,
+    ReviewTypeConfig journalInsights,
 
     /// Configuration for balance review.
     @Default(ReviewTypeConfig(frequencyDays: 14)) ReviewTypeConfig balance,
@@ -104,7 +104,7 @@ abstract class ReviewSettings with _$ReviewSettings {
   ReviewTypeConfig getConfig(ReviewType type) => switch (type) {
     ReviewType.valuesAlignment => valuesAlignment,
     ReviewType.progress => progress,
-    ReviewType.wellbeingInsights => wellbeingInsights,
+    ReviewType.journalInsights => journalInsights,
     ReviewType.balance => balance,
     ReviewType.pinnedTasksCheck => pinnedTasksCheck,
   };
@@ -135,8 +135,8 @@ abstract class ReviewSettings with _$ReviewSettings {
       ReviewType.progress => copyWith(
         progress: progress.copyWith(lastCompletedAt: time),
       ),
-      ReviewType.wellbeingInsights => copyWith(
-        wellbeingInsights: wellbeingInsights.copyWith(lastCompletedAt: time),
+      ReviewType.journalInsights => copyWith(
+        journalInsights: journalInsights.copyWith(lastCompletedAt: time),
       ),
       ReviewType.balance => copyWith(
         balance: balance.copyWith(lastCompletedAt: time),
@@ -152,7 +152,7 @@ abstract class ReviewSettings with _$ReviewSettings {
     return switch (type) {
       ReviewType.valuesAlignment => copyWith(valuesAlignment: config),
       ReviewType.progress => copyWith(progress: config),
-      ReviewType.wellbeingInsights => copyWith(wellbeingInsights: config),
+      ReviewType.journalInsights => copyWith(journalInsights: config),
       ReviewType.balance => copyWith(balance: config),
       ReviewType.pinnedTasksCheck => copyWith(pinnedTasksCheck: config),
     };

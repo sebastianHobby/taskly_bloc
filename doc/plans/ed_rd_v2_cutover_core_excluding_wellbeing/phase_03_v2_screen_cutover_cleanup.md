@@ -1,7 +1,7 @@
 # ED/RD + V2 Cutover (Core) — Phase 03: V2 Screen Cutover Cleanup
 
 Created at: 2026-01-13T00:00:00Z
-Last updated at: 2026-01-13T00:00:00Z
+Last updated at: 2026-01-14T00:00:00Z
 
 ## Goal
 
@@ -32,9 +32,12 @@ Last updated at: 2026-01-13T00:00:00Z
       - `lib/presentation/screens/view/unified_screen_page.dart`
       - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
       - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+
+    Note (2026-01-14): these files have been deleted in the repo; keep this
+    checklist as a guardrail for branches or older snapshots.
   - Delete/adjust tests that only exercise the legacy stack.
-    - Search for tests referencing `ScreenDefinitionBloc`, `UnifiedScreenPage`, `SystemScreenDefinitions`.
-    - Expected: remove `test/presentation/features/screens/bloc/screen_definition_bloc_test.dart` if it only covers the deleted bloc.
+    - Search for tests referencing the deleted legacy screen-definition pipeline.
+    - Expected: remove `test/presentation/features/screens/bloc/screen_definition_bloc_test.dart` if it only covers deleted code.
   - Remove or update any stale comments that still reference the legacy system.
 - Documentation and naming consistency
   - Update the repository contract docs to reference `SystemScreenSpecs` (current source of system screens).
@@ -61,9 +64,9 @@ Last updated at: 2026-01-13T00:00:00Z
 
 - After implementation, these searches should return 0 results:
   - `\/label\/:id`
-  - `UnifiedScreenPage` (type/name)
-  - `ScreenDefinitionBloc`
-  - `SystemScreenDefinitions`
+  - `lib/presentation/screens/view/unified_screen_page.dart`
+  - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
+  - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
 
 ## AI instructions
 

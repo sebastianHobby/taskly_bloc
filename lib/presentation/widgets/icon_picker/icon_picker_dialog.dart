@@ -354,10 +354,9 @@ const List<IconCategory> defaultIconCategories = [
     ],
   ),
   IconCategory(
-    name: 'wellbeing',
-    label: 'Wellbeing',
+    name: 'journal',
+    label: 'Journal',
     icons: [
-      IconItem(name: 'wellbeing', label: 'Wellbeing', icon: Icons.favorite),
       IconItem(name: 'mood', label: 'Mood', icon: Icons.mood),
       IconItem(name: 'journal', label: 'Journal', icon: Icons.book),
       IconItem(name: 'self_care', label: 'Self Care', icon: Icons.spa),

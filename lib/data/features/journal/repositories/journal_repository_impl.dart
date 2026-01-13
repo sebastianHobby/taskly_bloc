@@ -1,25 +1,27 @@
-﻿import 'dart:convert';
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 import 'package:taskly_bloc/data/repositories/mappers/journal_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 
-class WellbeingRepositoryImpl
+class JournalRepositoryImpl
     with QueryBuilderMixin
-  implements JournalRepositoryContract {
-  WellbeingRepositoryImpl(this._database, this._idGenerator);
+    implements JournalRepositoryContract {
+  JournalRepositoryImpl(this._database, this._idGenerator);
+
   final AppDatabase _database;
   final IdGenerator _idGenerator;
   final JournalPredicateMapper _predicateMapper =
@@ -57,13 +59,11 @@ class WellbeingRepositoryImpl
   ) {
     final query = _database.select(_database.journalEntries);
 
-    // Apply filter from JournalQuery
     final whereExpr = _whereExpressionFromFilter(journalQuery.filter);
     if (whereExpr != null) {
       query.where((tbl) => whereExpr);
     }
 
-    // Apply sorting - default to newest first
     query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
 
     return query.watch().asyncMap((rows) async {
@@ -133,7 +133,6 @@ class WellbeingRepositoryImpl
 
   @override
   Future<void> saveJournalEntry(JournalEntry entry) async {
-    // Use v4 random ID for journal entries (user content)
     final entryId = entry.id.isEmpty ? _idGenerator.journalEntryId() : entry.id;
 
     await _database
@@ -200,7 +199,6 @@ class WellbeingRepositoryImpl
       response.responseDate.day,
     );
 
-    // Use v5 deterministic ID for daily tracker responses
     final responseId = response.id.isEmpty
         ? _idGenerator.dailyTrackerResponseId(
             trackerId: response.trackerId,
@@ -257,7 +255,6 @@ class WellbeingRepositoryImpl
 
   @override
   Future<void> saveTracker(Tracker tracker) async {
-    // Use v5 deterministic ID for trackers (userId + name is natural key)
     final trackerId = tracker.id.isEmpty
         ? _idGenerator.trackerId(name: tracker.name)
         : tracker.id;
@@ -269,41 +266,14 @@ class WellbeingRepositoryImpl
             id: Value(trackerId),
             name: Value(tracker.name),
             description: Value(tracker.description),
+            responseType: Value(tracker.responseType.name),
+            responseConfig: Value(jsonEncode(tracker.config.toJson())),
             entryScope: Value(tracker.entryScope.name),
-            responseType: Value(
-              tracker.config.map(
-                choice: (_) => 'choice',
-                scale: (_) => 'scale',
-                yesNo: (_) => 'yesNo',
-              ),
-            ),
-            responseConfig: Value(jsonEncode(_configToJson(tracker.config))),
             sortOrder: Value(tracker.sortOrder),
             createdAt: Value(tracker.createdAt),
             updatedAt: Value(tracker.updatedAt),
           ),
         );
-  }
-
-  @override
-  Future<void> deleteTracker(String trackerId) async {
-    // Since there's no deletedAt column, do hard delete
-    await (_database.delete(
-      _database.trackers,
-    )..where((t) => t.id.equals(trackerId))).go();
-  }
-
-  @override
-  Future<void> reorderTrackers(List<String> trackerIds) async {
-    await _database.batch((batch) {
-      for (var i = 0; i < trackerIds.length; i++) {
-        batch.update(
-          _database.trackers,
-          TrackersCompanion(sortOrder: Value(i)),
-          where: (t) => t.id.equals(trackerIds[i]),
-        );
-      }
-    });
   }
 
   @override
@@ -314,16 +284,28 @@ class WellbeingRepositoryImpl
       ..where(
         (e) =>
             e.entryDate.isBiggerOrEqualValue(range.start) &
-            e.entryDate.isSmallerOrEqualValue(range.end),
-      )
-      ..orderBy([(e) => OrderingTerm.asc(e.entryDate)]);
+            e.entryDate.isSmallerOrEqualValue(range.end) &
+            e.moodRating.isNotNull(),
+      );
 
-    final results = await query.get();
-    return Map.fromEntries(
-      results
-          .where((e) => e.moodRating != null)
-          .map((e) => MapEntry(e.entryDate, e.moodRating!.toDouble())),
-    );
+    final rows = await query.get();
+    final byDate = <DateTime, List<int>>{};
+
+    for (final row in rows) {
+      final mood = row.moodRating;
+      if (mood == null) continue;
+      byDate.putIfAbsent(row.entryDate, () => <int>[]).add(mood);
+    }
+
+    final result = <DateTime, double>{};
+    for (final entry in byDate.entries) {
+      final values = entry.value;
+      if (values.isEmpty) continue;
+      result[entry.key] =
+          values.reduce((a, b) => a + b) / values.length.toDouble();
+    }
+
+    return result;
   }
 
   @override
@@ -331,120 +313,96 @@ class WellbeingRepositoryImpl
     required String trackerId,
     required DateRange range,
   }) async {
-    // First, check the tracker scope
-    final tracker = await getTrackerById(trackerId);
-    if (tracker == null) return {};
-
-    if (tracker.entryScope == TrackerEntryScope.allDay) {
-      // For allDay trackers, query DailyTrackerResponses table
-      final query = _database.select(_database.dailyTrackerResponses)
-        ..where(
-          (r) =>
-              r.trackerId.equals(trackerId) &
-              r.responseDate.isBiggerOrEqualValue(range.start) &
-              r.responseDate.isSmallerOrEqualValue(range.end),
-        )
-        ..orderBy([(r) => OrderingTerm.asc(r.responseDate)]);
-
-      final results = await query.get();
-      return Map.fromEntries(
-        results.map((row) {
-          final responseData =
-              jsonDecode(row.responseValue) as Map<String, dynamic>;
-          final date = DateTime(
-            row.responseDate.year,
-            row.responseDate.month,
-            row.responseDate.day,
-          );
-          return MapEntry(date, _extractNumericValue(responseData));
-        }),
+    // Prefer all-day responses for a date-based series.
+    final dailyQuery = _database.select(_database.dailyTrackerResponses)
+      ..where(
+        (r) =>
+            r.trackerId.equals(trackerId) &
+            r.responseDate.isBiggerOrEqualValue(range.start) &
+            r.responseDate.isSmallerOrEqualValue(range.end),
       );
-    } else {
-      // For perEntry trackers, query TrackerResponses and aggregate by date
-      final query =
-          _database.select(_database.trackerResponses).join([
-              innerJoin(
-                _database.journalEntries,
-                _database.journalEntries.id.equalsExp(
-                  _database.trackerResponses.journalEntryId,
-                ),
-              ),
-            ])
-            ..where(
-              _database.trackerResponses.trackerId.equals(trackerId) &
-                  _database.journalEntries.entryDate.isBiggerOrEqualValue(
-                    range.start,
-                  ) &
-                  _database.journalEntries.entryDate.isSmallerOrEqualValue(
-                    range.end,
-                  ),
-            )
-            ..orderBy([OrderingTerm.asc(_database.journalEntries.entryDate)]);
 
-      final results = await query.get();
-
-      // Group by date and calculate average
-      final Map<DateTime, List<double>> valuesByDate = {};
-
-      for (final row in results) {
-        final response = row.readTable(_database.trackerResponses);
-        final entry = row.readTable(_database.journalEntries);
-        final date = DateTime(
-          entry.entryDate.year,
-          entry.entryDate.month,
-          entry.entryDate.day,
-        );
-
-        final responseData =
-            jsonDecode(response.responseValue) as Map<String, dynamic>;
-        final value = _extractNumericValue(responseData);
-
-        valuesByDate.putIfAbsent(date, () => []).add(value);
-      }
-
-      // Calculate average for each date
-      return valuesByDate.map(
-        (date, values) => MapEntry(
-          date,
-          values.reduce((a, b) => a + b) / values.length,
-        ),
-      );
-    }
-  }
-
-  double _extractNumericValue(Map<String, dynamic> responseData) {
-    if (responseData.containsKey('value')) {
-      final value = responseData['value'];
-      if (value is int) {
-        return value.toDouble();
-      } else if (value is bool) {
-        return value ? 1.0 : 0.0;
-      } else if (value is double) {
-        return value;
+    final dailyRows = await dailyQuery.get();
+    final result = <DateTime, double>{};
+    for (final row in dailyRows) {
+      final decoded = jsonDecode(row.responseValue) as Map<String, dynamic>;
+      final value = TrackerResponseValue.fromJson(decoded);
+      final numeric = _toNumeric(value);
+      if (numeric != null) {
+        result[row.responseDate] = numeric;
       }
     }
-    return 0;
+
+    if (result.isNotEmpty) return result;
+
+    // Fallback: per-entry responses joined via journal entry date.
+    final entryQuery = _database.select(_database.journalEntries)
+      ..where(
+        (e) =>
+            e.entryDate.isBiggerOrEqualValue(range.start) &
+            e.entryDate.isSmallerOrEqualValue(range.end),
+      );
+    final entries = await entryQuery.get();
+    if (entries.isEmpty) return const {};
+
+    final entryIds = entries.map((e) => e.id).toList();
+    final entryDateById = <String, DateTime>{
+      for (final e in entries) e.id: e.entryDate,
+    };
+
+    final responseQuery = _database.select(_database.trackerResponses)
+      ..where(
+        (r) => r.trackerId.equals(trackerId) & r.journalEntryId.isIn(entryIds),
+      );
+    final responseRows = await responseQuery.get();
+
+    final valuesByDate = <DateTime, List<double>>{};
+    for (final row in responseRows) {
+      final date = entryDateById[row.journalEntryId];
+      if (date == null) continue;
+
+      final decoded = jsonDecode(row.responseValue) as Map<String, dynamic>;
+      final value = TrackerResponseValue.fromJson(decoded);
+      final numeric = _toNumeric(value);
+      if (numeric == null) continue;
+      valuesByDate.putIfAbsent(date, () => <double>[]).add(numeric);
+    }
+
+    final averaged = <DateTime, double>{};
+    for (final entry in valuesByDate.entries) {
+      final values = entry.value;
+      if (values.isEmpty) continue;
+      averaged[entry.key] =
+          values.reduce((a, b) => a + b) / values.length.toDouble();
+    }
+
+    return averaged;
   }
 
-  JournalEntry _mapToJournalEntry(
-    JournalEntryEntity entity,
-    List<TrackerResponse> trackerResponses,
-  ) {
-    return JournalEntry(
-      id: entity.id,
-      entryDate: entity.entryDate,
-      entryTime: entity.entryTime,
-      moodRating: entity.moodRating != null
-          ? MoodRating.values.firstWhere(
-              (m) => m.value == entity.moodRating,
-              orElse: () => MoodRating.neutral,
-            )
-          : null,
-      journalText: entity.journalText,
-      perEntryTrackerResponses: trackerResponses,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    );
+  @override
+  Future<void> deleteTracker(String trackerId) async {
+    await (_database.delete(
+      _database.trackerResponses,
+    )..where((r) => r.trackerId.equals(trackerId))).go();
+
+    await (_database.delete(
+      _database.dailyTrackerResponses,
+    )..where((r) => r.trackerId.equals(trackerId))).go();
+
+    await (_database.delete(
+      _database.trackers,
+    )..where((t) => t.id.equals(trackerId))).go();
+  }
+
+  @override
+  Future<void> reorderTrackers(List<String> orderedIds) async {
+    await _database.transaction(() async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await (_database.update(_database.trackers)
+              ..where((t) => t.id.equals(orderedIds[i])))
+            .write(TrackersCompanion(sortOrder: Value(i)));
+      }
+    });
   }
 
   Future<List<TrackerResponse>> _getTrackerResponsesForEntry(
@@ -452,62 +410,30 @@ class WellbeingRepositoryImpl
   ) async {
     final query = _database.select(_database.trackerResponses)
       ..where((r) => r.journalEntryId.equals(journalEntryId));
-    final rows = await query.get();
-    return rows.map(_mapToTrackerResponse).toList();
-  }
 
-  TrackerResponse _mapToTrackerResponse(TrackerResponseEntity entity) {
-    final valueJson = jsonDecode(entity.responseValue) as Map<String, dynamic>;
-    return TrackerResponse(
-      id: entity.id,
-      journalEntryId: entity.journalEntryId,
-      trackerId: entity.trackerId,
-      value: TrackerResponseValue.fromJson(valueJson),
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    );
-  }
-
-  DailyTrackerResponse _mapToDailyTrackerResponse(
-    DailyTrackerResponseEntity entity,
-  ) {
-    final valueJson = jsonDecode(entity.responseValue) as Map<String, dynamic>;
-    return DailyTrackerResponse(
-      id: entity.id,
-      responseDate: entity.responseDate,
-      trackerId: entity.trackerId,
-      value: TrackerResponseValue.fromJson(valueJson),
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    );
+    final results = await query.get();
+    return results.map(_mapToTrackerResponse).toList();
   }
 
   Future<void> _syncTrackerResponses({
     required String journalEntryId,
     required List<TrackerResponse> responses,
   }) async {
-    final desiredTrackerIds = responses
-        .map((r) => r.trackerId)
+    final existing = await _getTrackerResponsesForEntry(journalEntryId);
+    final existingIds = existing.map((r) => r.id).toSet();
+    final newIds = responses
+        .map((r) => r.id)
         .where((id) => id.isNotEmpty)
         .toSet();
 
-    if (desiredTrackerIds.isEmpty) {
+    final idsToDelete = existingIds.difference(newIds);
+    if (idsToDelete.isNotEmpty) {
       await (_database.delete(
         _database.trackerResponses,
-      )..where((r) => r.journalEntryId.equals(journalEntryId))).go();
-    } else {
-      await (_database.delete(
-            _database.trackerResponses,
-          )..where(
-            (r) =>
-                r.journalEntryId.equals(journalEntryId) &
-                r.trackerId.isNotIn(desiredTrackerIds.toList()),
-          ))
-          .go();
+      )..where((r) => r.id.isIn(idsToDelete))).go();
     }
 
     for (final response in responses) {
-      // Use v5 deterministic ID for tracker responses
       final responseId = response.id.isEmpty
           ? _idGenerator.trackerResponseId(
               journalEntryId: journalEntryId,
@@ -530,63 +456,73 @@ class WellbeingRepositoryImpl
     }
   }
 
-  Tracker _mapToTracker(TrackerEntity entity) {
-    final configJson =
-        jsonDecode(entity.responseConfig) as Map<String, dynamic>;
-
-    // Parse responseType from string
-    final responseType = TrackerResponseType.values.firstWhere(
-      (t) => t.name == entity.responseType,
-      orElse: () => TrackerResponseType.choice,
+  JournalEntry _mapToJournalEntry(
+    JournalEntryEntity row,
+    List<TrackerResponse> responses,
+  ) {
+    return JournalEntry(
+      id: row.id,
+      entryDate: row.entryDate,
+      entryTime: row.entryTime,
+      moodRating: row.moodRating != null
+          ? MoodRating.fromValue(row.moodRating!)
+          : null,
+      journalText: row.journalText,
+      perEntryTrackerResponses: responses,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
+  }
 
-    final config = _jsonToConfig(entity.responseType, configJson);
+  DailyTrackerResponse _mapToDailyTrackerResponse(
+    DailyTrackerResponseEntity row,
+  ) {
+    return DailyTrackerResponse(
+      id: row.id,
+      responseDate: row.responseDate,
+      trackerId: row.trackerId,
+      value: TrackerResponseValue.fromJson(
+        jsonDecode(row.responseValue) as Map<String, dynamic>,
+      ),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    );
+  }
 
+  Tracker _mapToTracker(TrackerEntity row) {
     return Tracker(
-      id: entity.id,
-      name: entity.name,
-      description: entity.description,
-      responseType: responseType,
-      config: config,
-      entryScope: entity.entryScope == 'perEntry'
-          ? TrackerEntryScope.perEntry
-          : TrackerEntryScope.allDay,
-      sortOrder: entity.sortOrder,
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      responseType: TrackerResponseType.values.byName(row.responseType),
+      config: TrackerResponseConfig.fromJson(
+        jsonDecode(row.responseConfig) as Map<String, dynamic>,
+      ),
+      entryScope: TrackerEntryScope.values.byName(row.entryScope),
+      sortOrder: row.sortOrder,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
   }
 
-  TrackerResponseConfig _jsonToConfig(String type, Map<String, dynamic> json) {
-    switch (type) {
-      case 'choice':
-        return TrackerResponseConfig.choice(
-          options: (json['options'] as List).cast<String>(),
-        );
-      case 'scale':
-        return TrackerResponseConfig.scale(
-          min: json['min'] as int? ?? 1,
-          max: json['max'] as int? ?? 5,
-          minLabel: json['minLabel'] as String?,
-          maxLabel: json['maxLabel'] as String?,
-        );
-      case 'yesNo':
-        return const TrackerResponseConfig.yesNo();
-      default:
-        throw ArgumentError('Unknown tracker type: $type');
-    }
+  double? _toNumeric(TrackerResponseValue value) {
+    return value.when(
+      choice: (selected) => null,
+      scale: (value) => value.toDouble(),
+      yesNo: (value) => value ? 1.0 : 0.0,
+    );
   }
 
-  Map<String, dynamic> _configToJson(TrackerResponseConfig config) {
-    return config.map(
-      choice: (c) => {'options': c.options},
-      scale: (s) => {
-        'min': s.min,
-        'max': s.max,
-        'minLabel': s.minLabel,
-        'maxLabel': s.maxLabel,
-      },
-      yesNo: (_) => <String, dynamic>{},
+  TrackerResponse _mapToTrackerResponse(TrackerResponseEntity row) {
+    return TrackerResponse(
+      id: row.id,
+      journalEntryId: row.journalEntryId,
+      trackerId: row.trackerId,
+      value: TrackerResponseValue.fromJson(
+        jsonDecode(row.responseValue) as Map<String, dynamic>,
+      ),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
     );
   }
 }

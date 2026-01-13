@@ -27,7 +27,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
-import 'package:taskly_bloc/data/features/wellbeing/repositories/wellbeing_repository_impl.dart';
+import 'package:taskly_bloc/data/features/journal/repositories/journal_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
@@ -263,7 +263,7 @@ Future<void> setupDependencies() async {
     )
     // Journal
     ..registerLazySingleton<JournalRepositoryContract>(
-      () => WellbeingRepositoryImpl(
+      () => JournalRepositoryImpl(
         getIt<AppDatabase>(),
         getIt<IdGenerator>(),
       ),

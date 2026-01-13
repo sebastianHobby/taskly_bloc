@@ -1,7 +1,7 @@
 # ED/RD + V2 Cutover (Core, excluding wellbeing) — Implementation Notes (AI-oriented)
 
 Created at: 2026-01-13T00:00:00Z
-Last updated at: 2026-01-13T00:00:00Z
+Last updated at: 2026-01-14T00:00:00Z
 
 This file is a concrete, step-by-step execution guide for implementing the plan phases efficiently.
 
@@ -18,7 +18,7 @@ This file is a concrete, step-by-step execution guide for implementing the plan 
 1) Run `flutter analyze` first and keep it clean while working.
 2) Apply routing cleanup (`/label/:id`) and update any callers.
 3) Delete legacy ScreenDefinition stack + delete/adjust legacy-only tests.
-4) Update stale documentation/comments referencing `SystemScreenDefinitions`.
+4) Update stale documentation/comments referencing the removed legacy system-screen definitions.
 5) Run `flutter analyze` (must be clean), then run recorded tests.
 
 ## Concrete file targets
@@ -37,13 +37,16 @@ This file is a concrete, step-by-step execution guide for implementing the plan 
   - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
   - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
 
+Status (2026-01-14): these legacy files are already absent in the repo. Keep
+the guidance as delete-if-exists so the plan stays resilient across branches.
+
 - Tests to remove/adjust:
-  - Search for `ScreenDefinitionBloc` and remove tests that only cover legacy behavior.
+  - Search for the removed legacy screen-definition BLoC and remove tests that only cover legacy behavior.
   - Expected: `test/presentation/features/screens/bloc/screen_definition_bloc_test.dart`.
 
 ### Update stale docs/comments
 
-- Update mentions of `SystemScreenDefinitions` to `SystemScreenSpecs`:
+- Ensure docs/comments reference `SystemScreenSpecs` as the system-screen source:
   - `lib/domain/interfaces/screen_definitions_repository_contract.dart`
 
 ## High-signal verification searches
@@ -51,9 +54,9 @@ This file is a concrete, step-by-step execution guide for implementing the plan 
 After implementation, these should return 0 results:
 
 - `\/label\/:id`
-- `SystemScreenDefinitions`
-- `ScreenDefinitionBloc`
-- `UnifiedScreenPage` (the legacy ScreenDefinition-based widget)
+- `lib/presentation/screens/view/unified_screen_page.dart`
+- `lib/presentation/screens/bloc/screen_definition_bloc.dart`
+- `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
 
 ## Validation commands (repo workflow)
 
