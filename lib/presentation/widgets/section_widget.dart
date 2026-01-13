@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
@@ -25,6 +26,7 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_sect
 import 'package:taskly_bloc/presentation/screens/templates/renderers/check_in_summary_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/issues_summary_section_renderer.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/hierarchy_value_project_task_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/project_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
@@ -190,6 +192,17 @@ class SectionWidget extends StatelessWidget {
             onTaskCheckboxChanged?.call(task, val);
           },
         ),
+        SectionTemplateId.hierarchyValueProjectTaskV2 =>
+          HierarchyValueProjectTaskRendererV2(
+            data: d,
+            params: section.params as HierarchyValueProjectTaskSectionParamsV2,
+            title: section.title,
+            compactTiles: compactTiles,
+            onTaskToggle: (taskId, val) {
+              final task = d.allTasks.firstWhere((t) => t.id == taskId);
+              onTaskCheckboxChanged?.call(task, val);
+            },
+          ),
         _ => SliverToBoxAdapter(child: _buildUnsupportedSection(d)),
       },
       final AgendaSectionResult d

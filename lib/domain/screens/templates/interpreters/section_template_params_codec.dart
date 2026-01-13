@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_p
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -17,6 +18,8 @@ class SectionTemplateParamsCodec {
       SectionTemplateId.valueListV2 => ListSectionParamsV2.fromJson(paramsJson),
       SectionTemplateId.interleavedListV2 =>
         InterleavedListSectionParamsV2.fromJson(paramsJson),
+      SectionTemplateId.hierarchyValueProjectTaskV2 =>
+        HierarchyValueProjectTaskSectionParamsV2.fromJson(paramsJson),
       SectionTemplateId.allocation => AllocationSectionParams.fromJson(
         paramsJson,
       ),
@@ -43,6 +46,7 @@ class SectionTemplateParamsCodec {
     return switch (params) {
       final ListSectionParamsV2 p => p.toJson(),
       final InterleavedListSectionParamsV2 p => p.toJson(),
+      final HierarchyValueProjectTaskSectionParamsV2 p => p.toJson(),
       final AllocationSectionParams p => p.toJson(),
       final AgendaSectionParamsV2 p => p.toJson(),
       final IssuesSummarySectionParams p => p.toJson(),

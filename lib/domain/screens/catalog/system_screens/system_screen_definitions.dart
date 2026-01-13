@@ -14,7 +14,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_sec
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
@@ -155,8 +155,8 @@ abstract class SystemScreenDefinitions {
         ).toJson(),
       ),
       SectionRef(
-        templateId: SectionTemplateId.interleavedListV2,
-        params: InterleavedListSectionParamsV2(
+        templateId: SectionTemplateId.hierarchyValueProjectTaskV2,
+        params: HierarchyValueProjectTaskSectionParamsV2(
           sources: [
             DataConfig.task(
               query: const TaskQuery(
@@ -184,11 +184,9 @@ abstract class SystemScreenDefinitions {
             project: ProjectTileVariant.listTile,
             value: ValueTileVariant.compactCard,
           ),
-          layout: const SectionLayoutSpecV2.hierarchyValueProjectTask(
-            pinnedValueHeaders: true,
-            pinnedProjectHeaders: false,
-            singleInboxGroupForNoProjectTasks: true,
-          ),
+          pinnedValueHeaders: true,
+          pinnedProjectHeaders: false,
+          singleInboxGroupForNoProjectTasks: true,
           filters: const SectionFilterSpecV2(
             enableValueDropdown: true,
             enableProjectsOnlyToggle: true,

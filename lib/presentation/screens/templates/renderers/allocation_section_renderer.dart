@@ -1,36 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
 
 typedef _RowBuilder = Widget Function(BuildContext context);
 
-class AllocationSectionRenderer extends StatelessWidget {
+class AllocationSectionRenderer extends StatefulWidget {
   const AllocationSectionRenderer({
     required this.data,
     super.key,
     this.onTaskToggle,
     this.onSetupValues,
   });
+
   final AllocationSectionResult data;
   final void Function(String, bool?)? onTaskToggle;
   final VoidCallback? onSetupValues;
 
   @override
-  Widget build(BuildContext context) {
-    final focusMode = data.activeFocusMode ?? FocusMode.sustainable;
+  State<AllocationSectionRenderer> createState() =>
+      _AllocationSectionRendererState();
+}
 
-    if (data.requiresValueSetup) {
+class _AllocationSectionRendererState extends State<AllocationSectionRenderer> {
+  final Set<String> _collapsedProjectIds = <String>{};
+
+  bool _isProjectCollapsed(String projectId) {
+    return _collapsedProjectIds.contains(projectId);
+  }
+
+  void _toggleProjectCollapsed(String projectId) {
+    setState(() {
+      if (!_collapsedProjectIds.add(projectId)) {
+        _collapsedProjectIds.remove(projectId);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final focusMode = widget.data.activeFocusMode ?? FocusMode.sustainable;
+
+    if (widget.data.requiresValueSetup) {
       return SliverToBoxAdapter(child: _buildRequiresValueSetup(context));
     }
 
-    if (data.allocatedTasks.isEmpty) {
+    if (widget.data.allocatedTasks.isEmpty) {
       return SliverToBoxAdapter(child: _buildEmptyState(context));
     }
 
@@ -38,7 +63,7 @@ class AllocationSectionRenderer extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, FocusMode focusMode) {
-    return switch (data.displayMode) {
+    return switch (widget.data.displayMode) {
       AllocationDisplayMode.groupedByProject => _buildProjectGroupedList(
         context,
       ),
@@ -63,63 +88,6 @@ class AllocationSectionRenderer extends StatelessWidget {
     };
   }
 
-  void _appendPinnedTasks(BuildContext context, List<_RowBuilder> rows) {
-    if (data.pinnedTasks.isEmpty) return;
-
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    rows.add(
-      (context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Row(
-          children: [
-            Text(
-              'PINNED',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '${data.pinnedTasks.length}',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    for (var i = 0; i < data.pinnedTasks.length; i++) {
-      final allocatedTask = data.pinnedTasks[i];
-      rows.add(
-        (context) => TaskView(
-          task: allocatedTask.task,
-          onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-        ),
-      );
-
-      if (i != data.pinnedTasks.length - 1) {
-        rows.add((context) => const Divider(height: 1));
-      }
-    }
-
-    rows.add((context) => const SizedBox(height: 16));
-  }
-
   Widget _buildProjectGroupedList(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -127,7 +95,7 @@ class AllocationSectionRenderer extends StatelessWidget {
     final groups = <String, List<Task>>{};
     final groupKeys = <String>[];
 
-    for (final task in data.allocatedTasks) {
+    for (final task in widget.data.allocatedTasks) {
       final key = _projectGroupKey(task);
       final existing = groups[key];
       if (existing == null) {
@@ -228,7 +196,7 @@ class AllocationSectionRenderer extends StatelessWidget {
         rows.add(
           (context) => TaskView(
             task: task,
-            onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+            onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
           ),
         );
         if (i != tasks.length - 1) {
@@ -269,12 +237,12 @@ class AllocationSectionRenderer extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     // Use tasksByValue if available, otherwise fallback to flat list
-    if (data.tasksByValue.isEmpty) {
+    if (widget.data.tasksByValue.isEmpty) {
       return _buildFlatList();
     }
 
     final groups =
-        data.tasksByValue.values
+        widget.data.tasksByValue.values
             .where((g) => g.tasks.isNotEmpty)
             .toList(growable: false)
           ..sort((a, b) {
@@ -289,42 +257,51 @@ class AllocationSectionRenderer extends StatelessWidget {
 
     final rows = <_RowBuilder>[];
 
+    final pinnedByValueId = <String, List<AllocatedTask>>{};
+    final unassignedPinned = <AllocatedTask>[];
+
     if (includePinned) {
-      _appendPinnedTasks(context, rows);
+      for (final pinned in widget.data.pinnedTasks) {
+        final valueId = pinned.qualifyingValueId.trim();
+        if (valueId.isEmpty) {
+          unassignedPinned.add(pinned);
+        } else {
+          (pinnedByValueId[valueId] ??= []).add(pinned);
+        }
+      }
     }
 
     for (final group in groups) {
       if (group.tasks.isEmpty) continue;
 
+      final groupColor = group.color == null
+          ? null
+          : ColorUtils.fromHexWithThemeFallback(context, group.color);
+
       rows.add(
         (context) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.only(top: 12, bottom: 8),
           child: Row(
             children: [
-              Text(
-                group.valueName.toUpperCase(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
+              if (groupColor != null) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: groupColor,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(4),
-                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
                 child: Text(
-                  '${group.tasks.length}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
+                  group.valueName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
                   ),
                 ),
               ),
@@ -333,20 +310,226 @@ class AllocationSectionRenderer extends StatelessWidget {
         ),
       );
 
-      for (var i = 0; i < group.tasks.length; i++) {
-        final allocatedTask = group.tasks[i];
-        rows.add(
-          (context) => TaskView(
-            task: allocatedTask.task,
-            onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
-          ),
-        );
-        if (i != group.tasks.length - 1) {
-          rows.add((context) => const Divider(height: 1));
+      final pinnedForGroup = pinnedByValueId[group.valueId] ?? const [];
+      final allTasksForGroup = <AllocatedTask>[
+        ...pinnedForGroup,
+        ...group.tasks,
+      ];
+
+      final uniqueByTaskId = <String, AllocatedTask>{
+        for (final t in allTasksForGroup) t.task.id: t,
+      };
+      final uniqueTasksForGroup = uniqueByTaskId.values.toList(growable: false);
+
+      final tasksByProjectId = <String, List<AllocatedTask>>{};
+      final projectNameById = <String, String>{};
+      final projectById = <String, Project?>{};
+      const noProjectKey = '__no_project__';
+
+      for (final allocatedTask in uniqueTasksForGroup) {
+        final task = allocatedTask.task;
+        final project = task.project;
+        final projectId = project?.id ?? task.projectId ?? noProjectKey;
+        (tasksByProjectId[projectId] ??= []).add(allocatedTask);
+
+        if (projectId == noProjectKey) {
+          projectNameById[projectId] = 'No project';
+          projectById[projectId] = null;
+        } else {
+          projectNameById[projectId] = project?.name ?? 'Project';
+          projectById[projectId] = project;
         }
       }
 
-      rows.add((context) => const SizedBox(height: 16));
+      final projectIds = tasksByProjectId.keys.toList(growable: false)
+        ..sort((a, b) {
+          if (a == noProjectKey && b != noProjectKey) return 1;
+          if (b == noProjectKey && a != noProjectKey) return -1;
+          final aName = (projectNameById[a] ?? '').toLowerCase();
+          final bName = (projectNameById[b] ?? '').toLowerCase();
+          return aName.compareTo(bName);
+        });
+
+      for (final projectId in projectIds) {
+        final projectName = projectNameById[projectId] ?? 'Project';
+        final project = projectById[projectId];
+        final tasks = tasksByProjectId[projectId] ?? const <AllocatedTask>[];
+        if (tasks.isEmpty) continue;
+
+        // Match Someday: small gap before each project block.
+        rows.add((context) => const SizedBox(height: 8));
+
+        final canCollapse = projectId != noProjectKey;
+        final collapsed = canCollapse && _isProjectCollapsed(projectId);
+
+        final pinnedTaskIds = {
+          for (final pinned in pinnedForGroup) pinned.task.id,
+        };
+        final sortedTasks = tasks.toList(growable: false)
+          ..sort((a, b) {
+            final aTask = a.task;
+            final bTask = b.task;
+            final aPinned = pinnedTaskIds.contains(aTask.id);
+            final bPinned = pinnedTaskIds.contains(bTask.id);
+            if (aPinned != bPinned) return aPinned ? -1 : 1;
+            if (aTask.completed != bTask.completed) {
+              return aTask.completed ? 1 : -1;
+            }
+            return aTask.name.toLowerCase().compareTo(bTask.name.toLowerCase());
+          });
+
+        rows.add(
+          (context) {
+            final prefix = canCollapse
+                ? _CollapseChevron(
+                    collapsed: collapsed,
+                    onPressed: () => _toggleProjectCollapsed(projectId),
+                  )
+                : null;
+
+            if (project != null) {
+              final completedCount = tasks
+                  .where((t) => t.task.completed)
+                  .length;
+              return ProjectView(
+                project: project,
+                compact: true,
+                trailing: prefix,
+                showTrailingProgressLabel: prefix != null,
+                taskCount: tasks.length,
+                completedTaskCount: completedCount,
+              );
+            }
+
+            if (canCollapse) {
+              return InkWell(
+                onTap: () => Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  projectId,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 6),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.folder_outlined, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          projectName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${tasks.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ?prefix,
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const Icon(Icons.folder_outlined, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      projectName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${tasks.length}',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+        if (collapsed) {
+          rows.add((context) => const SizedBox(height: 8));
+          continue;
+        }
+
+        // Match Someday: add a small gap between the project header and tasks.
+        rows.add((context) => const SizedBox(height: 8));
+
+        for (var i = 0; i < sortedTasks.length; i++) {
+          final allocatedTask = sortedTasks[i];
+          rows.add(
+            (context) => TaskView(
+              task: allocatedTask.task,
+              onCheckboxChanged: (t, val) =>
+                  widget.onTaskToggle?.call(t.id, val),
+              showProjectNameInMeta: false,
+              showPrimaryValueChip: false,
+              maxSecondaryValueChips: 2,
+              excludeValueIdFromChips: group.valueId,
+            ),
+          );
+          if (i != sortedTasks.length - 1) {
+            rows.add((context) => const Divider(height: 1));
+          }
+        }
+
+        rows.add((context) => const SizedBox(height: 8));
+      }
+
+      rows.add((context) => const SizedBox(height: 8));
+    }
+
+    if (unassignedPinned.isNotEmpty) {
+      rows.add(
+        (context) => Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 8),
+          child: Text(
+            'Pinned (unassigned)',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ),
+      );
+
+      for (var i = 0; i < unassignedPinned.length; i++) {
+        final allocatedTask = unassignedPinned[i];
+        rows.add(
+          (context) => TaskView(
+            task: allocatedTask.task,
+            onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
+          ),
+        );
+        if (i != unassignedPinned.length - 1) {
+          rows.add((context) => const Divider(height: 1));
+        }
+      }
     }
 
     return _sliverFromBuilders(rows);
@@ -354,15 +537,15 @@ class AllocationSectionRenderer extends StatelessWidget {
 
   Widget _buildFlatList() {
     final rows = <_RowBuilder>[];
-    for (var i = 0; i < data.allocatedTasks.length; i++) {
-      final task = data.allocatedTasks[i];
+    for (var i = 0; i < widget.data.allocatedTasks.length; i++) {
+      final task = widget.data.allocatedTasks[i];
       rows.add(
         (context) => TaskView(
           task: task,
-          onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
+          onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
         ),
       );
-      if (i != data.allocatedTasks.length - 1) {
+      if (i != widget.data.allocatedTasks.length - 1) {
         rows.add((context) => const Divider(height: 1));
       }
     }
@@ -385,7 +568,7 @@ class AllocationSectionRenderer extends StatelessWidget {
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (data.totalAvailable == 0) {
+    if (widget.data.totalAvailable == 0) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -451,7 +634,7 @@ class AllocationSectionRenderer extends StatelessWidget {
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed:
-                  onSetupValues ??
+                  widget.onSetupValues ??
                   () {
                     Routing.toScreenKey(context, 'focus_setup');
                   },
@@ -459,6 +642,38 @@ class AllocationSectionRenderer extends StatelessWidget {
               label: const Text('Set up focus'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CollapseChevron extends StatelessWidget {
+  const _CollapseChevron({
+    required this.collapsed,
+    required this.onPressed,
+  });
+
+  final bool collapsed;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IconButton(
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      tooltip: collapsed ? 'Expand project' : 'Collapse project',
+      onPressed: onPressed,
+      icon: AnimatedRotation(
+        turns: collapsed ? -0.25 : 0,
+        duration: const Duration(milliseconds: 160),
+        child: Icon(
+          Icons.expand_more,
+          size: 20,
+          color: colorScheme.onSurfaceVariant,
         ),
       ),
     );

@@ -28,6 +28,8 @@ class ProjectView extends StatelessWidget {
     this.nextTask,
     this.showNextTask = false,
     this.showPinnedIndicator = true,
+    this.trailing,
+    this.showTrailingProgressLabel = false,
     super.key,
     this.titlePrefix,
     this.variant = ProjectViewVariant.list,
@@ -55,6 +57,13 @@ class ProjectView extends StatelessWidget {
 
   /// Whether to show a pinned indicator when the project is pinned.
   final bool showPinnedIndicator;
+
+  /// Optional trailing control, typically used for collapse/expand in grouped
+  /// list renderers.
+  final Widget? trailing;
+
+  /// Whether to show a compact progress label (e.g. 3/7) near [trailing].
+  final bool showTrailingProgressLabel;
 
   /// Optional widget shown inline before the project title.
   ///
@@ -115,7 +124,10 @@ class ProjectView extends StatelessWidget {
             ? onTap!(project)
             : Routing.toEntity(context, EntityType.project, project.id),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: compact ? 10 : 12,
+          ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -126,6 +138,11 @@ class ProjectView extends StatelessWidget {
                 semanticsLabel: project.name,
                 taskCount: taskCount,
                 completedTaskCount: completedTaskCount,
+                centerChild: Icon(
+                  Icons.folder_outlined,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 12),
 
@@ -158,7 +175,7 @@ class ProjectView extends StatelessWidget {
                                   ? colorScheme.onSurface.withValues(alpha: 0.5)
                                   : colorScheme.onSurface,
                             ),
-                            maxLines: 2,
+                            maxLines: compact ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -167,22 +184,38 @@ class ProjectView extends StatelessWidget {
                       ],
                     ),
 
-                    // Values row
-                    _ValueLine(
-                      primaryValue: project.primaryValue,
-                      secondaryValues: project.secondaryValues,
-                    ),
-
-                    // Dates row (Start + Deadline + Repeat)
-                    _ProjectDatesRow(
-                      startDate: project.startDate,
-                      deadlineDate: project.deadlineDate,
-                      hasRepeat: project.repeatIcalRrule != null,
-                      formatMonthDay: (date) => _formatMonthDay(context, date),
-                    ),
+                    if (!compact) ...[
+                      _ValueLine(
+                        primaryValue: project.primaryValue,
+                        secondaryValues: project.secondaryValues,
+                      ),
+                      _ProjectDatesRow(
+                        startDate: project.startDate,
+                        deadlineDate: project.deadlineDate,
+                        hasRepeat: project.repeatIcalRrule != null,
+                        formatMonthDay: (date) =>
+                            _formatMonthDay(context, date),
+                      ),
+                    ],
                   ],
                 ),
               ),
+
+              if (trailing != null || showTrailingProgressLabel) ...[
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    ?trailing,
+                    if (showTrailingProgressLabel)
+                      _ProjectProgressLabel(
+                        taskCount: taskCount,
+                        completedTaskCount: completedTaskCount,
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -425,6 +458,7 @@ class _ProjectProgressRing extends StatelessWidget {
     required this.semanticsLabel,
     this.taskCount,
     this.completedTaskCount,
+    this.centerChild,
   });
 
   final double? value;
@@ -432,6 +466,7 @@ class _ProjectProgressRing extends StatelessWidget {
   final String semanticsLabel;
   final int? taskCount;
   final int? completedTaskCount;
+  final Widget? centerChild;
 
   @override
   Widget build(BuildContext context) {
@@ -472,15 +507,49 @@ class _ProjectProgressRing extends StatelessWidget {
               strokeCap: StrokeCap.round,
               valueColor: AlwaysStoppedAnimation<Color>(color),
             ),
-            Text(
-              percentLabel,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: scheme.onSurface,
-              ),
-            ),
+            centerChild ??
+                Text(
+                  percentLabel,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: scheme.onSurface,
+                  ),
+                ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectProgressLabel extends StatelessWidget {
+  const _ProjectProgressLabel({
+    required this.taskCount,
+    required this.completedTaskCount,
+  });
+
+  final int? taskCount;
+  final int? completedTaskCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = taskCount;
+    final done = completedTaskCount;
+    if (total == null || done == null || total <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Text(
+        '$done/$total',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
