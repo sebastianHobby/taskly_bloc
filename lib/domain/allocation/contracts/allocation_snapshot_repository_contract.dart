@@ -29,4 +29,10 @@ abstract class AllocationSnapshotRepositoryContract {
     required DateTime windowEndDayUtc,
     required int windowDays,
   });
+
+  /// Deletes all persisted allocation snapshots and entries.
+  ///
+  /// Intended for debug/reset flows (e.g. template data seeding) where the
+  /// app should recompute today's allocation immediately.
+  Future<void> deleteAll();
 }

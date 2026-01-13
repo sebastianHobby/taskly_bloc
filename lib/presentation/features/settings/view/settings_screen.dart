@@ -11,6 +11,8 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
+import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
 import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
@@ -86,6 +88,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Developer',
                   children: [
                     _buildViewLogsItem(context),
+                    if (kDebugMode) const _PrototypeMenuItem(),
                     if (kDebugMode) const _GenerateTemplateDataItem(),
                     if (kDebugMode) const _ClearLocalDataItem(),
                   ],
@@ -213,6 +216,21 @@ class _ThemeModeSelector extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _PrototypeMenuItem extends StatelessWidget {
+  const _PrototypeMenuItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.science_outlined),
+      title: const Text('Prototype'),
+      subtitle: const Text('Open My Day prototype UI'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Routing.toScreenKey(context, 'my_day_proto'),
     );
   }
 }
@@ -528,9 +546,16 @@ class _GenerateTemplateDataItem extends StatelessWidget {
         projectRepository: getIt<ProjectRepositoryContract>(),
         valueRepository: getIt<ValueRepositoryContract>(),
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
       );
 
       await service.resetAndSeed();
+
+      // Ensure My Day allocation recomputes immediately for the new dataset.
+      getIt<AllocationSnapshotCoordinator>().requestRefreshNow(
+        AllocationSnapshotRefreshReason.manual,
+      );
 
       if (!context.mounted) return;
       messenger.clearSnackBars();
