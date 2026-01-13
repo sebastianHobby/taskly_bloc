@@ -9,7 +9,7 @@ Last updated at: 2026-01-13 (UTC)
 - A screen is written here only when you explicitly confirm **ALL decisions for that screen** are final.
 
 Related architecture decisions (editors + entity detail templates):
-- `doc/architecture/backlog/editor_detail_template_contracts_formbuilder.md`
+- `doc/backlog/editor_detail_template_contracts_formbuilder.md`
 
 ## Decision checklist (per screen)
 - Migrate to future architecture? (yes/no)
@@ -29,10 +29,9 @@ Related architecture decisions (editors + entity detail templates):
 ### FE-11 — `/task/:id` detail vs editor routes
 - Migrate to future architecture: Yes.
 - Decision: **Task is editor-only** (no task detail screen).
-- Navigation semantics:
-  - Create: `/task/new`
-  - Edit: `/task/:id/edit`
-  - Detail: `/task/:id` is not supported.
+- Navigation semantics (current repo convention):
+  - Edit: `/task/:id` (opens the editor UI).
+  - Detail: no read-only/composite task detail surface.
 - Target template type: `EditorTemplateSpec.taskV1` (create/edit).
 - Editing UX: editor-only (modal/page adaptive), no read/composite detail surface.
 - Pack policy: N/A (no detail template).

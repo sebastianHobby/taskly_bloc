@@ -123,7 +123,6 @@ void main() {
         const specialRoutes = <String>{
           '/task',
           '/project',
-          '/label',
           '/value',
           '/workflow-run',
         };

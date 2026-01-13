@@ -6,6 +6,8 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
@@ -23,6 +25,7 @@ import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -91,7 +94,7 @@ class _LoadingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.valuesTitle)),
+      appBar: AppBar(title: const Text('Loading...')),
       body: const LoadingStateWidget(),
     );
   }
@@ -109,7 +112,7 @@ class _ErrorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(context.l10n.valuesTitle)),
+      appBar: AppBar(title: const Text('Error')),
       body: ErrorStateWidget(message: message, onRetry: onRetry),
     );
   }
@@ -235,7 +238,7 @@ class _ValueScreenView extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
-            tooltip: l10n.editValue,
+            tooltip: l10n.editLabel,
             onPressed: () => _showEditValueSheet(context),
           ),
           PopupMenuButton<String>(
@@ -251,7 +254,7 @@ class _ValueScreenView extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      l10n.deleteValue,
+                      l10n.deleteLabel,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -279,6 +282,11 @@ class _ValueScreenView extends StatelessWidget {
             ),
           };
         },
+      ),
+      floatingActionButton: AddTaskFab(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
       ),
     );
   }
@@ -314,6 +322,13 @@ class _ValueScreenView extends StatelessWidget {
                 Routing.toEntity(context, EntityType.project, entity.id);
               }
             },
+            onProjectCheckboxChanged: (project, value) {
+              if (value ?? false) {
+                unawaited(entityActionService.completeProject(project.id));
+              } else {
+                unawaited(entityActionService.uncompleteProject(project.id));
+              }
+            },
             onTaskCheckboxChanged: (task, value) async {
               if (value ?? false) {
                 await entityActionService.completeTask(task.id);
@@ -323,6 +338,9 @@ class _ValueScreenView extends StatelessWidget {
             },
             onTaskDelete: (task) async {
               await entityActionService.deleteTask(task.id);
+            },
+            onProjectDelete: (project) {
+              unawaited(entityActionService.deleteProject(project.id));
             },
           ),
         const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
