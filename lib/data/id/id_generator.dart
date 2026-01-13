@@ -40,15 +40,15 @@ class IdGenerator {
   /// 23505 errors on these tables may indicate expected duplicates.
   static const Set<String> v5Tables = {
     'values',
-    'trackers',
     'task_values',
     'project_values',
     'task_completion_history',
     'project_completion_history',
     'task_recurrence_exceptions',
     'project_recurrence_exceptions',
-    'tracker_responses',
-    'daily_tracker_responses',
+    'tracker_definitions',
+    'tracker_preferences',
+    'tracker_definition_choices',
     'analytics_snapshots',
     'attention_rules',
   };
@@ -112,10 +112,25 @@ class IdGenerator {
     return _v5('values/$name');
   }
 
-  /// Generate deterministic ID for a tracker.
+  /// Generate deterministic ID for a tracker definition.
   /// Natural key: userId + name
-  String trackerId({required String name}) {
-    return _v5('trackers/$name');
+  String trackerDefinitionId({required String name}) {
+    return _v5('tracker_definitions/$name');
+  }
+
+  /// Generate deterministic ID for tracker preferences.
+  /// Natural key: userId + trackerId
+  String trackerPreferenceId({required String trackerId}) {
+    return _v5('tracker_preferences/$trackerId');
+  }
+
+  /// Generate deterministic ID for tracker definition choices.
+  /// Natural key: userId + trackerId + choiceKey
+  String trackerDefinitionChoiceId({
+    required String trackerId,
+    required String choiceKey,
+  }) {
+    return _v5('tracker_definition_choices/$trackerId/$choiceKey');
   }
 
   /// Generate deterministic ID for task-value junction.
@@ -173,24 +188,8 @@ class IdGenerator {
     return _v5NoUser('project_exception/$projectId/$dateKey');
   }
 
-  /// Generate deterministic ID for tracker response (per-entry).
-  /// Natural key: journalEntryId + trackerId
-  String trackerResponseId({
-    required String journalEntryId,
-    required String trackerId,
-  }) {
-    return _v5NoUser('tracker_response/$journalEntryId/$trackerId');
-  }
-
-  /// Generate deterministic ID for daily tracker response.
-  /// Natural key: userId + trackerId + responseDate
-  String dailyTrackerResponseId({
-    required String trackerId,
-    required DateTime responseDate,
-  }) {
-    final dateKey = responseDate.toIso8601String().split('T').first;
-    return _v5('daily_tracker/$trackerId/$dateKey');
-  }
+  /// Generate random ID for a tracker event (append-only).
+  String trackerEventId() => _uuid.v4();
 
   /// Generate deterministic ID for screen definition.
   /// Natural key: userId + screenKey

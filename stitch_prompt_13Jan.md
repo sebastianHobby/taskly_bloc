@@ -69,7 +69,7 @@ Layout order (top to bottom):
 - Text: `My Day is powered by Focus Mode. Choose what you want to prioritize, and Taskly will build today’s task list grouped by your Values—plus highlight what’s excluded and why.`
 
 5) Mission (single sentence)
-- Text: `Taskly helps you consistently spend your time on what matters most—your values, your wellbeing, and your commitments.`
+- Text: `Taskly helps you consistently spend your time on what matters most—your values, your journal, and your commitments.`
 
 6) Primary CTA button (full width)
 - Label: `Choose Focus Mode`

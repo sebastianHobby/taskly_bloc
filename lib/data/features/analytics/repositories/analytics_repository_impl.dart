@@ -340,7 +340,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     final trackerIds = idsByType['tracker'];
     if (trackerIds != null && trackerIds.isNotEmpty) {
       final rows = await (_database.select(
-        _database.trackers,
+        _database.trackerDefinitions,
       )..where((t) => t.id.isIn(trackerIds))).get();
       for (final row in rows) {
         labels[row.id] = row.name;

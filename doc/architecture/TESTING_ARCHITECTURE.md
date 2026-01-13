@@ -91,7 +91,7 @@ The repo uses `dart_test.yaml` to define and standardize test tags and presets.
 - `integration` — slower tests with real DB or multi-component flows
 - `repository` — DB-backed repository tests
 - `slow` — known-slow tests
-- feature tags (examples): `tasks`, `wellbeing`, `parity`
+- feature tags (examples): `tasks`, `journal`, `parity`
 - `pipeline` — local-stack pipeline tests
 
 ### 4.2 Presets

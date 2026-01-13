@@ -56,10 +56,26 @@ void main() {
         expect(id, 'value-my-value');
       });
 
-      test('trackerId generates based on name', () {
-        final id = idGenerator.trackerId(name: 'Mood');
-        expect(id, 'tracker-mood');
+      test('trackerDefinitionId generates based on name', () {
+        final id = idGenerator.trackerDefinitionId(name: 'Mood');
+        expect(id, 'tracker-def-mood');
       });
+
+      test('trackerPreferenceId generates based on trackerId', () {
+        final id = idGenerator.trackerPreferenceId(trackerId: 'tracker-1');
+        expect(id, 'tracker-pref-tracker-1');
+      });
+
+      test(
+        'trackerDefinitionChoiceId generates based on trackerId and key',
+        () {
+          final id = idGenerator.trackerDefinitionChoiceId(
+            trackerId: 'tracker-1',
+            choiceKey: 'good',
+          );
+          expect(id, 'tracker-choice-tracker-1-good');
+        },
+      );
 
       test('taskValueId generates based on task and value', () {
         final id = idGenerator.taskValueId(
@@ -133,20 +149,9 @@ void main() {
         expect(id, 'screen-inbox');
       });
 
-      test('trackerResponseId generates based on entry and tracker', () {
-        final id = idGenerator.trackerResponseId(
-          journalEntryId: 'journal-1',
-          trackerId: 'tracker-1',
-        );
-        expect(id, 'tracker-response-journal-1-tracker-1');
-      });
-
-      test('dailyTrackerResponseId generates based on tracker and date', () {
-        final id = idGenerator.dailyTrackerResponseId(
-          trackerId: 'tracker-1',
-          responseDate: DateTime(2025, 6, 15),
-        );
-        expect(id, 'daily-response-tracker-1-2025-06-15');
+      test('trackerEventId generates sequential IDs', () {
+        expect(idGenerator.trackerEventId(), 'tracker-event-0');
+        expect(idGenerator.trackerEventId(), 'tracker-event-1');
       });
 
       test('analyticsSnapshotId generates based on entity and date', () {

@@ -35,7 +35,7 @@ import 'dart:io';
 /// - **DisplayConfig**: Declarative screen display settings (sort, group, filter)
 /// - **TriggerConfig**: Workflow trigger definitions (schedule, manual)
 /// - **ScheduleViewConfig**: UI configuration for schedule views
-/// - **TrackerResponseConfig**: Wellbeing tracker field definitions
+/// - **TrackerResponseConfig**: Journal tracker field definitions
 /// - These are pure data structures with no business logic - just
 ///   enums, freezed classes, and factory constructors. Testing them
 ///   would only verify that freezed generates correct code.

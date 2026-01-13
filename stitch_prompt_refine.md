@@ -34,7 +34,7 @@ Display an alternate state (Focus Mode Required gate) with the following content
 - Display a pill label with text: `SET UP FOCUS MODE`.
 - Display a headline with text: `Pick a Focus Mode to Generate Today’s Plan`.
 - Display a description paragraph with text: `My Day is powered by Focus Mode. Choose what you want to prioritize, and Taskly will build today’s task list grouped by your Values—plus highlight what’s excluded and why.`
-- Display a mission sentence with text: `Taskly helps you consistently spend your time on what matters most—your values, your wellbeing, and your commitments.`
+- Display a mission sentence with text: `Taskly helps you consistently spend your time on what matters most—your values, your journal, and your commitments.`
 - Display a primary full-width button with label: `Choose Focus Mode`.
 
 Display the main state (Focus Mode Enabled) with exactly the following entities.

@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -7,12 +7,13 @@ import 'package:taskly_bloc/data/repositories/mappers/journal_predicate_mapper.d
 import 'package:taskly_bloc/data/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition_choice.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_state_day.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_state_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -27,10 +28,11 @@ class JournalRepositoryImpl
   final JournalPredicateMapper _predicateMapper =
       const JournalPredicateMapper();
 
+  BigInt? _bigIntOrNull(int? value) =>
+      value == null ? null : BigInt.from(value);
+
   @override
-  Stream<List<JournalEntry>> watchJournalEntries({
-    DateRange? range,
-  }) {
+  Stream<List<JournalEntry>> watchJournalEntries({DateRange? range}) {
     final query = _database.select(_database.journalEntries);
 
     if (range != null) {
@@ -43,14 +45,7 @@ class JournalRepositoryImpl
 
     query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
 
-    return query.watch().asyncMap((rows) async {
-      final entries = <JournalEntry>[];
-      for (final row in rows) {
-        final responses = await _getTrackerResponsesForEntry(row.id);
-        entries.add(_mapToJournalEntry(row, responses));
-      }
-      return entries;
-    });
+    return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
   }
 
   @override
@@ -66,14 +61,7 @@ class JournalRepositoryImpl
 
     query.orderBy([(e) => OrderingTerm.desc(e.entryDate)]);
 
-    return query.watch().asyncMap((rows) async {
-      final entries = <JournalEntry>[];
-      for (final row in rows) {
-        final responses = await _getTrackerResponsesForEntry(row.id);
-        entries.add(_mapToJournalEntry(row, responses));
-      }
-      return entries;
-    });
+    return query.watch().map((rows) => rows.map(_mapToJournalEntry).toList());
   }
 
   Expression<bool>? _whereExpressionFromFilter(
@@ -92,25 +80,19 @@ class JournalRepositoryImpl
   Future<JournalEntry?> getJournalEntryById(String id) async {
     final query = _database.select(_database.journalEntries)
       ..where((e) => e.id.equals(id));
-
     final result = await query.getSingleOrNull();
-    if (result == null) return null;
-    final responses = await _getTrackerResponsesForEntry(result.id);
-    return _mapToJournalEntry(result, responses);
+    return result == null ? null : _mapToJournalEntry(result);
   }
 
   @override
-  Future<JournalEntry?> getJournalEntryByDate({
-    required DateTime date,
-  }) async {
+  Future<JournalEntry?> getJournalEntryByDate({required DateTime date}) async {
     final dateOnly = DateTime(date.year, date.month, date.day);
     final query = _database.select(_database.journalEntries)
-      ..where((e) => e.entryDate.equals(dateOnly));
+      ..where((e) => e.entryDate.equals(dateOnly))
+      ..orderBy([(e) => OrderingTerm.desc(e.entryTime)]);
 
     final result = await query.getSingleOrNull();
-    if (result == null) return null;
-    final responses = await _getTrackerResponsesForEntry(result.id);
-    return _mapToJournalEntry(result, responses);
+    return result == null ? null : _mapToJournalEntry(result);
   }
 
   @override
@@ -123,12 +105,7 @@ class JournalRepositoryImpl
       ..orderBy([(e) => OrderingTerm.desc(e.entryTime)]);
 
     final results = await query.get();
-    final entries = <JournalEntry>[];
-    for (final row in results) {
-      final responses = await _getTrackerResponsesForEntry(row.id);
-      entries.add(_mapToJournalEntry(row, responses));
-    }
-    return entries;
+    return results.map(_mapToJournalEntry).toList();
   }
 
   @override
@@ -142,170 +119,184 @@ class JournalRepositoryImpl
             id: Value(entryId),
             entryDate: Value(entry.entryDate),
             entryTime: Value(entry.entryTime),
-            moodRating: Value(entry.moodRating?.value),
+            occurredAt: Value(entry.occurredAt),
+            localDate: Value(entry.localDate),
             journalText: Value(entry.journalText),
             createdAt: Value(entry.createdAt),
             updatedAt: Value(entry.updatedAt),
+            deletedAt: Value(entry.deletedAt),
           ),
         );
-
-    await _syncTrackerResponses(
-      journalEntryId: entryId,
-      responses: entry.perEntryTrackerResponses,
-    );
   }
 
   @override
   Future<void> deleteJournalEntry(String id) async {
     await (_database.delete(
-      _database.trackerResponses,
-    )..where((r) => r.journalEntryId.equals(id))).go();
-
-    await (_database.delete(
       _database.journalEntries,
     )..where((e) => e.id.equals(id))).go();
   }
 
+  // === Trackers (OPT-A: event-log + projections) ===
+
   @override
-  Stream<List<DailyTrackerResponse>> watchDailyTrackerResponses({
-    required DateTime date,
-  }) {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final query = _database.select(_database.dailyTrackerResponses)
-      ..where((r) => r.responseDate.equals(dateOnly));
+  Stream<List<TrackerDefinition>> watchTrackerDefinitions() {
+    final query = _database.select(_database.trackerDefinitions)
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
 
     return query.watch().map(
-      (rows) => rows.map(_mapToDailyTrackerResponse).toList(),
+      (rows) => rows.map(_mapToTrackerDefinition).toList(),
     );
   }
 
   @override
-  Future<List<DailyTrackerResponse>> getDailyTrackerResponses({
-    required DateTime date,
-  }) async {
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final query = _database.select(_database.dailyTrackerResponses)
-      ..where((r) => r.responseDate.equals(dateOnly));
+  Stream<List<TrackerPreference>> watchTrackerPreferences() {
+    final query = _database.select(_database.trackerPreferences)
+      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
 
-    final results = await query.get();
-    return results.map(_mapToDailyTrackerResponse).toList();
+    return query.watch().map(
+      (rows) => rows.map(_mapToTrackerPreference).toList(),
+    );
   }
 
   @override
-  Future<void> saveDailyTrackerResponse(DailyTrackerResponse response) async {
-    final dateOnly = DateTime(
-      response.responseDate.year,
-      response.responseDate.month,
-      response.responseDate.day,
-    );
+  Stream<List<TrackerDefinitionChoice>> watchTrackerDefinitionChoices({
+    required String trackerId,
+  }) {
+    final query = _database.select(_database.trackerDefinitionChoices)
+      ..where((c) => c.trackerId.equals(trackerId))
+      ..orderBy([(c) => OrderingTerm.asc(c.sortOrder)]);
 
-    final responseId = response.id.isEmpty
-        ? _idGenerator.dailyTrackerResponseId(
-            trackerId: response.trackerId,
-            responseDate: dateOnly,
-          )
-        : response.id;
+    return query.watch().map(
+      (rows) => rows.map(_mapToTrackerDefinitionChoice).toList(),
+    );
+  }
+
+  @override
+  Stream<List<TrackerStateDay>> watchTrackerStateDay({
+    required DateRange range,
+  }) {
+    final query = _database.select(_database.trackerStateDay)
+      ..where(
+        (s) =>
+            s.anchorDate.isBiggerOrEqualValue(range.start) &
+            s.anchorDate.isSmallerOrEqualValue(range.end),
+      );
+
+    return query.watch().map(
+      (rows) => rows.map(_mapToTrackerStateDay).toList(),
+    );
+  }
+
+  @override
+  Stream<List<TrackerStateEntry>> watchTrackerStateEntry({
+    required DateRange range,
+  }) {
+    // tracker_state_entry does not include an anchor date; filter must be done
+    // via joins if/when needed.
+    final query = _database.select(_database.trackerStateEntry);
+    return query.watch().map(
+      (rows) => rows.map(_mapToTrackerStateEntry).toList(),
+    );
+  }
+
+  @override
+  Future<void> saveTrackerDefinition(TrackerDefinition definition) async {
+    final id = definition.id.isEmpty
+        ? _idGenerator.trackerDefinitionId(name: definition.name)
+        : definition.id;
 
     await _database
-        .into(_database.dailyTrackerResponses)
+        .into(_database.trackerDefinitions)
         .insertOnConflictUpdate(
-          DailyTrackerResponsesCompanion(
-            id: Value(responseId),
-            responseDate: Value(dateOnly),
-            trackerId: Value(response.trackerId),
-            responseValue: Value(jsonEncode(response.value.toJson())),
-            createdAt: Value(response.createdAt),
-            updatedAt: Value(response.updatedAt),
+          TrackerDefinitionsCompanion(
+            id: Value(id),
+            name: Value(definition.name),
+            description: Value(definition.description),
+            scope: Value(definition.scope),
+            roles: Value(jsonEncode(definition.roles)),
+            valueType: Value(definition.valueType),
+            config: Value(jsonEncode(definition.config)),
+            goal: Value(jsonEncode(definition.goal)),
+            isActive: Value(definition.isActive),
+            sortOrder: Value(definition.sortOrder),
+            createdAt: Value(definition.createdAt),
+            updatedAt: Value(definition.updatedAt),
+            deletedAt: Value(definition.deletedAt),
+            source: Value(definition.source),
+            systemKey: Value(definition.systemKey),
+            opKind: Value(definition.opKind),
+            valueKind: Value(definition.valueKind),
+            unitKind: Value(definition.unitKind),
+            minInt: Value(_bigIntOrNull(definition.minInt)),
+            maxInt: Value(_bigIntOrNull(definition.maxInt)),
+            stepInt: Value(_bigIntOrNull(definition.stepInt)),
+            linkedValueId: Value(definition.linkedValueId),
+            isOutcome: Value(definition.isOutcome),
+            isInsightEnabled: Value(definition.isInsightEnabled),
+            higherIsBetter: Value(definition.higherIsBetter),
           ),
         );
   }
 
   @override
-  Future<void> deleteDailyTrackerResponse(String id) async {
-    await (_database.delete(
-      _database.dailyTrackerResponses,
-    )..where((r) => r.id.equals(id))).go();
-  }
-
-  @override
-  Stream<List<Tracker>> watchTrackers() {
-    final query = _database.select(_database.trackers)
-      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
-
-    return query.watch().map((rows) => rows.map(_mapToTracker).toList());
-  }
-
-  @override
-  Future<List<Tracker>> getAllTrackers() async {
-    final query = _database.select(_database.trackers)
-      ..orderBy([(t) => OrderingTerm.asc(t.sortOrder)]);
-
-    final results = await query.get();
-    return results.map(_mapToTracker).toList();
-  }
-
-  @override
-  Future<Tracker?> getTrackerById(String trackerId) async {
-    final query = _database.select(_database.trackers)
-      ..where((t) => t.id.equals(trackerId));
-
-    final result = await query.getSingleOrNull();
-    return result != null ? _mapToTracker(result) : null;
-  }
-
-  @override
-  Future<void> saveTracker(Tracker tracker) async {
-    final trackerId = tracker.id.isEmpty
-        ? _idGenerator.trackerId(name: tracker.name)
-        : tracker.id;
+  Future<void> saveTrackerPreference(TrackerPreference preference) async {
+    final id = preference.id.isEmpty
+        ? _idGenerator.trackerPreferenceId(trackerId: preference.trackerId)
+        : preference.id;
 
     await _database
-        .into(_database.trackers)
+        .into(_database.trackerPreferences)
         .insertOnConflictUpdate(
-          TrackersCompanion(
-            id: Value(trackerId),
-            name: Value(tracker.name),
-            description: Value(tracker.description),
-            responseType: Value(tracker.responseType.name),
-            responseConfig: Value(jsonEncode(tracker.config.toJson())),
-            entryScope: Value(tracker.entryScope.name),
-            sortOrder: Value(tracker.sortOrder),
-            createdAt: Value(tracker.createdAt),
-            updatedAt: Value(tracker.updatedAt),
+          TrackerPreferencesCompanion(
+            id: Value(id),
+            trackerId: Value(preference.trackerId),
+            isActive: Value(preference.isActive),
+            sortOrder: Value(preference.sortOrder),
+            pinned: Value(preference.pinned),
+            showInQuickAdd: Value(preference.showInQuickAdd),
+            color: Value(preference.color),
+            createdAt: Value(preference.createdAt),
+            updatedAt: Value(preference.updatedAt),
           ),
         );
   }
+
+  @override
+  Future<void> appendTrackerEvent(TrackerEvent event) async {
+    final id = event.id.isEmpty ? _idGenerator.trackerEventId() : event.id;
+
+    String? value;
+    if (event.value != null) {
+      value = event.value is String
+          ? event.value! as String
+          : jsonEncode(event.value);
+    }
+
+    await _database
+        .into(_database.trackerEvents)
+        .insertOnConflictUpdate(
+          TrackerEventsCompanion(
+            id: Value(id),
+            trackerId: Value(event.trackerId),
+            anchorType: Value(event.anchorType),
+            entryId: Value(event.entryId),
+            anchorDate: Value(event.anchorDate),
+            op: Value(event.op),
+            value: Value(value),
+            occurredAt: Value(event.occurredAt),
+            recordedAt: Value(event.recordedAt),
+          ),
+        );
+  }
+
+  // === Analytics Helpers ===
 
   @override
   Future<Map<DateTime, double>> getDailyMoodAverages({
     required DateRange range,
   }) async {
-    final query = _database.select(_database.journalEntries)
-      ..where(
-        (e) =>
-            e.entryDate.isBiggerOrEqualValue(range.start) &
-            e.entryDate.isSmallerOrEqualValue(range.end) &
-            e.moodRating.isNotNull(),
-      );
-
-    final rows = await query.get();
-    final byDate = <DateTime, List<int>>{};
-
-    for (final row in rows) {
-      final mood = row.moodRating;
-      if (mood == null) continue;
-      byDate.putIfAbsent(row.entryDate, () => <int>[]).add(mood);
-    }
-
-    final result = <DateTime, double>{};
-    for (final entry in byDate.entries) {
-      final values = entry.value;
-      if (values.isEmpty) continue;
-      result[entry.key] =
-          values.reduce((a, b) => a + b) / values.length.toDouble();
-    }
-
-    return result;
+    // Mood is now represented as tracker events (system trackers).
+    return <DateTime, double>{};
   }
 
   @override
@@ -313,216 +304,142 @@ class JournalRepositoryImpl
     required String trackerId,
     required DateRange range,
   }) async {
-    // Prefer all-day responses for a date-based series.
-    final dailyQuery = _database.select(_database.dailyTrackerResponses)
-      ..where(
-        (r) =>
-            r.trackerId.equals(trackerId) &
-            r.responseDate.isBiggerOrEqualValue(range.start) &
-            r.responseDate.isSmallerOrEqualValue(range.end),
-      );
-
-    final dailyRows = await dailyQuery.get();
-    final result = <DateTime, double>{};
-    for (final row in dailyRows) {
-      final decoded = jsonDecode(row.responseValue) as Map<String, dynamic>;
-      final value = TrackerResponseValue.fromJson(decoded);
-      final numeric = _toNumeric(value);
-      if (numeric != null) {
-        result[row.responseDate] = numeric;
-      }
-    }
-
-    if (result.isNotEmpty) return result;
-
-    // Fallback: per-entry responses joined via journal entry date.
-    final entryQuery = _database.select(_database.journalEntries)
-      ..where(
-        (e) =>
-            e.entryDate.isBiggerOrEqualValue(range.start) &
-            e.entryDate.isSmallerOrEqualValue(range.end),
-      );
-    final entries = await entryQuery.get();
-    if (entries.isEmpty) return const {};
-
-    final entryIds = entries.map((e) => e.id).toList();
-    final entryDateById = <String, DateTime>{
-      for (final e in entries) e.id: e.entryDate,
-    };
-
-    final responseQuery = _database.select(_database.trackerResponses)
-      ..where(
-        (r) => r.trackerId.equals(trackerId) & r.journalEntryId.isIn(entryIds),
-      );
-    final responseRows = await responseQuery.get();
-
-    final valuesByDate = <DateTime, List<double>>{};
-    for (final row in responseRows) {
-      final date = entryDateById[row.journalEntryId];
-      if (date == null) continue;
-
-      final decoded = jsonDecode(row.responseValue) as Map<String, dynamic>;
-      final value = TrackerResponseValue.fromJson(decoded);
-      final numeric = _toNumeric(value);
-      if (numeric == null) continue;
-      valuesByDate.putIfAbsent(date, () => <double>[]).add(numeric);
-    }
-
-    final averaged = <DateTime, double>{};
-    for (final entry in valuesByDate.entries) {
-      final values = entry.value;
-      if (values.isEmpty) continue;
-      averaged[entry.key] =
-          values.reduce((a, b) => a + b) / values.length.toDouble();
-    }
-
-    return averaged;
+    // Tracker values should be read from projections (tracker_state_day / tracker_state_entry).
+    return <DateTime, double>{};
   }
 
-  @override
-  Future<void> deleteTracker(String trackerId) async {
-    await (_database.delete(
-      _database.trackerResponses,
-    )..where((r) => r.trackerId.equals(trackerId))).go();
-
-    await (_database.delete(
-      _database.dailyTrackerResponses,
-    )..where((r) => r.trackerId.equals(trackerId))).go();
-
-    await (_database.delete(
-      _database.trackers,
-    )..where((t) => t.id.equals(trackerId))).go();
-  }
-
-  @override
-  Future<void> reorderTrackers(List<String> orderedIds) async {
-    await _database.transaction(() async {
-      for (var i = 0; i < orderedIds.length; i++) {
-        await (_database.update(_database.trackers)
-              ..where((t) => t.id.equals(orderedIds[i])))
-            .write(TrackersCompanion(sortOrder: Value(i)));
-      }
-    });
-  }
-
-  Future<List<TrackerResponse>> _getTrackerResponsesForEntry(
-    String journalEntryId,
-  ) async {
-    final query = _database.select(_database.trackerResponses)
-      ..where((r) => r.journalEntryId.equals(journalEntryId));
-
-    final results = await query.get();
-    return results.map(_mapToTrackerResponse).toList();
-  }
-
-  Future<void> _syncTrackerResponses({
-    required String journalEntryId,
-    required List<TrackerResponse> responses,
-  }) async {
-    final existing = await _getTrackerResponsesForEntry(journalEntryId);
-    final existingIds = existing.map((r) => r.id).toSet();
-    final newIds = responses
-        .map((r) => r.id)
-        .where((id) => id.isNotEmpty)
-        .toSet();
-
-    final idsToDelete = existingIds.difference(newIds);
-    if (idsToDelete.isNotEmpty) {
-      await (_database.delete(
-        _database.trackerResponses,
-      )..where((r) => r.id.isIn(idsToDelete))).go();
-    }
-
-    for (final response in responses) {
-      final responseId = response.id.isEmpty
-          ? _idGenerator.trackerResponseId(
-              journalEntryId: journalEntryId,
-              trackerId: response.trackerId,
-            )
-          : response.id;
-
-      await _database
-          .into(_database.trackerResponses)
-          .insertOnConflictUpdate(
-            TrackerResponsesCompanion(
-              id: Value(responseId),
-              journalEntryId: Value(journalEntryId),
-              trackerId: Value(response.trackerId),
-              responseValue: Value(jsonEncode(response.value.toJson())),
-              createdAt: Value(response.createdAt),
-              updatedAt: Value(response.updatedAt),
-            ),
-          );
-    }
-  }
-
-  JournalEntry _mapToJournalEntry(
-    JournalEntryEntity row,
-    List<TrackerResponse> responses,
-  ) {
+  JournalEntry _mapToJournalEntry(JournalEntryEntity row) {
     return JournalEntry(
       id: row.id,
       entryDate: row.entryDate,
       entryTime: row.entryTime,
-      moodRating: row.moodRating != null
-          ? MoodRating.fromValue(row.moodRating!)
-          : null,
+      occurredAt: row.occurredAt,
+      localDate: row.localDate,
       journalText: row.journalText,
-      perEntryTrackerResponses: responses,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      deletedAt: row.deletedAt,
     );
   }
 
-  DailyTrackerResponse _mapToDailyTrackerResponse(
-    DailyTrackerResponseEntity row,
-  ) {
-    return DailyTrackerResponse(
-      id: row.id,
-      responseDate: row.responseDate,
-      trackerId: row.trackerId,
-      value: TrackerResponseValue.fromJson(
-        jsonDecode(row.responseValue) as Map<String, dynamic>,
-      ),
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-    );
-  }
+  TrackerDefinition _mapToTrackerDefinition(TrackerDefinitionEntity row) {
+    final roles = _tryDecodeJsonListOfStrings(row.roles) ?? const <String>[];
+    final config = _tryDecodeJsonMap(row.config) ?? const <String, dynamic>{};
+    final goal = _tryDecodeJsonMap(row.goal) ?? const <String, dynamic>{};
 
-  Tracker _mapToTracker(TrackerEntity row) {
-    return Tracker(
+    return TrackerDefinition(
       id: row.id,
+      userId: row.userId,
       name: row.name,
       description: row.description,
-      responseType: TrackerResponseType.values.byName(row.responseType),
-      config: TrackerResponseConfig.fromJson(
-        jsonDecode(row.responseConfig) as Map<String, dynamic>,
-      ),
-      entryScope: TrackerEntryScope.values.byName(row.entryScope),
+      scope: row.scope,
+      roles: roles,
+      valueType: row.valueType,
+      config: config,
+      goal: goal,
+      isActive: row.isActive,
       sortOrder: row.sortOrder,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      deletedAt: row.deletedAt,
+      source: row.source,
+      systemKey: row.systemKey,
+      opKind: row.opKind,
+      valueKind: row.valueKind,
+      unitKind: row.unitKind,
+      minInt: row.minInt?.toInt(),
+      maxInt: row.maxInt?.toInt(),
+      stepInt: row.stepInt?.toInt(),
+      linkedValueId: row.linkedValueId,
+      isOutcome: row.isOutcome,
+      isInsightEnabled: row.isInsightEnabled,
+      higherIsBetter: row.higherIsBetter,
     );
   }
 
-  double? _toNumeric(TrackerResponseValue value) {
-    return value.when(
-      choice: (selected) => null,
-      scale: (value) => value.toDouble(),
-      yesNo: (value) => value ? 1.0 : 0.0,
-    );
-  }
-
-  TrackerResponse _mapToTrackerResponse(TrackerResponseEntity row) {
-    return TrackerResponse(
+  TrackerPreference _mapToTrackerPreference(TrackerPreferenceEntity row) {
+    return TrackerPreference(
       id: row.id,
-      journalEntryId: row.journalEntryId,
+      userId: row.userId,
       trackerId: row.trackerId,
-      value: TrackerResponseValue.fromJson(
-        jsonDecode(row.responseValue) as Map<String, dynamic>,
-      ),
+      isActive: row.isActive,
+      sortOrder: row.sortOrder,
+      pinned: row.pinned,
+      showInQuickAdd: row.showInQuickAdd,
+      color: row.color,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
+  }
+
+  TrackerDefinitionChoice _mapToTrackerDefinitionChoice(
+    TrackerDefinitionChoiceEntity row,
+  ) {
+    return TrackerDefinitionChoice(
+      id: row.id,
+      userId: row.userId,
+      trackerId: row.trackerId,
+      choiceKey: row.choiceKey,
+      label: row.label,
+      sortOrder: row.sortOrder,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    );
+  }
+
+  TrackerStateDay _mapToTrackerStateDay(TrackerStateDayEntity row) {
+    return TrackerStateDay(
+      id: row.id,
+      userId: row.userId,
+      anchorType: row.anchorType,
+      anchorDate: row.anchorDate,
+      trackerId: row.trackerId,
+      value: _tryDecodeJsonAny(row.value),
+      lastEventId: row.lastEventId,
+      updatedAt: row.updatedAt,
+    );
+  }
+
+  TrackerStateEntry _mapToTrackerStateEntry(TrackerStateEntryEntity row) {
+    return TrackerStateEntry(
+      id: row.id,
+      userId: row.userId,
+      entryId: row.entryId,
+      trackerId: row.trackerId,
+      value: _tryDecodeJsonAny(row.value),
+      lastEventId: row.lastEventId,
+      updatedAt: row.updatedAt,
+    );
+  }
+
+  Map<String, dynamic>? _tryDecodeJsonMap(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(value);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  List<String>? _tryDecodeJsonListOfStrings(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is! List) return null;
+      return decoded.whereType<String>().toList(growable: false);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Object? _tryDecodeJsonAny(String? value) {
+    if (value == null || value.trim().isEmpty) return null;
+    try {
+      return jsonDecode(value);
+    } catch (_) {
+      return value;
+    }
   }
 }

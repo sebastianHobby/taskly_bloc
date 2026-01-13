@@ -6,12 +6,6 @@ import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
 
 /// Test data builders using the Object Mother pattern.
@@ -267,94 +261,6 @@ class TestData {
     return DateRange(
       start: start ?? now.subtract(const Duration(days: 7)),
       end: end ?? now,
-    );
-  }
-
-  // === Journal ===
-
-  static JournalEntry journalEntry({
-    String? id,
-    DateTime? entryDate,
-    DateTime? entryTime,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    MoodRating? moodRating,
-    String? journalText,
-    List<TrackerResponse>? trackerResponses,
-  }) {
-    final now = DateTime.now();
-    return JournalEntry(
-      id: id ?? _nextId('journal'),
-      entryDate: entryDate ?? now,
-      entryTime: entryTime ?? now,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      moodRating: moodRating,
-      journalText: journalText,
-      perEntryTrackerResponses: trackerResponses ?? [],
-    );
-  }
-
-  static Tracker tracker({
-    String? id,
-    String name = 'Test Tracker',
-    TrackerResponseType responseType = TrackerResponseType.scale,
-    TrackerResponseConfig? config,
-    TrackerEntryScope entryScope = TrackerEntryScope.allDay,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? description,
-    int sortOrder = 0,
-  }) {
-    final now = DateTime.now();
-    return Tracker(
-      id: id ?? _nextId('tracker'),
-      name: name,
-      responseType: responseType,
-      config: config ?? const TrackerResponseConfig.scale(),
-      entryScope: entryScope,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      description: description,
-      sortOrder: sortOrder,
-    );
-  }
-
-  static TrackerResponse trackerResponse({
-    String? id,
-    String? journalEntryId,
-    String? trackerId,
-    TrackerResponseValue? value,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    final now = DateTime.now();
-    return TrackerResponse(
-      id: id ?? _nextId('response'),
-      journalEntryId: journalEntryId ?? 'journal-1',
-      trackerId: trackerId ?? 'tracker-1',
-      value: value ?? const TrackerResponseValue.scale(value: 5),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-    );
-  }
-
-  static DailyTrackerResponse dailyTrackerResponse({
-    String? id,
-    DateTime? responseDate,
-    String? trackerId,
-    TrackerResponseValue? value,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
-    final now = DateTime.now();
-    return DailyTrackerResponse(
-      id: id ?? _nextId('daily-response'),
-      responseDate: responseDate ?? DateTime(now.year, now.month, now.day),
-      trackerId: trackerId ?? 'tracker-1',
-      value: value ?? const TrackerResponseValue.yesNo(value: true),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
     );
   }
 
