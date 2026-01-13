@@ -50,10 +50,6 @@ class ScreenTemplateWidget extends StatelessWidget {
           child: Text('Statistics dashboard not implemented yet.'),
         ),
       ),
-      journalDashboard: () => const _PlaceholderTemplate(
-        title: 'Journal Dashboard',
-        message: 'Journal insights are being rebuilt.',
-      ),
       journalHub: () => const JournalHubPage(),
       journalTimeline: () => const _PlaceholderTemplate(
         title: 'Journal',

@@ -81,8 +81,6 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
       ScreenTemplateTrackerManagement;
   const factory ScreenTemplateSpec.statisticsDashboard() =
       ScreenTemplateStatisticsDashboard;
-  const factory ScreenTemplateSpec.journalDashboard() =
-      ScreenTemplateJournalDashboard;
   const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
   const factory ScreenTemplateSpec.journalTimeline() =
       ScreenTemplateJournalTimeline;

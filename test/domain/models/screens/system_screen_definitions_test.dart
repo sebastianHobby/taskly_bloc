@@ -32,6 +32,10 @@ void main() {
       test('next_actions is no longer defined', () {
         expect(SystemScreenSpecs.getByKey('next_actions'), isNull);
       });
+
+      test('workflows is no longer defined', () {
+        expect(SystemScreenSpecs.getByKey('workflows'), isNull);
+      });
     });
 
     group('all list', () {
@@ -55,10 +59,14 @@ void main() {
           containsAll([
             'my_day',
             'scheduled',
-            'projects',
-            'values',
-            'settings',
+            'someday',
+            'logbook',
             'journal',
+            'values',
+            'projects',
+            'statistics',
+            'settings',
+            'browse',
           ]),
         );
 
@@ -85,14 +93,14 @@ void main() {
         );
       });
 
-      test('routes legacy settings entrypoints to focusSetup', () {
+      test('returns settings screens for existing keys', () {
         expect(
           SystemScreenSpecs.getByKey('allocation_settings'),
-          SystemScreenSpecs.focusSetup,
+          SystemScreenSpecs.allocationSettings,
         );
         expect(
           SystemScreenSpecs.getByKey('attention_rules'),
-          SystemScreenSpecs.focusSetup,
+          SystemScreenSpecs.attentionRules,
         );
       });
     });

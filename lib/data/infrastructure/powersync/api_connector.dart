@@ -14,6 +14,7 @@ import 'package:taskly_bloc/data/infrastructure/powersync/schema.dart';
 import 'package:taskly_bloc/data/infrastructure/powersync/upload_data_normalizer.dart'
     as upload_normalizer;
 import 'package:taskly_bloc/data/attention/maintenance/attention_seeder.dart';
+import 'package:taskly_bloc/data/features/journal/maintenance/journal_tracker_seeder.dart';
 import 'package:taskly_bloc/domain/attention/system_attention_rules.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
@@ -524,6 +525,12 @@ Future<void> runPostAuthMaintenance({
   // This is required when Supabase has no rows yet because the UI reads from
   // the local Drift/PowerSync database.
   await AttentionSeeder(db: driftDb, idGenerator: idGenerator).ensureSeeded();
+
+  // Seed system Journal trackers + default preferences.
+  await JournalTrackerSeeder(
+    db: driftDb,
+    idGenerator: idGenerator,
+  ).ensureSeeded();
 
   await _cleanupOrphanedSystemAttentionRules(
     db: driftDb,

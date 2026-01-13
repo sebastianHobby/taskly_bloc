@@ -44,9 +44,9 @@ class TrackerDefinitions extends Table {
   /// Supabase: unit_kind in {count, ml, mg, minutes, steps}
   TextColumn get unitKind => text().nullable()();
 
-  Int64Column get minInt => int64().nullable()();
-  Int64Column get maxInt => int64().nullable()();
-  Int64Column get stepInt => int64().nullable()();
+  IntColumn get minInt => integer().nullable()();
+  IntColumn get maxInt => integer().nullable()();
+  IntColumn get stepInt => integer().nullable()();
 
   TextColumn get linkedValueId => text().nullable()();
 

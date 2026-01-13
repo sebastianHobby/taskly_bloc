@@ -16,12 +16,8 @@ import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalid
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
-import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
-import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
+import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_unified_page.dart';
 
 DateTime? _lastDebugDumpAt;
@@ -321,21 +317,9 @@ Future<void> _maybeDevAutoLogin() async {
 /// This centralizes all screen→bloc mappings. Screens not registered here
 /// automatically use the typed ScreenSpec rendering path.
 void _registerRoutingBuilders() {
-  final taskRepo = getIt<TaskRepositoryContract>();
-  final projectRepo = getIt<ProjectRepositoryContract>();
-  final valueRepo = getIt<ValueRepositoryContract>();
-
   // Register entity detail builders
   Routing.registerEntityBuilders(
-    taskBuilder: (id) => BlocProvider(
-      create: (_) => TaskDetailBloc(
-        taskId: id,
-        taskRepository: taskRepo,
-        projectRepository: projectRepo,
-        valueRepository: valueRepo,
-      ),
-      child: const TaskDetailSheet(),
-    ),
+    taskBuilder: (id) => TaskEditorRoutePage(taskId: id),
     valueBuilder: (id) => ValueDetailUnifiedPage(valueId: id),
     projectBuilder: (id) => ProjectDetailUnifiedPage(projectId: id),
   );
