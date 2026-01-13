@@ -350,7 +350,7 @@ Important nuance in the current repo state:
 
 ### 5.4 Temporal Triggers Integration (In-App Only)
 
-Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a wellbeing review is now due).
+Current product scope: **time-based rules are only required to update when the app is running** (e.g. user opens the app and a journal review is now due).
 
 To support this without introducing OS notifications or server scheduling, the runtime uses a lightweight invalidation stream:
 

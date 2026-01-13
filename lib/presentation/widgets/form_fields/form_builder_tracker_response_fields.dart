@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
+
+typedef TrackerResponseValue = Object?;
 
 /// FormBuilder field for yes/no tracker responses
 class FormBuilderTrackerYesNoField
@@ -29,9 +30,9 @@ class FormBuilderTrackerYesNoField
            final selectedColor =
                widget.selectedColor ?? theme.colorScheme.primary;
 
-           final bool? currentValue = state.value?.mapOrNull(
-             yesNo: (v) => v.value,
-           );
+           final bool? currentValue = state.value is bool
+               ? state.value! as bool
+               : null;
 
            return InputDecorator(
              decoration: state.decoration,
@@ -43,7 +44,7 @@ class FormBuilderTrackerYesNoField
                      isSelected: currentValue == false,
                      onTap: state.enabled
                          ? () => state.didChange(
-                             const TrackerResponseValue.yesNo(value: false),
+                             false,
                            )
                          : null,
                      selectedColor: selectedColor,
@@ -57,7 +58,7 @@ class FormBuilderTrackerYesNoField
                      isSelected: currentValue ?? false,
                      onTap: state.enabled
                          ? () => state.didChange(
-                             const TrackerResponseValue.yesNo(value: true),
+                             true,
                            )
                          : null,
                      selectedColor: selectedColor,
@@ -110,9 +111,9 @@ class FormBuilderTrackerScaleField
            final theme = Theme.of(state.context);
            final widget = state.widget;
 
-           final int? currentValue = state.value?.mapOrNull(
-             scale: (v) => v.value,
-           );
+           final int? currentValue = state.value is int
+               ? state.value! as int
+               : null;
 
            return InputDecorator(
              decoration: state.decoration,
@@ -165,9 +166,7 @@ class FormBuilderTrackerScaleField
                    divisions: widget.divisions ?? (widget.max - widget.min),
                    onChanged: state.enabled
                        ? (value) => state.didChange(
-                           TrackerResponseValue.scale(
-                             value: value.round(),
-                           ),
+                           value.round(),
                          )
                        : null,
                  ),
@@ -232,9 +231,9 @@ class FormBuilderTrackerChoiceField
            final selectedColor =
                widget.selectedColor ?? theme.colorScheme.primary;
 
-           final String? currentValue = state.value?.mapOrNull(
-             choice: (v) => v.selected,
-           );
+           final String? currentValue = state.value is String
+               ? state.value! as String
+               : null;
 
            return InputDecorator(
              decoration: state.decoration,
@@ -250,7 +249,7 @@ class FormBuilderTrackerChoiceField
                        ? (selected) {
                            if (selected) {
                              state.didChange(
-                               TrackerResponseValue.choice(selected: option),
+                               option,
                              );
                            }
                          }

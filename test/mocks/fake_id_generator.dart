@@ -30,6 +30,7 @@ class FakeIdGenerator implements IdGenerator {
   int _pendingNotificationIdCounter = 0;
   int _analyticsCorrelationIdCounter = 0;
   int _analyticsInsightIdCounter = 0;
+  int _trackerEventIdCounter = 0;
 
   // Call counts for verification
   int get taskIdCallCount => _taskIdCounter;
@@ -75,8 +76,18 @@ class FakeIdGenerator implements IdGenerator {
       'value-${name.toLowerCase().replaceAll(' ', '-')}';
 
   @override
-  String trackerId({required String name}) =>
-      'tracker-${name.toLowerCase().replaceAll(' ', '-')}';
+  String trackerDefinitionId({required String name}) =>
+      'tracker-def-${name.toLowerCase().replaceAll(' ', '-')}';
+
+  @override
+  String trackerPreferenceId({required String trackerId}) =>
+      'tracker-pref-$trackerId';
+
+  @override
+  String trackerDefinitionChoiceId({
+    required String trackerId,
+    required String choiceKey,
+  }) => 'tracker-choice-$trackerId-$choiceKey';
 
   @override
   String taskValueId({required String taskId, required String valueId}) =>
@@ -125,22 +136,10 @@ class FakeIdGenerator implements IdGenerator {
   }
 
   @override
+  String trackerEventId() => 'tracker-event-${_trackerEventIdCounter++}';
+
+  @override
   String screenDefinitionId({required String screenKey}) => 'screen-$screenKey';
-
-  @override
-  String trackerResponseId({
-    required String journalEntryId,
-    required String trackerId,
-  }) => 'tracker-response-$journalEntryId-$trackerId';
-
-  @override
-  String dailyTrackerResponseId({
-    required String trackerId,
-    required DateTime responseDate,
-  }) {
-    final dateKey = responseDate.toIso8601String().split('T').first;
-    return 'daily-response-$trackerId-$dateKey';
-  }
 
   @override
   String analyticsSnapshotId({
@@ -175,6 +174,7 @@ class FakeIdGenerator implements IdGenerator {
     _pendingNotificationIdCounter = 0;
     _analyticsCorrelationIdCounter = 0;
     _analyticsInsightIdCounter = 0;
+    _trackerEventIdCounter = 0;
     _attentionResolutionIdCounter = 0;
   }
 

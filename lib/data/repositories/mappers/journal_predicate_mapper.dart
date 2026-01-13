@@ -75,23 +75,14 @@ class JournalPredicateMapper with QueryBuilderMixin {
     JournalMoodPredicate predicate,
     $JournalEntriesTable j,
   ) {
-    final column = j.moodRating;
-
+    // Mood is represented as tracker events in the OPT-A model.
+    // The journal_entries table does not store a mood_rating column.
+    // Until journal queries are implemented via joins/projections, treat mood
+    // predicates as unsupported at the SQL layer.
     return switch (predicate.operator) {
-      MoodOperator.equals =>
-        predicate.value == null
-            ? const Constant(false)
-            : column.equals(predicate.value!.value),
-      MoodOperator.greaterThanOrEqual =>
-        predicate.value == null
-            ? const Constant(false)
-            : column.isBiggerOrEqualValue(predicate.value!.value),
-      MoodOperator.lessThanOrEqual =>
-        predicate.value == null
-            ? const Constant(false)
-            : column.isSmallerOrEqualValue(predicate.value!.value),
-      MoodOperator.isNull => column.isNull(),
-      MoodOperator.isNotNull => column.isNotNull(),
+      MoodOperator.isNull => const Constant(true),
+      MoodOperator.isNotNull => const Constant(false),
+      _ => const Constant(false),
     };
   }
 

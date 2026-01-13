@@ -270,7 +270,7 @@ do not rely on section modules.
 | `attentionRules` | none | Attention rules UI. |
 | `focusSetupWizard` | none | Focus setup wizard UI. |
 | `trackerManagement` | none | Tracker management UI. |
-| `wellbeingDashboard` | none | Wellbeing dashboard UI. |
+| `journalDashboard` | none | Journal dashboard UI. |
 | `statisticsDashboard` | none | Statistics dashboard UI (placeholder at the moment). |
 | `browseHub` | none | Browse hub UI. |
 | `myDayFocusModeRequired` | none | Gate screen shown when My Day focus mode is missing. |

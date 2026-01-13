@@ -1,7 +1,11 @@
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition_choice.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_state_day.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_state_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 /// Repository contract for journal data.
@@ -35,33 +39,29 @@ abstract class JournalRepositoryContract {
 
   Future<void> deleteJournalEntry(String id);
 
-  // === Trackers (legacy; removed in Phase 02) ===
+  // === Trackers (OPT-A: event-log + projections) ===
 
-  Stream<List<Tracker>> watchTrackers();
+  Stream<List<TrackerDefinition>> watchTrackerDefinitions();
 
-  Future<List<Tracker>> getAllTrackers();
+  Stream<List<TrackerPreference>> watchTrackerPreferences();
 
-  Future<Tracker?> getTrackerById(String trackerId);
-
-  Future<void> saveTracker(Tracker tracker);
-
-  Future<void> deleteTracker(String trackerId);
-
-  Future<void> reorderTrackers(List<String> trackerIds);
-
-  // === Daily Tracker Responses (legacy; removed in Phase 02) ===
-
-  Stream<List<DailyTrackerResponse>> watchDailyTrackerResponses({
-    required DateTime date,
+  Stream<List<TrackerDefinitionChoice>> watchTrackerDefinitionChoices({
+    required String trackerId,
   });
 
-  Future<List<DailyTrackerResponse>> getDailyTrackerResponses({
-    required DateTime date,
+  Stream<List<TrackerStateDay>> watchTrackerStateDay({
+    required DateRange range,
   });
 
-  Future<void> saveDailyTrackerResponse(DailyTrackerResponse response);
+  Stream<List<TrackerStateEntry>> watchTrackerStateEntry({
+    required DateRange range,
+  });
 
-  Future<void> deleteDailyTrackerResponse(String id);
+  Future<void> saveTrackerDefinition(TrackerDefinition definition);
+
+  Future<void> saveTrackerPreference(TrackerPreference preference);
+
+  Future<void> appendTrackerEvent(TrackerEvent event);
 
   // === Analytics Helpers ===
 

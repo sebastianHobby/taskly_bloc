@@ -242,18 +242,77 @@ void main() {
         });
       });
 
-      group('trackerId', () {
+      group('trackerDefinitionId', () {
         test('generates deterministic ID from name', () {
-          final id1 = idGenerator.trackerId(name: 'Mood');
-          final id2 = idGenerator.trackerId(name: 'Mood');
+          final id1 = idGenerator.trackerDefinitionId(name: 'Mood');
+          final id2 = idGenerator.trackerDefinitionId(name: 'Mood');
 
           expect(id1, equals(id2));
           expect(id1.length, 36);
         });
 
         test('different names produce different IDs', () {
-          final id1 = idGenerator.trackerId(name: 'Mood');
-          final id2 = idGenerator.trackerId(name: 'Energy');
+          final id1 = idGenerator.trackerDefinitionId(name: 'Mood');
+          final id2 = idGenerator.trackerDefinitionId(name: 'Energy');
+
+          expect(id1, isNot(equals(id2)));
+        });
+
+        test('different users produce different IDs', () {
+          final gen1 = IdGenerator.withUserId('user-1');
+          final gen2 = IdGenerator.withUserId('user-2');
+
+          final id1 = gen1.trackerDefinitionId(name: 'Mood');
+          final id2 = gen2.trackerDefinitionId(name: 'Mood');
+
+          expect(id1, isNot(equals(id2)));
+        });
+      });
+
+      group('trackerPreferenceId', () {
+        test('generates deterministic ID from trackerId', () {
+          final id1 = idGenerator.trackerPreferenceId(trackerId: 'tracker-1');
+          final id2 = idGenerator.trackerPreferenceId(trackerId: 'tracker-1');
+
+          expect(id1, equals(id2));
+          expect(id1.length, 36);
+        });
+
+        test('different users produce different IDs', () {
+          final gen1 = IdGenerator.withUserId('user-1');
+          final gen2 = IdGenerator.withUserId('user-2');
+
+          final id1 = gen1.trackerPreferenceId(trackerId: 'tracker-1');
+          final id2 = gen2.trackerPreferenceId(trackerId: 'tracker-1');
+
+          expect(id1, isNot(equals(id2)));
+        });
+      });
+
+      group('trackerDefinitionChoiceId', () {
+        test('generates deterministic ID from trackerId and choiceKey', () {
+          final id1 = idGenerator.trackerDefinitionChoiceId(
+            trackerId: 'tracker-1',
+            choiceKey: 'good',
+          );
+          final id2 = idGenerator.trackerDefinitionChoiceId(
+            trackerId: 'tracker-1',
+            choiceKey: 'good',
+          );
+
+          expect(id1, equals(id2));
+          expect(id1.length, 36);
+        });
+
+        test('different choiceKeys produce different IDs', () {
+          final id1 = idGenerator.trackerDefinitionChoiceId(
+            trackerId: 'tracker-1',
+            choiceKey: 'good',
+          );
+          final id2 = idGenerator.trackerDefinitionChoiceId(
+            trackerId: 'tracker-1',
+            choiceKey: 'bad',
+          );
 
           expect(id1, isNot(equals(id2)));
         });
@@ -426,54 +485,6 @@ void main() {
           );
 
           expect(id1, equals(id2));
-        });
-      });
-
-      group('trackerResponseId', () {
-        test('generates deterministic ID from journal and tracker', () {
-          final id1 = idGenerator.trackerResponseId(
-            journalEntryId: 'journal-1',
-            trackerId: 'tracker-1',
-          );
-          final id2 = idGenerator.trackerResponseId(
-            journalEntryId: 'journal-1',
-            trackerId: 'tracker-1',
-          );
-
-          expect(id1, equals(id2));
-        });
-      });
-
-      group('dailyTrackerResponseId', () {
-        test('generates deterministic ID from tracker and date', () {
-          final date = DateTime(2025, 6, 15);
-          final id1 = idGenerator.dailyTrackerResponseId(
-            trackerId: 'tracker-1',
-            responseDate: date,
-          );
-          final id2 = idGenerator.dailyTrackerResponseId(
-            trackerId: 'tracker-1',
-            responseDate: date,
-          );
-
-          expect(id1, equals(id2));
-        });
-
-        test('includes user in path (different users = different IDs)', () {
-          final gen1 = IdGenerator.withUserId('user-1');
-          final gen2 = IdGenerator.withUserId('user-2');
-          final date = DateTime(2025, 6, 15);
-
-          final id1 = gen1.dailyTrackerResponseId(
-            trackerId: 'tracker-1',
-            responseDate: date,
-          );
-          final id2 = gen2.dailyTrackerResponseId(
-            trackerId: 'tracker-1',
-            responseDate: date,
-          );
-
-          expect(id1, isNot(equals(id2)));
         });
       });
 

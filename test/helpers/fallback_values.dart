@@ -86,9 +86,4 @@ void registerAllFallbackValues() {
       range: TestData.dateRange(),
     ),
   );
-
-  // === Journal ===
-  registerFallbackValue(TestData.journalEntry());
-  registerFallbackValue(TestData.tracker());
-  registerFallbackValue(TestData.dailyTrackerResponse());
 }

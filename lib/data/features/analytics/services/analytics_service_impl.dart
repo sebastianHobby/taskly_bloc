@@ -19,10 +19,7 @@ import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
-import 'package:taskly_bloc/domain/services/analytics/correlation_calculator.dart';
-import 'package:taskly_bloc/domain/services/analytics/mood_stats_calculator.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
-import 'package:taskly_bloc/domain/services/analytics/trend_calculator.dart';
 
 class AnalyticsServiceImpl implements AnalyticsService {
   AnalyticsServiceImpl({
@@ -36,19 +33,15 @@ class AnalyticsServiceImpl implements AnalyticsService {
        _projectRepo = projectRepo,
        _valueRepo = valueRepo,
        _journalRepo = journalRepo,
-       _taskStatsCalculator = TaskStatsCalculator(),
-       _trendCalculator = TrendCalculator(),
-       _moodStatsCalculator = MoodStatsCalculator(TrendCalculator()),
-       _correlationCalculator = CorrelationCalculator();
+       _taskStatsCalculator = TaskStatsCalculator();
   final AnalyticsRepositoryContract _analyticsRepo;
   final TaskRepositoryContract _taskRepo;
   final ProjectRepositoryContract _projectRepo;
   final ValueRepositoryContract _valueRepo;
   final JournalRepositoryContract _journalRepo;
   final TaskStatsCalculator _taskStatsCalculator;
-  final CorrelationCalculator _correlationCalculator;
-  final MoodStatsCalculator _moodStatsCalculator;
-  final TrendCalculator _trendCalculator;
+  static const _journalAnalyticsStubMessage =
+      'Journal/tracker analytics are being rebuilt.';
 
   @override
   Future<StatResult> getTaskStat({
@@ -98,37 +91,34 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    final moodData = await _journalRepo.getDailyMoodAverages(
-      range: range,
-    );
-
-    return _moodStatsCalculator.calculateTrend(
-      moodData: moodData,
-      range: range,
-      granularity: granularity,
-    );
+    // The journal system is mid-migration to an event-log tracker model.
+    // Read whatever the repository can provide, but keep rendering stable.
+    await _journalRepo.getDailyMoodAverages(range: range);
+    return TrendData(points: const [], granularity: granularity);
   }
 
   @override
   Future<Map<int, int>> getMoodDistribution({
     required DateRange range,
   }) async {
-    final moodData = await _journalRepo.getDailyMoodAverages(
-      range: range,
-    );
-
-    return _moodStatsCalculator.calculateDistribution(moodData: moodData);
+    // Stub while journal/tracker analytics are rebuilt.
+    await _journalRepo.getDailyMoodAverages(range: range);
+    return const {};
   }
 
   @override
   Future<MoodSummary> getMoodSummary({
     required DateRange range,
   }) async {
-    final moodData = await _journalRepo.getDailyMoodAverages(
-      range: range,
+    // Stub while journal/tracker analytics are rebuilt.
+    await _journalRepo.getDailyMoodAverages(range: range);
+    return const MoodSummary(
+      average: 0,
+      totalEntries: 0,
+      min: 0,
+      max: 0,
+      distribution: {},
     );
-
-    return _moodStatsCalculator.calculateSummary(moodData: moodData);
   }
 
   @override
@@ -137,36 +127,43 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    final trackerData = await _journalRepo.getTrackerValues(
-      trackerId: trackerId,
-      range: range,
-    );
-
-    return _trendCalculator.calculate(
-      data: trackerData,
-      range: range,
-      granularity: granularity,
-    );
+    // Stub while tracker event/projection reads are being finalized.
+    await _journalRepo.getTrackerValues(trackerId: trackerId, range: range);
+    return TrendData(points: const [], granularity: granularity);
   }
 
   @override
   Future<CorrelationResult> calculateCorrelation({
     required CorrelationRequest request,
   }) async {
+    // Stub while journal/tracker analytics are rebuilt.
     return request.when(
-      moodVsTracker: (trackerId, range) async {
-        return _calculateMoodVsTracker(trackerId, range);
-      },
-      moodVsEntity: (entityId, entityType, range) async {
-        return _calculateMoodVsEntity(entityId, entityType, range);
-      },
-      trackerVsTracker: (trackerId1, trackerId2, range) async {
-        return _calculateTrackerVsTracker(
-          trackerId1,
-          trackerId2,
-          range,
-        );
-      },
+      moodVsTracker: (trackerId, range) async => const CorrelationResult(
+        sourceLabel: 'Tracker',
+        targetLabel: 'Mood',
+        coefficient: 0,
+        strength: CorrelationStrength.negligible,
+        sampleSize: 0,
+        insight: _journalAnalyticsStubMessage,
+      ),
+      moodVsEntity: (entityId, entityType, range) async =>
+          const CorrelationResult(
+            sourceLabel: 'Entity',
+            targetLabel: 'Mood',
+            coefficient: 0,
+            strength: CorrelationStrength.negligible,
+            sampleSize: 0,
+            insight: _journalAnalyticsStubMessage,
+          ),
+      trackerVsTracker: (trackerId1, trackerId2, range) async =>
+          const CorrelationResult(
+            sourceLabel: 'Tracker',
+            targetLabel: 'Tracker',
+            coefficient: 0,
+            strength: CorrelationStrength.negligible,
+            sampleSize: 0,
+            insight: _journalAnalyticsStubMessage,
+          ),
     );
   }
 
@@ -175,32 +172,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     int limit = 10,
   }) async {
-    // Get all trackers
-    final trackers = await _journalRepo.getAllTrackers();
-
-    // Calculate correlations for each tracker
-    final List<CorrelationResult> correlations = [];
-    for (final tracker in trackers) {
-      try {
-        final correlation = await _calculateMoodVsTracker(
-          tracker.id,
-          range,
-        );
-        if (correlation.coefficient.abs() > 0.1) {
-          // Only include meaningful correlations
-          correlations.add(correlation);
-        }
-      } catch (_) {
-        // Skip trackers with insufficient data
-      }
-    }
-
-    // Sort by absolute coefficient value
-    correlations.sort(
-      (a, b) => b.coefficient.abs().compareTo(a.coefficient.abs()),
-    );
-
-    return correlations.take(limit).toList();
+    // Stub while journal/tracker analytics are rebuilt.
+    return const [];
   }
 
   @override
@@ -225,110 +198,6 @@ class AnalyticsServiceImpl implements AnalyticsService {
     // Get all tasks - in a real implementation, this would be filtered
     final allTasks = await _taskRepo.watchAll().first;
     return allTasks;
-  }
-
-  Future<CorrelationResult> _calculateMoodVsTracker(
-    String trackerId,
-    DateRange range,
-  ) async {
-    final tracker = await _journalRepo.getTrackerById(trackerId);
-    final trackerValues = await _journalRepo.getTrackerValues(
-      trackerId: trackerId,
-      range: range,
-    );
-    final moodData = await _journalRepo.getDailyMoodAverages(
-      range: range,
-    );
-
-    // Get days where tracker had values
-    final sourceDays = trackerValues.keys.toList();
-
-    return _correlationCalculator.calculate(
-      sourceLabel: tracker?.name ?? 'Tracker',
-      targetLabel: 'Mood',
-      sourceDays: sourceDays,
-      targetData: moodData,
-    );
-  }
-
-  Future<CorrelationResult> _calculateMoodVsEntity(
-    String entityId,
-    EntityType entityType,
-    DateRange range,
-  ) async {
-    final tasks = await _getTasksForEntity(
-      entityId: entityId,
-      entityType: entityType,
-    );
-
-    final taskDays = _taskStatsCalculator.getTaskDaysForEntity(
-      tasks: tasks,
-      entityId: entityId,
-      entityType: entityType,
-      range: range,
-    );
-
-    final moodData = await _journalRepo.getDailyMoodAverages(
-      range: range,
-    );
-
-    final entityLabel = await _getEntityLabel(entityId, entityType);
-
-    return _correlationCalculator.calculate(
-      sourceLabel: '$entityLabel tasks',
-      targetLabel: 'Mood',
-      sourceDays: taskDays['days'] ?? [],
-      targetData: moodData,
-    );
-  }
-
-  Future<CorrelationResult> _calculateTrackerVsTracker(
-    String trackerId1,
-    String trackerId2,
-    DateRange range,
-  ) async {
-    final tracker1 = await _journalRepo.getTrackerById(trackerId1);
-    final tracker2 = await _journalRepo.getTrackerById(trackerId2);
-
-    final tracker1Values = await _journalRepo.getTrackerValues(
-      trackerId: trackerId1,
-      range: range,
-    );
-
-    final tracker2Values = await _journalRepo.getTrackerValues(
-      trackerId: trackerId2,
-      range: range,
-    );
-
-    return _correlationCalculator.calculate(
-      sourceLabel: tracker1?.name ?? 'Tracker 1',
-      targetLabel: tracker2?.name ?? 'Tracker 2',
-      sourceDays: tracker1Values.keys.toList(),
-      targetData: tracker2Values,
-    );
-  }
-
-  Future<String> _getEntityLabel(String entityId, EntityType entityType) async {
-    return switch (entityType) {
-      EntityType.task => await _getTaskLabel(entityId),
-      EntityType.project => await _getProjectLabel(entityId),
-      EntityType.value => await _getValueLabel(entityId),
-    };
-  }
-
-  Future<String> _getTaskLabel(String taskId) async {
-    final task = await _taskRepo.getById(taskId);
-    return task?.name ?? 'Unknown Task';
-  }
-
-  Future<String> _getProjectLabel(String projectId) async {
-    final project = await _projectRepo.getById(projectId);
-    return project?.name ?? 'Unknown Project';
-  }
-
-  Future<String> _getValueLabel(String valueId) async {
-    final value = await _valueRepo.getById(valueId);
-    return value?.name ?? 'Unknown Value';
   }
 
   @override
