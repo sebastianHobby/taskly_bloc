@@ -23,7 +23,7 @@ class ScreenWithPreferences {
 ///
 /// ## Architecture
 ///
-/// Screens come from code via `SystemScreenDefinitions`.
+/// Screens come from code via `SystemScreenSpecs`.
 ///
 /// User preferences (sortOrder, isActive) for system screens are stored in
 /// `screen_preferences`.
@@ -36,7 +36,7 @@ class ScreenWithPreferences {
 /// - System screens available immediately on app start
 /// - Template updates applied automatically
 abstract class ScreenDefinitionsRepositoryContract {
-  /// Watch all active screens (system + custom), sorted by effective sortOrder.
+  /// Watch all active screens (system), sorted by effective sortOrder.
   ///
   /// Applies preferences to determine visibility and sort order.
   Stream<List<ScreenWithPreferences>> watchAllScreens();
@@ -49,7 +49,7 @@ abstract class ScreenDefinitionsRepositoryContract {
   /// Returns system screen from code.
   Stream<ScreenWithPreferences?> watchScreen(String screenKey);
 
-  /// Update preferences for any screen (system or custom).
+  /// Update preferences for any screen (system).
   ///
   /// Preferences are stored in `screen_preferences`.
   Future<void> updateScreenPreferences(

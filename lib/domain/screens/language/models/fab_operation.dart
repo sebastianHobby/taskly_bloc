@@ -2,8 +2,8 @@ import 'package:json_annotation/json_annotation.dart';
 
 /// Operations that can be exposed as a FAB on a screen.
 ///
-/// Used by [ScreenDefinition.fabOperations] to declaratively specify
-/// what create actions are available on each screen.
+/// Used by screen chrome configuration to declaratively specify what create
+/// actions are available on each screen.
 enum FabOperation {
   /// Create a new task
   @JsonValue('create_task')

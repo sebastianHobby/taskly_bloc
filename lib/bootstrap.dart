@@ -319,7 +319,7 @@ Future<void> _maybeDevAutoLogin() async {
 /// Register screen and entity builders with [Routing].
 ///
 /// This centralizes all screen→bloc mappings. Screens not registered here
-/// automatically use [UnifiedScreenPage] for convention-based rendering.
+/// automatically use the typed ScreenSpec rendering path.
 void _registerRoutingBuilders() {
   final taskRepo = getIt<TaskRepositoryContract>();
   final projectRepo = getIt<ProjectRepositoryContract>();

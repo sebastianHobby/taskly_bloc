@@ -35,21 +35,6 @@ void main() {
       expect(normalized['settings_overrides'], isA<Map>());
     });
 
-    test('decodes screen_definitions jsonb maps', () {
-      final normalized = normalizeUploadData(
-        table: 'screen_definitions',
-        rowId: 's1',
-        opType: 'put',
-        data: {
-          'content_config': '{"sections":[]}',
-          'actions_config': '{"fabOperations":[]}',
-        },
-      );
-
-      expect(normalized['content_config'], isA<Map>());
-      expect(normalized['actions_config'], isA<Map>());
-    });
-
     test('decodes pending_notifications payload as any JSON', () {
       final normalized = normalizeUploadData(
         table: 'pending_notifications',

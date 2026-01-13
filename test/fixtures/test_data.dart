@@ -4,16 +4,6 @@ import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
 import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/display_config.dart'
-    as display;
-import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
@@ -23,7 +13,6 @@ import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
 import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Test data builders using the Object Mother pattern.
 ///
@@ -377,72 +366,6 @@ class TestData {
   // === Enums and Simple Types ===
 
   // === Screens ===
-
-  /// Creates a screen definition for testing.
-  ///
-  /// Historically tests used a DataDrivenScreenDefinition; this now returns the
-  /// unified [ScreenDefinition] shape.
-  static ScreenDefinition screenDefinition({
-    String? id,
-    String? screenKey,
-    String name = 'Test Screen',
-    List<SectionRef>? sections,
-    display.DisplayConfig? displayConfig,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? iconName,
-    ScreenSource screenSource = ScreenSource.userDefined,
-  }) {
-    final now = DateTime.now();
-    return ScreenDefinition(
-      id: id ?? _nextId('screen'),
-      screenKey: screenKey ?? 'screen-key-1',
-      name: name,
-      sections:
-          sections ??
-          [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: ListSectionParamsV2(
-                config: DataConfig.task(query: TaskQuery.all()),
-                pack: StylePackV2.standard,
-                layout: const SectionLayoutSpecV2.flatList(),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Test Section'),
-            ),
-          ],
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      chrome: ScreenChrome(iconName: iconName),
-      screenSource: screenSource,
-    );
-  }
-
-  /// Creates a navigation-only screen definition for testing.
-  ///
-  /// A navigation-only screen is represented as a [ScreenDefinition] with no
-  /// sections.
-  static ScreenDefinition navigationOnlyScreen({
-    String? id,
-    String? screenKey,
-    String name = 'Test Navigation Screen',
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    String? iconName,
-    ScreenSource screenSource = ScreenSource.userDefined,
-  }) {
-    final now = DateTime.now();
-    return ScreenDefinition(
-      id: id ?? _nextId('nav-screen'),
-      screenKey: screenKey ?? 'nav-screen-key-1',
-      name: name,
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
-      screenSource: screenSource,
-      sections: const [],
-      chrome: ScreenChrome(iconName: iconName),
-    );
-  }
 
   // === Pre-built Sample Entities ===
   // These are ready-to-use entities with sensible defaults,

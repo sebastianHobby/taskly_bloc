@@ -58,7 +58,7 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
 
 ### Local E2E scripts + docs
 - Deterministic local stack docs:
-  - [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+  - [doc/backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md](../backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - PowerShell helpers:
   - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
   - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
@@ -228,7 +228,7 @@ See [infra/powersync_local/config/powersync.yaml](../../infra/powersync_local/co
 PowerSync replication requires logical replication to be enabled/configured on the target Postgres.
 
 In this repo, local stack orchestration lives under:
-- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [doc/backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md](../backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - [infra/powersync_local/](../../infra/powersync_local/)
 
 If replication setup becomes a recurring source of drift, add a Supabase migration under `supabase/migrations/` to make the required publication/permissions explicit and reviewable.
@@ -277,7 +277,7 @@ The repo provides scripts to:
 - generate `dart_defines.local.json` from `supabase status`
 
 Entry points:
-- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [doc/backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md](../backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - [tool/e2e/Start-LocalE2EStack.ps1](../../tool/e2e/Start-LocalE2EStack.ps1)
 - [tool/e2e/Run-LocalE2ETests.ps1](../../tool/e2e/Run-LocalE2ETests.ps1)
 
@@ -311,4 +311,4 @@ Local schema is kept in sync with production by updating `supabase/migrations/*`
 This repo intentionally avoids automatically pulling prod schema on each test run.
 
 See:
-- [doc/LOCAL_SUPABASE_POWERSYNC_E2E.md](../LOCAL_SUPABASE_POWERSYNC_E2E.md)
+- [doc/backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md](../backlog/LOCAL_SUPABASE_POWERSYNC_E2E.md)

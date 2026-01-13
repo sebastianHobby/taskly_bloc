@@ -8,10 +8,10 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/view/journal/journal_timeline_view.dart';
 
@@ -41,7 +41,7 @@ class _JournalScreenState extends State<JournalScreen> {
   @override
   void initState() {
     super.initState();
-    _trackersStream = getIt<WellbeingRepositoryContract>().watchTrackers();
+    _trackersStream = getIt<JournalRepositoryContract>().watchTrackers();
     unawaited(_loadForDate(_selectedDate));
   }
 
@@ -90,7 +90,7 @@ class _JournalScreenState extends State<JournalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Journal � ${_formatDate(_selectedDate)}'),
+        title: Text('Journal · ${_formatDate(_selectedDate)}'),
         actions: [
           IconButton(
             onPressed: _pickDate,

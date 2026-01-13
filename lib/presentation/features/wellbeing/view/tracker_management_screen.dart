@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
 import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 

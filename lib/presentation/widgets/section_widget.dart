@@ -24,7 +24,7 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/project_lis
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_renderer_v2.dart';
 
-/// Widget that renders a section from ScreenBloc state.
+/// Widget that renders a section from interpreted screen data.
 ///
 /// Handles different section types (data, allocation, agenda) and
 /// displays appropriate UI for each.
@@ -36,6 +36,7 @@ class SectionWidget extends StatelessWidget {
     this.displayConfig,
     this.focusMode,
     this.onEntityTap,
+    this.onEntityHeaderTap,
     this.onTaskComplete,
     this.onTaskCheckboxChanged,
     this.onProjectCheckboxChanged,
@@ -54,6 +55,12 @@ class SectionWidget extends StatelessWidget {
 
   /// Callback when an entity is tapped
   final void Function(dynamic entity)? onEntityTap;
+
+  /// Callback when the entity header module is tapped.
+  ///
+  /// This is separate from [onEntityTap] so detail pages can open editors from
+  /// the header while list items still navigate to their routes.
+  final VoidCallback? onEntityHeaderTap;
 
   /// Callback when a task is completed.
   final void Function(Task task)? onTaskComplete;
@@ -122,6 +129,7 @@ class SectionWidget extends StatelessWidget {
         SliverToBoxAdapter(
           child: EntityHeaderSectionRenderer(
             data: result! as SectionDataResult,
+            onTap: onEntityHeaderTap,
             onProjectCheckboxChanged: (val) {
               if (result is EntityHeaderProjectSectionResult) {
                 onProjectCheckboxChanged?.call(result.project, val);

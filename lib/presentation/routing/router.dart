@@ -52,13 +52,6 @@ final router = GoRouter(
           ),
         ),
         GoRoute(
-          path: '/label/:id',
-          builder: (_, state) => Routing.buildEntityDetail(
-            'label',
-            state.pathParameters['id']!,
-          ),
-        ),
-        GoRoute(
           path: '/value/:id',
           builder: (_, state) => Routing.buildEntityDetail(
             'value',

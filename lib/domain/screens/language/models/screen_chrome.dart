@@ -9,7 +9,7 @@ part 'screen_chrome.g.dart';
 /// Declarative configuration for screen UI chrome.
 ///
 /// This groups UI metadata (icon, badges, app bar actions, FAB actions) so that
-/// [ScreenDefinition] stays focused on content structure (sections) and identity.
+/// the screen spec stays focused on content structure (sections) and identity.
 @freezed
 abstract class ScreenChrome with _$ScreenChrome {
   const factory ScreenChrome({

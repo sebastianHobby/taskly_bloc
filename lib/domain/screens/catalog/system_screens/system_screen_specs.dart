@@ -344,8 +344,8 @@ abstract class SystemScreenSpecs {
     'values': 5,
     'projects': 6,
     'statistics': 7,
+    'browse': 8,
     'settings': 100,
-    'browse': 1000,
   };
 
   static int getDefaultSortOrder(String screenKey) {
@@ -375,19 +375,7 @@ abstract class SystemScreenSpecs {
   };
 
   static ScreenSpec? getByKey(String screenKey) {
-    // Handle legacy entrypoints and URL variations.
     final normalized = screenKey.replaceAll('-', '_');
-
-    // Legacy entrypoints: route to canonical focus setup flow.
-    if (normalized == 'allocation_settings' ||
-        normalized == 'attention_rules') {
-      return focusSetup;
-    }
-
-    // Navigation settings supports hyphenated key in URLs.
-    if (normalized == 'navigation_settings') {
-      return navigationSettings;
-    }
 
     return _byKey[normalized];
   }

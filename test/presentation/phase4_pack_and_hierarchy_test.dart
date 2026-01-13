@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:json_annotation/json_annotation.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
@@ -17,13 +16,20 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
+import '../helpers/widget_test_helpers.dart';
+
+Future<void> _pumpForStream(WidgetTester tester, [int frameCount = 10]) async {
+  for (var i = 0; i < frameCount; i++) {
+    await tester.pump();
+  }
+}
 
 void main() {
   group('Phase 4: StylePackV2 (pack-only)', () {
     testWidgets('TaskListV2 compactTiles derives from params.pack', (
       tester,
     ) async {
-      Widget build({required StylePackV2 pack}) {
+      Widget buildBody({required StylePackV2 pack}) {
         final task = TestData.task();
         final data =
             SectionDataResult.dataV2(items: [ScreenItem.task(task)])
@@ -42,21 +48,19 @@ void main() {
           data: data,
         );
 
-        return MaterialApp(
-          home: Scaffold(
-            body: CustomScrollView(slivers: [SectionWidget(section: section)]),
-          ),
+        return Scaffold(
+          body: CustomScrollView(slivers: [SectionWidget(section: section)]),
         );
       }
 
-      await tester.pumpWidget(build(pack: StylePackV2.compact));
-      await tester.pumpAndSettle();
+      await tester.pumpApp(buildBody(pack: StylePackV2.compact));
+      await _pumpForStream(tester);
 
       final taskView = tester.widget<TaskView>(find.byType(TaskView));
       expect(taskView.compact, isTrue);
 
-      await tester.pumpWidget(build(pack: StylePackV2.standard));
-      await tester.pumpAndSettle();
+      await tester.pumpApp(buildBody(pack: StylePackV2.standard));
+      await _pumpForStream(tester);
 
       final taskView2 = tester.widget<TaskView>(find.byType(TaskView));
       expect(taskView2.compact, isFalse);
@@ -65,7 +69,7 @@ void main() {
     testWidgets('ValueListV2 compactTiles derives from params.pack', (
       tester,
     ) async {
-      Widget build({required StylePackV2 pack}) {
+      Widget buildBody({required StylePackV2 pack}) {
         final value = TestData.value();
         final data =
             SectionDataResult.dataV2(items: [ScreenItem.value(value)])
@@ -84,21 +88,19 @@ void main() {
           data: data,
         );
 
-        return MaterialApp(
-          home: Scaffold(
-            body: CustomScrollView(slivers: [SectionWidget(section: section)]),
-          ),
+        return Scaffold(
+          body: CustomScrollView(slivers: [SectionWidget(section: section)]),
         );
       }
 
-      await tester.pumpWidget(build(pack: StylePackV2.compact));
-      await tester.pumpAndSettle();
+      await tester.pumpApp(buildBody(pack: StylePackV2.compact));
+      await _pumpForStream(tester);
 
       final valueView = tester.widget<ValueView>(find.byType(ValueView));
       expect(valueView.compact, isTrue);
 
-      await tester.pumpWidget(build(pack: StylePackV2.standard));
-      await tester.pumpAndSettle();
+      await tester.pumpApp(buildBody(pack: StylePackV2.standard));
+      await _pumpForStream(tester);
 
       final valueView2 = tester.widget<ValueView>(find.byType(ValueView));
       expect(valueView2.compact, isFalse);
@@ -115,7 +117,7 @@ void main() {
 
       expect(
         () => ListSectionParamsV2.fromJson(json),
-        throwsA(isA<CheckedFromJsonException>()),
+        throwsA(isA<ArgumentError>()),
       );
     });
   });
@@ -137,16 +139,14 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CustomScrollView(
-              slivers: [InterleavedListRendererV2(data: data, params: params)],
-            ),
+      await tester.pumpApp(
+        Scaffold(
+          body: CustomScrollView(
+            slivers: [InterleavedListRendererV2(data: data, params: params)],
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await _pumpForStream(tester);
 
       expect(find.byTooltip('Collapse project'), findsOneWidget);
     });

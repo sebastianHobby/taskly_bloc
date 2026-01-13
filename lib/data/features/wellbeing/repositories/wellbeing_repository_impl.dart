@@ -5,20 +5,20 @@ import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/repositories/mappers/journal_predicate_mapper.dart';
 import 'package:taskly_bloc/data/repositories/mixins/query_builder_mixin.dart';
 import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 
 class WellbeingRepositoryImpl
     with QueryBuilderMixin
-    implements WellbeingRepositoryContract {
+  implements JournalRepositoryContract {
   WellbeingRepositoryImpl(this._database, this._idGenerator);
   final AppDatabase _database;
   final IdGenerator _idGenerator;

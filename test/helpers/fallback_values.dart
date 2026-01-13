@@ -70,7 +70,6 @@ void registerAllFallbackValues() {
   registerFallbackValue(PageKey.taskOverview);
 
   // === Screens & Views ===
-  registerFallbackValue(TestData.screenDefinition());
   registerFallbackValue(const EntitySelector(entityType: EntityType.task));
   registerFallbackValue(const DisplayConfig());
   registerFallbackValue(const SortPreferences());

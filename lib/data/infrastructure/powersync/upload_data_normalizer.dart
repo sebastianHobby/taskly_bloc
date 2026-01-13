@@ -19,11 +19,6 @@ uploadJsonExpectationsByTable = {
   'user_profiles': {
     'settings_overrides': UploadJsonExpectation.map,
   },
-  'screen_definitions': {
-    'content_config': UploadJsonExpectation.map,
-    'actions_config': UploadJsonExpectation.map,
-    // Note: Supabase has badge_config jsonb but local schema currently does not.
-  },
   'attention_rules': {
     'trigger_config': UploadJsonExpectation.map,
     'entity_selector': UploadJsonExpectation.map,

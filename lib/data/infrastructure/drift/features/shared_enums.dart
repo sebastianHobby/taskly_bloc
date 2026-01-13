@@ -10,7 +10,6 @@ library;
 ///
 /// Used by:
 /// - [AttentionRules] table
-/// - [ScreenDefinitions] table
 ///
 /// NOTE: Values must match Supabase enum values (snake_case).
 /// Drift's textEnum() uses .name, so enum values must be snake_case.

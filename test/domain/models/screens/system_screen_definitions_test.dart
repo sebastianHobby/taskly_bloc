@@ -1,7 +1,7 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 void main() {
   group('SystemScreenSpecs', () {

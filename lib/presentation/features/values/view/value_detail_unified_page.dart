@@ -9,18 +9,14 @@ import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
-    as screens;
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
-import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
@@ -133,29 +129,27 @@ class _ValueScreenWithData extends StatelessWidget {
       name: value.name,
       template: const ScreenTemplateSpec.standardScaffoldV1(),
       modules: SlottedModules(
-        primary: [
-          ScreenModuleSpec.taskListV2(
-            title: 'Tasks',
-            params: ListSectionParamsV2(
-              config: DataConfig.task(
-                query: TaskQuery.forValue(valueId: value.id),
-              ),
-              pack: StylePackV2.standard,
-              layout: const SectionLayoutSpecV2.flatList(
-                separator: ListSeparatorV2.divider,
-              ),
+        header: [
+          ScreenModuleSpec.entityHeader(
+            params: EntityHeaderSectionParams(
+              entityType: 'value',
+              entityId: value.id,
+              showCheckbox: false,
+              showMetadata: true,
             ),
           ),
-          ScreenModuleSpec.projectListV2(
-            title: 'Projects',
-            params: ListSectionParamsV2(
-              config: DataConfig.project(
-                query: ProjectQuery.byValues([value.id]),
-              ),
+        ],
+        primary: [
+          ScreenModuleSpec.hierarchyValueProjectTaskV2(
+            title: 'Projects & tasks',
+            params: HierarchyValueProjectTaskSectionParamsV2(
+              sources: [
+                DataConfig.task(query: TaskQuery.forValue(valueId: value.id)),
+              ],
               pack: StylePackV2.standard,
-              layout: const SectionLayoutSpecV2.flatList(
-                separator: ListSeparatorV2.spaced8,
-              ),
+              pinnedValueHeaders: false,
+              pinnedProjectHeaders: true,
+              singleInboxGroupForNoProjectTasks: true,
             ),
           ),
         ],
@@ -182,78 +176,10 @@ class _ValueScreenWithData extends StatelessWidget {
   }
 }
 
-class _ValueScreenView extends StatefulWidget {
+class _ValueScreenView extends StatelessWidget {
   const _ValueScreenView({required this.value});
 
   final Value value;
-
-  @override
-  State<_ValueScreenView> createState() => _ValueScreenViewState();
-}
-
-class _ValueScreenViewState extends State<_ValueScreenView> {
-  screens.ValueStats? _valueStats;
-  bool _isLoadingStats = true;
-
-  Value get value => widget.value;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadValueStats();
-  }
-
-  Future<void> _loadValueStats() async {
-    try {
-      final analyticsService = getIt<AnalyticsService>();
-
-      // Load all required data in parallel
-      final results = await Future.wait([
-        analyticsService.getValueWeeklyTrends(weeks: 8),
-        analyticsService.getValueActivityStats(),
-        analyticsService.getRecentCompletionsByValue(days: 56),
-        analyticsService.getTotalRecentCompletions(days: 56),
-      ]);
-
-      final weeklyTrends = results[0] as Map<String, List<double>>;
-      final activityStats = results[1] as Map<String, ValueActivityStats>;
-      final recentCompletions = results[2] as Map<String, int>;
-      final totalRecentCompletions = results[3] as int;
-
-      // Calculate actual percent from recent completions
-      final actualPercent = totalRecentCompletions > 0
-          ? ((recentCompletions[value.id] ?? 0) / totalRecentCompletions) * 100
-          : 0.0;
-
-      // Get weekly trend data
-      final weeklyTrend = weeklyTrends[value.id] ?? [];
-
-      // Get activity stats
-      final activity =
-          activityStats[value.id] ??
-          const ValueActivityStats(taskCount: 0, projectCount: 0);
-
-      if (mounted) {
-        setState(() {
-          _valueStats = screens.ValueStats(
-            targetPercent: 0, // No longer tracking target allocation
-            actualPercent: actualPercent,
-            taskCount: activity.taskCount,
-            projectCount: activity.projectCount,
-            weeklyTrend: weeklyTrend,
-            gapWarningThreshold: 15,
-          );
-          _isLoadingStats = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingStats = false;
-        });
-      }
-    }
-  }
 
   void _showEditValueSheet(BuildContext context) {
     final launcher = EditorLauncher.fromGetIt();
@@ -293,8 +219,6 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
 
   void _handleMenuAction(BuildContext context, String action) {
     switch (action) {
-      case 'edit':
-        _showEditValueSheet(context);
       case 'delete':
         unawaited(_showDeleteConfirmation(context));
     }
@@ -339,42 +263,22 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Entity header - use ValueView for values
-          if (_isLoadingStats)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else
-            ValueView(
-              value: value,
-              stats: _valueStats,
-              onTap: () => _showEditValueSheet(context),
+      body: BlocBuilder<ScreenSpecBloc, ScreenSpecState>(
+        builder: (context, state) {
+          return switch (state) {
+            ScreenSpecInitialState() ||
+            ScreenSpecLoadingState() => const LoadingStateWidget(),
+            ScreenSpecLoadedState(:final data) => _buildRelatedLists(
+              context,
+              data,
+              entityActionService,
             ),
-
-          // Related lists via ScreenBloc
-          Expanded(
-            child: BlocBuilder<ScreenSpecBloc, ScreenSpecState>(
-              builder: (context, state) {
-                return switch (state) {
-                  ScreenSpecInitialState() ||
-                  ScreenSpecLoadingState() => const LoadingStateWidget(),
-                  ScreenSpecLoadedState(:final data) => _buildRelatedLists(
-                    context,
-                    data,
-                    entityActionService,
-                  ),
-                  ScreenSpecErrorState(:final message) => ErrorStateWidget(
-                    message: message,
-                    onRetry: () => Navigator.of(context).pop(),
-                  ),
-                };
-              },
+            ScreenSpecErrorState(:final message) => ErrorStateWidget(
+              message: message,
+              onRetry: () => Navigator.of(context).pop(),
             ),
-          ),
-        ],
+          };
+        },
       ),
     );
   }
@@ -396,47 +300,33 @@ class _ValueScreenViewState extends State<_ValueScreenView> {
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        // Data updates automatically via reactive streams
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-      },
-      child: CustomScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        slivers: [
-          for (final section in sections)
-            SectionWidget(
-              section: section,
-              displayConfig: section.displayConfig,
-              onEntityTap: (entity) {
-                if (entity is Task) {
-                  Routing.toEntity(
-                    context,
-                    EntityType.task,
-                    entity.id,
-                  );
-                } else if (entity is Project) {
-                  Routing.toEntity(
-                    context,
-                    EntityType.project,
-                    entity.id,
-                  );
-                }
-              },
-              onTaskCheckboxChanged: (task, value) async {
-                if (value ?? false) {
-                  await entityActionService.completeTask(task.id);
-                } else {
-                  await entityActionService.uncompleteTask(task.id);
-                }
-              },
-              onTaskDelete: (task) async {
-                await entityActionService.deleteTask(task.id);
-              },
-            ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
-      ),
+    return CustomScrollView(
+      slivers: [
+        for (final section in sections)
+          SectionWidget(
+            section: section,
+            displayConfig: section.displayConfig,
+            onEntityHeaderTap: () => _showEditValueSheet(context),
+            onEntityTap: (entity) {
+              if (entity is Task) {
+                Routing.toEntity(context, EntityType.task, entity.id);
+              } else if (entity is Project) {
+                Routing.toEntity(context, EntityType.project, entity.id);
+              }
+            },
+            onTaskCheckboxChanged: (task, value) async {
+              if (value ?? false) {
+                await entityActionService.completeTask(task.id);
+              } else {
+                await entityActionService.uncompleteTask(task.id);
+              }
+            },
+            onTaskDelete: (task) async {
+              await entityActionService.deleteTask(task.id);
+            },
+          ),
+        const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
+      ],
     );
   }
 }

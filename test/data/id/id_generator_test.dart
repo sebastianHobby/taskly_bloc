@@ -102,7 +102,6 @@ void main() {
             IdGenerator.isDeterministic('daily_tracker_responses'),
             isTrue,
           );
-          expect(IdGenerator.isDeterministic('screen_definitions'), isTrue);
           expect(IdGenerator.isDeterministic('analytics_snapshots'), isTrue);
         });
 

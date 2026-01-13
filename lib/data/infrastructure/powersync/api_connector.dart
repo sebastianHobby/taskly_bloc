@@ -348,7 +348,6 @@ class SupabaseConnector extends PowerSyncBackendConnector {
             'trackerId="${data['tracker_id']}"',
       'daily_tracker_responses' =>
         'trackerId="${data['tracker_id']}", date="${data['response_date']}"',
-      'screen_definitions' => 'screenKey="${data['screen_key']}"',
       'analytics_snapshots' =>
         'entityType="${data['entity_type']}", entityId="${data['entity_id']}",'
             ' date="${data['snapshot_date']}"',
@@ -564,10 +563,9 @@ Future<void> _cleanupOrphanedAttentionResolutions({
   final rules = await db.select(db.attentionRules).get();
   final validRuleIds = rules.map((r) => r.id).toSet();
 
-  final deleted =
-      await (db.delete(db.attentionResolutions)
-            ..where((r) => r.ruleId.isNotIn(validRuleIds)))
-          .go();
+  final deleted = await (db.delete(
+    db.attentionResolutions,
+  )..where((r) => r.ruleId.isNotIn(validRuleIds))).go();
 
   if (deleted > 0) {
     talker.info(

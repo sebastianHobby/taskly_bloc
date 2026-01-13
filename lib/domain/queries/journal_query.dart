@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'

@@ -1,88 +1,88 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/core/performance/performance_logger.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 import '../helpers/bloc_test_patterns.dart';
 
-class MockScreenDataInterpreter extends Mock implements ScreenDataInterpreter {}
+class MockScreenSpecDataInterpreter extends Mock
+    implements ScreenSpecDataInterpreter {}
+
+const _testSpec = ScreenSpec(
+  id: 'test-spec',
+  screenKey: 'test_screen',
+  name: 'Test Screen',
+  template: ScreenTemplateSpec.standardScaffoldV1(),
+);
+
+ScreenSpecData _data({String? error}) {
+  return ScreenSpecData(
+    spec: _testSpec,
+    template: _testSpec.template,
+    sections: const SlottedSectionVms(),
+    error: error,
+  );
+}
 
 void main() {
   setUpAll(() {
     initializeTalkerForTest();
-    registerFallbackValue(_createScreenDefinition());
+    registerFallbackValue(_testSpec);
   });
 
-  group('ScreenBloc (integration-ish)', () {
-    late MockScreenDataInterpreter mockInterpreter;
-    late ScreenDefinition testDefinition;
-    late ScreenData testScreenData;
+  group('ScreenSpecBloc (integration-ish)', () {
+    late MockScreenSpecDataInterpreter mockInterpreter;
 
     setUp(() {
-      mockInterpreter = MockScreenDataInterpreter();
-      testDefinition = _createScreenDefinition();
-      testScreenData = _createScreenData(testDefinition);
+      mockInterpreter = MockScreenSpecDataInterpreter();
     });
 
-    blocTestSafe<ScreenBloc, ScreenState>(
+    blocTestSafe<ScreenSpecBloc, ScreenSpecState>(
       'emits loading then loaded when interpreter emits data',
       setUp: () {
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
-          (_) => Stream.value(testScreenData),
+          (_) => Stream.value(_data()),
         );
       },
-      build: () => ScreenBloc(
-        interpreter: mockInterpreter,
-        performanceLogger: PerformanceLogger(),
-      ),
-      act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
+      build: () => ScreenSpecBloc(interpreter: mockInterpreter),
+      act: (bloc) => bloc.add(const ScreenSpecLoadEvent(spec: _testSpec)),
       expect: () => [
-        isA<ScreenLoadingState>(),
-        isA<ScreenLoadedState>(),
+        isA<ScreenSpecLoadingState>(),
+        isA<ScreenSpecLoadedState>(),
       ],
     );
 
-    blocTestSafe<ScreenBloc, ScreenState>(
+    blocTestSafe<ScreenSpecBloc, ScreenSpecState>(
       'emits error when interpreter stream throws',
       setUp: () {
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
-          (_) => Stream<ScreenData>.error(Exception('Stream failed')),
+          (_) => Stream<ScreenSpecData>.error(Exception('Stream failed')),
         );
       },
-      build: () => ScreenBloc(
-        interpreter: mockInterpreter,
-        performanceLogger: PerformanceLogger(),
-      ),
-      act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
+      build: () => ScreenSpecBloc(interpreter: mockInterpreter),
+      act: (bloc) => bloc.add(const ScreenSpecLoadEvent(spec: _testSpec)),
       expect: () => [
-        isA<ScreenLoadingState>(),
-        isA<ScreenErrorState>(),
+        isA<ScreenSpecLoadingState>(),
+        isA<ScreenSpecErrorState>(),
       ],
     );
 
-    blocTestSafe<ScreenBloc, ScreenState>(
+    blocTestSafe<ScreenSpecBloc, ScreenSpecState>(
       'emits error when interpreter emits error data',
       setUp: () {
-        final errorData = ScreenData.error(testDefinition, 'Data fetch failed');
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
-          (_) => Stream.value(errorData),
+          (_) => Stream.value(_data(error: 'Data fetch failed')),
         );
       },
-      build: () => ScreenBloc(
-        interpreter: mockInterpreter,
-        performanceLogger: PerformanceLogger(),
-      ),
-      act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
+      build: () => ScreenSpecBloc(interpreter: mockInterpreter),
+      act: (bloc) => bloc.add(const ScreenSpecLoadEvent(spec: _testSpec)),
       expect: () => [
-        isA<ScreenLoadingState>(),
-        isA<ScreenErrorState>().having(
+        isA<ScreenSpecLoadingState>(),
+        isA<ScreenSpecErrorState>().having(
           (s) => s.message,
           'message',
           'Data fetch failed',
@@ -90,49 +90,23 @@ void main() {
       ],
     );
 
-    blocTestSafe<ScreenBloc, ScreenState>(
+    blocTestSafe<ScreenSpecBloc, ScreenSpecState>(
       'emits multiple loaded states as data updates arrive',
       setUp: () {
-        final data1 = testScreenData;
-        final data2 = ScreenData(
-          definition: testDefinition,
-          sections: const [],
-        );
-
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
-          (_) => Stream.fromIterable([data1, data2]),
+          (_) => Stream.fromIterable([
+            _data(),
+            _data(),
+          ]),
         );
       },
-      build: () => ScreenBloc(
-        interpreter: mockInterpreter,
-        performanceLogger: PerformanceLogger(),
-      ),
-      act: (bloc) => bloc.add(ScreenEvent.load(definition: testDefinition)),
+      build: () => ScreenSpecBloc(interpreter: mockInterpreter),
+      act: (bloc) => bloc.add(const ScreenSpecLoadEvent(spec: _testSpec)),
       expect: () => [
-        isA<ScreenLoadingState>(),
-        isA<ScreenLoadedState>(),
-        isA<ScreenLoadedState>(),
+        isA<ScreenSpecLoadingState>(),
+        isA<ScreenSpecLoadedState>(),
+        isA<ScreenSpecLoadedState>(),
       ],
     );
   });
-}
-
-ScreenDefinition _createScreenDefinition() {
-  return ScreenDefinition(
-    id: 'my_day',
-    screenKey: 'my_day',
-    name: 'My Day',
-    createdAt: DateTime(2026, 1, 1),
-    updatedAt: DateTime(2026, 1, 1),
-    sections: const [
-      SectionRef(templateId: 'test-template'),
-    ],
-  );
-}
-
-ScreenData _createScreenData(ScreenDefinition definition) {
-  return ScreenData(
-    definition: definition,
-    sections: const [],
-  );
 }
