@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_param
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -457,11 +458,7 @@ void main() {
           templateId: SectionTemplateId.taskListV2,
           params: ListSectionParamsV2(
             config: DataConfig.task(query: TaskQuery.incomplete()),
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
@@ -480,11 +477,7 @@ void main() {
           templateId: SectionTemplateId.projectListV2,
           params: ListSectionParamsV2(
             config: DataConfig.project(query: ProjectQuery.all()),
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
@@ -550,11 +543,7 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
@@ -577,11 +566,7 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.startDate,
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
@@ -604,11 +589,7 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
@@ -642,11 +623,7 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            tiles: const TilePolicyV2(
-              task: TaskTileVariant.listTile,
-              project: ProjectTileVariant.listTile,
-              value: ValueTileVariant.compactCard,
-            ),
+            pack: StylePackV2.standard,
             layout: const SectionLayoutSpecV2.timelineMonthSections(),
             additionalFilter: additionalQuery,
           ).toJson(),

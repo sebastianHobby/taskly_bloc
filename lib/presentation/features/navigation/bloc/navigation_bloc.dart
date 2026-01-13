@@ -154,7 +154,6 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
       icon: iconSet.icon,
       selectedIcon: iconSet.selectedIcon,
       route: Routing.screenPath(screen.screenKey),
-      screenSource: screen.screenSource,
       badgeStream: _badgeService.badgeStreamFor(screen),
       sortOrder: screenWithPrefs.effectiveSortOrder,
     );

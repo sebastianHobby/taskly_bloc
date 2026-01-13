@@ -6,7 +6,7 @@ import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart'
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
 import 'package:taskly_bloc/core/logging/app_log.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -33,7 +33,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
     final badgeService = context.read<NavigationBadgeService>();
     const iconResolver = NavigationIconResolver();
 
-    final systemDestinations = SystemScreenDefinitions.navigationScreens
+    final systemDestinations = SystemScreenSpecs.navigationScreens
         .map(
           (screen) {
             final iconSet = iconResolver.resolve(
@@ -47,9 +47,8 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
               icon: iconSet.icon,
               selectedIcon: iconSet.selectedIcon,
               route: Routing.screenPath(screen.screenKey),
-              screenSource: screen.screenSource,
               badgeStream: badgeService.badgeStreamFor(screen),
-              sortOrder: SystemScreenDefinitions.getDefaultSortOrder(
+              sortOrder: SystemScreenSpecs.getDefaultSortOrder(
                 screen.screenKey,
               ),
             );
@@ -57,7 +56,7 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
         )
         .toList(growable: false);
 
-    final browseScreen = SystemScreenDefinitions.browse;
+    final browseScreen = SystemScreenSpecs.browse;
     final browseIconSet = iconResolver.resolve(
       screenId: browseScreen.screenKey,
       iconName: browseScreen.chrome.iconName,
@@ -69,7 +68,6 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
       icon: browseIconSet.icon,
       selectedIcon: browseIconSet.selectedIcon,
       route: Routing.screenPath(browseScreen.screenKey),
-      screenSource: browseScreen.screenSource,
       badgeStream: null,
       sortOrder: 1000,
     );

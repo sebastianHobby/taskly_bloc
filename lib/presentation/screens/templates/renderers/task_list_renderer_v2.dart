@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
@@ -30,6 +29,10 @@ class TaskListRendererV2 extends StatelessWidget {
       growable: false,
     );
 
+    final showAgendaTagPills = params.enrichment.items.any(
+      (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
+    );
+
     if (tasks.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
@@ -53,7 +56,10 @@ class TaskListRendererV2 extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             final item = tasks[index];
-            final prefix = _titlePrefixForTask(item);
+            final prefix = _titlePrefixForTask(
+              item,
+              showAgendaTagPills: showAgendaTagPills,
+            );
 
             return registry.build(
               context,
@@ -71,7 +77,10 @@ class TaskListRendererV2 extends StatelessWidget {
           pinnedHeaders: pinnedSectionHeaders,
           header: header,
           tileBuilder: (context, item) {
-            final prefix = _titlePrefixForTask(item);
+            final prefix = _titlePrefixForTask(
+              item,
+              showAgendaTagPills: showAgendaTagPills,
+            );
             return registry.build(
               context,
               item: item,
@@ -91,7 +100,10 @@ class TaskListRendererV2 extends StatelessWidget {
           separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, index) {
             final item = tasks[index];
-            final prefix = _titlePrefixForTask(item);
+            final prefix = _titlePrefixForTask(
+              item,
+              showAgendaTagPills: showAgendaTagPills,
+            );
             return registry.build(
               context,
               item: item,
@@ -105,8 +117,11 @@ class TaskListRendererV2 extends StatelessWidget {
     );
   }
 
-  Widget? _titlePrefixForTask(ScreenItemTask item) {
-    if (params.tiles.task != TaskTileVariant.agenda) return null;
+  Widget? _titlePrefixForTask(
+    ScreenItemTask item, {
+    required bool showAgendaTagPills,
+  }) {
+    if (!showAgendaTagPills) return null;
     final tag = data.enrichment?.agendaTagByTaskId[item.task.id];
     if (tag == null) return null;
 

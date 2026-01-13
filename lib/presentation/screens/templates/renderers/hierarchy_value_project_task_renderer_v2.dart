@@ -24,7 +24,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
   InterleavedListSectionParamsV2 _toInterleavedParams() {
     return InterleavedListSectionParamsV2(
       sources: params.sources,
-      tiles: params.tiles,
+      pack: params.pack,
       layout: SectionLayoutSpecV2.hierarchyValueProjectTask(
         pinnedValueHeaders: params.pinnedValueHeaders,
         pinnedProjectHeaders: params.pinnedProjectHeaders,

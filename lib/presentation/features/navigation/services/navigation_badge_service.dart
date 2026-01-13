@@ -2,12 +2,12 @@
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/badge_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 /// Service for computing badge counts for navigation screens.
@@ -20,12 +20,8 @@ class NavigationBadgeService {
   NavigationBadgeService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
-    required ScreenQueryBuilder screenQueryBuilder,
   }) : _taskRepository = taskRepository,
-       _projectRepository = projectRepository,
-       _screenQueryBuilder = screenQueryBuilder;
-
-  final ScreenQueryBuilder _screenQueryBuilder;
+       _projectRepository = projectRepository;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
@@ -35,7 +31,7 @@ class NavigationBadgeService {
   /// Returns a stream of badge counts for the given screen.
   ///
   /// Returns null if the screen should not display a badge.
-  Stream<int>? badgeStreamFor(ScreenDefinition screen) {
+  Stream<int>? badgeStreamFor(ScreenSpec screen) {
     final screenKey = screen.screenKey;
     if (_badgeStreamCache.containsKey(screenKey)) {
       return _badgeStreamCache[screenKey];
@@ -67,8 +63,8 @@ class NavigationBadgeService {
   }
 
   /// Get badge stream from the first data section of a screen.
-  Stream<int>? _streamForFirstSection(ScreenDefinition screen) {
-    final target = _findFirstBadgeTarget(screen.sections);
+  Stream<int>? _streamForFirstSection(ScreenSpec screen) {
+    final target = _findFirstBadgeTarget(screen.modules);
     return switch (target) {
       _BadgeTask(:final query) => _taskRepository.watchAllCount(query),
       _BadgeProject(:final query) => _projectRepository.watchAllCount(query),
@@ -76,49 +72,91 @@ class NavigationBadgeService {
     };
   }
 
-  _BadgeTarget? _findFirstBadgeTarget(List<SectionRef> sections) {
-    for (final ref in sections) {
-      if (ref.overrides?.enabled == false) continue;
+  _BadgeTarget? _findFirstBadgeTarget(SlottedModules modules) {
+    final ordered = <ScreenModuleSpec>[...modules.header, ...modules.primary];
 
-      final templateId = ref.templateId;
+    for (final module in ordered) {
+      final target = switch (module) {
+        ScreenModuleTaskListV2(:final params) => _badgeTargetFromListParams(
+          params,
+        ),
+        ScreenModuleProjectListV2(:final params) => _badgeTargetFromListParams(
+          params,
+        ),
+        ScreenModuleValueListV2(:final params) => _badgeTargetFromListParams(
+          params,
+        ),
+        ScreenModuleAgendaV2(:final params) => _BadgeTask(
+          _buildTaskQueryFromAgendaParams(params, now: DateTime.now()),
+        ),
+        _ => null,
+      };
 
-      if (templateId == SectionTemplateId.agendaV2) {
-        final query = _screenQueryBuilder.buildTaskQueryFromAgendaSectionRef(
-          section: ref,
-          now: DateTime.now(),
-        );
-
-        if (query != null) {
-          return _BadgeTask(query);
-        }
-
-        continue;
-      }
-
-      if (templateId != SectionTemplateId.taskListV2 &&
-          templateId != SectionTemplateId.projectListV2 &&
-          templateId != SectionTemplateId.valueListV2) {
-        continue;
-      }
-
-      final params = ListSectionParamsV2.fromJson(ref.params);
-      final config = params.config;
-
-      switch (config) {
-        case TaskDataConfig(:final query):
-          return _BadgeTask(query);
-        case ProjectDataConfig(:final query):
-          return _BadgeProject(query);
-        case ValueDataConfig() || JournalDataConfig():
-          return const _BadgeNone();
-      }
+      if (target != null) return target;
     }
 
     return null;
   }
 
+  TaskQuery _buildTaskQueryFromAgendaParams(
+    AgendaSectionParamsV2 params, {
+    required DateTime now,
+  }) {
+    final baseFilter =
+        params.additionalFilter?.filter ?? const QueryFilter.matchAll();
+
+    final alreadyHasCompletionPredicate = baseFilter.shared.any(
+      (p) =>
+          p is TaskBoolPredicate &&
+          p.field == TaskBoolField.completed &&
+          p.operator == BoolOperator.isFalse,
+    );
+
+    final withCompletion = alreadyHasCompletionPredicate
+        ? baseFilter
+        : baseFilter.copyWith(
+            shared: [
+              const TaskBoolPredicate(
+                field: TaskBoolField.completed,
+                operator: BoolOperator.isFalse,
+              ),
+              ...baseFilter.shared,
+            ],
+          );
+
+    final dateField = switch (params.dateField) {
+      AgendaDateFieldV2.deadlineDate => TaskDateField.deadlineDate,
+      AgendaDateFieldV2.startDate => TaskDateField.startDate,
+      AgendaDateFieldV2.scheduledFor => TaskDateField.deadlineDate,
+    };
+
+    // Only include tasks that have the date field set.
+    final withDateFilter = withCompletion.copyWith(
+      shared: [
+        ...withCompletion.shared,
+        TaskDatePredicate(
+          field: dateField,
+          operator: DateOperator.onOrAfter,
+          date: DateTime(now.year - 1, now.month, now.day),
+        ),
+      ],
+    );
+
+    return TaskQuery(filter: withDateFilter);
+  }
+
+  _BadgeTarget? _badgeTargetFromListParams(ListSectionParamsV2 params) {
+    final config = params.config;
+
+    return switch (config) {
+      TaskDataConfig(:final query) => _BadgeTask(query),
+      ProjectDataConfig(:final query) => _BadgeProject(query),
+      ValueDataConfig() || JournalDataConfig() => const _BadgeNone(),
+    };
+  }
+
   /// Returns the task query for badge counting if the screen has task data.
-  TaskQuery? getTaskQueryForScreen(ScreenDefinition screen) {
+  TaskQuery? getTaskQueryForScreen(ScreenSpec screen) {
     return switch (screen.chrome.badgeConfig) {
       NoBadge() => null,
       CustomBadgeConfig(:final taskQuery) => taskQuery,
@@ -126,8 +164,8 @@ class NavigationBadgeService {
     };
   }
 
-  TaskQuery? _getTaskQueryFromFirstSection(ScreenDefinition screen) {
-    final target = _findFirstBadgeTarget(screen.sections);
+  TaskQuery? _getTaskQueryFromFirstSection(ScreenSpec screen) {
+    final target = _findFirstBadgeTarget(screen.modules);
     return switch (target) {
       _BadgeTask(:final query) => query,
       _ => null,
@@ -135,7 +173,7 @@ class NavigationBadgeService {
   }
 
   /// Returns the project query for badge counting if the screen has project data.
-  ProjectQuery? getProjectQueryForScreen(ScreenDefinition screen) {
+  ProjectQuery? getProjectQueryForScreen(ScreenSpec screen) {
     return switch (screen.chrome.badgeConfig) {
       NoBadge() => null,
       CustomBadgeConfig(:final projectQuery) => projectQuery,
@@ -143,8 +181,8 @@ class NavigationBadgeService {
     };
   }
 
-  ProjectQuery? _getProjectQueryFromFirstSection(ScreenDefinition screen) {
-    final target = _findFirstBadgeTarget(screen.sections);
+  ProjectQuery? _getProjectQueryFromFirstSection(ScreenSpec screen) {
+    final target = _findFirstBadgeTarget(screen.modules);
     return switch (target) {
       _BadgeProject(:final query) => query,
       _ => null,

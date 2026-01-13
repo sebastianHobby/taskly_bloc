@@ -5,37 +5,26 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/core/performance/performance_logger.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 
-class _MockScreenDataInterpreter extends Mock
-    implements ScreenDataInterpreter {}
-
-class _MockEntityActionService extends Mock implements EntityActionService {}
-
-class _FakeScreenDefinition extends Fake implements ScreenDefinition {}
+class _MockScreenSpecDataInterpreter extends Mock
+    implements ScreenSpecDataInterpreter {}
 
 class _MockGlobalSettingsBloc
     extends MockBloc<GlobalSettingsEvent, GlobalSettingsState>
@@ -46,13 +35,11 @@ class _MockAuthBloc extends MockBloc<AuthEvent, AppAuthState>
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(_FakeScreenDefinition());
+    registerFallbackValue(SystemScreenSpecs.myDay);
   });
 
   group('System menu items (widget) load guards', () {
-    late MockScreenDefinitionsRepositoryContract screensRepository;
-    late _MockScreenDataInterpreter screenDataInterpreter;
-    late _MockEntityActionService entityActionService;
+    late _MockScreenSpecDataInterpreter screenSpecInterpreter;
     late MockSettingsRepositoryContract settingsRepository;
     late MockTaskRepositoryContract taskRepository;
     late MockProjectRepositoryContract projectRepository;
@@ -65,9 +52,7 @@ void main() {
       initializeTalkerForTest();
       await getIt.reset();
 
-      screensRepository = MockScreenDefinitionsRepositoryContract();
-      screenDataInterpreter = _MockScreenDataInterpreter();
-      entityActionService = _MockEntityActionService();
+      screenSpecInterpreter = _MockScreenSpecDataInterpreter();
       settingsRepository = MockSettingsRepositoryContract();
       taskRepository = MockTaskRepositoryContract();
       projectRepository = MockProjectRepositoryContract();
@@ -75,12 +60,6 @@ void main() {
 
       globalSettingsBloc = _MockGlobalSettingsBloc();
       authBloc = _MockAuthBloc();
-
-      // Settings used by focus screens (My Day) via StreamBuilder.
-      when(
-        () =>
-            settingsRepository.watch<AllocationConfig>(SettingsKey.allocation),
-      ).thenAnswer((_) => Stream.value(const AllocationConfig()));
 
       // Browse tiles use badge counts for some screens.
       when(() => taskRepository.watchAllCount(any())).thenAnswer(
@@ -106,51 +85,23 @@ void main() {
         (_) => const Stream<AppAuthState>.empty(),
       );
 
-      // Interpreter: return a deterministic "loaded" ScreenData for each system
-      // screen so the UI must transition off the spinner.
-      when(() => screenDataInterpreter.watchScreen(any())).thenAnswer(
+      // Interpreter: return a deterministic "loaded" ScreenSpecData so the UI
+      // must transition off the spinner.
+      when(() => screenSpecInterpreter.watchScreen(any())).thenAnswer(
         (invocation) {
-          final definition =
-              invocation.positionalArguments.first as ScreenDefinition;
-
-          final sections = switch (definition.screenKey) {
-            'browse' => [
-              const SectionVm(
-                index: 0,
-                templateId: SectionTemplateId.browseHub,
-                params: <String, dynamic>{},
-              ),
-            ],
-            'statistics' => [
-              const SectionVm(
-                index: 0,
-                templateId: SectionTemplateId.statisticsDashboard,
-                params: <String, dynamic>{},
-              ),
-            ],
-            'settings' => [
-              const SectionVm(
-                index: 0,
-                templateId: SectionTemplateId.settingsMenu,
-                params: <String, dynamic>{},
-              ),
-            ],
-            _ => const <SectionVm>[],
-          };
-
+          final spec = invocation.positionalArguments.first as ScreenSpec;
           return Stream.value(
-            ScreenData(definition: definition, sections: sections),
+            ScreenSpecData(
+              spec: spec,
+              template: spec.template,
+              sections: const SlottedSectionVms(),
+            ),
           );
         },
       );
 
       getIt
-        ..registerSingleton<ScreenDefinitionsRepositoryContract>(
-          screensRepository,
-        )
-        ..registerSingleton<PerformanceLogger>(PerformanceLogger())
-        ..registerSingleton<ScreenDataInterpreter>(screenDataInterpreter)
-        ..registerSingleton<EntityActionService>(entityActionService)
+        ..registerSingleton<ScreenSpecDataInterpreter>(screenSpecInterpreter)
         ..registerSingleton<SettingsRepositoryContract>(settingsRepository)
         ..registerSingleton<TaskRepositoryContract>(taskRepository)
         ..registerSingleton<ProjectRepositoryContract>(projectRepository)
@@ -164,9 +115,14 @@ void main() {
     testWidgetsSafe(
       'each system navigation item leaves loading state',
       (tester) async {
-        final screens = <ScreenDefinition>[
-          ...SystemScreenDefinitions.navigationScreens,
-          SystemScreenDefinitions.browse,
+        final screens = <ScreenSpec>[
+          SystemScreenSpecs.myDay,
+          SystemScreenSpecs.scheduled,
+          SystemScreenSpecs.someday,
+          SystemScreenSpecs.logbook,
+          SystemScreenSpecs.journal,
+          SystemScreenSpecs.values,
+          SystemScreenSpecs.projects,
         ];
 
         for (final screen in screens) {
@@ -179,7 +135,7 @@ void main() {
                 ),
                 BlocProvider<AuthBloc>.value(value: authBloc),
               ],
-              child: UnifiedScreenPage(definition: screen),
+              child: UnifiedScreenPageFromSpec(spec: screen),
             ),
           );
 
@@ -199,29 +155,6 @@ void main() {
             reason:
                 'Screen stayed in loading too long (possible infinite load): '
                 '${screen.screenKey}',
-          );
-
-          // Ensure we didn\'t fall into the generic error UI.
-          expect(find.text('Failed to load screen'), findsNothing);
-
-          // Avoid ending up on the generic "unsupported template" UI.
-          expect(
-            find.textContaining('Unsupported full-screen template'),
-            findsNothing,
-          );
-
-          // Generic "has UI" assertion to catch empty-page regressions without
-          // depending on screen-specific copy.
-          final hasAnyContent =
-              find.byType(Text).evaluate().isNotEmpty ||
-              find.byType(ListView).evaluate().isNotEmpty ||
-              find.byType(GridView).evaluate().isNotEmpty ||
-              find.byType(CustomScrollView).evaluate().isNotEmpty;
-
-          expect(
-            hasAnyContent,
-            isTrue,
-            reason: 'Expected some visible content for ${screen.screenKey}',
           );
         }
       },

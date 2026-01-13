@@ -18,6 +18,12 @@ The system supports:
 - **Reactive rendering**: sections can update independently (streams combined into a single screen view).
 - **Config-driven composition**: most UX variations are expressed by changing template params and chrome config.
 
+Note (hard-cutover in progress): newer system screens can bypass the legacy
+`ScreenDefinition` + `SectionRef` (string template IDs + JSON params) path via a
+typed `ScreenSpec` + `ScreenTemplateSpec` + `ScreenModuleSpec` model. This keeps
+system screen configuration compile-time safe while custom/legacy screens remain
+on the repository-backed `ScreenDefinition` path until the cutover completes.
+
 ---
 
 ## 2) Where Things Live (Folder Map)

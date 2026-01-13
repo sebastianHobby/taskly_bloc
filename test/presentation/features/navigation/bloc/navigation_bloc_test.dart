@@ -8,16 +8,9 @@ import '../../../../helpers/bloc_test_patterns.dart';
 import '../../../../helpers/test_helpers.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_bloc.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -37,29 +30,12 @@ void main() {
 
     setUpAll(() {
       initializeTalkerForTest();
-      // Register fallback for ScreenDefinition used with any()
-      final now = DateTime.now();
       registerFallbackValue(
-        ScreenDefinition(
+        ScreenSpec(
           id: 'fallback-id',
           screenKey: 'fallback',
           name: 'Fallback',
-          createdAt: now,
-          updatedAt: now,
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: ListSectionParamsV2(
-                config: DataConfig.task(query: TaskQuery.all()),
-                tiles: const TilePolicyV2(
-                  task: TaskTileVariant.listTile,
-                  project: ProjectTileVariant.listTile,
-                  value: ValueTileVariant.compactCard,
-                ),
-                layout: const SectionLayoutSpecV2.flatList(),
-              ).toJson(),
-            ),
-          ],
+          template: const ScreenTemplateSpec.standardScaffoldV1(),
         ),
       );
     });
@@ -85,32 +61,14 @@ void main() {
       required String screenKey,
       required String name,
       int sortOrder = 0,
-      ScreenSource screenSource = ScreenSource.systemTemplate,
       bool isActive = true,
       String? iconName,
     }) {
-      final now = DateTime.now();
-      final screen = ScreenDefinition(
+      final screen = ScreenSpec(
         id: id,
         screenKey: screenKey,
         name: name,
-        sections: [
-          SectionRef(
-            templateId: SectionTemplateId.taskListV2,
-            params: ListSectionParamsV2(
-              config: DataConfig.task(query: TaskQuery.all()),
-              tiles: const TilePolicyV2(
-                task: TaskTileVariant.listTile,
-                project: ProjectTileVariant.listTile,
-                value: ValueTileVariant.compactCard,
-              ),
-              layout: const SectionLayoutSpecV2.flatList(),
-            ).toJson(),
-          ),
-        ],
-        createdAt: now,
-        updatedAt: now,
-        screenSource: screenSource,
+        template: const ScreenTemplateSpec.standardScaffoldV1(),
         chrome: ScreenChrome(iconName: iconName),
       );
       return ScreenWithPreferences(

@@ -1,37 +1,53 @@
-﻿import 'package:mocktail/mocktail.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
+﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
-import 'package:taskly_bloc/data/screens/maintenance/screen_seeder.dart';
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
-import 'package:taskly_bloc/core/performance/performance_logger.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 
 import '../helpers/test_db.dart';
 import '../helpers/integration_test_helpers.dart';
 import '../mocks/fake_id_generator.dart';
 import '../mocks/feature_mocks.dart';
 import '../mocks/repository_mocks.dart';
+
+class _MockDataListSectionInterpreterV2 extends Mock
+    implements DataListSectionInterpreterV2 {}
+
+class _MockInterleavedListSectionInterpreterV2 extends Mock
+    implements InterleavedListSectionInterpreterV2 {}
+
+class _MockHierarchyValueProjectTaskSectionInterpreterV2 extends Mock
+    implements HierarchyValueProjectTaskSectionInterpreterV2 {}
+
+class _MockAgendaSectionInterpreterV2 extends Mock
+    implements AgendaSectionInterpreterV2 {}
+
+class _MockIssuesSummarySectionInterpreter extends Mock
+    implements IssuesSummarySectionInterpreter {}
+
+class _MockEntityHeaderSectionInterpreter extends Mock
+    implements EntityHeaderSectionInterpreter {}
 
 void main() {
   group('My Day screen (integration)', () {
@@ -115,50 +131,42 @@ void main() {
           dayKeyService: dayKeyService,
           invalidations: const Stream<void>.empty(),
         );
-        final screenRepository = ScreenDefinitionsRepository(
-          databaseRepository: ScreenDefinitionsRepositoryImpl(
-            db,
-          ),
-        );
 
-        final screenSeeder = ScreenSeeder(db: db, idGenerator: idGenerator);
-        await screenSeeder.seedSystemScreens();
-
-        final interpreterRegistry = SectionTemplateInterpreterRegistry([
-          AllocationSectionInterpreter(sectionDataService: sectionDataService),
-          AllocationAlertsSectionInterpreter(
-            attentionEngine: attentionEngine,
-          ),
-          CheckInSummarySectionInterpreter(
-            attentionEngine: attentionEngine,
-          ),
-          StaticSectionInterpreter(
-            templateId: SectionTemplateId.myDayFocusModeRequired,
-          ),
-        ]);
-
-        final interpreter = ScreenDataInterpreter(
-          interpreterRegistry: interpreterRegistry,
-          paramsCodec: SectionTemplateParamsCodec(),
+        final specInterpreter = ScreenSpecDataInterpreter(
           settingsRepository: settingsRepository,
+          taskListInterpreter: _MockDataListSectionInterpreterV2(),
+          projectListInterpreter: _MockDataListSectionInterpreterV2(),
+          valueListInterpreter: _MockDataListSectionInterpreterV2(),
+          interleavedListInterpreter:
+              _MockInterleavedListSectionInterpreterV2(),
+          hierarchyValueProjectTaskInterpreter:
+              _MockHierarchyValueProjectTaskSectionInterpreterV2(),
+          allocationInterpreter: AllocationSectionInterpreter(
+            sectionDataService: sectionDataService,
+          ),
+          agendaInterpreter: _MockAgendaSectionInterpreterV2(),
+          issuesSummaryInterpreter: _MockIssuesSummarySectionInterpreter(),
+          allocationAlertsInterpreter: AllocationAlertsSectionInterpreter(
+            attentionEngine: attentionEngine,
+          ),
+          checkInSummaryInterpreter: CheckInSummarySectionInterpreter(
+            attentionEngine: attentionEngine,
+          ),
+          entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
         );
 
-        final bloc = ScreenBloc(
-          screenRepository: screenRepository,
-          interpreter: interpreter,
-          performanceLogger: PerformanceLogger(),
-        );
+        final bloc = ScreenSpecBloc(interpreter: specInterpreter);
 
         try {
-          bloc.add(const ScreenEvent.loadById(screenId: 'my_day'));
+          bloc.add(ScreenSpecLoadEvent(spec: SystemScreenSpecs.myDay));
 
           final terminalState = await bloc.stream
               .firstWhere(
-                (s) => s is ScreenLoadedState || s is ScreenErrorState,
+                (s) => s is ScreenSpecLoadedState || s is ScreenSpecErrorState,
               )
               .timeout(const Duration(seconds: 2));
 
-          expect(terminalState, isA<ScreenLoadedState>());
+          expect(terminalState, isA<ScreenSpecLoadedState>());
         } finally {
           await bloc.close();
           await closeTestDb(db);

@@ -4,9 +4,10 @@ part 'screen_preferences.freezed.dart';
 
 /// User preferences for a specific screen.
 ///
-/// Stored directly in `screen_definitions`.
-/// This replaces the `sort_order` and `is_active` columns from the
-/// screen_definitions table for system screens.
+/// Stored in `screen_preferences`.
+///
+/// This replaces the legacy `sort_order` and `is_active` columns that used to
+/// live on `screen_definitions` for system screens.
 @freezed
 abstract class ScreenPreferences with _$ScreenPreferences {
   const factory ScreenPreferences({

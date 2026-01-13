@@ -10,12 +10,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/app/di/dependency_injection.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'dart:async';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -35,7 +33,6 @@ class MockEntityActionService extends Mock implements EntityActionService {}
 
 void main() {
   group('UnifiedScreenPage Regression Tests', () {
-    late MockScreenDefinitionsRepositoryContract screensRepository;
     late MockScreenDataInterpreter mockInterpreter;
     late MockEntityActionService mockEntityActionService;
     late MockSettingsRepositoryContract mockSettingsRepository;
@@ -44,15 +41,11 @@ void main() {
       initializeTalkerForTest();
       await getIt.reset();
 
-      screensRepository = MockScreenDefinitionsRepositoryContract();
       mockInterpreter = MockScreenDataInterpreter();
       mockEntityActionService = MockEntityActionService();
       mockSettingsRepository = MockSettingsRepositoryContract();
 
       getIt
-        ..registerSingleton<ScreenDefinitionsRepositoryContract>(
-          screensRepository,
-        )
         ..registerSingleton<ScreenDataInterpreter>(mockInterpreter)
         ..registerSingleton<EntityActionService>(mockEntityActionService)
         ..registerSingleton<SettingsRepositoryContract>(mockSettingsRepository)
@@ -81,18 +74,6 @@ void main() {
       'renders content when stream emits data',
       (tester) async {
         // Arrange
-        when(() => screensRepository.watchScreen('test-screen')).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: testScreen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 0,
-              ),
-            ),
-          ),
-        );
-
         final sectionVm = SectionVm(
           index: 0,
           templateId: 'test-template',
@@ -115,7 +96,7 @@ void main() {
         // Act
         await pumpLocalizedApp(
           tester,
-          home: const UnifiedScreenPageById(screenId: 'test-screen'),
+          home: UnifiedScreenPage(definition: testScreen),
         );
         await tester.pumpAndSettle();
 
@@ -131,18 +112,6 @@ void main() {
       'renders "No sections configured" when data has no sections',
       (tester) async {
         // Arrange
-        when(() => screensRepository.watchScreen('test-screen')).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: testScreen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 0,
-              ),
-            ),
-          ),
-        );
-
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
           (_) => Stream.value(
             ScreenData(
@@ -155,7 +124,7 @@ void main() {
         // Act
         await pumpLocalizedApp(
           tester,
-          home: const UnifiedScreenPageById(screenId: 'test-screen'),
+          home: UnifiedScreenPage(definition: testScreen),
         );
         await tester.pumpAndSettle();
 
@@ -169,18 +138,6 @@ void main() {
       'renders error UI when stream emits error',
       (tester) async {
         // Arrange
-        when(() => screensRepository.watchScreen('test-screen')).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: testScreen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 0,
-              ),
-            ),
-          ),
-        );
-
         when(() => mockInterpreter.watchScreen(any())).thenAnswer(
           (_) => Stream.error(Exception('Stream failed')),
         );
@@ -188,7 +145,7 @@ void main() {
         // Act
         await pumpLocalizedApp(
           tester,
-          home: const UnifiedScreenPageById(screenId: 'test-screen'),
+          home: UnifiedScreenPage(definition: testScreen),
         );
         await tester.pumpAndSettle();
 
@@ -203,17 +160,16 @@ void main() {
       'fails fast if loading indicator persists (infinite loading regression)',
       (tester) async {
         // Arrange - Stream never emits
-        final controller = StreamController<ScreenWithPreferences>();
+        final controller = StreamController<ScreenData>();
         addTearDown(controller.close);
-
-        when(() => screensRepository.watchScreen(any())).thenAnswer(
+        when(() => mockInterpreter.watchScreen(any())).thenAnswer(
           (_) => controller.stream,
         );
 
         // Act
         await pumpLocalizedApp(
           tester,
-          home: const UnifiedScreenPageById(screenId: 'test-screen'),
+          home: UnifiedScreenPage(definition: testScreen),
         );
 
         // Assert

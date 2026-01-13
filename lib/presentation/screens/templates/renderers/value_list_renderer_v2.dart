@@ -12,11 +12,13 @@ class ValueListRendererV2 extends StatelessWidget {
     required this.params,
     super.key,
     this.title,
+    this.compactTiles = false,
   });
 
   final DataV2SectionResult data;
   final ListSectionParamsV2 params;
   final String? title;
+  final bool compactTiles;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,7 @@ class ValueListRendererV2 extends StatelessWidget {
           context,
           item: item,
           valueStats: stats,
+          compactTiles: compactTiles,
         );
       },
     );

@@ -10,23 +10,25 @@ import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/allocation/engine/project_next_task_resolver.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_next_task_card.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_event.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_state.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
@@ -38,7 +40,7 @@ import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 /// Unified project detail page using the screen model.
 ///
-/// Fetches the project first, then creates a dynamic ScreenDefinition
+/// Fetches the project first, then creates a typed [ScreenSpec]
 /// and renders using the unified pattern.
 class ProjectDetailUnifiedPage extends StatelessWidget {
   const ProjectDetailUnifiedPage({
@@ -129,21 +131,37 @@ class _ProjectScreenWithData extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Create dynamic screen definition for this project
-    final definition = SystemScreenDefinitions.forProject(
-      projectId: project.id,
-      projectName: project.name,
+    final spec = ScreenSpec(
+      id: 'project_${project.id}',
+      screenKey: 'project_detail',
+      name: project.name,
+      template: const ScreenTemplateSpec.standardScaffoldV1(),
+      modules: SlottedModules(
+        primary: [
+          ScreenModuleSpec.taskListV2(
+            title: 'Tasks',
+            params: ListSectionParamsV2(
+              config: DataConfig.task(
+                query: TaskQuery.forProject(projectId: project.id),
+              ),
+              pack: StylePackV2.standard,
+              layout: const SectionLayoutSpecV2.flatList(
+                separator: ListSeparatorV2.divider,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
-    return BlocProvider<ScreenBloc>(
-      create: (context) => ScreenBloc(
-        screenRepository: getIt(),
-        interpreter: getIt<ScreenDataInterpreter>(),
-        performanceLogger: getIt<PerformanceLogger>(),
-      )..add(ScreenEvent.load(definition: definition)),
-      child: BlocListener<ScreenBloc, ScreenState>(
+    return BlocProvider<ScreenSpecBloc>(
+      create: (_) => ScreenSpecBloc(
+        interpreter: getIt(),
+      )..add(ScreenSpecLoadEvent(spec: spec)),
+      child: BlocListener<ScreenSpecBloc, ScreenSpecState>(
         listenWhen: (previous, current) {
-          return previous is! ScreenLoadedState && current is ScreenLoadedState;
+          return previous is! ScreenSpecLoadedState &&
+              current is ScreenSpecLoadedState;
         },
         listener: (context, state) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -270,18 +288,18 @@ class _ProjectScreenView extends StatelessWidget {
                 final allocationConfig =
                     configSnapshot.data ?? const AllocationConfig();
 
-                return BlocBuilder<ScreenBloc, ScreenState>(
+                return BlocBuilder<ScreenSpecBloc, ScreenSpecState>(
                   builder: (context, state) {
                     return switch (state) {
-                      ScreenInitialState() ||
-                      ScreenLoadingState() => const LoadingStateWidget(),
-                      ScreenLoadedState(:final data) => _buildTaskList(
+                      ScreenSpecInitialState() ||
+                      ScreenSpecLoadingState() => const LoadingStateWidget(),
+                      ScreenSpecLoadedState(:final data) => _buildTaskList(
                         context,
                         data,
                         entityActionService,
                         allocationConfig,
                       ),
-                      ScreenErrorState(:final message) => ErrorStateWidget(
+                      ScreenSpecErrorState(:final message) => ErrorStateWidget(
                         message: message,
                         onRetry: () => Navigator.of(context).pop(),
                       ),
@@ -304,15 +322,20 @@ class _ProjectScreenView extends StatelessWidget {
 
   Widget _buildTaskList(
     BuildContext context,
-    ScreenData data,
+    ScreenSpecData data,
     EntityActionService entityActionService,
     AllocationConfig allocationConfig,
   ) {
     final l10n = context.l10n;
 
+    final sections = [
+      ...data.sections.header,
+      ...data.sections.primary,
+    ];
+
     // Extract all incomplete tasks from sections for next task resolution
     final allTasks = <Task>[];
-    for (final section in data.sections) {
+    for (final section in sections) {
       final result = section.data;
       if (result is SectionDataResult) {
         allTasks.addAll(result.allTasks);
@@ -333,7 +356,7 @@ class _ProjectScreenView extends StatelessWidget {
       );
     }
 
-    if (data.sections.isEmpty) {
+    if (sections.isEmpty) {
       return EmptyStateWidget.noTasks(
         title: l10n.emptyTasksTitle,
         description: l10n.projectDetailEmptyTasksDescription,
@@ -369,7 +392,7 @@ class _ProjectScreenView extends StatelessWidget {
               ),
             ),
           // Task sections
-          for (final section in data.sections)
+          for (final section in sections)
             SectionWidget(
               section: section,
               displayConfig: section.displayConfig,

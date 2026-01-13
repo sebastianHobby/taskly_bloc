@@ -1,5 +1,5 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 part 'check_in_summary_section_params.freezed.dart';
 part 'check_in_summary_section_params.g.dart';
@@ -8,7 +8,7 @@ part 'check_in_summary_section_params.g.dart';
 @freezed
 abstract class CheckInSummarySectionParams with _$CheckInSummarySectionParams {
   const factory CheckInSummarySectionParams({
-    required ReviewItemTileVariant reviewItemTileVariant,
+    required StylePackV2 pack,
   }) = _CheckInSummarySectionParams;
 
   factory CheckInSummarySectionParams.fromJson(Map<String, dynamic> json) =>

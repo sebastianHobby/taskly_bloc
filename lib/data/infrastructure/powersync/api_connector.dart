@@ -1,5 +1,6 @@
 // This file performs setup of the PowerSync database
 
+import 'package:drift/drift.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,7 +14,7 @@ import 'package:taskly_bloc/data/infrastructure/powersync/schema.dart';
 import 'package:taskly_bloc/data/infrastructure/powersync/upload_data_normalizer.dart'
     as upload_normalizer;
 import 'package:taskly_bloc/data/attention/maintenance/attention_seeder.dart';
-import 'package:taskly_bloc/data/screens/maintenance/system_data_cleanup_service.dart';
+import 'package:taskly_bloc/domain/attention/system_attention_rules.dart';
 
 /// Postgres Response codes that we cannot recover from by retrying.
 /// Note: 23505 (unique violation) is handled separately in _handle23505.
@@ -525,13 +526,52 @@ Future<void> runPostAuthMaintenance({
   // the local Drift/PowerSync database.
   await AttentionSeeder(db: driftDb, idGenerator: idGenerator).ensureSeeded();
 
-  // Clean up orphaned system data
-  final cleanupService = SystemDataCleanupService(
+  await _cleanupOrphanedSystemAttentionRules(
     db: driftDb,
     idGenerator: idGenerator,
   );
-  await cleanupService.cleanOrphanedScreenDefinitions();
-  await cleanupService.cleanOrphanedAttentionRules();
+  await _cleanupOrphanedAttentionResolutions(db: driftDb);
 
   talker.info('[PostAuthMaintenance] Completed');
+}
+
+Future<void> _cleanupOrphanedSystemAttentionRules({
+  required AppDatabase db,
+  required IdGenerator idGenerator,
+}) async {
+  // Compute known deterministic IDs from the current rule templates.
+  final knownIds = SystemAttentionRules.all
+      .map((t) => idGenerator.attentionRuleId(ruleKey: t.ruleKey))
+      .toSet();
+  final systemRuleKeys = SystemAttentionRules.all.map((t) => t.ruleKey).toSet();
+
+  final deleted =
+      await (db.delete(db.attentionRules)..where(
+            (r) => r.ruleKey.isIn(systemRuleKeys) & r.id.isNotIn(knownIds),
+          ))
+          .go();
+
+  if (deleted > 0) {
+    talker.info(
+      '[PostAuthMaintenance] Deleted $deleted orphaned attention rule(s)',
+    );
+  }
+}
+
+Future<void> _cleanupOrphanedAttentionResolutions({
+  required AppDatabase db,
+}) async {
+  final rules = await db.select(db.attentionRules).get();
+  final validRuleIds = rules.map((r) => r.id).toSet();
+
+  final deleted =
+      await (db.delete(db.attentionResolutions)
+            ..where((r) => r.ruleId.isNotIn(validRuleIds)))
+          .go();
+
+  if (deleted > 0) {
+    talker.info(
+      '[PostAuthMaintenance] Deleted $deleted orphaned attention resolution(s)',
+    );
+  }
 }

@@ -23,7 +23,7 @@ class HierarchyValueProjectTaskSectionInterpreterV2
   ) {
     return InterleavedListSectionParamsV2(
       sources: params.sources,
-      tiles: params.tiles,
+      pack: params.pack,
       layout: SectionLayoutSpecV2.hierarchyValueProjectTask(
         pinnedValueHeaders: params.pinnedValueHeaders,
         pinnedProjectHeaders: params.pinnedProjectHeaders,

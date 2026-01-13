@@ -9,13 +9,13 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 
 void main() {
   group('Route Contracts', () {
-    group('Routing.screenPath ↔ SystemScreenDefinitions', () {
+    group('Routing.screenPath ↔ SystemScreenSpecs', () {
       test('all system screens produce valid paths', () {
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final path = Routing.screenPath(screen.screenKey);
 
           // Path should start with /
@@ -50,7 +50,7 @@ void main() {
       });
 
       test('screenKey round-trips through path conversion', () {
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final path = Routing.screenPath(screen.screenKey);
           final segment = path.substring(1); // Remove leading /
           final restored = Routing.parseScreenKey(segment);
@@ -67,29 +67,29 @@ void main() {
 
       test('my_day screen has /my-day path', () {
         final path = Routing.screenPath(
-          SystemScreenDefinitions.myDay.screenKey,
+          SystemScreenSpecs.myDay.screenKey,
         );
         expect(path, '/my-day');
       });
     });
 
-    group('SystemScreenDefinitions.getById', () {
-      test('all system screen keys are recognized by getById', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          final found = SystemScreenDefinitions.getById(screen.screenKey);
+    group('SystemScreenSpecs.getByKey', () {
+      test('all system screen keys are recognized by getByKey', () {
+        for (final screen in SystemScreenSpecs.all) {
+          final found = SystemScreenSpecs.getByKey(screen.screenKey);
 
           expect(
             found,
             isNotNull,
             reason:
-                'SystemScreenDefinitions.getById("${screen.screenKey}") returned null',
+                'SystemScreenSpecs.getByKey("${screen.screenKey}") returned null',
           );
           expect(found!.screenKey, screen.screenKey);
         }
       });
 
       test('unknown screen keys return null', () {
-        final found = SystemScreenDefinitions.getById('unknown_screen_xyz');
+        final found = SystemScreenSpecs.getByKey('unknown_screen_xyz');
         expect(found, isNull);
       });
     });
@@ -104,7 +104,7 @@ void main() {
 
         final segmentPattern = RegExp(r'^/[a-z0-9-]+$');
 
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final path = Routing.screenPath(screen.screenKey);
 
           expect(
@@ -128,7 +128,7 @@ void main() {
           '/workflow-run',
         };
 
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final path = Routing.screenPath(screen.screenKey);
 
           // Exact match check

@@ -1,7 +1,5 @@
 export 'entity_action_service.dart';
 export 'entity_grouper.dart';
-export 'screen_data.dart';
-export 'screen_data_interpreter.dart';
 export 'screen_query_builder.dart';
 export 'section_data_result.dart';
 export 'section_data_service.dart';

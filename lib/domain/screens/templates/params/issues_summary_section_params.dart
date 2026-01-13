@@ -1,5 +1,5 @@
 ﻿import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 part 'issues_summary_section_params.freezed.dart';
 part 'issues_summary_section_params.g.dart';
@@ -10,7 +10,7 @@ part 'issues_summary_section_params.g.dart';
 @freezed
 abstract class IssuesSummarySectionParams with _$IssuesSummarySectionParams {
   const factory IssuesSummarySectionParams({
-    required AttentionItemTileVariant attentionItemTileVariant,
+    required StylePackV2 pack,
 
     /// Restrict issues to these entity types (e.g. ['task', 'project']).
     ///
