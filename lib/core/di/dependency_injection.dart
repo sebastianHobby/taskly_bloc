@@ -41,7 +41,7 @@ import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_grouper.dart';
@@ -257,12 +257,12 @@ Future<void> setupDependencies() async {
         taskRepo: getIt<TaskRepositoryContract>(),
         projectRepo: getIt<ProjectRepositoryContract>(),
         valueRepo: getIt<ValueRepositoryContract>(),
-        wellbeingRepo: getIt<WellbeingRepositoryContract>(),
+        journalRepo: getIt<JournalRepositoryContract>(),
         analyticsRepo: getIt<AnalyticsRepositoryContract>(),
       ),
     )
-    // Wellbeing
-    ..registerLazySingleton<WellbeingRepositoryContract>(
+    // Journal
+    ..registerLazySingleton<JournalRepositoryContract>(
       () => WellbeingRepositoryImpl(
         getIt<AppDatabase>(),
         getIt<IdGenerator>(),

@@ -8,7 +8,7 @@
 ///
 /// - Component A generates data that Component B consumes
 /// - A change in A could silently break B without failing unit tests
-/// - Examples: SystemScreenDefinitions ↔ NavigationIconResolver
+/// - Examples: SystemScreenSpecs ↔ NavigationIconResolver
 ///
 /// ## Pattern
 ///
@@ -44,7 +44,7 @@ const Duration kContractTestTimeout = Duration(seconds: 10);
 ///
 /// ```dart
 /// testContract('all system screens have icons', () {
-///   for (final screen in SystemScreenDefinitions.all) {
+///   for (final screen in SystemScreenSpecs.all) {
 ///     final icon = resolver.resolve(screenId: screen.screenKey);
 ///     expect(icon, isNot(defaultIcon));
 ///   }
@@ -88,7 +88,7 @@ void testContract(
 ///
 /// ```dart
 /// verifyExhaustiveMapping(
-///   source: SystemScreenDefinitions.all,
+///   source: SystemScreenSpecs.all,
 ///   transform: (screen) => resolver.resolve(screenId: screen.screenKey),
 ///   isDefault: (result) => result.icon == Icons.widgets_outlined,
 ///   itemLabel: (screen) => screen.screenKey,
@@ -123,7 +123,7 @@ void verifyExhaustiveMapping<TSource, TResult>({
 ///
 /// ```dart
 /// verifyUniqueMapping(
-///   source: SystemScreenDefinitions.all,
+///   source: SystemScreenSpecs.all,
 ///   transform: (screen) => resolver.resolve(screenId: screen.screenKey).icon,
 ///   itemLabel: (screen) => screen.screenKey,
 ///   allowDuplicates: {'settings', 'screen_management'}, // intentionally same
@@ -164,7 +164,7 @@ void verifyUniqueMapping<TSource, TResult>({
 ///
 /// ```dart
 /// verifyRoundTrip(
-///   source: SystemScreenDefinitions.all.map((s) => s.screenKey),
+///   source: SystemScreenSpecs.all.map((s) => s.screenKey),
 ///   encode: Routing.screenPath,
 ///   decode: (path) => Routing.parseScreenKey(path.substring(1)),
 ///   itemLabel: (key) => key,

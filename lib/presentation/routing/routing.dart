@@ -81,8 +81,7 @@ abstract final class Routing {
 
   /// Build a screen widget by screenKey.
   ///
-  /// Always uses [UnifiedScreenPage] (either via system templates or
-  /// by loading from repository).
+  /// Uses the typed ScreenSpec rendering path for system screens.
   ///
   /// This is the single entry point for all screen construction.
   static Widget buildScreen(String screenKey) {

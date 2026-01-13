@@ -7,10 +7,12 @@ class EntityHeaderSectionRenderer extends StatelessWidget {
     required this.data,
     super.key,
     this.onProjectCheckboxChanged,
+    this.onTap,
   });
 
   final SectionDataResult data;
   final void Function(bool? value)? onProjectCheckboxChanged;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,7 @@ class EntityHeaderSectionRenderer extends StatelessWidget {
           project: project,
           showCheckbox: showCheckbox,
           showMetadata: showMetadata,
+          onTap: onTap,
           onCheckboxChanged: onProjectCheckboxChanged,
         ),
       EntityHeaderValueSectionResult(
@@ -35,6 +38,7 @@ class EntityHeaderSectionRenderer extends StatelessWidget {
           value: value,
           taskCount: taskCount,
           showMetadata: showMetadata,
+          onTap: onTap,
         ),
       EntityHeaderMissingSectionResult(:final entityType) => Padding(
         padding: const EdgeInsets.all(16),

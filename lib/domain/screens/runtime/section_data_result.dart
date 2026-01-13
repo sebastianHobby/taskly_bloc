@@ -46,7 +46,7 @@ abstract class AllocationValueGroup with _$AllocationValueGroup {
 /// Result of fetching data for a section.
 ///
 /// Each variant contains the data appropriate for that section type.
-/// Used by ScreenBloc to populate section UIs with their data.
+/// Used by the screen data interpreter to populate section UIs with data.
 @freezed
 sealed class SectionDataResult with _$SectionDataResult {
   /// Data section result - generic entity list with optional enrichment.

@@ -127,7 +127,7 @@ void main() {
       });
 
       testContract('default sort orders for main screens are < 100', () {
-        for (final screen in SystemScreenSpecs.all) {
+        for (final screen in SystemScreenSpecs.navigationScreens) {
           if (screen.screenKey == 'settings') continue;
           expect(
             SystemScreenSpecs.getDefaultSortOrder(screen.screenKey),

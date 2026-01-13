@@ -3,9 +3,9 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 
 part 'journal_entry_bloc.freezed.dart';
 
@@ -66,7 +66,7 @@ class JournalEntryBloc extends Bloc<JournalEntryEvent, JournalEntryState> {
     on<_Delete>(_onDelete, transformer: droppable());
   }
 
-  final WellbeingRepositoryContract _repository;
+  final JournalRepositoryContract _repository;
 
   Future<void> _onLoad(_Load event, Emitter emit) async {
     emit(const JournalEntryState.loading());

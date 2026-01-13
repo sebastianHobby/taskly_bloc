@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/mood_rating.dart';
+import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart'
     show DateOperator, RelativeComparison;
 

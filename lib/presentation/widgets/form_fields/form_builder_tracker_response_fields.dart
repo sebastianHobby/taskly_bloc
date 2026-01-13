@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
 
 /// FormBuilder field for yes/no tracker responses
 class FormBuilderTrackerYesNoField

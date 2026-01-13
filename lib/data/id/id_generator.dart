@@ -49,7 +49,6 @@ class IdGenerator {
     'project_recurrence_exceptions',
     'tracker_responses',
     'daily_tracker_responses',
-    'screen_definitions',
     'analytics_snapshots',
     'attention_rules',
   };

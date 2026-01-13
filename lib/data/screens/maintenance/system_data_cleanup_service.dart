@@ -17,6 +17,8 @@ class SystemDataCleanupService {
   }) : _db = db,
        _idGenerator = idGenerator;
 
+  // Kept for API compatibility; may be used for future cleanup semantics.
+  // ignore: unused_field
   final db.AppDatabase _db;
   // Kept for API compatibility; may be used for future cleanup semantics.
   // ignore: unused_field

@@ -75,10 +75,10 @@ A key UX invariant:
   - [lib/domain/screens/runtime/section_data_result.dart](../../lib/domain/screens/runtime/section_data_result.dart)
 - Screen gating:
   - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
-  - [lib/domain/screens/runtime/screen_data_interpreter.dart](../../lib/domain/screens/runtime/screen_data_interpreter.dart)
+  - [lib/domain/screens/runtime/screen_spec_data_interpreter.dart](../../lib/domain/screens/runtime/screen_spec_data_interpreter.dart)
 
 ### System screen definition (My Day)
-- [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
 
 ### Presentation (My Day gate + allocation rendering + focus setup)
 - Gate page shown when focus mode is not selected:
@@ -106,8 +106,8 @@ A key UX invariant:
                                 v
 +---------------------------------------------------------------+
 |                    Unified Screen Pipeline                     |
-|  ScreenDataInterpreter                                         |
-|   - applies ScreenGateConfig (e.g., focus mode required)        |
+|  ScreenSpecDataInterpreter                                     |
+|   - applies ScreenGateSpec criteria (e.g., focus mode required) |
 |   - runs section template interpreters                          |
 |     - allocation -> SectionDataService.watchAllocation()        |
 |     - allocation_alerts -> AttentionEngine                      |
@@ -149,21 +149,21 @@ A key UX invariant:
 
 My Day is a **system screen** with a **screen-level gate**.
 
-- Definition: `SystemScreenDefinitions.myDay`
-  - [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](../../lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- Definition: `SystemScreenSpecs.myDay`
+  - [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
 - Gate criteria: `allocationFocusModeNotSelected`
   - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
 
 **Reactive gating logic** (domain-side):
 
-- `ScreenDataInterpreter.watchScreen()` checks gate criteria.
+- `ScreenSpecDataInterpreter.watchScreen()` checks gate criteria.
 - For `allocationFocusModeNotSelected`, it watches settings:
   - `SettingsKey.allocation` and `AllocationConfig.hasSelectedFocusMode`.
-- While active, the screen's normal sections are replaced by the gate section:
-  - `SectionTemplateId.myDayFocusModeRequired`.
+- While active, the screen's normal modules are skipped and the gate template
+  is rendered (no modules).
 
 See gate evaluation:
-- [lib/domain/screens/runtime/screen_data_interpreter.dart](../../lib/domain/screens/runtime/screen_data_interpreter.dart)
+- [lib/domain/screens/runtime/screen_spec_data_interpreter.dart](../../lib/domain/screens/runtime/screen_spec_data_interpreter.dart)
 
 **What the user experiences**:
 

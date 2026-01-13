@@ -28,7 +28,7 @@ model:
                                      v
 +-----------------------------------------------------------------------+
 |                                 Domain                                |
-|  - screen interpretation pipeline (definition -> section VMs)          |
+|  - screen interpretation pipeline (spec -> section VMs)                |
 |  - business services (allocation, attention, etc.)                     |
 |  - repository contracts (interfaces)                                  |
 +------------------------------------+----------------------------------+
@@ -54,24 +54,24 @@ This section is intentionally high-level and focuses on *integration points*.
 
 ### 2.1 Unified Screen Model (primary UI composition mechanism)
 
-Most screens are assembled from declarative screen definitions composed of
-ordered, templated sections.
+Most screens are assembled from typed, declarative screen specs composed of
+screen templates and typed modules.
 
 Key idea:
 
-- Presentation asks the domain layer to interpret a `ScreenDefinition`.
-- The domain layer executes template interpreters to produce section view-models.
+- Presentation asks the domain layer to interpret a `ScreenSpec`.
+- The domain layer executes typed module interpreters to produce section view-models.
 - Presentation renders those view-models through template-specific widgets.
 
 #### Unified screen pipeline diagram
 
 ```text
 Route -> Screen key
-  -> load ScreenDefinition (system template or custom)
-  -> interpret sections (domain):
-       templateId + params -> interpreter -> SectionVm (stream)
-  -> combine all sections into ScreenData (stream)
-  -> render (presentation): UnifiedScreenPage + SectionWidget switch
+  -> load ScreenSpec (system screens + persisted preferences)
+  -> interpret modules (domain):
+       ScreenModuleSpec + typed params -> interpreter -> SectionVm (stream)
+  -> combine all sections into ScreenSpecData (stream)
+  -> render (presentation): UnifiedScreenPageFromSpec + SectionWidget switch
 ```
 
 For the deeper dive see:

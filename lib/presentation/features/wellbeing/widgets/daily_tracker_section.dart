@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/daily_tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/journal/model/daily_tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tracker_response_fields.dart';
 
 /// Section for managing allDay tracker responses.

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker_response_config.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_response_config.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_builder_tracker_response_fields.dart';
 
 /// A card widget that displays a tracker field based on its response type.

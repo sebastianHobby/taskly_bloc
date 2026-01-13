@@ -1,71 +1,58 @@
-/// Regression test for “infinite loading” on real unified screen rendering.
+/// Regression test for “infinite loading” on typed unified screen rendering.
 ///
-/// This is a widget-level guard: it pumps the real `UnifiedScreenPageById`
-/// and fails fast if the page stays stuck on the loading spinner.
+/// This is a widget-level guard: it pumps `UnifiedScreenPageFromSpec` and
+/// fails fast if the page stays stuck on the loading spinner.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
-import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
-import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_helpers.dart';
-import '../../../../mocks/repository_mocks.dart';
 
-class MockEntityActionService extends Mock implements EntityActionService {}
+class MockScreenSpecDataInterpreter extends Mock
+    implements ScreenSpecDataInterpreter {}
+
+const _testSpec = ScreenSpec(
+  id: 'test-spec',
+  screenKey: 'test-statistics-screen',
+  name: 'Test Statistics Screen',
+  template: ScreenTemplateSpec.statisticsDashboard(),
+);
+
+ScreenSpecData _data() {
+  return const ScreenSpecData(
+    spec: _testSpec,
+    template: ScreenTemplateSpec.statisticsDashboard(),
+    sections: SlottedSectionVms(),
+  );
+}
 
 void main() {
-  group('UnifiedScreenPageById (widget) infinite loading guards', () {
-    late MockSettingsRepositoryContract settingsRepository;
-    late MockEntityActionService entityActionService;
+  group('UnifiedScreenPageFromSpec (widget) infinite loading guards', () {
+    late MockScreenSpecDataInterpreter interpreter;
 
     setUp(() async {
       initializeTalkerForTest();
 
       // The widget under test uses getIt internally.
       await getIt.reset();
-      settingsRepository = MockSettingsRepositoryContract();
-      entityActionService = MockEntityActionService();
 
-      when(
-        () =>
-            settingsRepository.watch<AllocationConfig>(SettingsKey.allocation),
-      ).thenAnswer((_) => Stream.value(const AllocationConfig()));
-      when(
-        () => settingsRepository.load<AllocationConfig>(SettingsKey.allocation),
-      ).thenAnswer((_) async => const AllocationConfig());
+      interpreter = MockScreenSpecDataInterpreter();
+      registerFallbackValue(_testSpec);
 
-      final interpreter = ScreenDataInterpreter(
-        interpreterRegistry: SectionTemplateInterpreterRegistry([
-          StaticSectionInterpreter(
-            // Choose a full-screen template that renders without further DI.
-            templateId: SectionTemplateId.statisticsDashboard,
-          ),
-        ]),
-        paramsCodec: SectionTemplateParamsCodec(),
-        settingsRepository: settingsRepository,
+      when(() => interpreter.watchScreen(any())).thenAnswer(
+        (_) => Stream.value(_data()),
       );
 
-      getIt
-        ..registerSingleton(settingsRepository)
-        ..registerSingleton<EntityActionService>(entityActionService)
-        ..registerSingleton<ScreenDataInterpreter>(interpreter)
-        ..registerSingleton<PerformanceLogger>(PerformanceLogger());
+      getIt.registerSingleton<ScreenSpecDataInterpreter>(interpreter);
     });
 
     tearDown(() async {
@@ -75,21 +62,9 @@ void main() {
     testWidgetsSafe(
       'loads and renders within 2 seconds',
       (tester) async {
-        final screen = ScreenDefinition(
-          id: '',
-          screenKey: 'test-statistics-screen',
-          name: 'Test Statistics Screen',
-          createdAt: DateTime(2026, 1, 1),
-          updatedAt: DateTime(2026, 1, 1),
-          chrome: const ScreenChrome(iconName: 'test'),
-          sections: const [
-            SectionRef(templateId: SectionTemplateId.statisticsDashboard),
-          ],
-        );
-
         await pumpLocalizedApp(
           tester,
-          home: UnifiedScreenPage(definition: screen),
+          home: const UnifiedScreenPageFromSpec(spec: _testSpec),
         );
 
         // Expect initial loading state.

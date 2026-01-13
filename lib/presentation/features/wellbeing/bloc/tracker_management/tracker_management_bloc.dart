@@ -3,8 +3,8 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/tracker.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 
 part 'tracker_management_bloc.freezed.dart';
 
@@ -42,7 +42,7 @@ class TrackerManagementBloc
     on<_ReorderTrackers>(_onReorderTrackers, transformer: restartable());
   }
 
-  final WellbeingRepositoryContract _repository;
+  final JournalRepositoryContract _repository;
 
   Future<void> _onLoadTrackers(_LoadTrackers event, Emitter emit) async {
     emit(const TrackerManagementState.loading());

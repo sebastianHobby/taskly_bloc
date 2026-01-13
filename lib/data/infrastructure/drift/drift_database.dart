@@ -9,9 +9,6 @@ import 'package:taskly_bloc/data/infrastructure/drift/features/shared_enums.dart
 import 'package:taskly_bloc/data/infrastructure/drift/converters/date_only_string_converter.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/converters/json_converters.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-// Domain models needed by TypeConverters in generated code
-import 'package:taskly_bloc/domain/screens/language/models/actions_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/content_config.dart';
 part 'drift_database.g.dart';
 
 /// Exception types for recurrence modifications
@@ -389,8 +386,6 @@ class ProjectRecurrenceExceptionsTable extends Table {
     Trackers,
     TrackerResponses,
     DailyTrackerResponses,
-    // Screen definitions (system templates + user-created)
-    ScreenDefinitions,
     // Screen preferences (per-user ordering/visibility)
     ScreenPreferencesTable,
     PendingNotifications,

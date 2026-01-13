@@ -24,9 +24,6 @@ bucket_definitions:
       # User settings
       - SELECT * FROM user_profiles WHERE user_id = bucket.user_id
 
-      # Screen Definitions
-      - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
-
       # Screen Preferences (per-user navigation ordering/visibility)
       - SELECT * FROM screen_preferences WHERE user_id = bucket.user_id
 
@@ -81,6 +78,12 @@ bucket_definitions:
 
       # Tracker Definitions (replaces trackers)
       - SELECT * FROM tracker_definitions WHERE user_id = bucket.user_id
+
+      # Tracker Preferences (per-user ordering/visibility/pinning)
+      - SELECT * FROM tracker_preferences WHERE user_id = bucket.user_id
+
+      # Tracker Definition Choices (optional: normalized options for choice trackers)
+      - SELECT * FROM tracker_definition_choices WHERE user_id = bucket.user_id
 
       # Tracker Events (replaces tracker_responses + daily_tracker_responses)
       - SELECT * FROM tracker_events WHERE user_id = bucket.user_id

@@ -1,162 +1,17 @@
-﻿/// Tests for ScreenDefinitionBloc.
+﻿/// Legacy tests for the removed `ScreenDefinitionBloc`.
 ///
-/// This BLoC is responsible for loading a single screen definition
-/// by screenKey and handling:
-/// - Initial loading state
-/// - Successful screen load
-/// - Screen not found (immediate, no grace period)
-/// - Stream errors
-/// - Screen deletion detection
-///
-/// Note: Grace period was removed in favor of proper synchronization.
-/// AuthBloc now guarantees seeding is complete before emitting authenticated,
-/// so ScreenDefinitionBloc can assume data exists if queried.
+/// The app has hard-cut over to the `ScreenSpec` unified-screen pipeline.
 library;
 
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_definition_bloc.dart';
-
-import '../../../../helpers/bloc_test_patterns.dart';
-import '../../../../helpers/fallback_values.dart';
-import '../../../../mocks/repository_mocks.dart';
 
 void main() {
-  group('ScreenDefinitionBloc', () {
-    late MockScreenDefinitionsRepositoryContract mockRepository;
-    late ScreenDefinitionBloc bloc;
+  test('legacy ScreenDefinitionBloc tests retired', () {
+    // Intentionally empty.
+  });
+}
 
-    setUpAll(registerAllFallbackValues);
-
-    setUp(() {
-      mockRepository = MockScreenDefinitionsRepositoryContract();
-    });
-
-    tearDown(() async {
-      await bloc.close();
-    });
-
-    ScreenDefinitionBloc buildBloc() =>
-        bloc = ScreenDefinitionBloc(repository: mockRepository);
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Initial State
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-    test('initial state is loading', () {
-      bloc = buildBloc();
-      expect(bloc.state, const ScreenDefinitionState.loading());
-    });
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Successful Screen Load
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-    blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
-      'emits [loading, loaded] when screen found immediately',
-      build: () {
-        final screen = SystemScreenSpecs.myDay;
-        when(() => mockRepository.watchScreen('my_day')).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: screen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 0,
-              ),
-            ),
-          ),
-        );
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(
-        const ScreenDefinitionEvent.subscriptionRequested(screenKey: 'my_day'),
-      ),
-      expect: () => [
-        const ScreenDefinitionState.loading(),
-        isA<ScreenDefinitionState>().having(
-          (s) =>
-              s.maybeMap(loaded: (l) => l.screen.screenKey, orElse: () => ''),
-          'screen.screenKey',
-          'my_day',
-        ),
-      ],
-    );
-
-    blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
-      'emits loaded with correct screen data',
-      build: () {
-        final screen = ScreenSpec(
-          id: 'custom-screen-id',
-          screenKey: 'custom-screen',
-          name: 'My Custom Screen',
-          template: const ScreenTemplateSpec.standardScaffoldV1(),
-        );
-        when(() => mockRepository.watchScreen('custom-screen')).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: screen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 5,
-              ),
-            ),
-          ),
-        );
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(
-        const ScreenDefinitionEvent.subscriptionRequested(
-          screenKey: 'custom-screen',
-        ),
-      ),
-      expect: () => [
-        const ScreenDefinitionState.loading(),
-        isA<ScreenDefinitionState>().having(
-          (s) => s.maybeMap(loaded: (l) => l.screen.name, orElse: () => ''),
-          'screen.name',
-          'My Custom Screen',
-        ),
-      ],
-    );
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Not Found Handling (immediate - no grace period)
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-    blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
-      'emits notFound immediately when screen does not exist',
-      build: () {
-        when(() => mockRepository.watchScreen('unknown')).thenAnswer(
-          (_) => Stream.value(null),
-        );
-        return buildBloc();
-      },
-      act: (bloc) => bloc.add(
-        const ScreenDefinitionEvent.subscriptionRequested(screenKey: 'unknown'),
-      ),
-      expect: () => [
-        const ScreenDefinitionState.loading(),
-        const ScreenDefinitionState.notFound(),
-      ],
-    );
-
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-    // Error Handling
-    // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-    blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
-      'emits error when stream throws',
-      build: () {
-        when(() => mockRepository.watchScreen('error-screen')).thenAnswer(
-          (_) => Stream.error(Exception('Database error'), StackTrace.current),
-        );
+/*
         return buildBloc();
       },
       act: (bloc) => bloc.add(
@@ -349,3 +204,5 @@ void main() {
     });
   });
 }
+
+*/

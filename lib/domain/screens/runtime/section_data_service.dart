@@ -4,7 +4,7 @@ import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repo
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
@@ -23,7 +23,7 @@ import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/wellbeing/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -48,13 +48,13 @@ class SectionDataService {
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
     required HomeDayKeyService dayKeyService,
     required AgendaSectionDataService agendaDataService,
-    WellbeingRepositoryContract? wellbeingRepository,
+    JournalRepositoryContract? journalRepository,
     AnalyticsService? analyticsService,
     SettingsRepositoryContract? settingsRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
-       _wellbeingRepository = wellbeingRepository,
+       _journalRepository = journalRepository,
        _allocationOrchestrator = allocationOrchestrator,
        _allocationSnapshotRepository = allocationSnapshotRepository,
        _dayKeyService = dayKeyService,
@@ -65,7 +65,7 @@ class SectionDataService {
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
-  final WellbeingRepositoryContract? _wellbeingRepository;
+  final JournalRepositoryContract? _journalRepository;
   final AllocationOrchestrator _allocationOrchestrator;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final HomeDayKeyService _dayKeyService;
@@ -314,14 +314,14 @@ class SectionDataService {
   }
 
   Future<List<JournalEntry>> _fetchJournalEntries(JournalQuery? query) async {
-    if (_wellbeingRepository == null) {
+    if (_journalRepository == null) {
       talker.warning(
-        '[SectionDataService] WellbeingRepository not available for journal query',
+        '[SectionDataService] JournalRepository not available for journal query',
       );
       return [];
     }
     // Use the repository's watchByQuery if available, otherwise fall back
-    return _wellbeingRepository
+    return _journalRepository
         .watchJournalEntriesByQuery(
           query ?? JournalQuery.all(),
         )
@@ -343,13 +343,13 @@ class SectionDataService {
   }
 
   Stream<List<JournalEntry>> _watchJournalEntries(JournalQuery? query) {
-    if (_wellbeingRepository == null) {
+    if (_journalRepository == null) {
       talker.warning(
-        '[SectionDataService] WellbeingRepository not available for journal watch',
+        '[SectionDataService] JournalRepository not available for journal watch',
       );
       return Stream.value([]);
     }
-    return _wellbeingRepository.watchJournalEntriesByQuery(
+    return _journalRepository.watchJournalEntriesByQuery(
       query ?? JournalQuery.all(),
     );
   }

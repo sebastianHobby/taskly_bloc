@@ -29,14 +29,6 @@ These contracts are intended to be referenced by per-screen migration decisions.
   - validation mapping
   - test assertions
 
-### ED-A4-A — Repo generates editor boilerplate
-- Repository tooling generates the common editor scaffolding:
-  - field key definitions
-  - draft models (where applicable)
-  - command stubs (create/update)
-  - validation mapping skeletons
-- Handwritten code focuses on domain rules + UI composition, not repetitive glue.
-
 ### ED-B1-A — Single form module per entity
 - For each entity type, there is a single reusable “form module” widget responsible for:
   - rendering the fields

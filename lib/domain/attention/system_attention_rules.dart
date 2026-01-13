@@ -5,11 +5,11 @@ import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 /// These are TEMPLATES that get seeded to the database on first launch.
 /// The source of truth is always the database.
 ///
-/// Pattern matches SystemScreenDefinitions:
-/// - Templates defined as static fields
+/// Pattern matches the code-seeded system-template approach:
+/// - Templates are defined as static fields
 /// - Seeded with source='system_template'
 /// - Users customize via database rows
-/// - Repository reads from database, not these templates
+/// - Repository reads from the database, not these templates
 abstract class SystemAttentionRules {
   SystemAttentionRules._();
 

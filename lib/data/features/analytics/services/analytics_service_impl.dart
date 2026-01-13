@@ -17,7 +17,7 @@ import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
 import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
 import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/correlation_calculator.dart';
 import 'package:taskly_bloc/domain/services/analytics/mood_stats_calculator.dart';
@@ -30,12 +30,12 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required TaskRepositoryContract taskRepo,
     required ProjectRepositoryContract projectRepo,
     required ValueRepositoryContract valueRepo,
-    required WellbeingRepositoryContract wellbeingRepo,
+    required JournalRepositoryContract journalRepo,
   }) : _analyticsRepo = analyticsRepo,
        _taskRepo = taskRepo,
        _projectRepo = projectRepo,
        _valueRepo = valueRepo,
-       _wellbeingRepo = wellbeingRepo,
+       _journalRepo = journalRepo,
        _taskStatsCalculator = TaskStatsCalculator(),
        _trendCalculator = TrendCalculator(),
        _moodStatsCalculator = MoodStatsCalculator(TrendCalculator()),
@@ -44,7 +44,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   final TaskRepositoryContract _taskRepo;
   final ProjectRepositoryContract _projectRepo;
   final ValueRepositoryContract _valueRepo;
-  final WellbeingRepositoryContract _wellbeingRepo;
+  final JournalRepositoryContract _journalRepo;
   final TaskStatsCalculator _taskStatsCalculator;
   final CorrelationCalculator _correlationCalculator;
   final MoodStatsCalculator _moodStatsCalculator;
@@ -98,7 +98,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    final moodData = await _wellbeingRepo.getDailyMoodAverages(
+    final moodData = await _journalRepo.getDailyMoodAverages(
       range: range,
     );
 
@@ -113,7 +113,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   Future<Map<int, int>> getMoodDistribution({
     required DateRange range,
   }) async {
-    final moodData = await _wellbeingRepo.getDailyMoodAverages(
+    final moodData = await _journalRepo.getDailyMoodAverages(
       range: range,
     );
 
@@ -124,7 +124,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
   Future<MoodSummary> getMoodSummary({
     required DateRange range,
   }) async {
-    final moodData = await _wellbeingRepo.getDailyMoodAverages(
+    final moodData = await _journalRepo.getDailyMoodAverages(
       range: range,
     );
 
@@ -137,7 +137,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    final trackerData = await _wellbeingRepo.getTrackerValues(
+    final trackerData = await _journalRepo.getTrackerValues(
       trackerId: trackerId,
       range: range,
     );
@@ -176,7 +176,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
     int limit = 10,
   }) async {
     // Get all trackers
-    final trackers = await _wellbeingRepo.getAllTrackers();
+    final trackers = await _journalRepo.getAllTrackers();
 
     // Calculate correlations for each tracker
     final List<CorrelationResult> correlations = [];
@@ -231,12 +231,12 @@ class AnalyticsServiceImpl implements AnalyticsService {
     String trackerId,
     DateRange range,
   ) async {
-    final tracker = await _wellbeingRepo.getTrackerById(trackerId);
-    final trackerValues = await _wellbeingRepo.getTrackerValues(
+    final tracker = await _journalRepo.getTrackerById(trackerId);
+    final trackerValues = await _journalRepo.getTrackerValues(
       trackerId: trackerId,
       range: range,
     );
-    final moodData = await _wellbeingRepo.getDailyMoodAverages(
+    final moodData = await _journalRepo.getDailyMoodAverages(
       range: range,
     );
 
@@ -268,7 +268,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
       range: range,
     );
 
-    final moodData = await _wellbeingRepo.getDailyMoodAverages(
+    final moodData = await _journalRepo.getDailyMoodAverages(
       range: range,
     );
 
@@ -287,15 +287,15 @@ class AnalyticsServiceImpl implements AnalyticsService {
     String trackerId2,
     DateRange range,
   ) async {
-    final tracker1 = await _wellbeingRepo.getTrackerById(trackerId1);
-    final tracker2 = await _wellbeingRepo.getTrackerById(trackerId2);
+    final tracker1 = await _journalRepo.getTrackerById(trackerId1);
+    final tracker2 = await _journalRepo.getTrackerById(trackerId2);
 
-    final tracker1Values = await _wellbeingRepo.getTrackerValues(
+    final tracker1Values = await _journalRepo.getTrackerValues(
       trackerId: trackerId1,
       range: range,
     );
 
-    final tracker2Values = await _wellbeingRepo.getTrackerValues(
+    final tracker2Values = await _journalRepo.getTrackerValues(
       trackerId: trackerId2,
       range: range,
     );

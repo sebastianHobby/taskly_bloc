@@ -5,7 +5,7 @@ import 'package:taskly_bloc/domain/attention/contracts/attention_repository_cont
     as attention_repo_v2;
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
@@ -50,7 +50,7 @@ class ScreenTemplateWidget extends StatelessWidget {
       settingsMenu: () => const SettingsScreen(),
       trackerManagement: () => BlocProvider(
         create: (_) =>
-            TrackerManagementBloc(getIt<WellbeingRepositoryContract>()),
+            TrackerManagementBloc(getIt<JournalRepositoryContract>()),
         child: const TrackerManagementScreen(),
       ),
       statisticsDashboard: () => const Scaffold(
@@ -63,7 +63,7 @@ class ScreenTemplateWidget extends StatelessWidget {
         child: const WellbeingDashboardScreen(),
       ),
       journalTimeline: () => BlocProvider(
-        create: (_) => JournalEntryBloc(getIt<WellbeingRepositoryContract>()),
+        create: (_) => JournalEntryBloc(getIt<JournalRepositoryContract>()),
         child: const JournalScreen(),
       ),
       navigationSettings: () => NavigationSettingsPage(
