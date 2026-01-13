@@ -25,6 +25,10 @@ mobile platforms.
 
 ## Repo Workflow Rules (Taskly)
 
+### Git safety (required)
+
+* Never revert changes or use `git` (checkout/reset/revert/clean/commit/rebase, etc.) without explicit user confirmation.
+
 ### Architecture-first (required)
 
 * Before doing any repository analysis (beyond a quick scan to locate the relevant files) or making any significant change, first review the architecture docs under `doc/architecture/`.
@@ -54,24 +58,32 @@ mobile platforms.
 
 ### Analysis first (strict)
 
-* Always run `flutter analyze` and fix **all** errors and warnings before working on failing tests.
+* Always run `flutter analyze` before working on failing tests.
 * Do not attempt to "fix tests to make them pass" while `flutter analyze` is reporting problems.
+* When implementing a multi-phase plan (with plan files/folder), only fix `flutter analyze` errors/warnings that are caused by the current plan phase changes.
+  * Exception: in the **last phase** of the plan, fix **any** `flutter analyze` error or warning (regardless of whether it is related to the plan).
 
 ### Planning docs (required)
 
-* When creating a plan, always create a new folder under `doc/plans/` with a meaningful plan name.
+* These rules apply **only if** the user explicitly asks you to create a persisted plan (a plan file/folder under `doc/backlog/` or `doc/wip/`).
+  * If the user asks for a plan but is not explicit about persistence, ask whether they want the plan **in chat** or as **plan files/folder**.
+* When creating a persisted plan, ask whether it should go into:
+  * **Backlog**: use `doc/backlog/`
+  * **Work in progress**: use `doc/wip/` (create `doc/wip/` if needed)
+* Create a new plan folder (with a meaningful plan name) under the chosen location.
 * Inside that folder, create **one file per phase** (split plans into manageable phases).
 * Every plan phase file must include:
   * `Created at:` (UTC)
   * `Last updated at:` (UTC)
 * Every phase file must include an **AI instructions** section that includes:
   * Run `flutter analyze` for the phase.
-  * Ensure any errors or warnings introduced (or discovered) are fixed by the end of the phase.
+  * Ensure any `flutter analyze` errors/warnings **caused by that phase’s changes** are fixed by the end of the phase.
+  * Exception: in the **last phase**, fix **any** `flutter analyze` error or warning.
   * Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
 
 ### Plan completion workflow (required)
 
-* When a plan is fully implemented, move its plan folder to `doc/plans/completed/<plan-name>/` (create `doc/plans/completed/` if needed).
+* When a plan is fully implemented, move its plan folder from `doc/wip/` (or `doc/backlog/`, if it was implemented directly) to `doc/plans/completed/<plan-name>/` (create `doc/plans/completed/` if needed).
 * Add a summary document in that completed folder stating:
   * Implementation date (UTC)
   * What shipped (high-level)
@@ -100,8 +112,8 @@ mobile platforms.
 * **Widgets are for UI:** Everything in Flutter's UI is a widget. Compose
   complex UIs from smaller, reusable widgets.
 * **Navigation:** Use a modern routing package like `auto_route` or `go_router`.
-  See the [navigation guide](./navigation.md) for a detailed example using
-  `go_router`.
+  See the navigation guide in [doc/architecture](../doc/architecture/README.md)
+  for routing-related patterns.
 
 ## Package Management
 * **Pub Tool:** To manage packages, use the `pub` tool, if available.
@@ -270,8 +282,8 @@ linter:
 ### Routing
 * **GoRouter:** Use the `go_router` package for declarative navigation, deep
   linking, and web support.
-* **GoRouter Setup:** To use `go_router`, first add it to your `pubspec.yaml`
-  using the `pub` tool's `add` command.
+* See the navigation guide in [doc/architecture](../doc/architecture/README.md)
+  for routing-related patterns.
 
   ```dart
   // 1. Add the dependency
