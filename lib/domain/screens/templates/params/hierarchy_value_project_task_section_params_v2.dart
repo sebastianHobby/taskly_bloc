@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 part 'hierarchy_value_project_task_section_params_v2.freezed.dart';
 part 'hierarchy_value_project_task_section_params_v2.g.dart';
@@ -18,8 +19,8 @@ abstract class HierarchyValueProjectTaskSectionParamsV2
     /// Data sources. Typically one or more task queries.
     required List<DataConfig> sources,
 
-    /// Tile variants for each entity type.
-    required TilePolicyV2 tiles,
+    /// Curated styling pack for this module.
+    required StylePackV2 pack,
 
     /// Controls whether Value headers are pinned (sticky).
     @Default(true) bool pinnedValueHeaders,

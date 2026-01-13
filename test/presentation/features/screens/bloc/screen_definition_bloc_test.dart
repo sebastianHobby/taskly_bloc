@@ -18,11 +18,11 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_definition_bloc.dart';
 
-import '../../../../fixtures/test_data.dart';
 import '../../../../helpers/bloc_test_patterns.dart';
 import '../../../../helpers/fallback_values.dart';
 import '../../../../mocks/repository_mocks.dart';
@@ -61,7 +61,7 @@ void main() {
     blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
       'emits [loading, loaded] when screen found immediately',
       build: () {
-        final screen = SystemScreenDefinitions.myDay;
+        final screen = SystemScreenSpecs.myDay;
         when(() => mockRepository.watchScreen('my_day')).thenAnswer(
           (_) => Stream.value(
             ScreenWithPreferences(
@@ -92,9 +92,11 @@ void main() {
     blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
       'emits loaded with correct screen data',
       build: () {
-        final screen = TestData.screenDefinition(
+        final screen = ScreenSpec(
+          id: 'custom-screen-id',
           screenKey: 'custom-screen',
           name: 'My Custom Screen',
+          template: const ScreenTemplateSpec.standardScaffoldV1(),
         );
         when(() => mockRepository.watchScreen('custom-screen')).thenAnswer(
           (_) => Stream.value(
@@ -179,7 +181,12 @@ void main() {
     blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
       'emits notFound when previously loaded screen is deleted',
       build: () {
-        final screen = TestData.screenDefinition(screenKey: 'deletable');
+        final screen = ScreenSpec(
+          id: 'deletable-id',
+          screenKey: 'deletable',
+          name: 'Deletable',
+          template: const ScreenTemplateSpec.standardScaffoldV1(),
+        );
         final controller = TestStreamController<ScreenWithPreferences?>();
 
         when(() => mockRepository.watchScreen('deletable')).thenAnswer(
@@ -229,13 +236,17 @@ void main() {
     blocTestSafe<ScreenDefinitionBloc, ScreenDefinitionState>(
       'updates state when screen data changes',
       build: () {
-        final screen1 = TestData.screenDefinition(
+        final screen1 = ScreenSpec(
+          id: 'editable-id',
           screenKey: 'editable',
           name: 'Original Name',
+          template: const ScreenTemplateSpec.standardScaffoldV1(),
         );
-        final screen2 = TestData.screenDefinition(
+        final screen2 = ScreenSpec(
+          id: 'editable-id',
           screenKey: 'editable',
           name: 'Updated Name',
+          template: const ScreenTemplateSpec.standardScaffoldV1(),
         );
         final controller = TestStreamController<ScreenWithPreferences?>();
 
@@ -296,7 +307,7 @@ void main() {
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
     group('system screen contracts', () {
-      for (final systemScreen in SystemScreenDefinitions.all) {
+      for (final systemScreen in SystemScreenSpecs.all) {
         test('loads ${systemScreen.screenKey} correctly', () async {
           when(
             () => mockRepository.watchScreen(systemScreen.screenKey),

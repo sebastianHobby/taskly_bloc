@@ -1,33 +1,29 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/badge_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 
 import '../../../../mocks/repository_mocks.dart';
 
-ScreenDefinition _makeScreen({
+ScreenSpec _makeScreen({
   required String id,
   required String name,
-  List<SectionRef> sections = const [],
   ScreenChrome chrome = ScreenChrome.empty,
+  SlottedModules modules = const SlottedModules(),
 }) {
-  final now = DateTime.now();
-  return ScreenDefinition(
+  return ScreenSpec(
     id: id,
     screenKey: 'test-$id',
     name: name,
-    createdAt: now,
-    updatedAt: now,
-    sections: sections,
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    modules: modules,
     chrome: chrome,
   );
 }
@@ -35,11 +31,7 @@ ScreenDefinition _makeScreen({
 ListSectionParamsV2 _listParamsV2(DataConfig config) {
   return ListSectionParamsV2(
     config: config,
-    tiles: const TilePolicyV2(
-      task: TaskTileVariant.listTile,
-      project: ProjectTileVariant.listTile,
-      value: ValueTileVariant.compactCard,
-    ),
+    pack: StylePackV2.standard,
     layout: const SectionLayoutSpecV2.flatList(),
   );
 }
@@ -55,14 +47,17 @@ void main() {
     badgeService = NavigationBadgeService(
       taskRepository: taskRepo,
       projectRepository: projectRepo,
-      screenQueryBuilder: ScreenQueryBuilder(),
     );
   });
 
   group('NavigationBadgeService', () {
     group('badgeStreamFor', () {
       test('returns null for navigation-only screens', () {
-        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
+        final screen = _makeScreen(
+          id: 'settings-1',
+          name: 'Settings',
+          chrome: const ScreenChrome(badgeConfig: BadgeConfig.none()),
+        );
 
         final stream = badgeService.badgeStreamFor(screen);
 
@@ -85,13 +80,14 @@ void main() {
         final screen = _makeScreen(
           id: 'inbox-1',
           name: 'Inbox',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
-              overrides: const SectionOverrides(title: 'Tasks'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.taskListV2(
+                params: _listParamsV2(DataConfig.task(query: taskQuery)),
+                title: 'Tasks',
+              ),
+            ],
+          ),
         );
 
         when(
@@ -109,15 +105,14 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.projectListV2,
-              params: _listParamsV2(
-                DataConfig.project(query: projectQuery),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Projects'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.projectListV2(
+                params: _listParamsV2(DataConfig.project(query: projectQuery)),
+                title: 'Projects',
+              ),
+            ],
+          ),
         );
 
         when(
@@ -134,13 +129,14 @@ void main() {
         final screen = _makeScreen(
           id: 'values-1',
           name: 'Values',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.valueListV2,
-              params: _listParamsV2(DataConfig.value()).toJson(),
-              overrides: const SectionOverrides(title: 'Values'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.valueListV2(
+                params: _listParamsV2(DataConfig.value()),
+                title: 'Values',
+              ),
+            ],
+          ),
         );
 
         final stream = badgeService.badgeStreamFor(screen);
@@ -154,20 +150,20 @@ void main() {
         final screen = _makeScreen(
           id: 'mixed-1',
           name: 'Mixed',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
-              overrides: const SectionOverrides(title: 'Tasks First'),
-            ),
-            SectionRef(
-              templateId: SectionTemplateId.projectListV2,
-              params: _listParamsV2(
-                DataConfig.project(query: projectQuery),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Projects Second'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.taskListV2(
+                params: _listParamsV2(DataConfig.task(query: taskQuery)),
+                title: 'Tasks First',
+              ),
+              ScreenModuleSpec.projectListV2(
+                params: _listParamsV2(
+                  DataConfig.project(query: projectQuery),
+                ),
+                title: 'Projects Second',
+              ),
+            ],
+          ),
         );
 
         when(
@@ -183,7 +179,11 @@ void main() {
 
     group('getTaskQueryForScreen', () {
       test('returns null for navigation-only screens', () {
-        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
+        final screen = _makeScreen(
+          id: 'settings-1',
+          name: 'Settings',
+          chrome: const ScreenChrome(badgeConfig: BadgeConfig.none()),
+        );
 
         final query = badgeService.getTaskQueryForScreen(screen);
 
@@ -206,13 +206,14 @@ void main() {
         final screen = _makeScreen(
           id: 'inbox-1',
           name: 'Inbox',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: _listParamsV2(DataConfig.task(query: taskQuery)).toJson(),
-              overrides: const SectionOverrides(title: 'Tasks'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.taskListV2(
+                params: _listParamsV2(DataConfig.task(query: taskQuery)),
+                title: 'Tasks',
+              ),
+            ],
+          ),
         );
 
         final query = badgeService.getTaskQueryForScreen(screen);
@@ -225,14 +226,15 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.projectListV2,
-              params: _listParamsV2(
-                DataConfig.project(query: projectQuery),
-              ).toJson(),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.projectListV2(
+                params: _listParamsV2(
+                  DataConfig.project(query: projectQuery),
+                ),
+              ),
+            ],
+          ),
         );
 
         final query = badgeService.getTaskQueryForScreen(screen);
@@ -243,7 +245,11 @@ void main() {
 
     group('getProjectQueryForScreen', () {
       test('returns null for navigation-only screens', () {
-        final screen = _makeScreen(id: 'settings-1', name: 'Settings');
+        final screen = _makeScreen(
+          id: 'settings-1',
+          name: 'Settings',
+          chrome: const ScreenChrome(badgeConfig: BadgeConfig.none()),
+        );
 
         final query = badgeService.getProjectQueryForScreen(screen);
 
@@ -266,15 +272,16 @@ void main() {
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.projectListV2,
-              params: _listParamsV2(
-                DataConfig.project(query: projectQuery),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Projects'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.projectListV2(
+                params: _listParamsV2(
+                  DataConfig.project(query: projectQuery),
+                ),
+                title: 'Projects',
+              ),
+            ],
+          ),
         );
 
         final query = badgeService.getProjectQueryForScreen(screen);
@@ -286,15 +293,16 @@ void main() {
         final screen = _makeScreen(
           id: 'tasks-1',
           name: 'Tasks',
-          sections: [
-            SectionRef(
-              templateId: SectionTemplateId.taskListV2,
-              params: _listParamsV2(
-                DataConfig.task(query: TaskQuery.all()),
-              ).toJson(),
-              overrides: const SectionOverrides(title: 'Tasks'),
-            ),
-          ],
+          modules: SlottedModules(
+            primary: [
+              ScreenModuleSpec.taskListV2(
+                params: _listParamsV2(
+                  DataConfig.task(query: TaskQuery.all()),
+                ),
+                title: 'Tasks',
+              ),
+            ],
+          ),
         );
 
         final query = badgeService.getProjectQueryForScreen(screen);

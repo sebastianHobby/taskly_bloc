@@ -2,11 +2,10 @@
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/presentation/screens/view/unified_screen_page.dart';
+import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
 ///
@@ -46,10 +45,6 @@ abstract final class Routing {
   static bool isEntityType(String segment) => entityTypes.contains(segment);
 
   // === SCREEN NAVIGATION ===
-
-  /// Navigate to screen (replaces current view in nav stack).
-  static void toScreen(BuildContext context, ScreenDefinition screen) =>
-      GoRouter.of(context).go(screenPath(screen.screenKey));
 
   /// Navigate to screen by key (when definition is unavailable).
   static void toScreenKey(BuildContext context, String screenKey) =>
@@ -91,18 +86,17 @@ abstract final class Routing {
   ///
   /// This is the single entry point for all screen construction.
   static Widget buildScreen(String screenKey) {
-    final systemScreen = SystemScreenDefinitions.getByKey(screenKey);
-    if (systemScreen != null) {
-      return UnifiedScreenPage(
+    final systemSpec = SystemScreenSpecs.getByKey(screenKey);
+    if (systemSpec != null) {
+      return UnifiedScreenPageFromSpec(
         key: ValueKey('screen_$screenKey'),
-        definition: systemScreen,
+        spec: systemSpec,
       );
     }
 
-    // User-defined screen from repository
-    return UnifiedScreenPageById(
-      key: ValueKey('screen_$screenKey'),
-      screenId: screenKey,
+    return Center(
+      key: ValueKey('screen_not_found_$screenKey'),
+      child: Text('Screen not found: $screenKey'),
     );
   }
 

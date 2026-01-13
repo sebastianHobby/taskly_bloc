@@ -82,9 +82,6 @@ class _ReadyState extends StatelessWidget {
                 key: ValueKey(screen.id),
                 leading: Icon(iconSet.icon),
                 title: Text(screen.name),
-                subtitle: screen.isSystemScreen
-                    ? const Text('System screen (cannot be deleted)')
-                    : null,
                 trailing: const Icon(Icons.drag_handle),
               );
             },

@@ -1,14 +1,12 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 part 'list_section_params_v2.freezed.dart';
 part 'list_section_params_v2.g.dart';
 
 /// Date field used to derive agenda tags.
-///
-/// Kept in V2 params so `TaskTileVariant.agenda` can be used outside `agenda_v2`.
 enum AgendaDateFieldV2 {
   @JsonValue('deadline_date')
   deadlineDate,
@@ -30,19 +28,6 @@ enum AgendaTagV2 {
 
   @JsonValue('in_progress')
   inProgress,
-}
-
-@freezed
-abstract class TilePolicyV2 with _$TilePolicyV2 {
-  @JsonSerializable(disallowUnrecognizedKeys: true)
-  const factory TilePolicyV2({
-    required TaskTileVariant task,
-    required ProjectTileVariant project,
-    required ValueTileVariant value,
-  }) = _TilePolicyV2;
-
-  factory TilePolicyV2.fromJson(Map<String, dynamic> json) =>
-      _$TilePolicyV2FromJson(json);
 }
 
 @Freezed(unionKey: 'type')
@@ -180,7 +165,7 @@ abstract class ListSectionParamsV2 with _$ListSectionParamsV2 {
   @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory ListSectionParamsV2({
     required DataConfig config,
-    required TilePolicyV2 tiles,
+    required StylePackV2 pack,
     required SectionLayoutSpecV2 layout,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     SectionFilterSpecV2? filters,

@@ -9,12 +9,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/app/di/dependency_injection.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
@@ -33,7 +31,6 @@ class MockEntityActionService extends Mock implements EntityActionService {}
 
 void main() {
   group('UnifiedScreenPageById (widget) infinite loading guards', () {
-    late MockScreenDefinitionsRepositoryContract screensRepository;
     late MockSettingsRepositoryContract settingsRepository;
     late MockEntityActionService entityActionService;
 
@@ -42,8 +39,6 @@ void main() {
 
       // The widget under test uses getIt internally.
       await getIt.reset();
-
-      screensRepository = MockScreenDefinitionsRepositoryContract();
       settingsRepository = MockSettingsRepositoryContract();
       entityActionService = MockEntityActionService();
 
@@ -67,9 +62,6 @@ void main() {
       );
 
       getIt
-        ..registerSingleton<ScreenDefinitionsRepositoryContract>(
-          screensRepository,
-        )
         ..registerSingleton(settingsRepository)
         ..registerSingleton<EntityActionService>(entityActionService)
         ..registerSingleton<ScreenDataInterpreter>(interpreter)
@@ -83,11 +75,9 @@ void main() {
     testWidgetsSafe(
       'loads and renders within 2 seconds',
       (tester) async {
-        const screenKey = 'test-statistics-screen';
-
         final screen = ScreenDefinition(
           id: '',
-          screenKey: screenKey,
+          screenKey: 'test-statistics-screen',
           name: 'Test Statistics Screen',
           createdAt: DateTime(2026, 1, 1),
           updatedAt: DateTime(2026, 1, 1),
@@ -97,21 +87,9 @@ void main() {
           ],
         );
 
-        when(() => screensRepository.watchScreen(screenKey)).thenAnswer(
-          (_) => Stream.value(
-            ScreenWithPreferences(
-              screen: screen,
-              preferences: const ScreenPreferences(
-                isActive: true,
-                sortOrder: 0,
-              ),
-            ),
-          ),
-        );
-
         await pumpLocalizedApp(
           tester,
-          home: const UnifiedScreenPageById(screenId: screenKey),
+          home: UnifiedScreenPage(definition: screen),
         );
 
         // Expect initial loading state.

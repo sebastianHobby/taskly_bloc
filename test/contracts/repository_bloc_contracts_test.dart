@@ -9,8 +9,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
@@ -26,7 +25,7 @@ void main() {
       testContract(
         'all system screens can be wrapped in ScreenWithPreferences',
         () {
-          for (final screen in SystemScreenDefinitions.all) {
+          for (final screen in SystemScreenSpecs.all) {
             final wrapped = ScreenWithPreferences(
               screen: screen,
               preferences: const ScreenPreferences(
@@ -43,7 +42,7 @@ void main() {
       );
 
       testContract('ScreenWithPreferences exposes all required properties', () {
-        final screen = SystemScreenDefinitions.myDay;
+        final screen = SystemScreenSpecs.myDay;
         final wrapped = ScreenWithPreferences(
           screen: screen,
           preferences: const ScreenPreferences(isActive: true, sortOrder: 5),
@@ -71,7 +70,7 @@ void main() {
       testContract(
         'NavigationDestination can be built from any system screen',
         () {
-          for (final screen in SystemScreenDefinitions.all) {
+          for (final screen in SystemScreenSpecs.all) {
             // Simulate what NavigationBloc does when building destinations
             final wrapped = ScreenWithPreferences(
               screen: screen,
@@ -103,26 +102,17 @@ void main() {
     // Screen Definition Type Contracts
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-    group('ScreenDefinition types', () {
-      testContract('all system screens are of expected types', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          // All system screens should be ScreenDefinition subclasses
-          expect(screen, isA<ScreenDefinition>());
-
-          // They should have required fields
+    group('ScreenSpec types', () {
+      testContract('all system screens have required fields', () {
+        for (final screen in SystemScreenSpecs.all) {
           expect(screen.screenKey, isNotEmpty);
           expect(screen.name, isNotEmpty);
         }
       });
 
-      testContract('data-driven screens have sections property', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          // Unified model: all ScreenDefinitions have sections.
-          expect(
-            screen.sections,
-            isNotNull,
-            reason: 'sections should be accessible for ${screen.screenKey}',
-          );
+      testContract('all system screens expose module slots', () {
+        for (final screen in SystemScreenSpecs.all) {
+          expect(screen.modules, isNotNull);
         }
       });
     });
@@ -133,22 +123,22 @@ void main() {
 
     group('Sort order contracts', () {
       testContract('default sort order for settings is 100', () {
-        expect(SystemScreenDefinitions.getDefaultSortOrder('settings'), 100);
+        expect(SystemScreenSpecs.getDefaultSortOrder('settings'), 100);
       });
 
       testContract('default sort orders for main screens are < 100', () {
-        for (final entry in SystemScreenDefinitions.defaultSortOrders.entries) {
-          if (entry.key == 'settings') continue;
+        for (final screen in SystemScreenSpecs.all) {
+          if (screen.screenKey == 'settings') continue;
           expect(
-            entry.value,
+            SystemScreenSpecs.getDefaultSortOrder(screen.screenKey),
             lessThan(100),
-            reason: '${entry.key} should sort before settings',
+            reason: '${screen.screenKey} should sort before settings',
           );
         }
       });
 
       testContract('unknown screens sort last (999)', () {
-        expect(SystemScreenDefinitions.getDefaultSortOrder('unknown_key'), 999);
+        expect(SystemScreenSpecs.getDefaultSortOrder('unknown'), 999);
       });
     });
   });

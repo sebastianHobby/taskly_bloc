@@ -9,7 +9,6 @@ import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
@@ -166,7 +165,6 @@ class _AuthenticatedApp extends StatelessWidget {
           create: (_) => NavigationBadgeService(
             taskRepository: getIt<TaskRepositoryContract>(),
             projectRepository: getIt<ProjectRepositoryContract>(),
-            screenQueryBuilder: getIt<ScreenQueryBuilder>(),
           ),
         ),
       ],

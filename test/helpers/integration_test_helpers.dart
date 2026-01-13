@@ -26,7 +26,7 @@
 ///
 ///   testIntegration('loads screen from database', () async {
 ///     // Arrange
-///     await ctx.seedScreen(screenKey: 'inbox');
+///     await ctx.seedSystemScreens();
 ///
 ///     // Act
 ///     final bloc = ctx.createScreenDefinitionBloc('inbox');
@@ -54,8 +54,7 @@ import 'package:taskly_bloc/data/screens/repositories/screen_definitions_reposit
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 import 'test_db.dart';
@@ -175,12 +174,12 @@ class IntegrationTestContext {
   /// System screens are code-based and don't need to be seeded into the
   /// database. This method sets up their preferences (isActive, sortOrder).
   Future<void> seedSystemScreens({String userId = 'test-user'}) async {
-    for (final screen in SystemScreenDefinitions.all) {
+    for (final screen in SystemScreenSpecs.all) {
       await screensRepository.updateScreenPreferences(
         screen.screenKey,
         ScreenPreferences(
           isActive: true,
-          sortOrder: SystemScreenDefinitions.getDefaultSortOrder(
+          sortOrder: SystemScreenSpecs.getDefaultSortOrder(
             screen.screenKey,
           ),
         ),
@@ -189,25 +188,6 @@ class IntegrationTestContext {
   }
 
   /// Seeds a single custom screen definition into the database.
-  ///
-  /// For system screens, use [seedSystemScreens] or update preferences
-  /// directly via [screensRepository.updateScreenPreferences].
-  @Deprecated(
-    'Custom screen creation was removed. Use seedSystemScreens() or '
-    'screensRepository.updateScreenPreferences() for existing screenKeys.',
-  )
-  Future<void> seedScreen({
-    required ScreenDefinition screen,
-    String userId = 'test-user',
-    bool isActive = true,
-    int sortOrder = 0,
-  }) async {
-    await screensRepository.updateScreenPreferences(
-      screen.screenKey,
-      ScreenPreferences(isActive: isActive, sortOrder: sortOrder),
-    );
-  }
-
   /// Tracks a BLoC for automatic cleanup.
   T trackBloc<T extends BlocBase<dynamic>>(T bloc) {
     _createdBlocs.add(bloc);

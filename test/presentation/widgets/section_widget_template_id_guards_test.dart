@@ -6,10 +6,10 @@ import 'package:taskly_bloc/domain/screens/language/models/section_template_id.d
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../../helpers/pump_app.dart';
 
@@ -24,7 +24,7 @@ void main() {
       templateId: SectionTemplateId.issuesSummary,
       title: 'My Issues',
       params: IssuesSummarySectionParams(
-        attentionItemTileVariant: AttentionItemTileVariant.standard,
+        pack: StylePackV2.standard,
       ),
       data: SectionDataResult.issuesSummary(
         items: [],
@@ -48,7 +48,7 @@ void main() {
       index: 0,
       templateId: SectionTemplateId.taskListV2,
       params: IssuesSummarySectionParams(
-        attentionItemTileVariant: AttentionItemTileVariant.standard,
+        pack: StylePackV2.standard,
       ),
       data: SectionDataResult.issuesSummary(
         items: [],

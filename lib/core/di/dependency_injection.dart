@@ -60,7 +60,7 @@ import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_data_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
@@ -72,9 +72,6 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter_registry.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_params_codec.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/static_section_interpreter.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -234,12 +231,6 @@ Future<void> setupDependencies() async {
         projectRepository: getIt<ProjectRepositoryContract>(),
       ),
     )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.statisticsDashboard,
-      ),
-      instanceName: SectionTemplateId.statisticsDashboard,
-    )
     ..registerLazySingleton<SectionDataService>(
       () => SectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
@@ -300,9 +291,6 @@ Future<void> setupDependencies() async {
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
       ),
-    )
-    ..registerLazySingleton<SectionTemplateParamsCodec>(
-      SectionTemplateParamsCodec.new,
     )
     ..registerLazySingleton<DataListSectionInterpreterV2>(
       () => DataListSectionInterpreterV2(
@@ -375,141 +363,43 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.entityHeader,
     )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () =>
-          StaticSectionInterpreter(templateId: SectionTemplateId.settingsMenu),
-      instanceName: SectionTemplateId.settingsMenu,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.journalTimeline,
-      ),
-      instanceName: SectionTemplateId.journalTimeline,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.navigationSettings,
-      ),
-      instanceName: SectionTemplateId.navigationSettings,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.allocationSettings,
-      ),
-      instanceName: SectionTemplateId.allocationSettings,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.attentionRules,
-      ),
-      instanceName: SectionTemplateId.attentionRules,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.focusSetupWizard,
-      ),
-      instanceName: SectionTemplateId.focusSetupWizard,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.trackerManagement,
-      ),
-      instanceName: SectionTemplateId.trackerManagement,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.wellbeingDashboard,
-      ),
-      instanceName: SectionTemplateId.wellbeingDashboard,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.myDayFocusModeRequired,
-      ),
-      instanceName: SectionTemplateId.myDayFocusModeRequired,
-    )
-    ..registerLazySingleton<StaticSectionInterpreter>(
-      () => StaticSectionInterpreter(
-        templateId: SectionTemplateId.browseHub,
-      ),
-      instanceName: SectionTemplateId.browseHub,
-    )
-    ..registerLazySingleton<SectionTemplateInterpreterRegistry>(
-      () => SectionTemplateInterpreterRegistry([
-        getIt<DataListSectionInterpreterV2>(
+    ..registerLazySingleton<ScreenSpecDataInterpreter>(
+      () => ScreenSpecDataInterpreter(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        taskListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.taskListV2,
         ),
-        getIt<DataListSectionInterpreterV2>(
+        projectListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.projectListV2,
         ),
-        getIt<DataListSectionInterpreterV2>(
+        valueListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.valueListV2,
         ),
-        getIt<InterleavedListSectionInterpreterV2>(
+        interleavedListInterpreter: getIt<InterleavedListSectionInterpreterV2>(
           instanceName: SectionTemplateId.interleavedListV2,
         ),
-        getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
-          instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
-        ),
-        getIt<AllocationSectionInterpreter>(
+        hierarchyValueProjectTaskInterpreter:
+            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
+              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
+            ),
+        allocationInterpreter: getIt<AllocationSectionInterpreter>(
           instanceName: SectionTemplateId.allocation,
         ),
-        getIt<AgendaSectionInterpreterV2>(
+        agendaInterpreter: getIt<AgendaSectionInterpreterV2>(
           instanceName: SectionTemplateId.agendaV2,
         ),
-        getIt<IssuesSummarySectionInterpreter>(
+        issuesSummaryInterpreter: getIt<IssuesSummarySectionInterpreter>(
           instanceName: SectionTemplateId.issuesSummary,
         ),
-        getIt<AllocationAlertsSectionInterpreter>(
+        allocationAlertsInterpreter: getIt<AllocationAlertsSectionInterpreter>(
           instanceName: SectionTemplateId.allocationAlerts,
         ),
-        getIt<CheckInSummarySectionInterpreter>(
+        checkInSummaryInterpreter: getIt<CheckInSummarySectionInterpreter>(
           instanceName: SectionTemplateId.checkInSummary,
         ),
-        getIt<EntityHeaderSectionInterpreter>(
+        entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,
         ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.settingsMenu,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.statisticsDashboard,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.journalTimeline,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.navigationSettings,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.allocationSettings,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.attentionRules,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.focusSetupWizard,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.trackerManagement,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.wellbeingDashboard,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.myDayFocusModeRequired,
-        ),
-        getIt<StaticSectionInterpreter>(
-          instanceName: SectionTemplateId.browseHub,
-        ),
-      ]),
-    )
-    // ScreenDataInterpreter - coordinates section templates
-    ..registerLazySingleton<ScreenDataInterpreter>(
-      () => ScreenDataInterpreter(
-        interpreterRegistry: getIt<SectionTemplateInterpreterRegistry>(),
-        paramsCodec: getIt<SectionTemplateParamsCodec>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
       ),
     )
     // Notifications (server-enqueued + PowerSync synced)

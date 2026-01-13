@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
@@ -10,15 +8,9 @@ import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_param
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
-    as attention_repo_v2;
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/wellbeing_repository_contract.dart';
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_alerts_section_renderer.dart';
@@ -31,18 +23,6 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved
 import 'package:taskly_bloc/presentation/screens/templates/renderers/project_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_renderer_v2.dart';
-import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
-import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
-import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
-import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.dart';
-import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/journal_entry/journal_entry_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/tracker_management/tracker_management_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/bloc/wellbeing_dashboard/wellbeing_dashboard_bloc.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/journal_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/tracker_management_screen.dart';
-import 'package:taskly_bloc/presentation/features/wellbeing/view/wellbeing_dashboard_screen.dart';
 
 /// Widget that renders a section from ScreenBloc state.
 ///
@@ -92,6 +72,15 @@ class SectionWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (section.templateId == SectionTemplateId.statisticsDashboard) {
+      return const SliverPadding(
+        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        sliver: SliverToBoxAdapter(
+          child: Text('Statistics dashboard not implemented yet.'),
+        ),
+      );
+    }
+
     if (section.isLoading) {
       return const SliverPadding(
         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -108,15 +97,7 @@ class SectionWidget extends StatelessWidget {
       );
     }
 
-    if (_isFullScreenTemplate(section.templateId)) {
-      return SliverToBoxAdapter(child: _buildFullScreenTemplate());
-    }
-
     final result = section.data;
-
-    final effectiveDisplayConfig = displayConfig ?? section.displayConfig;
-
-    final compactTiles = effectiveDisplayConfig?.compactTiles ?? false;
 
     final sliver = switch (result) {
       final IssuesSummarySectionResult d
@@ -165,7 +146,9 @@ class SectionWidget extends StatelessWidget {
           data: d,
           params: section.params as ListSectionParamsV2,
           title: section.title,
-          compactTiles: compactTiles,
+          compactTiles:
+              (section.params as ListSectionParamsV2).pack ==
+              StylePackV2.compact,
           onTaskToggle: (taskId, val) {
             final task = d.allTasks.firstWhere((t) => t.id == taskId);
             onTaskCheckboxChanged?.call(task, val);
@@ -175,18 +158,25 @@ class SectionWidget extends StatelessWidget {
           data: d,
           params: section.params as ListSectionParamsV2,
           title: section.title,
-          compactTiles: compactTiles,
+          compactTiles:
+              (section.params as ListSectionParamsV2).pack ==
+              StylePackV2.compact,
         ),
         SectionTemplateId.valueListV2 => ValueListRendererV2(
           data: d,
           params: section.params as ListSectionParamsV2,
           title: section.title,
+          compactTiles:
+              (section.params as ListSectionParamsV2).pack ==
+              StylePackV2.compact,
         ),
         SectionTemplateId.interleavedListV2 => InterleavedListRendererV2(
           data: d,
           params: section.params as InterleavedListSectionParamsV2,
           title: section.title,
-          compactTiles: compactTiles,
+          compactTiles:
+              (section.params as InterleavedListSectionParamsV2).pack ==
+              StylePackV2.compact,
           onTaskToggle: (taskId, val) {
             final task = d.allTasks.firstWhere((t) => t.id == taskId);
             onTaskCheckboxChanged?.call(task, val);
@@ -197,7 +187,10 @@ class SectionWidget extends StatelessWidget {
             data: d,
             params: section.params as HierarchyValueProjectTaskSectionParamsV2,
             title: section.title,
-            compactTiles: compactTiles,
+            compactTiles:
+                (section.params as HierarchyValueProjectTaskSectionParamsV2)
+                    .pack ==
+                StylePackV2.compact,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
@@ -210,9 +203,15 @@ class SectionWidget extends StatelessWidget {
         SliverToBoxAdapter(
           child: AgendaSectionRenderer(
             data: d,
-            showTagPills:
-                (section.params as AgendaSectionParamsV2).tiles.task ==
-                TaskTileVariant.agenda,
+            showTagPills: (section.params as AgendaSectionParamsV2)
+                .enrichment
+                .items
+                .any(
+                  (i) => i.maybeWhen(
+                    agendaTags: (_) => true,
+                    orElse: () => false,
+                  ),
+                ),
             onTaskToggle: (taskId, val) {
               final task = d.agendaData.groups
                   .expand((g) => g.items)
@@ -234,27 +233,6 @@ class SectionWidget extends StatelessWidget {
     );
   }
 
-  static bool _isFullScreenTemplate(String templateId) {
-    return switch (templateId) {
-      SectionTemplateId.settingsMenu ||
-      SectionTemplateId.statisticsDashboard ||
-      SectionTemplateId.journalTimeline ||
-      SectionTemplateId.trackerManagement ||
-      SectionTemplateId.wellbeingDashboard ||
-      SectionTemplateId.allocationSettings ||
-      SectionTemplateId.navigationSettings ||
-      SectionTemplateId.attentionRules ||
-      SectionTemplateId.focusSetupWizard ||
-      SectionTemplateId.browseHub ||
-      SectionTemplateId.myDayFocusModeRequired => true,
-      _ => false,
-    };
-  }
-
-  Widget _buildFullScreenTemplate() {
-    return buildFullScreenTemplateSection(section);
-  }
-
   Widget _buildUnsupportedSection(SectionDataResult result) {
     return Text('Unsupported section type: ${result.runtimeType}');
   }
@@ -262,63 +240,4 @@ class SectionWidget extends StatelessWidget {
   Widget _buildUnknownSection() {
     return Text('Unsupported section data: ${section.templateId}');
   }
-}
-
-/// Builds the widget for a full-screen template section.
-///
-/// Full-screen templates are rendered outside the unified sliver scroll
-/// pipeline to avoid nested scaffolds and duplicated chrome.
-Widget buildFullScreenTemplateSection(SectionVm section) {
-  return switch (section.templateId) {
-    SectionTemplateId.browseHub => const BrowseHubScreen(),
-    SectionTemplateId.settingsMenu => const SettingsScreen(),
-    SectionTemplateId.myDayFocusModeRequired =>
-      const MyDayFocusModeRequiredPage(),
-    SectionTemplateId.allocationSettings => BlocProvider(
-      create: (_) => FocusSetupBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        attentionRepository:
-            getIt<attention_repo_v2.AttentionRepositoryContract>(),
-      )..add(const FocusSetupEvent.started()),
-      child: const FocusSetupWizardPage(),
-    ),
-    SectionTemplateId.navigationSettings => NavigationSettingsPage(
-      screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
-    ),
-    SectionTemplateId.attentionRules => BlocProvider(
-      create: (_) => FocusSetupBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        attentionRepository:
-            getIt<attention_repo_v2.AttentionRepositoryContract>(),
-      )..add(const FocusSetupEvent.started()),
-      child: const FocusSetupWizardPage(),
-    ),
-    SectionTemplateId.focusSetupWizard => BlocProvider(
-      create: (_) => FocusSetupBloc(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        attentionRepository:
-            getIt<attention_repo_v2.AttentionRepositoryContract>(),
-      )..add(const FocusSetupEvent.started()),
-      child: const FocusSetupWizardPage(),
-    ),
-    SectionTemplateId.journalTimeline => BlocProvider(
-      create: (_) => JournalEntryBloc(getIt<WellbeingRepositoryContract>()),
-      child: const JournalScreen(),
-    ),
-    SectionTemplateId.trackerManagement => BlocProvider(
-      create: (_) =>
-          TrackerManagementBloc(getIt<WellbeingRepositoryContract>()),
-      child: const TrackerManagementScreen(),
-    ),
-    SectionTemplateId.wellbeingDashboard => BlocProvider(
-      create: (_) => WellbeingDashboardBloc(getIt<AnalyticsService>()),
-      child: const WellbeingDashboardScreen(),
-    ),
-    SectionTemplateId.statisticsDashboard => const Scaffold(
-      body: Center(
-        child: Text('Statistics dashboard not implemented yet.'),
-      ),
-    ),
-    _ => Text('Unsupported full-screen template: ${section.templateId}'),
-  };
 }

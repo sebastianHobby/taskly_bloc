@@ -52,7 +52,7 @@ class ScreenItemTileRegistry {
         onTap:
             onTap ??
             () => Routing.toEntity(context, EntityType.value, value.id),
-        compact: true,
+        compact: compactTiles,
         titlePrefix: titlePrefix,
       ),
       ScreenItemHeader(:final title) => Padding(

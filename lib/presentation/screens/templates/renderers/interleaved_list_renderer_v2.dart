@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -522,7 +521,17 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           slivers.add(
             SliverPersistentHeader(
               pinned: true,
-              delegate: _PinnedHeaderDelegate(title: projectTitleFallback),
+              delegate: _PinnedProjectHeaderDelegate(
+                title: projectTitleFallback,
+                count: projectTasks.length,
+                collapsed: collapsed,
+                onToggle: () => _toggleProjectCollapsed(orphanProjectId),
+                onOpen: () => Routing.toEntity(
+                  context,
+                  EntityType.project,
+                  orphanProjectId,
+                ),
+              ),
             ),
           );
           if (!collapsed) {
@@ -614,7 +623,10 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   }
 
   Widget? _titlePrefixForTask(ScreenItemTask item) {
-    if (widget.params.tiles.task != TaskTileVariant.agenda) return null;
+    final showAgendaTagPills = widget.params.enrichment.items.any(
+      (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
+    );
+    if (!showAgendaTagPills) return null;
     final tag = widget.data.enrichment?.agendaTagByTaskId[item.task.id];
     if (tag == null) return null;
 
@@ -946,5 +958,81 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
   @override
   bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
     return oldDelegate.title != title;
+  }
+}
+
+class _PinnedProjectHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedProjectHeaderDelegate({
+    required this.title,
+    required this.count,
+    required this.collapsed,
+    required this.onToggle,
+    required this.onOpen,
+  });
+
+  final String title;
+  final int count;
+  final bool collapsed;
+  final VoidCallback onToggle;
+  final VoidCallback onOpen;
+
+  @override
+  double get minExtent => 48;
+
+  @override
+  double get maxExtent => 48;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Material(
+      color: theme.scaffoldBackgroundColor,
+      child: InkWell(
+        onTap: onOpen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(0, 8, 0, 6),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(Icons.folder_outlined, size: 16),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$count',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _CollapseChevron(collapsed: collapsed, onPressed: onToggle),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedProjectHeaderDelegate oldDelegate) {
+    return oldDelegate.title != title ||
+        oldDelegate.count != count ||
+        oldDelegate.collapsed != collapsed;
   }
 }

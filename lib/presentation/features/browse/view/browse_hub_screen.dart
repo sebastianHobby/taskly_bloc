@@ -5,9 +5,8 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
@@ -22,7 +21,7 @@ class BrowseHubScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final systemScreens = SystemScreenDefinitions.navigationScreens;
+    final systemScreens = SystemScreenSpecs.navigationScreens;
     final hiddenSystemKeys = systemScreens
         .take(_compactBottomBarVisibleCount)
         .map((s) => s.screenKey)
@@ -101,7 +100,7 @@ class _BrowseTileVm {
     required this.badgeStream,
   });
 
-  factory _BrowseTileVm.fromSystem(ScreenDefinition screen) {
+  factory _BrowseTileVm.fromSystem(ScreenSpec screen) {
     final iconSet = const NavigationIconResolver().resolve(
       screenId: screen.screenKey,
       iconName: screen.chrome.iconName,
@@ -110,7 +109,6 @@ class _BrowseTileVm {
     final badgeStream = NavigationBadgeService(
       taskRepository: getIt<TaskRepositoryContract>(),
       projectRepository: getIt<ProjectRepositoryContract>(),
-      screenQueryBuilder: getIt<ScreenQueryBuilder>(),
     ).badgeStreamFor(screen);
 
     return _BrowseTileVm(

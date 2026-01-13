@@ -79,14 +79,15 @@ bucket_definitions:
       # Journal Entries
       - SELECT * FROM journal_entries WHERE user_id = bucket.user_id
 
-      # Trackers
-      - SELECT * FROM trackers WHERE user_id = bucket.user_id
+      # Tracker Definitions (replaces trackers)
+      - SELECT * FROM tracker_definitions WHERE user_id = bucket.user_id
 
-      # Tracker Responses (per-entry)
-      - SELECT * FROM tracker_responses WHERE user_id = bucket.user_id
+      # Tracker Events (replaces tracker_responses + daily_tracker_responses)
+      - SELECT * FROM tracker_events WHERE user_id = bucket.user_id
 
-      # Daily Tracker Responses (all-day scope trackers)
-      - SELECT * FROM daily_tracker_responses WHERE user_id = bucket.user_id
+      # Tracker state projections (optional but recommended for fast UI)
+      - SELECT * FROM tracker_state_entry WHERE user_id = bucket.user_id
+      - SELECT * FROM tracker_state_day WHERE user_id = bucket.user_id
 
       # Attention Condition States (time-gated alerts like “no next action”)
       - SELECT * FROM attention_condition_states WHERE user_id = bucket.user_id

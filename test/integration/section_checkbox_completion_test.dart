@@ -18,7 +18,7 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
@@ -237,11 +237,7 @@ SectionVm _createTaskSection({
     templateId: SectionTemplateId.taskListV2,
     params: ListSectionParamsV2(
       config: DataConfig.task(query: TaskQuery()),
-      tiles: const TilePolicyV2(
-        task: TaskTileVariant.listTile,
-        project: ProjectTileVariant.listTile,
-        value: ValueTileVariant.compactCard,
-      ),
+      pack: StylePackV2.standard,
       layout: const SectionLayoutSpecV2.flatList(),
     ),
     data: SectionDataResult.dataV2(
@@ -262,11 +258,7 @@ SectionVm _createProjectSection({
     templateId: SectionTemplateId.projectListV2,
     params: ListSectionParamsV2(
       config: DataConfig.project(query: ProjectQuery()),
-      tiles: const TilePolicyV2(
-        task: TaskTileVariant.listTile,
-        project: ProjectTileVariant.listTile,
-        value: ValueTileVariant.compactCard,
-      ),
+      pack: StylePackV2.standard,
       layout: const SectionLayoutSpecV2.flatList(),
     ),
     data: SectionDataResult.dataV2(

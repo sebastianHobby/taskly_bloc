@@ -1,5 +1,5 @@
-﻿import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+﻿import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 /// A screen definition combined with user preferences.
@@ -9,12 +9,12 @@ class ScreenWithPreferences {
     this.preferences = const ScreenPreferences(),
   });
 
-  final ScreenDefinition screen;
+  final ScreenSpec screen;
   final ScreenPreferences preferences;
 
   int get effectiveSortOrder =>
       preferences.sortOrder ??
-      SystemScreenDefinitions.getDefaultSortOrder(screen.screenKey);
+      SystemScreenSpecs.getDefaultSortOrder(screen.screenKey);
 
   bool get isActive => preferences.isActive;
 }

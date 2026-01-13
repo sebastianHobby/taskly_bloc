@@ -2,7 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_definition.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 
 part 'screen_definition_bloc.freezed.dart';
@@ -19,7 +19,7 @@ sealed class ScreenDefinitionState with _$ScreenDefinitionState {
   const factory ScreenDefinitionState.loading() = _Loading;
 
   const factory ScreenDefinitionState.loaded({
-    required ScreenDefinition screen,
+    required ScreenSpec screen,
   }) = _Loaded;
 
   const factory ScreenDefinitionState.notFound() = _NotFound;
@@ -95,7 +95,7 @@ class ScreenDefinitionBloc
           final screen = screenWithPrefs?.screen;
           talker.blocLog(
             'ScreenDefinition',
-            'onData: screen=${screen == null ? "null" : "ScreenDefinition(screenKey=${screen.screenKey})"}',
+            'onData: screen=${screen == null ? "null" : "ScreenSpec(screenKey=${screen.screenKey})"}',
           );
 
           if (screen != null) {

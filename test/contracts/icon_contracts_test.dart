@@ -9,7 +9,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_definitions.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
 void main() {
@@ -20,9 +20,9 @@ void main() {
       resolver = const NavigationIconResolver();
     });
 
-    group('SystemScreenDefinitions â†” NavigationIconResolver', () {
+    group('SystemScreenSpecs ↔ NavigationIconResolver', () {
       test('all system screens have specific icons (not default fallback)', () {
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final result = resolver.resolve(
             screenId: screen.screenKey,
             iconName: screen.chrome.iconName,
@@ -47,7 +47,7 @@ void main() {
       test('each system screen has distinct icons', () {
         final iconsByScreen = <String, IconData>{};
 
-        for (final screen in SystemScreenDefinitions.all) {
+        for (final screen in SystemScreenSpecs.all) {
           final result = resolver.resolve(
             screenId: screen.screenKey,
             iconName: screen.chrome.iconName,
@@ -71,7 +71,7 @@ void main() {
         // Verify we tested all screens
         expect(
           iconsByScreen.length,
-          SystemScreenDefinitions.all.length,
+          SystemScreenSpecs.all.length,
           reason: 'Not all system screens were checked',
         );
       });
@@ -84,8 +84,8 @@ void main() {
 
       test('myDay screen has sun icon', () {
         final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.myDay.screenKey,
-          iconName: SystemScreenDefinitions.myDay.chrome.iconName,
+          screenId: SystemScreenSpecs.myDay.screenKey,
+          iconName: SystemScreenSpecs.myDay.chrome.iconName,
         );
         expect(result.icon, Icons.wb_sunny_outlined);
         expect(result.selectedIcon, Icons.wb_sunny);
@@ -93,8 +93,8 @@ void main() {
 
       test('logbook screen has done_all icon', () {
         final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.logbook.screenKey,
-          iconName: SystemScreenDefinitions.logbook.chrome.iconName,
+          screenId: SystemScreenSpecs.logbook.screenKey,
+          iconName: SystemScreenSpecs.logbook.chrome.iconName,
         );
         expect(result.icon, Icons.done_all_outlined);
         expect(result.selectedIcon, Icons.done_all);
@@ -102,8 +102,8 @@ void main() {
 
       test('values screen has star icon', () {
         final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.values.screenKey,
-          iconName: SystemScreenDefinitions.values.chrome.iconName,
+          screenId: SystemScreenSpecs.values.screenKey,
+          iconName: SystemScreenSpecs.values.chrome.iconName,
         );
         expect(result.icon, Icons.star_outline);
         expect(result.selectedIcon, Icons.star);
@@ -111,8 +111,8 @@ void main() {
 
       test('journal screen has book icon', () {
         final result = resolver.resolve(
-          screenId: SystemScreenDefinitions.journal.screenKey,
-          iconName: SystemScreenDefinitions.journal.chrome.iconName,
+          screenId: SystemScreenSpecs.journal.screenKey,
+          iconName: SystemScreenSpecs.journal.chrome.iconName,
         );
         expect(result.icon, Icons.book_outlined);
         expect(result.selectedIcon, Icons.book);
@@ -121,8 +121,8 @@ void main() {
 
     group('defaultSortOrders contract', () {
       test('all system screens have default sort orders', () {
-        for (final screen in SystemScreenDefinitions.all) {
-          final sortOrder = SystemScreenDefinitions.getDefaultSortOrder(
+        for (final screen in SystemScreenSpecs.all) {
+          final sortOrder = SystemScreenSpecs.getDefaultSortOrder(
             screen.screenKey,
           );
 
@@ -131,7 +131,7 @@ void main() {
             isNot(999),
             reason:
                 'Screen "${screen.screenKey}" has no default sort order. '
-                'Add it to SystemScreenDefinitions.defaultSortOrders.',
+                'Add it to SystemScreenSpecs._defaultSortOrders.',
           );
         }
       });
@@ -140,8 +140,8 @@ void main() {
         final workspaceOrders = <int>[];
         final settingsOrders = <int>[];
 
-        for (final screen in SystemScreenDefinitions.all) {
-          final order = SystemScreenDefinitions.getDefaultSortOrder(
+        for (final screen in SystemScreenSpecs.all) {
+          final order = SystemScreenSpecs.getDefaultSortOrder(
             screen.screenKey,
           );
 

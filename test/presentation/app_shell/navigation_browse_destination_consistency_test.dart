@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/screens/language/models/screen_source.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
@@ -17,7 +16,6 @@ void main() {
         icon: Icons.explore_outlined,
         selectedIcon: Icons.explore,
         route: '/browse',
-        screenSource: ScreenSource.systemTemplate,
         badgeStream: null,
         sortOrder: 1000,
       );
@@ -29,7 +27,6 @@ void main() {
         icon: Icons.home_outlined,
         selectedIcon: Icons.home,
         route: '/home',
-        screenSource: ScreenSource.systemTemplate,
         badgeStream: null,
         sortOrder: 0,
       );
