@@ -306,7 +306,7 @@ class _ProjectScreenView extends StatelessWidget {
     if (sections.isEmpty) {
       return EmptyStateWidget.noTasks(
         title: l10n.emptyTasksTitle,
-        description: l10n.projectDetailEmptyTasksDescription,
+        description: l10n.emptyTasksDescription,
       );
     }
 

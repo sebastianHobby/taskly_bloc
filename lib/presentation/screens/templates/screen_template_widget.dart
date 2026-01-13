@@ -15,6 +15,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
@@ -53,6 +54,7 @@ class ScreenTemplateWidget extends StatelessWidget {
         title: 'Journal Dashboard',
         message: 'Journal insights are being rebuilt.',
       ),
+      journalHub: () => const JournalHubPage(),
       journalTimeline: () => const _PlaceholderTemplate(
         title: 'Journal',
         message: 'Journal is being rebuilt into a hub.',

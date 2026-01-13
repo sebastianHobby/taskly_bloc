@@ -83,6 +83,7 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
       ScreenTemplateStatisticsDashboard;
   const factory ScreenTemplateSpec.journalDashboard() =
       ScreenTemplateJournalDashboard;
+  const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
   const factory ScreenTemplateSpec.journalTimeline() =
       ScreenTemplateJournalTimeline;
   const factory ScreenTemplateSpec.navigationSettings() =
