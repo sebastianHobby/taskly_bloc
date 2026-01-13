@@ -22,6 +22,15 @@ Taskly renders screens through a single, typed, declarative model:
 System screens are defined in code via `SystemScreenSpecs`. Screen ordering and
 visibility preferences are persisted separately.
 
+Routing follows two supported URL patterns:
+
+- **Screens**: `/:segment` → `Routing.buildScreen(screenKey)` → `SystemScreenSpecs` → unified rendering.
+- **Entities**: `/:entityType/:id` → `Routing.buildEntityDetail(entityType, id)` → entity builder registry.
+
+As of the core ED/RD cutover, **tasks are editor-only**: navigating to
+`/task/:id` opens the task editor modal (there is no read-only task detail
+page).
+
 ---
 
 ## 2) Where Things Live (Folder Map)
@@ -73,7 +82,9 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 +------------------------------+
 |            Routing           |
 |  GoRouter '/:segment'        |
+|         '/:entityType/:id'   |
 |  Routing.buildScreen         |
+|  Routing.buildEntityDetail   |
 +--------------+---------------+
                |
                v
@@ -84,6 +95,13 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 |    -> ScreenTemplateWidget   |
 |       -> StandardScaffoldV1  |
 |          -> SectionWidget(s) |
++--------------+---------------+
+               |
+               v
++------------------------------+
+|   Presentation (Entities)    |
+|  Entity detail route widget  |
+|  (registered builder)        |
 +--------------+---------------+
                |
                v
@@ -124,6 +142,23 @@ Plain-text sequence (portable Markdown):
    - standardScaffoldV1: builds scaffold and renders header/primary sections
    - full-screen templates: render a dedicated feature page
 9) SectionWidget renders each SectionVm by section.templateId
+```
+
+### 3.3 Entity Routes (ED/RD) — Runtime Flow
+
+Entity routes use the `/:entityType/:id` pattern and are handled by
+`Routing.buildEntityDetail`.
+
+```text
+1) User navigates to '/:entityType/:id'
+2) Router parses entityType + id
+3) Router calls Routing.buildEntityDetail(entityType, id)
+4) Routing resolves a registered builder for the entityType
+  - Builders are registered at app startup (bootstrap) via Routing.registerEntityBuilders
+5) Presentation builds the entity widget returned by the builder
+6) Entity UX is entity-specific:
+  - task: route is editor-only; opens editor modal and then returns
+  - project/value: route builds a unified entity detail page
 ```
 
 ---
@@ -271,7 +306,6 @@ do not rely on section modules.
 | `attentionRules` | none | Attention rules UI. |
 | `focusSetupWizard` | none | Focus setup wizard UI. |
 | `trackerManagement` | none | Tracker management UI. |
-| `journalDashboard` | none | Journal dashboard UI. |
 | `statisticsDashboard` | none | Statistics dashboard UI (placeholder at the moment). |
 | `browseHub` | none | Browse hub UI. |
 | `myDayFocusModeRequired` | none | Gate screen shown when My Day focus mode is missing. |
