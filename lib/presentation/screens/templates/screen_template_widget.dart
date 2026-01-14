@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
     as attention_repo_v2;
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
@@ -18,7 +17,6 @@ import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
-import 'package:taskly_bloc/presentation/features/navigation/view/navigation_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
@@ -56,9 +54,6 @@ class ScreenTemplateWidget extends StatelessWidget {
       journalTimeline: () => const _PlaceholderTemplate(
         title: 'Journal',
         message: 'Journal is being rebuilt into a hub.',
-      ),
-      navigationSettings: () => NavigationSettingsPage(
-        screensRepository: getIt<ScreenDefinitionsRepositoryContract>(),
       ),
       allocationSettings: () => BlocProvider(
         create: (_) => FocusSetupBloc(

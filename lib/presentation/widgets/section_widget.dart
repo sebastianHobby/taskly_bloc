@@ -12,12 +12,9 @@ import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 
-import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_alerts_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v1.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
-import 'package:taskly_bloc/presentation/screens/templates/renderers/check_in_summary_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
-import 'package:taskly_bloc/presentation/screens/templates/renderers/issues_summary_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/hierarchy_value_project_task_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/project_list_renderer_v2.dart';
@@ -107,21 +104,6 @@ class SectionWidget extends StatelessWidget {
     final result = section.data;
 
     final sliver = switch (result) {
-      final IssuesSummarySectionResult d
-          when section.templateId == SectionTemplateId.issuesSummary =>
-        SliverToBoxAdapter(
-          child: IssuesSummarySectionRenderer(data: d, title: section.title),
-        ),
-      final CheckInSummarySectionResult d
-          when section.templateId == SectionTemplateId.checkInSummary =>
-        SliverToBoxAdapter(
-          child: CheckInSummarySectionRenderer(data: d, title: section.title),
-        ),
-      final AllocationAlertsSectionResult d
-          when section.templateId == SectionTemplateId.allocationAlerts =>
-        SliverToBoxAdapter(
-          child: AllocationAlertsSectionRenderer(data: d, title: section.title),
-        ),
       final AttentionBannerV1SectionResult d
           when section.templateId == SectionTemplateId.attentionBannerV1 =>
         SliverToBoxAdapter(

@@ -68,7 +68,6 @@ class SettingsScreen extends StatelessWidget {
                   context: context,
                   title: 'Customization',
                   children: [
-                    _buildNavigationOrderItem(context),
                     if (_showLegacyFocusItems)
                       _buildTaskAllocationItem(context),
                     if (_showLegacyFocusItems)
@@ -131,16 +130,6 @@ class SettingsScreen extends StatelessWidget {
       subtitle: const Text('Strategy, limits, and value ranking'),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => Routing.toScreenKey(context, 'focus_setup'),
-    );
-  }
-
-  Widget _buildNavigationOrderItem(BuildContext context) {
-    return ListTile(
-      leading: const Icon(Icons.menu),
-      title: const Text('Navigation Order'),
-      subtitle: const Text('Reorder sidebar items'),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: () => Routing.toScreenKey(context, 'navigation-settings'),
     );
   }
 

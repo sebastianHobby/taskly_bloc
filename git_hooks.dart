@@ -13,8 +13,12 @@ void main(List<String> arguments) {
 Future<bool> preCommit() async {
   print('🔍 Running pre-commit checks...\n');
 
-  // Intentionally no auto-formatting in git hooks.
-  print('   ✓ No pre-commit checks configured.');
+  // 5. Run tests with coverage (80% minimum)
+  if (!await _runTestsWithCoverage()) {
+    _printFailure();
+    return false;
+  }
+  print('\n✅ All pre-commit checks passed!');
   return true;
 }
 

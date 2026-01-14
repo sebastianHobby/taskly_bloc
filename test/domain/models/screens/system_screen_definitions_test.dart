@@ -2,6 +2,7 @@
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 
 void main() {
   group('SystemScreenSpecs', () {

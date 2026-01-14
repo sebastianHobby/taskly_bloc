@@ -62,6 +62,10 @@ presets:
   database:
     include-tags: [integration, repository]
 
+  # Run everything except local-stack pipeline tests
+  no_pipeline:
+    exclude-tags: [pipeline]
+
 # Automatically apply tags based on file paths
 on_os:
   windows:

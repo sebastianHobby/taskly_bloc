@@ -37,25 +37,6 @@ sealed class SectionDataResult with _$SectionDataResult {
     required AgendaData agendaData,
   }) = AgendaSectionResult;
 
-  /// Issues summary section result - attention issues requiring action.
-  const factory SectionDataResult.issuesSummary({
-    required List<AttentionItem> items,
-    required int criticalCount,
-    required int warningCount,
-  }) = IssuesSummarySectionResult;
-
-  /// Allocation alerts section result - urgent excluded tasks.
-  const factory SectionDataResult.allocationAlerts({
-    required List<AttentionItem> alerts,
-    required int totalExcluded,
-  }) = AllocationAlertsSectionResult;
-
-  /// Check-in summary section result - due reviews.
-  const factory SectionDataResult.checkInSummary({
-    required List<AttentionItem> dueReviews,
-    required bool hasOverdue,
-  }) = CheckInSummarySectionResult;
-
   /// Unified attention banner (bucket-aware cutover v1).
   const factory SectionDataResult.attentionBannerV1({
     required int actionCount,

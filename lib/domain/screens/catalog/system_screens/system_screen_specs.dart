@@ -11,8 +11,6 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.da
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
@@ -44,12 +42,6 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
-        ScreenModuleSpec.checkInSummary(
-          params: CheckInSummarySectionParams(pack: StylePackV2.standard),
-        ),
-        ScreenModuleSpec.allocationAlerts(
-          params: AllocationAlertsSectionParams(pack: StylePackV2.standard),
-        ),
         ScreenModuleSpec.attentionBannerV1(
           params: AttentionBannerSectionParamsV1(
             pack: StylePackV2.standard,
@@ -253,13 +245,6 @@ abstract class SystemScreenSpecs {
     template: const ScreenTemplateSpec.allocationSettings(),
   );
 
-  static final navigationSettings = ScreenSpec(
-    id: 'navigation_settings',
-    screenKey: 'navigation_settings',
-    name: 'Navigation',
-    template: const ScreenTemplateSpec.navigationSettings(),
-  );
-
   static final focusSetup = ScreenSpec(
     id: 'focus_setup',
     screenKey: 'focus_setup',
@@ -322,7 +307,6 @@ abstract class SystemScreenSpecs {
     journal.screenKey: journal,
     trackers.screenKey: trackers,
     allocationSettings.screenKey: allocationSettings,
-    navigationSettings.screenKey: navigationSettings,
     focusSetup.screenKey: focusSetup,
     attentionRules.screenKey: attentionRules,
     reviewInbox.screenKey: reviewInbox,

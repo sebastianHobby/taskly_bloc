@@ -10,14 +10,11 @@ import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
@@ -39,9 +36,6 @@ class _MockHierarchyValueProjectTaskSectionInterpreterV2 extends Mock
 
 class _MockAgendaSectionInterpreterV2 extends Mock
     implements AgendaSectionInterpreterV2 {}
-
-class _MockIssuesSummarySectionInterpreter extends Mock
-    implements IssuesSummarySectionInterpreter {}
 
 class _MockEntityHeaderSectionInterpreter extends Mock
     implements EntityHeaderSectionInterpreter {}
@@ -115,13 +109,6 @@ void main() {
           hierarchyValueProjectTaskInterpreter:
               _MockHierarchyValueProjectTaskSectionInterpreterV2(),
           agendaInterpreter: _MockAgendaSectionInterpreterV2(),
-          issuesSummaryInterpreter: _MockIssuesSummarySectionInterpreter(),
-          allocationAlertsInterpreter: AllocationAlertsSectionInterpreter(
-            attentionEngine: attentionEngine,
-          ),
-          checkInSummaryInterpreter: CheckInSummarySectionInterpreter(
-            attentionEngine: attentionEngine,
-          ),
           attentionBannerInterpreter: AttentionBannerSectionInterpreterV1(
             engine: attentionEngine,
           ),

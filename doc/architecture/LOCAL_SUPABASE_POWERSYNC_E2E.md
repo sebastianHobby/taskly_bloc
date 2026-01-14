@@ -41,17 +41,13 @@ Notes:
 What the test script runs:
 - `flutter test test/integration_test --dart-define-from-file=dart_defines.local.json`
 
-## Workflow 2: Schema-only sync from prod (explicit + reviewable)
+## Schema notes (prod -> local)
 
-The goal is to keep local schema aligned with production *via migrations*, not by pulling from prod on every test run.
+CI (and developers when needed) can pull the latest schema from Supabase Cloud
+into `supabase/migrations/` before starting the local stack.
 
-### Pull prod schema into migrations
-- PowerShell 7: `pwsh -File tool/schema/Pull-ProdSchema.ps1 -ProjectRef <your-project-ref>`
-- Windows PowerShell: `powershell -File tool/schema/Pull-ProdSchema.ps1 -ProjectRef <your-project-ref>`
-
-Guidelines:
-- Treat generated migrations like code: review, run locally, and commit deliberately.
-- Avoid using this as an automated pre-test step against prod.
+This keeps the local stack aligned with production without requiring developers
+to manually maintain schema drift.
 
 ## PowerSync notes
 

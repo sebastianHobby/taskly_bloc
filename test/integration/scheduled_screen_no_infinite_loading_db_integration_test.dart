@@ -13,15 +13,11 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
-
-import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 
 import '../helpers/integration_test_helpers.dart';
 import '../helpers/test_db.dart';
@@ -37,17 +33,8 @@ class _MockInterleavedListSectionInterpreterV2 extends Mock
 class _MockHierarchyValueProjectTaskSectionInterpreterV2 extends Mock
     implements HierarchyValueProjectTaskSectionInterpreterV2 {}
 
-class _MockIssuesSummarySectionInterpreter extends Mock
-    implements IssuesSummarySectionInterpreter {}
-
 class _MockEntityHeaderSectionInterpreter extends Mock
     implements EntityHeaderSectionInterpreter {}
-
-class _MockAllocationAlertsSectionInterpreter extends Mock
-    implements AllocationAlertsSectionInterpreter {}
-
-class _MockCheckInSummarySectionInterpreter extends Mock
-    implements CheckInSummarySectionInterpreter {}
 
 class _MockAttentionBannerSectionInterpreterV1 extends Mock
     implements AttentionBannerSectionInterpreterV1 {}
@@ -119,10 +106,6 @@ void main() {
           agendaInterpreter: AgendaSectionInterpreterV2(
             sectionDataService: sectionDataService,
           ),
-          issuesSummaryInterpreter: _MockIssuesSummarySectionInterpreter(),
-          allocationAlertsInterpreter:
-              _MockAllocationAlertsSectionInterpreter(),
-          checkInSummaryInterpreter: _MockCheckInSummarySectionInterpreter(),
           attentionBannerInterpreter:
               _MockAttentionBannerSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),

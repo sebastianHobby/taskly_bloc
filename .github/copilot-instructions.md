@@ -38,22 +38,10 @@ mobile platforms.
 
 ### Testing (preferred workflow)
 
-* Prefer the recorded test runner so every run produces artifacts and timings.
-  * **VS Code Task:** Run the task named `flutter_test_record`.
-    * How: Command Palette -> Tasks: Run Task -> flutter_test_record.
-    * If it exits with code `42`, a previous recorded test run is still active.
-      * Do not retry the task.
-      * Skip running tests for this turn.
-      * In your work summary, explicitly say tests were not executed and why.
-  * **CLI equivalent:** `dart run tool/test_run_recorder.dart`
-    * Pass `flutter test` args after `--`, e.g. `dart run tool/test_run_recorder.dart -- --tags=unit`.
-    * Captures machine output + summary under `build_out/test_runs/<timestamp>/`.
-    * By default, if the machine run fails it also captures `-r expanded` output for failures.
 
 ### Test execution timing (strict)
 
-* When implementing a change, run tests only once: at the very end of the final implementation phase.
-* Do not run tests after each intermediate step; use `flutter analyze` as the primary feedback loop while iterating.
+* When implementing a change, do not run tests. Instead if change is significant reminder user to run the tests after implementation is complete or commit so pre git hook run tests.
 * Exceptions: only run tests earlier if the user explicitly asks, or if it is required to unblock progress.
 
 ### Analysis first (strict)

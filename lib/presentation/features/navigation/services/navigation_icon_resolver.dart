@@ -87,10 +87,6 @@ class NavigationIconResolver {
         icon: Icons.tune_outlined,
         selectedIcon: Icons.tune,
       ),
-      'navigation_settings' || 'navigation-settings' => (
-        icon: Icons.reorder_outlined,
-        selectedIcon: Icons.reorder,
-      ),
       'tasks' => (
         icon: Icons.checklist_outlined,
         selectedIcon: Icons.checklist,

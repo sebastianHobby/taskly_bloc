@@ -105,7 +105,7 @@ void main() {
             .having(
               (s) => s.currentStep,
               'currentStep',
-              FocusSetupWizardStep.reviewSchedule,
+              FocusSetupWizardStep.valuesCta,
             )
             .having(
               (s) => s.draftUrgencyBoostMultiplier,

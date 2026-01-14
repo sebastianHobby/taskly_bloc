@@ -64,12 +64,9 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
@@ -330,24 +327,6 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.agendaV2,
     )
-    ..registerLazySingleton<IssuesSummarySectionInterpreter>(
-      () => IssuesSummarySectionInterpreter(
-        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
-      ),
-      instanceName: SectionTemplateId.issuesSummary,
-    )
-    ..registerLazySingleton<AllocationAlertsSectionInterpreter>(
-      () => AllocationAlertsSectionInterpreter(
-        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
-      ),
-      instanceName: SectionTemplateId.allocationAlerts,
-    )
-    ..registerLazySingleton<CheckInSummarySectionInterpreter>(
-      () => CheckInSummarySectionInterpreter(
-        attentionEngine: getIt<attention_engine_v2.AttentionEngineContract>(),
-      ),
-      instanceName: SectionTemplateId.checkInSummary,
-    )
     ..registerLazySingleton<AttentionBannerSectionInterpreterV1>(
       () => AttentionBannerSectionInterpreterV1(
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
@@ -384,15 +363,6 @@ Future<void> setupDependencies() async {
             ),
         agendaInterpreter: getIt<AgendaSectionInterpreterV2>(
           instanceName: SectionTemplateId.agendaV2,
-        ),
-        issuesSummaryInterpreter: getIt<IssuesSummarySectionInterpreter>(
-          instanceName: SectionTemplateId.issuesSummary,
-        ),
-        allocationAlertsInterpreter: getIt<AllocationAlertsSectionInterpreter>(
-          instanceName: SectionTemplateId.allocationAlerts,
-        ),
-        checkInSummaryInterpreter: getIt<CheckInSummarySectionInterpreter>(
-          instanceName: SectionTemplateId.checkInSummary,
         ),
         attentionBannerInterpreter: getIt<AttentionBannerSectionInterpreterV1>(
           instanceName: SectionTemplateId.attentionBannerV1,
