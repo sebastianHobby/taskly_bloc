@@ -1,9 +1,13 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/core/performance/performance_route_observer.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -35,15 +39,62 @@ final router = GoRouter(
         );
       },
       routes: [
-        // === ENTITY DETAIL ROUTES ===
-        // These are parameterized routes that need IDs
+        // === ENTITY EDITOR ROUTES (NAV-01) ===
+        // Create + edit are route-backed editor entry points.
+        // They open the modal editor and then return (pop or my-day fallback).
+
+        // Task (editor-only)
         GoRoute(
-          path: '/task/:id',
+          path: '/task/new',
+          builder: (_, state) => TaskEditorRoutePage(
+            taskId: null,
+            defaultProjectId: state.uri.queryParameters['projectId'],
+          ),
+        ),
+        GoRoute(
+          path: '/task/:id/edit',
           builder: (_, state) => Routing.buildEntityDetail(
             'task',
             state.pathParameters['id']!,
           ),
         ),
+        // Redirect legacy/non-canonical task detail route to canonical edit.
+        GoRoute(
+          path: '/task/:id',
+          redirect: (_, state) {
+            final id = state.pathParameters['id'];
+            if (id == null || id.isEmpty) return null;
+            return '/task/$id/edit';
+          },
+          builder: (_, state) => const SizedBox.shrink(),
+        ),
+
+        // Project (detail + edit)
+        GoRoute(
+          path: '/project/new',
+          builder: (_, __) => const ProjectEditorRoutePage(projectId: null),
+        ),
+        GoRoute(
+          path: '/project/:id/edit',
+          builder: (_, state) => ProjectEditorRoutePage(
+            projectId: state.pathParameters['id'],
+          ),
+        ),
+
+        // Value (detail + edit)
+        GoRoute(
+          path: '/value/new',
+          builder: (_, __) => const ValueEditorRoutePage(valueId: null),
+        ),
+        GoRoute(
+          path: '/value/:id/edit',
+          builder: (_, state) => ValueEditorRoutePage(
+            valueId: state.pathParameters['id'],
+          ),
+        ),
+
+        // === ENTITY DETAIL ROUTES ===
+        // These are parameterized routes that need IDs
         GoRoute(
           path: '/project/:id',
           builder: (_, state) => Routing.buildEntityDetail(

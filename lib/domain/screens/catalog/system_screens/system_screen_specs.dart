@@ -1,9 +1,15 @@
+import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/queries/value_query.dart';
+import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
-import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
@@ -13,12 +19,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_secti
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
-import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 /// Typed system screen specs for the hard-cutover system-screen path.
 abstract class SystemScreenSpecs {
@@ -36,13 +36,14 @@ abstract class SystemScreenSpecs {
     screenKey: 'my_day',
     name: 'My Day',
     template: const ScreenTemplateSpec.standardScaffoldV1(),
-    chrome: const ScreenChrome(
-      appBarActions: [AppBarAction.settingsLink],
-      settingsRoute: 'focus_setup',
-    ),
     gate: const ScreenGateSpec(
       criteria: ScreenGateCriteria.allocationFocusModeNotSelected(),
       template: ScreenTemplateSpec.myDayFocusModeRequired(),
+    ),
+    chrome: const ScreenChrome(
+      fabOperations: [FabOperation.createTask],
+      appBarActions: [AppBarAction.settingsLink],
+      settingsRoute: 'focus_setup',
     ),
     modules: SlottedModules(
       header: [
@@ -51,13 +52,13 @@ abstract class SystemScreenSpecs {
             pack: StylePackV2.standard,
           ),
         ),
-      ],
-      primary: [
         ScreenModuleSpec.allocationAlerts(
           params: AllocationAlertsSectionParams(
             pack: StylePackV2.standard,
           ),
         ),
+      ],
+      primary: [
         ScreenModuleSpec.allocation(
           params: AllocationSectionParams(
             taskTileVariant: TaskTileVariant.listTile,
@@ -66,6 +67,13 @@ abstract class SystemScreenSpecs {
         ),
       ],
     ),
+  );
+
+  static final reviewInbox = ScreenSpec(
+    id: 'review_inbox',
+    screenKey: 'review_inbox',
+    name: 'Review Inbox',
+    template: const ScreenTemplateSpec.reviewInbox(),
   );
 
   static final scheduled = ScreenSpec(
@@ -260,22 +268,6 @@ abstract class SystemScreenSpecs {
     template: const ScreenTemplateSpec.attentionRules(),
   );
 
-  static final checkIn = ScreenSpec(
-    id: 'check_in',
-    screenKey: 'check_in',
-    name: 'Check In',
-    template: const ScreenTemplateSpec.standardScaffoldV1(),
-    modules: SlottedModules(
-      primary: [
-        ScreenModuleSpec.checkInSummary(
-          params: CheckInSummarySectionParams(
-            pack: StylePackV2.standard,
-          ),
-        ),
-      ],
-    ),
-  );
-
   /// Canonical system screens shown in the main navigation UI.
   static List<ScreenSpec> get navigationScreens => [
     myDay,
@@ -302,6 +294,7 @@ abstract class SystemScreenSpecs {
     'projects': 6,
     'statistics': 7,
     'browse': 8,
+    'review_inbox': 9,
     'settings': 100,
   };
 
@@ -326,7 +319,7 @@ abstract class SystemScreenSpecs {
     navigationSettings.screenKey: navigationSettings,
     focusSetup.screenKey: focusSetup,
     attentionRules.screenKey: attentionRules,
-    checkIn.screenKey: checkIn,
+    reviewInbox.screenKey: reviewInbox,
   };
 
   static ScreenSpec? getByKey(String screenKey) {

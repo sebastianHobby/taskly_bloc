@@ -40,6 +40,11 @@ class ScreenTemplateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return data.template.when(
       standardScaffoldV1: () => _StandardScaffoldV1Template(data: data),
+      reviewInbox: () => const _PlaceholderTemplate(
+        title: 'Review Inbox',
+        message:
+            'Review inbox is not implemented yet.\n\nThis is a placeholder overflow destination for attention alerts.',
+      ),
       settingsMenu: () => const SettingsScreen(),
       trackerManagement: () => const _PlaceholderTemplate(
         title: 'Trackers',

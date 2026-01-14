@@ -45,25 +45,25 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   }
 
   @override
-  Stream<List<domain_rule.AttentionRule>> watchRulesByType(
-    domain_rule.AttentionRuleType type,
+  Stream<List<domain_rule.AttentionRule>> watchRulesByBucket(
+    domain_rule.AttentionBucket bucket,
   ) {
-    final driftType = _mapRuleType(type);
+    final driftBucket = _mapBucket(bucket);
     return (_db.select(
       _db.attentionRules,
-    )..where((tbl) => tbl.ruleType.equalsValue(driftType))).watch().map(
+    )..where((tbl) => tbl.bucket.equalsValue(driftBucket))).watch().map(
       (rows) => rows.map(_ruleToDomain).toList(growable: false),
     );
   }
 
   @override
-  Stream<List<domain_rule.AttentionRule>> watchRulesByTypes(
-    List<domain_rule.AttentionRuleType> types,
+  Stream<List<domain_rule.AttentionRule>> watchRulesByBuckets(
+    List<domain_rule.AttentionBucket> buckets,
   ) {
-    final driftTypes = types.map(_mapRuleType).toList(growable: false);
+    final driftBuckets = buckets.map(_mapBucket).toList(growable: false);
     return (_db.select(
       _db.attentionRules,
-    )..where((tbl) => tbl.ruleType.isInValues(driftTypes))).watch().map(
+    )..where((tbl) => tbl.bucket.isInValues(driftBuckets))).watch().map(
       (rows) => rows.map(_ruleToDomain).toList(growable: false),
     );
   }
@@ -122,12 +122,15 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   }
 
   @override
-  Future<void> updateRuleTriggerConfig(
+  Future<void> updateRuleEvaluatorParams(
     String ruleId,
-    Map<String, dynamic> triggerConfig,
+    Map<String, dynamic> evaluatorParams,
   ) async {
-    await (_db.update(_db.attentionRules)..where((t) => t.id.equals(ruleId)))
-        .write(AttentionRulesCompanion(triggerConfig: Value(triggerConfig)));
+    await (_db.update(
+      _db.attentionRules,
+    )..where((t) => t.id.equals(ruleId))).write(
+      AttentionRulesCompanion(evaluatorParams: Value(evaluatorParams)),
+    );
   }
 
   @override
@@ -302,12 +305,9 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     return domain_rule.AttentionRule(
       id: row.id,
       ruleKey: row.ruleKey,
-      domain: row.domain,
-      category: row.category,
-      ruleType: _parseRuleType(row.ruleType),
-      triggerType: _parseTriggerType(row.triggerType),
-      triggerConfig: row.triggerConfig,
-      entitySelector: row.entitySelector,
+      bucket: _parseBucket(row.bucket),
+      evaluator: row.evaluator,
+      evaluatorParams: row.evaluatorParams,
       severity: _parseSeverity(row.severity),
       displayConfig: row.displayConfig,
       resolutionActions: row.resolutionActions,
@@ -325,12 +325,9 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
     return AttentionRulesCompanion(
       id: Value(rule.id),
       ruleKey: Value(rule.ruleKey),
-      domain: Value(rule.domain),
-      category: Value(rule.category),
-      ruleType: Value(_mapRuleType(rule.ruleType)),
-      triggerType: Value(_mapTriggerType(rule.triggerType)),
-      triggerConfig: Value(rule.triggerConfig),
-      entitySelector: Value(rule.entitySelector),
+      bucket: Value(_mapBucket(rule.bucket)),
+      evaluator: Value(rule.evaluator),
+      evaluatorParams: Value(rule.evaluatorParams),
       severity: Value(_mapSeverity(rule.severity)),
       displayConfig: Value(rule.displayConfig),
       resolutionActions: Value(rule.resolutionActions),
@@ -418,51 +415,23 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   // Enum + value mapping helpers
   // ==========================================================================
 
-  domain_rule.AttentionRuleType _parseRuleType(
-    drift_attention.AttentionRuleType value,
+  domain_rule.AttentionBucket _parseBucket(
+    drift_attention.AttentionBucket value,
   ) {
     switch (value) {
-      case drift_attention.AttentionRuleType.problem:
-        return domain_rule.AttentionRuleType.problem;
-      case drift_attention.AttentionRuleType.review:
-        return domain_rule.AttentionRuleType.review;
-      case drift_attention.AttentionRuleType.allocationWarning:
-        return domain_rule.AttentionRuleType.allocationWarning;
+      case drift_attention.AttentionBucket.action:
+        return domain_rule.AttentionBucket.action;
+      case drift_attention.AttentionBucket.review:
+        return domain_rule.AttentionBucket.review;
     }
   }
 
-  drift_attention.AttentionRuleType _mapRuleType(
-    domain_rule.AttentionRuleType type,
-  ) {
-    switch (type) {
-      case domain_rule.AttentionRuleType.problem:
-        return drift_attention.AttentionRuleType.problem;
-      case domain_rule.AttentionRuleType.review:
-        return drift_attention.AttentionRuleType.review;
-      case domain_rule.AttentionRuleType.allocationWarning:
-        return drift_attention.AttentionRuleType.allocationWarning;
-    }
-  }
-
-  domain_rule.AttentionTriggerType _parseTriggerType(
-    drift_attention.AttentionTriggerType value,
-  ) {
-    switch (value) {
-      case drift_attention.AttentionTriggerType.realtime:
-        return domain_rule.AttentionTriggerType.realtime;
-      case drift_attention.AttentionTriggerType.scheduled:
-        return domain_rule.AttentionTriggerType.scheduled;
-    }
-  }
-
-  drift_attention.AttentionTriggerType _mapTriggerType(
-    domain_rule.AttentionTriggerType type,
-  ) {
-    switch (type) {
-      case domain_rule.AttentionTriggerType.realtime:
-        return drift_attention.AttentionTriggerType.realtime;
-      case domain_rule.AttentionTriggerType.scheduled:
-        return drift_attention.AttentionTriggerType.scheduled;
+  drift_attention.AttentionBucket _mapBucket(domain_rule.AttentionBucket b) {
+    switch (b) {
+      case domain_rule.AttentionBucket.action:
+        return drift_attention.AttentionBucket.action;
+      case domain_rule.AttentionBucket.review:
+        return drift_attention.AttentionBucket.review;
     }
   }
 

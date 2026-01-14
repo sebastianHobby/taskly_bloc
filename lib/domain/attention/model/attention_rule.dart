@@ -4,24 +4,12 @@ part 'attention_rule.freezed.dart';
 part 'attention_rule.g.dart';
 
 /// Rule type determines how the attention system categorizes rules.
-enum AttentionRuleType {
-  @JsonValue('problem')
-  problem,
+enum AttentionBucket {
+  @JsonValue('action')
+  action,
 
   @JsonValue('review')
   review,
-
-  @JsonValue('allocationWarning')
-  allocationWarning,
-}
-
-/// Trigger type determines when a rule activates.
-enum AttentionTriggerType {
-  @JsonValue('realtime')
-  realtime,
-
-  @JsonValue('scheduled')
-  scheduled,
 }
 
 /// Severity indicates urgency level.
@@ -55,14 +43,15 @@ abstract class AttentionRule with _$AttentionRule {
     required String id,
     required String ruleKey,
 
-    /// Stable grouping axes (persisted).
-    required String domain,
-    required String category,
+    /// High-level taxonomy for UI surfaces.
+    required AttentionBucket bucket,
 
-    required AttentionRuleType ruleType,
-    required AttentionTriggerType triggerType,
-    required Map<String, dynamic> triggerConfig,
-    required Map<String, dynamic> entitySelector,
+    /// Stable evaluator key (selects an evaluator implementation).
+    required String evaluator,
+
+    /// Typed evaluator params payload (stored as JSON).
+    required Map<String, dynamic> evaluatorParams,
+
     required AttentionSeverity severity,
     required Map<String, dynamic> displayConfig,
     required List<String> resolutionActions,

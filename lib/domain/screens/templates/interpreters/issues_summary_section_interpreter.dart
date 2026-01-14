@@ -52,7 +52,7 @@ class IssuesSummarySectionInterpreter
         .toSet();
 
     return AttentionQuery(
-      domains: const {'issues'},
+      buckets: const {AttentionBucket.action},
       entityTypes: entityTypes,
       minSeverity: _parseSeverity(params.minSeverity),
     );

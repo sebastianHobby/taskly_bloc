@@ -54,7 +54,7 @@ abstract final class Routing {
 
   /// Navigate to task detail (pushes onto nav stack).
   static void toTask(BuildContext context, Task task) =>
-      GoRouter.of(context).push('/task/${task.id}');
+      GoRouter.of(context).push('/task/${task.id}/edit');
 
   /// Navigate to project detail (pushes onto nav stack).
   static void toProject(BuildContext context, Project project) =>
@@ -68,8 +68,37 @@ abstract final class Routing {
 
   /// Navigate to entity detail by type and ID.
   /// Use when you only have the ID, not the full domain object.
-  static void toEntity(BuildContext context, EntityType type, String id) =>
-      GoRouter.of(context).push('/${type.urlSegment}/$id');
+  static void toEntity(BuildContext context, EntityType type, String id) {
+    if (type == EntityType.task) {
+      GoRouter.of(context).push('/task/$id/edit');
+      return;
+    }
+    GoRouter.of(context).push('/${type.urlSegment}/$id');
+  }
+
+  // === NAV-01 CREATE/EDIT ROUTES (core entities) ===
+
+  static void toTaskNew(BuildContext context, {String? defaultProjectId}) {
+    final query = (defaultProjectId == null || defaultProjectId.isEmpty)
+        ? ''
+        : '?projectId=$defaultProjectId';
+    GoRouter.of(context).push('/task/new$query');
+  }
+
+  static void toTaskEdit(BuildContext context, String taskId) =>
+      GoRouter.of(context).push('/task/$taskId/edit');
+
+  static void toProjectNew(BuildContext context) =>
+      GoRouter.of(context).push('/project/new');
+
+  static void toProjectEdit(BuildContext context, String projectId) =>
+      GoRouter.of(context).push('/project/$projectId/edit');
+
+  static void toValueNew(BuildContext context) =>
+      GoRouter.of(context).push('/value/new');
+
+  static void toValueEdit(BuildContext context, String valueId) =>
+      GoRouter.of(context).push('/value/$valueId/edit');
 
   /// Get onTap callback for entity navigation.
   static VoidCallback onTapEntity(

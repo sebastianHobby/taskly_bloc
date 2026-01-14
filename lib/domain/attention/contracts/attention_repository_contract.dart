@@ -10,17 +10,19 @@ abstract class AttentionRepositoryContract {
   // ===== Rules =====
   Stream<List<AttentionRule>> watchAllRules();
   Stream<List<AttentionRule>> watchActiveRules();
-  Stream<List<AttentionRule>> watchRulesByType(AttentionRuleType type);
-  Stream<List<AttentionRule>> watchRulesByTypes(List<AttentionRuleType> types);
+  Stream<List<AttentionRule>> watchRulesByBucket(AttentionBucket bucket);
+  Stream<List<AttentionRule>> watchRulesByBuckets(
+    List<AttentionBucket> buckets,
+  );
 
   Future<AttentionRule?> getRuleById(String id);
   Future<AttentionRule?> getRuleByKey(String ruleKey);
 
   Future<void> upsertRule(AttentionRule rule);
   Future<void> updateRuleActive(String ruleId, bool active);
-  Future<void> updateRuleTriggerConfig(
+  Future<void> updateRuleEvaluatorParams(
     String ruleId,
-    Map<String, dynamic> triggerConfig,
+    Map<String, dynamic> evaluatorParams,
   );
   Future<void> updateRuleSeverity(String ruleId, AttentionSeverity severity);
   Future<void> deleteRule(String ruleId);

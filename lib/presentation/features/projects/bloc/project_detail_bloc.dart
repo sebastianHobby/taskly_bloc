@@ -17,29 +17,14 @@ part 'project_detail_bloc.freezed.dart';
 @freezed
 sealed class ProjectDetailEvent with _$ProjectDetailEvent {
   const factory ProjectDetailEvent.update({
-    required String id,
-    required String name,
-    required bool completed,
-    String? description,
-    DateTime? startDate,
-    DateTime? deadlineDate,
-    int? priority,
-    String? repeatIcalRrule,
-    List<String>? valueIds,
+    required UpdateProjectCommand command,
   }) = _ProjectDetailUpdate;
   const factory ProjectDetailEvent.delete({
     required String id,
   }) = _ProjectDetailDelete;
 
   const factory ProjectDetailEvent.create({
-    required String name,
-    String? description,
-    @Default(false) bool completed,
-    DateTime? startDate,
-    DateTime? deadlineDate,
-    int? priority,
-    String? repeatIcalRrule,
-    List<String>? valueIds,
+    required CreateProjectCommand command,
   }) = _ProjectDetailCreate;
 
   const factory ProjectDetailEvent.loadById({required String projectId}) =
@@ -53,6 +38,10 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
 @freezed
 class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.initial() = ProjectDetailInitial;
+
+  const factory ProjectDetailState.validationFailure({
+    required ValidationFailure failure,
+  }) = ProjectDetailValidationFailure;
 
   const factory ProjectDetailState.initialDataLoadSuccess({
     required List<Value> availableValues,
@@ -80,6 +69,9 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     required ValueRepositoryContract valueRepository,
   }) : _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _commandHandler = ProjectCommandHandler(
+         projectRepository: projectRepository,
+       ),
        super(const ProjectDetailState.initial()) {
     on<_ProjectDetailLoadById>(
       (event, emit) => _onGet(event.projectId, emit),
@@ -96,6 +88,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
 
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final ProjectCommandHandler _commandHandler;
 
   @override
   Talker get logger => talker.raw;
@@ -161,17 +154,10 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailUpdate event,
     Emitter<ProjectDetailState> emit,
   ) async {
-    await executeUpdateOperation(
+    await _executeValidatedCommand(
       emit,
-      () => _projectRepository.update(
-        id: event.id,
-        name: event.name,
-        description: event.description,
-        completed: event.completed,
-        startDate: event.startDate,
-        deadlineDate: event.deadlineDate,
-        valueIds: event.valueIds,
-      ),
+      EntityOperation.update,
+      () => _commandHandler.handleUpdate(event.command),
     );
   }
 
@@ -189,19 +175,34 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailCreate event,
     Emitter<ProjectDetailState> emit,
   ) async {
-    await executeCreateOperation(
+    await _executeValidatedCommand(
       emit,
-      () => _projectRepository.create(
-        name: event.name,
-        description: event.description,
-        completed: event.completed,
-        startDate: event.startDate,
-        deadlineDate: event.deadlineDate,
-        priority: event.priority,
-        repeatIcalRrule: event.repeatIcalRrule,
-        valueIds: event.valueIds,
-      ),
+      EntityOperation.create,
+      () => _commandHandler.handleCreate(event.command),
     );
+  }
+
+  Future<void> _executeValidatedCommand(
+    Emitter<ProjectDetailState> emit,
+    EntityOperation operation,
+    Future<CommandResult> Function() execute,
+  ) async {
+    try {
+      final result = await execute();
+      switch (result) {
+        case CommandSuccess():
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          emit(createOperationSuccessState(operation));
+        case CommandValidationFailure(:final failure):
+          emit(ProjectDetailState.validationFailure(failure: failure));
+      }
+    } catch (error, stackTrace) {
+      emit(
+        createOperationFailureState(
+          DetailBlocError<Project>(error: error, stackTrace: stackTrace),
+        ),
+      );
+    }
   }
 
   Future<void> _onLoadInitialData(Emitter<ProjectDetailState> emit) async {

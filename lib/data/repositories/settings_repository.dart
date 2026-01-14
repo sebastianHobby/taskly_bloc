@@ -309,16 +309,6 @@ class SettingsRepository implements SettingsRepositoryContract {
           )
           as T;
     }
-    if (identical(key, SettingsKey.softGates)) {
-      return _decodeSingleton(
-            keyName: 'softGates',
-            overrides: overrides,
-            profileId: row.id,
-            defaultValue: const SoftGatesSettings(),
-            fromJson: SoftGatesSettings.fromJson,
-          )
-          as T;
-    }
 
     return _extractKeyedValue(key, row.id, overrides);
   }
@@ -335,13 +325,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     return switch (name) {
       'pageSort' =>
         _decodePageSort(
-              profileId: profileId,
-              overrides: overrides,
-              pageKey: subKey,
-            )
-            as T,
-      'pageDisplay' =>
-        _decodePageDisplay(
               profileId: profileId,
               overrides: overrides,
               pageKey: subKey,
@@ -391,49 +374,6 @@ class SettingsRepository implements SettingsRepositoryContract {
     }
 
     return SortPreferences.fromJson(value);
-  }
-
-  PageDisplaySettings _decodePageDisplay({
-    required String profileId,
-    required Map<String, dynamic> overrides,
-    required String pageKey,
-  }) {
-    final group = overrides['pageDisplay'];
-    if (group == null) return const PageDisplaySettings();
-    if (group is! Map<String, dynamic>) {
-      final repaired = Map<String, dynamic>.from(overrides)
-        ..remove('pageDisplay');
-      _scheduleRepair(
-        profileId: profileId,
-        repaired: _withRepairMeta(
-          repaired,
-          repairKey: 'pageDisplay',
-          repairedFrom: group,
-          reason: 'pageDisplay_not_a_map',
-        ),
-      );
-      return const PageDisplaySettings();
-    }
-
-    final value = group[pageKey];
-    if (value == null) return const PageDisplaySettings();
-    if (value is! Map<String, dynamic>) {
-      final repairedGroup = Map<String, dynamic>.from(group)..remove(pageKey);
-      final repaired = Map<String, dynamic>.from(overrides)
-        ..['pageDisplay'] = repairedGroup;
-      _scheduleRepair(
-        profileId: profileId,
-        repaired: _withRepairMeta(
-          repaired,
-          repairKey: 'pageDisplay:$pageKey',
-          repairedFrom: value,
-          reason: 'pageDisplay_entry_not_a_map',
-        ),
-      );
-      return const PageDisplaySettings();
-    }
-
-    return PageDisplaySettings.fromJson(value);
   }
 
   T _decodeSingleton<T>({
@@ -490,10 +430,6 @@ class SettingsRepository implements SettingsRepositoryContract {
       updated['allocation'] = (value as AllocationConfig).toJson();
       return updated;
     }
-    if (identical(key, SettingsKey.softGates)) {
-      updated['softGates'] = (value as SoftGatesSettings).toJson();
-      return updated;
-    }
 
     final keyedKey = key as dynamic;
     final name = keyedKey.name as String;
@@ -517,15 +453,6 @@ class SettingsRepository implements SettingsRepositoryContract {
         }
         return updated;
 
-      case 'pageDisplay':
-        final group = Map<String, dynamic>.from(
-          (updated['pageDisplay'] as Map<String, dynamic>?) ??
-              const <String, dynamic>{},
-        );
-        group[subKey] = (value as PageDisplaySettings).toJson();
-        updated['pageDisplay'] = group;
-        return updated;
-
       default:
         throw ArgumentError('Unknown keyed key: $name');
     }
@@ -536,15 +463,11 @@ class SettingsRepository implements SettingsRepositoryContract {
     if (identical(key, SettingsKey.allocation)) {
       return const AllocationConfig() as T;
     }
-    if (identical(key, SettingsKey.softGates)) {
-      return const SoftGatesSettings() as T;
-    }
 
     final keyedKey = key as dynamic;
     final name = keyedKey.name as String;
     return switch (name) {
       'pageSort' => null as T,
-      'pageDisplay' => const PageDisplaySettings() as T,
       _ => throw ArgumentError('Unknown SettingsKey default: $key'),
     };
   }

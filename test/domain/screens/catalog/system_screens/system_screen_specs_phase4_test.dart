@@ -9,8 +9,8 @@ void main() {
       expect(SystemScreenSpecs.getByKey('my_day'), isNotNull);
       expect(SystemScreenSpecs.getByKey('scheduled'), isNotNull);
       expect(SystemScreenSpecs.getByKey('someday'), isNotNull);
+      expect(SystemScreenSpecs.getByKey('journal'), isNotNull);
       expect(SystemScreenSpecs.getByKey('values'), isNotNull);
-      expect(SystemScreenSpecs.getByKey('check_in'), isNotNull);
     });
 
     test('Routing.buildScreen uses typed specs for system screens', () {

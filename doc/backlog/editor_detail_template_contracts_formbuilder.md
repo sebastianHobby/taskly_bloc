@@ -36,9 +36,9 @@ As of: 2026-01-14 (UTC)
 
 | Contract item | Task | Project | Value |
 | --- | --- | --- | --- |
-| ED-A1-A — Explicit `*Draft` → `*Command` | ⚠️ Partial (bloc events take primitives; no explicit draft/command types) | ⚠️ Partial | ⚠️ Partial |
-| ED-A2-A — Domain validation → field-addressable UI mapping | ⚠️ Partial (FormBuilder validators exist; domain errors shown via snackbar) | ⚠️ Partial | ⚠️ Partial |
-| ED-A3-A — Typed, centralized field keys | ❌ (string literals like `name`, `description`, etc.) | ❌ | ❌ |
+| ED-A1-A — Explicit `*Draft` → `*Command` | ✅ | ✅ | ✅ |
+| ED-A2-A — Domain validation → field-addressable UI mapping | ✅ | ✅ | ✅ |
+| ED-A3-A — Typed, centralized field keys | ✅ | ✅ | ✅ |
 | ED-B1-A — Single reusable “form module” per entity | ✅ (`TaskForm` reused for create/edit) | ✅ (`ProjectForm` reused for create/edit) | ✅ (`ValueForm` reused for create/edit) |
 | ED-B2-A — Template owns actions; form module is fields-only | ❌ (forms currently include close/delete chrome) | ❌ | ❌ |
 | RD-C2-B — Detail template does not embed editor UI | ✅ (task has no detail surface; editor-only) | ✅ (detail launches editor) | ✅ (detail launches editor) |
@@ -46,6 +46,8 @@ As of: 2026-01-14 (UTC)
 **Key implementation files**
 - Task editor route: `lib/presentation/features/tasks/view/task_editor_route_page.dart`
 - Editor entry points: `lib/presentation/features/editors/editor_launcher.dart`
+- Draft/command/validation core: `lib/domain/core/editing/`
+- Validation → FormBuilder mapping: `lib/presentation/shared/mixins/form_submission_mixin.dart`, `lib/presentation/shared/validation/validation_error_message.dart`
 - Task editor form: `lib/presentation/features/tasks/view/task_detail_view.dart`, `lib/presentation/features/tasks/widgets/task_form.dart`
 - Project detail + editor form: `lib/presentation/features/projects/view/project_detail_unified_page.dart`, `lib/presentation/features/projects/view/project_create_edit_view.dart`, `lib/presentation/features/projects/widgets/project_form.dart`
 - Value detail + editor form: `lib/presentation/features/values/view/value_detail_unified_page.dart`, `lib/presentation/features/values/view/value_detail_view.dart`, `lib/presentation/features/values/widgets/value_form.dart`

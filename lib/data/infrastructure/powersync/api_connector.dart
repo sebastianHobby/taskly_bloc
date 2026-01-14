@@ -400,11 +400,6 @@ Future<PowerSyncDatabase> openDatabase({
   );
   await db.initialize();
 
-  // Normalize legacy enum strings before any sync/upload starts.
-  // This prevents Supabase enum rejections like:
-  // invalid input value for enum attention_rule_type: "allocation_warning".
-  await _migrateLegacyAttentionRuleTypeValues(db);
-
   // Helper to log user_profiles state after sync checkpoint
   Future<void> logUserProfilesAfterSync(
     PowerSyncDatabase database,
@@ -464,7 +459,6 @@ Future<PowerSyncDatabase> openDatabase({
     final event = data.event;
     if (event == AuthChangeEvent.signedIn) {
       // Connect to PowerSync when the user is signed in
-      await _migrateLegacyAttentionRuleTypeValues(db);
       currentConnector = SupabaseConnector(db);
       await db.connect(connector: currentConnector!);
 
@@ -480,29 +474,6 @@ Future<PowerSyncDatabase> openDatabase({
     }
   });
   return db;
-}
-
-Future<void> _migrateLegacyAttentionRuleTypeValues(PowerSyncDatabase db) async {
-  try {
-    // Legacy versions stored enum names as snake_case (and some clients
-    // may have persisted camelCase values directly). Normalize to current
-    // canonical values so enum decoding doesn't fail.
-    await db.execute(
-      "UPDATE attention_rules SET rule_type='problem' "
-      "WHERE rule_type IN ('workflow_step','workflowStep')",
-    );
-    await db.execute(
-      "UPDATE attention_rules SET rule_type='allocationWarning' "
-      "WHERE rule_type='allocation_warning'",
-    );
-  } catch (e, st) {
-    // Best-effort migration: don't block database initialization.
-    talker.warning(
-      '[powersync] Failed legacy attention_rules rule_type migration',
-      e,
-      st,
-    );
-  }
 }
 
 /// Run post-authentication maintenance tasks.
@@ -559,7 +530,7 @@ Future<void> _cleanupOrphanedSystemAttentionRules({
 
   if (deleted > 0) {
     talker.info(
-      '[PostAuthMaintenance] Deleted $deleted orphaned attention rule(s)',
+      '[PostAuthMaintenance] Deleted $deleted orphaned system attention rule(s)',
     );
   }
 }
@@ -567,12 +538,13 @@ Future<void> _cleanupOrphanedSystemAttentionRules({
 Future<void> _cleanupOrphanedAttentionResolutions({
   required AppDatabase db,
 }) async {
-  final rules = await db.select(db.attentionRules).get();
-  final validRuleIds = rules.map((r) => r.id).toSet();
-
-  final deleted = await (db.delete(
-    db.attentionResolutions,
-  )..where((r) => r.ruleId.isNotIn(validRuleIds))).go();
+  // Foreign keys are not enforced because PowerSync exposes schema as views.
+  // Best-effort cleanup prevents broken joins/queries when templates change.
+  final deleted = await db.customUpdate(
+    'DELETE FROM attention_resolutions '
+    'WHERE rule_id NOT IN (SELECT id FROM attention_rules)',
+    updates: {db.attentionResolutions},
+  );
 
   if (deleted > 0) {
     talker.info(

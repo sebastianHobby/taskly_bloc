@@ -128,12 +128,20 @@ void main() {
 
     testContract('TaskDetailEvent has all CRUD event factories', () {
       // All events needed for task management
-      const create = TaskDetailEvent.create(name: 'Test', description: null);
+      const create = TaskDetailEvent.create(
+        command: CreateTaskCommand(
+          name: 'Test',
+          completed: false,
+          description: null,
+        ),
+      );
       const update = TaskDetailEvent.update(
-        id: 'id',
-        name: 'Test',
-        description: null,
-        completed: false,
+        command: UpdateTaskCommand(
+          id: 'id',
+          name: 'Test',
+          completed: false,
+          description: null,
+        ),
       );
       const delete = TaskDetailEvent.delete(id: 'id');
       const loadById = TaskDetailEvent.loadById(taskId: 'id');
@@ -145,11 +153,18 @@ void main() {
     });
 
     testContract('ProjectDetailEvent has all CRUD event factories', () {
-      const create = ProjectDetailEvent.create(name: 'Test');
+      const create = ProjectDetailEvent.create(
+        command: CreateProjectCommand(
+          name: 'Test',
+          completed: false,
+        ),
+      );
       const update = ProjectDetailEvent.update(
-        id: 'id',
-        name: 'Test',
-        completed: false,
+        command: UpdateProjectCommand(
+          id: 'id',
+          name: 'Test',
+          completed: false,
+        ),
       );
       const delete = ProjectDetailEvent.delete(id: 'id');
       const loadById = ProjectDetailEvent.loadById(projectId: 'id');
@@ -162,15 +177,19 @@ void main() {
 
     testContract('ValueDetailEvent has all CRUD event factories', () {
       const create = ValueDetailEvent.create(
-        name: 'Test',
-        color: '#000000',
-        priority: ValuePriority.medium,
+        command: CreateValueCommand(
+          name: 'Test',
+          color: '#000000',
+          priority: ValuePriority.medium,
+        ),
       );
       const update = ValueDetailEvent.update(
-        id: 'id',
-        name: 'Test',
-        color: '#000000',
-        priority: ValuePriority.medium,
+        command: UpdateValueCommand(
+          id: 'id',
+          name: 'Test',
+          color: '#000000',
+          priority: ValuePriority.medium,
+        ),
       );
       const delete = ValueDetailEvent.delete(id: 'id');
       const loadById = ValueDetailEvent.loadById(valueId: 'id');

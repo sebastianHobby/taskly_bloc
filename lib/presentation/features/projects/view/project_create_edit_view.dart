@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_feedback.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/form_submission_mixin.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
@@ -67,6 +68,8 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
   // Create a global key that uniquely identifies the Form widget
   final _formKey = GlobalKey<FormBuilderState>();
 
+  ProjectDraft _draft = ProjectDraft.empty();
+
   @override
   void initState() {
     super.initState();
@@ -85,32 +88,17 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
     return BlocConsumer<ProjectDetailBloc, ProjectDetailState>(
       listenWhen: (previous, current) {
         return current is ProjectDetailOperationSuccess ||
+            current is ProjectDetailValidationFailure ||
             current is ProjectDetailOperationFailure ||
             current is ProjectDetailLoadSuccess;
       },
       listener: (context, state) {
-        switch (state) {
-          case ProjectDetailLoadSuccess(
-            :final project,
-          ):
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final formState = _formKey.currentState;
-              if (formState == null) return;
-
-              formState.patchValue({
-                'name': project.name.trim(),
-                'description': project.description ?? '',
-                'completed': project.completed,
-                'startDate': project.startDate,
-                'deadlineDate': project.deadlineDate,
-                'repeatIcalRrule': project.repeatIcalRrule ?? '',
-              });
-            });
-          case ProjectDetailOperationSuccess(:final operation):
+        state.mapOrNull(
+          operationSuccess: (success) {
             unawaited(
               handleEditorOperationSuccess(
                 context,
-                operation: operation,
+                operation: success.operation,
                 createdMessage: context.l10n.projectCreatedSuccessfully,
                 updatedMessage: context.l10n.projectUpdatedSuccessfully,
                 deletedMessage: context.l10n.projectDeletedSuccessfully,
@@ -119,11 +107,14 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                     : null,
               ),
             );
-          case ProjectDetailOperationFailure(:final errorDetails):
-            showEditorErrorSnackBar(context, errorDetails.error);
-          default:
-            return;
-        }
+          },
+          validationFailure: (failure) {
+            applyValidationFailureToForm(_formKey, failure.failure, context);
+          },
+          operationFailure: (failure) {
+            showEditorErrorSnackBar(context, failure.errorDetails.error);
+          },
+        );
       },
       buildWhen: (previous, current) {
         return current is ProjectDetailInitial ||
@@ -137,45 +128,74 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
           initialDataLoadSuccess: (availableValues) {
+            void syncDraft(Map<String, dynamic> values) {
+              final name = extractStringValue(values, ProjectFieldKeys.name.id);
+              final description = extractNullableStringValue(
+                values,
+                ProjectFieldKeys.description.id,
+              );
+              final completed = extractBoolValue(
+                values,
+                ProjectFieldKeys.completed.id,
+              );
+              final startDate = extractDateTimeValue(
+                values,
+                ProjectFieldKeys.startDate.id,
+              );
+              final deadlineDate = extractDateTimeValue(
+                values,
+                ProjectFieldKeys.deadlineDate.id,
+              );
+              final priority = values[ProjectFieldKeys.priority.id] as int?;
+              final repeatCandidate = extractNullableStringValue(
+                values,
+                ProjectFieldKeys.repeatIcalRrule.id,
+              );
+              final repeatIcalRrule =
+                  (repeatCandidate == null || repeatCandidate.isEmpty)
+                  ? null
+                  : repeatCandidate;
+              final valueIds = extractStringListValue(
+                values,
+                ProjectFieldKeys.valueIds.id,
+              );
+
+              _draft = _draft.copyWith(
+                name: name,
+                description: description,
+                completed: completed,
+                startDate: startDate,
+                deadlineDate: deadlineDate,
+                priority: priority,
+                repeatIcalRrule: repeatIcalRrule,
+                valueIds: valueIds,
+              );
+            }
+
+            _draft = ProjectDraft.empty();
             return ProjectForm(
               initialData: null,
               formKey: _formKey,
               availableValues: availableValues,
+              onChanged: syncDraft,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;
 
-                final name = extractStringValue(formValues, 'name').trim();
-                final description = extractNullableStringValue(
-                  formValues,
-                  'description',
-                );
-                final completed = extractBoolValue(formValues, 'completed');
-
-                final repeatCandidate = extractNullableStringValue(
-                  formValues,
-                  'repeatIcalRrule',
-                );
-                final repeatIcalRrule =
-                    (repeatCandidate == null || repeatCandidate.isEmpty)
-                    ? null
-                    : repeatCandidate;
-                final startDate = extractDateTimeValue(formValues, 'startDate');
-                final deadlineDate = extractDateTimeValue(
-                  formValues,
-                  'deadlineDate',
-                );
-                final valueIds = extractStringListValue(formValues, 'valueIds');
+                syncDraft(formValues);
 
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.create(
-                    name: name,
-                    description: description,
-                    completed: completed,
-                    startDate: startDate,
-                    deadlineDate: deadlineDate,
-                    repeatIcalRrule: repeatIcalRrule,
-                    valueIds: valueIds,
+                    command: CreateProjectCommand(
+                      name: _draft.name,
+                      description: _draft.description,
+                      completed: _draft.completed,
+                      startDate: _draft.startDate,
+                      deadlineDate: _draft.deadlineDate,
+                      priority: _draft.priority,
+                      repeatIcalRrule: _draft.repeatIcalRrule,
+                      valueIds: _draft.valueIds,
+                    ),
                   ),
                 );
               },
@@ -184,46 +204,75 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
             );
           },
           loadSuccess: (availableValues, project) {
+            void syncDraft(Map<String, dynamic> values) {
+              final name = extractStringValue(values, ProjectFieldKeys.name.id);
+              final description = extractNullableStringValue(
+                values,
+                ProjectFieldKeys.description.id,
+              );
+              final completed = extractBoolValue(
+                values,
+                ProjectFieldKeys.completed.id,
+              );
+              final startDate = extractDateTimeValue(
+                values,
+                ProjectFieldKeys.startDate.id,
+              );
+              final deadlineDate = extractDateTimeValue(
+                values,
+                ProjectFieldKeys.deadlineDate.id,
+              );
+              final priority = values[ProjectFieldKeys.priority.id] as int?;
+              final repeatCandidate = extractNullableStringValue(
+                values,
+                ProjectFieldKeys.repeatIcalRrule.id,
+              );
+              final repeatIcalRrule =
+                  (repeatCandidate == null || repeatCandidate.isEmpty)
+                  ? null
+                  : repeatCandidate;
+              final valueIds = extractStringListValue(
+                values,
+                ProjectFieldKeys.valueIds.id,
+              );
+
+              _draft = _draft.copyWith(
+                name: name,
+                description: description,
+                completed: completed,
+                startDate: startDate,
+                deadlineDate: deadlineDate,
+                priority: priority,
+                repeatIcalRrule: repeatIcalRrule,
+                valueIds: valueIds,
+              );
+            }
+
+            _draft = ProjectDraft.fromProject(project);
             return ProjectForm(
               initialData: project,
               formKey: _formKey,
               availableValues: availableValues,
+              onChanged: syncDraft,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;
 
-                final name = extractStringValue(formValues, 'name').trim();
-                final description = extractNullableStringValue(
-                  formValues,
-                  'description',
-                );
-                final completed = extractBoolValue(formValues, 'completed');
-
-                final repeatCandidate = extractNullableStringValue(
-                  formValues,
-                  'repeatIcalRrule',
-                );
-                final repeatIcalRrule =
-                    (repeatCandidate == null || repeatCandidate.isEmpty)
-                    ? null
-                    : repeatCandidate;
-                final startDate = extractDateTimeValue(formValues, 'startDate');
-                final deadlineDate = extractDateTimeValue(
-                  formValues,
-                  'deadlineDate',
-                );
-                final valueIds = extractStringListValue(formValues, 'valueIds');
+                syncDraft(formValues);
 
                 context.read<ProjectDetailBloc>().add(
                   ProjectDetailEvent.update(
-                    id: project.id,
-                    name: name,
-                    description: description,
-                    completed: completed,
-                    startDate: startDate,
-                    deadlineDate: deadlineDate,
-                    repeatIcalRrule: repeatIcalRrule,
-                    valueIds: valueIds,
+                    command: UpdateProjectCommand(
+                      id: project.id,
+                      name: _draft.name,
+                      description: _draft.description,
+                      completed: _draft.completed,
+                      startDate: _draft.startDate,
+                      deadlineDate: _draft.deadlineDate,
+                      priority: _draft.priority,
+                      repeatIcalRrule: _draft.repeatIcalRrule,
+                      valueIds: _draft.valueIds,
+                    ),
                   ),
                 );
               },
@@ -246,6 +295,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
           },
           operationSuccess: (_) => const SizedBox.shrink(),
           operationFailure: (_) => const SizedBox.shrink(),
+          validationFailure: (_) => const SizedBox.shrink(),
         );
       },
     );

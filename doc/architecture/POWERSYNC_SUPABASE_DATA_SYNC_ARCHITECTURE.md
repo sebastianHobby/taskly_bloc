@@ -37,6 +37,52 @@ Practical rule for this codebase:
 - Server-side upsert via Supabase/PostgREST is fine; this limitation is about local
   SQLite writes.
 
+### Drift write patterns (view-safe)
+
+Use these patterns when writing to tables that are part of the PowerSync schema.
+
+**1) Update-then-insert (recommended for “upsert” semantics)**
+
+```dart
+// View-safe alternative to Drift UPSERT helpers.
+Future<void> writeDefinition(AppDatabase db, TrackerDefinitionsCompanion row) async {
+  final updated = await (db.update(db.trackerDefinitions)
+        ..where((t) => t.id.equals(row.id.value)))
+      .write(
+        row.copyWith(
+          // Avoid rewriting createdAt on update.
+          createdAt: const Value.absent(),
+        ),
+      );
+
+  if (updated == 0) {
+    // Insert (no ON CONFLICT clause).
+    await db.into(db.trackerDefinitions).insert(row, mode: InsertMode.insert);
+  }
+}
+```
+
+Notes:
+
+- Use a deterministic ID so the update can target a single row.
+- Prefer `InsertMode.insert`/`InsertMode.insertOrAbort` (no conflict clause) for the insert step.
+
+**2) Insert-or-ignore (recommended for append-only / idempotent writes)**
+
+```dart
+await db.into(db.trackerEvents).insert(
+  eventRow,
+  mode: InsertMode.insertOrIgnore,
+);
+```
+
+Avoid for PowerSync schema tables:
+
+- `insertOnConflictUpdate` / `insertAllOnConflictUpdate`
+- `InsertMode.insertOrReplace` / `insertOrReplace`
+
+These can emit `ON CONFLICT` SQL and will fail against SQLite views.
+
 Important ownership rule:
 
 - `user_id` is **owned and controlled by Supabase** (derived from the logged-in JWT on the server).

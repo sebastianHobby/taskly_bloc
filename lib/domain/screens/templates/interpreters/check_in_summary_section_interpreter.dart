@@ -2,6 +2,7 @@
 
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
@@ -21,8 +22,8 @@ class CheckInSummarySectionInterpreter
 
   @override
   Stream<Object?> watch(CheckInSummarySectionParams params) {
-    const query = AttentionQuery(
-      domains: {'reviews'},
+    final query = AttentionQuery(
+      buckets: {AttentionBucket.review},
       entityTypes: {AttentionEntityType.reviewSession},
     );
 

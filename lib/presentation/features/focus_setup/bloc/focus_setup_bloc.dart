@@ -411,9 +411,9 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     Emitter<FocusSetupState> emit,
   ) {
     final reviewSessionRules = event.rules
-        .where((r) => r.ruleType == AttentionRuleType.review)
-        .where((r) => r.entitySelector['entity_type'] == 'review_session')
-        .where((r) => r.triggerConfig.containsKey('frequency_days'))
+        .where((r) => r.bucket == AttentionBucket.review)
+        .where((r) => r.evaluator == 'review_session_due_v1')
+        .where((r) => r.evaluatorParams.containsKey('frequencyDays'))
         .toList(growable: false);
 
     // Ensure draft maps contain entries for known rules.
@@ -422,7 +422,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
     for (final rule in reviewSessionRules) {
       enabledDraft.putIfAbsent(rule.id, () => rule.active);
-      final freq = rule.triggerConfig['frequency_days'];
+      final freq = rule.evaluatorParams['frequencyDays'];
       if (freq is int) {
         freqDraft.putIfAbsent(rule.id, () => freq);
       } else if (freq is num) {
@@ -736,18 +736,20 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         final enabled = state.draftRuleEnabled[rule.id] ?? rule.active;
         final freqDays =
             state.draftRuleFrequencyDays[rule.id] ??
-            (rule.triggerConfig['frequency_days'] as int? ?? 30);
+            (rule.evaluatorParams['frequencyDays'] as int? ?? 30);
 
         if (enabled != rule.active) {
           await _attentionRepository.updateRuleActive(rule.id, enabled);
         }
 
-        final triggerConfig = Map<String, dynamic>.from(rule.triggerConfig);
-        triggerConfig['frequency_days'] = freqDays;
-        await _attentionRepository.updateRuleTriggerConfig(
-          rule.id,
-          triggerConfig,
-        );
+        final existingFreq = rule.evaluatorParams['frequencyDays'];
+        final needsFreqUpdate =
+            existingFreq is! int || existingFreq != freqDays;
+        if (needsFreqUpdate) {
+          final params = Map<String, dynamic>.from(rule.evaluatorParams);
+          params['frequencyDays'] = freqDays;
+          await _attentionRepository.updateRuleEvaluatorParams(rule.id, params);
+        }
       }
 
       add(const FocusSetupEvent.saveSucceeded());

@@ -75,6 +75,9 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
   const factory ScreenTemplateSpec.standardScaffoldV1() =
       ScreenTemplateStandardScaffoldV1;
 
+  /// Placeholder screen for attention/review overflow.
+  const factory ScreenTemplateSpec.reviewInbox() = ScreenTemplateReviewInbox;
+
   // Full-screen, self-contained templates (feature UIs)
   const factory ScreenTemplateSpec.settingsMenu() = ScreenTemplateSettingsMenu;
   const factory ScreenTemplateSpec.trackerManagement() =

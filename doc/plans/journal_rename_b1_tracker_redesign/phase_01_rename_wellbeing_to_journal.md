@@ -88,8 +88,8 @@ Compatibility policy (this plan):
 
 - Update attention rule labels/strings referencing wellbeing (e.g. “Wellbeing Check-in”).
 - Update review settings model keys:
-  - If `ReviewType.wellbeingInsights` is strictly tied to the old concept, rename to `journalInsights`.
-  - If this is user-visible only, keep a JSON alias for backward compatibility.
+  - Journal insights/review prompts are currently removed from surfaced reviews (see `review_journal` removal).
+  - Do not rename `ReviewType.wellbeingInsights` → `journalInsights`; prefer deleting/omitting the setting type instead.
 
 Important note: `ReviewType` is annotated with `@JsonValue(...)`. If we rename the enum value, we should either:
 

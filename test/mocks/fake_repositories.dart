@@ -254,22 +254,15 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
   FakeSettingsRepository({
     GlobalSettings global = const GlobalSettings(),
     AllocationConfig allocation = const AllocationConfig(),
-    SoftGatesSettings softGates = const SoftGatesSettings(),
     Map<String, SortPreferences> pageSort = const <String, SortPreferences>{},
-    Map<String, PageDisplaySettings> pageDisplay =
-        const <String, PageDisplaySettings>{},
   }) : _global = global,
        _allocation = allocation,
-       _softGates = softGates,
-       _pageSort = Map<String, SortPreferences>.from(pageSort),
-       _pageDisplay = Map<String, PageDisplaySettings>.from(pageDisplay);
+       _pageSort = Map<String, SortPreferences>.from(pageSort);
 
   final _controller = StreamController<void>.broadcast();
   GlobalSettings _global;
   AllocationConfig _allocation;
-  SoftGatesSettings _softGates;
   final Map<String, SortPreferences> _pageSort;
-  final Map<String, PageDisplaySettings> _pageDisplay;
 
   @override
   Stream<T> watch<T>(SettingsKey<T> key) async* {
@@ -290,7 +283,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     return switch (key) {
       SettingsKey.global => _global as T,
       SettingsKey.allocation => _allocation as T,
-      SettingsKey.softGates => _softGates as T,
       _ => _extractKeyedValue(key),
     };
   }
@@ -302,8 +294,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
 
     return switch (name) {
       'pageSort' => _pageSort[subKey] as T,
-      'pageDisplay' =>
-        (_pageDisplay[subKey] ?? const PageDisplaySettings()) as T,
       _ => throw ArgumentError('Unknown keyed key: $name'),
     };
   }
@@ -315,10 +305,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
     }
     if (identical(key, SettingsKey.allocation)) {
       _allocation = value as AllocationConfig;
-      return;
-    }
-    if (identical(key, SettingsKey.softGates)) {
-      _softGates = value as SoftGatesSettings;
       return;
     }
 
@@ -333,9 +319,6 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
         } else {
           _pageSort[subKey] = prefs;
         }
-        return;
-      case 'pageDisplay':
-        _pageDisplay[subKey] = value as PageDisplaySettings;
         return;
       default:
         throw ArgumentError('Unknown keyed key: $name');

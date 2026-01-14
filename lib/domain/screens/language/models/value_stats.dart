@@ -5,7 +5,7 @@ part 'value_stats.g.dart';
 
 /// Statistics for a single value entity.
 ///
-/// Used by EnrichmentResult.valueStats to provide per-value statistics
+/// Used by typed enrichment results to provide per-value statistics.
 /// that can be rendered inline in value cards.
 @freezed
 abstract class ValueStats with _$ValueStats {
@@ -23,7 +23,7 @@ abstract class ValueStats with _$ValueStats {
     required int projectCount,
 
     /// Weekly completion percentages for sparkline visualization.
-    /// Length determined by EnrichmentConfig.sparklineWeeks.
+    /// Length determined by the requested sparkline weeks.
     required List<double> weeklyTrend,
 
     /// Gap warning threshold from enrichment config.

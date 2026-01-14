@@ -125,6 +125,7 @@ void main() {
             startDate: any(named: 'startDate'),
             deadlineDate: any(named: 'deadlineDate'),
             projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
             repeatIcalRrule: any(named: 'repeatIcalRrule'),
             valueIds: any(named: 'valueIds'),
           ),
@@ -142,8 +143,11 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 100));
         bloc.add(
           const TaskDetailEvent.create(
-            name: 'New Task',
-            description: 'Created via integration test',
+            command: CreateTaskCommand(
+              name: 'New Task',
+              completed: false,
+              description: 'Created via integration test',
+            ),
           ),
         );
       },
@@ -338,10 +342,12 @@ void main() {
       },
       act: (bloc) => bloc.add(
         const ValueDetailEvent.update(
-          id: 'value-1',
-          name: 'Updated Value',
-          color: '#00FF00',
-          priority: ValuePriority.medium,
+          command: UpdateValueCommand(
+            id: 'value-1',
+            name: 'Updated Value',
+            color: '#00FF00',
+            priority: ValuePriority.medium,
+          ),
         ),
       ),
       expect: () => [
@@ -371,9 +377,11 @@ void main() {
       },
       act: (bloc) => bloc.add(
         const ValueDetailEvent.create(
-          name: 'New Value',
-          color: '#0000FF',
-          priority: ValuePriority.high,
+          command: CreateValueCommand(
+            name: 'New Value',
+            color: '#0000FF',
+            priority: ValuePriority.high,
+          ),
         ),
       ),
       expect: () => [

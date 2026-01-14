@@ -9,7 +9,6 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -73,7 +72,6 @@ void registerAllFallbackValues() {
   registerFallbackValue(const EntitySelector(entityType: EntityType.task));
   registerFallbackValue(const DisplayConfig());
   registerFallbackValue(const SortPreferences());
-  registerFallbackValue(const PageDisplaySettings());
 
   // === Analytics ===
   registerFallbackValue(TestData.correlation());

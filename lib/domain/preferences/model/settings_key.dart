@@ -20,9 +20,6 @@ sealed class SettingsKey<T> {
   /// Allocation algorithm settings.
   static const allocation = _SingletonKey<AllocationConfig>('allocation');
 
-  /// Soft gates threshold settings.
-  static const softGates = _SingletonKey<SoftGatesSettings>('softGates');
-
   // ─────────────────────────────────────────────────────────────────────────
   // Keyed keys (parameterized by identifier)
   // ─────────────────────────────────────────────────────────────────────────
@@ -30,10 +27,6 @@ sealed class SettingsKey<T> {
   /// Sort preferences for a specific page.
   static SettingsKey<SortPreferences?> pageSort(PageKey page) =>
       _KeyedKey<SortPreferences?>('pageSort', page.key);
-
-  /// Display settings for a specific page.
-  static SettingsKey<PageDisplaySettings> pageDisplay(PageKey page) =>
-      _KeyedKey<PageDisplaySettings>('pageDisplay', page.key);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Aggregate keys

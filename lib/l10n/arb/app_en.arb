@@ -446,6 +446,10 @@
     "@taskFormDescriptionTooLong": {
         "description": "Validation error when task description is too long"
     },
+    "taskFormRepeatRuleTooLong": "Repeat rule is too long",
+    "@taskFormRepeatRuleTooLong": {
+        "description": "Validation error when task repeat rule is too long"
+    },
     "taskFormDeadlineAfterStartError": "Deadline must be after start date",
     "@taskFormDeadlineAfterStartError": {
         "description": "Validation error when deadline is before start date"

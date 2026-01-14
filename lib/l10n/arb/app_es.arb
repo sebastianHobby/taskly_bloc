@@ -434,6 +434,10 @@
     "@taskFormDescriptionTooLong": {
         "description": "Error de validación cuando la descripción de la tarea es muy larga"
     },
+    "taskFormRepeatRuleTooLong": "La regla de repetición es demasiado larga",
+    "@taskFormRepeatRuleTooLong": {
+        "description": "Error de validación cuando la regla de repetición de la tarea es muy larga"
+    },
     "taskFormDeadlineAfterStartError": "La fecha límite debe ser posterior a la fecha de inicio",
     "@taskFormDeadlineAfterStartError": {
         "description": "Error de validación cuando la fecha límite es anterior a la fecha de inicio"

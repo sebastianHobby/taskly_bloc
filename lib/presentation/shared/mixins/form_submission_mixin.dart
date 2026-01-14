@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:taskly_bloc/domain/core/editing/validation_error.dart';
+import 'package:taskly_bloc/presentation/shared/validation/validation_error_message.dart';
 
 /// Mixin for handling common form submission patterns in detail views.
 ///
@@ -59,5 +61,32 @@ mixin FormSubmissionMixin {
     String key,
   ) {
     return (formValues[key] as List<dynamic>?)?.cast<String>() ?? <String>[];
+  }
+
+  /// Applies domain validation errors onto the current FormBuilder state.
+  ///
+  /// This uses [FieldKey.id] as the FormBuilder field name.
+  void applyValidationFailureToForm(
+    GlobalKey<FormBuilderState> formKey,
+    ValidationFailure failure,
+    BuildContext context,
+  ) {
+    final formState = formKey.currentState;
+    if (formState == null) return;
+
+    for (final entry in failure.fieldErrors.entries) {
+      final fieldName = entry.key.id;
+      final field = formState.fields[fieldName];
+      if (field == null) continue;
+
+      final message = entry.value
+          .map((e) => validationErrorMessage(context, e))
+          .where((m) => m.trim().isNotEmpty)
+          .join('\n');
+
+      if (message.isNotEmpty) {
+        field.invalidate(message);
+      }
+    }
   }
 }

@@ -19,6 +19,7 @@ class ValueForm extends StatefulWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
+    this.onChanged,
     this.onDelete,
     this.onClose,
     super.key,
@@ -28,6 +29,7 @@ class ValueForm extends StatefulWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Value? initialData;
+  final ValueChanged<Map<String, dynamic>>? onChanged;
   final VoidCallback? onDelete;
 
   /// Called when the user wants to close the form.
@@ -53,13 +55,15 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
     final isCreating = widget.initialData == null;
 
-    final Map<String, dynamic> initialValues = {
-      'name': widget.initialData?.name.trim() ?? '',
-      'colour': ColorUtils.fromHex(
+    final initialValues = <String, dynamic>{
+      ValueFieldKeys.name.id: widget.initialData?.name.trim() ?? '',
+      ValueFieldKeys.colour.id: ColorUtils.fromHex(
         widget.initialData?.color ?? ValueForm._defaultColorHex,
       ),
-      'priority': widget.initialData?.priority ?? ValuePriority.medium,
-      'iconName': widget.initialData?.iconName ?? ValueForm._defaultValueEmoji,
+      ValueFieldKeys.priority.id:
+          widget.initialData?.priority ?? ValuePriority.medium,
+      ValueFieldKeys.iconName.id:
+          widget.initialData?.iconName ?? ValueForm._defaultValueEmoji,
     };
 
     const entityName = 'Value';
@@ -138,7 +142,13 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
             key: widget.formKey,
             initialValue: initialValues,
             autovalidateMode: AutovalidateMode.onUserInteraction,
-            onChanged: markDirty,
+            onChanged: () {
+              markDirty();
+              final values = widget.formKey.currentState?.value;
+              if (values != null) {
+                widget.onChanged?.call(values);
+              }
+            },
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Column(
@@ -146,7 +156,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                 children: [
                   // Name field
                   FormBuilderTextField(
-                    name: 'name',
+                    name: ValueFieldKeys.name.id,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -189,7 +199,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                     children: [
                       Expanded(
                         child: FormBuilderDropdown<ValuePriority>(
-                          name: 'priority',
+                          name: ValueFieldKeys.priority.id,
                           decoration: InputDecoration(
                             labelText: 'Priority',
                             filled: true,
@@ -225,7 +235,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                   Row(
                     children: [
                       FormBuilderColorPickerModern(
-                        name: 'colour',
+                        name: ValueFieldKeys.colour.id,
                         showLabel: false,
                         compact: true,
                         validator: FormBuilderValidators.required<Color>(
@@ -234,7 +244,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                       ),
                       const SizedBox(width: 8),
                       FormBuilderEmojiPickerModern(
-                        name: 'iconName',
+                        name: ValueFieldKeys.iconName.id,
                         showLabel: false,
                         compact: true,
                         validator: FormBuilderValidators.required<String>(

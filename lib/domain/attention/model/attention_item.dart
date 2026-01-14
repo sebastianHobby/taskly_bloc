@@ -11,7 +11,7 @@ abstract class AttentionItem with _$AttentionItem {
     required String id,
     required String ruleId,
     required String ruleKey,
-    required AttentionRuleType ruleType,
+    required AttentionBucket bucket,
     required String entityId,
     required AttentionEntityType entityType,
     required AttentionSeverity severity,
@@ -19,6 +19,7 @@ abstract class AttentionItem with _$AttentionItem {
     required String description,
     required List<AttentionResolutionAction> availableActions,
     required DateTime detectedAt,
+    String? sortKey,
     Map<String, dynamic>? metadata,
   }) = _AttentionItem;
 

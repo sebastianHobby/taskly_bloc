@@ -779,7 +779,7 @@ class _ReviewScheduleStep extends StatelessWidget {
                     frequencyDays:
                         state.draftRuleFrequencyDays[projectHealthRules[i]
                             .id] ??
-                        (projectHealthRules[i].triggerConfig['frequency_days']
+                        (projectHealthRules[i].evaluatorParams['frequencyDays']
                                 as int? ??
                             30),
                     lastResolvedAt:
@@ -840,7 +840,7 @@ class _ReviewScheduleStep extends StatelessWidget {
                         periodicRules[i].active,
                     frequencyDays:
                         state.draftRuleFrequencyDays[periodicRules[i].id] ??
-                        (periodicRules[i].triggerConfig['frequency_days']
+                        (periodicRules[i].evaluatorParams['frequencyDays']
                                 as int? ??
                             30),
                     lastResolvedAt: state.lastResolvedAt[periodicRules[i].id],
@@ -1025,16 +1025,6 @@ class _ReviewRuleRow extends StatelessWidget {
         foregroundColor: cs.tertiary,
         backgroundColor: cs.tertiary.withOpacity(0.14),
       ),
-      'review_progress' => _RuleVisual(
-        icon: Icons.trending_up,
-        foregroundColor: cs.secondary,
-        backgroundColor: cs.secondary.withOpacity(0.14),
-      ),
-      'review_journal' => _RuleVisual(
-        icon: Icons.book_outlined,
-        foregroundColor: cs.primary,
-        backgroundColor: cs.primary.withOpacity(0.14),
-      ),
       'review_balance' => _RuleVisual(
         icon: Icons.balance,
         foregroundColor: cs.primary,
@@ -1200,7 +1190,7 @@ class _FinalizeStep extends StatelessWidget {
                     child: Text(
                       '• ${(rule.displayConfig['title'] as String?) ?? rule.ruleKey}: '
                       '${(state.draftRuleEnabled[rule.id] ?? rule.active) ? 'On' : 'Off'} '
-                      '(${state.draftRuleFrequencyDays[rule.id] ?? (rule.triggerConfig['frequency_days'] as int? ?? 30)} days)',
+                      '(${state.draftRuleFrequencyDays[rule.id] ?? (rule.evaluatorParams['frequencyDays'] as int? ?? 30)} days)',
                     ),
                   ),
               ],

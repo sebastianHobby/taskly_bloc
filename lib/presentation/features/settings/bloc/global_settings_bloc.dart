@@ -33,10 +33,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   const factory GlobalSettingsEvent.localeChanged(String? localeCode) =
       GlobalSettingsLocaleChanged;
 
-  /// User changed the date format pattern.
-  const factory GlobalSettingsEvent.dateFormatChanged(String pattern) =
-      GlobalSettingsDateFormatChanged;
-
   /// User changed the fixed home timezone offset.
   const factory GlobalSettingsEvent.homeTimeZoneOffsetChanged(
     int offsetMinutes,
@@ -49,9 +45,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
   /// User completed onboarding.
   const factory GlobalSettingsEvent.onboardingCompleted() =
       GlobalSettingsOnboardingCompleted;
-
-  /// User reset settings to defaults.
-  const factory GlobalSettingsEvent.reset() = GlobalSettingsReset;
 
   /// Internal: Stream emitted new settings.
   @internal
@@ -130,10 +123,6 @@ class GlobalSettingsBloc
       _onLocaleChanged,
       transformer: sequential(),
     );
-    on<GlobalSettingsDateFormatChanged>(
-      _onDateFormatChanged,
-      transformer: sequential(),
-    );
     on<GlobalSettingsHomeTimeZoneOffsetChanged>(
       _onHomeTimeZoneOffsetChanged,
       transformer: sequential(),
@@ -146,7 +135,6 @@ class GlobalSettingsBloc
       _onOnboardingCompleted,
       transformer: droppable(),
     );
-    on<GlobalSettingsReset>(_onReset, transformer: droppable());
     on<GlobalSettingsStreamUpdated>(
       _onStreamUpdated,
       transformer: sequential(),
@@ -277,14 +265,6 @@ class GlobalSettingsBloc
     await _settingsRepository.save(SettingsKey.global, updated);
   }
 
-  Future<void> _onDateFormatChanged(
-    GlobalSettingsDateFormatChanged event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    final updated = state.settings.copyWith(dateFormatPattern: event.pattern);
-    await _settingsRepository.save(SettingsKey.global, updated);
-  }
-
   Future<void> _onTextScaleChanged(
     GlobalSettingsTextScaleChanged event,
     Emitter<GlobalSettingsState> emit,
@@ -301,13 +281,5 @@ class GlobalSettingsBloc
   ) async {
     final updated = state.settings.copyWith(onboardingCompleted: true);
     await _settingsRepository.save(SettingsKey.global, updated);
-  }
-
-  Future<void> _onReset(
-    GlobalSettingsReset event,
-    Emitter<GlobalSettingsState> emit,
-  ) async {
-    const defaults = GlobalSettings();
-    await _settingsRepository.save(SettingsKey.global, defaults);
   }
 }
