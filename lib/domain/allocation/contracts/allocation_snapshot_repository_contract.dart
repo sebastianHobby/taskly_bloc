@@ -12,6 +12,18 @@ abstract class AllocationSnapshotRepositoryContract {
   /// Watches the latest snapshot for the given UTC day.
   Stream<AllocationSnapshot?> watchLatestForUtcDay(DateTime dayUtc);
 
+  /// Returns ordered allocated task refs for the latest snapshot of [dayUtc].
+  ///
+  /// This is a lightweight alternative to hydrating full [Task] objects.
+  Future<List<AllocationSnapshotTaskRef>> getLatestTaskRefsForUtcDay(
+    DateTime dayUtc,
+  );
+
+  /// Watches ordered allocated task refs for the latest snapshot of [dayUtc].
+  Stream<List<AllocationSnapshotTaskRef>> watchLatestTaskRefsForUtcDay(
+    DateTime dayUtc,
+  );
+
   /// Persists the allocation membership for [dayUtc].
   ///
   /// Creates a new version only when membership changes.

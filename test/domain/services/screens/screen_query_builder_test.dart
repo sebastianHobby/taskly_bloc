@@ -5,9 +5,7 @@ import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart'
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
@@ -492,49 +490,6 @@ void main() {
 
       // Note: V2 section refs include a fully-specified query in `DataConfig`.
       // Display/filter/sort is not derived from section params at runtime.
-    });
-
-    group('buildTaskQueryFromAllocationSectionRef', () {
-      test('returns sourceFilter when provided', () {
-        final sourceQuery = TaskQuery.incomplete();
-        final section = SectionRef(
-          templateId: SectionTemplateId.allocation,
-          params: AllocationSectionParams(
-            taskTileVariant: TaskTileVariant.listTile,
-            sourceFilter: sourceQuery,
-          ).toJson(),
-        );
-
-        final query = queryBuilder.buildTaskQueryFromAllocationSectionRef(
-          section: section,
-          now: now,
-        );
-
-        expect(query, sourceQuery);
-      });
-
-      test('returns default incomplete query when no sourceFilter', () {
-        final section = SectionRef(
-          templateId: SectionTemplateId.allocation,
-          params: const AllocationSectionParams(
-            taskTileVariant: TaskTileVariant.listTile,
-          ).toJson(),
-        );
-
-        final query = queryBuilder.buildTaskQueryFromAllocationSectionRef(
-          section: section,
-          now: now,
-        );
-
-        expect(query, isNotNull);
-        final hasIncompletePredicate = query!.filter.shared.any(
-          (p) =>
-              p is TaskBoolPredicate &&
-              p.field == TaskBoolField.completed &&
-              p.operator == BoolOperator.isFalse,
-        );
-        expect(hasIncompletePredicate, isTrue);
-      });
     });
 
     group('buildTaskQueryFromAgendaSectionRef', () {

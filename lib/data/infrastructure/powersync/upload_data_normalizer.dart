@@ -20,6 +20,9 @@ uploadJsonExpectationsByTable = {
     'settings_overrides': UploadJsonExpectation.map,
   },
   'attention_rules': {
+    // Legacy attention rule schema columns.
+    'trigger_config': UploadJsonExpectation.map,
+    'entity_selector': UploadJsonExpectation.map,
     'evaluator_params': UploadJsonExpectation.map,
     'display_config': UploadJsonExpectation.map,
     // Supabase: text[] (PostgREST expects a JSON array)

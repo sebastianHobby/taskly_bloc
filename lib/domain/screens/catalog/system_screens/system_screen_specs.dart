@@ -9,13 +9,12 @@ import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 /// Typed system screen specs for the hard-cutover system-screen path.
@@ -35,7 +34,7 @@ abstract class SystemScreenSpecs {
     name: 'My Day',
     template: const ScreenTemplateSpec.standardScaffoldV1(),
     gate: const ScreenGateSpec(
-      criteria: ScreenGateCriteria.allocationFocusModeNotSelected(),
+      criteria: ScreenGateCriteria.myDayPrereqsMissing(),
       template: ScreenTemplateSpec.myDayFocusModeRequired(),
     ),
     chrome: const ScreenChrome(
@@ -45,6 +44,12 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
+        ScreenModuleSpec.checkInSummary(
+          params: CheckInSummarySectionParams(pack: StylePackV2.standard),
+        ),
+        ScreenModuleSpec.allocationAlerts(
+          params: AllocationAlertsSectionParams(pack: StylePackV2.standard),
+        ),
         ScreenModuleSpec.attentionBannerV1(
           params: AttentionBannerSectionParamsV1(
             pack: StylePackV2.standard,
@@ -53,10 +58,16 @@ abstract class SystemScreenSpecs {
         ),
       ],
       primary: [
-        ScreenModuleSpec.allocation(
-          params: AllocationSectionParams(
-            taskTileVariant: TaskTileVariant.listTile,
-            displayMode: AllocationDisplayMode.groupedByValue,
+        ScreenModuleSpec.hierarchyValueProjectTaskV2(
+          params: HierarchyValueProjectTaskSectionParamsV2(
+            sources: const [DataConfig.allocationSnapshotTasksToday()],
+            pack: StylePackV2.standard,
+            pinnedValueHeaders: true,
+            pinnedProjectHeaders: false,
+            singleInboxGroupForNoProjectTasks: false,
+            enrichment: const EnrichmentPlanV2(
+              items: [EnrichmentPlanItemV2.allocationMembership()],
+            ),
           ),
         ),
       ],

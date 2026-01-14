@@ -1,6 +1,5 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -89,77 +88,6 @@ void main() {
             expect(result.allValues, isEmpty);
           },
         );
-      });
-    });
-
-    group('AllocationSectionResult', () {
-      test('creates with required fields', () {
-        final tasks = [TestData.task()];
-        final result = SectionDataResult.allocation(
-          allocatedTasks: tasks,
-          totalAvailable: 10,
-        );
-
-        expect(result, isA<AllocationSectionResult>());
-        expect(
-          (result as AllocationSectionResult).allocatedTasks,
-          hasLength(1),
-        );
-        expect(result.totalAvailable, 10);
-      });
-
-      test('creates with all optional fields', () {
-        final tasks = [TestData.task()];
-        final pinnedTasks = [
-          AllocatedTask(
-            task: TestData.task(),
-            qualifyingValueId: 'value-1',
-            allocationScore: 1,
-          ),
-        ];
-        final result = SectionDataResult.allocation(
-          allocatedTasks: tasks,
-          totalAvailable: 10,
-          pinnedTasks: pinnedTasks,
-          displayMode: AllocationDisplayMode.groupedByValue,
-        );
-
-        expect((result as AllocationSectionResult).pinnedTasks, hasLength(1));
-        expect(result.displayMode, AllocationDisplayMode.groupedByValue);
-      });
-
-      group('allTasks', () {
-        test('returns allocated tasks', () {
-          final tasks = [TestData.task(), TestData.task()];
-          final result = SectionDataResult.allocation(
-            allocatedTasks: tasks,
-            totalAvailable: 10,
-          );
-
-          expect(result.allTasks, hasLength(2));
-        });
-      });
-
-      group('allProjects', () {
-        test('returns empty list for allocation results', () {
-          final result = SectionDataResult.allocation(
-            allocatedTasks: [TestData.task()],
-            totalAvailable: 10,
-          );
-
-          expect(result.allProjects, isEmpty);
-        });
-      });
-
-      group('allValues', () {
-        test('returns empty list for allocation results', () {
-          final result = SectionDataResult.allocation(
-            allocatedTasks: [TestData.task()],
-            totalAvailable: 10,
-          );
-
-          expect(result.allValues, isEmpty);
-        });
       });
     });
 
@@ -274,60 +202,6 @@ void main() {
 
           expect(result.allValues, isEmpty);
         });
-      });
-    });
-
-    group('AllocationValueGroup', () {
-      test('creates with required fields', () {
-        final group = AllocationValueGroup(
-          valueId: 'value-1',
-          valueName: 'Health',
-          tasks: [
-            AllocatedTask(
-              task: TestData.task(),
-              qualifyingValueId: 'value-1',
-              allocationScore: 1,
-            ),
-          ],
-          weight: 0.5,
-          quota: 3,
-        );
-
-        expect(group.valueId, 'value-1');
-        expect(group.valueName, 'Health');
-        expect(group.tasks, hasLength(1));
-        expect(group.weight, 0.5);
-        expect(group.quota, 3);
-      });
-
-      test('creates with optional color', () {
-        final group = AllocationValueGroup(
-          valueId: 'value-1',
-          valueName: 'Health',
-          tasks: [],
-          weight: 0.5,
-          quota: 3,
-          color: '#FF0000',
-        );
-
-        expect(group.color, '#FF0000');
-      });
-    });
-
-    group('AllocationDisplayMode', () {
-      test('contains all expected values', () {
-        expect(
-          AllocationDisplayMode.values,
-          contains(AllocationDisplayMode.flat),
-        );
-        expect(
-          AllocationDisplayMode.values,
-          contains(AllocationDisplayMode.groupedByValue),
-        );
-        expect(
-          AllocationDisplayMode.values,
-          contains(AllocationDisplayMode.pinnedFirst),
-        );
       });
     });
   });

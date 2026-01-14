@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
@@ -10,7 +11,6 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
@@ -28,13 +28,13 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary
 class ScreenSpecDataInterpreter {
   ScreenSpecDataInterpreter({
     required SettingsRepositoryContract settingsRepository,
+    required ValueRepositoryContract valueRepository,
     required DataListSectionInterpreterV2 taskListInterpreter,
     required DataListSectionInterpreterV2 projectListInterpreter,
     required DataListSectionInterpreterV2 valueListInterpreter,
     required InterleavedListSectionInterpreterV2 interleavedListInterpreter,
     required HierarchyValueProjectTaskSectionInterpreterV2
     hierarchyValueProjectTaskInterpreter,
-    required AllocationSectionInterpreter allocationInterpreter,
     required AgendaSectionInterpreterV2 agendaInterpreter,
     required IssuesSummarySectionInterpreter issuesSummaryInterpreter,
     required AllocationAlertsSectionInterpreter allocationAlertsInterpreter,
@@ -42,13 +42,13 @@ class ScreenSpecDataInterpreter {
     required AttentionBannerSectionInterpreterV1 attentionBannerInterpreter,
     required EntityHeaderSectionInterpreter entityHeaderInterpreter,
   }) : _settingsRepository = settingsRepository,
+       _valueRepository = valueRepository,
        _taskListInterpreter = taskListInterpreter,
        _projectListInterpreter = projectListInterpreter,
        _valueListInterpreter = valueListInterpreter,
        _interleavedListInterpreter = interleavedListInterpreter,
        _hierarchyValueProjectTaskInterpreter =
            hierarchyValueProjectTaskInterpreter,
-       _allocationInterpreter = allocationInterpreter,
        _agendaInterpreter = agendaInterpreter,
        _issuesSummaryInterpreter = issuesSummaryInterpreter,
        _allocationAlertsInterpreter = allocationAlertsInterpreter,
@@ -57,6 +57,7 @@ class ScreenSpecDataInterpreter {
        _entityHeaderInterpreter = entityHeaderInterpreter;
 
   final SettingsRepositoryContract _settingsRepository;
+  final ValueRepositoryContract _valueRepository;
 
   final DataListSectionInterpreterV2 _taskListInterpreter;
   final DataListSectionInterpreterV2 _projectListInterpreter;
@@ -64,7 +65,6 @@ class ScreenSpecDataInterpreter {
   final InterleavedListSectionInterpreterV2 _interleavedListInterpreter;
   final HierarchyValueProjectTaskSectionInterpreterV2
   _hierarchyValueProjectTaskInterpreter;
-  final AllocationSectionInterpreter _allocationInterpreter;
   final AgendaSectionInterpreterV2 _agendaInterpreter;
   final IssuesSummarySectionInterpreter _issuesSummaryInterpreter;
   final AllocationAlertsSectionInterpreter _allocationAlertsInterpreter;
@@ -99,6 +99,15 @@ class ScreenSpecDataInterpreter {
         _settingsRepository
             .watch<AllocationConfig>(SettingsKey.allocation)
             .map((c) => !c.hasSelectedFocusMode),
+      MyDayPrereqsMissingGateCriteria() => Rx.combineLatest2(
+        _settingsRepository
+            .watch<AllocationConfig>(SettingsKey.allocation)
+            .map((c) => !c.hasSelectedFocusMode)
+            .distinct(),
+        _valueRepository.watchAll().map((values) => values.isEmpty).distinct(),
+        (needsFocusModeSetup, needsValuesSetup) =>
+            needsFocusModeSetup || needsValuesSetup,
+      ),
     };
   }
 
@@ -240,17 +249,6 @@ class ScreenSpecDataInterpreter {
               (data) => SectionVm(
                 index: index,
                 templateId: SectionTemplateId.agendaV2,
-                params: m.params,
-                title: m.title,
-                data: data,
-              ),
-            ),
-        allocation: (m) => _allocationInterpreter
-            .watch(m.params)
-            .map(
-              (data) => SectionVm(
-                index: index,
-                templateId: SectionTemplateId.allocation,
                 params: m.params,
                 title: m.title,
                 data: data,

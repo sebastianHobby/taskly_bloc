@@ -133,7 +133,9 @@ Integration highlights:
 
 - Allocation is invoked by domain orchestration (including time/day boundary
   triggers).
-- Unified screens render allocation outputs via dedicated allocation sections.
+- My Day renders allocation outputs via the shared hierarchy/list primary section,
+  with membership/order driven by the allocation snapshot (and optional V2
+  enrichment consumed by the renderer).
 - Allocation warnings are surfaced via the attention system’s allocation alerts.
 
 For the deeper dive see:

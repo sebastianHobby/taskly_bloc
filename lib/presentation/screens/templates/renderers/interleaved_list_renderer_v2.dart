@@ -287,7 +287,34 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final projects = items.whereType<ScreenItemProject>().toList(
       growable: false,
     );
-    final tasks = items.whereType<ScreenItemTask>().toList(growable: false);
+    final tasks = items.whereType<ScreenItemTask>().toList();
+
+    final rankByTaskId = widget.data.enrichment?.allocationRankByTaskId;
+    final qualifyingValueIdByTaskId =
+        widget.data.enrichment?.qualifyingValueIdByTaskId;
+
+    if (rankByTaskId != null && rankByTaskId.isNotEmpty) {
+      final originalIndexById = <String, int>{
+        for (final (i, t) in tasks.indexed) t.task.id: i,
+      };
+      tasks.sort((a, b) {
+        final ar = rankByTaskId[a.task.id];
+        final br = rankByTaskId[b.task.id];
+        if (ar != null && br != null) {
+          final byRank = ar.compareTo(br);
+          if (byRank != 0) return byRank;
+        } else if (ar != null) {
+          return -1;
+        } else if (br != null) {
+          return 1;
+        }
+
+        // Preserve prior ordering when ranks are absent/tied.
+        final ai = originalIndexById[a.task.id] ?? 0;
+        final bi = originalIndexById[b.task.id] ?? 0;
+        return ai.compareTo(bi);
+      });
+    }
 
     // Collect embedded values so hierarchy works even when no ScreenItemValue
     // tiles are present in the interleaved result.
@@ -337,7 +364,10 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       if (allowInboxGroup && isSomedayInboxTask(t)) {
         continue;
       }
-      final valueIds = t.task.effectiveValues.map((v) => v.id).toSet();
+      final qualifyingOverride = qualifyingValueIdByTaskId?[t.task.id];
+      final valueIds = qualifyingOverride == null
+          ? t.task.effectiveValues.map((v) => v.id).toSet()
+          : <String>{qualifyingOverride};
       if (valueIds.isEmpty) {
         tasksWithoutValue.add(t);
         continue;

@@ -6,6 +6,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
@@ -20,6 +21,7 @@ enum FocusSetupWizardStep {
   selectFocusMode,
   allocationStrategy,
   reviewSchedule,
+  valuesCta,
   finalize,
 }
 
@@ -86,6 +88,12 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
     List<AttentionRule> rules,
   ) = FocusSetupReviewRulesStreamUpdated;
 
+  const factory FocusSetupEvent.valuesStreamUpdated(int valuesCount) =
+      FocusSetupValuesStreamUpdated;
+
+  const factory FocusSetupEvent.quickAddValueRequested(String name) =
+      FocusSetupQuickAddValueRequested;
+
   const factory FocusSetupEvent.lastResolvedUpdated({
     required String ruleId,
     required DateTime? lastResolvedAt,
@@ -104,6 +112,9 @@ sealed class FocusSetupState with _$FocusSetupState {
     @Default(false) bool isSaving,
     String? errorMessage,
     @Default(0) int stepIndex,
+
+    /// Count of values in the system (used for My Day prerequisites).
+    @Default(0) int valuesCount,
 
     /// Baseline persisted config (for merge-on-save).
     AllocationConfig? persistedAllocationConfig,
@@ -139,16 +150,45 @@ sealed class FocusSetupState with _$FocusSetupState {
 
   bool get canGoNext {
     if (isSaving) return false;
+
+    if (currentStep == FocusSetupWizardStep.valuesCta) {
+      return valuesCount > 0;
+    }
+
     return stepIndex < maxStepIndex;
   }
 
   List<FocusSetupWizardStep> get steps {
     final focusMode = effectiveFocusMode;
+
+    final hasSelectedFocusMode =
+        persistedAllocationConfig?.hasSelectedFocusMode ?? false;
+    final hasValues = valuesCount > 0;
+
+    // When prerequisites are missing (gate flow), show only the missing steps.
+    final prereqsMissing = !hasSelectedFocusMode || !hasValues;
+    if (prereqsMissing) {
+      final steps = <FocusSetupWizardStep>[];
+      if (!hasSelectedFocusMode) {
+        steps.add(FocusSetupWizardStep.selectFocusMode);
+        if (focusMode == FocusMode.personalized) {
+          steps.add(FocusSetupWizardStep.allocationStrategy);
+        }
+      }
+      if (!hasValues) {
+        steps.add(FocusSetupWizardStep.valuesCta);
+      }
+      steps.add(FocusSetupWizardStep.finalize);
+      return steps;
+    }
+
+    // Full wizard (settings route): include values step as part of setup.
     if (focusMode == FocusMode.personalized) {
       return const [
         FocusSetupWizardStep.selectFocusMode,
         FocusSetupWizardStep.allocationStrategy,
         FocusSetupWizardStep.reviewSchedule,
+        FocusSetupWizardStep.valuesCta,
         FocusSetupWizardStep.finalize,
       ];
     }
@@ -156,6 +196,7 @@ sealed class FocusSetupState with _$FocusSetupState {
     return const [
       FocusSetupWizardStep.selectFocusMode,
       FocusSetupWizardStep.reviewSchedule,
+      FocusSetupWizardStep.valuesCta,
       FocusSetupWizardStep.finalize,
     ];
   }
@@ -266,8 +307,10 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
   FocusSetupBloc({
     required SettingsRepositoryContract settingsRepository,
     required AttentionRepositoryContract attentionRepository,
+    required ValueRepositoryContract valueRepository,
   }) : _settingsRepository = settingsRepository,
        _attentionRepository = attentionRepository,
+       _valueRepository = valueRepository,
        super(const FocusSetupState()) {
     on<FocusSetupStarted>(_onStarted, transformer: droppable());
     on<FocusSetupAllocationStreamUpdated>(
@@ -276,6 +319,10 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
     on<FocusSetupReviewRulesStreamUpdated>(
       _onReviewRulesStreamUpdated,
+      transformer: sequential(),
+    );
+    on<FocusSetupValuesStreamUpdated>(
+      _onValuesStreamUpdated,
       transformer: sequential(),
     );
     on<FocusSetupLastResolvedUpdated>(
@@ -338,6 +385,11 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       transformer: droppable(),
     );
 
+    on<FocusSetupQuickAddValueRequested>(
+      _onQuickAddValueRequested,
+      transformer: droppable(),
+    );
+
     on<FocusSetupFinalizePressed>(_onFinalizePressed, transformer: droppable());
     on<FocusSetupSaveFailed>(_onSaveFailed, transformer: sequential());
     on<FocusSetupSaveSucceeded>(_onSaveSucceeded, transformer: sequential());
@@ -345,15 +397,18 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
   final SettingsRepositoryContract _settingsRepository;
   final AttentionRepositoryContract _attentionRepository;
+  final ValueRepositoryContract _valueRepository;
 
   StreamSubscription<AllocationConfig>? _allocationSub;
   StreamSubscription<List<AttentionRule>>? _rulesSub;
+  StreamSubscription<dynamic>? _valuesSub;
   final Map<String, StreamSubscription<dynamic>> _resolutionSubs = {};
 
   @override
   Future<void> close() async {
     await _allocationSub?.cancel();
     await _rulesSub?.cancel();
+    await _valuesSub?.cancel();
     for (final sub in _resolutionSubs.values) {
       await sub.cancel();
     }
@@ -390,6 +445,15 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         add(
           const FocusSetupEvent.saveFailed('Failed to load attention rules'),
         );
+      },
+    );
+
+    await _valuesSub?.cancel();
+    _valuesSub = _valueRepository.watchAll().listen(
+      (values) => add(FocusSetupEvent.valuesStreamUpdated(values.length)),
+      onError: (Object e, StackTrace st) {
+        talker.handle(e, st, '[FocusSetupBloc] values stream error');
+        add(const FocusSetupEvent.saveFailed('Failed to load values'));
       },
     );
   }
@@ -441,6 +505,56 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         isLoading: false,
       ),
     );
+  }
+
+  void _onValuesStreamUpdated(
+    FocusSetupValuesStreamUpdated event,
+    Emitter<FocusSetupState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        valuesCount: event.valuesCount,
+        isLoading: false,
+      ),
+    );
+  }
+
+  Future<void> _onQuickAddValueRequested(
+    FocusSetupQuickAddValueRequested event,
+    Emitter<FocusSetupState> emit,
+  ) async {
+    final name = event.name.trim();
+    if (name.isEmpty) return;
+
+    try {
+      await _valueRepository.create(
+        name: name,
+        color: _colorHexForName(name),
+      );
+    } catch (e, st) {
+      talker.handle(e, st, '[FocusSetupBloc] quick add value failed');
+      emit(state.copyWith(errorMessage: 'Failed to create value'));
+    }
+  }
+
+  String _colorHexForName(String name) {
+    const palette = <String>[
+      '#6366F1',
+      '#0EA5E9',
+      '#10B981',
+      '#F59E0B',
+      '#EF4444',
+      '#8B5CF6',
+      '#14B8A6',
+      '#22C55E',
+      '#E11D48',
+    ];
+
+    final hash = name.toLowerCase().codeUnits.fold<int>(
+      0,
+      (a, b) => (a * 31 + b) & 0x7fffffff,
+    );
+    return palette[hash % palette.length];
   }
 
   void _refreshResolutionSubscriptions(List<AttentionRule> rules) {

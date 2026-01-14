@@ -49,6 +49,16 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
+  Future<List<Task>> getByIds(Iterable<String> ids) async {
+    final idList = ids.toList(growable: false);
+    final byId = <String, Task>{for (final t in _last) t.id: t};
+    return [
+      for (final id in idList)
+        if (byId[id] != null) byId[id]!,
+    ];
+  }
+
+  @override
   Stream<Task?> watchById(String id) => _controller.stream.map((rows) {
     try {
       return rows.firstWhere((r) => r.id == id);
@@ -56,6 +66,18 @@ class FakeTaskRepository implements TaskRepositoryContract {
       return null;
     }
   });
+
+  @override
+  Stream<List<Task>> watchByIds(Iterable<String> ids) {
+    final idList = ids.toList(growable: false);
+    return _controller.stream.map((rows) {
+      final byId = <String, Task>{for (final t in rows) t.id: t};
+      return [
+        for (final id in idList)
+          if (byId[id] != null) byId[id]!,
+      ];
+    });
+  }
 
   @override
   Future<void> update({

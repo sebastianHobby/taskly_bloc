@@ -6,26 +6,19 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -42,18 +35,16 @@ class SectionDataService {
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
     required ValueRepositoryContract valueRepository,
-    required AllocationOrchestrator allocationOrchestrator,
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
     required HomeDayKeyService dayKeyService,
     required AgendaSectionDataService agendaDataService,
-    JournalRepositoryContract? journalRepository,
     AnalyticsService? analyticsService,
     SettingsRepositoryContract? settingsRepository,
+    JournalRepositoryContract? journalRepository,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
        _journalRepository = journalRepository,
-       _allocationOrchestrator = allocationOrchestrator,
        _allocationSnapshotRepository = allocationSnapshotRepository,
        _dayKeyService = dayKeyService,
        _agendaDataService = agendaDataService,
@@ -64,7 +55,6 @@ class SectionDataService {
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final JournalRepositoryContract? _journalRepository;
-  final AllocationOrchestrator _allocationOrchestrator;
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final HomeDayKeyService _dayKeyService;
   final AgendaSectionDataService _agendaDataService;
@@ -93,22 +83,6 @@ class SectionDataService {
     return _watchInterleavedListSectionV2(params);
   }
 
-  Future<SectionDataResult> fetchAllocation(AllocationSectionParams params) {
-    return _fetchAllocationSection(
-      sourceFilter: params.sourceFilter,
-      maxTasks: params.maxTasks,
-      displayMode: params.displayMode,
-    );
-  }
-
-  Stream<SectionDataResult> watchAllocation(AllocationSectionParams params) {
-    return _watchAllocationSection(
-      sourceFilter: params.sourceFilter,
-      maxTasks: params.maxTasks,
-      displayMode: params.displayMode,
-    );
-  }
-
   Future<SectionDataResult> fetchAgendaV2(AgendaSectionParamsV2 params) {
     return _fetchAgendaSectionV2(params);
   }
@@ -129,6 +103,16 @@ class SectionDataService {
       JournalDataConfig() => _PrimaryEntityKind.journal,
       AllocationSnapshotTasksTodayDataConfig() => _PrimaryEntityKind.task,
     };
+  }
+
+  Stream<List<Task>> _watchSnapshotTasksForToday() {
+    final dayUtc = _todayUtcDay();
+    return _allocationSnapshotRepository
+        .watchLatestTaskRefsForUtcDay(dayUtc)
+        .switchMap((refs) {
+          final ids = refs.map((r) => r.taskId).toList(growable: false);
+          return _taskRepository.watchByIds(ids);
+        });
   }
 
   static List<ScreenItem> _toScreenItems(
@@ -314,32 +298,11 @@ class SectionDataService {
 
   Future<List<Task>> _fetchSnapshotTasksForToday() async {
     final dayUtc = _todayUtcDay();
-    final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
+    final refs = await _allocationSnapshotRepository.getLatestTaskRefsForUtcDay(
       dayUtc,
     );
-    return _tasksFromSnapshot(snapshot);
-  }
-
-  Future<List<Task>> _fetchSnapshotTasksForTodayFrom(AllocationSnapshot? snap) {
-    return Future.value(_tasksFromSnapshot(snap));
-  }
-
-  List<Task> _tasksFromSnapshot(AllocationSnapshot? snapshot) {
-    if (snapshot == null) return const <Task>[];
-
-    final taskEntries = snapshot.allocated
-        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
-        .toList(growable: false);
-
-    // Preserve snapshot ordering.
-    // Note: repository lookup is async in other paths; here we only build ids.
-    // Actual task loading occurs in async helper below.
-    // (This function is kept sync so we can share ordering logic.)
-    //
-    // We return an empty list here and load in the async watcher/fetcher.
-    //
-    // Implementation note: this is overridden by async loaders.
-    return const <Task>[];
+    final ids = refs.map((r) => r.taskId).toList(growable: false);
+    return _taskRepository.getByIds(ids);
   }
 
   Future<List<JournalEntry>> _fetchJournalEntries(JournalQuery? query) async {
@@ -368,6 +331,8 @@ class SectionDataService {
       JournalDataConfig(:final query) => _watchJournalEntries(
         query,
       ).map((items) => items.cast<Object>()),
+      AllocationSnapshotTasksTodayDataConfig() =>
+        _watchSnapshotTasksForToday().map((items) => items.cast<Object>()),
     };
   }
 
@@ -381,372 +346,6 @@ class SectionDataService {
     return _journalRepository.watchJournalEntriesByQuery(
       query ?? JournalQuery.all(),
     );
-  }
-
-  // ===========================================================================
-  // ALLOCATION SECTION
-  // ===========================================================================
-
-  Future<SectionDataResult> _fetchAllocationSection({
-    required TaskQuery? sourceFilter,
-    required int? maxTasks,
-    required AllocationDisplayMode displayMode,
-  }) async {
-    final dayUtc = _todayUtcDay();
-    final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
-      dayUtc,
-    );
-
-    if (snapshot != null) {
-      return _buildAllocationSectionResultFromSnapshot(
-        snapshot: snapshot,
-        sourceFilter: sourceFilter,
-        maxTasks: maxTasks,
-        displayMode: displayMode,
-      );
-    }
-
-    // Fallback to live allocation (first-run before snapshot exists).
-    final allocation = await _allocationOrchestrator.watchAllocation().first;
-
-    // Check if value setup is required
-    if (allocation.requiresValueSetup) {
-      return SectionDataResult.allocation(
-        allocatedTasks: const [],
-        totalAvailable: 0,
-        requiresValueSetup: true,
-        displayMode: displayMode,
-      );
-    }
-
-    // Build pinned tasks and value groups for UI rendering
-    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
-      allocation.allocatedTasks,
-      sourceFilter,
-      maxTasks,
-    );
-
-    // Flatten tasks for UI consumption.
-    final tasks = [
-      ...pinnedTasks,
-      ...tasksByValue.values.expand((g) => g.tasks),
-    ].map((at) => at.task).toList();
-
-    // Count total available (all non-completed tasks)
-    final totalAvailable = await _taskRepository
-        .watchAllCount(TaskQuery.incomplete())
-        .first;
-
-    // Allocation warnings are handled by the attention system.
-
-    return SectionDataResult.allocation(
-      allocatedTasks: tasks,
-      totalAvailable: totalAvailable,
-      pinnedTasks: pinnedTasks,
-      tasksByValue: tasksByValue,
-      activeFocusMode: allocation.activeFocusMode,
-      displayMode: displayMode,
-    );
-  }
-
-  Stream<SectionDataResult> _watchAllocationSection({
-    required TaskQuery? sourceFilter,
-    required int? maxTasks,
-    required AllocationDisplayMode displayMode,
-  }) {
-    final dayUtc = _todayUtcDay();
-
-    // Prefer persisted snapshots. If a snapshot does not exist yet for today,
-    // fall back to live allocation (first-run bootstrap).
-    return _allocationSnapshotRepository.watchLatestForUtcDay(dayUtc).switchMap(
-      (snapshot) {
-        if (snapshot != null) {
-          return _watchAllocationSectionFromSnapshot(
-            snapshot: snapshot,
-            sourceFilter: sourceFilter,
-            maxTasks: maxTasks,
-            displayMode: displayMode,
-          );
-        }
-
-        return _allocationOrchestrator.watchAllocation().switchMap(
-          (allocation) => Stream.fromFuture(
-            _buildAllocationSectionResult(
-              allocation: allocation,
-              sourceFilter: sourceFilter,
-              maxTasks: maxTasks,
-              displayMode: displayMode,
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Future<SectionDataResult> _buildAllocationSectionResult({
-    required AllocationResult allocation,
-    required TaskQuery? sourceFilter,
-    required int? maxTasks,
-    required AllocationDisplayMode displayMode,
-  }) async {
-    // Check if value setup is required
-    if (allocation.requiresValueSetup) {
-      return SectionDataResult.allocation(
-        allocatedTasks: const [],
-        totalAvailable: 0,
-        requiresValueSetup: true,
-        displayMode: displayMode,
-      );
-    }
-
-    // Build pinned tasks and value groups for UI rendering
-    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
-      allocation.allocatedTasks,
-      sourceFilter,
-      maxTasks,
-    );
-
-    // Flatten tasks for UI consumption.
-    final tasks = [
-      ...pinnedTasks,
-      ...tasksByValue.values.expand((g) => g.tasks),
-    ].map((at) => at.task).toList();
-
-    // Count total available
-    final totalAvailable = await _taskRepository
-        .watchAllCount(TaskQuery.incomplete())
-        .first;
-
-    // Allocation warnings are handled by the attention system.
-
-    return SectionDataResult.allocation(
-      allocatedTasks: tasks,
-      totalAvailable: totalAvailable,
-      pinnedTasks: pinnedTasks,
-      tasksByValue: tasksByValue,
-      activeFocusMode: allocation.activeFocusMode,
-      displayMode: displayMode,
-    );
-  }
-
-  Future<SectionDataResult> _buildAllocationSectionResultFromSnapshot({
-    required AllocationSnapshot snapshot,
-    required TaskQuery? sourceFilter,
-    required int? maxTasks,
-    required AllocationDisplayMode displayMode,
-  }) async {
-    final taskEntries = snapshot.allocated
-        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
-        .toList(growable: false);
-
-    final tasks = <Task>[];
-    final allocatedTasks = <AllocatedTask>[];
-
-    for (final entry in taskEntries) {
-      final task = await _taskRepository.getById(entry.entity.id);
-      if (task == null) continue;
-      tasks.add(task);
-      allocatedTasks.add(
-        AllocatedTask(
-          task: task,
-          qualifyingValueId: entry.qualifyingValueId ?? 'unknown',
-          allocationScore: entry.allocationScore ?? 0,
-        ),
-      );
-    }
-
-    final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
-      allocatedTasks,
-      sourceFilter,
-      maxTasks,
-    );
-
-    final flatTasks = [
-      ...pinnedTasks,
-      ...tasksByValue.values.expand((g) => g.tasks),
-    ].map((at) => at.task).toList();
-
-    final totalAvailable = await _taskRepository
-        .watchAllCount(TaskQuery.incomplete())
-        .first;
-
-    final allocationConfig = _settingsRepository == null
-        ? const AllocationConfig()
-        : await _settingsRepository.load(SettingsKey.allocation);
-
-    return SectionDataResult.allocation(
-      allocatedTasks: flatTasks,
-      totalAvailable: totalAvailable,
-      pinnedTasks: pinnedTasks,
-      tasksByValue: tasksByValue,
-      activeFocusMode: allocationConfig.focusMode,
-      displayMode: displayMode,
-    );
-  }
-
-  Stream<SectionDataResult> _watchAllocationSectionFromSnapshot({
-    required AllocationSnapshot snapshot,
-    required TaskQuery? sourceFilter,
-    required int? maxTasks,
-    required AllocationDisplayMode displayMode,
-  }) {
-    final taskEntries = snapshot.allocated
-        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
-        .toList(growable: false);
-
-    final taskStreams = taskEntries
-        .map((e) => _taskRepository.watchById(e.entity.id))
-        .toList(growable: false);
-
-    final tasksStream = taskStreams.isEmpty
-        ? Stream.value(const <Task?>[])
-        : Rx.combineLatestList<Task?>(taskStreams);
-
-    final totalAvailableStream = _taskRepository.watchAllCount(
-      TaskQuery.incomplete(),
-    );
-
-    final allocationConfigStream = _settingsRepository == null
-        ? Stream.value(const AllocationConfig())
-        : _settingsRepository.watch(SettingsKey.allocation);
-
-    return Rx.combineLatest3(
-      tasksStream,
-      totalAvailableStream,
-      allocationConfigStream,
-      (List<Task?> tasks, int totalAvailable, AllocationConfig cfg) => (
-        tasks,
-        totalAvailable,
-        cfg,
-      ),
-    ).asyncMap((tuple) async {
-      final tasksNullable = tuple.$1;
-      final totalAvailable = tuple.$2;
-      final config = tuple.$3;
-
-      final allocatedTasks = <AllocatedTask>[];
-      for (var i = 0; i < taskEntries.length; i++) {
-        final task = i < tasksNullable.length ? tasksNullable[i] : null;
-        if (task == null) continue;
-        final entry = taskEntries[i];
-        allocatedTasks.add(
-          AllocatedTask(
-            task: task,
-            qualifyingValueId: entry.qualifyingValueId ?? 'unknown',
-            allocationScore: entry.allocationScore ?? 0,
-          ),
-        );
-      }
-
-      final (pinnedTasks, tasksByValue) = await _buildAllocationGroups(
-        allocatedTasks,
-        sourceFilter,
-        maxTasks,
-      );
-
-      final flatTasks = [
-        ...pinnedTasks,
-        ...tasksByValue.values.expand((g) => g.tasks),
-      ].map((at) => at.task).toList();
-
-      return SectionDataResult.allocation(
-        allocatedTasks: flatTasks,
-        totalAvailable: totalAvailable,
-        pinnedTasks: pinnedTasks,
-        tasksByValue: tasksByValue,
-        activeFocusMode: config.focusMode,
-        displayMode: displayMode,
-      );
-    });
-  }
-
-  /// Builds pinned tasks list and value groups from allocated tasks.
-  ///
-  /// Separates pinned tasks (qualifyingValueId == 'pinned') from regular tasks,
-  /// then groups regular tasks by their qualifying value ID.
-  Future<(List<AllocatedTask>, Map<String, AllocationValueGroup>)>
-  _buildAllocationGroups(
-    List<AllocatedTask> allocatedTasks,
-    TaskQuery? sourceFilter,
-    int? maxTasks,
-  ) async {
-    // Apply source filter if provided
-    var filteredTasks = allocatedTasks;
-    if (sourceFilter != null) {
-      final filteredTaskObjects = _applyTaskFilter(
-        allocatedTasks.map((at) => at.task).toList(),
-        sourceFilter,
-      );
-      final filteredIds = filteredTaskObjects.map((t) => t.id).toSet();
-      filteredTasks = allocatedTasks
-          .where((at) => filteredIds.contains(at.task.id))
-          .toList();
-    }
-
-    // Limit if maxTasks specified
-    if (maxTasks != null && filteredTasks.length > maxTasks) {
-      filteredTasks = filteredTasks.take(maxTasks).toList();
-    }
-
-    // Separate pinned tasks from regular tasks
-    final pinnedTasks = filteredTasks
-        .where((at) => at.qualifyingValueId == 'pinned')
-        .toList();
-
-    final regularTasks = filteredTasks
-        .where((at) => at.qualifyingValueId != 'pinned')
-        .toList();
-
-    // Group regular tasks by their qualifying value ID
-    final groupedByValue = <String, List<AllocatedTask>>{};
-    for (final task in regularTasks) {
-      groupedByValue.putIfAbsent(task.qualifyingValueId, () => []).add(task);
-    }
-
-    // Build AllocationValueGroup for each value
-    final tasksByValue = <String, AllocationValueGroup>{};
-    for (final entry in groupedByValue.entries) {
-      final valueId = entry.key;
-      final tasks = entry.value;
-
-      // Look up value for name, color, and icon
-      final value = await _valueRepository.getById(valueId);
-      final valueName = value?.name ?? 'Unknown Value';
-      final valuePriority = value?.priority ?? ValuePriority.medium;
-      final color = value?.color;
-      final iconName = value?.iconName;
-
-      tasksByValue[valueId] = AllocationValueGroup(
-        valueId: valueId,
-        valueName: valueName,
-        valuePriority: valuePriority,
-        tasks: tasks,
-        weight: 1, // Default weight - could be enhanced later
-        quota: tasks.length,
-        color: color,
-        iconName: iconName,
-      );
-    }
-
-    return (pinnedTasks, tasksByValue);
-  }
-
-  List<Task> _applyTaskFilter(List<Task> tasks, TaskQuery query) {
-    // Apply in-memory filtering based on query predicates
-    // For full SQL filtering, use the repository's watchAll method instead
-    return tasks.where((task) {
-      // Filter by completion status if specified in predicates
-      for (final predicate in query.filter.shared) {
-        if (predicate is TaskBoolPredicate) {
-          if (predicate.field == TaskBoolField.completed) {
-            final isCompleted = task.completed;
-            final shouldMatch = predicate.operator == BoolOperator.isTrue;
-            if (isCompleted != shouldMatch) return false;
-          }
-        }
-      }
-      return true;
-    }).toList();
   }
 
   // ===========================================================================
@@ -803,6 +402,10 @@ class SectionDataService {
       (i) => i.maybeWhen(openTaskCounts: () => true, orElse: () => false),
     );
 
+    final wantsAllocationMembership = plan.items.any(
+      (i) => i.maybeWhen(allocationMembership: () => true, orElse: () => false),
+    );
+
     final agendaDateFields = plan.items
         .map(
           (i) => i.maybeWhen(
@@ -830,6 +433,9 @@ class SectionDataService {
     int? totalRecentCompletions;
     OpenTaskCountsV2? openTaskCounts;
     Map<String, AgendaTagV2> agendaTagByTaskId = const {};
+    Map<String, bool> isAllocatedByTaskId = const {};
+    Map<String, int> allocationRankByTaskId = const {};
+    Map<String, String> qualifyingValueIdByTaskId = const {};
 
     if (wantsValueStats && values.isNotEmpty) {
       const sparklineWeeks = 4;
@@ -855,11 +461,42 @@ class SectionDataService {
       agendaTagByTaskId = _computeAgendaTagsV2(tasks, agendaDateField);
     }
 
+    if (wantsAllocationMembership && tasks.isNotEmpty) {
+      final dayUtc = _todayUtcDay();
+      final refs = await _allocationSnapshotRepository
+          .getLatestTaskRefsForUtcDay(
+            dayUtc,
+          );
+
+      final refByTaskId = <String, AllocationSnapshotTaskRef>{
+        for (final r in refs) r.taskId: r,
+      };
+
+      isAllocatedByTaskId = <String, bool>{
+        for (final t in tasks) t.id: refByTaskId.containsKey(t.id),
+      };
+
+      allocationRankByTaskId = <String, int>{
+        for (final t in tasks)
+          if (refByTaskId[t.id] != null)
+            t.id: refByTaskId[t.id]!.allocationRank,
+      };
+
+      qualifyingValueIdByTaskId = <String, String>{
+        for (final t in tasks)
+          if (refByTaskId[t.id]?.qualifyingValueId != null)
+            t.id: refByTaskId[t.id]!.qualifyingValueId!,
+      };
+    }
+
     final hasAny =
         valueStatsByValueId.isNotEmpty ||
         totalRecentCompletions != null ||
         openTaskCounts != null ||
-        agendaTagByTaskId.isNotEmpty;
+        agendaTagByTaskId.isNotEmpty ||
+        isAllocatedByTaskId.isNotEmpty ||
+        allocationRankByTaskId.isNotEmpty ||
+        qualifyingValueIdByTaskId.isNotEmpty;
     if (!hasAny) return null;
 
     return EnrichmentResultV2(
@@ -867,6 +504,9 @@ class SectionDataService {
       totalRecentCompletions: totalRecentCompletions,
       openTaskCounts: openTaskCounts,
       agendaTagByTaskId: agendaTagByTaskId,
+      isAllocatedByTaskId: isAllocatedByTaskId,
+      allocationRankByTaskId: allocationRankByTaskId,
+      qualifyingValueIdByTaskId: qualifyingValueIdByTaskId,
     );
   }
 
@@ -932,41 +572,64 @@ class SectionDataService {
 
     final map = <String, AgendaTagV2>{};
     for (final task in tasks) {
-      final start = task.startDate;
-      final deadline = task.deadlineDate;
+      final start = task.occurrence?.date ?? task.startDate;
+      final deadline = task.occurrence?.deadline ?? task.deadlineDate;
+
+      final startDay = start == null
+          ? null
+          : DateTime(start.year, start.month, start.day);
+      final deadlineDay = deadline == null
+          ? null
+          : DateTime(deadline.year, deadline.month, deadline.day);
 
       final hasSameStartAndDeadline =
-          start != null &&
-          deadline != null &&
-          DateTime(start.year, start.month, start.day) ==
-              DateTime(deadline.year, deadline.month, deadline.day);
+          startDay != null && deadlineDay != null && startDay == deadlineDay;
 
       final isInProgressToday =
           !hasSameStartAndDeadline &&
-          start != null &&
-          deadline != null &&
-          today.isAfter(DateTime(start.year, start.month, start.day)) &&
-          today.isBefore(DateTime(deadline.year, deadline.month, deadline.day));
+          startDay != null &&
+          deadlineDay != null &&
+          today.isAfter(startDay) &&
+          today.isBefore(deadlineDay);
 
       if (isInProgressToday) {
         map[task.id] = AgendaTagV2.inProgress;
         continue;
       }
 
-      final startsToday =
-          start != null &&
-          DateTime(start.year, start.month, start.day) == today;
-      final dueToday =
-          deadline != null &&
-          DateTime(deadline.year, deadline.month, deadline.day) == today;
+      final startsToday = startDay != null && startDay == today;
+      final dueToday = deadlineDay != null && deadlineDay == today;
 
       // Prefer starts/due over dateField-driven behavior so tags are consistent
       // anywhere `TaskTileVariant.agenda` is used.
       if (startsToday) {
         map[task.id] = AgendaTagV2.starts;
-      } else if (dueToday) {
-        map[task.id] = AgendaTagV2.due;
+        continue;
       }
+      if (dueToday) {
+        map[task.id] = AgendaTagV2.due;
+        continue;
+      }
+
+      final derivedDate = switch (dateField) {
+        AgendaDateFieldV2.deadlineDate => deadline,
+        AgendaDateFieldV2.startDate => start,
+        AgendaDateFieldV2.scheduledFor => task.occurrence?.date ?? start,
+      };
+      if (derivedDate == null) continue;
+
+      final derivedDay = DateTime(
+        derivedDate.year,
+        derivedDate.month,
+        derivedDate.day,
+      );
+      if (derivedDay != today) continue;
+
+      map[task.id] = switch (dateField) {
+        AgendaDateFieldV2.deadlineDate => AgendaTagV2.due,
+        AgendaDateFieldV2.startDate => AgendaTagV2.starts,
+        AgendaDateFieldV2.scheduledFor => AgendaTagV2.starts,
+      };
     }
 
     return map;

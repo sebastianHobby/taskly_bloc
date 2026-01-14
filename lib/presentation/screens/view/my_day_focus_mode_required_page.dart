@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 
-/// Full-screen gate shown when My Day requires focus-mode setup.
+/// Full-screen gate shown when My Day prerequisites are missing.
 class MyDayFocusModeRequiredPage extends StatelessWidget {
   const MyDayFocusModeRequiredPage({super.key});
 
@@ -196,7 +196,7 @@ class MyDayFocusModeRequiredPage extends StatelessWidget {
                                   );
                                 },
                                 icon: const Icon(Icons.tune),
-                                label: const Text('Choose Focus Mode'),
+                                label: const Text('Finish Setup'),
                               ),
                             ),
                           ],

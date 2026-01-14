@@ -65,6 +65,7 @@ class ScreenTemplateWidget extends StatelessWidget {
           settingsRepository: getIt<SettingsRepositoryContract>(),
           attentionRepository:
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
+          valueRepository: getIt(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),
@@ -73,6 +74,7 @@ class ScreenTemplateWidget extends StatelessWidget {
           settingsRepository: getIt<SettingsRepositoryContract>(),
           attentionRepository:
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
+          valueRepository: getIt(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),
@@ -81,6 +83,7 @@ class ScreenTemplateWidget extends StatelessWidget {
           settingsRepository: getIt<SettingsRepositoryContract>(),
           attentionRepository:
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
+          valueRepository: getIt(),
         )..add(const FocusSetupEvent.started()),
         child: const FocusSetupWizardPage(),
       ),

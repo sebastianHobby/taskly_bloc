@@ -7,7 +7,6 @@ import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart'
 import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart'
     as sort_preferences;
@@ -168,30 +167,6 @@ class ScreenQueryBuilder {
       TaskDataConfig(:final query) => query,
       _ => null,
     };
-  }
-
-  /// Builds a [TaskQuery] from a [SectionRef] if it represents an allocation.
-  TaskQuery? buildTaskQueryFromAllocationSectionRef({
-    required SectionRef section,
-    required DateTime now,
-  }) {
-    if (section.templateId != SectionTemplateId.allocation) return null;
-
-    final params = AllocationSectionParams.fromJson(section.params);
-    final query = params.sourceFilter;
-    if (query != null) return query;
-
-    // Default: all incomplete tasks
-    return TaskQuery(
-      filter: const QueryFilter(
-        shared: [
-          TaskBoolPredicate(
-            field: TaskBoolField.completed,
-            operator: BoolOperator.isFalse,
-          ),
-        ],
-      ),
-    );
   }
 
   /// Builds a [TaskQuery] from a [SectionRef] if it represents an agenda.

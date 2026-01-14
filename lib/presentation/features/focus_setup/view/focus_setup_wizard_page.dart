@@ -41,6 +41,7 @@ class FocusSetupWizardPage extends StatelessWidget {
             FocusSetupWizardStep.selectFocusMode => 'Select Focus Mode',
             FocusSetupWizardStep.allocationStrategy => 'Allocation Strategy',
             FocusSetupWizardStep.reviewSchedule => 'Review Schedule',
+            FocusSetupWizardStep.valuesCta => 'Define Your Values',
             FocusSetupWizardStep.finalize => 'Finalize Settings',
           };
 
@@ -67,8 +68,9 @@ class FocusSetupWizardPage extends StatelessWidget {
                 },
               ),
               actions: [
-                if (state.stepIndex != 0 &&
-                    state.stepIndex < state.maxStepIndex)
+                if (state.stepIndex < state.maxStepIndex &&
+                    state.currentStep != FocusSetupWizardStep.selectFocusMode &&
+                    state.currentStep != FocusSetupWizardStep.valuesCta)
                   TextButton(
                     onPressed: state.canGoNext
                         ? () => context.read<FocusSetupBloc>().add(
@@ -113,7 +115,8 @@ class FocusSetupWizardPage extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          if (state.stepIndex == 0)
+                          if (state.currentStep ==
+                              FocusSetupWizardStep.selectFocusMode)
                             Container(
                               width: double.infinity,
                               padding: const EdgeInsets.fromLTRB(
@@ -153,6 +156,71 @@ class FocusSetupWizardPage extends StatelessWidget {
                                       : null,
                                   child: const Text('Confirm Selection'),
                                 ),
+                              ),
+                            ),
+                          if (state.currentStep ==
+                              FocusSetupWizardStep.valuesCta)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                16,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    theme.scaffoldBackgroundColor.withOpacity(
+                                      0,
+                                    ),
+                                    theme.scaffoldBackgroundColor.withOpacity(
+                                      0.9,
+                                    ),
+                                    theme.scaffoldBackgroundColor,
+                                  ],
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (state.valuesCount == 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 8),
+                                      child: Text(
+                                        'Add at least one Value to continue.',
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.7),
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: FilledButton(
+                                      style: FilledButton.styleFrom(
+                                        minimumSize: const Size.fromHeight(56),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                      ),
+                                      onPressed: state.canGoNext
+                                          ? () => context
+                                                .read<FocusSetupBloc>()
+                                                .add(
+                                                  const FocusSetupEvent.nextPressed(),
+                                                )
+                                          : null,
+                                      child: const Text('Continue'),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           if (state.stepIndex == state.maxStepIndex)
@@ -204,8 +272,124 @@ class _StepBody extends StatelessWidget {
       FocusSetupWizardStep.selectFocusMode => _FocusModeStep(state: state),
       FocusSetupWizardStep.allocationStrategy => _AllocationStep(state: state),
       FocusSetupWizardStep.reviewSchedule => _ReviewScheduleStep(state: state),
+      FocusSetupWizardStep.valuesCta => _ValuesCtaStep(state: state),
       FocusSetupWizardStep.finalize => _FinalizeStep(state: state),
     };
+  }
+}
+
+class _ValuesCtaStep extends StatefulWidget {
+  const _ValuesCtaStep({required this.state});
+
+  final FocusSetupState state;
+
+  @override
+  State<_ValuesCtaStep> createState() => _ValuesCtaStepState();
+}
+
+class _ValuesCtaStepState extends State<_ValuesCtaStep> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _addValue(BuildContext context, String name) {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+
+    context.read<FocusSetupBloc>().add(
+      FocusSetupEvent.quickAddValueRequested(trimmed),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    const suggestions = <String>[
+      'Health',
+      'Family',
+      'Learning',
+      'Deep Work',
+      'Friendship',
+      'Creativity',
+    ];
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          'Values help Taskly prioritize and group tasks.',
+          style: theme.textTheme.bodyLarge,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Add a few values you want your day to reflect.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.75),
+          ),
+        ),
+        const SizedBox(height: 24),
+        TextField(
+          controller: _controller,
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            labelText: 'New value',
+            hintText: 'e.g., Health',
+            suffixIcon: IconButton(
+              tooltip: 'Add value',
+              icon: const Icon(Icons.add),
+              onPressed: () {
+                _addValue(context, _controller.text);
+                _controller.clear();
+              },
+            ),
+          ),
+          onSubmitted: (value) {
+            _addValue(context, value);
+            _controller.clear();
+          },
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            for (final s in suggestions)
+              ActionChip(
+                label: Text(s),
+                onPressed: () => _addValue(context, s),
+              ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.favorite,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    widget.state.valuesCount == 0
+                        ? 'No values yet'
+                        : 'Values added: ${widget.state.valuesCount}',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

@@ -2,6 +2,7 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
@@ -13,12 +14,15 @@ class _MockSettingsRepository extends Mock
 class _MockAttentionRepository extends Mock
     implements AttentionRepositoryContract {}
 
+class _MockValueRepository extends Mock implements ValueRepositoryContract {}
+
 void main() {
   blocTest<FocusSetupBloc, FocusSetupState>(
     'allocationResetToDefaultPressed resets draft strategy fields to preset',
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
       attentionRepository: _MockAttentionRepository(),
+      valueRepository: _MockValueRepository(),
     ),
     seed: () => FocusSetupState(
       isLoading: false,
@@ -81,6 +85,7 @@ void main() {
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
       attentionRepository: _MockAttentionRepository(),
+      valueRepository: _MockValueRepository(),
     ),
     seed: () => const FocusSetupState(
       isLoading: false,
@@ -131,6 +136,7 @@ void main() {
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
       attentionRepository: _MockAttentionRepository(),
+      valueRepository: _MockValueRepository(),
     ),
     seed: () => const FocusSetupState(
       isLoading: false,
