@@ -77,6 +77,10 @@ export 'pump_app.dart';
 export 'custom_matchers.dart';
 export 'fallback_values.dart';
 export 'bloc_test_helpers.dart';
+export 'checks.dart';
+export 'disposables.dart';
+export 'test_clock.dart';
+export 'test_environment.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Specialized Test Helpers

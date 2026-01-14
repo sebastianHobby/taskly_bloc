@@ -17,7 +17,6 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_imports.dart';
@@ -35,8 +34,11 @@ class _MockAuthBloc extends MockBloc<AuthEvent, AppAuthState>
 
 void main() {
   setUpAll(() {
+    setUpAllTestEnvironment();
     registerFallbackValue(SystemScreenSpecs.myDay);
   });
+
+  setUp(setUpTestEnvironment);
 
   group('System menu items (widget) load guards', () {
     late _MockScreenSpecDataInterpreter screenSpecInterpreter;
@@ -49,8 +51,8 @@ void main() {
     late _MockAuthBloc authBloc;
 
     setUp(() async {
-      initializeTalkerForTest();
       await getIt.reset();
+      addTearDown(getIt.reset);
 
       screenSpecInterpreter = _MockScreenSpecDataInterpreter();
       settingsRepository = MockSettingsRepositoryContract();
@@ -106,10 +108,6 @@ void main() {
         ..registerSingleton<TaskRepositoryContract>(taskRepository)
         ..registerSingleton<ProjectRepositoryContract>(projectRepository)
         ..registerSingleton<ValueRepositoryContract>(valueRepository);
-    });
-
-    tearDown(() async {
-      await getIt.reset();
     });
 
     testWidgetsSafe(

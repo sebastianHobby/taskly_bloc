@@ -418,6 +418,56 @@ broadly applicable.
 - `ReviewItemTileVariant`: `standard`
 
 **When to add a new variant**
+
+### 6.6 Presentation-only list filters (filter bar pattern)
+
+Some list-style modules support optional, *presentation-only* filter controls
+that are enabled by typed params and rendered by the section renderer.
+
+This pattern exists to let system screens opt into lightweight filtering
+without introducing new screen templates, domain concepts, or persistence.
+
+#### 6.6.1 What is configurable (domain)
+
+List-like params expose an optional `filters` field:
+- `ListSectionParamsV2.filters`: `SectionFilterSpecV2`
+  - [lib/domain/screens/templates/params/list_section_params_v2.dart](../../lib/domain/screens/templates/params/list_section_params_v2.dart)
+- `InterleavedListSectionParamsV2.filters`: `SectionFilterSpecV2`
+  - [lib/domain/screens/templates/params/interleaved_list_section_params_v2.dart](../../lib/domain/screens/templates/params/interleaved_list_section_params_v2.dart)
+
+`SectionFilterSpecV2` is intentionally *small* and controls only:
+- which controls are visible (e.g. projects-only toggle, value picker)
+- how value filtering behaves (e.g. any-values vs primary-only)
+
+Important: enabling `filters` does **not** change interpreter behavior or data
+fetching. The domain produces the same `items` stream.
+
+#### 6.6.2 What is owned by presentation (state + UI)
+
+Filter state is ephemeral and owned by the renderer (presentation layer). It is
+not persisted and does not flow through `ScreenSpecDataInterpreter`.
+
+Current implementation notes:
+- The interleaved list renderer holds filter state (e.g. selected value id,
+  projects-only toggle) and filters `ScreenItem`s in-memory.
+  - [lib/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart](../../lib/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart)
+- Reusable filter UI belongs in template-level widgets under presentation:
+  - [lib/presentation/screens/templates/widgets/section_filter_bar_v2.dart](../../lib/presentation/screens/templates/widgets/section_filter_bar_v2.dart)
+
+Rationale:
+- The unified screen model stays typed/config-driven.
+- The domain remains the source of truth for *what exists*; filters are a local
+  view concern for *what to show right now*.
+
+#### 6.6.3 When not to use this pattern
+
+Use a different mechanism when:
+- The filter must affect the underlying query/data source.
+  - Prefer encoding it into `DataConfig`/query params so the interpreter fetches
+    the correct data.
+- The filter must persist across sessions/screens.
+  - Prefer screen preferences persistence or a dedicated domain setting.
+
 - Add a new enum value only when a *real* screen requires a distinct presentation and there is already (or will be) a concrete widget renderer for it.
 - Keep variants narrowly scoped to the entity they render (task/project/value/attention/review). Avoid "mega variants" that implicitly change multiple unrelated UI decisions.
 

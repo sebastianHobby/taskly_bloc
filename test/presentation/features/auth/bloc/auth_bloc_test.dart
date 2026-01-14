@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 
+import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 
 // Mock classes for Supabase types
@@ -22,9 +20,11 @@ void main() {
   late MockSession mockSession;
 
   setUpAll(() {
-    initializeTalkerForTest();
+    setUpAllTestEnvironment();
     registerFallbackValue('');
   });
+
+  setUp(setUpTestEnvironment);
 
   setUp(() {
     authRepo = MockAuthRepositoryContract();

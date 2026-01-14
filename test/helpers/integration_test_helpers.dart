@@ -16,6 +16,8 @@
 /// group('Screen loading flow', () {
 ///   late IntegrationTestContext ctx;
 ///
+///   setUpAll(setUpAllTestEnvironment);
+///
 ///   setUp(() async {
 ///     ctx = await IntegrationTestContext.create();
 ///   });
@@ -52,6 +54,7 @@ import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart'
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
+import 'disposables.dart';
 import 'test_db.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -161,8 +164,7 @@ class IntegrationTestContext {
   final ScreenDefinitionsRepositoryContract screensRepository;
   final SettingsRepositoryContract settingsRepository;
 
-  final List<BlocBase<dynamic>> _createdBlocs = [];
-  final List<StreamSubscription<dynamic>> _subscriptions = [];
+  final DisposableBag _bag = DisposableBag();
 
   /// Sets up preferences for all system screens.
   ///
@@ -185,29 +187,19 @@ class IntegrationTestContext {
   /// Seeds a single custom screen definition into the database.
   /// Tracks a BLoC for automatic cleanup.
   T trackBloc<T extends BlocBase<dynamic>>(T bloc) {
-    _createdBlocs.add(bloc);
+    _bag.add(bloc.close);
     return bloc;
   }
 
   /// Tracks a stream subscription for automatic cleanup.
   StreamSubscription<T> trackSubscription<T>(StreamSubscription<T> sub) {
-    _subscriptions.add(sub);
+    _bag.add(sub.cancel);
     return sub;
   }
 
   /// Disposes all resources.
   Future<void> dispose() async {
-    // Cancel subscriptions first
-    for (final sub in _subscriptions) {
-      await sub.cancel();
-    }
-    _subscriptions.clear();
-
-    // Close BLoCs
-    for (final bloc in _createdBlocs) {
-      await bloc.close();
-    }
-    _createdBlocs.clear();
+    await _bag.dispose();
 
     // Close database
     await closeTestDb(db);

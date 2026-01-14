@@ -16,6 +16,8 @@ import 'package:taskly_bloc/domain/analytics/model/correlation_request.dart';
 
 import '../fixtures/test_data.dart';
 
+bool _fallbackValuesRegistered = false;
+
 /// Fake implementations for mocktail's any() matcher.
 class FakeTaskQuery extends Fake implements TaskQuery {}
 
@@ -41,6 +43,9 @@ class FakeDisplayConfig extends Fake implements DisplayConfig {}
 /// }
 /// ```
 void registerAllFallbackValues() {
+  if (_fallbackValuesRegistered) return;
+  _fallbackValuesRegistered = true;
+
   // Initialize talker for tests (safe to call multiple times)
   initializeTalkerForTest();
 

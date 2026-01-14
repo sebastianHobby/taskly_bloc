@@ -52,6 +52,7 @@ class TestData {
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? now,
     DateTime? startDate,
     DateTime? deadlineDate,
     String? projectId,
@@ -63,11 +64,11 @@ class TestData {
     List<Value>? values,
     OccurrenceData? occurrence,
   }) {
-    final now = DateTime.now();
+    final resolvedNow = now ?? DateTime.now();
     return Task(
       id: id ?? _nextId('task'),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
+      createdAt: createdAt ?? resolvedNow,
+      updatedAt: updatedAt ?? resolvedNow,
       name: name,
       completed: completed,
       description: description,
@@ -91,6 +92,7 @@ class TestData {
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? now,
     DateTime? startDate,
     DateTime? deadlineDate,
     int? priority,
@@ -100,11 +102,11 @@ class TestData {
     List<Value>? values,
     OccurrenceData? occurrence,
   }) {
-    final now = DateTime.now();
+    final resolvedNow = now ?? DateTime.now();
     return Project(
       id: id ?? _nextId('project'),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
+      createdAt: createdAt ?? resolvedNow,
+      updatedAt: updatedAt ?? resolvedNow,
       name: name,
       completed: completed,
       description: description,
@@ -127,12 +129,13 @@ class TestData {
     ValuePriority priority = ValuePriority.medium,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? now,
   }) {
-    final now = DateTime.now();
+    final resolvedNow = now ?? DateTime.now();
     return Value(
       id: id ?? _nextId('value'),
-      createdAt: createdAt ?? now,
-      updatedAt: updatedAt ?? now,
+      createdAt: createdAt ?? resolvedNow,
+      updatedAt: updatedAt ?? resolvedNow,
       name: name,
       color: color,
       iconName: iconName,
@@ -150,9 +153,10 @@ class TestData {
     String? completionId,
     DateTime? completedAt,
     String? completionNotes,
+    DateTime? now,
   }) {
     return OccurrenceData(
-      date: date ?? DateTime.now(),
+      date: date ?? (now ?? DateTime.now()),
       deadline: deadline,
       originalDate: originalDate,
       isRescheduled: isRescheduled,
@@ -232,20 +236,21 @@ class TestData {
     DateTime? generatedAt,
     DateTime? periodStart,
     DateTime? periodEnd,
+    DateTime? now,
     Map<String, dynamic> metadata = const {},
     double? score,
     double? confidence,
     bool isPositive = true,
   }) {
-    final now = DateTime.now();
+    final resolvedNow = now ?? DateTime.now();
     return AnalyticsInsight(
       id: id ?? _nextId('insight'),
       insightType: insightType,
       title: title,
       description: description,
-      generatedAt: generatedAt ?? now,
-      periodStart: periodStart ?? now.subtract(const Duration(days: 7)),
-      periodEnd: periodEnd ?? now,
+      generatedAt: generatedAt ?? resolvedNow,
+      periodStart: periodStart ?? resolvedNow.subtract(const Duration(days: 7)),
+      periodEnd: periodEnd ?? resolvedNow,
       metadata: metadata,
       score: score,
       confidence: confidence,
@@ -256,11 +261,12 @@ class TestData {
   static DateRange dateRange({
     DateTime? start,
     DateTime? end,
+    DateTime? now,
   }) {
-    final now = DateTime.now();
+    final resolvedNow = now ?? DateTime.now();
     return DateRange(
-      start: start ?? now.subtract(const Duration(days: 7)),
-      end: end ?? now,
+      start: start ?? resolvedNow.subtract(const Duration(days: 7)),
+      end: end ?? resolvedNow,
     );
   }
 
@@ -329,12 +335,13 @@ class TestData {
     String? id,
     String name = 'Completed Task',
     DateTime? completedAt,
+    DateTime? now,
   }) {
     return task(
       id: id,
       name: name,
       completed: true,
-      updatedAt: completedAt ?? DateTime.now(),
+      updatedAt: completedAt ?? (now ?? DateTime.now()),
     );
   }
 
@@ -343,11 +350,13 @@ class TestData {
     String? id,
     String name = 'Overdue Task',
     int daysOverdue = 1,
+    DateTime? now,
   }) {
+    final resolvedNow = now ?? DateTime.now();
     return task(
       id: id,
       name: name,
-      deadlineDate: DateTime.now().subtract(Duration(days: daysOverdue)),
+      deadlineDate: resolvedNow.subtract(Duration(days: daysOverdue)),
     );
   }
 
@@ -355,12 +364,13 @@ class TestData {
   static Task recurringDailyTask({
     String? id,
     String name = 'Daily Task',
+    DateTime? now,
   }) {
     return task(
       id: id,
       name: name,
       repeatIcalRrule: 'FREQ=DAILY',
-      startDate: DateTime.now(),
+      startDate: now ?? DateTime.now(),
     );
   }
 
@@ -368,12 +378,13 @@ class TestData {
   static Task recurringWeeklyTask({
     String? id,
     String name = 'Weekly Task',
+    DateTime? now,
   }) {
     return task(
       id: id,
       name: name,
       repeatIcalRrule: 'FREQ=WEEKLY',
-      startDate: DateTime.now(),
+      startDate: now ?? DateTime.now(),
     );
   }
 
@@ -409,11 +420,12 @@ class TestData {
   static Task taskDueToday({
     String? id,
     String name = 'Due Today',
+    DateTime? now,
   }) {
     return task(
       id: id,
       name: name,
-      deadlineDate: DateTime.now(),
+      deadlineDate: now ?? DateTime.now(),
     );
   }
 
@@ -421,11 +433,13 @@ class TestData {
   static Task taskDueTomorrow({
     String? id,
     String name = 'Due Tomorrow',
+    DateTime? now,
   }) {
+    final resolvedNow = now ?? DateTime.now();
     return task(
       id: id,
       name: name,
-      deadlineDate: DateTime.now().add(const Duration(days: 1)),
+      deadlineDate: resolvedNow.add(const Duration(days: 1)),
     );
   }
 

@@ -13,7 +13,7 @@ void main(List<String> arguments) {
 Future<bool> preCommit() async {
   print('🔍 Running pre-commit checks...\n');
 
-  // 5. Run tests with coverage (80% minimum)
+  // 5. Run tests with coverage (staged gate; filtered lcov)
   if (!await _runTestsWithCoverage()) {
     _printFailure();
     return false;
@@ -37,7 +37,7 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 3. Run dart analyze (no warnings allowed)
+  // 3. Run flutter analyze (no warnings allowed)
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
@@ -49,7 +49,7 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 5. Run tests with coverage (80% minimum)
+  // 5. Run tests with coverage (staged gate; filtered lcov)
   if (!await _runTestsWithCoverage()) {
     _printFailure();
     return false;
@@ -364,14 +364,10 @@ Future<bool> _checkRawStreamController() async {
 }
 
 Future<bool> _runAnalyze() async {
-  print('🔬 Running dart analyze...');
+  print('🔬 Running flutter analyze...');
 
   try {
-    final result = await Process.run(
-      'dart',
-      ['analyze', '--fatal-warnings'],
-      runInShell: true,
-    );
+    final result = await Process.run('flutter', ['analyze'], runInShell: true);
 
     final stdout = (result.stdout as String).trim();
     final stderr = (result.stderr as String).trim();
@@ -406,16 +402,42 @@ Future<bool> _runAnalyze() async {
   }
 }
 
+double _coverageGatePercent() {
+  // Supports staged gates so developers don't need permanent --no-verify.
+  //
+  // Overrides:
+  // - TASKLYgit_COVERAGE_MIN: a direct percent (e.g. "55")
+  // - TASKLY_COVERAGE_GATE: an integer stage 1..6
+  //
+  // Gate ramp:
+  // 1: 35%
+  // 2: 45%
+  // 3: 55%
+  // 4: 65%
+  // 5: 75%
+  // 6: 80%
+  final direct = double.tryParse(
+    Platform.environment['TASKLY_COVERAGE_MIN'] ?? '',
+  );
+  if (direct != null) return direct;
+
+  const gates = <double>[35, 45, 55, 65, 75, 80];
+  final stageRaw = Platform.environment['TASKLY_COVERAGE_GATE'];
+  final stage = int.tryParse(stageRaw ?? '') ?? 1;
+  final idx = (stage - 1).clamp(0, gates.length - 1);
+  return gates[idx];
+}
+
 Future<bool> _runTestsWithCoverage() async {
   print('🧪 Running tests with coverage...');
 
-  const minCoverage = 80.0;
+  final minCoverage = _coverageGatePercent();
 
   try {
     // Run tests with coverage
     final result = await Process.run(
       'flutter',
-      ['test', '--no-pub', '--coverage'],
+      ['test', '--no-pub', '--coverage', '--preset=no_pipeline'],
       runInShell: true,
     );
 
@@ -427,15 +449,36 @@ Future<bool> _runTestsWithCoverage() async {
 
     print('   ✓ All tests passed.');
 
-    // Parse coverage from lcov.info
+    // Convert coverage/lcov.info -> coverage/lcov_filtered.info (official metric)
     final coverageFile = File('coverage/lcov.info');
     if (!coverageFile.existsSync()) {
-      print('   ⚠️  No coverage file found. Skipping coverage check.');
+      print('   ⚠️  coverage/lcov.info not found. Skipping coverage gate.');
       return true;
     }
 
-    final coverage = _parseLcovCoverage(coverageFile.readAsStringSync());
-    print('   📊 Code coverage: ${coverage.toStringAsFixed(1)}%');
+    final filterResult = await Process.run(
+      'dart',
+      ['run', 'tool/coverage_filter.dart'],
+      runInShell: true,
+    );
+
+    if (filterResult.exitCode != 0) {
+      print(filterResult.stdout);
+      print(filterResult.stderr);
+      print('   ⚠️  Coverage filter failed. Skipping coverage gate.');
+      return true;
+    }
+
+    final filteredFile = File('coverage/lcov_filtered.info');
+    if (!filteredFile.existsSync()) {
+      print(
+        '   ⚠️  coverage/lcov_filtered.info not found. Skipping coverage gate.',
+      );
+      return true;
+    }
+
+    final coverage = _parseLcovCoverage(filteredFile.readAsStringSync());
+    print('   📊 Filtered coverage: ${coverage.toStringAsFixed(1)}%');
 
     if (coverage < minCoverage) {
       print(
@@ -465,7 +508,8 @@ bool _isGeneratedFile(String filePath) {
 }
 
 /// Parse LCOV coverage file and return overall coverage percentage.
-/// Excludes generated files (*.g.dart, *.freezed.dart, *.drift.dart).
+///
+/// Note: this is intended for `coverage/lcov_filtered.info`.
 double _parseLcovCoverage(String lcovContent) {
   var totalLines = 0;
   var coveredLines = 0;

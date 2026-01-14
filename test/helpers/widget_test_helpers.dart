@@ -35,9 +35,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 
+import 'pump_app.dart';
 import 'test_helpers.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -68,14 +67,11 @@ extension WidgetPumpExtensions on WidgetTester {
     ThemeData? theme,
     Locale? locale,
   }) async {
-    await pumpWidget(
-      MaterialApp(
-        theme: theme ?? AppTheme.lightTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: locale,
-        home: widget,
-      ),
+    await pumpTasklyApp(
+      this,
+      home: widget,
+      theme: theme,
+      locale: locale,
     );
   }
 
@@ -97,15 +93,12 @@ extension WidgetPumpExtensions on WidgetTester {
     required Widget child,
     ThemeData? theme,
   }) async {
-    await pumpWidget(
-      MaterialApp(
-        theme: theme ?? AppTheme.lightTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: BlocProvider<T>.value(
-          value: bloc,
-          child: child,
-        ),
+    await pumpTasklyApp(
+      this,
+      theme: theme,
+      home: BlocProvider<T>.value(
+        value: bloc,
+        child: child,
       ),
     );
   }
@@ -126,15 +119,12 @@ extension WidgetPumpExtensions on WidgetTester {
     required Widget child,
     ThemeData? theme,
   }) async {
-    await pumpWidget(
-      MaterialApp(
-        theme: theme ?? AppTheme.lightTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MultiBlocProvider(
-          providers: providers,
-          child: child,
-        ),
+    await pumpTasklyApp(
+      this,
+      theme: theme,
+      home: MultiBlocProvider(
+        providers: providers,
+        child: child,
       ),
     );
   }
@@ -157,14 +147,7 @@ extension WidgetPumpExtensions on WidgetTester {
     required GoRouter router,
     ThemeData? theme,
   }) async {
-    await pumpWidget(
-      MaterialApp.router(
-        theme: theme ?? AppTheme.lightTheme(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        routerConfig: router,
-      ),
-    );
+    await pumpTasklyApp(this, router: router, theme: theme);
   }
 
   /// Pumps frames and waits for a widget to appear, with timeout.

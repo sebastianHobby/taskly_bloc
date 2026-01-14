@@ -10,6 +10,7 @@ import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/presentation/screens/templates/widgets/section_filter_bar_v2.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
@@ -55,18 +56,16 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   @override
   Widget build(BuildContext context) {
     const registry = ScreenItemTileRegistry();
+    final items = widget.data.items;
 
-    if (widget.data.items.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-
-    final filterSpec = widget.params.filters;
-    final showProjectsOnlyToggle =
-        filterSpec?.enableProjectsOnlyToggle ?? false;
-    final showValueDropdown = filterSpec?.enableValueDropdown ?? false;
+    final filters = widget.params.filters;
+    final showProjectsOnlyToggle = filters?.enableProjectsOnlyToggle ?? false;
+    final showValueDropdown = filters?.enableValueDropdown ?? false;
+    final valueFilterMode =
+        filters?.valueFilterMode ?? ValueFilterModeV2.anyValues;
 
     final availableValues = showValueDropdown
-        ? _collectAvailableValues(widget.data.items)
+        ? _collectAvailableValues(items)
         : const <Value>[];
 
     final header = _buildHeader(
@@ -77,11 +76,22 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     );
 
     final filteredItems = _applyFiltersToItems(
-      items: widget.data.items,
-      valueFilterMode:
-          filterSpec?.valueFilterMode ?? ValueFilterModeV2.anyValues,
+      items: items,
+      valueFilterMode: valueFilterMode,
       showValueDropdown: showValueDropdown,
     );
+
+    if (filteredItems.isEmpty) {
+      final hasActiveFilters = _projectsOnly || _selectedValueId != null;
+      return _EmptyStateSliverGroup(
+        header: header,
+        hasActiveFilters: hasActiveFilters,
+        onClearFilters: () => setState(() {
+          _projectsOnly = false;
+          _selectedValueId = null;
+        }),
+      );
+    }
 
     return widget.params.layout.when(
       flatList: (separator) {
@@ -101,16 +111,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         );
       },
       timelineMonthSections: (_) {
-        // Interleaved lists are primarily used for mixed entity groupings.
-        // For now, treat timeline grouping as a flat list.
+        // This renderer is interleaved (tasks/projects/values). Fall back to a
+        // simple flat list for timeline layouts.
         return SliverSeparatedList(
           header: header,
           itemCount: filteredItems.length,
-          separatorBuilder: (context, index) => _separatorFor(
-            separator: ListSeparatorV2.interleavedAuto,
-            current: filteredItems[index],
-            next: filteredItems[index + 1],
-          ),
+          separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, index) => _buildItem(
             context,
             registry: registry,
@@ -154,15 +160,21 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         children: [
           if (title != null) TasklyHeader(title: title),
           if (showProjectsOnlyToggle || showValueDropdown)
-            _FilterBar(
-              projectsOnly: _projectsOnly,
+            SectionFilterBarV2(
               showProjectsOnlyToggle: showProjectsOnlyToggle,
-              selectedValueId: _selectedValueId,
-              showValueDropdown: showValueDropdown,
-              values: availableValues,
+              projectsOnly: _projectsOnly,
               onProjectsOnlyChanged: (v) => setState(() => _projectsOnly = v),
+              showValuePicker: showValueDropdown,
+              values: availableValues,
+              selectedValueId: _selectedValueId,
               onSelectedValueChanged: (v) =>
                   setState(() => _selectedValueId = v),
+              onClearFilters: (_projectsOnly || _selectedValueId != null)
+                  ? () => setState(() {
+                      _projectsOnly = false;
+                      _selectedValueId = null;
+                    })
+                  : null,
             ),
         ],
       ),
@@ -758,83 +770,6 @@ class _FallbackProjectHeaderRow extends StatelessWidget {
   }
 }
 
-class _FilterBar extends StatelessWidget {
-  const _FilterBar({
-    required this.projectsOnly,
-    required this.showProjectsOnlyToggle,
-    required this.selectedValueId,
-    required this.showValueDropdown,
-    required this.values,
-    required this.onProjectsOnlyChanged,
-    required this.onSelectedValueChanged,
-  });
-
-  final bool projectsOnly;
-  final bool showProjectsOnlyToggle;
-  final String? selectedValueId;
-  final bool showValueDropdown;
-  final List<Value> values;
-  final ValueChanged<bool> onProjectsOnlyChanged;
-  final ValueChanged<String?> onSelectedValueChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return Card(
-      elevation: 0,
-      color: scheme.surfaceContainerHighest.withOpacity(0.55),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (showProjectsOnlyToggle)
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Projects only',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  Switch(
-                    value: projectsOnly,
-                    onChanged: onProjectsOnlyChanged,
-                  ),
-                ],
-              ),
-            if (showProjectsOnlyToggle && showValueDropdown)
-              const SizedBox(height: 8),
-            if (showValueDropdown)
-              DropdownButtonFormField<String?>(
-                value: selectedValueId,
-                decoration: const InputDecoration(
-                  labelText: 'Value',
-                  isDense: true,
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('All values'),
-                  ),
-                  ...values.map(
-                    (v) => DropdownMenuItem<String?>(
-                      value: v.id,
-                      child: Text(v.name),
-                    ),
-                  ),
-                ],
-                onChanged: onSelectedValueChanged,
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _TagPill extends StatelessWidget {
   const _TagPill({required this.label});
 
@@ -857,6 +792,88 @@ class _TagPill extends StatelessWidget {
           color: colorScheme.onSecondaryContainer,
         ),
       ),
+    );
+  }
+}
+
+class _EmptyStateSliverGroup extends StatelessWidget {
+  const _EmptyStateSliverGroup({
+    required this.header,
+    required this.hasActiveFilters,
+    required this.onClearFilters,
+  });
+
+  final Widget? header;
+  final bool hasActiveFilters;
+  final VoidCallback onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final title = hasActiveFilters
+        ? 'No items match your filters'
+        : 'Nothing here yet';
+    final body = hasActiveFilters
+        ? 'Try clearing filters to see more.'
+        : 'This section will populate as you add items.';
+
+    return SliverMainAxisGroup(
+      slivers: [
+        if (header != null) SliverToBoxAdapter(child: header),
+        SliverToBoxAdapter(
+          child: Card(
+            margin: EdgeInsets.zero,
+            elevation: 0,
+            color: scheme.surfaceContainerHighest.withOpacity(0.35),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    hasActiveFilters ? Icons.filter_alt_off : Icons.inbox,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          body,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (hasActiveFilters) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: TextButton.icon(
+                              onPressed: onClearFilters,
+                              icon: const Icon(Icons.clear),
+                              label: const Text('Clear filters'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

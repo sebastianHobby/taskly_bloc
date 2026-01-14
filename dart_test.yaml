@@ -76,6 +76,11 @@ on_os:
 concurrency: 4
 reporter: expanded
 
+# Also emit structured output to a file (in addition to stdout).
+# See: https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md#file_reporters
+file_reporters:
+  json: test/last_run.json
+
 # Test retry configuration (for flaky tests)
 # retry: 2
 

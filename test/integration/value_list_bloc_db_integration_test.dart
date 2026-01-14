@@ -1,5 +1,4 @@
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_test/flutter_test.dart';
+import '../helpers/test_imports.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
@@ -8,6 +7,9 @@ import '../helpers/base_repository_helpers.dart';
 import '../mocks/fake_id_generator.dart';
 
 void main() {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+
   group('ValueListBloc (integration)', () {
     late RepositoryTestContext ctx;
     late FakeIdGenerator idGenerator;
@@ -15,15 +17,12 @@ void main() {
 
     setUp(() {
       ctx = RepositoryTestContext();
+      addTearDown(ctx.dispose);
       idGenerator = FakeIdGenerator();
       valueRepository = ValueRepository(
         driftDb: ctx.db,
         idGenerator: idGenerator,
       );
-    });
-
-    tearDown(() async {
-      await ctx.dispose();
     });
 
     blocTest<ValueListBloc, ValueListState>(

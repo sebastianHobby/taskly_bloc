@@ -1,9 +1,7 @@
-import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter_test/flutter_test.dart';
+import '../../../../helpers/test_imports.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
 import 'package:taskly_bloc/domain/core/editing/editing.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
@@ -14,12 +12,9 @@ void main() {
   late MockProjectRepositoryContract projectRepo;
   late MockValueRepositoryContract valueRepo;
 
-  setUpAll(() {
-    initializeTalkerForTest();
-    registerFallbackValue(TestData.task());
-    registerFallbackValue(TestData.project());
-    registerFallbackValue(TestData.value());
-  });
+  setUpAll(setUpAllTestEnvironment);
+
+  setUp(setUpTestEnvironment);
 
   setUp(() {
     taskRepo = MockTaskRepositoryContract();

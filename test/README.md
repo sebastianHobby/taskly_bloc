@@ -41,6 +41,16 @@ Investigation and debugging tests. Located in `diagnosis/`.
 
 ## Running Tests
 
+Prefer presets over ad-hoc tag combinations. Presets are defined in
+`dart_test.yaml` and are the canonical way to run consistent suites.
+
+Common presets:
+
+- Fast loop: `flutter test --preset=fast`
+- Broader: `flutter test --preset=quick`
+- DB confidence: `flutter test --preset=database`
+- Exclude local-stack pipeline: `flutter test --preset=no_pipeline`
+
 ### All Tests
 ```bash
 flutter test
@@ -51,11 +61,15 @@ flutter test
 flutter test --coverage
 ```
 
-### Fast Tests Only (exclude integration/slow)
+Official coverage metric in this repo:
+
+1) `flutter test --coverage`
+2) `dart run tool/coverage_filter.dart`
+3) `dart run tool/coverage_summary.dart`
+
+### Fast Tests Only
 ```bash
-flutter test --tags=fast
-# or
-flutter test --exclude-tags=integration,slow
+flutter test --preset=fast
 ```
 
 ### Specific Feature
@@ -74,67 +88,49 @@ flutter test test/presentation/features/tasks/bloc/task_detail_bloc_test.dart
 flutter test --watch
 ```
 
-## Recording Test Runs (results + timings)
+## Test output files (file_reporters)
 
-For a single command that:
-- runs tests
-- writes one folder per run (raw machine output + summary)
-- keeps only the latest few runs
+This repo configures `file_reporters` in `dart_test.yaml` to write a JSON report
+to:
 
-Use the recorder:
+- `test/last_run.json`
 
-```bash
-dart run tool/test_run_recorder.dart
-```
-
-Artifacts are written to `build_out/test_runs/<timestamp>/`:
-- `machine.jsonl`: raw `flutter test --machine` output (line-delimited JSON)
-- `stderr.txt`: anything emitted to stderr
-- `summary.json`: structured summary (totals, failures, slowest tests)
-- `summary.md`: human-readable summary
-
-If the run fails, the recorder also reruns once with `-r expanded` (by default)
-to capture full human-readable failure details:
-- `expanded_stdout.txt`
-- `expanded_stderr.txt`
-
-### Keeping the latest N runs
-
-```bash
-dart run tool/test_run_recorder.dart --keep 5
-```
-
-### Passing through flutter test args
-
-Everything after `--` is passed to `flutter test`:
-
-```bash
-dart run tool/test_run_recorder.dart -- --tags=unit
-dart run tool/test_run_recorder.dart -- --exclude-tags=integration,slow
-dart run tool/test_run_recorder.dart -- test/presentation/features/tasks/
-```
-
-### Performance metrics captured
-
-The machine protocol includes a monotonic `time` (ms since run start) for each
-`testStart`/`testDone` event. The recorder computes per-test duration as:
-
-$$durationMs = testDone.time - testStart.time$$
-
-The summary includes:
-- total wall-clock duration for the run
-- per-test durations
-- top slowest tests (by duration)
-
-### Controlling expanded output capture
-
-```bash
-dart run tool/test_run_recorder.dart --expanded failure
-dart run tool/test_run_recorder.dart --expanded never
-dart run tool/test_run_recorder.dart --expanded always
-```
+For convenience, use the VS Code task `flutter_test_report` which runs the test
+suite and copies `test/last_run.json` to a dated file under `test/`.
 
 ## Writing Tests
+
+### Recommended imports + environment setup
+
+Prefer using the shared imports and standardized setup hooks:
+
+```dart
+import '../helpers/test_imports.dart';
+
+void main() {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+}
+```
+
+Why:
+- `setUpAllTestEnvironment` ensures the test binding is initialized, talker is
+  ready, and mocktail fallback values are registered.
+- `setUpTestEnvironment` keeps per-test setup small and consistent.
+
+### Cleanup and teardown (best practice)
+
+Prefer `addTearDown` for any resource created during a test, so cleanup is
+registered immediately and still runs if the test fails early.
+
+This repo provides `autoTearDown(...)` for convenience:
+
+```dart
+final controller = autoTearDown(
+  StreamController<int>.broadcast(),
+  (c) => c.close(),
+);
+```
 
 ### Test Structure
 Follow the Arrange-Act-Assert (AAA) pattern:
@@ -172,11 +168,19 @@ Use descriptive names that explain the test scenario:
 final task = TestData.task(
   name: 'My Task',
   completed: true,
-  deadlineDate: DateTime.now(),
+  deadlineDate: TestConstants.referenceDate,
 );
 
 final project = TestData.project(name: 'My Project');
 final label = TestData.label(name: 'Urgent', type: LabelType.label);
+```
+
+Tip: Most `TestData` builders accept an optional `now:` so you can make
+time-based defaults deterministic:
+
+```dart
+final clock = TestClock(TestConstants.referenceDate);
+final task = TestData.task(now: clock.now);
 ```
 
 #### BlocTestContext
@@ -243,10 +247,18 @@ verifyNever(() => mockRepo.delete(any()));
 Register fallback values for `any()` matcher:
 ```dart
 setUpAll(() {
-  registerFallbackValue(TestData.task());
-  registerFallbackValue(TestData.project());
-  registerFallbackValue(TaskQuery.all());
+  registerAllFallbackValues();
 });
+```
+
+### Assertions
+
+`flutter_test` matchers are fine. When it improves readability, prefer
+`checks` (available via `test_imports.dart`):
+
+```dart
+check(value).isGreaterThan(0);
+check(list).length.equals(3);
 ```
 
 ### Integration Tests
@@ -361,18 +373,18 @@ blocTest<MyBloc, MyState>(
 
 ### Testing Stream Emissions
 ```dart
-test('repository emits updated data', () async {
-  final controller = StreamController<List<Task>>();
+testSafe('repository emits updated data', () async {
+  final controller = TestStreamController<List<Task>>();
   when(() => mockRepo.watchAll()).thenAnswer((_) => controller.stream);
   
   final subscription = repo.watchAll().listen(expectAsync1((tasks) {
     expect(tasks, hasLength(1));
   }));
   
-  controller.add([TestData.task()]);
+  controller.emit([TestData.task()]);
   
   await subscription.cancel();
-  await controller.close();
+  await controller.dispose();
 });
 ```
 
