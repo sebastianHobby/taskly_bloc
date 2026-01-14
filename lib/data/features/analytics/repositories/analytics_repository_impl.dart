@@ -62,45 +62,40 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
           )
         : snapshot.id;
 
-    await _database
-        .into(_database.analyticsSnapshots)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_database.update(
+          _database.analyticsSnapshots,
+        )..where((s) => s.id.equals(snapshotId))).write(
           AnalyticsSnapshotsCompanion(
-            id: Value(snapshotId),
             entityType: Value(snapshot.entityType),
             entityId: Value(snapshot.entityId),
             snapshotDate: Value(snapshot.snapshotDate),
             metrics: Value(snapshot.metrics),
           ),
         );
-  }
 
-  @override
-  Future<void> saveSnapshots(List<AnalyticsSnapshot> snapshots) async {
-    await _database.batch((batch) {
-      batch.insertAllOnConflictUpdate(
-        _database.analyticsSnapshots,
-        snapshots.map(
-          (snapshot) {
-            // Use v5 deterministic ID for snapshots
-            final snapshotId = snapshot.id.isEmpty
-                ? _idGenerator.analyticsSnapshotId(
-                    entityType: snapshot.entityType,
-                    entityId: snapshot.entityId ?? '',
-                    snapshotDate: snapshot.snapshotDate,
-                  )
-                : snapshot.id;
-
-            return AnalyticsSnapshotsCompanion(
+    if (updated == 0) {
+      await _database
+          .into(_database.analyticsSnapshots)
+          .insert(
+            AnalyticsSnapshotsCompanion(
               id: Value(snapshotId),
               entityType: Value(snapshot.entityType),
               entityId: Value(snapshot.entityId),
               snapshotDate: Value(snapshot.snapshotDate),
               metrics: Value(snapshot.metrics),
-            );
-          },
-        ),
-      );
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
+  }
+
+  @override
+  Future<void> saveSnapshots(List<AnalyticsSnapshot> snapshots) async {
+    await _database.transaction(() async {
+      for (final snapshot in snapshots) {
+        await saveSnapshot(snapshot);
+      }
     });
   }
 
@@ -208,7 +203,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
 
     await _database
         .into(_database.analyticsCorrelations)
-        .insertOnConflictUpdate(
+        .insert(
           AnalyticsCorrelationsCompanion(
             id: Value(_idGenerator.analyticsCorrelationId()),
             correlationType: Value(inferredCorrelationType),
@@ -230,6 +225,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
             statisticalSignificance: Value(significanceMap),
             performanceMetrics: Value(performanceMap),
           ),
+          mode: InsertMode.insertOrIgnore,
         );
   }
 
@@ -276,7 +272,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
             statisticalSignificance: Value(significanceMap),
             performanceMetrics: Value(performanceMap),
           ),
-          mode: InsertMode.insertOrReplace,
+          mode: InsertMode.insertOrIgnore,
         );
       }
     });
@@ -403,7 +399,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
 
     await _database
         .into(_database.analyticsInsights)
-        .insertOnConflictUpdate(
+        .insert(
           AnalyticsInsightsCompanion(
             id: Value(insightId),
             insightType: Value(insight.insightType.name),
@@ -417,6 +413,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
             periodStart: Value(insight.periodStart),
             periodEnd: Value(insight.periodEnd),
           ),
+          mode: InsertMode.insertOrIgnore,
         );
   }
 

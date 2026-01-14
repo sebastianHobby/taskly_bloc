@@ -31,6 +31,8 @@ As of the core ED/RD cutover, **tasks are editor-only**: navigating to
 `/task/:id` opens the task editor modal (there is no read-only task detail
 page).
 
+The supported entity route types are `task`, `project`, and `value`.
+
 ---
 
 ## 2) Where Things Live (Folder Map)
@@ -160,6 +162,52 @@ Entity routes use the `/:entityType/:id` pattern and are handled by
   - task: route is editor-only; opens editor modal and then returns
   - project/value: route builds a unified entity detail page
 ```
+
+### 3.4 Editor/Detail Data Contract (ED/RD) — Overview
+
+The unified screen model describes how **screens** are composed and rendered.
+Entity ED/RD flows layer on top of that routing surface using a
+FormBuilder-first editor contract.
+
+This section is intentionally high-level; the detailed, normative contract is
+in:
+
+- [doc/backlog/editor_detail_template_contracts_formbuilder.md](../backlog/editor_detail_template_contracts_formbuilder.md)
+
+#### Editor (ED) — Draft → Command
+
+- Editors hold explicit `*Draft` state (the editable form model).
+- On save, editors produce a `Create*Command` or `Update*Command`.
+- Persistence consumes commands; UI does not write directly to repositories.
+
+#### Validation — Field-addressable mapping
+
+- Domain validation returns a structured, field-addressable error model.
+- Presentation maps domain errors onto FormBuilder field errors using stable
+  field keys (plus optional form-level errors).
+
+#### Field keys — Typed and stable
+
+- Each editor defines centralized, typed field keys (avoid ad-hoc string
+  literals).
+- Field keys are used consistently for:
+  - FormBuilder field names
+  - validation/error mapping
+  - test assertions
+
+#### Action surfaces — Template owns actions
+
+- The editor template owns the action surface (save/cancel/delete placement).
+- The reusable form module is fields-only and exposes a narrow interface (e.g.
+  validate/save callbacks).
+
+#### Detail (RD) — Read/composite pages do not embed editors
+
+- Entity detail pages do not contain editor UI.
+- Editing is launched via the standardized editor entry points (typically via
+  `EditorLauncher`).
+- After the editor closes, detail UI refreshes from the offline-first source of
+  truth (reactive watches), not from editor return values.
 
 ---
 

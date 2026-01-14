@@ -89,11 +89,21 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   @override
   Future<void> upsertRule(domain_rule.AttentionRule rule) async {
     try {
-      await _db
-          .into(_db.attentionRules)
-          .insertOnConflictUpdate(
+      final updated =
+          await (_db.update(
+            _db.attentionRules,
+          )..where((t) => t.id.equals(rule.id))).write(
             _ruleToCompanion(rule, forUpdate: true),
           );
+
+      if (updated == 0) {
+        await _db
+            .into(_db.attentionRules)
+            .insert(
+              _ruleToCompanion(rule, forUpdate: false),
+              mode: InsertMode.insertOrAbort,
+            );
+      }
       talker.repositoryLog('AttentionV2', 'Upserted rule: ${rule.id}');
     } catch (e, stackTrace) {
       talker.operationFailed(
@@ -192,12 +202,28 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   Future<void> recordResolution(
     domain_resolution.AttentionResolution resolution,
   ) async {
-    await _db
-        .into(_db.attentionResolutions)
-        .insert(
-          _resolutionToCompanion(resolution),
-          mode: InsertMode.insertOrReplace,
+    final updated =
+        await (_db.update(
+          _db.attentionResolutions,
+        )..where((tbl) => tbl.id.equals(resolution.id))).write(
+          AttentionResolutionsCompanion(
+            ruleId: Value(resolution.ruleId),
+            entityId: Value(resolution.entityId),
+            entityType: Value(_entityTypeToStorage(resolution.entityType)),
+            resolvedAt: Value(resolution.resolvedAt),
+            resolutionAction: Value(
+              _mapResolutionAction(resolution.resolutionAction),
+            ),
+            actionDetails: Value(resolution.actionDetails),
+            createdAt: const Value.absent(),
+          ),
         );
+
+    if (updated == 0) {
+      await _db
+          .into(_db.attentionResolutions)
+          .insert(_resolutionToCompanion(resolution), mode: InsertMode.insert);
+    }
   }
 
   // ==========================================================================
@@ -251,11 +277,21 @@ class AttentionRepositoryV2 implements AttentionRepositoryContract {
   ) async {
     _validateEntityPair(entityType: state.entityType, entityId: state.entityId);
 
-    await _db
-        .into(_db.attentionRuleRuntimeStates)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_db.update(
+          _db.attentionRuleRuntimeStates,
+        )..where((t) => t.id.equals(state.id))).write(
           _runtimeStateToCompanion(state, forUpdate: true),
         );
+
+    if (updated == 0) {
+      await _db
+          .into(_db.attentionRuleRuntimeStates)
+          .insert(
+            _runtimeStateToCompanion(state, forUpdate: false),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
   }
 
   // ==========================================================================

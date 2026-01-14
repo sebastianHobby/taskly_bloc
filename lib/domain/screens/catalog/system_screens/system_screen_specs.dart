@@ -62,8 +62,6 @@ abstract class SystemScreenSpecs {
           params: AllocationSectionParams(
             taskTileVariant: TaskTileVariant.listTile,
             displayMode: AllocationDisplayMode.groupedByValue,
-            showExcludedWarnings: true,
-            showExcludedSection: true,
           ),
         ),
       ],
@@ -150,38 +148,6 @@ abstract class SystemScreenSpecs {
               enableValueDropdown: true,
               enableProjectsOnlyToggle: true,
               valueFilterMode: ValueFilterModeV2.anyValues,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  static final logbook = ScreenSpec(
-    id: 'logbook',
-    screenKey: 'logbook',
-    name: 'Logbook',
-    template: const ScreenTemplateSpec.standardScaffoldV1(),
-    modules: SlottedModules(
-      primary: [
-        ScreenModuleSpec.taskListV2(
-          title: 'Completed',
-          params: ListSectionParamsV2(
-            config: DataConfig.task(
-              query: const TaskQuery(
-                filter: QueryFilter<TaskPredicate>(
-                  shared: [
-                    TaskBoolPredicate(
-                      field: TaskBoolField.completed,
-                      operator: BoolOperator.isTrue,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(
-              separator: ListSeparatorV2.divider,
             ),
           ),
         ),
@@ -315,7 +281,6 @@ abstract class SystemScreenSpecs {
     myDay,
     scheduled,
     someday,
-    logbook,
     journal,
     values,
     projects,
@@ -332,7 +297,6 @@ abstract class SystemScreenSpecs {
     'my_day': 0,
     'scheduled': 1,
     'someday': 2,
-    'logbook': 3,
     'journal': 4,
     'values': 5,
     'projects': 6,
@@ -352,7 +316,6 @@ abstract class SystemScreenSpecs {
     myDay.screenKey: myDay,
     scheduled.screenKey: scheduled,
     someday.screenKey: someday,
-    logbook.screenKey: logbook,
     projects.screenKey: projects,
     values.screenKey: values,
     settings.screenKey: settings,

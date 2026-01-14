@@ -1167,14 +1167,6 @@
     "@maxTasksLabel": {
         "description": "Label for maximum tasks slider"
     },
-    "showExcludedSection": "Mostrar sección excluida",
-    "@showExcludedSection": {
-        "description": "Toggle label for showing excluded tasks section"
-    },
-    "showExcludedSectionSubtitle": "Mostrar tareas excluidas al final",
-    "@showExcludedSectionSubtitle": {
-        "description": "Subtitle for show excluded section toggle"
-    },
     "urgentTaskBehaviorLabel": "Manejo de tareas urgentes",
     "@urgentTaskBehaviorLabel": {
         "description": "Label for urgent task behavior dropdown"
@@ -1204,11 +1196,6 @@
     "myDayAlertBannerSingular": "1 elemento fuera de Focus",
     "myDayAlertBannerPlural": "{count} elementos fuera de Focus",
     "myDayAlertBannerReview": "Revisar",
-    "excludedSectionNeedsAlignment": "Necesita alineación",
-    "excludedSectionWorthConsidering": "Vale la pena considerar",
-    "excludedSectionOverdueAttention": "Atención atrasada",
-    "excludedSectionActiveFires": "Incendios activos",
-    "excludedSectionOutsideFocus": "Fuera de Focus",
     "alertTypeUrgent": "Tareas urgentes",
     "alertTypeOverdue": "Tareas vencidas",
     "alertTypeNoValue": "Tareas sin valores",

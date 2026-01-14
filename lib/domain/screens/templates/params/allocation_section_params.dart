@@ -16,8 +16,6 @@ abstract class AllocationSectionParams with _$AllocationSectionParams {
     int? maxTasks,
     @Default(AllocationDisplayMode.pinnedFirst)
     AllocationDisplayMode displayMode,
-    @Default(true) bool showExcludedWarnings,
-    @Default(false) bool showExcludedSection,
   }) = _AllocationSectionParams;
 
   factory AllocationSectionParams.fromJson(Map<String, dynamic> json) =>

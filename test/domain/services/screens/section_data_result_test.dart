@@ -121,12 +121,10 @@ void main() {
           allocatedTasks: tasks,
           totalAvailable: 10,
           pinnedTasks: pinnedTasks,
-          excludedCount: 5,
           displayMode: AllocationDisplayMode.groupedByValue,
         );
 
         expect((result as AllocationSectionResult).pinnedTasks, hasLength(1));
-        expect(result.excludedCount, 5);
         expect(result.displayMode, AllocationDisplayMode.groupedByValue);
       });
 

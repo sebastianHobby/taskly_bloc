@@ -82,12 +82,4 @@ extension FocusModeX on FocusMode {
     FocusMode.responsive => 'bolt', // ⚡
     FocusMode.personalized => 'tune', // 🎛️
   };
-
-  /// Section title for excluded tasks in My Day view.
-  String get excludedSectionTitle => switch (this) {
-    FocusMode.intentional => 'Needs Alignment',
-    FocusMode.sustainable => 'Worth Considering',
-    FocusMode.responsive => 'Active Fires',
-    FocusMode.personalized => 'Outside Focus',
-  };
 }

@@ -91,15 +91,6 @@ void main() {
         expect(result.selectedIcon, Icons.wb_sunny);
       });
 
-      test('logbook screen has done_all icon', () {
-        final result = resolver.resolve(
-          screenId: SystemScreenSpecs.logbook.screenKey,
-          iconName: SystemScreenSpecs.logbook.chrome.iconName,
-        );
-        expect(result.icon, Icons.done_all_outlined);
-        expect(result.selectedIcon, Icons.done_all);
-      });
-
       test('values screen has star icon', () {
         final result = resolver.resolve(
           screenId: SystemScreenSpecs.values.screenKey,

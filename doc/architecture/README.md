@@ -81,6 +81,10 @@ For the deeper dive see:
 
 The app reads/writes to a local SQLite database via Drift.
 
+Important: PowerSync applies the client schema using SQLite views, and SQLite cannot
+UPSERT (`INSERT ... ON CONFLICT DO UPDATE`) a view. Avoid Drift UPSERT helpers on
+PowerSync schema tables; prefer update-then-insert or insert-or-ignore patterns.
+
 - **UI reads**: from the local DB (reactive watchers drive UI updates).
 - **Writes**: recorded locally and uploaded to Supabase via PostgREST.
 - **Downloads**: arrive via PowerSync replication and are applied locally.

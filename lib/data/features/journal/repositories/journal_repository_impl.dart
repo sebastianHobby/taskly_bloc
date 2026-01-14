@@ -114,21 +114,40 @@ class JournalRepositoryImpl
   Future<String> upsertJournalEntry(JournalEntry entry) async {
     final entryId = entry.id.isEmpty ? _idGenerator.journalEntryId() : entry.id;
 
-    await _database
-        .into(_database.journalEntries)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_database.update(
+          _database.journalEntries,
+        )..where((e) => e.id.equals(entryId))).write(
           JournalEntriesCompanion(
-            id: Value(entryId),
             entryDate: Value(entry.entryDate),
             entryTime: Value(entry.entryTime),
             occurredAt: Value(entry.occurredAt),
             localDate: Value(entry.localDate),
             journalText: Value(entry.journalText),
-            createdAt: Value(entry.createdAt),
             updatedAt: Value(entry.updatedAt),
             deletedAt: Value(entry.deletedAt),
+            createdAt: const Value.absent(),
           ),
         );
+
+    if (updated == 0) {
+      await _database
+          .into(_database.journalEntries)
+          .insert(
+            JournalEntriesCompanion(
+              id: Value(entryId),
+              entryDate: Value(entry.entryDate),
+              entryTime: Value(entry.entryTime),
+              occurredAt: Value(entry.occurredAt),
+              localDate: Value(entry.localDate),
+              journalText: Value(entry.journalText),
+              createdAt: Value(entry.createdAt),
+              updatedAt: Value(entry.updatedAt),
+              deletedAt: Value(entry.deletedAt),
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
 
     return entryId;
   }
@@ -209,11 +228,11 @@ class JournalRepositoryImpl
         ? _idGenerator.trackerDefinitionId(name: definition.name)
         : definition.id;
 
-    await _database
-        .into(_database.trackerDefinitions)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_database.update(
+          _database.trackerDefinitions,
+        )..where((t) => t.id.equals(id))).write(
           TrackerDefinitionsCompanion(
-            id: Value(id),
             name: Value(definition.name),
             description: Value(definition.description),
             scope: Value(definition.scope),
@@ -223,7 +242,6 @@ class JournalRepositoryImpl
             goal: Value(jsonEncode(definition.goal)),
             isActive: Value(definition.isActive),
             sortOrder: Value(definition.sortOrder),
-            createdAt: Value(definition.createdAt),
             updatedAt: Value(definition.updatedAt),
             deletedAt: Value(definition.deletedAt),
             source: Value(definition.source),
@@ -238,8 +256,44 @@ class JournalRepositoryImpl
             isOutcome: Value(definition.isOutcome),
             isInsightEnabled: Value(definition.isInsightEnabled),
             higherIsBetter: Value(definition.higherIsBetter),
+            createdAt: const Value.absent(),
           ),
         );
+
+    if (updated == 0) {
+      await _database
+          .into(_database.trackerDefinitions)
+          .insert(
+            TrackerDefinitionsCompanion(
+              id: Value(id),
+              name: Value(definition.name),
+              description: Value(definition.description),
+              scope: Value(definition.scope),
+              roles: Value(jsonEncode(definition.roles)),
+              valueType: Value(definition.valueType),
+              config: Value(jsonEncode(definition.config)),
+              goal: Value(jsonEncode(definition.goal)),
+              isActive: Value(definition.isActive),
+              sortOrder: Value(definition.sortOrder),
+              createdAt: Value(definition.createdAt),
+              updatedAt: Value(definition.updatedAt),
+              deletedAt: Value(definition.deletedAt),
+              source: Value(definition.source),
+              systemKey: Value(definition.systemKey),
+              opKind: Value(definition.opKind),
+              valueKind: Value(definition.valueKind),
+              unitKind: Value(definition.unitKind),
+              minInt: Value(definition.minInt),
+              maxInt: Value(definition.maxInt),
+              stepInt: Value(definition.stepInt),
+              linkedValueId: Value(definition.linkedValueId),
+              isOutcome: Value(definition.isOutcome),
+              isInsightEnabled: Value(definition.isInsightEnabled),
+              higherIsBetter: Value(definition.higherIsBetter),
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
   }
 
   @override
@@ -248,21 +302,40 @@ class JournalRepositoryImpl
         ? _idGenerator.trackerPreferenceId(trackerId: preference.trackerId)
         : preference.id;
 
-    await _database
-        .into(_database.trackerPreferences)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_database.update(
+          _database.trackerPreferences,
+        )..where((t) => t.id.equals(id))).write(
           TrackerPreferencesCompanion(
-            id: Value(id),
             trackerId: Value(preference.trackerId),
             isActive: Value(preference.isActive),
             sortOrder: Value(preference.sortOrder),
             pinned: Value(preference.pinned),
             showInQuickAdd: Value(preference.showInQuickAdd),
             color: Value(preference.color),
-            createdAt: Value(preference.createdAt),
             updatedAt: Value(preference.updatedAt),
+            createdAt: const Value.absent(),
           ),
         );
+
+    if (updated == 0) {
+      await _database
+          .into(_database.trackerPreferences)
+          .insert(
+            TrackerPreferencesCompanion(
+              id: Value(id),
+              trackerId: Value(preference.trackerId),
+              isActive: Value(preference.isActive),
+              sortOrder: Value(preference.sortOrder),
+              pinned: Value(preference.pinned),
+              showInQuickAdd: Value(preference.showInQuickAdd),
+              color: Value(preference.color),
+              createdAt: Value(preference.createdAt),
+              updatedAt: Value(preference.updatedAt),
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
   }
 
   @override
@@ -276,20 +349,38 @@ class JournalRepositoryImpl
           )
         : choice.id;
 
-    await _database
-        .into(_database.trackerDefinitionChoices)
-        .insertOnConflictUpdate(
+    final updated =
+        await (_database.update(
+          _database.trackerDefinitionChoices,
+        )..where((c) => c.id.equals(id))).write(
           TrackerDefinitionChoicesCompanion(
-            id: Value(id),
             trackerId: Value(choice.trackerId),
             choiceKey: Value(choice.choiceKey),
             label: Value(choice.label),
             sortOrder: Value(choice.sortOrder),
             isActive: Value(choice.isActive),
-            createdAt: Value(choice.createdAt),
             updatedAt: Value(choice.updatedAt),
+            createdAt: const Value.absent(),
           ),
         );
+
+    if (updated == 0) {
+      await _database
+          .into(_database.trackerDefinitionChoices)
+          .insert(
+            TrackerDefinitionChoicesCompanion(
+              id: Value(id),
+              trackerId: Value(choice.trackerId),
+              choiceKey: Value(choice.choiceKey),
+              label: Value(choice.label),
+              sortOrder: Value(choice.sortOrder),
+              isActive: Value(choice.isActive),
+              createdAt: Value(choice.createdAt),
+              updatedAt: Value(choice.updatedAt),
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
   }
 
   @override
@@ -303,9 +394,10 @@ class JournalRepositoryImpl
           : jsonEncode(event.value);
     }
 
+    // Events are append-only; duplicate inserts are safe to ignore.
     await _database
         .into(_database.trackerEvents)
-        .insertOnConflictUpdate(
+        .insert(
           TrackerEventsCompanion(
             id: Value(id),
             trackerId: Value(event.trackerId),
@@ -317,6 +409,7 @@ class JournalRepositoryImpl
             occurredAt: Value(event.occurredAt),
             recordedAt: Value(event.recordedAt),
           ),
+          mode: InsertMode.insertOrIgnore,
         );
   }
 

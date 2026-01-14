@@ -1,7 +1,7 @@
 # Editor + detail template contracts (FormBuilder-first)
 
 Created at: 2026-01-13 (UTC)
-Last updated at: 2026-01-13 (UTC)
+Last updated at: 2026-01-14 (UTC)
 
 ## Scope
 This document captures **confirmed architecture decisions** for:
@@ -11,6 +11,44 @@ This document captures **confirmed architecture decisions** for:
 These contracts are intended to be referenced by per-screen migration decisions.
 
 ## Confirmed decisions
+
+## Current implementation status (snapshot)
+
+This section is descriptive (non-normative): it records what exists in the repo
+today so it’s easy to see which parts of the contract are already satisfied and
+which are still “target state”.
+
+As of: 2026-01-14 (UTC)
+
+### Core entities (task/project/value)
+
+**Entry points (ED)**
+- ✅ Centralized editor launching exists via `EditorLauncher`.
+- ✅ All core entity editors use `flutter_form_builder`.
+
+**Surface policy (RD)**
+- ✅ Task is effectively `editorOnly` in navigation: `/task/:id` opens the editor
+  modal and returns to the previous route.
+- ✅ Project and value are `detailAndEdit`: they have a unified detail page and
+  launch the editor via `EditorLauncher`.
+
+**Contract alignment checklist**
+
+| Contract item | Task | Project | Value |
+| --- | --- | --- | --- |
+| ED-A1-A — Explicit `*Draft` → `*Command` | ⚠️ Partial (bloc events take primitives; no explicit draft/command types) | ⚠️ Partial | ⚠️ Partial |
+| ED-A2-A — Domain validation → field-addressable UI mapping | ⚠️ Partial (FormBuilder validators exist; domain errors shown via snackbar) | ⚠️ Partial | ⚠️ Partial |
+| ED-A3-A — Typed, centralized field keys | ❌ (string literals like `name`, `description`, etc.) | ❌ | ❌ |
+| ED-B1-A — Single reusable “form module” per entity | ✅ (`TaskForm` reused for create/edit) | ✅ (`ProjectForm` reused for create/edit) | ✅ (`ValueForm` reused for create/edit) |
+| ED-B2-A — Template owns actions; form module is fields-only | ❌ (forms currently include close/delete chrome) | ❌ | ❌ |
+| RD-C2-B — Detail template does not embed editor UI | ✅ (task has no detail surface; editor-only) | ✅ (detail launches editor) | ✅ (detail launches editor) |
+
+**Key implementation files**
+- Task editor route: `lib/presentation/features/tasks/view/task_editor_route_page.dart`
+- Editor entry points: `lib/presentation/features/editors/editor_launcher.dart`
+- Task editor form: `lib/presentation/features/tasks/view/task_detail_view.dart`, `lib/presentation/features/tasks/widgets/task_form.dart`
+- Project detail + editor form: `lib/presentation/features/projects/view/project_detail_unified_page.dart`, `lib/presentation/features/projects/view/project_create_edit_view.dart`, `lib/presentation/features/projects/widgets/project_form.dart`
+- Value detail + editor form: `lib/presentation/features/values/view/value_detail_unified_page.dart`, `lib/presentation/features/values/view/value_detail_view.dart`, `lib/presentation/features/values/widgets/value_form.dart`
 
 ### ED-A1-A — Draft → Command architecture
 - Each editor builds and holds an explicit `*Draft` state.

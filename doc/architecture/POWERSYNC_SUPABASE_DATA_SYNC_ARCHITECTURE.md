@@ -23,6 +23,20 @@ Key implications:
   - Calling PostgREST
   - Authenticating to the PowerSync service
 
+Important local SQLite limitation:
+
+- PowerSync applies the client schema using **SQLite views**.
+- SQLite does **not** allow `INSERT ... ON CONFLICT DO UPDATE` (UPSERT) against views.
+
+Practical rule for this codebase:
+
+- Avoid Drift UPSERT helpers like `insertOnConflictUpdate` / `insertAllOnConflictUpdate`
+  on tables that are part of the PowerSync schema.
+- Prefer **update-then-insert** (try `UPDATE`; if no rows updated then `INSERT`), or
+  `insertOrIgnore` for append-only / idempotent writes.
+- Server-side upsert via Supabase/PostgREST is fine; this limitation is about local
+  SQLite writes.
+
 Important ownership rule:
 
 - `user_id` is **owned and controlled by Supabase** (derived from the logged-in JWT on the server).

@@ -51,10 +51,6 @@ class NavigationIconResolver {
         icon: Icons.bar_chart_outlined,
         selectedIcon: Icons.bar_chart,
       ),
-      'logbook' => (
-        icon: Icons.done_all_outlined,
-        selectedIcon: Icons.done_all,
-      ),
       // Legacy screen key (map to my_day icon)
       'next_actions' || 'next-actions' => (
         icon: Icons.wb_sunny_outlined,

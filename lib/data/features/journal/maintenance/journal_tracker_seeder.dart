@@ -46,12 +46,16 @@ class JournalTrackerSeeder {
   Future<void> _seedTracker(SystemTrackerTemplate template) async {
     final trackerId = _idGenerator.trackerDefinitionId(name: template.name);
 
+    final now = DateTime.now().toUtc();
+
     // Definitions are system-owned; keep them updated so the app can evolve.
-    await _db
-        .into(_db.trackerDefinitions)
-        .insertOnConflictUpdate(
+    // PowerSync applies the schema using SQLite views; SQLite does not support
+    // UPSERT (ON CONFLICT) on views.
+    final updated =
+        await (_db.update(
+          _db.trackerDefinitions,
+        )..where((t) => t.id.equals(trackerId))).write(
           TrackerDefinitionsCompanion(
-            id: Value(trackerId),
             name: Value(template.name),
             description: Value(template.description),
             scope: Value(template.scope),
@@ -65,10 +69,36 @@ class JournalTrackerSeeder {
             stepInt: Value(template.stepInt),
             sortOrder: Value(template.defaultSortOrder),
             isActive: const Value(true),
-            createdAt: Value(DateTime.now().toUtc()),
-            updatedAt: Value(DateTime.now().toUtc()),
+            updatedAt: Value(now),
+            createdAt: const Value.absent(),
           ),
         );
+
+    if (updated == 0) {
+      await _db
+          .into(_db.trackerDefinitions)
+          .insert(
+            TrackerDefinitionsCompanion(
+              id: Value(trackerId),
+              name: Value(template.name),
+              description: Value(template.description),
+              scope: Value(template.scope),
+              valueType: Value(template.valueType),
+              source: const Value('system'),
+              systemKey: Value(template.systemKey),
+              opKind: Value(template.opKind),
+              valueKind: Value(template.valueKind),
+              minInt: Value(template.minInt),
+              maxInt: Value(template.maxInt),
+              stepInt: Value(template.stepInt),
+              sortOrder: Value(template.defaultSortOrder),
+              isActive: const Value(true),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+            mode: InsertMode.insertOrAbort,
+          );
+    }
 
     // Preferences are user-owned; seed only when missing.
     final prefId = _idGenerator.trackerPreferenceId(trackerId: trackerId);
@@ -82,8 +112,8 @@ class JournalTrackerSeeder {
             sortOrder: Value(template.defaultSortOrder),
             pinned: Value(template.defaultPinned),
             showInQuickAdd: Value(template.defaultQuickAdd),
-            createdAt: Value(DateTime.now().toUtc()),
-            updatedAt: Value(DateTime.now().toUtc()),
+            createdAt: Value(now),
+            updatedAt: Value(now),
           ),
           mode: InsertMode.insertOrIgnore,
         );
@@ -104,8 +134,8 @@ class JournalTrackerSeeder {
               label: choice.label,
               sortOrder: Value(choice.sortOrder),
               isActive: const Value(true),
-              createdAt: Value(DateTime.now().toUtc()),
-              updatedAt: Value(DateTime.now().toUtc()),
+              createdAt: Value(now),
+              updatedAt: Value(now),
             ),
             mode: InsertMode.insertOrIgnore,
           );

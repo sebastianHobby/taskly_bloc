@@ -328,12 +328,6 @@ void main() {
       expect(result.selectedIcon, Icons.event);
     });
 
-    test('resolves logbook icon by screenId', () {
-      final result = resolver.resolve(screenId: 'logbook', iconName: null);
-      expect(result.icon, Icons.done_all_outlined);
-      expect(result.selectedIcon, Icons.done_all);
-    });
-
     test('resolves next_actions icon by screenId (legacy, maps to my_day)', () {
       final result = resolver.resolve(screenId: 'next_actions', iconName: null);
       // Legacy 'next_actions' now maps to my_day icon (wb_sunny)
