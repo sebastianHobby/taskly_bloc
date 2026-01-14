@@ -81,15 +81,14 @@ String _stableMapFingerprint(Map<String, dynamic> map) {
 }
 
 String _ruleFingerprint(AttentionRule rule, {required String predicate}) {
-  final selector = _stableMapFingerprint(rule.entitySelector);
-  final trigger = _stableMapFingerprint(rule.triggerConfig);
+  final evaluatorParams = _stableMapFingerprint(rule.evaluatorParams);
 
   return _stableFingerprint([
     'ruleKey=${rule.ruleKey}',
-    'ruleType=${rule.ruleType.name}',
+    'bucket=${rule.bucket.name}',
+    'evaluator=${rule.evaluator}',
     'predicate=$predicate',
-    'selector=$selector',
-    'trigger=$trigger',
+    'params=$evaluatorParams',
   ]);
 }
 
@@ -178,14 +177,11 @@ void main() {
       final rule = AttentionRule(
         id: 'r1',
         ruleKey: 'task_overdue',
-        domain: 'issues',
-        category: 'task',
-        ruleType: AttentionRuleType.problem,
-        triggerType: AttentionTriggerType.realtime,
-        triggerConfig: const <String, dynamic>{'threshold_hours': 0},
-        entitySelector: const <String, dynamic>{
-          'entity_type': 'task',
+        bucket: AttentionBucket.action,
+        evaluator: 'task_predicate_v1',
+        evaluatorParams: const <String, dynamic>{
           'predicate': 'isOverdue',
+          'thresholdHours': 0,
         },
         severity: AttentionSeverity.warning,
         displayConfig: const <String, dynamic>{
@@ -210,7 +206,7 @@ void main() {
 
       final received = <List<AttentionItem>>[];
       final sub = engine
-          .watch(const AttentionQuery(domains: {'issues'}))
+          .watch(const AttentionQuery(buckets: {AttentionBucket.action}))
           .listen(received.add);
       addTearDown(sub.cancel);
 
@@ -299,14 +295,11 @@ void main() {
       final rule = AttentionRule(
         id: 'r1',
         ruleKey: 'task_overdue',
-        domain: 'issues',
-        category: 'task',
-        ruleType: AttentionRuleType.problem,
-        triggerType: AttentionTriggerType.realtime,
-        triggerConfig: const <String, dynamic>{'threshold_hours': 0},
-        entitySelector: const <String, dynamic>{
-          'entity_type': 'task',
+        bucket: AttentionBucket.action,
+        evaluator: 'task_predicate_v1',
+        evaluatorParams: const <String, dynamic>{
           'predicate': 'isOverdue',
+          'thresholdHours': 0,
         },
         severity: AttentionSeverity.warning,
         displayConfig: const <String, dynamic>{
@@ -331,7 +324,7 @@ void main() {
 
       final received = <List<AttentionItem>>[];
       final sub = engine
-          .watch(const AttentionQuery(domains: {'issues'}))
+          .watch(const AttentionQuery(buckets: {AttentionBucket.action}))
           .listen(received.add);
       addTearDown(sub.cancel);
 
@@ -432,14 +425,11 @@ void main() {
       final rule = AttentionRule(
         id: 'r1',
         ruleKey: 'task_overdue',
-        domain: 'issues',
-        category: 'task',
-        ruleType: AttentionRuleType.problem,
-        triggerType: AttentionTriggerType.realtime,
-        triggerConfig: const <String, dynamic>{'threshold_hours': 0},
-        entitySelector: const <String, dynamic>{
-          'entity_type': 'task',
+        bucket: AttentionBucket.action,
+        evaluator: 'task_predicate_v1',
+        evaluatorParams: const <String, dynamic>{
           'predicate': 'isOverdue',
+          'thresholdHours': 0,
         },
         severity: AttentionSeverity.warning,
         displayConfig: const <String, dynamic>{
@@ -464,7 +454,7 @@ void main() {
 
       final received = <List<AttentionItem>>[];
       final sub = engine
-          .watch(const AttentionQuery(domains: {'issues'}))
+          .watch(const AttentionQuery(buckets: {AttentionBucket.action}))
           .listen(received.add);
       addTearDown(sub.cancel);
 

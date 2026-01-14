@@ -11,8 +11,6 @@ import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/enrichment_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/enrichment_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
@@ -801,18 +799,18 @@ class SectionDataService {
     Map<String, AgendaTagV2> agendaTagByTaskId = const {};
 
     if (wantsValueStats && values.isNotEmpty) {
-      final valueStatsResult = await _computeEnrichment(
-        const EnrichmentConfig.valueStats(),
-        values.cast<Object>(),
-        _PrimaryEntityKind.value,
+      const sparklineWeeks = 4;
+      const gapWarningThreshold = 15;
+
+      final result = await _computeValueStatsEnrichmentV2(
+        values,
+        sparklineWeeks: sparklineWeeks,
+        gapWarningThreshold: gapWarningThreshold,
       );
 
-      if (valueStatsResult case ValueStatsEnrichmentResult(
-        statsByValueId: final statsByValueId,
-        totalRecentCompletions: final legacyTotalRecentCompletions,
-      )) {
-        valueStatsByValueId = statsByValueId;
-        totalRecentCompletions = legacyTotalRecentCompletions;
+      if (result != null) {
+        valueStatsByValueId = result.statsByValueId;
+        totalRecentCompletions = result.totalRecentCompletions;
       }
     }
 
@@ -941,50 +939,11 @@ class SectionDataService {
     return map;
   }
 
-  // ===========================================================================
-  // ENRICHMENT COMPUTATION
-  // ===========================================================================
-
-  /// Compute enrichment data based on the requested config.
-  ///
-  /// Returns null if no enrichment was requested or if the required
-  /// services are not available.
-  Future<EnrichmentResult?> _computeEnrichment(
-    EnrichmentConfig? config,
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-  ) async {
-    if (config == null) return null;
-
-    return switch (config) {
-      ValueStatsEnrichment(:final sparklineWeeks, :final gapWarningThreshold) =>
-        _computeValueStatsEnrichment(
-          entities,
-          entityKind,
-          sparklineWeeks,
-          gapWarningThreshold,
-        ),
-    };
-  }
-
-  /// Compute value statistics enrichment.
-  ///
-  /// Requires analytics service and settings repository to be available.
-  Future<EnrichmentResult?> _computeValueStatsEnrichment(
-    List<Object> entities,
-    _PrimaryEntityKind entityKind,
-    int sparklineWeeks,
-    int gapWarningThreshold,
-  ) async {
-    // Only compute for value entities
-    if (entityKind != _PrimaryEntityKind.value) {
-      talker.warning(
-        '[SectionDataService] ValueStats enrichment requested for non-value '
-        'entity kind: $entityKind',
-      );
-      return null;
-    }
-
+  Future<_ValueStatsEnrichmentV2Result?> _computeValueStatsEnrichmentV2(
+    List<Value> values, {
+    required int sparklineWeeks,
+    required int gapWarningThreshold,
+  }) async {
     // Check required services are available
     if (_analyticsService == null || _settingsRepository == null) {
       talker.warning(
@@ -1011,8 +970,6 @@ class SectionDataService {
       final recentCompletions = results[2] as Map<String, int>;
       final totalRecentCompletions = results[3] as int;
 
-      final values = entities.cast<Value>();
-
       // Calculate total weight for percentage calculation
       final totalWeight = values.fold<int>(
         0,
@@ -1035,7 +992,7 @@ class SectionDataService {
             : 0.0;
 
         // Get weekly trend data
-        final weeklyTrend = weeklyTrends[value.id] ?? [];
+        final weeklyTrend = weeklyTrends[value.id] ?? const <double>[];
 
         // Get activity stats
         final activity =
@@ -1052,7 +1009,7 @@ class SectionDataService {
         );
       }
 
-      return EnrichmentResult.valueStats(
+      return _ValueStatsEnrichmentV2Result(
         statsByValueId: statsByValueId,
         totalRecentCompletions: totalRecentCompletions,
       );
@@ -1065,6 +1022,16 @@ class SectionDataService {
       return null;
     }
   }
+}
+
+final class _ValueStatsEnrichmentV2Result {
+  const _ValueStatsEnrichmentV2Result({
+    required this.statsByValueId,
+    required this.totalRecentCompletions,
+  });
+
+  final Map<String, ValueStats> statsByValueId;
+  final int totalRecentCompletions;
 }
 
 enum _PrimaryEntityKind {

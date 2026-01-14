@@ -108,16 +108,22 @@ class _AttentionRulesSettingsPageState
       );
     }
 
-    // Group rules by type
-    final problemRules = _rules
-        .where((r) => r.ruleType == AttentionRuleType.problem)
-        .toList();
+    // Group rules by bucket/evaluator.
     final reviewRules = _rules
-        .where((r) => r.ruleType == AttentionRuleType.review)
-        .toList();
-    final allocationRules = _rules
-        .where((r) => r.ruleType == AttentionRuleType.allocationWarning)
-        .toList();
+        .where((r) => r.bucket == AttentionBucket.review)
+        .toList(growable: false);
+
+    final actionRules = _rules
+        .where((r) => r.bucket == AttentionBucket.action)
+        .toList(growable: false);
+
+    final allocationRules = actionRules
+        .where((r) => r.evaluator == 'allocation_snapshot_task_v1')
+        .toList(growable: false);
+
+    final problemRules = actionRules
+        .where((r) => r.evaluator != 'allocation_snapshot_task_v1')
+        .toList(growable: false);
 
     return ResponsiveBody(
       child: ListView(

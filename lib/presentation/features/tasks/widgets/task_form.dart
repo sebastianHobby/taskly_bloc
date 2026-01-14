@@ -21,6 +21,7 @@ class TaskForm extends StatefulWidget {
     required this.formKey,
     required this.onSubmit,
     required this.submitTooltip,
+    this.onChanged,
     this.initialData,
     this.availableProjects = const [],
     this.availableValues = const [],
@@ -34,6 +35,7 @@ class TaskForm extends StatefulWidget {
   final Task? initialData;
   final VoidCallback onSubmit;
   final String submitTooltip;
+  final ValueChanged<Map<String, dynamic>>? onChanged;
   final List<Project> availableProjects;
   final List<Value> availableValues;
   final String? defaultProjectId;
@@ -81,17 +83,19 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
     final colorScheme = theme.colorScheme;
     final isCreating = widget.initialData == null;
 
-    final Map<String, dynamic> initialValues = {
-      'name': widget.initialData?.name ?? '',
-      'description': widget.initialData?.description ?? '',
-      'completed': widget.initialData?.completed ?? false,
-      'startDate': widget.initialData?.startDate,
-      'deadlineDate': widget.initialData?.deadlineDate,
-      'projectId':
+    final initialValues = <String, dynamic>{
+      TaskFieldKeys.name.id: widget.initialData?.name ?? '',
+      TaskFieldKeys.description.id: widget.initialData?.description ?? '',
+      TaskFieldKeys.completed.id: widget.initialData?.completed ?? false,
+      TaskFieldKeys.startDate.id: widget.initialData?.startDate,
+      TaskFieldKeys.deadlineDate.id: widget.initialData?.deadlineDate,
+      TaskFieldKeys.projectId.id:
           widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
-      'priority': widget.initialData?.priority,
-      'valueIds': widget.initialData?.values.map((e) => e.id).toList() ?? [],
-      'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
+      TaskFieldKeys.priority.id: widget.initialData?.priority,
+      TaskFieldKeys.valueIds.id:
+          widget.initialData?.values.map((e) => e.id).toList() ?? [],
+      TaskFieldKeys.repeatIcalRrule.id:
+          widget.initialData?.repeatIcalRrule ?? '',
     };
 
     return Container(
@@ -151,7 +155,13 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                 key: widget.formKey,
                 initialValue: initialValues,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                onChanged: markDirty,
+                onChanged: () {
+                  markDirty();
+                  final values = widget.formKey.currentState?.value;
+                  if (values != null) {
+                    widget.onChanged?.call(values);
+                  }
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -165,7 +175,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           Padding(
                             padding: const EdgeInsets.only(top: 12),
                             child: FormBuilderField<bool>(
-                              name: 'completed',
+                              name: TaskFieldKeys.completed.id,
                               builder: (field) {
                                 return SizedBox(
                                   width: 24,
@@ -188,7 +198,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           // Task name field
                           Expanded(
                             child: FormBuilderTextField(
-                              name: 'name',
+                              name: TaskFieldKeys.name.id,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w500,
                               ),
@@ -239,7 +249,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
                     // Task Description
                     FormBuilderTextFieldModern(
-                      name: 'description',
+                      name: TaskFieldKeys.description.id,
                       hint: l10n.taskFormDescriptionHint,
                       textInputAction: TextInputAction.newline,
                       fieldType: ModernFieldType.description,
@@ -264,7 +274,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           // Project chip
                           if (widget.availableProjects.isNotEmpty)
                             FormBuilderField<String>(
-                              name: 'projectId',
+                              name: TaskFieldKeys.projectId.id,
                               builder: (field) {
                                 final selectedProject = widget.availableProjects
                                     .where((p) => p.id == field.value)
@@ -300,7 +310,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                             ),
                           // Start Date chip
                           FormBuilderField<DateTime?>(
-                            name: 'startDate',
+                            name: TaskFieldKeys.startDate.id,
                             builder: (field) {
                               return FormDateChip.startDate(
                                 date: field.value,
@@ -317,7 +327,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           ),
                           // Deadline Date chip
                           FormBuilderField<DateTime?>(
-                            name: 'deadlineDate',
+                            name: TaskFieldKeys.deadlineDate.id,
                             builder: (field) {
                               return FormDateChip.deadline(
                                 date: field.value,
@@ -334,7 +344,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                           ),
                           // Recurrence chip
                           FormBuilderField<String?>(
-                            name: 'repeatIcalRrule',
+                            name: TaskFieldKeys.repeatIcalRrule.id,
                             builder: (field) {
                               return FormRecurrenceChip(
                                 rrule: field.value,
@@ -373,7 +383,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: FormBuilderPriorityPicker(
-                        name: 'priority',
+                        name: TaskFieldKeys.priority.id,
                       ),
                     ),
 
@@ -381,7 +391,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
 
                     // Values
                     FormBuilderValuePicker(
-                      name: 'valueIds',
+                      name: TaskFieldKeys.valueIds.id,
                       label: l10n.valuesTitle,
                       hint: 'Select values',
                       availableValues: widget.availableValues,

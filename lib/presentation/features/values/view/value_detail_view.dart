@@ -64,6 +64,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     with FormSubmissionMixin {
   GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   String? _formValueId;
+  ValueDraft _draft = ValueDraft.empty();
 
   void _ensureFreshFormKeyFor(String? valueId) {
     if (_formValueId == valueId) return;
@@ -71,39 +72,59 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     _formKey = GlobalKey<FormBuilderState>();
   }
 
+  void _syncDraftFromFormValues(Map<String, dynamic> formValues) {
+    final name = extractStringValue(formValues, ValueFieldKeys.name.id);
+    final colorValue = formValues[ValueFieldKeys.colour.id] as Color?;
+    final color = colorValue != null
+        ? ColorUtils.toHexWithHash(colorValue)
+        : _draft.color;
+
+    final priority =
+        (formValues[ValueFieldKeys.priority.id] as ValuePriority?) ??
+        _draft.priority;
+    final iconName = extractStringValue(
+      formValues,
+      ValueFieldKeys.iconName.id,
+    ).trim();
+
+    _draft = _draft.copyWith(
+      name: name,
+      color: color,
+      priority: priority,
+      iconName: iconName,
+    );
+  }
+
   void _onSubmit(String? id) {
     final formValues = validateAndGetFormValues(_formKey);
     if (formValues == null) return;
 
-    final name = extractStringValue(formValues, 'name');
-    // Color is stored as a Color object, convert to hex string
-    final colorValue = formValues['colour'] as Color?;
-    final color = colorValue != null
-        ? ColorUtils.toHexWithHash(colorValue)
-        : '#000000';
-    final priority = formValues['priority'] as ValuePriority;
-    final iconName = extractStringValue(formValues, 'iconName').isEmpty
-        ? null
-        : extractStringValue(formValues, 'iconName');
+    _syncDraftFromFormValues(formValues);
+
+    final iconName = _draft.iconName.trim().isEmpty ? null : _draft.iconName;
 
     final bloc = context.read<ValueDetailBloc>();
     if (id == null) {
       bloc.add(
         ValueDetailEvent.create(
-          name: name,
-          color: color,
-          priority: priority,
-          iconName: iconName,
+          command: CreateValueCommand(
+            name: _draft.name,
+            color: _draft.color,
+            priority: _draft.priority,
+            iconName: iconName,
+          ),
         ),
       );
     } else {
       bloc.add(
         ValueDetailEvent.update(
-          id: id,
-          name: name,
-          color: color,
-          priority: priority,
-          iconName: iconName,
+          command: UpdateValueCommand(
+            id: id,
+            name: _draft.name,
+            color: _draft.color,
+            priority: _draft.priority,
+            iconName: iconName,
+          ),
         ),
       );
     }
@@ -128,6 +149,10 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ValueDetailBloc, ValueDetailState>(
+      listenWhen: (previous, current) =>
+          current is ValueDetailOperationSuccess ||
+          current is ValueDetailValidationFailure ||
+          current is ValueDetailOperationFailure,
       listener: (context, state) {
         state.mapOrNull(
           operationSuccess: (success) {
@@ -144,18 +169,27 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
               ),
             );
           },
+          validationFailure: (failure) {
+            applyValidationFailureToForm(_formKey, failure.failure, context);
+          },
           operationFailure: (failure) {
             showEditorErrorSnackBar(context, failure.errorDetails.error);
           },
         );
       },
+      buildWhen: (previous, current) =>
+          current is ValueDetailInitial ||
+          current is ValueDetailLoadInProgress ||
+          current is ValueDetailLoadSuccess,
       builder: (context, state) {
         return state.maybeMap(
           loadSuccess: (success) {
             _ensureFreshFormKeyFor(success.value.id);
+            _draft = ValueDraft.fromValue(success.value);
             return ValueForm(
               formKey: _formKey,
               initialData: success.value,
+              onChanged: _syncDraftFromFormValues,
               onSubmit: () => _onSubmit(success.value.id),
               onDelete: () => _onDelete(
                 id: success.value.id,
@@ -171,9 +205,11 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             // Initial state or error state where we can still show the form for creation
             if (widget.valueId == null) {
               _ensureFreshFormKeyFor(null);
+              _draft = ValueDraft.empty();
               return ValueForm(
                 formKey: _formKey,
                 initialData: null,
+                onChanged: _syncDraftFromFormValues,
                 onSubmit: () => _onSubmit(null),
                 submitTooltip: context.l10n.actionCreate,
                 onClose: () => unawaited(closeEditor(context)),

@@ -12,8 +12,7 @@ class TaskStatsCalculator {
   /// Creates a TaskStatsCalculator.
   ///
   /// [staleThresholdDays] controls how many days without activity makes a task
-  /// "stale". Should be set from SoftGatesSettings.staleAfterDaysWithoutUpdates
-  /// for consistency across the app. Defaults to 30 days.
+  /// "stale".
   TaskStatsCalculator({
     this.staleThresholdDays = kDefaultStaleThresholdDays,
   });

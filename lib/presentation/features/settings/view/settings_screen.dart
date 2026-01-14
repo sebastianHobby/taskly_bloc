@@ -62,7 +62,6 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     _LanguageSelector(settings: settings),
                     _HomeTimeZoneSelector(settings: settings),
-                    _DateFormatSelector(settings: settings),
                   ],
                 ),
                 _buildSection(
@@ -74,13 +73,6 @@ class SettingsScreen extends StatelessWidget {
                       _buildTaskAllocationItem(context),
                     if (_showLegacyFocusItems)
                       _buildAttentionRulesItem(context),
-                  ],
-                ),
-                _buildSection(
-                  context: context,
-                  title: 'Advanced',
-                  children: [
-                    const _ResetButton(),
                   ],
                 ),
                 _buildSection(
@@ -191,27 +183,28 @@ class _ThemeModeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: const Text('Theme Mode'),
-      subtitle: const Text('Choose between light, dark, or system theme'),
-      trailing: SegmentedButton<AppThemeMode>(
-        segments: const [
-          ButtonSegment(
-            value: AppThemeMode.light,
-            icon: Icon(Icons.light_mode, size: 16),
-          ),
-          ButtonSegment(
-            value: AppThemeMode.dark,
-            icon: Icon(Icons.dark_mode, size: 16),
-          ),
-          ButtonSegment(
+      title: const Text('Theme'),
+      subtitle: const Text('Light, dark, or system'),
+      trailing: DropdownButton<AppThemeMode>(
+        value: settings.themeMode,
+        items: const [
+          DropdownMenuItem(
             value: AppThemeMode.system,
-            icon: Icon(Icons.brightness_auto, size: 16),
+            child: Text('System'),
+          ),
+          DropdownMenuItem(
+            value: AppThemeMode.light,
+            child: Text('Light'),
+          ),
+          DropdownMenuItem(
+            value: AppThemeMode.dark,
+            child: Text('Dark'),
           ),
         ],
-        selected: {settings.themeMode},
-        onSelectionChanged: (Set<AppThemeMode> newSelection) {
+        onChanged: (themeMode) {
+          if (themeMode == null) return;
           context.read<GlobalSettingsBloc>().add(
-            GlobalSettingsEvent.themeModeChanged(newSelection.first),
+            GlobalSettingsEvent.themeModeChanged(themeMode),
           );
         },
       ),
@@ -229,14 +222,13 @@ class _ColorPicker extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ColorPickerField(
+        label: 'Accent color',
         color: Color(settings.colorSchemeSeedArgb),
-        onColorChanged: (color) {
+        onColorChanged: (Color color) {
           context.read<GlobalSettingsBloc>().add(
-            GlobalSettingsEvent.colorChanged(color.toARGB32()),
+            GlobalSettingsEvent.colorChanged(color.value),
           );
         },
-        label: 'Theme Color',
-        showMaterialName: true,
       ),
     );
   }
@@ -247,25 +239,43 @@ class _TextSizeSlider extends StatelessWidget {
 
   final GlobalSettings settings;
 
+  static const double _min = 0.85;
+  static const double _max = 1.25;
+
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: const Text('Text Size'),
-      subtitle: Slider(
-        value: settings.textScaleFactor,
-        min: 0.8,
-        max: 1.4,
-        divisions: 6,
-        label: '${(settings.textScaleFactor * 100).round()}%',
-        onChanged: (value) {
-          context.read<GlobalSettingsBloc>().add(
-            GlobalSettingsEvent.textScaleChanged(value),
-          );
-        },
-      ),
-      trailing: Text(
-        '${(settings.textScaleFactor * 100).round()}%',
-        style: Theme.of(context).textTheme.titleMedium,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Text size',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Text(
+                '${(settings.textScaleFactor * 100).round()}%',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          Slider(
+            value: settings.textScaleFactor.clamp(_min, _max),
+            min: _min,
+            max: _max,
+            divisions: 8,
+            label: '${(settings.textScaleFactor * 100).round()}%',
+            onChanged: (value) {
+              context.read<GlobalSettingsBloc>().add(
+                GlobalSettingsEvent.textScaleChanged(value),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -303,64 +313,6 @@ class _LanguageSelector extends StatelessWidget {
         },
       ),
     );
-  }
-}
-
-class _DateFormatSelector extends StatelessWidget {
-  const _DateFormatSelector({required this.settings});
-
-  final GlobalSettings settings;
-
-  static const List<String> _patterns = [
-    DateFormatPatterns.short,
-    DateFormatPatterns.medium,
-    DateFormatPatterns.long,
-    DateFormatPatterns.full,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: const Text('Date Format'),
-      subtitle: Text(_getDateFormatExample(settings.dateFormatPattern)),
-      trailing: DropdownButton<String>(
-        value: settings.dateFormatPattern,
-        items: _patterns.map((pattern) {
-          return DropdownMenuItem(
-            value: pattern,
-            child: Text(_getDateFormatLabel(pattern)),
-          );
-        }).toList(),
-        onChanged: (pattern) {
-          if (pattern != null) {
-            context.read<GlobalSettingsBloc>().add(
-              GlobalSettingsEvent.dateFormatChanged(pattern),
-            );
-          }
-        },
-      ),
-    );
-  }
-
-  String _getDateFormatLabel(String pattern) {
-    switch (pattern) {
-      case DateFormatPatterns.short:
-        return 'Short';
-      case DateFormatPatterns.medium:
-        return 'Medium';
-      case DateFormatPatterns.long:
-        return 'Long';
-      case DateFormatPatterns.full:
-        return 'Full';
-      default:
-        return 'Custom';
-    }
-  }
-
-  String _getDateFormatExample(String pattern) {
-    final now = DateTime(2025, 12, 30);
-    final formatter = DateFormatPatterns.getFormat(pattern);
-    return 'Example: ${formatter.format(now)}';
   }
 }
 
@@ -415,54 +367,6 @@ class _HomeTimeZoneSelector extends StatelessWidget {
     final hh = hours.toString().padLeft(2, '0');
     final mm = minutes.toString().padLeft(2, '0');
     return minutes == 0 ? 'GMT$sign$hh' : 'GMT$sign$hh:$mm';
-  }
-}
-
-class _ResetButton extends StatelessWidget {
-  const _ResetButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: OutlinedButton.icon(
-        onPressed: () => _showResetConfirmation(context),
-        icon: const Icon(Icons.restore),
-        label: const Text('Reset to Defaults'),
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Theme.of(context).colorScheme.error,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showResetConfirmation(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Reset Settings'),
-        content: const Text(
-          'Are you sure you want to reset all settings to their default values?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if ((confirmed ?? false) && context.mounted) {
-      context.read<GlobalSettingsBloc>().add(const GlobalSettingsEvent.reset());
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Settings reset to defaults')),
-      );
-    }
   }
 }
 

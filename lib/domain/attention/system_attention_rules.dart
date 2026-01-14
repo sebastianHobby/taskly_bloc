@@ -14,22 +14,17 @@ abstract class SystemAttentionRules {
   SystemAttentionRules._();
 
   // ==========================================================================
-  // PROBLEM DETECTION RULES (4 rules)
+  // PROBLEM DETECTION RULES (3 rules)
   // ==========================================================================
 
   /// Detects overdue tasks (past deadline)
   static const problemTaskOverdue = AttentionRuleTemplate(
-    domain: 'issues',
-    category: 'problem_task_overdue',
     ruleKey: 'problem_task_overdue',
-    ruleType: AttentionRuleType.problem,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {
-      'threshold_hours': 0, // Alert as soon as overdue
-    },
-    entitySelector: {
-      'entity_type': 'task',
+    bucket: AttentionBucket.action,
+    evaluator: 'task_predicate_v1',
+    evaluatorParams: {
       'predicate': 'isOverdue',
+      'thresholdHours': 0,
     },
     severity: AttentionSeverity.warning,
     displayConfig: {
@@ -43,17 +38,12 @@ abstract class SystemAttentionRules {
 
   /// Detects stale tasks (no activity for 30+ days)
   static const problemTaskStale = AttentionRuleTemplate(
-    domain: 'issues',
-    category: 'problem_task_stale',
     ruleKey: 'problem_task_stale',
-    ruleType: AttentionRuleType.problem,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'threshold_days': 30,
-    },
-    entitySelector: {
-      'entity_type': 'task',
+    bucket: AttentionBucket.action,
+    evaluator: 'task_predicate_v1',
+    evaluatorParams: {
       'predicate': 'isStale',
+      'thresholdDays': 30,
     },
     severity: AttentionSeverity.info,
     displayConfig: {
@@ -67,17 +57,12 @@ abstract class SystemAttentionRules {
 
   /// Detects idle projects (no activity)
   static const problemProjectIdle = AttentionRuleTemplate(
-    domain: 'issues',
-    category: 'problem_project_idle',
     ruleKey: 'problem_project_idle',
-    ruleType: AttentionRuleType.problem,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'threshold_days': 30,
-    },
-    entitySelector: {
-      'entity_type': 'project',
+    bucket: AttentionBucket.action,
+    evaluator: 'project_predicate_v1',
+    evaluatorParams: {
       'predicate': 'isIdle',
+      'thresholdDays': 30,
     },
     severity: AttentionSeverity.info,
     displayConfig: {
@@ -89,47 +74,18 @@ abstract class SystemAttentionRules {
     sortOrder: 30,
   );
 
-  /// Detects overdue journal entries
-  static const problemJournalOverdue = AttentionRuleTemplate(
-    domain: 'issues',
-    category: 'problem_journal_overdue',
-    ruleKey: 'problem_journal_overdue',
-    ruleType: AttentionRuleType.problem,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {
-      'threshold_days': 1,
-    },
-    entitySelector: {
-      'entity_type': 'journal',
-      'predicate': 'isOverdue',
-    },
-    severity: AttentionSeverity.warning,
-    displayConfig: {
-      'title': 'Journal Overdue',
-      'description': 'Journal entries past due date',
-      'icon': 'book',
-    },
-    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
-    sortOrder: 40,
-  );
-
   // ==========================================================================
-  // REVIEW RULES (5 rules)
+  // REVIEW RULES (3 rules)
   // ==========================================================================
 
   /// Values alignment review
   static const reviewValuesAlignment = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_values_alignment',
     ruleKey: 'review_values_alignment',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'frequency_days': 90, // Quarterly
-    },
-    entitySelector: {
-      'entity_type': 'review_session',
-      'review_type': 'values_alignment',
+    bucket: AttentionBucket.review,
+    evaluator: 'review_session_due_v1',
+    evaluatorParams: {
+      'reviewType': 'values_alignment',
+      'frequencyDays': 90,
     },
     severity: AttentionSeverity.info, // Reviews always info
     displayConfig: {
@@ -141,67 +97,14 @@ abstract class SystemAttentionRules {
     sortOrder: 100,
   );
 
-  /// Progress review
-  static const reviewProgress = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_progress',
-    ruleKey: 'review_progress',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'frequency_days': 30, // Monthly
-    },
-    entitySelector: {
-      'entity_type': 'review_session',
-      'review_type': 'progress',
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Progress Review',
-      'description': 'Review your goal progress',
-      'icon': 'trending_up',
-    },
-    resolutionActions: ['reviewed', 'snoozed'],
-    sortOrder: 110,
-  );
-
-  /// Journal review
-  static const reviewJournal = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_journal',
-    ruleKey: 'review_journal',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'frequency_days': 14, // Bi-weekly
-    },
-    entitySelector: {
-      'entity_type': 'review_session',
-      'review_type': 'journal',
-    },
-    severity: AttentionSeverity.info,
-    displayConfig: {
-      'title': 'Journal Check-in',
-      'description': 'Reflect on your journal patterns',
-      'icon': 'journal',
-    },
-    resolutionActions: ['reviewed', 'snoozed'],
-    sortOrder: 120,
-  );
-
   /// Balance review
   static const reviewBalance = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_balance',
     ruleKey: 'review_balance',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'frequency_days': 30, // Monthly
-    },
-    entitySelector: {
-      'entity_type': 'review_session',
-      'review_type': 'balance',
+    bucket: AttentionBucket.review,
+    evaluator: 'review_session_due_v1',
+    evaluatorParams: {
+      'reviewType': 'balance',
+      'frequencyDays': 30,
     },
     severity: AttentionSeverity.info,
     displayConfig: {
@@ -219,14 +122,10 @@ abstract class SystemAttentionRules {
 
   /// High-value project neglected (allocation-based).
   static const reviewProjectHighValueNeglected = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_project_high_value_neglected',
     ruleKey: 'review_project_high_value_neglected',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {},
-    entitySelector: {
-      'entity_type': 'project',
+    bucket: AttentionBucket.action,
+    evaluator: 'project_predicate_v1',
+    evaluatorParams: {
       'predicate': 'highValueNeglected',
     },
     severity: AttentionSeverity.info,
@@ -241,14 +140,10 @@ abstract class SystemAttentionRules {
 
   /// Project has not been allocated recently (portfolio hygiene).
   static const reviewProjectNoAllocatedRecently = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_project_no_allocated_recently',
     ruleKey: 'review_project_no_allocated_recently',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {},
-    entitySelector: {
-      'entity_type': 'project',
+    bucket: AttentionBucket.action,
+    evaluator: 'project_predicate_v1',
+    evaluatorParams: {
       'predicate': 'noAllocatedRecently',
     },
     severity: AttentionSeverity.info,
@@ -263,14 +158,10 @@ abstract class SystemAttentionRules {
 
   /// Project has no allocatable tasks for > 1 day (time gated).
   static const reviewProjectNoAllocatableTasks = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_project_no_allocatable_tasks',
     ruleKey: 'review_project_no_allocatable_tasks',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {},
-    entitySelector: {
-      'entity_type': 'project',
+    bucket: AttentionBucket.action,
+    evaluator: 'project_predicate_v1',
+    evaluatorParams: {
       'predicate': 'noAllocatableTasks',
     },
     severity: AttentionSeverity.info,
@@ -285,17 +176,12 @@ abstract class SystemAttentionRules {
 
   /// Pinned tasks review
   static const reviewPinnedTasks = AttentionRuleTemplate(
-    domain: 'reviews',
-    category: 'review_pinned_tasks',
     ruleKey: 'review_pinned_tasks',
-    ruleType: AttentionRuleType.review,
-    triggerType: AttentionTriggerType.scheduled,
-    triggerConfig: {
-      'frequency_days': 7, // Weekly
-    },
-    entitySelector: {
-      'entity_type': 'review_session',
-      'review_type': 'pinned_tasks',
+    bucket: AttentionBucket.review,
+    evaluator: 'review_session_due_v1',
+    evaluatorParams: {
+      'reviewType': 'pinned_tasks',
+      'frequencyDays': 7,
     },
     severity: AttentionSeverity.info,
     displayConfig: {
@@ -313,18 +199,10 @@ abstract class SystemAttentionRules {
 
   /// Warns about tasks that need allocation attention
   static const allocationExcludedTasks = AttentionRuleTemplate(
-    domain: 'allocation',
-    category: 'allocation_excluded_tasks',
     ruleKey: 'allocation_excluded_tasks',
-    ruleType: AttentionRuleType.allocationWarning,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {
-      'show_in': 'my_day',
-    },
-    entitySelector: {
-      'entity_type': 'task',
-      // Candidates are selected by predicate and then filtered by
-      // persisted allocation snapshot membership (allocated-only).
+    bucket: AttentionBucket.action,
+    evaluator: 'allocation_snapshot_task_v1',
+    evaluatorParams: {
       'predicate': 'urgentValueless',
     },
     severity: AttentionSeverity.warning,
@@ -339,18 +217,10 @@ abstract class SystemAttentionRules {
 
   /// Warns about urgent tasks that ARE value-aligned but still not allocated.
   static const allocationUrgentValueAligned = AttentionRuleTemplate(
-    domain: 'allocation',
-    category: 'allocation_urgent_value_aligned',
     ruleKey: 'allocation_urgent_value_aligned',
-    ruleType: AttentionRuleType.allocationWarning,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {
-      'show_in': 'my_day',
-    },
-    entitySelector: {
-      'entity_type': 'task',
-      // Candidates are selected by predicate and then filtered by
-      // persisted allocation snapshot membership (allocated-only).
+    bucket: AttentionBucket.action,
+    evaluator: 'allocation_snapshot_task_v1',
+    evaluatorParams: {
       'predicate': 'urgentValueAligned',
     },
     severity: AttentionSeverity.warning,
@@ -365,18 +235,10 @@ abstract class SystemAttentionRules {
 
   /// Warns about tasks under urgent projects that have no effective value.
   static const allocationProjectUrgentValueless = AttentionRuleTemplate(
-    domain: 'allocation',
-    category: 'allocation_project_urgent_valueless',
     ruleKey: 'allocation_project_urgent_valueless',
-    ruleType: AttentionRuleType.allocationWarning,
-    triggerType: AttentionTriggerType.realtime,
-    triggerConfig: {
-      'show_in': 'my_day',
-    },
-    entitySelector: {
-      'entity_type': 'task',
-      // Candidates are selected by predicate and then filtered by
-      // persisted allocation snapshot membership (allocated-only).
+    bucket: AttentionBucket.action,
+    evaluator: 'allocation_snapshot_task_v1',
+    evaluatorParams: {
       'predicate': 'projectUrgentValueless',
     },
     severity: AttentionSeverity.warning,
@@ -395,15 +257,12 @@ abstract class SystemAttentionRules {
 
   /// All system rule templates
   static List<AttentionRuleTemplate> get all => [
-    // Problem detection (4)
+    // Problem detection (3)
     problemTaskOverdue,
     problemTaskStale,
     problemProjectIdle,
-    problemJournalOverdue,
-    // Reviews (5 + 3 project health)
+    // Reviews (3 + 3 project health)
     reviewValuesAlignment,
-    reviewProgress,
-    reviewJournal,
     reviewBalance,
     reviewPinnedTasks,
     reviewProjectHighValueNeglected,
@@ -424,36 +283,25 @@ abstract class SystemAttentionRules {
     }
     return null;
   }
-
-  /// Get all templates of a specific type
-  static List<AttentionRuleTemplate> byType(AttentionRuleType type) {
-    return all.where((rule) => rule.ruleType == type).toList();
-  }
 }
 
 /// Template class for attention rules (not a domain model)
 /// This exists only for seeding - never used directly in business logic
 class AttentionRuleTemplate {
   const AttentionRuleTemplate({
-    required this.domain,
-    required this.category,
     required this.ruleKey,
-    required this.ruleType,
-    required this.triggerType,
-    required this.triggerConfig,
-    required this.entitySelector,
+    required this.bucket,
+    required this.evaluator,
+    required this.evaluatorParams,
     required this.severity,
     required this.displayConfig,
     required this.resolutionActions,
     required this.sortOrder,
   });
-  final String domain;
-  final String category;
   final String ruleKey;
-  final AttentionRuleType ruleType;
-  final AttentionTriggerType triggerType;
-  final Map<String, dynamic> triggerConfig;
-  final Map<String, dynamic> entitySelector;
+  final AttentionBucket bucket;
+  final String evaluator;
+  final Map<String, dynamic> evaluatorParams;
   final AttentionSeverity severity;
   final Map<String, dynamic> displayConfig;
   final List<String> resolutionActions;

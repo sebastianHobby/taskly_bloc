@@ -25,7 +25,11 @@ visibility preferences are persisted separately.
 Routing follows two supported URL patterns:
 
 - **Screens**: `/:segment` → `Routing.buildScreen(screenKey)` → `SystemScreenSpecs` → unified rendering.
-- **Entities**: `/:entityType/:id` → `Routing.buildEntityDetail(entityType, id)` → entity builder registry.
+- **Entity editors (NAV-01)**:
+  - Create: `/<entityType>/new` (e.g. `/task/new?projectId=abc`)
+  - Edit: `/<entityType>/:id/edit`
+  - Legacy task detail route: `/task/:id` redirects to `/task/:id/edit`
+- **Entity detail (read/composite)**: `/<entityType>/:id` (only for entities with a detail surface)
 
 As of the core ED/RD cutover, **tasks are editor-only**: navigating to
 `/task/:id` opens the task editor modal (there is no read-only task detail
@@ -84,7 +88,10 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 +------------------------------+
 |            Routing           |
 |  GoRouter '/:segment'        |
-|         '/:entityType/:id'   |
+|         '/<entity>/new'      |
+|         '/<entity>/:id/edit' |
+|         '/project/:id'       |
+|         '/value/:id'         |
 |  Routing.buildScreen         |
 |  Routing.buildEntityDetail   |
 +--------------+---------------+
@@ -148,11 +155,26 @@ Plain-text sequence (portable Markdown):
 
 ### 3.3 Entity Routes (ED/RD) — Runtime Flow
 
-Entity routes use the `/:entityType/:id` pattern and are handled by
-`Routing.buildEntityDetail`.
+Entity routes use NAV-01 conventions:
+- **Editor (create)**: `/<entityType>/new` (route-backed modal editor)
+- **Editor (edit)**: `/<entityType>/:id/edit` (route-backed modal editor)
+- **Detail (read/composite)**: `/<entityType>/:id` (only for entities that have a detail surface)
+
+Editor routes are handled by dedicated route pages (e.g. `TaskEditorRoutePage`).
+Entity detail routes are handled by `Routing.buildEntityDetail`.
+
+#### Editor route flow
 
 ```text
-1) User navigates to '/:entityType/:id'
+1) User navigates to '/<entityType>/new' or '/<entityType>/:id/edit'
+2) GoRouter selects the corresponding editor route page
+3) Editor route page opens the modal editor UX and then returns (pop)
+```
+
+#### Detail route flow
+
+```text
+1) User navigates to '/<entityType>/:id'
 2) Router parses entityType + id
 3) Router calls Routing.buildEntityDetail(entityType, id)
 4) Routing resolves a registered builder for the entityType

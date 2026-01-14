@@ -23,6 +23,7 @@ class ProjectForm extends StatefulWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
+    this.onChanged,
     this.availableValues = const <Value>[],
     this.onDelete,
     this.onClose,
@@ -33,6 +34,7 @@ class ProjectForm extends StatefulWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Project? initialData;
+  final ValueChanged<Map<String, dynamic>>? onChanged;
   final List<Value> availableValues;
   final VoidCallback? onDelete;
 
@@ -73,18 +75,19 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
     final colorScheme = theme.colorScheme;
     final isCreating = widget.initialData == null;
 
-    final Map<String, dynamic> initialValues = {
-      'name': widget.initialData?.name.trim() ?? '',
-      'description': widget.initialData?.description ?? '',
-      'completed': widget.initialData?.completed ?? false,
-      'startDate': widget.initialData?.startDate,
-      'deadlineDate': widget.initialData?.deadlineDate,
-      'priority': widget.initialData?.priority,
-      'valueIds':
+    final initialValues = <String, dynamic>{
+      ProjectFieldKeys.name.id: widget.initialData?.name.trim() ?? '',
+      ProjectFieldKeys.description.id: widget.initialData?.description ?? '',
+      ProjectFieldKeys.completed.id: widget.initialData?.completed ?? false,
+      ProjectFieldKeys.startDate.id: widget.initialData?.startDate,
+      ProjectFieldKeys.deadlineDate.id: widget.initialData?.deadlineDate,
+      ProjectFieldKeys.priority.id: widget.initialData?.priority,
+      ProjectFieldKeys.valueIds.id:
           (widget.initialData?.values ?? <Value>[]) // Use values property
               .map((Value e) => e.id)
               .toList(growable: false),
-      'repeatIcalRrule': widget.initialData?.repeatIcalRrule ?? '',
+      ProjectFieldKeys.repeatIcalRrule.id:
+          widget.initialData?.repeatIcalRrule ?? '',
     };
 
     return Container(
@@ -144,13 +147,19 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 key: widget.formKey,
                 initialValue: initialValues,
                 autovalidateMode: AutovalidateMode.onUserInteraction,
-                onChanged: markDirty,
+                onChanged: () {
+                  markDirty();
+                  final values = widget.formKey.currentState?.value;
+                  if (values != null) {
+                    widget.onChanged?.call(values);
+                  }
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Project Name
                     FormBuilderTextFieldModern(
-                      name: 'name',
+                      name: ProjectFieldKeys.name.id,
                       hint: l10n.projectFormTitleHint,
                       textCapitalization: TextCapitalization.words,
                       textInputAction: TextInputAction.next,
@@ -173,7 +182,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
 
                     // Project Description
                     FormBuilderTextFieldModern(
-                      name: 'description',
+                      name: ProjectFieldKeys.description.id,
                       hint: l10n.projectFormDescriptionHint,
                       textInputAction: TextInputAction.newline,
                       fieldType: ModernFieldType.description,
@@ -197,7 +206,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         children: [
                           // Start Date chip
                           FormBuilderField<DateTime?>(
-                            name: 'startDate',
+                            name: ProjectFieldKeys.startDate.id,
                             builder: (field) {
                               return FormDateChip.startDate(
                                 date: field.value,
@@ -214,7 +223,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           ),
                           // Deadline Date chip
                           FormBuilderField<DateTime?>(
-                            name: 'deadlineDate',
+                            name: ProjectFieldKeys.deadlineDate.id,
                             builder: (field) {
                               return FormDateChip.deadline(
                                 date: field.value,
@@ -231,7 +240,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                           ),
                           // Recurrence chip
                           FormBuilderField<String?>(
-                            name: 'repeatIcalRrule',
+                            name: ProjectFieldKeys.repeatIcalRrule.id,
                             builder: (field) {
                               return FormRecurrenceChip(
                                 rrule: field.value?.isEmpty ?? true
@@ -282,7 +291,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: FormBuilderPriorityPicker(
-                        name: 'priority',
+                        name: ProjectFieldKeys.priority.id,
                       ),
                     ),
 
@@ -290,7 +299,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
 
                     // Values
                     FormBuilderValuePicker(
-                      name: 'valueIds',
+                      name: ProjectFieldKeys.valueIds.id,
                       label: l10n.projectFormValuesLabel,
                       hint: 'Select values',
                       availableValues: widget.availableValues,

@@ -13,6 +13,7 @@ import 'package:taskly_bloc/domain/errors/not_found_entity.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/core/editing/editing.dart';
 
 part 'task_detail_bloc.freezed.dart';
 
@@ -20,31 +21,14 @@ part 'task_detail_bloc.freezed.dart';
 @freezed
 sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.update({
-    required String id,
-    required String name,
-    required String? description,
-    required bool completed,
-    DateTime? startDate,
-    DateTime? deadlineDate,
-    String? projectId,
-    int? priority,
-    String? repeatIcalRrule,
-    List<String>? valueIds,
+    required UpdateTaskCommand command,
   }) = _TaskDetailUpdate;
   const factory TaskDetailEvent.delete({
     required String id,
   }) = _TaskDetailDelete;
 
   const factory TaskDetailEvent.create({
-    required String name,
-    required String? description,
-    @Default(false) bool completed,
-    DateTime? startDate,
-    DateTime? deadlineDate,
-    String? projectId,
-    int? priority,
-    String? repeatIcalRrule,
-    List<String>? valueIds,
+    required CreateTaskCommand command,
   }) = _TaskDetailCreate;
 
   const factory TaskDetailEvent.loadById({required String taskId}) =
@@ -56,6 +40,10 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
 @freezed
 class TaskDetailState with _$TaskDetailState {
   const factory TaskDetailState.initial() = TaskDetailInitial;
+
+  const factory TaskDetailState.validationFailure({
+    required ValidationFailure failure,
+  }) = TaskDetailValidationFailure;
 
   const factory TaskDetailState.initialDataLoadSuccess({
     required List<Project> availableProjects,
@@ -88,6 +76,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
        _valueRepository = valueRepository,
+       _commandHandler = TaskCommandHandler(taskRepository: taskRepository),
        super(const TaskDetailState.initial()) {
     on<_TaskDetailLoadInitialData>(
       _onLoadInitialData,
@@ -110,6 +99,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
+  final TaskCommandHandler _commandHandler;
 
   @override
   Talker get logger => talker.raw;
@@ -196,19 +186,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     _TaskDetailCreate event,
     Emitter<TaskDetailState> emit,
   ) async {
-    await executeCreateOperation(
+    await _executeValidatedCommand(
       emit,
-      () => _taskRepository.create(
-        name: event.name,
-        description: event.description,
-        completed: event.completed,
-        startDate: event.startDate,
-        deadlineDate: event.deadlineDate,
-        projectId: event.projectId,
-        priority: event.priority,
-        repeatIcalRrule: event.repeatIcalRrule,
-        valueIds: event.valueIds,
-      ),
+      EntityOperation.create,
+      () => _commandHandler.handleCreate(event.command),
     );
   }
 
@@ -216,22 +197,10 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     _TaskDetailUpdate event,
     Emitter<TaskDetailState> emit,
   ) async {
-    await executeUpdateOperation(
+    await _executeValidatedCommand(
       emit,
-      () async {
-        await _taskRepository.update(
-          id: event.id,
-          name: event.name,
-          description: event.description,
-          completed: event.completed,
-          projectId: event.projectId,
-          priority: event.priority,
-          startDate: event.startDate,
-          deadlineDate: event.deadlineDate,
-          repeatIcalRrule: event.repeatIcalRrule,
-          valueIds: event.valueIds,
-        );
-      },
+      EntityOperation.update,
+      () => _commandHandler.handleUpdate(event.command),
     );
   }
 
@@ -240,5 +209,28 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     Emitter<TaskDetailState> emit,
   ) async {
     await executeDeleteOperation(emit, () => _taskRepository.delete(event.id));
+  }
+
+  Future<void> _executeValidatedCommand(
+    Emitter<TaskDetailState> emit,
+    EntityOperation operation,
+    Future<CommandResult> Function() execute,
+  ) async {
+    try {
+      final result = await execute();
+      switch (result) {
+        case CommandSuccess():
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          emit(createOperationSuccessState(operation));
+        case CommandValidationFailure(:final failure):
+          emit(TaskDetailState.validationFailure(failure: failure));
+      }
+    } catch (error, stackTrace) {
+      emit(
+        createOperationFailureState(
+          DetailBlocError<Task>(error: error, stackTrace: stackTrace),
+        ),
+      );
+    }
   }
 }

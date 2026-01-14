@@ -1,5 +1,4 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/presentation/shared/utils/date_format_patterns.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 
 part 'global_settings.freezed.dart';
@@ -20,7 +19,6 @@ abstract class GlobalSettings with _$GlobalSettings {
     /// Note: this does not model DST transitions; it's a fixed offset.
     @Default(GlobalSettings.defaultHomeTimeZoneOffsetMinutes)
     int homeTimeZoneOffsetMinutes,
-    @Default(DateFormatPatterns.defaultPattern) String dateFormatPattern,
     @Default(1.0) double textScaleFactor,
     @Default(false) bool onboardingCompleted,
   }) = _GlobalSettings;
@@ -36,9 +34,6 @@ abstract class GlobalSettings with _$GlobalSettings {
       homeTimeZoneOffsetMinutes:
           (json['homeTimeZoneOffsetMinutes'] as num?)?.toInt() ??
           defaultHomeTimeZoneOffsetMinutes,
-      dateFormatPattern:
-          json['dateFormatPattern'] as String? ??
-          DateFormatPatterns.defaultPattern,
       textScaleFactor: (json['textScaleFactor'] as num?)?.toDouble() ?? 1.0,
       onboardingCompleted: json['onboardingCompleted'] as bool? ?? false,
     );
@@ -90,7 +85,6 @@ extension GlobalSettingsJson on GlobalSettings {
     ),
     'locale': localeCode,
     'homeTimeZoneOffsetMinutes': homeTimeZoneOffsetMinutes,
-    'dateFormatPattern': dateFormatPattern,
     'textScaleFactor': textScaleFactor,
     'onboardingCompleted': onboardingCompleted,
   };

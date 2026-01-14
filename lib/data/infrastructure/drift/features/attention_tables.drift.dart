@@ -3,11 +3,8 @@ import 'package:powersync/powersync.dart' show uuid;
 import 'package:taskly_bloc/data/infrastructure/drift/converters/json_converters.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/features/shared_enums.dart';
 
-/// Attention rule types
-enum AttentionRuleType { problem, review, allocationWarning }
-
-/// Attention trigger types (when rules are evaluated)
-enum AttentionTriggerType { realtime, scheduled }
+/// Attention bucket taxonomy (Action vs Review).
+enum AttentionBucket { action, review }
 
 /// Attention severity levels
 enum AttentionSeverity { critical, warning, info }
@@ -28,25 +25,14 @@ class AttentionRules extends Table {
   TextColumn get userId => text().nullable().named('user_id')();
 
   /// Stable grouping axes.
-  TextColumn get domain => text().named('domain')();
+  TextColumn get bucket => textEnum<AttentionBucket>().named('bucket')();
 
-  /// Stable sub-category within a domain.
-  TextColumn get category => text().named('category')();
+  /// Stable evaluator key.
+  TextColumn get evaluator => text().named('evaluator')();
 
-  /// Rule type: problem, review, allocation_warning
-  TextColumn get ruleType => textEnum<AttentionRuleType>().named('rule_type')();
-
-  /// Trigger type: realtime or scheduled
-  TextColumn get triggerType =>
-      textEnum<AttentionTriggerType>().named('trigger_type')();
-
-  /// Configuration for the trigger (frequency_days, grace_period_days, threshold_days, etc.)
-  TextColumn get triggerConfig =>
-      text().map(const JsonMapConverter()).named('trigger_config')();
-
-  /// Entity selector defining which entities this rule applies to
-  TextColumn get entitySelector =>
-      text().map(const JsonMapConverter()).named('entity_selector')();
+  /// Evaluator params payload (jsonb in Supabase, TEXT in SQLite).
+  TextColumn get evaluatorParams =>
+      text().map(const JsonMapConverter()).named('evaluator_params')();
 
   /// Severity level: critical, warning, info
   TextColumn get severity => textEnum<AttentionSeverity>().named('severity')();

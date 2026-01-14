@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
+import 'package:taskly_bloc/domain/core/editing/editing.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
@@ -123,14 +124,24 @@ void main() {
           () => taskRepo.create(
             name: 'New Task',
             description: 'Task description',
+            completed: false,
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            valueIds: any(named: 'valueIds'),
           ),
         ).thenAnswer((_) async {});
       },
       build: buildBloc,
       act: (bloc) => bloc.add(
         const TaskDetailEvent.create(
-          name: 'New Task',
-          description: 'Task description',
+          command: CreateTaskCommand(
+            name: 'New Task',
+            completed: false,
+            description: 'Task description',
+          ),
         ),
       ),
       wait: const Duration(milliseconds: 100),
@@ -149,14 +160,25 @@ void main() {
         when(
           () => taskRepo.create(
             name: 'New Task',
+            completed: false,
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            valueIds: any(named: 'valueIds'),
           ),
         ).thenThrow(Exception('Create failed'));
       },
       build: buildBloc,
       act: (bloc) => bloc.add(
         const TaskDetailEvent.create(
-          name: 'New Task',
-          description: null,
+          command: CreateTaskCommand(
+            name: 'New Task',
+            completed: false,
+            description: null,
+          ),
         ),
       ),
       expect: () => [
@@ -172,16 +194,25 @@ void main() {
             id: 'task-1',
             name: 'Updated Task',
             completed: false,
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            valueIds: any(named: 'valueIds'),
           ),
         ).thenAnswer((_) async {});
       },
       build: buildBloc,
       act: (bloc) => bloc.add(
         const TaskDetailEvent.update(
-          id: 'task-1',
-          name: 'Updated Task',
-          description: null,
-          completed: false,
+          command: UpdateTaskCommand(
+            id: 'task-1',
+            name: 'Updated Task',
+            completed: false,
+            description: null,
+          ),
         ),
       ),
       wait: const Duration(milliseconds: 100),
@@ -202,16 +233,25 @@ void main() {
             id: 'task-1',
             name: 'Updated Task',
             completed: false,
+            description: any(named: 'description'),
+            startDate: any(named: 'startDate'),
+            deadlineDate: any(named: 'deadlineDate'),
+            projectId: any(named: 'projectId'),
+            priority: any(named: 'priority'),
+            repeatIcalRrule: any(named: 'repeatIcalRrule'),
+            valueIds: any(named: 'valueIds'),
           ),
         ).thenThrow(Exception('Update failed'));
       },
       build: buildBloc,
       act: (bloc) => bloc.add(
         const TaskDetailEvent.update(
-          id: 'task-1',
-          name: 'Updated Task',
-          description: null,
-          completed: false,
+          command: UpdateTaskCommand(
+            id: 'task-1',
+            name: 'Updated Task',
+            completed: false,
+            description: null,
+          ),
         ),
       ),
       expect: () => [

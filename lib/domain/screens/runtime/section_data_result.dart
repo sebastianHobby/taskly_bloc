@@ -4,7 +4,6 @@ import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
-import 'package:taskly_bloc/domain/screens/language/models/enrichment_result.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -54,8 +53,8 @@ sealed class SectionDataResult with _$SectionDataResult {
     required List<ScreenItem> items,
 
     /// Computed enrichment data (e.g., value statistics).
-    /// Present when the section requested enrichment via EnrichmentConfig.
-    EnrichmentResult? enrichment,
+    /// Present when the section requested enrichment via an enrichment plan.
+    EnrichmentResultV2? enrichment,
   }) = DataSectionResult;
 
   /// V2 data section result - generic entity list with typed V2 enrichment.

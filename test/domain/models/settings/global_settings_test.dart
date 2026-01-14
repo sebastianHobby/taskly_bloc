@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
-import 'package:taskly_bloc/presentation/shared/utils/date_format_patterns.dart';
 import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 
 void main() {
@@ -17,7 +16,6 @@ void main() {
         expect(settings.themeMode, AppThemeMode.system);
         expect(settings.colorSchemeSeedArgb, 0xFF6750A4);
         expect(settings.localeCode, isNull);
-        expect(settings.dateFormatPattern, DateFormatPatterns.defaultPattern);
         expect(settings.textScaleFactor, 1.0);
         expect(settings.onboardingCompleted, false);
       });
@@ -27,7 +25,6 @@ void main() {
           themeMode: AppThemeMode.dark,
           colorSchemeSeedArgb: 0xFF00FF00,
           localeCode: 'es',
-          dateFormatPattern: DateFormatPatterns.long,
           textScaleFactor: 1.5,
           onboardingCompleted: true,
         );
@@ -35,7 +32,6 @@ void main() {
         expect(settings.themeMode, AppThemeMode.dark);
         expect(settings.colorSchemeSeedArgb, 0xFF00FF00);
         expect(settings.localeCode, 'es');
-        expect(settings.dateFormatPattern, DateFormatPatterns.long);
         expect(settings.textScaleFactor, 1.5);
         expect(settings.onboardingCompleted, true);
       });
@@ -47,7 +43,6 @@ void main() {
           'themeMode': 'dark',
           'colorSchemeSeed': '#FF5733',
           'locale': 'fr',
-          'dateFormatPattern': 'yMd',
           'textScaleFactor': 1.2,
           'onboardingCompleted': true,
         };
@@ -57,7 +52,6 @@ void main() {
         expect(settings.themeMode, AppThemeMode.dark);
         expect(settings.colorSchemeSeedArgb, 0xFFFF5733);
         expect(settings.localeCode, 'fr');
-        expect(settings.dateFormatPattern, 'yMd');
         expect(settings.textScaleFactor, 1.2);
         expect(settings.onboardingCompleted, true);
       });
@@ -68,7 +62,6 @@ void main() {
         expect(settings.themeMode, AppThemeMode.system);
         expect(settings.colorSchemeSeedArgb, 0xFF6750A4);
         expect(settings.localeCode, isNull);
-        expect(settings.dateFormatPattern, DateFormatPatterns.defaultPattern);
         expect(settings.textScaleFactor, 1.0);
         expect(settings.onboardingCompleted, false);
       });
@@ -160,7 +153,6 @@ void main() {
           themeMode: AppThemeMode.light,
           colorSchemeSeedArgb: 0xFF123456,
           localeCode: 'de',
-          dateFormatPattern: 'yMMMMd',
           textScaleFactor: 1.1,
           onboardingCompleted: true,
         );
@@ -170,7 +162,6 @@ void main() {
         expect(json['themeMode'], 'light');
         expect(json['colorSchemeSeed'], '#123456');
         expect(json['locale'], 'de');
-        expect(json['dateFormatPattern'], 'yMMMMd');
         expect(json['textScaleFactor'], 1.1);
         expect(json['onboardingCompleted'], true);
       });
@@ -188,7 +179,6 @@ void main() {
           themeMode: AppThemeMode.dark,
           colorSchemeSeedArgb: 0xFFABCDEF,
           localeCode: 'ja',
-          dateFormatPattern: 'yMd',
           textScaleFactor: 1.25,
           onboardingCompleted: true,
         );
@@ -236,14 +226,6 @@ void main() {
         final copied = settings.copyWith(localeCode: 'es');
 
         expect(copied.localeCode, 'es');
-      });
-
-      test('copies with dateFormatPattern change', () {
-        const settings = GlobalSettings();
-
-        final copied = settings.copyWith(dateFormatPattern: 'yMd');
-
-        expect(copied.dateFormatPattern, 'yMd');
       });
 
       test('copies with textScaleFactor change', () {
@@ -313,13 +295,6 @@ void main() {
         expect(settings1, isNot(settings2));
       });
 
-      test('different dateFormatPattern are not equal', () {
-        const settings1 = GlobalSettings(dateFormatPattern: 'yMd');
-        const settings2 = GlobalSettings(dateFormatPattern: 'yMMMd');
-
-        expect(settings1, isNot(settings2));
-      });
-
       test('different textScaleFactor are not equal', () {
         const settings1 = GlobalSettings(textScaleFactor: 1);
         const settings2 = GlobalSettings(textScaleFactor: 1.5);
@@ -356,37 +331,6 @@ void main() {
 
       test('returns system for unknown value', () {
         expect(AppThemeMode.fromName('invalid'), AppThemeMode.system);
-      });
-    });
-  });
-
-  group('DateFormatPatterns', () {
-    test('has correct pattern constants', () {
-      expect(DateFormatPatterns.short, 'yMd');
-      expect(DateFormatPatterns.medium, 'yMMMd');
-      expect(DateFormatPatterns.long, 'yMMMMd');
-      expect(DateFormatPatterns.full, 'yMMMMEEEEd');
-      expect(DateFormatPatterns.defaultPattern, DateFormatPatterns.medium);
-    });
-
-    group('getFormat', () {
-      test('returns DateFormat for valid pattern', () {
-        final format = DateFormatPatterns.getFormat('yMd');
-
-        expect(format, isNotNull);
-      });
-
-      test('returns DateFormat with locale', () {
-        final format = DateFormatPatterns.getFormat('yMd', 'en');
-
-        expect(format, isNotNull);
-      });
-
-      test('returns fallback for invalid pattern', () {
-        // Invalid patterns should fall back to default
-        final format = DateFormatPatterns.getFormat('invalid_pattern');
-
-        expect(format, isNotNull);
       });
     });
   });

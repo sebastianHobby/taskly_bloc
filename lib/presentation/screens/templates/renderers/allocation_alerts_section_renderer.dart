@@ -42,9 +42,9 @@ class AllocationAlertsSectionRenderer extends StatelessWidget {
           if (data.alerts.length > 2)
             TextButton(
               onPressed: () {
-                Routing.toScreenKey(context, 'focus_setup');
+                Routing.toScreenKey(context, 'review_inbox');
               },
-              child: Text('View all ${data.alerts.length} alerts'),
+              child: Text('Open review inbox (${data.alerts.length})'),
             ),
         ],
       ),

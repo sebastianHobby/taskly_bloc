@@ -15,21 +15,14 @@ part 'value_detail_bloc.freezed.dart';
 @freezed
 sealed class ValueDetailEvent with _$ValueDetailEvent {
   const factory ValueDetailEvent.update({
-    required String id,
-    required String name,
-    required String color,
-    required ValuePriority priority,
-    String? iconName,
+    required UpdateValueCommand command,
   }) = _ValueDetailUpdate;
 
   const factory ValueDetailEvent.delete({required String id}) =
       _ValueDetailDelete;
 
   const factory ValueDetailEvent.create({
-    required String name,
-    required String color,
-    required ValuePriority priority,
-    String? iconName,
+    required CreateValueCommand command,
   }) = _ValueDetailCreate;
 
   const factory ValueDetailEvent.loadById({required String valueId}) =
@@ -39,6 +32,10 @@ sealed class ValueDetailEvent with _$ValueDetailEvent {
 @freezed
 class ValueDetailState with _$ValueDetailState {
   const factory ValueDetailState.initial() = ValueDetailInitial;
+
+  const factory ValueDetailState.validationFailure({
+    required ValidationFailure failure,
+  }) = ValueDetailValidationFailure;
 
   const factory ValueDetailState.operationSuccess({
     required EntityOperation operation,
@@ -58,6 +55,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     required ValueRepositoryContract valueRepository,
     String? valueId,
   }) : _valueRepository = valueRepository,
+       _commandHandler = ValueCommandHandler(valueRepository: valueRepository),
        super(const ValueDetailState.initial()) {
     on<_ValueDetailLoadById>(_onGet, transformer: restartable());
     on<_ValueDetailCreate>(_onCreate, transformer: droppable());
@@ -70,6 +68,7 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
   }
 
   final ValueRepositoryContract _valueRepository;
+  final ValueCommandHandler _commandHandler;
 
   @override
   Talker get logger => talker.raw;
@@ -109,15 +108,10 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     _ValueDetailCreate event,
     Emitter<ValueDetailState> emit,
   ) async {
-    await executeOperation(
+    await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _valueRepository.create(
-        name: event.name,
-        color: event.color,
-        priority: event.priority,
-        iconName: event.iconName,
-      ),
+      () => _commandHandler.handleCreate(event.command),
     );
   }
 
@@ -125,16 +119,10 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     _ValueDetailUpdate event,
     Emitter<ValueDetailState> emit,
   ) async {
-    await executeOperation(
+    await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _valueRepository.update(
-        id: event.id,
-        name: event.name,
-        color: event.color,
-        priority: event.priority,
-        iconName: event.iconName,
-      ),
+      () => _commandHandler.handleUpdate(event.command),
     );
   }
 
@@ -147,5 +135,28 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
       EntityOperation.delete,
       () => _valueRepository.delete(event.id),
     );
+  }
+
+  Future<void> _executeValidatedCommand(
+    Emitter<ValueDetailState> emit,
+    EntityOperation operation,
+    Future<CommandResult> Function() execute,
+  ) async {
+    try {
+      final result = await execute();
+      switch (result) {
+        case CommandSuccess():
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          emit(createOperationSuccessState(operation));
+        case CommandValidationFailure(:final failure):
+          emit(ValueDetailState.validationFailure(failure: failure));
+      }
+    } catch (error, stackTrace) {
+      emit(
+        createOperationFailureState(
+          DetailBlocError<Value>(error: error, stackTrace: stackTrace),
+        ),
+      );
+    }
   }
 }

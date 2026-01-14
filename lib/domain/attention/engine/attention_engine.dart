@@ -52,6 +52,25 @@ class AttentionEngine implements AttentionEngineContract {
 
   final _uuid = const Uuid();
 
+  late final Map<String, _EvaluatorSpec> _evaluatorRegistry = {
+    'task_predicate_v1': _EvaluatorSpec(
+      entityTypes: {AttentionEntityType.task},
+      evaluate: _evaluateTaskPredicateV1,
+    ),
+    'project_predicate_v1': _EvaluatorSpec(
+      entityTypes: {AttentionEntityType.project},
+      evaluate: _evaluateProjectPredicateV1,
+    ),
+    'allocation_snapshot_task_v1': _EvaluatorSpec(
+      entityTypes: {AttentionEntityType.task},
+      evaluate: _evaluateAllocationSnapshotTaskV1,
+    ),
+    'review_session_due_v1': _EvaluatorSpec(
+      entityTypes: {AttentionEntityType.reviewSession},
+      evaluate: _evaluateReviewSessionDueV1,
+    ),
+  };
+
   @override
   Stream<List<AttentionItem>> watch(AttentionQuery query) {
     final pulse$ = _invalidations
@@ -116,40 +135,60 @@ class AttentionEngine implements AttentionEngineContract {
     })
     inputs,
   ) async {
+    final now = DateTime.now();
     final items = <AttentionItem>[];
 
     for (final rule in inputs.rules) {
-      if (!_matchesQueryEntityTypes(query, rule)) continue;
       if (!_matchesMinSeverity(query, rule)) continue;
 
-      final ruleItems = await _evaluateRule(
+      final evaluatorSpec = _evaluatorRegistry[rule.evaluator];
+      if (evaluatorSpec == null) continue;
+
+      final entityTypeFilter = query.entityTypes;
+      if (entityTypeFilter != null &&
+          evaluatorSpec.entityTypes.intersection(entityTypeFilter).isEmpty) {
+        continue;
+      }
+
+      final runtimeStates = await _loadRuntimeStateIndex(rule.id);
+      final latestResolutions = await _loadLatestResolutionIndex(rule.id);
+
+      final evaluated = await evaluatorSpec.evaluate(
         rule,
-        tasks: inputs.tasks,
-        projects: inputs.projects,
-        snapshot: inputs.snapshot,
+        (
+          tasks: inputs.tasks,
+          projects: inputs.projects,
+          snapshot: inputs.snapshot,
+          now: now,
+        ),
       );
 
-      if (query.entityTypes == null) {
-        items.addAll(ruleItems);
-      } else {
-        items.addAll(
-          ruleItems.where((i) => query.entityTypes!.contains(i.entityType)),
+      for (final e in evaluated) {
+        if (entityTypeFilter != null &&
+            !entityTypeFilter.contains(e.item.entityType)) {
+          continue;
+        }
+
+        final key = _runtimeKey(
+          entityType: e.item.entityType,
+          entityId: e.item.entityId,
         );
+
+        if (_isSuppressed(
+          now: now,
+          stateHash: e.stateHash,
+          runtimeState: runtimeStates[key],
+          latestResolution: latestResolutions[e.item.entityId],
+        )) {
+          continue;
+        }
+
+        items.add(e.item);
       }
     }
 
+    items.sort((a, b) => (a.sortKey ?? '').compareTo(b.sortKey ?? ''));
     return items;
-  }
-
-  bool _matchesQueryEntityTypes(AttentionQuery query, AttentionRule rule) {
-    final filter = query.entityTypes;
-    if (filter == null) return true;
-
-    final entityTypeStr = rule.entitySelector['entity_type'] as String?;
-    final entityType = _parseEntityType(entityTypeStr);
-    if (entityType == null) return false;
-
-    return filter.contains(entityType);
   }
 
   bool _matchesMinSeverity(AttentionQuery query, AttentionRule rule) {
@@ -158,79 +197,35 @@ class AttentionEngine implements AttentionEngineContract {
     return _severityIndex(rule.severity) >= _severityIndex(min);
   }
 
-  Future<List<AttentionItem>> _evaluateRule(
-    AttentionRule rule, {
-    required List<Task> tasks,
-    required List<Project> projects,
-    required AllocationSnapshot? snapshot,
-  }) async {
-    return switch (rule.ruleType) {
-      AttentionRuleType.problem => _evaluateProblemRule(
-        rule,
-        tasks: tasks,
-        projects: projects,
-      ),
-      AttentionRuleType.review => _evaluateReviewRule(rule),
-      AttentionRuleType.allocationWarning => _evaluateAllocationRule(
-        rule,
-        tasks: tasks,
-        projects: projects,
-        snapshot: snapshot,
-      ),
-    };
-  }
+  // ========================================================================
+  // Evaluators
+  // ========================================================================
 
-  Future<List<AttentionItem>> _evaluateProblemRule(
-    AttentionRule rule, {
-    required List<Task> tasks,
-    required List<Project> projects,
-  }) async {
-    final predicate = rule.entitySelector['predicate'] as String?;
-    final entityTypeStr = rule.entitySelector['entity_type'] as String?;
-
-    if (predicate == null || entityTypeStr == null) {
-      return const <AttentionItem>[];
-    }
-
-    final entityType = _parseEntityType(entityTypeStr);
-
-    return switch (entityType) {
-      AttentionEntityType.task => _evaluateTaskPredicate(
-        rule,
-        tasks,
-        predicate,
-      ),
-      AttentionEntityType.project => _evaluateProjectPredicate(
-        rule,
-        projects,
-        predicate,
-      ),
-      // Legacy evaluator treated journal as out-of-scope v1.
-      AttentionEntityType.journal => const <AttentionItem>[],
-      AttentionEntityType.value => const <AttentionItem>[],
-      AttentionEntityType.tracker => const <AttentionItem>[],
-      AttentionEntityType.reviewSession => const <AttentionItem>[],
-      null => const <AttentionItem>[],
-    };
-  }
-
-  Future<List<AttentionItem>> _evaluateTaskPredicate(
+  Future<List<_EvaluatedItem>> _evaluateTaskPredicateV1(
     AttentionRule rule,
-    List<Task> tasks,
-    String predicate,
+    _EvalInputs inputs,
   ) async {
-    final runtimeStates = await _loadRuntimeStateIndex(rule.id);
-    final latestResolutions = await _loadLatestResolutionIndex(rule.id);
+    final predicate = rule.evaluatorParams['predicate'] as String?;
+    if (predicate == null) return const <_EvaluatedItem>[];
 
-    final now = DateTime.now();
-    final matching = <Task>[];
+    final thresholdHours =
+        _readInt(rule.evaluatorParams, 'thresholdHours') ??
+        _readInt(rule.evaluatorParams, 'threshold_hours') ??
+        0;
+    final thresholdDays =
+        _readInt(rule.evaluatorParams, 'thresholdDays') ??
+        _readInt(rule.evaluatorParams, 'threshold_days') ??
+        30;
 
-    for (final task in tasks) {
+    final now = inputs.now;
+    final matching = <_EvaluatedItem>[];
+
+    for (final task in inputs.tasks) {
       if (task.completed) continue;
 
       final matches = switch (predicate) {
-        'isOverdue' => _isTaskOverdue(task, rule.triggerConfig),
-        'isStale' => _isTaskStale(task, rule.triggerConfig),
+        'isOverdue' => _isTaskOverdue(task, thresholdHours: thresholdHours),
+        'isStale' => _isTaskStale(task, thresholdDays: thresholdDays),
         _ => false,
       };
 
@@ -242,45 +237,39 @@ class AttentionEngine implements AttentionEngineContract {
         predicate: predicate,
       );
 
-      final key = _runtimeKey(
-        entityType: AttentionEntityType.task,
-        entityId: task.id,
+      matching.add(
+        _EvaluatedItem(
+          item: _createTaskItem(rule, task, detectedAt: now),
+          stateHash: stateHash,
+        ),
       );
-
-      if (_isSuppressed(
-        now: now,
-        stateHash: stateHash,
-        runtimeState: runtimeStates[key],
-        latestResolution: latestResolutions[task.id],
-      )) {
-        continue;
-      }
-
-      matching.add(task);
     }
 
-    return matching
-        .map((t) => _createTaskItem(rule, t))
-        .toList(growable: false);
+    return matching;
   }
 
-  Future<List<AttentionItem>> _evaluateProjectPredicate(
+  Future<List<_EvaluatedItem>> _evaluateProjectPredicateV1(
     AttentionRule rule,
-    List<Project> projects,
-    String predicate,
+    _EvalInputs inputs,
   ) async {
-    final runtimeStates = await _loadRuntimeStateIndex(rule.id);
-    final latestResolutions = await _loadLatestResolutionIndex(rule.id);
+    final predicate = rule.evaluatorParams['predicate'] as String?;
+    if (predicate == null) return const <_EvaluatedItem>[];
 
-    final now = DateTime.now();
-    final matching = <Project>[];
+    final now = inputs.now;
+    final items = <_EvaluatedItem>[];
 
-    for (final project in projects) {
+    for (final project in inputs.projects) {
       if (project.completed) continue;
 
       final matches = switch (predicate) {
-        'isIdle' => _isProjectIdle(project, rule.triggerConfig),
-        'isStale' => _isProjectStale(project, rule.triggerConfig),
+        'isIdle' => _isProjectIdle(
+          project,
+          thresholdDays: _readInt(rule.evaluatorParams, 'thresholdDays') ?? 30,
+        ),
+        'noAllocatableTasks' =>
+          (project.taskCount - project.completedTaskCount) <= 0,
+        'highValueNeglected' => _isProjectHighValueNeglected(project, now),
+        'noAllocatedRecently' => _isProjectNoAllocatedRecently(project, now),
         _ => false,
       };
 
@@ -292,47 +281,31 @@ class AttentionEngine implements AttentionEngineContract {
         predicate: predicate,
       );
 
-      final key = _runtimeKey(
-        entityType: AttentionEntityType.project,
-        entityId: project.id,
+      items.add(
+        _EvaluatedItem(
+          item: _createProjectItem(rule, project, detectedAt: now),
+          stateHash: stateHash,
+        ),
       );
-
-      if (_isSuppressed(
-        now: now,
-        stateHash: stateHash,
-        runtimeState: runtimeStates[key],
-        latestResolution: latestResolutions[project.id],
-      )) {
-        continue;
-      }
-
-      matching.add(project);
     }
 
-    return matching
-        .map((p) => _createProjectItem(rule, p))
-        .toList(growable: false);
+    return items;
   }
 
-  Future<List<AttentionItem>> _evaluateAllocationRule(
-    AttentionRule rule, {
-    required List<Task> tasks,
-    required List<Project> projects,
-    required AllocationSnapshot? snapshot,
-  }) async {
-    if (snapshot == null) return const <AttentionItem>[];
+  Future<List<_EvaluatedItem>> _evaluateAllocationSnapshotTaskV1(
+    AttentionRule rule,
+    _EvalInputs inputs,
+  ) async {
+    final snapshot = inputs.snapshot;
+    if (snapshot == null) return const <_EvaluatedItem>[];
 
-    final predicate = rule.entitySelector['predicate'] as String?;
-    final entityTypeStr = rule.entitySelector['entity_type'] as String?;
-    if (predicate == null || entityTypeStr == null) {
-      return const <AttentionItem>[];
-    }
+    final predicateRaw = rule.evaluatorParams['predicate'] as String?;
+    if (predicateRaw == null) return const <_EvaluatedItem>[];
 
-    final entityType = _parseEntityType(entityTypeStr);
-    if (entityType != AttentionEntityType.task) return const <AttentionItem>[];
-
-    final runtimeStates = await _loadRuntimeStateIndex(rule.id);
-    final latestResolutions = await _loadLatestResolutionIndex(rule.id);
+    // Back-compat: old predicate name before snapshot-based alerts.
+    final predicate = predicateRaw == 'excludedFromAllocation'
+        ? 'urgentValueless'
+        : predicateRaw;
 
     final allocatedTaskIds = snapshot.allocated
         .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
@@ -340,16 +313,16 @@ class AttentionEngine implements AttentionEngineContract {
         .toSet();
 
     final candidates = await _selectAllocationTaskCandidates(
-      tasks,
-      projects: projects,
+      inputs.tasks,
+      projects: inputs.projects,
       predicate: predicate,
     );
 
     final allocationVersion = snapshot.version;
     final dayUtc = snapshot.dayUtc;
+    final now = inputs.now;
 
-    final now = DateTime.now();
-    final items = <AttentionItem>[];
+    final items = <_EvaluatedItem>[];
 
     for (final task in candidates) {
       if (task.completed) continue;
@@ -363,26 +336,16 @@ class AttentionEngine implements AttentionEngineContract {
         allocationVersion: allocationVersion,
       );
 
-      final key = _runtimeKey(
-        entityType: AttentionEntityType.task,
-        entityId: task.id,
-      );
-
-      if (_isSuppressed(
-        now: now,
-        stateHash: stateHash,
-        runtimeState: runtimeStates[key],
-        latestResolution: latestResolutions[task.id],
-      )) {
-        continue;
-      }
-
       items.add(
-        _createAllocationTaskItem(
-          rule,
-          task,
-          dayUtc: dayUtc,
-          allocationVersion: allocationVersion,
+        _EvaluatedItem(
+          item: _createAllocationTaskItem(
+            rule,
+            task,
+            detectedAt: now,
+            dayUtc: dayUtc,
+            allocationVersion: allocationVersion,
+          ),
+          stateHash: stateHash,
         ),
       );
     }
@@ -390,49 +353,46 @@ class AttentionEngine implements AttentionEngineContract {
     return items;
   }
 
-  Future<List<AttentionItem>> _evaluateReviewRule(AttentionRule rule) async {
-    final entityTypeStr = rule.entitySelector['entity_type'] as String?;
-    final entityType = _parseEntityType(entityTypeStr);
-
-    // Only scheduled review sessions are supported here.
-    if (entityType != AttentionEntityType.reviewSession) {
-      return const <AttentionItem>[];
-    }
-
-    final dueInfo = await _getReviewDueInfo(rule);
-    if (dueInfo == null) return const <AttentionItem>[];
-
-    return <AttentionItem>[
-      _createReviewItem(rule, overdueDays: dueInfo.overdueDays),
-    ];
-  }
-
-  Future<({int overdueDays, int frequencyDays})?> _getReviewDueInfo(
+  Future<List<_EvaluatedItem>> _evaluateReviewSessionDueV1(
     AttentionRule rule,
+    _EvalInputs inputs,
   ) async {
-    final frequencyDays = rule.triggerConfig['frequency_days'] as int? ?? 7;
+    final frequencyDays = _readInt(rule.evaluatorParams, 'frequencyDays') ?? 7;
 
     // Reviews use rule key as entity id.
+    final entityId = rule.ruleKey;
     final lastResolution = await _attentionRepository.getLatestResolution(
       rule.id,
-      rule.ruleKey,
+      entityId,
     );
 
-    if (lastResolution == null) {
-      return (overdueDays: 1000000, frequencyDays: frequencyDays);
-    }
+    final now = inputs.now;
+    final overdueDays = switch (lastResolution?.resolutionAction) {
+      null => 1000000,
+      AttentionResolutionAction.reviewed =>
+        now.difference(lastResolution!.resolvedAt).inDays - frequencyDays,
+      _ => 1000000,
+    };
 
-    if (lastResolution.resolutionAction != AttentionResolutionAction.reviewed) {
-      return (overdueDays: 1000000, frequencyDays: frequencyDays);
-    }
+    if (overdueDays < 0) return const <_EvaluatedItem>[];
 
-    final daysSinceCompletion = DateTime.now()
-        .difference(lastResolution.resolvedAt)
-        .inDays;
-    final overdueDays = daysSinceCompletion - frequencyDays;
-    if (overdueDays < 0) return null;
+    final stateHash = _computeReviewSessionStateHash(
+      rule: rule,
+      frequencyDays: frequencyDays,
+      overdueDays: overdueDays,
+    );
 
-    return (overdueDays: overdueDays, frequencyDays: frequencyDays);
+    return <_EvaluatedItem>[
+      _EvaluatedItem(
+        item: _createReviewItem(
+          rule,
+          detectedAt: now,
+          frequencyDays: frequencyDays,
+          overdueDays: overdueDays,
+        ),
+        stateHash: stateHash,
+      ),
+    ];
   }
 
   // ==========================================================================
@@ -512,29 +472,6 @@ class AttentionEngine implements AttentionEngineContract {
   // Predicate helpers
   // ==========================================================================
 
-  bool _isTaskOverdue(Task task, Map<String, dynamic> config) {
-    if (task.deadlineDate == null) return false;
-    final thresholdHours = config['threshold_hours'] as int? ?? 0;
-    final threshold = DateTime.now().subtract(Duration(hours: thresholdHours));
-    return task.deadlineDate!.isBefore(threshold);
-  }
-
-  bool _isTaskStale(Task task, Map<String, dynamic> config) {
-    final thresholdDays = config['threshold_days'] as int? ?? 30;
-    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
-    return task.updatedAt.isBefore(threshold);
-  }
-
-  bool _isProjectIdle(Project project, Map<String, dynamic> config) {
-    final thresholdDays = config['threshold_days'] as int? ?? 30;
-    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
-    return project.updatedAt.isBefore(threshold);
-  }
-
-  bool _isProjectStale(Project project, Map<String, dynamic> config) {
-    return _isProjectIdle(project, config);
-  }
-
   // ==========================================================================
   // Allocation candidate selection
   // ==========================================================================
@@ -551,12 +488,7 @@ class AttentionEngine implements AttentionEngineContract {
 
     final projectById = {for (final p in projects) p.id: p};
 
-    // Back-compat: old predicate name before snapshot-based alerts.
-    final normalizedPredicate = predicate == 'excludedFromAllocation'
-        ? 'urgentValueless'
-        : predicate;
-
-    return switch (normalizedPredicate) {
+    return switch (predicate) {
       'urgentValueless' =>
         urgencyDetector
             .findUrgentValuelessTasks(tasks)
@@ -591,112 +523,6 @@ class AttentionEngine implements AttentionEngineContract {
   // ==========================================================================
   // Item creators
   // ==========================================================================
-
-  AttentionItem _createTaskItem(AttentionRule rule, Task task) {
-    final displayConfig = rule.displayConfig;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      ruleType: rule.ruleType,
-      entityId: task.id,
-      entityType: AttentionEntityType.task,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Task Issue',
-      description: _formatTaskDescription(
-        displayConfig['description'] as String? ?? 'Task needs attention',
-        task,
-      ),
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: DateTime.now(),
-      metadata: {
-        'task_name': task.name,
-        'deadline_date': task.deadlineDate?.toIso8601String(),
-        'updated_at': task.updatedAt.toIso8601String(),
-      },
-    );
-  }
-
-  AttentionItem _createProjectItem(AttentionRule rule, Project project) {
-    final displayConfig = rule.displayConfig;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      ruleType: rule.ruleType,
-      entityId: project.id,
-      entityType: AttentionEntityType.project,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Project Issue',
-      description: _formatProjectDescription(
-        displayConfig['description'] as String? ?? 'Project needs attention',
-        project,
-      ),
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: DateTime.now(),
-      metadata: {
-        'project_name': project.name,
-        'updated_at': project.updatedAt.toIso8601String(),
-      },
-    );
-  }
-
-  AttentionItem _createReviewItem(
-    AttentionRule rule, {
-    required int overdueDays,
-  }) {
-    final displayConfig = rule.displayConfig;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      ruleType: rule.ruleType,
-      entityId: rule.ruleKey,
-      entityType: AttentionEntityType.reviewSession,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Review Due',
-      description: displayConfig['description'] as String? ?? 'Time for review',
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: DateTime.now(),
-      metadata: {
-        'frequency_days': rule.triggerConfig['frequency_days'],
-        'overdue_days': overdueDays,
-        'review_type': rule.entitySelector['review_type'],
-      },
-    );
-  }
-
-  AttentionItem _createAllocationTaskItem(
-    AttentionRule rule,
-    Task task, {
-    required DateTime dayUtc,
-    required int allocationVersion,
-  }) {
-    final displayConfig = rule.displayConfig;
-    return AttentionItem(
-      id: _uuid.v4(),
-      ruleId: rule.id,
-      ruleKey: rule.ruleKey,
-      ruleType: rule.ruleType,
-      entityId: task.id,
-      entityType: AttentionEntityType.task,
-      severity: rule.severity,
-      title: displayConfig['title'] as String? ?? 'Allocation Alert',
-      description: _formatTaskDescription(
-        displayConfig['description'] as String? ?? 'Task needs allocation',
-        task,
-      ),
-      availableActions: _parseResolutionActions(rule.resolutionActions),
-      detectedAt: DateTime.now(),
-      metadata: {
-        'task_name': task.name,
-        'deadline_date': task.deadlineDate?.toIso8601String(),
-        'updated_at': task.updatedAt.toIso8601String(),
-        'allocation_day_utc': dayUtc.toIso8601String(),
-        'allocation_version': allocationVersion,
-      },
-    );
-  }
 
   // ==========================================================================
   // State hashing
@@ -776,15 +602,13 @@ class AttentionEngine implements AttentionEngineContract {
   }
 
   String _ruleFingerprint(AttentionRule rule, {required String predicate}) {
-    final selector = _stableMapFingerprint(rule.entitySelector);
-    final trigger = _stableMapFingerprint(rule.triggerConfig);
-
+    final evaluatorParams = _stableMapFingerprint(rule.evaluatorParams);
     return _stableFingerprint([
       'ruleKey=${rule.ruleKey}',
-      'ruleType=${rule.ruleType.name}',
+      'bucket=${rule.bucket.name}',
+      'evaluator=${rule.evaluator}',
       'predicate=$predicate',
-      'selector=$selector',
-      'trigger=$trigger',
+      'params=$evaluatorParams',
     ]);
   }
 
@@ -801,14 +625,43 @@ class AttentionEngine implements AttentionEngineContract {
   // Misc helpers
   // ==========================================================================
 
-  AttentionEntityType? _parseEntityType(String? value) {
-    return switch (value) {
-      'task' => AttentionEntityType.task,
-      'project' => AttentionEntityType.project,
-      'journal' => AttentionEntityType.journal,
-      'value' => AttentionEntityType.value,
-      'tracker' => AttentionEntityType.tracker,
-      'review_session' || 'reviewSession' => AttentionEntityType.reviewSession,
+  bool _isTaskOverdue(Task task, {required int thresholdHours}) {
+    if (task.deadlineDate == null) return false;
+    final threshold = DateTime.now().subtract(Duration(hours: thresholdHours));
+    return task.deadlineDate!.isBefore(threshold);
+  }
+
+  bool _isTaskStale(Task task, {required int thresholdDays}) {
+    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
+    return task.updatedAt.isBefore(threshold);
+  }
+
+  bool _isProjectIdle(Project project, {required int thresholdDays}) {
+    final threshold = DateTime.now().subtract(Duration(days: thresholdDays));
+    return project.updatedAt.isBefore(threshold);
+  }
+
+  bool _isProjectHighValueNeglected(Project project, DateTime now) {
+    final isHighValue =
+        project.isPinned ||
+        (project.priority != null && project.priority! <= 2);
+    if (!isHighValue) return false;
+
+    final threshold = now.subtract(const Duration(days: 14));
+    return project.updatedAt.isBefore(threshold);
+  }
+
+  bool _isProjectNoAllocatedRecently(Project project, DateTime now) {
+    final threshold = now.subtract(const Duration(days: 30));
+    return project.updatedAt.isBefore(threshold);
+  }
+
+  int? _readInt(Map<String, dynamic> map, String key) {
+    final v = map[key];
+    return switch (v) {
+      int() => v,
+      double() => v.toInt(),
+      String() => int.tryParse(v),
       _ => null,
     };
   }
@@ -819,6 +672,189 @@ class AttentionEngine implements AttentionEngineContract {
       AttentionSeverity.warning => 1,
       AttentionSeverity.critical => 2,
     };
+  }
+
+  String _computeSortKey({
+    required AttentionRule rule,
+    required AttentionEntityType entityType,
+    required String entityId,
+    String? extra,
+  }) {
+    final bucketOrder = switch (rule.bucket) {
+      AttentionBucket.action => '0',
+      AttentionBucket.review => '1',
+    };
+    final severityOrder = switch (rule.severity) {
+      AttentionSeverity.critical => '0',
+      AttentionSeverity.warning => '1',
+      AttentionSeverity.info => '2',
+    };
+
+    return [
+      bucketOrder,
+      severityOrder,
+      rule.ruleKey,
+      entityType.name,
+      entityId,
+      ?extra,
+    ].join('|');
+  }
+
+  AttentionItem _createTaskItem(
+    AttentionRule rule,
+    Task task, {
+    required DateTime detectedAt,
+  }) {
+    final displayConfig = rule.displayConfig;
+    return AttentionItem(
+      id: _uuid.v4(),
+      ruleId: rule.id,
+      ruleKey: rule.ruleKey,
+      bucket: rule.bucket,
+      entityId: task.id,
+      entityType: AttentionEntityType.task,
+      severity: rule.severity,
+      title: displayConfig['title'] as String? ?? 'Task Issue',
+      description: _formatTaskDescription(
+        displayConfig['description'] as String? ?? 'Task needs attention',
+        task,
+      ),
+      availableActions: _parseResolutionActions(rule.resolutionActions),
+      detectedAt: detectedAt,
+      sortKey: _computeSortKey(
+        rule: rule,
+        entityType: AttentionEntityType.task,
+        entityId: task.id,
+      ),
+      metadata: {
+        'task_name': task.name,
+        'deadline_date': task.deadlineDate?.toIso8601String(),
+        'updated_at': task.updatedAt.toIso8601String(),
+      },
+    );
+  }
+
+  AttentionItem _createProjectItem(
+    AttentionRule rule,
+    Project project, {
+    required DateTime detectedAt,
+  }) {
+    final displayConfig = rule.displayConfig;
+    return AttentionItem(
+      id: _uuid.v4(),
+      ruleId: rule.id,
+      ruleKey: rule.ruleKey,
+      bucket: rule.bucket,
+      entityId: project.id,
+      entityType: AttentionEntityType.project,
+      severity: rule.severity,
+      title: displayConfig['title'] as String? ?? 'Project Issue',
+      description: _formatProjectDescription(
+        displayConfig['description'] as String? ?? 'Project needs attention',
+        project,
+      ),
+      availableActions: _parseResolutionActions(rule.resolutionActions),
+      detectedAt: detectedAt,
+      sortKey: _computeSortKey(
+        rule: rule,
+        entityType: AttentionEntityType.project,
+        entityId: project.id,
+      ),
+      metadata: {
+        'project_name': project.name,
+        'updated_at': project.updatedAt.toIso8601String(),
+      },
+    );
+  }
+
+  AttentionItem _createReviewItem(
+    AttentionRule rule, {
+    required DateTime detectedAt,
+    required int frequencyDays,
+    required int overdueDays,
+  }) {
+    final displayConfig = rule.displayConfig;
+    final entityId = rule.ruleKey;
+    return AttentionItem(
+      id: _uuid.v4(),
+      ruleId: rule.id,
+      ruleKey: rule.ruleKey,
+      bucket: rule.bucket,
+      entityId: entityId,
+      entityType: AttentionEntityType.reviewSession,
+      severity: rule.severity,
+      title: displayConfig['title'] as String? ?? 'Review Due',
+      description: displayConfig['description'] as String? ?? 'Time for review',
+      availableActions: _parseResolutionActions(rule.resolutionActions),
+      detectedAt: detectedAt,
+      sortKey: _computeSortKey(
+        rule: rule,
+        entityType: AttentionEntityType.reviewSession,
+        entityId: entityId,
+        extra: overdueDays.toString().padLeft(8, '0'),
+      ),
+      metadata: {
+        'frequency_days': frequencyDays,
+        'overdue_days': overdueDays,
+        'review_type': rule.evaluatorParams['reviewType'],
+      },
+    );
+  }
+
+  AttentionItem _createAllocationTaskItem(
+    AttentionRule rule,
+    Task task, {
+    required DateTime detectedAt,
+    required DateTime dayUtc,
+    required int allocationVersion,
+  }) {
+    final displayConfig = rule.displayConfig;
+    return AttentionItem(
+      id: _uuid.v4(),
+      ruleId: rule.id,
+      ruleKey: rule.ruleKey,
+      bucket: rule.bucket,
+      entityId: task.id,
+      entityType: AttentionEntityType.task,
+      severity: rule.severity,
+      title: displayConfig['title'] as String? ?? 'Allocation Alert',
+      description: _formatTaskDescription(
+        displayConfig['description'] as String? ?? 'Task needs allocation',
+        task,
+      ),
+      availableActions: _parseResolutionActions(rule.resolutionActions),
+      detectedAt: detectedAt,
+      sortKey: _computeSortKey(
+        rule: rule,
+        entityType: AttentionEntityType.task,
+        entityId: task.id,
+        extra: allocationVersion.toString().padLeft(8, '0'),
+      ),
+      metadata: {
+        'task_name': task.name,
+        'deadline_date': task.deadlineDate?.toIso8601String(),
+        'updated_at': task.updatedAt.toIso8601String(),
+        'allocation_day_utc': dayUtc.toIso8601String(),
+        'allocation_version': allocationVersion,
+      },
+    );
+  }
+
+  String _computeReviewSessionStateHash({
+    required AttentionRule rule,
+    required int frequencyDays,
+    required int overdueDays,
+  }) {
+    final ruleFingerprint = _ruleFingerprint(
+      rule,
+      predicate: 'review_session_due_v1',
+    );
+    return _stableFingerprint([
+      'entity=reviewSession',
+      'rule=$ruleFingerprint',
+      'frequencyDays=$frequencyDays',
+      'overdueDays=$overdueDays',
+    ]);
   }
 
   List<AttentionResolutionAction> _parseResolutionActions(
@@ -845,4 +881,32 @@ class AttentionEngine implements AttentionEngineContract {
         .replaceAll('{name}', project.name)
         .replaceAll('{project_name}', project.name);
   }
+}
+
+typedef _EvalInputs = ({
+  List<Task> tasks,
+  List<Project> projects,
+  AllocationSnapshot? snapshot,
+  DateTime now,
+});
+
+class _EvaluatorSpec {
+  const _EvaluatorSpec({
+    required this.entityTypes,
+    required this.evaluate,
+  });
+
+  final Set<AttentionEntityType> entityTypes;
+  final Future<List<_EvaluatedItem>> Function(AttentionRule, _EvalInputs)
+  evaluate;
+}
+
+class _EvaluatedItem {
+  const _EvaluatedItem({
+    required this.item,
+    required this.stateHash,
+  });
+
+  final AttentionItem item;
+  final String? stateHash;
 }

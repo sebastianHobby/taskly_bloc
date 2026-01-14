@@ -1,6 +1,7 @@
 ﻿import 'dart:async';
 
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
@@ -20,7 +21,7 @@ class AllocationAlertsSectionInterpreter
 
   @override
   Stream<Object?> watch(AllocationAlertsSectionParams params) {
-    const query = AttentionQuery(domains: {'allocation'});
+    final query = AttentionQuery(buckets: {AttentionBucket.action});
 
     return _attentionEngine.watch(query).map((alerts) {
       return SectionDataResult.allocationAlerts(

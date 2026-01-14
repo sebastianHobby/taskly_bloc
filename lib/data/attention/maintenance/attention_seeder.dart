@@ -65,12 +65,9 @@ class AttentionSeeder {
           AttentionRulesCompanion.insert(
             id: Value(id),
             ruleKey: template.ruleKey,
-            domain: template.domain,
-            category: template.category,
-            ruleType: _mapRuleType(template.ruleType),
-            triggerType: _mapTriggerType(template.triggerType),
-            triggerConfig: template.triggerConfig,
-            entitySelector: template.entitySelector,
+            bucket: _mapBucket(template.bucket),
+            evaluator: template.evaluator,
+            evaluatorParams: template.evaluatorParams,
             severity: _mapSeverity(template.severity),
             displayConfig: template.displayConfig,
             resolutionActions: template.resolutionActions,
@@ -88,56 +85,17 @@ class AttentionSeeder {
 
   /// Idempotent initialization - safe to call multiple times
   Future<void> ensureSeeded() async {
-    await _migrateLegacyRuleTypeValues();
-
     // Always attempt seeding: deterministic IDs + insertOrIgnore means this
     // will only insert missing templates and will not overwrite user edits.
     await seedSystemRules();
   }
 
-  Future<void> _migrateLegacyRuleTypeValues() async {
-    // Legacy versions stored enum names as snake_case.
-    // Supabase enum values are camelCase (workflowStep, allocationWarning).
-    // Normalize locally so PowerSync uploads don't fail.
-    try {
-      await _db.customStatement(
-        "UPDATE attention_rules SET rule_type='problem' WHERE rule_type IN ('workflow_step','workflowStep')",
-      );
-      await _db.customStatement(
-        "UPDATE attention_rules SET rule_type='allocationWarning' WHERE rule_type='allocation_warning'",
-      );
-    } catch (e, stackTrace) {
-      talker.operationFailed(
-        '[AttentionSeeder] Failed to migrate legacy rule_type values',
-        e,
-        stackTrace,
-      );
-      rethrow;
-    }
-  }
-
-  // Map domain enum to Drift enum
-  drift_attention.AttentionRuleType _mapRuleType(
-    domain.AttentionRuleType type,
-  ) {
-    switch (type) {
-      case domain.AttentionRuleType.problem:
-        return drift_attention.AttentionRuleType.problem;
-      case domain.AttentionRuleType.review:
-        return drift_attention.AttentionRuleType.review;
-      case domain.AttentionRuleType.allocationWarning:
-        return drift_attention.AttentionRuleType.allocationWarning;
-    }
-  }
-
-  drift_attention.AttentionTriggerType _mapTriggerType(
-    domain.AttentionTriggerType type,
-  ) {
-    switch (type) {
-      case domain.AttentionTriggerType.realtime:
-        return drift_attention.AttentionTriggerType.realtime;
-      case domain.AttentionTriggerType.scheduled:
-        return drift_attention.AttentionTriggerType.scheduled;
+  drift_attention.AttentionBucket _mapBucket(domain.AttentionBucket bucket) {
+    switch (bucket) {
+      case domain.AttentionBucket.action:
+        return drift_attention.AttentionBucket.action;
+      case domain.AttentionBucket.review:
+        return drift_attention.AttentionBucket.review;
     }
   }
 

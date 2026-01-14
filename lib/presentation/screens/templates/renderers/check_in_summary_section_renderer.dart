@@ -94,10 +94,10 @@ class CheckInSummarySectionRenderer extends StatelessWidget {
                   const SizedBox(height: 8),
                   FilledButton.icon(
                     onPressed: () {
-                      Routing.toScreenKey(context, 'check_in');
+                      Routing.toScreenKey(context, 'review_inbox');
                     },
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start Check-in'),
+                    label: const Text('Open Review Inbox'),
                   ),
                 ],
               ),
@@ -143,10 +143,10 @@ class CheckInSummarySectionRenderer extends StatelessWidget {
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   onPressed: () {
-                    Routing.toScreenKey(context, 'check_in');
+                    Routing.toScreenKey(context, 'review_inbox');
                   },
                   icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start Check-in'),
+                  label: const Text('Open Review Inbox'),
                 ),
               ],
             ),
