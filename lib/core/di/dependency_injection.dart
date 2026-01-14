@@ -72,6 +72,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 
 final GetIt getIt = GetIt.instance;
@@ -355,6 +356,12 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.checkInSummary,
     )
+    ..registerLazySingleton<AttentionBannerSectionInterpreterV1>(
+      () => AttentionBannerSectionInterpreterV1(
+        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
+      ),
+      instanceName: SectionTemplateId.attentionBannerV1,
+    )
     ..registerLazySingleton<EntityHeaderSectionInterpreter>(
       () => EntityHeaderSectionInterpreter(
         projectRepository: getIt<ProjectRepositoryContract>(),
@@ -396,6 +403,9 @@ Future<void> setupDependencies() async {
         ),
         checkInSummaryInterpreter: getIt<CheckInSummarySectionInterpreter>(
           instanceName: SectionTemplateId.checkInSummary,
+        ),
+        attentionBannerInterpreter: getIt<AttentionBannerSectionInterpreterV1>(
+          instanceName: SectionTemplateId.attentionBannerV1,
         ),
         entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,

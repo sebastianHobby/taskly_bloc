@@ -17,6 +17,7 @@ abstract final class SectionTemplateId {
   static const issuesSummary = 'issues_summary';
   static const checkInSummary = 'check_in_summary';
   static const allocationAlerts = 'allocation_alerts';
+  static const attentionBannerV1 = 'attention_banner_v1';
   static const entityHeader = 'entity_header';
 
   // Former custom screens (now templated)

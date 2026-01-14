@@ -11,11 +11,9 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.da
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
@@ -47,14 +45,10 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
-        ScreenModuleSpec.checkInSummary(
-          params: CheckInSummarySectionParams(
+        ScreenModuleSpec.attentionBannerV1(
+          params: AttentionBannerSectionParamsV1(
             pack: StylePackV2.standard,
-          ),
-        ),
-        ScreenModuleSpec.allocationAlerts(
-          params: AllocationAlertsSectionParams(
-            pack: StylePackV2.standard,
+            buckets: const ['action', 'review'],
           ),
         ),
       ],
@@ -72,7 +66,7 @@ abstract class SystemScreenSpecs {
   static final reviewInbox = ScreenSpec(
     id: 'review_inbox',
     screenKey: 'review_inbox',
-    name: 'Review Inbox',
+    name: 'Attention Inbox',
     template: const ScreenTemplateSpec.reviewInbox(),
   );
 
@@ -116,9 +110,10 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
-        ScreenModuleSpec.issuesSummary(
-          params: IssuesSummarySectionParams(
+        ScreenModuleSpec.attentionBannerV1(
+          params: AttentionBannerSectionParamsV1(
             pack: StylePackV2.standard,
+            buckets: const ['action', 'review'],
             entityTypes: const ['task'],
           ),
         ),

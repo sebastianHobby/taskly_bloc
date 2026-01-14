@@ -120,6 +120,17 @@ sealed class SectionDataResult with _$SectionDataResult {
     required bool hasOverdue,
   }) = CheckInSummarySectionResult;
 
+  /// Unified attention banner (bucket-aware cutover v1).
+  const factory SectionDataResult.attentionBannerV1({
+    required int actionCount,
+    required int reviewCount,
+    required int criticalCount,
+    required int warningCount,
+    required int infoCount,
+    required String overflowScreenKey,
+    @Default(<AttentionItem>[]) List<AttentionItem> previewItems,
+  }) = AttentionBannerV1SectionResult;
+
   /// Entity header for project detail screens.
   const factory SectionDataResult.entityHeaderProject({
     required Project project,
