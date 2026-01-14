@@ -14,6 +14,7 @@ import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_alerts_section_renderer.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v1.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/check_in_summary_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
@@ -121,6 +122,14 @@ class SectionWidget extends StatelessWidget {
           when section.templateId == SectionTemplateId.allocationAlerts =>
         SliverToBoxAdapter(
           child: AllocationAlertsSectionRenderer(data: d, title: section.title),
+        ),
+      final AttentionBannerV1SectionResult d
+          when section.templateId == SectionTemplateId.attentionBannerV1 =>
+        SliverToBoxAdapter(
+          child: AttentionBannerSectionRendererV1(
+            data: d,
+            title: section.title,
+          ),
         ),
       EntityHeaderProjectSectionResult() ||
       EntityHeaderValueSectionResult() ||

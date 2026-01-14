@@ -46,6 +46,14 @@ sealed class EnrichmentPlanItemV2 with _$EnrichmentPlanItemV2 {
     required AgendaDateFieldV2 dateField,
   }) = _AgendaTagsItemV2;
 
+  /// Snapshot-backed allocation membership for the current UTC day.
+  ///
+  /// This is global state derived from the latest allocation snapshot.
+  @FreezedUnionValue('allocation_membership')
+  @JsonSerializable(disallowUnrecognizedKeys: true)
+  const factory EnrichmentPlanItemV2.allocationMembership() =
+      _AllocationMembershipItemV2;
+
   factory EnrichmentPlanItemV2.fromJson(Map<String, dynamic> json) =>
       _$EnrichmentPlanItemV2FromJson(json);
 }
@@ -85,6 +93,20 @@ abstract class EnrichmentResultV2 with _$EnrichmentResultV2 {
     OpenTaskCountsV2? openTaskCounts,
     @Default(<String, AgendaTagV2>{})
     Map<String, AgendaTagV2> agendaTagByTaskId,
+
+    /// True when the task is allocated in the latest snapshot for today.
+    @Default(<String, bool>{}) Map<String, bool> isAllocatedByTaskId,
+
+    /// Stable ordering for allocated tasks (lower rank = earlier).
+    ///
+    /// Present only when the section requested allocation membership enrichment.
+    @Default(<String, int>{}) Map<String, int> allocationRankByTaskId,
+
+    /// Value grouping override for allocated tasks.
+    ///
+    /// When present, renderers may group tasks by this value id instead of
+    /// task.primary/effective values.
+    @Default(<String, String>{}) Map<String, String> qualifyingValueIdByTaskId,
   }) = _EnrichmentResultV2;
 
   factory EnrichmentResultV2.fromJson(Map<String, dynamic> json) =>

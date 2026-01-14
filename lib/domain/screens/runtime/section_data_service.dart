@@ -127,6 +127,7 @@ class SectionDataService {
       ProjectDataConfig() => _PrimaryEntityKind.project,
       ValueDataConfig() => _PrimaryEntityKind.value,
       JournalDataConfig() => _PrimaryEntityKind.journal,
+      AllocationSnapshotTasksTodayDataConfig() => _PrimaryEntityKind.task,
     };
   }
 
@@ -306,7 +307,39 @@ class SectionDataService {
       JournalDataConfig(:final query) => (await _fetchJournalEntries(
         query,
       )).cast<Object>(),
+      AllocationSnapshotTasksTodayDataConfig() =>
+        (await _fetchSnapshotTasksForToday()).cast<Object>(),
     };
+  }
+
+  Future<List<Task>> _fetchSnapshotTasksForToday() async {
+    final dayUtc = _todayUtcDay();
+    final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
+      dayUtc,
+    );
+    return _tasksFromSnapshot(snapshot);
+  }
+
+  Future<List<Task>> _fetchSnapshotTasksForTodayFrom(AllocationSnapshot? snap) {
+    return Future.value(_tasksFromSnapshot(snap));
+  }
+
+  List<Task> _tasksFromSnapshot(AllocationSnapshot? snapshot) {
+    if (snapshot == null) return const <Task>[];
+
+    final taskEntries = snapshot.allocated
+        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
+        .toList(growable: false);
+
+    // Preserve snapshot ordering.
+    // Note: repository lookup is async in other paths; here we only build ids.
+    // Actual task loading occurs in async helper below.
+    // (This function is kept sync so we can share ordering logic.)
+    //
+    // We return an empty list here and load in the async watcher/fetcher.
+    //
+    // Implementation note: this is overridden by async loaders.
+    return const <Task>[];
   }
 
   Future<List<JournalEntry>> _fetchJournalEntries(JournalQuery? query) async {

@@ -35,6 +35,14 @@ sealed class DataConfig with _$DataConfig {
     @JournalQueryConverter() JournalQuery? query,
   }) = JournalDataConfig;
 
+  /// Allocation snapshot tasks for the current UTC day.
+  ///
+  /// This is primarily used by My Day to render snapshot membership while
+  /// reusing list/hierarchy renderers.
+  @FreezedUnionValue('allocation_snapshot_tasks_today')
+  const factory DataConfig.allocationSnapshotTasksToday() =
+      AllocationSnapshotTasksTodayDataConfig;
+
   factory DataConfig.fromJson(Map<String, dynamic> json) =>
       _$DataConfigFromJson(json);
 }

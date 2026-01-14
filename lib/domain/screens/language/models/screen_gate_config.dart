@@ -29,6 +29,12 @@ sealed class ScreenGateCriteria with _$ScreenGateCriteria {
   const factory ScreenGateCriteria.allocationFocusModeNotSelected() =
       AllocationFocusModeNotSelectedGateCriteria;
 
+  /// Gate is active when My Day prerequisites are missing.
+  ///
+  /// Specifically: no focus mode configured OR no values exist.
+  const factory ScreenGateCriteria.myDayPrereqsMissing() =
+      MyDayPrereqsMissingGateCriteria;
+
   factory ScreenGateCriteria.fromJson(Map<String, dynamic> json) =>
       _$ScreenGateCriteriaFromJson(json);
 }

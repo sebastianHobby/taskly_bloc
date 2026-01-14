@@ -22,6 +22,7 @@ import 'package:taskly_bloc/presentation/features/navigation/view/navigation_set
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
+import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
@@ -40,11 +41,7 @@ class ScreenTemplateWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return data.template.when(
       standardScaffoldV1: () => _StandardScaffoldV1Template(data: data),
-      reviewInbox: () => const _PlaceholderTemplate(
-        title: 'Review Inbox',
-        message:
-            'Review inbox is not implemented yet.\n\nThis is a placeholder overflow destination for attention alerts.',
-      ),
+      reviewInbox: () => const AttentionInboxPage(),
       settingsMenu: () => const SettingsScreen(),
       trackerManagement: () => const _PlaceholderTemplate(
         title: 'Trackers',

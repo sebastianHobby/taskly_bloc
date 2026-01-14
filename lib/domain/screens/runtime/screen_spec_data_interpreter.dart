@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_section_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
@@ -38,6 +39,7 @@ class ScreenSpecDataInterpreter {
     required IssuesSummarySectionInterpreter issuesSummaryInterpreter,
     required AllocationAlertsSectionInterpreter allocationAlertsInterpreter,
     required CheckInSummarySectionInterpreter checkInSummaryInterpreter,
+    required AttentionBannerSectionInterpreterV1 attentionBannerInterpreter,
     required EntityHeaderSectionInterpreter entityHeaderInterpreter,
   }) : _settingsRepository = settingsRepository,
        _taskListInterpreter = taskListInterpreter,
@@ -51,6 +53,7 @@ class ScreenSpecDataInterpreter {
        _issuesSummaryInterpreter = issuesSummaryInterpreter,
        _allocationAlertsInterpreter = allocationAlertsInterpreter,
        _checkInSummaryInterpreter = checkInSummaryInterpreter,
+       _attentionBannerInterpreter = attentionBannerInterpreter,
        _entityHeaderInterpreter = entityHeaderInterpreter;
 
   final SettingsRepositoryContract _settingsRepository;
@@ -66,6 +69,7 @@ class ScreenSpecDataInterpreter {
   final IssuesSummarySectionInterpreter _issuesSummaryInterpreter;
   final AllocationAlertsSectionInterpreter _allocationAlertsInterpreter;
   final CheckInSummarySectionInterpreter _checkInSummaryInterpreter;
+  final AttentionBannerSectionInterpreterV1 _attentionBannerInterpreter;
   final EntityHeaderSectionInterpreter _entityHeaderInterpreter;
 
   Stream<ScreenSpecData> watchScreen(ScreenSpec spec) {
@@ -280,6 +284,17 @@ class ScreenSpecDataInterpreter {
               (data) => SectionVm(
                 index: index,
                 templateId: SectionTemplateId.allocationAlerts,
+                params: m.params,
+                title: m.title,
+                data: data,
+              ),
+            ),
+        attentionBannerV1: (m) => _attentionBannerInterpreter
+            .watch(m.params)
+            .map(
+              (data) => SectionVm(
+                index: index,
+                templateId: SectionTemplateId.attentionBannerV1,
                 params: m.params,
                 title: m.title,
                 data: data,

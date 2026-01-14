@@ -183,7 +183,12 @@ class AttentionEngine implements AttentionEngineContract {
           continue;
         }
 
-        items.add(e.item);
+        final mergedMetadata = <String, dynamic>{...?e.item.metadata};
+        if (e.stateHash != null) {
+          mergedMetadata['state_hash'] = e.stateHash;
+        }
+
+        items.add(e.item.copyWith(metadata: mergedMetadata));
       }
     }
 

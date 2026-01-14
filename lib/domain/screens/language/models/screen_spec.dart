@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.da
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
@@ -152,6 +153,11 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     required AllocationAlertsSectionParams params,
     String? title,
   }) = ScreenModuleAllocationAlerts;
+
+  const factory ScreenModuleSpec.attentionBannerV1({
+    required AttentionBannerSectionParamsV1 params,
+    String? title,
+  }) = ScreenModuleAttentionBannerV1;
 
   const factory ScreenModuleSpec.entityHeader({
     required EntityHeaderSectionParams params,
