@@ -12,7 +12,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 
-import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/allocation_alerts_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v1.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
@@ -145,15 +144,6 @@ class SectionWidget extends StatelessWidget {
               }
             },
           ),
-        ),
-      final AllocationSectionResult d
-          when section.templateId == SectionTemplateId.allocation =>
-        AllocationSectionRenderer(
-          data: d,
-          onTaskToggle: (taskId, val) {
-            final task = d.allocatedTasks.firstWhere((t) => t.id == taskId);
-            onTaskCheckboxChanged?.call(task, val);
-          },
         ),
       final DataSectionResult d => SliverToBoxAdapter(
         child: _buildUnsupportedSection(d),

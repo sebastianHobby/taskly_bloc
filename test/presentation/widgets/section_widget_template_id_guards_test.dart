@@ -5,10 +5,8 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../../helpers/pump_app.dart';
@@ -67,30 +65,6 @@ void main() {
       find.text('Unsupported section data: ${SectionTemplateId.taskListV2}'),
       findsOneWidget,
     );
-  });
-
-  testWidgets('allocation requiresValueSetup shows gateway UI', (tester) async {
-    const section = SectionVm(
-      index: 0,
-      templateId: SectionTemplateId.allocation,
-      params: AllocationSectionParams(
-        taskTileVariant: TaskTileVariant.listTile,
-      ),
-      data: SectionDataResult.allocation(
-        allocatedTasks: [],
-        totalAvailable: 0,
-        requiresValueSetup: true,
-      ),
-    );
-
-    await pumpLocalizedApp(
-      tester,
-      home: _wrapSliver(const SectionWidget(section: section)),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('Set up values to use focus mode'), findsOneWidget);
-    expect(find.text('Set up focus'), findsOneWidget);
   });
 
   testWidgets('entity_header showMetadata=false hides value chips', (

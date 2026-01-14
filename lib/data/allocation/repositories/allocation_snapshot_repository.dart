@@ -50,6 +50,21 @@ class AllocationSnapshotRepository
   }
 
   @override
+  Future<List<AllocationSnapshotTaskRef>> getLatestTaskRefsForUtcDay(
+    DateTime dayUtc,
+  ) async {
+    final snapshot = await getLatestForUtcDay(dayUtc);
+    return _taskRefsFromSnapshot(snapshot);
+  }
+
+  @override
+  Stream<List<AllocationSnapshotTaskRef>> watchLatestTaskRefsForUtcDay(
+    DateTime dayUtc,
+  ) {
+    return watchLatestForUtcDay(dayUtc).map(_taskRefsFromSnapshot);
+  }
+
+  @override
   Future<void> persistAllocatedForUtcDay({
     required DateTime dayUtc,
     required int capAtGeneration,
@@ -256,6 +271,32 @@ class AllocationSnapshotRepository
       (t) => t.name == raw,
       orElse: () => AllocationSnapshotEntityType.task,
     );
+  }
+
+  List<AllocationSnapshotTaskRef> _taskRefsFromSnapshot(
+    AllocationSnapshot? snapshot,
+  ) {
+    if (snapshot == null) return const <AllocationSnapshotTaskRef>[];
+
+    final taskEntries = snapshot.allocated
+        .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
+        .toList(growable: false);
+
+    final refs = <AllocationSnapshotTaskRef>[];
+    for (var i = 0; i < taskEntries.length; i++) {
+      final entry = taskEntries[i];
+      refs.add(
+        AllocationSnapshotTaskRef(
+          taskId: entry.entity.id,
+          allocationRank: i,
+          projectId: entry.projectId,
+          qualifyingValueId: entry.qualifyingValueId,
+          effectivePrimaryValueId: entry.effectivePrimaryValueId,
+          allocationScore: entry.allocationScore,
+        ),
+      );
+    }
+    return refs;
   }
 
   String _membershipKey(AllocationSnapshotEntityType type, String id) =>

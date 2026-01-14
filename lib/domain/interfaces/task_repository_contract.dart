@@ -37,10 +37,24 @@ abstract class TaskRepositoryContract {
   /// See [watchAll] for the hydration contract.
   Future<Task?> getById(String id);
 
+  /// Get multiple tasks by ID with related entities.
+  ///
+  /// The returned list preserves the order of [ids]. Missing tasks are omitted.
+  ///
+  /// See [watchAll] for the hydration contract.
+  Future<List<Task>> getByIds(Iterable<String> ids);
+
   /// Watch a single task by ID with related entities.
   ///
   /// See [watchAll] for the hydration contract.
   Stream<Task?> watchById(String id);
+
+  /// Watch multiple tasks by ID with related entities.
+  ///
+  /// The emitted list preserves the order of [ids]. Missing tasks are omitted.
+  ///
+  /// See [watchAll] for the hydration contract.
+  Stream<List<Task>> watchByIds(Iterable<String> ids);
 
   Future<void> create({
     required String name,

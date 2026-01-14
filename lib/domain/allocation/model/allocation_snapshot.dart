@@ -70,3 +70,34 @@ class AllocationSnapshot {
   final int candidatePoolCountAtGeneration;
   final List<AllocationSnapshotEntryInput> allocated;
 }
+
+/// A stable, ordered reference to an allocated task in a snapshot.
+///
+/// This is intentionally lightweight (IDs + ordering/grouping hints) and is
+/// meant to be batch-hydrated via repositories (e.g. TaskRepository).
+class AllocationSnapshotTaskRef {
+  const AllocationSnapshotTaskRef({
+    required this.taskId,
+    required this.allocationRank,
+    this.projectId,
+    this.qualifyingValueId,
+    this.effectivePrimaryValueId,
+    this.allocationScore,
+  });
+
+  final String taskId;
+
+  /// Stable ordering for allocated tasks (lower rank = earlier).
+  final int allocationRank;
+
+  /// Owning project id at allocation time (if any).
+  final String? projectId;
+
+  /// The value that qualified the task for allocation (if any).
+  final String? qualifyingValueId;
+
+  /// The effective primary value id at allocation time (if any).
+  final String? effectivePrimaryValueId;
+
+  final double? allocationScore;
+}

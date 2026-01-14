@@ -151,6 +151,7 @@ class NavigationBadgeService {
     return switch (config) {
       TaskDataConfig(:final query) => _BadgeTask(query),
       ProjectDataConfig(:final query) => _BadgeProject(query),
+      AllocationSnapshotTasksTodayDataConfig() => const _BadgeNone(),
       ValueDataConfig() || JournalDataConfig() => const _BadgeNone(),
     };
   }

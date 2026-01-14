@@ -87,8 +87,6 @@ class ProjectAggregation {
 }
 
 /// Aggregated result for task queries with project and values.
-/// Todo - check if this is required anymore given repositories always return
-/// full Task objects with project and values populated.
 class TaskAggregation {
   /// Process join rows to aggregate tasks with their project and values.
   factory TaskAggregation.fromRows({

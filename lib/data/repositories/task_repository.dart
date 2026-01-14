@@ -173,6 +173,61 @@ class TaskRepository implements TaskRepositoryContract {
     ).toSingleTask();
   }
 
+  @override
+  Future<List<Task>> getByIds(Iterable<String> ids) async {
+    final idsList = ids.toList(growable: false);
+    if (idsList.isEmpty) return const <Task>[];
+
+    final taskValueTable = driftDb.valueTable.createAlias('task_value');
+    final projectValuesTable = driftDb.projectValuesTable.createAlias(
+      'project_values_for_task',
+    );
+    final projectValueTable = driftDb.valueTable.createAlias('project_value');
+
+    final joined =
+        (driftDb.select(
+          driftDb.taskTable,
+        )..where((t) => t.id.isIn(idsList))).join(
+          [
+            drift_pkg.leftOuterJoin(
+              driftDb.projectTable,
+              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+            ),
+            drift_pkg.leftOuterJoin(
+              driftDb.taskValuesTable,
+              driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
+            ),
+            drift_pkg.leftOuterJoin(
+              taskValueTable,
+              driftDb.taskValuesTable.valueId.equalsExp(taskValueTable.id),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValuesTable,
+              driftDb.projectTable.id.equalsExp(projectValuesTable.projectId),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValueTable,
+              projectValuesTable.valueId.equalsExp(projectValueTable.id),
+            ),
+          ],
+        );
+
+    final rows = await joined.get();
+    final tasks = TaskAggregation.fromRows(
+      rows: rows,
+      driftDb: driftDb,
+      projectValuesTable: projectValuesTable,
+      projectValueTable: projectValueTable,
+      taskValueTable: taskValueTable,
+    ).toTasks();
+
+    final byId = <String, Task>{for (final t in tasks) t.id: t};
+    return [
+      for (final id in idsList)
+        if (byId[id] != null) byId[id]!,
+    ];
+  }
+
   /// Watch a single task by ID with related entities.
   @override
   Stream<Task?> watchById(String taskId) {
@@ -216,6 +271,62 @@ class TaskRepository implements TaskRepositoryContract {
         projectValueTable: projectValueTable,
         taskValueTable: taskValueTable,
       ).toSingleTask();
+    });
+  }
+
+  @override
+  Stream<List<Task>> watchByIds(Iterable<String> ids) {
+    final idsList = ids.toList(growable: false);
+    if (idsList.isEmpty) return Stream.value(const <Task>[]);
+
+    final taskValueTable = driftDb.valueTable.createAlias('task_value');
+    final projectValuesTable = driftDb.projectValuesTable.createAlias(
+      'project_values_for_task',
+    );
+    final projectValueTable = driftDb.valueTable.createAlias('project_value');
+
+    final joined =
+        (driftDb.select(
+          driftDb.taskTable,
+        )..where((t) => t.id.isIn(idsList))).join(
+          [
+            drift_pkg.leftOuterJoin(
+              driftDb.projectTable,
+              driftDb.taskTable.projectId.equalsExp(driftDb.projectTable.id),
+            ),
+            drift_pkg.leftOuterJoin(
+              driftDb.taskValuesTable,
+              driftDb.taskTable.id.equalsExp(driftDb.taskValuesTable.taskId),
+            ),
+            drift_pkg.leftOuterJoin(
+              taskValueTable,
+              driftDb.taskValuesTable.valueId.equalsExp(taskValueTable.id),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValuesTable,
+              driftDb.projectTable.id.equalsExp(projectValuesTable.projectId),
+            ),
+            drift_pkg.leftOuterJoin(
+              projectValueTable,
+              projectValuesTable.valueId.equalsExp(projectValueTable.id),
+            ),
+          ],
+        );
+
+    return joined.watch().map((rows) {
+      final tasks = TaskAggregation.fromRows(
+        rows: rows,
+        driftDb: driftDb,
+        projectValuesTable: projectValuesTable,
+        projectValueTable: projectValueTable,
+        taskValueTable: taskValueTable,
+      ).toTasks();
+
+      final byId = <String, Task>{for (final t in tasks) t.id: t};
+      return [
+        for (final id in idsList)
+          if (byId[id] != null) byId[id]!,
+      ];
     });
   }
 

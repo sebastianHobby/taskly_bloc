@@ -64,7 +64,6 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
@@ -237,7 +236,6 @@ Future<void> setupDependencies() async {
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
         agendaDataService: getIt<AgendaSectionDataService>(),
-        allocationOrchestrator: getIt<AllocationOrchestrator>(),
         allocationSnapshotRepository:
             getIt<AllocationSnapshotRepositoryContract>(),
         analyticsService: getIt<AnalyticsService>(),
@@ -326,12 +324,6 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
     )
-    ..registerLazySingleton<AllocationSectionInterpreter>(
-      () => AllocationSectionInterpreter(
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.allocation,
-    )
     ..registerLazySingleton<AgendaSectionInterpreterV2>(
       () => AgendaSectionInterpreterV2(
         sectionDataService: getIt<SectionDataService>(),
@@ -373,6 +365,7 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<ScreenSpecDataInterpreter>(
       () => ScreenSpecDataInterpreter(
         settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.taskListV2,
         ),
@@ -389,9 +382,6 @@ Future<void> setupDependencies() async {
             getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
               instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
             ),
-        allocationInterpreter: getIt<AllocationSectionInterpreter>(
-          instanceName: SectionTemplateId.allocation,
-        ),
         agendaInterpreter: getIt<AgendaSectionInterpreterV2>(
           instanceName: SectionTemplateId.agendaV2,
         ),

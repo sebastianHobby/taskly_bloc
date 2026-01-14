@@ -1,7 +1,7 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 void main() {
   group('SystemScreenSpecs', () {
@@ -13,12 +13,25 @@ void main() {
         expect(myDay.name, 'My Day');
         expect(myDay, isA<ScreenSpec>());
 
-        final allocationModule = myDay.modules.primary
-            .whereType<ScreenModuleAllocation>()
+        final module = myDay.modules.primary
+            .whereType<ScreenModuleHierarchyValueProjectTaskV2>()
             .single;
 
-        final params = allocationModule.params;
-        expect(params.displayMode, AllocationDisplayMode.groupedByValue);
+        final params = module.params;
+        expect(params.sources, hasLength(1));
+        expect(
+          params.sources.single,
+          isA<AllocationSnapshotTasksTodayDataConfig>(),
+        );
+        expect(
+          params.enrichment.items.any(
+            (i) => i.maybeWhen(
+              allocationMembership: () => true,
+              orElse: () => false,
+            ),
+          ),
+          isTrue,
+        );
       });
     });
 

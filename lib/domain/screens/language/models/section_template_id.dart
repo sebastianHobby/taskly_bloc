@@ -1,8 +1,5 @@
 /// Canonical template IDs for all section templates.
 abstract final class SectionTemplateId {
-  // Core section templates
-  static const allocation = 'allocation';
-
   // Dedicated hierarchy templates
   static const hierarchyValueProjectTaskV2 = 'hierarchy_value_project_task_v2';
 

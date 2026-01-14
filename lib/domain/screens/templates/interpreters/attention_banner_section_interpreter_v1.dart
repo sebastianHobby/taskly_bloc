@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/attention/query/attention_query.dart';

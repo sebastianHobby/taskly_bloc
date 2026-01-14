@@ -3,7 +3,6 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
@@ -133,11 +132,6 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     required AgendaSectionParamsV2 params,
     String? title,
   }) = ScreenModuleAgendaV2;
-
-  const factory ScreenModuleSpec.allocation({
-    required AllocationSectionParams params,
-    String? title,
-  }) = ScreenModuleAllocation;
 
   const factory ScreenModuleSpec.issuesSummary({
     required IssuesSummarySectionParams params,
