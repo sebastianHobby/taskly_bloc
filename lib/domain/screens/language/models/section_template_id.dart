@@ -10,17 +10,13 @@ abstract final class SectionTemplateId {
   static const interleavedListV2 = 'interleaved_list_v2';
   static const agendaV2 = 'agenda_v2';
 
-  // Former support-block behaviors (now inline sections)
-  static const issuesSummary = 'issues_summary';
-  static const checkInSummary = 'check_in_summary';
-  static const allocationAlerts = 'allocation_alerts';
+  // Support-block behaviors
   static const attentionBannerV1 = 'attention_banner_v1';
   static const entityHeader = 'entity_header';
 
   // Former custom screens (now templated)
   static const settingsMenu = 'settings_menu';
   static const journalTimeline = 'journal_timeline';
-  static const navigationSettings = 'navigation_settings';
   static const allocationSettings = 'allocation_settings';
   static const attentionRules = 'attention_rules';
   static const focusSetupWizard = 'focus_setup_wizard';

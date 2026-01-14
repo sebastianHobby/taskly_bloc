@@ -80,6 +80,11 @@ components working together:
 These are “real stack” tests that may involve the local Supabase + PowerSync
 pipeline (network + services). They are slower and should be run intentionally.
 
+Note: pipeline tests in this repo are written to only execute when the
+environment points at a *local* stack (e.g. `SUPABASE_URL` and `POWERSYNC_URL`
+are `localhost`/`127.0.0.1`). In environments that provide non-local URLs (like
+Supabase Cloud), they will self-skip.
+
 ## 4) Tagging, Presets, and Selective Execution
 
 The repo uses `dart_test.yaml` to define and standardize test tags and presets.

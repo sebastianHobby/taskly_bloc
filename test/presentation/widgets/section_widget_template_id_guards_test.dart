@@ -5,8 +5,8 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../../helpers/pump_app.dart';
@@ -16,18 +16,21 @@ Widget _wrapSliver(Widget sliver) {
 }
 
 void main() {
-  testWidgets('issues_summary uses section.title override', (tester) async {
+  testWidgets('attentionBannerV1 uses section.title override', (tester) async {
     const section = SectionVm(
       index: 0,
-      templateId: SectionTemplateId.issuesSummary,
+      templateId: SectionTemplateId.attentionBannerV1,
       title: 'My Issues',
-      params: IssuesSummarySectionParams(
+      params: AttentionBannerSectionParamsV1(
         pack: StylePackV2.standard,
       ),
-      data: SectionDataResult.issuesSummary(
-        items: [],
+      data: SectionDataResult.attentionBannerV1(
+        actionCount: 0,
+        reviewCount: 0,
         criticalCount: 0,
         warningCount: 0,
+        infoCount: 0,
+        overflowScreenKey: 'review_inbox',
       ),
     );
 
@@ -38,20 +41,23 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('My Issues'), findsOneWidget);
-    expect(find.text('All clear! No issues to address.'), findsOneWidget);
+    expect(find.text('All clear! Nothing needs attention.'), findsOneWidget);
   });
 
   testWidgets('templateId guards prevent mismatched rendering', (tester) async {
     const section = SectionVm(
       index: 0,
       templateId: SectionTemplateId.taskListV2,
-      params: IssuesSummarySectionParams(
+      params: AttentionBannerSectionParamsV1(
         pack: StylePackV2.standard,
       ),
-      data: SectionDataResult.issuesSummary(
-        items: [],
+      data: SectionDataResult.attentionBannerV1(
+        actionCount: 0,
+        reviewCount: 0,
         criticalCount: 0,
         warningCount: 0,
+        infoCount: 0,
+        overflowScreenKey: 'review_inbox',
       ),
     );
 

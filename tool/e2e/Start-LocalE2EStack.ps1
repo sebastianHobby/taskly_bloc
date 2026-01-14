@@ -45,7 +45,7 @@ if ($ResetDb) {
     if ($tablesLine -eq '|||||') {
         throw (
             "Local Supabase schema is missing the app tables required for E2E tests. " +
-            "Generate/apply schema migrations first (see tool/schema/Pull-ProdSchema.ps1 and doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md), " +
+            "Ensure prod schema has been pulled into supabase/migrations (see doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md), " +
             "then rerun this script."
         )
     }

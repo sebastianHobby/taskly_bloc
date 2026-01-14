@@ -2,13 +2,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/allocation_alerts_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/check_in_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 
 part 'screen_spec.freezed.dart';
@@ -87,8 +84,6 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
   const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
   const factory ScreenTemplateSpec.journalTimeline() =
       ScreenTemplateJournalTimeline;
-  const factory ScreenTemplateSpec.navigationSettings() =
-      ScreenTemplateNavigationSettings;
   const factory ScreenTemplateSpec.allocationSettings() =
       ScreenTemplateAllocationSettings;
   const factory ScreenTemplateSpec.attentionRules() =
@@ -132,21 +127,6 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     required AgendaSectionParamsV2 params,
     String? title,
   }) = ScreenModuleAgendaV2;
-
-  const factory ScreenModuleSpec.issuesSummary({
-    required IssuesSummarySectionParams params,
-    String? title,
-  }) = ScreenModuleIssuesSummary;
-
-  const factory ScreenModuleSpec.checkInSummary({
-    required CheckInSummarySectionParams params,
-    String? title,
-  }) = ScreenModuleCheckInSummary;
-
-  const factory ScreenModuleSpec.allocationAlerts({
-    required AllocationAlertsSectionParams params,
-    String? title,
-  }) = ScreenModuleAllocationAlerts;
 
   const factory ScreenModuleSpec.attentionBannerV1({
     required AttentionBannerSectionParamsV1 params,

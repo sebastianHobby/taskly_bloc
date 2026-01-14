@@ -45,14 +45,21 @@ import 'e2e_test_helpers.dart';
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 const _powersyncUrl = String.fromEnvironment('POWERSYNC_URL');
-const _runPipelineTests = bool.fromEnvironment(
-  'RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS',
-);
+
+bool _isLocalUrl(String url) {
+  final trimmed = url.trim().toLowerCase();
+  return trimmed.startsWith('http://127.0.0.1') ||
+      trimmed.startsWith('http://localhost') ||
+      trimmed.startsWith('https://127.0.0.1') ||
+      trimmed.startsWith('https://localhost');
+}
+
 final bool _canRunAgainstLocalStack =
-    _runPipelineTests &&
     _supabaseUrl.trim().isNotEmpty &&
     _supabaseAnonKey.trim().isNotEmpty &&
-    _powersyncUrl.trim().isNotEmpty;
+    _powersyncUrl.trim().isNotEmpty &&
+    _isLocalUrl(_supabaseUrl) &&
+    _isLocalUrl(_powersyncUrl);
 
 @Tags(['integration', 'pipeline'])
 void main() {

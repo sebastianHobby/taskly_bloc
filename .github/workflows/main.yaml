@@ -22,7 +22,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     
     steps:
       - name: Checkout code
@@ -34,6 +34,15 @@ jobs:
           flutter-version: '3.38.x'
           channel: 'stable'
           cache: true
+
+      - name: Setup Node (for Supabase CLI)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase
       
       - name: Cache pub dependencies
         uses: actions/cache@v4
@@ -50,15 +59,76 @@ jobs:
       
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Link to Supabase Cloud (prod)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref "${{ secrets.SUPABASE_PROD_PROJECT_REF }}"
+
+      - name: Pull latest prod schema into migrations (Option A)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db pull
+
+      - name: Start Supabase local stack
+        run: supabase start
+
+      - name: Apply migrations (no seed)
+        run: supabase db reset --no-seed
+
+      - name: Write PowerSync env file
+        run: |
+          cp infra/powersync_local/powersync.env.example infra/powersync_local/.env
+
+      - name: Start PowerSync
+        run: |
+          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env up -d
+
+      - name: Wait for PowerSync liveness
+        run: |
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:8080/probes/liveness > /dev/null; then
+              echo "PowerSync is live";
+              exit 0;
+            fi
+            sleep 1;
+          done
+          echo "PowerSync did not become live";
+          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env ps;
+          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env logs --tail=200;
+          exit 1
+
+      - name: Get local Supabase connection info
+        id: supabase
+        run: |
+          supabase status -o json > supabase_status.json
+          echo "SUPABASE_URL=$(jq -r .api_url supabase_status.json)" >> $GITHUB_OUTPUT
+          echo "SUPABASE_PUBLISHABLE_KEY=$(jq -r .anon_key supabase_status.json)" >> $GITHUB_OUTPUT
       
       - name: Run tests with coverage
         run: |
           flutter test --coverage --reporter=expanded \
-            --dart-define=SUPABASE_URL="${{ secrets.SUPABASE_URL }}" \
-            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" \
-            --dart-define=POWERSYNC_URL="${{ secrets.POWERSYNC_URL }}" \
-            --dart-define=DEV_USERNAME="ci_user" \
-            --dart-define=DEV_PASSWORD="ci_pass"
+            --dart-define=SUPABASE_URL="${{ steps.supabase.outputs.SUPABASE_URL }}" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="${{ steps.supabase.outputs.SUPABASE_PUBLISHABLE_KEY }}" \
+            --dart-define=POWERSYNC_URL="http://127.0.0.1:8080" \
+            --dart-define=DEV_USERNAME="" \
+            --dart-define=DEV_PASSWORD=""
+
+      - name: Dump docker logs on failure
+        if: failure()
+        run: |
+          echo "== supabase status ==";
+          supabase status || true;
+          echo "== docker ps ==";
+          docker ps -a || true;
+          echo "== powersync logs ==";
+          docker compose -f infra/powersync_local/docker-compose.yml --env-file infra/powersync_local/.env logs --tail=400 || true;
+
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
       
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4

@@ -303,6 +303,10 @@ Available tags (defined in `dart_test.yaml`):
 - `slow` - Tests that take longer to run
 - `analytics`, `auth`, `journal`, `tasks` - Feature-specific tags
 
+More configuration options:
+- Repo config: `../dart_test.yaml`
+- Official docs: https://github.com/dart-lang/test/blob/master/pkgs/test/doc/configuration.md
+
 ## Best Practices
 
 ### DO
