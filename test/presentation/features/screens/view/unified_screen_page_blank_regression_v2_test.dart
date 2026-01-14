@@ -7,17 +7,14 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
-import '../../../../helpers/pump_app.dart';
-import '../../../../helpers/test_helpers.dart';
+import '../../../../helpers/test_imports.dart';
 
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
@@ -39,22 +36,23 @@ ScreenSpecData _loadedData({String? error}) {
 }
 
 void main() {
+  setUpAll(() {
+    setUpAllTestEnvironment();
+    registerFallbackValue(_testSpec);
+  });
+
+  setUp(setUpTestEnvironment);
+
   group('UnifiedScreenPageFromSpec regression tests', () {
     late MockScreenSpecDataInterpreter mockInterpreter;
 
     setUp(() async {
-      initializeTalkerForTest();
       await getIt.reset();
+      addTearDown(getIt.reset);
 
       mockInterpreter = MockScreenSpecDataInterpreter();
 
       getIt.registerSingleton<ScreenSpecDataInterpreter>(mockInterpreter);
-
-      registerFallbackValue(_testSpec);
-    });
-
-    tearDown(() async {
-      await getIt.reset();
     });
 
     testWidgetsSafe(

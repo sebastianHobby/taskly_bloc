@@ -76,7 +76,7 @@ Keep it small and stable:
 
 - Review `doc/architecture/*` before implementing any phase and keep docs updated if architecture changes.
 - Run `flutter analyze` during the phase; fix any errors/warnings introduced (or discovered) by the end of the phase.
-- Do **not** run tests repeatedly while iterating. Run tests **once** at the end of the final implementation phase using the `flutter_test_record` task.
+- Do **not** run tests repeatedly while iterating. Run tests **once** at the end of the final implementation phase using the `flutter_test_report` task.
 
 ## Exit criteria for the overall plan
 
@@ -86,3 +86,4 @@ Keep it small and stable:
 - Debug fail-fast behavior is aligned with real category usage.
 - `flutter analyze` is clean.
 - Tests are run once at the end (recorded).
+

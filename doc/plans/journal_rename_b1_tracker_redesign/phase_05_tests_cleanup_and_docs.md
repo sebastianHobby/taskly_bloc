@@ -43,7 +43,7 @@ Finish the cutover with confidence:
 
 ## Acceptance criteria
 
-- Recorded test run passes via `flutter_test_record`.
+- Test run output captured via `flutter_test_report`.
 - No “wellbeing” references remain (except possibly historical migration notes).
 - `flutter analyze` clean.
 
@@ -57,4 +57,5 @@ Finish the cutover with confidence:
 ## Verification
 
 - `flutter analyze`
-- Tests: use the VS Code task `flutter_test_record` (once).
+- Tests: use the VS Code task `flutter_test_report` (once).
+

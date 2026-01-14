@@ -114,36 +114,25 @@ This enables a stable “small loop / big loop” workflow:
 - big loop: run `quick` or `database`
 - targeted confidence: run `integration` / `repository` / `pipeline`
 
-## 5) Recorded Test Runs (Artifacts + Timings)
+## 5) Test Output Files (file_reporters)
 
-This repo includes a test recorder script:
+This repo uses the Dart test runner’s `file_reporters` configuration to write
+structured output to disk during test runs.
 
-- `tool/test_run_recorder.dart`
+Configured in:
 
-It runs `flutter test --machine`, captures raw output, computes per-test timings,
-and writes one folder per run under:
+- `dart_test.yaml`
 
-- `build_out/test_runs/<timestamp>/`
+Default output:
 
-Recorded artifacts include:
-
-- `machine.jsonl` — raw `flutter test --machine` output
-- `stderr.txt` — stderr output
-- `summary.json` — structured summary (counts, failures, slowest tests)
-- `summary.md` — human-readable summary
-
-On failures, it can optionally capture an additional `-r expanded` rerun for
-readable failure details (typically only for failing tests).
-
-Recording runs is the default workflow in this repo because it preserves the
-exact failure output and produces a structured timing summary that makes slow
-tests obvious.
+- `test/last_run.json` (JSON reporter)
 
 ### 5.2 VS Code tasks
 
 The workspace defines tasks for common runs:
 
-- `flutter_test_record` — uses the recorder script
+- `flutter_test_report` — runs tests and copies `test/last_run.json` to a dated
+  file under `test/`
 - `flutter_test_machine` — raw `flutter test --machine`
 - `flutter_test_expanded` — human-readable failures
 
@@ -262,5 +251,5 @@ animations, missing stubs) rather than increasing timeouts.
 2) small loop: run preset=fast (unit/widget)
 3) big loop (before merging): run preset=quick or database
 4) when touching sync/persistence pipelines: run tag=pipeline intentionally
-5) when a failure happens: use the recorder artifacts in build_out/test_runs/
+5) when a failure happens: use the `file_reporters` outputs under test/last_run*.json
 ```

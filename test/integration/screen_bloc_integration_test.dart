@@ -1,13 +1,11 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
-import '../helpers/bloc_test_patterns.dart';
+import '../helpers/test_imports.dart';
 
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
@@ -30,9 +28,11 @@ ScreenSpecData _data({String? error}) {
 
 void main() {
   setUpAll(() {
-    initializeTalkerForTest();
+    setUpAllTestEnvironment();
     registerFallbackValue(_testSpec);
   });
+
+  setUp(setUpTestEnvironment);
 
   group('ScreenSpecBloc (integration-ish)', () {
     late MockScreenSpecDataInterpreter mockInterpreter;

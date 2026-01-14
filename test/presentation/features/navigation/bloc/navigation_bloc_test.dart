@@ -1,12 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../helpers/bloc_test_patterns.dart';
-import '../../../../helpers/test_helpers.dart';
-import 'package:taskly_bloc/shared/logging/talker_service.dart';
+import '../../../../helpers/test_imports.dart';
+
 import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
@@ -22,6 +20,9 @@ class MockNavigationBadgeService extends Mock
     implements NavigationBadgeService {}
 
 void main() {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+
   group('NavigationBloc', () {
     late MockScreenDefinitionsRepositoryContract mockScreensRepository;
     late MockNavigationBadgeService mockBadgeService;
@@ -29,7 +30,6 @@ void main() {
     late TestStreamController<List<ScreenWithPreferences>> screensController;
 
     setUpAll(() {
-      initializeTalkerForTest();
       registerFallbackValue(
         ScreenSpec(
           id: 'fallback-id',
@@ -45,15 +45,12 @@ void main() {
       mockBadgeService = MockNavigationBadgeService();
       iconResolver = const NavigationIconResolver();
       screensController = TestStreamController<List<ScreenWithPreferences>>();
+      addTearDown(screensController.close);
 
       when(
         () => mockScreensRepository.watchAllScreens(),
       ).thenAnswer((_) => screensController.stream);
       when(() => mockBadgeService.badgeStreamFor(any())).thenReturn(null);
-    });
-
-    tearDown(() async {
-      await screensController.close();
     });
 
     ScreenWithPreferences createScreen({

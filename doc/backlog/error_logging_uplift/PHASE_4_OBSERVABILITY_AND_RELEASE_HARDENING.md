@@ -51,7 +51,7 @@ Acceptance criteria:
 
 - Review `doc/architecture/*` before implementing.
 - Run `flutter analyze` and fix all errors/warnings introduced/discovered.
-- Run tests once at the end of the final implementation using VS Code task `flutter_test_record`.
+- Run tests once at the end of the final implementation using VS Code task `flutter_test_report`.
 
 ## Completion checklist
 
@@ -60,3 +60,4 @@ Acceptance criteria:
 - Release log volume is controlled.
 - `flutter analyze` clean.
 - Tests executed once at end (recorded).
+

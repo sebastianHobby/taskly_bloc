@@ -33,9 +33,10 @@ Last updated at: 2026-01-12T00:00:00Z
   - If this phase changes architecture (boundaries, responsibilities, data flow, storage/sync behavior, cross-feature patterns), update the relevant files in `doc/architecture/` as part of the same change.
 - Before finishing the phase:
   - Run `flutter analyze` and fix *all* errors and warnings.
-  - Only then run tests (prefer the `flutter_test_record` task).
+  - Only then run tests (prefer the `flutter_test_report` task).
 
 ## Verification
 
 - `flutter analyze`
-- Tests: `dart run tool/test_run_recorder.dart -- <args>`
+- Tests: run the VS Code task `flutter_test_report` (preferred).
+

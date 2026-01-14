@@ -20,7 +20,7 @@ Remove the legacy allocation primary section implementation after My Day has ful
    - No remaining references to allocation section template id / interpreter / renderer.
 4. Quality gates
    - `flutter analyze` clean.
-   - Recorded test run completed via `flutter_test_record`.
+   - Test run output captured via `flutter_test_report`.
 
 ## Work items
 1. Identify all legacy allocation section entrypoints
@@ -34,7 +34,7 @@ Remove the legacy allocation primary section implementation after My Day has ful
    - Delete unused helpers or assets only needed by allocation primary section.
 4. Verify
    - `flutter analyze` clean.
-   - Run tests once using `flutter_test_record`.
+   - Run tests once using `flutter_test_report`.
 
 ## Acceptance criteria
 - No allocation primary section code remains.
@@ -46,4 +46,5 @@ Remove the legacy allocation primary section implementation after My Day has ful
 - Review `doc/architecture/` before implementing this phase, and keep docs updated for architectural changes.
 - Run `flutter analyze` during this phase.
 - In this last phase: fix any `flutter analyze` error or warning (even if not caused by the plan’s changes).
-- Run tests only once at the end via the `flutter_test_record` task.
+- Run tests only once at the end via the `flutter_test_report` task.
+

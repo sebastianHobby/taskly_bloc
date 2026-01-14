@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test.dart';
+import '../../helpers/test_imports.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
@@ -10,6 +10,9 @@ import '../../mocks/fake_id_generator.dart';
 import '../../mocks/repository_mocks.dart';
 
 void main() {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+
   group('TaskRepository (repository)', () {
     late RepositoryTestContext ctx;
     late FakeIdGenerator idGenerator;
@@ -22,6 +25,7 @@ void main() {
 
     setUp(() {
       ctx = RepositoryTestContext();
+      addTearDown(ctx.dispose);
       idGenerator = FakeIdGenerator();
       occurrenceExpander = MockOccurrenceStreamExpanderContract();
       occurrenceWriteHelper = MockOccurrenceWriteHelperContract();
@@ -39,10 +43,6 @@ void main() {
         occurrenceWriteHelper: occurrenceWriteHelper,
         idGenerator: idGenerator,
       );
-    });
-
-    tearDown(() async {
-      await ctx.dispose();
     });
 
     test(

@@ -44,9 +44,10 @@ Possible locations:
 
 - Review `doc/architecture/*` before implementing.
 - Run `flutter analyze` and fix all errors/warnings introduced/discovered.
-- Do not run tests in this phase unless this is the final phase; if final, run `flutter_test_record` once.
+- Do not run tests in this phase unless this is the final phase; if final, run `flutter_test_report` once.
 
 ## Completion checklist
 
 - Docs updated and consistent with implementation.
 - Plan folder ready to move to `doc/plans/completed/error_logging_uplift/` once implemented.
+

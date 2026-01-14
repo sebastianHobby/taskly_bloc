@@ -14,7 +14,7 @@
 ///     late MyBloc bloc;
 ///
 ///     setUpAll(() {
-///       registerAllFallbackValues();  // From fallback_values.dart
+///       setUpAllTestEnvironment();
 ///     });
 ///
 ///     setUp(() {

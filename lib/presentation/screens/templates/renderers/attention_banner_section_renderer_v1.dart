@@ -18,77 +18,85 @@ class AttentionBannerSectionRendererV1 extends StatelessWidget {
     final effectiveTitle = title ?? 'Attention';
 
     final total = data.actionCount + data.reviewCount;
-    if (total == 0) {
-      return SupportSectionCard(
-        title: effectiveTitle,
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_outline,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: 8),
-            const Text('All clear! Nothing needs attention.'),
-          ],
+
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    final badges = <Widget>[];
+    if (data.actionCount > 0) {
+      badges.add(
+        CountBadge(
+          count: data.actionCount,
+          color: scheme.primary,
+          label: 'Action',
         ),
+      );
+    }
+    if (data.reviewCount > 0) {
+      badges.add(
+        CountBadge(
+          count: data.reviewCount,
+          color: scheme.secondary,
+          label: 'Review',
+        ),
+      );
+    }
+    if (data.criticalCount > 0) {
+      badges.add(
+        CountBadge(
+          count: data.criticalCount,
+          color: scheme.error,
+          label: 'Critical',
+        ),
+      );
+    }
+    if (data.warningCount > 0) {
+      badges.add(
+        CountBadge(
+          count: data.warningCount,
+          color: Colors.orange,
+          label: 'Warning',
+        ),
+      );
+    }
+    if (data.infoCount > 0) {
+      badges.add(
+        CountBadge(count: data.infoCount, color: scheme.primary, label: 'Info'),
       );
     }
 
     return SupportSectionCard(
       title: effectiveTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (data.actionCount > 0)
-                CountBadge(
-                  count: data.actionCount,
-                  color: Theme.of(context).colorScheme.primary,
-                  label: 'Action',
-                ),
-              if (data.reviewCount > 0)
-                CountBadge(
-                  count: data.reviewCount,
-                  color: Theme.of(context).colorScheme.secondary,
-                  label: 'Review',
-                ),
-              if (data.criticalCount > 0)
-                CountBadge(
-                  count: data.criticalCount,
-                  color: Theme.of(context).colorScheme.error,
-                  label: 'Critical',
-                ),
-              if (data.warningCount > 0)
-                CountBadge(
-                  count: data.warningCount,
-                  color: Colors.orange,
-                  label: 'Warning',
-                ),
-              if (data.infoCount > 0)
-                CountBadge(
-                  count: data.infoCount,
-                  color: Theme.of(context).colorScheme.primary,
-                  label: 'Info',
-                ),
-            ],
+          Icon(
+            total == 0 ? Icons.check_circle_outline : Icons.notifications_none,
+            color: total == 0 ? scheme.primary : scheme.onSurfaceVariant,
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () =>
-                  Routing.toScreenKey(context, data.overflowScreenKey),
-              icon: const Icon(Icons.inbox_outlined),
-              label: const Text('Open Attention Inbox'),
-            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: badges.isEmpty
+                ? Text(
+                    'All clear',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  )
+                : Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: badges,
+                  ),
           ),
-          if (data.previewItems.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ...data.previewItems.map((i) => AttentionItemTile(item: i)),
-          ],
+          const SizedBox(width: 12),
+          FilledButton.tonalIcon(
+            onPressed: () =>
+                Routing.toScreenKey(context, data.overflowScreenKey),
+            icon: const Icon(Icons.inbox_outlined),
+            label: const Text('Inbox'),
+          ),
         ],
       ),
     );

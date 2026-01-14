@@ -12,15 +12,16 @@ Document the new architecture patterns and verify correctness with analysis + te
    - Document the new snapshot allocation enrichment item: meaning, source of truth, when to request, what fields are provided.
 2. Verification:
    - Run `flutter analyze` (must be clean).
-   - Run tests once at the end using the `flutter_test_record` task.
+   - Run tests once at the end using the `flutter_test_report` task.
 
 ## Acceptance criteria
 - Docs under `doc/architecture/` accurately describe the final design.
 - `flutter analyze` clean.
-- Recorded test run completed via `flutter_test_record`.
+- Test run output captured via `flutter_test_report`.
 
 ## AI instructions (required)
 - Review `doc/architecture/` before implementing this phase, and keep docs updated for architectural changes.
 - Run `flutter analyze` during this phase.
 - In this last phase: fix any `flutter analyze` error or warning (even if not caused by the plan’s changes).
-- Run tests only once at the end via the `flutter_test_record` task.
+- Run tests only once at the end via the `flutter_test_report` task.
+
