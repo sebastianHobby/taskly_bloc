@@ -1168,26 +1168,6 @@
     "@myDayAlertBannerReview": {
         "description": "Button text to review excluded items"
     },
-    "excludedSectionNeedsAlignment": "Needs Alignment",
-    "@excludedSectionNeedsAlignment": {
-        "description": "Excluded section title for Intentional focus mode"
-    },
-    "excludedSectionWorthConsidering": "Worth Considering",
-    "@excludedSectionWorthConsidering": {
-        "description": "Excluded section title for Sustainable focus mode"
-    },
-    "excludedSectionOverdueAttention": "Overdue Attention",
-    "@excludedSectionOverdueAttention": {
-        "description": "Excluded section title (legacy)"
-    },
-    "excludedSectionActiveFires": "Active Fires",
-    "@excludedSectionActiveFires": {
-        "description": "Excluded section title for Responsive focus mode"
-    },
-    "excludedSectionOutsideFocus": "Outside Focus",
-    "@excludedSectionOutsideFocus": {
-        "description": "Excluded section title for Personalized focus mode"
-    },
     "alertTypeUrgent": "Urgent tasks",
     "@alertTypeUrgent": {
         "description": "Display name for urgent alert type"
@@ -1251,14 +1231,6 @@
     "maxTasksLabel": "Maximum Tasks",
     "@maxTasksLabel": {
         "description": "Label for maximum tasks slider"
-    },
-    "showExcludedSection": "Show excluded section",
-    "@showExcludedSection": {
-        "description": "Toggle label for showing excluded tasks section"
-    },
-    "showExcludedSectionSubtitle": "Display excluded tasks at the bottom",
-    "@showExcludedSectionSubtitle": {
-        "description": "Subtitle for show excluded section toggle"
     },
     "urgentTaskBehaviorLabel": "Urgent task handling",
     "@urgentTaskBehaviorLabel": {

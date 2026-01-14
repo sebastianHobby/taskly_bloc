@@ -68,7 +68,7 @@ sealed class SectionDataResult with _$SectionDataResult {
 
   /// Allocation section result - tasks allocated for focus/next actions (DR-020)
   ///
-  /// Enriched with pinned tasks, value grouping, reasoning, and excluded task info.
+  /// Enriched with pinned tasks, value grouping, and reasoning.
   const factory SectionDataResult.allocation({
     /// All allocated tasks (flat list for backward compatibility)
     required List<Task> allocatedTasks,
@@ -85,26 +85,12 @@ sealed class SectionDataResult with _$SectionDataResult {
     /// Reasoning behind allocation decisions
     AllocationReasoning? reasoning,
 
-    /// Count of tasks excluded from allocation
-    @Default(0) int excludedCount,
-
-    /// Urgent tasks that were excluded from allocation (for problem detection).
-    /// These are tasks that the allocation layer determined are urgent but
-    /// were excluded (e.g., due to UrgentTaskBehavior.warnOnly setting).
-    @Default([]) List<ExcludedTask> excludedUrgentTasks,
-
-    /// Full list of excluded tasks (for Outside Focus section)
-    @Default([]) List<ExcludedTask> excludedTasks,
-
     /// The focus mode used for this allocation
     FocusMode? activeFocusMode,
 
     /// Display mode for this allocation section
     @Default(AllocationDisplayMode.pinnedFirst)
     AllocationDisplayMode displayMode,
-
-    /// Whether to show excluded section
-    @Default(false) bool showExcludedSection,
 
     /// True if allocation cannot proceed because user has no values defined.
     /// When true, the UI should show a gateway prompting value setup.

@@ -18,8 +18,6 @@ void main() {
             .single;
 
         final params = allocationModule.params;
-        expect(params.showExcludedSection, isTrue);
-        expect(params.showExcludedWarnings, isTrue);
         expect(params.displayMode, AllocationDisplayMode.groupedByValue);
       });
     });
@@ -60,7 +58,6 @@ void main() {
             'my_day',
             'scheduled',
             'someday',
-            'logbook',
             'journal',
             'values',
             'projects',

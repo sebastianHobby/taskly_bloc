@@ -274,7 +274,6 @@ String _screenKeyToTitle(String screenKey) {
     'someday': 'Someday',
     'today': 'Today',
     'upcoming': 'Upcoming',
-    'logbook': 'Logbook',
     'projects': 'Projects',
     'labels': 'Labels',
     'values': 'Values',

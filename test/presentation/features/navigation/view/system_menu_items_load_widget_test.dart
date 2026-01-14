@@ -119,7 +119,6 @@ void main() {
           SystemScreenSpecs.myDay,
           SystemScreenSpecs.scheduled,
           SystemScreenSpecs.someday,
-          SystemScreenSpecs.logbook,
           SystemScreenSpecs.journal,
           SystemScreenSpecs.values,
           SystemScreenSpecs.projects,

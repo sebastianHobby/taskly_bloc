@@ -100,7 +100,6 @@ class SectionDataService {
       sourceFilter: params.sourceFilter,
       maxTasks: params.maxTasks,
       displayMode: params.displayMode,
-      showExcludedSection: params.showExcludedSection,
     );
   }
 
@@ -109,7 +108,6 @@ class SectionDataService {
       sourceFilter: params.sourceFilter,
       maxTasks: params.maxTasks,
       displayMode: params.displayMode,
-      showExcludedSection: params.showExcludedSection,
     );
   }
 
@@ -362,7 +360,6 @@ class SectionDataService {
     required TaskQuery? sourceFilter,
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
-    required bool showExcludedSection,
   }) async {
     final dayUtc = _todayUtcDay();
     final snapshot = await _allocationSnapshotRepository.getLatestForUtcDay(
@@ -375,7 +372,6 @@ class SectionDataService {
         sourceFilter: sourceFilter,
         maxTasks: maxTasks,
         displayMode: displayMode,
-        showExcludedSection: showExcludedSection,
       );
     }
 
@@ -389,7 +385,6 @@ class SectionDataService {
         totalAvailable: 0,
         requiresValueSetup: true,
         displayMode: displayMode,
-        showExcludedSection: showExcludedSection,
       );
     }
 
@@ -412,22 +407,14 @@ class SectionDataService {
         .first;
 
     // Allocation warnings are handled by the attention system.
-    // Keep excluded tasks data only for optional “outside focus” rendering.
-    final excludedUrgentTasks = allocation.excludedTasks
-        .where((e) => e.isUrgent ?? false)
-        .toList();
 
     return SectionDataResult.allocation(
       allocatedTasks: tasks,
       totalAvailable: totalAvailable,
       pinnedTasks: pinnedTasks,
       tasksByValue: tasksByValue,
-      excludedCount: allocation.excludedTasks.length,
-      excludedUrgentTasks: excludedUrgentTasks,
-      excludedTasks: allocation.excludedTasks,
       activeFocusMode: allocation.activeFocusMode,
       displayMode: displayMode,
-      showExcludedSection: showExcludedSection,
     );
   }
 
@@ -435,7 +422,6 @@ class SectionDataService {
     required TaskQuery? sourceFilter,
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
-    required bool showExcludedSection,
   }) {
     final dayUtc = _todayUtcDay();
 
@@ -449,7 +435,6 @@ class SectionDataService {
             sourceFilter: sourceFilter,
             maxTasks: maxTasks,
             displayMode: displayMode,
-            showExcludedSection: showExcludedSection,
           );
         }
 
@@ -460,7 +445,6 @@ class SectionDataService {
               sourceFilter: sourceFilter,
               maxTasks: maxTasks,
               displayMode: displayMode,
-              showExcludedSection: showExcludedSection,
             ),
           ),
         );
@@ -473,7 +457,6 @@ class SectionDataService {
     required TaskQuery? sourceFilter,
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
-    required bool showExcludedSection,
   }) async {
     // Check if value setup is required
     if (allocation.requiresValueSetup) {
@@ -482,7 +465,6 @@ class SectionDataService {
         totalAvailable: 0,
         requiresValueSetup: true,
         displayMode: displayMode,
-        showExcludedSection: showExcludedSection,
       );
     }
 
@@ -504,11 +486,6 @@ class SectionDataService {
         .watchAllCount(TaskQuery.incomplete())
         .first;
 
-    // Extract excluded urgent tasks for problem detection
-    final excludedUrgentTasks = allocation.excludedTasks
-        .where((e) => e.isUrgent ?? false)
-        .toList();
-
     // Allocation warnings are handled by the attention system.
 
     return SectionDataResult.allocation(
@@ -516,12 +493,8 @@ class SectionDataService {
       totalAvailable: totalAvailable,
       pinnedTasks: pinnedTasks,
       tasksByValue: tasksByValue,
-      excludedCount: allocation.excludedTasks.length,
-      excludedUrgentTasks: excludedUrgentTasks,
-      excludedTasks: allocation.excludedTasks,
       activeFocusMode: allocation.activeFocusMode,
       displayMode: displayMode,
-      showExcludedSection: showExcludedSection,
     );
   }
 
@@ -530,7 +503,6 @@ class SectionDataService {
     required TaskQuery? sourceFilter,
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
-    required bool showExcludedSection,
   }) async {
     final taskEntries = snapshot.allocated
         .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
@@ -576,12 +548,8 @@ class SectionDataService {
       totalAvailable: totalAvailable,
       pinnedTasks: pinnedTasks,
       tasksByValue: tasksByValue,
-      excludedCount: 0,
-      excludedUrgentTasks: const [],
-      excludedTasks: const [],
       activeFocusMode: allocationConfig.focusMode,
       displayMode: displayMode,
-      showExcludedSection: showExcludedSection,
     );
   }
 
@@ -590,7 +558,6 @@ class SectionDataService {
     required TaskQuery? sourceFilter,
     required int? maxTasks,
     required AllocationDisplayMode displayMode,
-    required bool showExcludedSection,
   }) {
     final taskEntries = snapshot.allocated
         .where((e) => e.entity.type == AllocationSnapshotEntityType.task)
@@ -656,12 +623,8 @@ class SectionDataService {
         totalAvailable: totalAvailable,
         pinnedTasks: pinnedTasks,
         tasksByValue: tasksByValue,
-        excludedCount: 0,
-        excludedUrgentTasks: const [],
-        excludedTasks: const [],
         activeFocusMode: config.focusMode,
         displayMode: displayMode,
-        showExcludedSection: showExcludedSection,
       );
     });
   }
