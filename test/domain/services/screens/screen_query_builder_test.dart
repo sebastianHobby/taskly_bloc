@@ -472,7 +472,7 @@ void main() {
 
       test('returns null for non-task sections', () {
         final section = SectionRef(
-          templateId: SectionTemplateId.projectListV2,
+          templateId: SectionTemplateId.valueListV2,
           params: ListSectionParamsV2(
             config: DataConfig.project(query: ProjectQuery.all()),
             pack: StylePackV2.standard,

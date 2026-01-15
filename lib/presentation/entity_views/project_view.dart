@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
@@ -24,15 +26,9 @@ class ProjectView extends StatelessWidget {
     required this.project,
     this.onTap,
     this.compact = false,
+    this.isInMyDayAuto = false,
     this.taskCount,
     this.completedTaskCount,
-    this.nextTask,
-    this.showNextTask = false,
-    this.showPinnedIndicator = true,
-    this.groupedValueId,
-    this.showPrimaryValueChip = true,
-    this.maxSecondaryValueChips = 1,
-    this.excludeValueIdFromChips,
     this.trailing,
     this.showTrailingProgressLabel = false,
     super.key,
@@ -54,36 +50,6 @@ class ProjectView extends StatelessWidget {
   /// Optional completed task count for progress indicator.
   final int? completedTaskCount;
 
-  /// Optional recommended next task for this project.
-  final Task? nextTask;
-
-  /// Whether to display the next task subtitle.
-  final bool showNextTask;
-
-  /// Whether to show a pinned indicator when the project is pinned.
-  final bool showPinnedIndicator;
-
-  /// When set, the project is being rendered under a value grouping.
-  ///
-  /// Used to render compact, icon-only value chips for the grouped layout.
-  final String? groupedValueId;
-
-  /// Whether to show the primary value chip in the value line.
-  ///
-  /// Useful when the project is displayed under a value grouping where the
-  /// value is already implied by the section header.
-  final bool showPrimaryValueChip;
-
-  /// Maximum number of secondary value chips to show.
-  ///
-  /// Defaults to 1 to keep list rows compact.
-  final int maxSecondaryValueChips;
-
-  /// When set, excludes this value id from any chips shown in the value line.
-  ///
-  /// This is typically the current value group id.
-  final String? excludeValueIdFromChips;
-
   /// Optional trailing control, typically used for collapse/expand in grouped
   /// list renderers.
   final Widget? trailing;
@@ -96,6 +62,11 @@ class ProjectView extends StatelessWidget {
   /// Used by some list templates (e.g. Agenda) to display a tag pill like
   /// START/DUE without overlaying the tile content.
   final Widget? titlePrefix;
+
+  /// Whether this project is currently in the user's My Day (auto-selected).
+  ///
+  /// Not yet supported by allocation, but wired for future use.
+  final bool isInMyDayAuto;
 
   /// Visual variant used to align with the Scheduled agenda mock.
   final ProjectViewVariant variant;
@@ -130,9 +101,10 @@ class ProjectView extends StatelessWidget {
     return DateFormat.MMMd(locale.toLanguageTag()).format(date);
   }
 
-  double? get _progressValue {
-    if (taskCount == null || taskCount == 0) return null;
-    return completedTaskCount != null ? completedTaskCount! / taskCount! : null;
+  bool get _hasKnownProgress {
+    final total = taskCount;
+    final done = completedTaskCount;
+    return total != null && done != null && total > 0;
   }
 
   @override
@@ -150,28 +122,6 @@ class ProjectView extends StatelessWidget {
     final isOverdue = _isOverdue(project.deadlineDate);
     final isDueToday = _isDueToday(project.deadlineDate);
     final isDueSoon = _isDueSoon(project.deadlineDate);
-
-    final groupedId = groupedValueId?.trim();
-    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
-
-    Value? groupedValue;
-    if (isValueGrouped) {
-      final primary = project.primaryValue;
-      if (primary?.id == groupedId) {
-        groupedValue = primary;
-      } else {
-        for (final v in project.secondaryValues) {
-          if (v.id == groupedId) {
-            groupedValue = v;
-            break;
-          }
-        }
-      }
-    }
-
-    final primaryValueForChip = isValueGrouped
-        ? (groupedValue ?? project.primaryValue)
-        : project.primaryValue;
 
     return Container(
       key: Key('project-${project.id}'),
@@ -198,17 +148,15 @@ class ProjectView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Leading: progress ring.
-              _ProjectProgressRing(
-                value: _progressValue,
-                isOverdue: isOverdue,
-                semanticsLabel: project.name,
-                taskCount: taskCount,
-                completedTaskCount: completedTaskCount,
-                centerChild: Icon(
-                  Icons.folder_outlined,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
+              // Leading: folder icon (project identity).
+              SizedBox.square(
+                dimension: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.folder_outlined,
+                    size: 22,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -242,19 +190,17 @@ class ProjectView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showPrimaryValueChip &&
-                            primaryValueForChip != null) ...[
-                          const SizedBox(width: 12),
-                          ValueChip(
-                            value: primaryValueForChip,
-                            variant: ValueChipVariant.solid,
-                            iconOnly: isValueGrouped,
-                          ),
-                        ],
+                        const SizedBox(width: 10),
+                        _ProjectTodayStatusMenuButton(
+                          projectId: project.id,
+                          isPinnedToMyDay: project.isPinned,
+                          isInMyDayAuto: isInMyDayAuto,
+                        ),
                       ],
                     ),
 
                     _MetaLine(
+                      primaryValue: project.primaryValue,
                       formatDate: _formatMonthDay,
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,
@@ -263,12 +209,25 @@ class ProjectView extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       hasRepeat: project.repeatIcalRrule != null,
                       secondaryValues: project.secondaryValues,
-                      groupedValueId: groupedValueId,
-                      maxSecondaryValueChips: maxSecondaryValueChips,
-                      excludeValueIdFromChips: excludeValueIdFromChips,
-                      isPinned: showPinnedIndicator && project.isPinned,
                       priority: project.priority,
+                      onTapValues: () {
+                        EditorLauncher.fromGetIt().openProjectEditor(
+                          context,
+                          projectId: project.id,
+                          openToValues: true,
+                        );
+                      },
                     ),
+
+                    if (_hasKnownProgress) ...[
+                      const SizedBox(height: 8),
+                      _ProjectProgressBar(
+                        projectName: project.name,
+                        isOverdue: isOverdue,
+                        taskCount: taskCount!,
+                        completedTaskCount: completedTaskCount!,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -302,28 +261,6 @@ class ProjectView extends StatelessWidget {
     final isDueToday = _isDueToday(project.deadlineDate);
     final isDueSoon = _isDueSoon(project.deadlineDate);
 
-    final groupedId = groupedValueId?.trim();
-    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
-
-    Value? groupedValue;
-    if (isValueGrouped) {
-      final primary = project.primaryValue;
-      if (primary?.id == groupedId) {
-        groupedValue = primary;
-      } else {
-        for (final v in project.secondaryValues) {
-          if (v.id == groupedId) {
-            groupedValue = v;
-            break;
-          }
-        }
-      }
-    }
-
-    final primaryValueForChip = isValueGrouped
-        ? (groupedValue ?? project.primaryValue)
-        : project.primaryValue;
-
     return Material(
       key: Key('project-${project.id}'),
       color: Colors.transparent,
@@ -345,12 +282,15 @@ class ProjectView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ProjectProgressRing(
-                value: _progressValue,
-                isOverdue: isOverdue,
-                semanticsLabel: project.name,
-                taskCount: taskCount,
-                completedTaskCount: completedTaskCount,
+              SizedBox.square(
+                dimension: 44,
+                child: Center(
+                  child: Icon(
+                    Icons.folder_outlined,
+                    size: 22,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -380,19 +320,17 @@ class ProjectView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showPrimaryValueChip &&
-                            primaryValueForChip != null) ...[
-                          const SizedBox(width: 12),
-                          ValueChip(
-                            value: primaryValueForChip,
-                            variant: ValueChipVariant.solid,
-                            iconOnly: isValueGrouped,
-                          ),
-                        ],
+                        const SizedBox(width: 10),
+                        _ProjectTodayStatusMenuButton(
+                          projectId: project.id,
+                          isPinnedToMyDay: project.isPinned,
+                          isInMyDayAuto: isInMyDayAuto,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     _MetaLine(
+                      primaryValue: project.primaryValue,
                       formatDate: _formatMonthDay,
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,
@@ -401,17 +339,84 @@ class ProjectView extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       hasRepeat: project.repeatIcalRrule != null,
                       secondaryValues: project.secondaryValues,
-                      groupedValueId: groupedValueId,
-                      maxSecondaryValueChips: maxSecondaryValueChips,
-                      excludeValueIdFromChips: excludeValueIdFromChips,
-                      isPinned: showPinnedIndicator && project.isPinned,
                       priority: project.priority,
+                      onTapValues: () {
+                        EditorLauncher.fromGetIt().openProjectEditor(
+                          context,
+                          projectId: project.id,
+                          openToValues: true,
+                        );
+                      },
                     ),
+
+                    if (_hasKnownProgress) ...[
+                      const SizedBox(height: 8),
+                      _ProjectProgressBar(
+                        projectName: project.name,
+                        isOverdue: isOverdue,
+                        taskCount: taskCount!,
+                        completedTaskCount: completedTaskCount!,
+                      ),
+                    ],
                   ],
                 ),
               ),
+
+              if (trailing != null || showTrailingProgressLabel) ...[
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    ?trailing,
+                    if (showTrailingProgressLabel)
+                      _ProjectProgressLabel(
+                        taskCount: taskCount,
+                        completedTaskCount: completedTaskCount,
+                      ),
+                  ],
+                ),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProjectProgressBar extends StatelessWidget {
+  const _ProjectProgressBar({
+    required this.projectName,
+    required this.isOverdue,
+    required this.taskCount,
+    required this.completedTaskCount,
+  });
+
+  final String projectName;
+  final bool isOverdue;
+  final int taskCount;
+  final int completedTaskCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final clampedTotal = taskCount <= 0 ? 1 : taskCount;
+    final progress = (completedTaskCount / clampedTotal).clamp(0.0, 1.0);
+
+    final fill = isOverdue ? scheme.error : scheme.primary;
+    final track = scheme.outlineVariant.withValues(alpha: 0.35);
+
+    return Semantics(
+      label: 'Project progress for $projectName',
+      value: '$completedTaskCount of $taskCount',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(999),
+        child: LinearProgressIndicator(
+          value: progress,
+          minHeight: 2,
+          backgroundColor: track,
+          valueColor: AlwaysStoppedAnimation<Color>(fill),
         ),
       ),
     );
@@ -422,19 +427,18 @@ class _MetaLine extends StatelessWidget {
   const _MetaLine({
     required this.formatDate,
     required this.secondaryValues,
-    required this.groupedValueId,
-    required this.maxSecondaryValueChips,
-    required this.excludeValueIdFromChips,
-    required this.isPinned,
     required this.priority,
+    this.primaryValue,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
     this.isDueToday = false,
     this.isDueSoon = false,
     this.hasRepeat = false,
+    this.onTapValues,
   });
 
+  final Value? primaryValue;
   final DateTime? startDate;
   final DateTime? deadlineDate;
   final bool isOverdue;
@@ -443,11 +447,8 @@ class _MetaLine extends StatelessWidget {
   final bool hasRepeat;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
-  final String? groupedValueId;
-  final int maxSecondaryValueChips;
-  final String? excludeValueIdFromChips;
-  final bool isPinned;
   final int? priority;
+  final VoidCallback? onTapValues;
 
   Color _priorityColor(ColorScheme scheme, int priority) {
     return switch (priority) {
@@ -464,68 +465,33 @@ class _MetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final groupedId = groupedValueId?.trim();
-    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
-
     final leftChildren = <Widget>[];
 
-    if (maxSecondaryValueChips > 0) {
-      final filteredSecondary = secondaryValues
-          .where(
-            (v) =>
-                v.id != excludeValueIdFromChips &&
-                (!isValueGrouped || v.id != groupedId),
-          )
-          .toList(growable: false);
+    final pValue = primaryValue;
+    if (pValue != null) {
+      leftChildren.add(
+        ValueChip(
+          value: pValue,
+          variant: ValueChipVariant.solid,
+          iconOnly: false,
+          onTap: () {
+            Routing.toEntity(context, EntityType.value, pValue.id);
+          },
+        ),
+      );
+    }
 
-      if (filteredSecondary.isNotEmpty) {
-        final visible = filteredSecondary.take(maxSecondaryValueChips).toList();
-        for (final v in visible) {
-          leftChildren.add(
-            Tooltip(
-              message: v.name,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: ValueChip(
-                  value: v,
-                  variant: ValueChipVariant.outlined,
-                  iconOnly: isValueGrouped,
-                ),
-              ),
-            ),
-          );
-        }
-
-        final remaining = filteredSecondary.length - visible.length;
-        if (remaining > 0) {
-          final allNames = filteredSecondary.map((v) => v.name).join(', ');
-          leftChildren.add(
-            Tooltip(
-              message: allNames,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: scheme.outlineVariant),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
-                constraints: const BoxConstraints(minHeight: 20),
-                child: Text(
-                  '+$remaining',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    height: 1.1,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      }
+    if (secondaryValues.isNotEmpty) {
+      final allNames = secondaryValues.map((v) => v.name).join(', ');
+      leftChildren.add(
+        Tooltip(
+          message: allNames,
+          child: _CountPill(
+            label: '+${secondaryValues.length}',
+            onTap: onTapValues,
+          ),
+        ),
+      );
     }
 
     if (hasRepeat) {
@@ -538,154 +504,266 @@ class _MetaLine extends StatelessWidget {
       );
     }
 
-    if (isPinned) {
-      leftChildren.add(
-        Tooltip(
-          message: 'Pinned',
-          child: Icon(
-            Icons.push_pin,
-            size: 14,
-            color: scheme.primary,
-          ),
-        ),
-      );
-    }
-
     final p = priority;
     if (p != null) {
       leftChildren.add(
         Tooltip(
           message: 'Priority P$p',
-          child: Icon(
-            Icons.flag,
-            size: 14,
-            color: _priorityColor(scheme, p),
+          child: _CountPill(
+            label: 'P$p',
+            foregroundColor: _priorityColor(scheme, p),
           ),
         ),
       );
     }
 
-    final dateTokens = <Widget>[];
-    if (startDate != null) {
-      dateTokens.add(
-        DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate!),
-        ),
-      );
-    }
-    if (deadlineDate != null) {
-      dateTokens.add(
-        DateChip.deadline(
-          context: context,
-          label: formatDate(context, deadlineDate!),
-          isOverdue: isOverdue,
-          isDueToday: isDueToday,
-          isDueSoon: isDueSoon,
-        ),
-      );
-    }
-
-    if (leftChildren.isEmpty && dateTokens.isEmpty) {
+    if (leftChildren.isEmpty && startDate == null && deadlineDate == null) {
       return const SizedBox.shrink();
     }
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: leftChildren,
-            ),
-          ),
-          if (dateTokens.isNotEmpty) ...[
-            const SizedBox(width: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: dateTokens,
-            ),
-          ],
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showBothDates =
+              startDate != null &&
+              deadlineDate != null &&
+              constraints.maxWidth >= 420;
+
+          final dateTokens = <Widget>[];
+          if (showBothDates && startDate != null) {
+            dateTokens.add(
+              DateChip.startDate(
+                context: context,
+                label: formatDate(context, startDate!),
+              ),
+            );
+          }
+          if (deadlineDate != null) {
+            dateTokens.add(
+              DateChip.deadline(
+                context: context,
+                label: formatDate(context, deadlineDate!),
+                isOverdue: isOverdue,
+                isDueToday: isDueToday,
+                isDueSoon: isDueSoon,
+              ),
+            );
+          } else if (!showBothDates && startDate != null) {
+            dateTokens.add(
+              DateChip.startDate(
+                context: context,
+                label: formatDate(context, startDate!),
+              ),
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: leftChildren,
+                ),
+              ),
+              if (dateTokens.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: dateTokens,
+                ),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _ProjectProgressRing extends StatelessWidget {
-  const _ProjectProgressRing({
-    required this.value,
-    required this.isOverdue,
-    required this.semanticsLabel,
-    this.taskCount,
-    this.completedTaskCount,
-    this.centerChild,
+class _CountPill extends StatelessWidget {
+  const _CountPill({
+    required this.label,
+    this.onTap,
+    this.foregroundColor,
   });
 
-  final double? value;
-  final bool isOverdue;
-  final String semanticsLabel;
-  final int? taskCount;
-  final int? completedTaskCount;
-  final Widget? centerChild;
+  final String label;
+  final VoidCallback? onTap;
+  final Color? foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final fg = foregroundColor ?? scheme.onSurfaceVariant;
+
+    final content = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      constraints: const BoxConstraints(minHeight: 20),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          height: 1.1,
+          color: fg,
+        ),
+      ),
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: content,
+    );
+  }
+}
+
+enum _ProjectOverflowAction {
+  togglePinnedToMyDay,
+  edit,
+  alignValues,
+  delete,
+}
+
+class _ProjectTodayStatusMenuButton extends StatelessWidget {
+  const _ProjectTodayStatusMenuButton({
+    required this.projectId,
+    required this.isPinnedToMyDay,
+    required this.isInMyDayAuto,
+  });
+
+  final String projectId;
+  final bool isPinnedToMyDay;
+  final bool isInMyDayAuto;
+
+  void _showSnackBar(ScaffoldMessengerState? messenger, String message) {
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    final ringValue = value;
-    final hasValue = ringValue != null;
-    final displayValue = (ringValue ?? 0).clamp(0.0, 1.0);
+    final statusLabel = switch ((isPinnedToMyDay, isInMyDayAuto)) {
+      (true, _) => 'Pinned to My Day',
+      (false, true) => 'In My Day',
+      _ => null,
+    };
 
-    final color = isOverdue ? scheme.error : scheme.primary;
-    final trackColor = scheme.outlineVariant.withValues(alpha: 0.4);
+    final statusIcon = switch ((isPinnedToMyDay, isInMyDayAuto)) {
+      (true, _) => Icons.push_pin,
+      (false, true) => Icons.wb_sunny_outlined,
+      _ => null,
+    };
 
-    final semanticsValue = (taskCount != null && completedTaskCount != null)
-        ? '$completedTaskCount of $taskCount'
-        : hasValue
-        ? '${(displayValue * 100).round()}%'
-        : 'No tasks';
+    final iconColor = scheme.onSurfaceVariant.withValues(alpha: 0.85);
 
-    final percentLabel = '${(displayValue * 100).round()}%';
+    final statusWidget = (statusIcon == null)
+        ? null
+        : Tooltip(
+            message: statusLabel,
+            child: Semantics(
+              label: statusLabel,
+              child: Icon(statusIcon, size: 20, color: iconColor),
+            ),
+          );
 
-    return Semantics(
-      label: 'Project progress for $semanticsLabel',
-      value: semanticsValue,
-      child: SizedBox.square(
-        dimension: 44,
-        child: Stack(
-          alignment: Alignment.center,
+    return PopupMenuButton<_ProjectOverflowAction>(
+      tooltip: 'More',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(
-              value: 1,
-              strokeWidth: 3,
-              strokeCap: StrokeCap.round,
-              valueColor: AlwaysStoppedAnimation<Color>(trackColor),
+            if (statusWidget != null) ...[
+              statusWidget,
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              Icons.more_horiz,
+              size: 20,
+              color: iconColor,
             ),
-            CircularProgressIndicator(
-              value: displayValue,
-              strokeWidth: 3,
-              strokeCap: StrokeCap.round,
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-            centerChild ??
-                Text(
-                  percentLabel,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: scheme.onSurface,
-                  ),
-                ),
           ],
         ),
       ),
+      onSelected: (action) async {
+        switch (action) {
+          case _ProjectOverflowAction.togglePinnedToMyDay:
+            final messenger = ScaffoldMessenger.maybeOf(context);
+            try {
+              final service = getIt<EntityActionService>();
+              if (isPinnedToMyDay) {
+                await service.unpinProject(projectId);
+                _showSnackBar(messenger, 'Unpinned (may still stay in My Day)');
+              } else {
+                await service.pinProject(projectId);
+                _showSnackBar(messenger, 'Pinned to My Day');
+              }
+            } catch (_) {
+              _showSnackBar(messenger, 'Could not update My Day pin');
+            }
+          case _ProjectOverflowAction.edit:
+            await EditorLauncher.fromGetIt().openProjectEditor(
+              context,
+              projectId: projectId,
+            );
+          case _ProjectOverflowAction.alignValues:
+            await EditorLauncher.fromGetIt().openProjectEditor(
+              context,
+              projectId: projectId,
+              openToValues: true,
+            );
+          case _ProjectOverflowAction.delete:
+            await getIt<EntityActionService>().deleteProject(projectId);
+        }
+      },
+      itemBuilder: (context) {
+        final pinLabel = isPinnedToMyDay
+            ? 'Unpin from My Day'
+            : 'Pin to My Day';
+        return [
+          PopupMenuItem(
+            value: _ProjectOverflowAction.togglePinnedToMyDay,
+            child: Text(pinLabel),
+          ),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: _ProjectOverflowAction.edit,
+            child: Text('Edit'),
+          ),
+          const PopupMenuItem(
+            value: _ProjectOverflowAction.alignValues,
+            child: Text('Align values…'),
+          ),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: _ProjectOverflowAction.delete,
+            child: Text('Delete'),
+          ),
+        ];
+      },
     );
   }
 }

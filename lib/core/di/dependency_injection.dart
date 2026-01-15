@@ -38,6 +38,7 @@ import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordin
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
+import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
@@ -72,7 +73,8 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_sect
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
@@ -81,6 +83,7 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_b
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
+
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 
@@ -193,6 +196,15 @@ Future<void> setupDependencies() async {
         lifecycleService: getIt<AppLifecycleService>(),
       ),
     )
+    ..registerLazySingleton<TodayProgressService>(
+      () => TodayProgressService(
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+        taskRepository: getIt<TaskRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
+      ),
+    )
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
       () => AttentionTemporalInvalidationService(
         temporalTriggerService: getIt<TemporalTriggerService>(),
@@ -232,6 +244,7 @@ Future<void> setupDependencies() async {
       () => EntityActionService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
         allocationOrchestrator: getIt<AllocationOrchestrator>(),
       ),
     )
@@ -381,13 +394,6 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<DataListSectionInterpreterV2>(
       () => DataListSectionInterpreterV2(
-        templateId: SectionTemplateId.projectListV2,
-        sectionDataService: getIt<SectionDataService>(),
-      ),
-      instanceName: SectionTemplateId.projectListV2,
-    )
-    ..registerLazySingleton<DataListSectionInterpreterV2>(
-      () => DataListSectionInterpreterV2(
         templateId: SectionTemplateId.valueListV2,
         sectionDataService: getIt<SectionDataService>(),
       ),
@@ -411,11 +417,16 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.agendaV2,
     )
-    ..registerLazySingleton<AttentionBannerSectionInterpreterV1>(
-      () => AttentionBannerSectionInterpreterV1(
+    ..registerLazySingleton<AttentionBannerSectionInterpreterV2>(
+      () => AttentionBannerSectionInterpreterV2(
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
+        todayProgressService: getIt<TodayProgressService>(),
       ),
-      instanceName: SectionTemplateId.attentionBannerV1,
+      instanceName: SectionTemplateId.attentionBannerV2,
+    )
+    ..registerLazySingleton<AttentionInboxSectionInterpreterV1>(
+      AttentionInboxSectionInterpreterV1.new,
+      instanceName: SectionTemplateId.attentionInboxV1,
     )
     ..registerLazySingleton<EntityHeaderSectionInterpreter>(
       () => EntityHeaderSectionInterpreter(
@@ -432,9 +443,6 @@ Future<void> setupDependencies() async {
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.taskListV2,
         ),
-        projectListInterpreter: getIt<DataListSectionInterpreterV2>(
-          instanceName: SectionTemplateId.projectListV2,
-        ),
         valueListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.valueListV2,
         ),
@@ -448,8 +456,12 @@ Future<void> setupDependencies() async {
         agendaInterpreter: getIt<AgendaSectionInterpreterV2>(
           instanceName: SectionTemplateId.agendaV2,
         ),
-        attentionBannerInterpreter: getIt<AttentionBannerSectionInterpreterV1>(
-          instanceName: SectionTemplateId.attentionBannerV1,
+        attentionBannerV2Interpreter:
+            getIt<AttentionBannerSectionInterpreterV2>(
+              instanceName: SectionTemplateId.attentionBannerV2,
+            ),
+        attentionInboxInterpreter: getIt<AttentionInboxSectionInterpreterV1>(
+          instanceName: SectionTemplateId.attentionInboxV1,
         ),
         entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,

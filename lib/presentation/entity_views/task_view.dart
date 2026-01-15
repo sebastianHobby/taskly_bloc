@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
@@ -26,18 +29,9 @@ class TaskView extends StatelessWidget {
     required this.onCheckboxChanged,
     this.onTap,
     this.compact = false,
-    this.onNextActionRemoved,
-    this.showNextActionIndicator = true,
     this.isInFocus = false,
-    this.showProjectNameInMeta = true,
-    this.projectNameIsTertiary = false,
-    this.groupedValueId,
-    this.showPrimaryValueChip = true,
-    this.maxSecondaryValueChips = 1,
-    this.excludeValueIdFromChips,
-    this.reasonText,
-    this.reasonColor,
     this.titlePrefix,
+    this.trailing,
     this.variant = TaskViewVariant.list,
     super.key,
   });
@@ -51,65 +45,21 @@ class TaskView extends StatelessWidget {
   /// Whether to use a compact (2-row) layout.
   final bool compact;
 
-  /// Callback when user removes the Next Action status from the task.
-  /// If null, the indicator won't show the unpin option.
-  final void Function(Task)? onNextActionRemoved;
-
-  /// Whether to show the Next Action indicator for pinned tasks.
-  final bool showNextActionIndicator;
-
   /// Whether this task is currently in the user's focus list (My Day).
   ///
   /// Used by screens like Anytime and Scheduled to provide subtle focus cues.
   final bool isInFocus;
-
-  /// Whether to show the project name in the meta line.
-  ///
-  /// Useful when the task is already displayed under a project header.
-  final bool showProjectNameInMeta;
-
-  /// Whether the project name should be rendered with tertiary emphasis.
-  ///
-  /// This is useful when the project is already implied by the surrounding UI
-  /// (e.g., grouped under a project header) but we still want the project name
-  /// present as a subtle reminder.
-  final bool projectNameIsTertiary;
-
-  /// When set, the task is being rendered under a value grouping.
-  ///
-  /// Used to (a) render a compact, icon-only primary value chip for the grouped
-  /// value and (b) avoid repeating that value among secondary chips.
-  final String? groupedValueId;
-
-  /// Whether to show the primary value chip in the meta line.
-  ///
-  /// Useful when tasks are displayed under a value grouping where the value is
-  /// already implied by the section header.
-  final bool showPrimaryValueChip;
-
-  /// Maximum number of secondary value chips to show.
-  ///
-  /// Defaults to 1 to keep list rows compact.
-  final int maxSecondaryValueChips;
-
-  /// When set, excludes this value id from any chips shown in the meta line.
-  ///
-  /// This is typically the current value group id.
-  final String? excludeValueIdFromChips;
-
-  /// Optional reason text to display below the task name.
-  /// Used for excluded task alerts (e.g., "Overdue by 2 days").
-  final String? reasonText;
-
-  /// Custom color for the reason text.
-  /// If null, uses onSurfaceVariant.
-  final Color? reasonColor;
 
   /// Optional widget shown inline before the task title.
   ///
   /// Used by some list templates (e.g. Agenda) to display a tag pill like
   /// START/DUE without overlaying the tile content.
   final Widget? titlePrefix;
+
+  /// Optional widget shown at the end of the title row.
+  ///
+  /// Intended for per-row actions in list templates (e.g., pin/unpin).
+  final Widget? trailing;
 
   /// Visual variant used to align with the Scheduled agenda mock.
   final TaskViewVariant variant;
@@ -223,15 +173,16 @@ class TaskView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showPrimaryValueChip &&
-                            effectivePrimaryValue != null) ...[
-                          const SizedBox(width: 12),
-                          ValueChip(
-                            value: effectivePrimaryValue,
-                            variant: ValueChipVariant.solid,
-                            iconOnly: false,
-                          ),
+                        if (trailing != null) ...[
+                          const SizedBox(width: 8),
+                          trailing!,
                         ],
+                        const SizedBox(width: 6),
+                        _TaskTodayStatusMenuButton(
+                          taskId: task.id,
+                          isPinnedToMyDay: task.isPinned,
+                          isInMyDayAuto: isInFocus,
+                        ),
                       ],
                     ),
                     // Explicitly removed subtitle/description logic to align with list view mockup
@@ -252,10 +203,9 @@ class TaskView extends StatelessWidget {
                     ],
                     */
                     _MetaLine(
-                      projectName: showProjectNameInMeta
-                          ? task.project?.name
-                          : null,
-                      projectNameIsTertiary: projectNameIsTertiary,
+                      primaryValue: effectivePrimaryValue,
+                      projectName: task.project?.name,
+                      projectId: task.projectId,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -264,11 +214,14 @@ class TaskView extends StatelessWidget {
                       formatDate: DateLabelFormatter.format,
                       hasRepeat: task.repeatIcalRrule != null,
                       secondaryValues: effectiveSecondaryValues,
-                      groupedValueId: groupedValueId,
-                      maxSecondaryValueChips: maxSecondaryValueChips,
-                      excludeValueIdFromChips: excludeValueIdFromChips,
-                      isPinned: task.isPinned,
                       priority: task.priority,
+                      onTapValues: () {
+                        EditorLauncher.fromGetIt().openTaskEditor(
+                          context,
+                          taskId: task.id,
+                          openToValues: true,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -372,23 +325,24 @@ class TaskView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (showPrimaryValueChip &&
-                            effectivePrimaryValue != null) ...[
-                          const SizedBox(width: 12),
-                          ValueChip(
-                            value: effectivePrimaryValue,
-                            variant: ValueChipVariant.solid,
-                            iconOnly: false,
-                          ),
+                        if (trailing != null) ...[
+                          const SizedBox(width: 8),
+                          trailing!,
                         ],
+                        const SizedBox(width: 10),
+                        _TaskTodayStatusMenuButton(
+                          taskId: task.id,
+                          isPinnedToMyDay: task.isPinned,
+                          isInMyDayAuto: isInFocus,
+                          compact: true,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     _MetaLine(
-                      projectName: showProjectNameInMeta
-                          ? task.project?.name
-                          : null,
-                      projectNameIsTertiary: projectNameIsTertiary,
+                      primaryValue: effectivePrimaryValue,
+                      projectName: task.project?.name,
+                      projectId: task.projectId,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -397,11 +351,14 @@ class TaskView extends StatelessWidget {
                       formatDate: DateLabelFormatter.format,
                       hasRepeat: task.repeatIcalRrule != null,
                       secondaryValues: effectiveSecondaryValues,
-                      groupedValueId: groupedValueId,
-                      maxSecondaryValueChips: maxSecondaryValueChips,
-                      excludeValueIdFromChips: excludeValueIdFromChips,
-                      isPinned: task.isPinned,
                       priority: task.priority,
+                      onTapValues: () {
+                        EditorLauncher.fromGetIt().openTaskEditor(
+                          context,
+                          taskId: task.id,
+                          openToValues: true,
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -418,23 +375,22 @@ class _MetaLine extends StatelessWidget {
   const _MetaLine({
     required this.formatDate,
     required this.secondaryValues,
-    required this.groupedValueId,
-    required this.maxSecondaryValueChips,
-    required this.excludeValueIdFromChips,
-    required this.isPinned,
     required this.priority,
+    this.primaryValue,
     this.projectName,
-    this.projectNameIsTertiary = false,
+    this.projectId,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
     this.isDueToday = false,
     this.isDueSoon = false,
     this.hasRepeat = false,
+    this.onTapValues,
   });
 
+  final Value? primaryValue;
   final String? projectName;
-  final bool projectNameIsTertiary;
+  final String? projectId;
   final DateTime? startDate;
   final DateTime? deadlineDate;
   final bool isOverdue;
@@ -443,11 +399,8 @@ class _MetaLine extends StatelessWidget {
   final bool hasRepeat;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
-  final String? groupedValueId;
-  final int maxSecondaryValueChips;
-  final String? excludeValueIdFromChips;
-  final bool isPinned;
   final int? priority;
+  final VoidCallback? onTapValues;
 
   Color _priorityColor(ColorScheme scheme, int p) {
     return switch (p) {
@@ -464,68 +417,33 @@ class _MetaLine extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final groupedId = groupedValueId?.trim();
-    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
-
     final leftChildren = <Widget>[];
 
-    if (maxSecondaryValueChips > 0) {
-      final filteredSecondary = secondaryValues
-          .where(
-            (v) =>
-                v.id != excludeValueIdFromChips &&
-                (!isValueGrouped || v.id != groupedId),
-          )
-          .toList(growable: false);
+    final pValue = primaryValue;
+    if (pValue != null) {
+      leftChildren.add(
+        ValueChip(
+          value: pValue,
+          variant: ValueChipVariant.solid,
+          iconOnly: false,
+          onTap: () {
+            Routing.toEntity(context, EntityType.value, pValue.id);
+          },
+        ),
+      );
+    }
 
-      if (filteredSecondary.isNotEmpty) {
-        final visible = filteredSecondary.take(maxSecondaryValueChips).toList();
-        for (final v in visible) {
-          leftChildren.add(
-            Tooltip(
-              message: v.name,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: ValueChip(
-                  value: v,
-                  variant: ValueChipVariant.outlined,
-                  iconOnly: isValueGrouped,
-                ),
-              ),
-            ),
-          );
-        }
-
-        final remaining = filteredSecondary.length - visible.length;
-        if (remaining > 0) {
-          final allNames = filteredSecondary.map((v) => v.name).join(', ');
-          leftChildren.add(
-            Tooltip(
-              message: allNames,
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: scheme.outlineVariant),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 2,
-                ),
-                constraints: const BoxConstraints(minHeight: 20),
-                child: Text(
-                  '+$remaining',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 10,
-                    height: 1.1,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-      }
+    if (secondaryValues.isNotEmpty) {
+      final allNames = secondaryValues.map((v) => v.name).join(', ');
+      leftChildren.add(
+        Tooltip(
+          message: allNames,
+          child: _CountPill(
+            label: '+${secondaryValues.length}',
+            onTap: onTapValues,
+          ),
+        ),
+      );
     }
 
     if (hasRepeat) {
@@ -538,28 +456,14 @@ class _MetaLine extends StatelessWidget {
       );
     }
 
-    if (isPinned) {
-      leftChildren.add(
-        Tooltip(
-          message: 'Pinned',
-          child: Icon(
-            Icons.push_pin,
-            size: 14,
-            color: scheme.primary,
-          ),
-        ),
-      );
-    }
-
     final p = priority;
     if (p != null) {
       leftChildren.add(
         Tooltip(
           message: 'Priority P$p',
-          child: Icon(
-            Icons.flag,
-            size: 14,
-            color: _priorityColor(scheme, p),
+          child: _CountPill(
+            label: 'P$p',
+            foregroundColor: _priorityColor(scheme, p),
           ),
         ),
       );
@@ -570,60 +474,280 @@ class _MetaLine extends StatelessWidget {
       leftChildren.add(
         ProjectPill(
           projectName: pName,
-          isTertiary: projectNameIsTertiary,
+          onTap: projectId == null
+              ? null
+              : () {
+                  Routing.toEntity(context, EntityType.project, projectId!);
+                },
         ),
       );
     }
 
-    final dateTokens = <Widget>[];
-    if (startDate != null) {
-      dateTokens.add(
-        DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate!),
-        ),
-      );
-    }
-    if (deadlineDate != null) {
-      dateTokens.add(
-        DateChip.deadline(
-          context: context,
-          label: formatDate(context, deadlineDate!),
-          isOverdue: isOverdue,
-          isDueToday: isDueToday,
-          isDueSoon: isDueSoon,
-        ),
-      );
-    }
-
-    if (leftChildren.isEmpty && dateTokens.isEmpty) {
+    if (leftChildren.isEmpty && startDate == null && deadlineDate == null) {
       return const SizedBox.shrink();
     }
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: leftChildren,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showBothDates =
+              startDate != null &&
+              deadlineDate != null &&
+              constraints.maxWidth >= 420;
+
+          final dateTokens = <Widget>[];
+          if (showBothDates && startDate != null) {
+            dateTokens.add(
+              DateChip.startDate(
+                context: context,
+                label: formatDate(context, startDate!),
+              ),
+            );
+          }
+          if (deadlineDate != null) {
+            dateTokens.add(
+              DateChip.deadline(
+                context: context,
+                label: formatDate(context, deadlineDate!),
+                isOverdue: isOverdue,
+                isDueToday: isDueToday,
+                isDueSoon: isDueSoon,
+              ),
+            );
+          } else if (!showBothDates && startDate != null) {
+            // If there's no deadline, we can still show start date.
+            dateTokens.add(
+              DateChip.startDate(
+                context: context,
+                label: formatDate(context, startDate!),
+              ),
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: leftChildren,
+                ),
+              ),
+              if (dateTokens.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: dateTokens,
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CountPill extends StatelessWidget {
+  const _CountPill({
+    required this.label,
+    this.onTap,
+    this.foregroundColor,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final Color? foregroundColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final fg = foregroundColor ?? scheme.onSurfaceVariant;
+
+    final content = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      constraints: const BoxConstraints(minHeight: 20),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700,
+          fontSize: 10,
+          height: 1.1,
+          color: fg,
+        ),
+      ),
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: content,
+    );
+  }
+}
+
+enum _TaskOverflowAction {
+  togglePinnedToMyDay,
+  edit,
+  moveToProject,
+  alignValues,
+  delete,
+}
+
+class _TaskTodayStatusMenuButton extends StatelessWidget {
+  const _TaskTodayStatusMenuButton({
+    required this.taskId,
+    required this.isPinnedToMyDay,
+    required this.isInMyDayAuto,
+    this.compact = false,
+  });
+
+  final String taskId;
+  final bool isPinnedToMyDay;
+  final bool isInMyDayAuto;
+  final bool compact;
+
+  void _showSnackBar(ScaffoldMessengerState? messenger, String message) {
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    final statusLabel = switch ((isPinnedToMyDay, isInMyDayAuto)) {
+      (true, _) => 'Pinned to My Day',
+      (false, true) => 'In My Day',
+      _ => null,
+    };
+
+    final statusIcon = switch ((isPinnedToMyDay, isInMyDayAuto)) {
+      (true, _) => Icons.push_pin,
+      (false, true) => Icons.wb_sunny_outlined,
+      _ => null,
+    };
+
+    final iconColor = scheme.onSurfaceVariant.withValues(alpha: 0.85);
+
+    final statusWidget = (statusIcon == null)
+        ? null
+        : Tooltip(
+            message: statusLabel,
+            child: Semantics(
+              label: statusLabel,
+              child: Icon(
+                statusIcon,
+                size: compact ? 18 : 20,
+                color: iconColor,
+              ),
             ),
-          ),
-          if (dateTokens.isNotEmpty) ...[
-            const SizedBox(width: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: dateTokens,
+          );
+
+    return PopupMenuButton<_TaskOverflowAction>(
+      tooltip: 'More',
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (statusWidget != null) ...[
+              statusWidget,
+              const SizedBox(width: 8),
+            ],
+            Icon(
+              Icons.more_horiz,
+              size: compact ? 18 : 20,
+              color: iconColor,
             ),
           ],
-        ],
+        ),
       ),
+      onSelected: (action) async {
+        switch (action) {
+          case _TaskOverflowAction.togglePinnedToMyDay:
+            final messenger = ScaffoldMessenger.maybeOf(context);
+            try {
+              final service = getIt<EntityActionService>();
+              if (isPinnedToMyDay) {
+                await service.unpinTask(taskId);
+                _showSnackBar(messenger, 'Unpinned (may still stay in My Day)');
+              } else {
+                await service.pinTask(taskId);
+                _showSnackBar(messenger, 'Pinned to My Day');
+              }
+            } catch (_) {
+              _showSnackBar(messenger, 'Could not update My Day pin');
+            }
+          case _TaskOverflowAction.edit:
+            await EditorLauncher.fromGetIt().openTaskEditor(
+              context,
+              taskId: taskId,
+            );
+          case _TaskOverflowAction.moveToProject:
+            await EditorLauncher.fromGetIt().openTaskEditor(
+              context,
+              taskId: taskId,
+              openToProjectPicker: true,
+            );
+          case _TaskOverflowAction.alignValues:
+            await EditorLauncher.fromGetIt().openTaskEditor(
+              context,
+              taskId: taskId,
+              openToValues: true,
+            );
+          case _TaskOverflowAction.delete:
+            await getIt<EntityActionService>().deleteTask(taskId);
+        }
+      },
+      itemBuilder: (context) {
+        final pinLabel = isPinnedToMyDay
+            ? 'Unpin from My Day'
+            : 'Pin to My Day';
+        return [
+          PopupMenuItem(
+            value: _TaskOverflowAction.togglePinnedToMyDay,
+            child: Text(pinLabel),
+          ),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: _TaskOverflowAction.edit,
+            child: Text('Edit'),
+          ),
+          const PopupMenuItem(
+            value: _TaskOverflowAction.moveToProject,
+            child: Text('Move to project…'),
+          ),
+          const PopupMenuItem(
+            value: _TaskOverflowAction.alignValues,
+            child: Text('Align values…'),
+          ),
+          const PopupMenuDivider(),
+          const PopupMenuItem(
+            value: _TaskOverflowAction.delete,
+            child: Text('Delete'),
+          ),
+        ];
+      },
     );
   }
 }

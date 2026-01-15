@@ -10,7 +10,8 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.da
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
@@ -19,45 +20,45 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_li
 
 /// Interprets a typed [ScreenSpec] into a reactive stream of [ScreenSpecData].
 ///
-/// Unlike [ScreenDataInterpreter], this path avoids JSON params + templateId
-/// registries at the screen-definition level. Modules carry typed params and are
-/// routed directly to their typed interpreters.
+/// Unlike the legacy JSON-driven screen pipeline, this path avoids string
+/// template IDs and JSON params at the screen level. Modules carry typed params
+/// and are routed directly to typed interpreters.
 class ScreenSpecDataInterpreter {
   ScreenSpecDataInterpreter({
     required SettingsRepositoryContract settingsRepository,
     required ValueRepositoryContract valueRepository,
     required DataListSectionInterpreterV2 taskListInterpreter,
-    required DataListSectionInterpreterV2 projectListInterpreter,
     required DataListSectionInterpreterV2 valueListInterpreter,
     required InterleavedListSectionInterpreterV2 interleavedListInterpreter,
     required HierarchyValueProjectTaskSectionInterpreterV2
     hierarchyValueProjectTaskInterpreter,
     required AgendaSectionInterpreterV2 agendaInterpreter,
-    required AttentionBannerSectionInterpreterV1 attentionBannerInterpreter,
+    required AttentionBannerSectionInterpreterV2 attentionBannerV2Interpreter,
+    required AttentionInboxSectionInterpreterV1 attentionInboxInterpreter,
     required EntityHeaderSectionInterpreter entityHeaderInterpreter,
   }) : _settingsRepository = settingsRepository,
        _valueRepository = valueRepository,
        _taskListInterpreter = taskListInterpreter,
-       _projectListInterpreter = projectListInterpreter,
        _valueListInterpreter = valueListInterpreter,
        _interleavedListInterpreter = interleavedListInterpreter,
        _hierarchyValueProjectTaskInterpreter =
            hierarchyValueProjectTaskInterpreter,
        _agendaInterpreter = agendaInterpreter,
-       _attentionBannerInterpreter = attentionBannerInterpreter,
+       _attentionBannerV2Interpreter = attentionBannerV2Interpreter,
+       _attentionInboxInterpreter = attentionInboxInterpreter,
        _entityHeaderInterpreter = entityHeaderInterpreter;
 
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
 
   final DataListSectionInterpreterV2 _taskListInterpreter;
-  final DataListSectionInterpreterV2 _projectListInterpreter;
   final DataListSectionInterpreterV2 _valueListInterpreter;
   final InterleavedListSectionInterpreterV2 _interleavedListInterpreter;
   final HierarchyValueProjectTaskSectionInterpreterV2
   _hierarchyValueProjectTaskInterpreter;
   final AgendaSectionInterpreterV2 _agendaInterpreter;
-  final AttentionBannerSectionInterpreterV1 _attentionBannerInterpreter;
+  final AttentionBannerSectionInterpreterV2 _attentionBannerV2Interpreter;
+  final AttentionInboxSectionInterpreterV1 _attentionInboxInterpreter;
   final EntityHeaderSectionInterpreter _entityHeaderInterpreter;
 
   Stream<ScreenSpecData> watchScreen(ScreenSpec spec) {
@@ -186,17 +187,6 @@ class ScreenSpecDataInterpreter {
                 data: data,
               ),
             ),
-        projectListV2: (m) => _projectListInterpreter
-            .watch(m.params)
-            .map(
-              (data) => SectionVm(
-                index: index,
-                templateId: SectionTemplateId.projectListV2,
-                params: m.params,
-                title: m.title,
-                data: data,
-              ),
-            ),
         valueListV2: (m) => _valueListInterpreter
             .watch(m.params)
             .map(
@@ -242,12 +232,23 @@ class ScreenSpecDataInterpreter {
                 data: data,
               ),
             ),
-        attentionBannerV1: (m) => _attentionBannerInterpreter
+        attentionBannerV2: (m) => _attentionBannerV2Interpreter
             .watch(m.params)
             .map(
               (data) => SectionVm(
                 index: index,
-                templateId: SectionTemplateId.attentionBannerV1,
+                templateId: SectionTemplateId.attentionBannerV2,
+                params: m.params,
+                title: m.title,
+                data: data,
+              ),
+            ),
+        attentionInboxV1: (m) => _attentionInboxInterpreter
+            .watch(m.params)
+            .map(
+              (data) => SectionVm(
+                index: index,
+                templateId: SectionTemplateId.attentionInboxV1,
                 params: m.params,
                 title: m.title,
                 data: data,

@@ -260,7 +260,7 @@ Templates determine the page-level layout and how slots are arranged.
 
 Examples:
 - `standardScaffoldV1`: scaffold with `header` + `primary` slots
-- Full-screen feature templates: `settingsMenu`, `journalHub`, `browseHub`, …
+- Full-screen feature templates: `settingsMenu`, `journalHub`, `focusSetupWizard`, …
 
 See: [lib/domain/screens/language/models/screen_spec.dart](../../lib/domain/screens/language/models/screen_spec.dart)
 
@@ -385,12 +385,11 @@ do not rely on section modules.
 | `focusSetupWizard` | none | Focus setup wizard UI. |
 | `trackerManagement` | none | Tracker management UI. |
 | `statisticsDashboard` | none | Statistics dashboard UI (placeholder at the moment). |
-| `browseHub` | none | Browse hub UI. |
 | `myDayFocusModeRequired` | none | Gate screen shown when My Day focus mode is missing. |
 
 **Guidance**
 - Prefer *parameterized* templates (`*_list_v2`, `agenda_v2`, `allocation`) for screens where the primary purpose is "show data in a consistent, configurable way".
-- Prefer *no-params* templates for screens that are effectively standalone "apps within the app" (settings dashboards, management screens). If these start needing data-driven variation, promote them to typed params instead of encoding flags into unrelated configs.
+- Prefer *no-params* templates for screens that are effectively standalone "apps within the app" (settings dashboards, management screens). If these start needing configurable variation, promote them to typed params/modules instead of encoding flags into unrelated configs.
 
 ### 6.5 Styles (`StylePackV2`) and module-specific variants
 

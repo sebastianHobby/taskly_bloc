@@ -102,6 +102,72 @@
     "@createTaskTooltip": {
         "description": "Tooltip del botón flotante para crear tarea"
     },
+    "loadingTitle": "Cargando...",
+    "@loadingTitle": {
+        "description": "Título mostrado en una AppBar mientras una pantalla se está cargando"
+    },
+    "errorTitle": "Error",
+    "@errorTitle": {
+        "description": "Título mostrado en una AppBar cuando una pantalla falla al cargar"
+    },
+    "projectDetailTasksFilterAll": "Todas",
+    "@projectDetailTasksFilterAll": {
+        "description": "Etiqueta de filtro rápido en el detalle del proyecto para mostrar todas las tareas"
+    },
+    "projectDetailTasksFilterOpen": "Abiertas",
+    "@projectDetailTasksFilterOpen": {
+        "description": "Etiqueta de filtro rápido en el detalle del proyecto para mostrar tareas abiertas (no completadas)"
+    },
+    "projectDetailTasksFilterCompleted": "Completadas",
+    "@projectDetailTasksFilterCompleted": {
+        "description": "Etiqueta de filtro rápido en el detalle del proyecto para mostrar tareas completadas"
+    },
+    "projectDetailNoMatchingTasksTitle": "No hay tareas coincidentes",
+    "@projectDetailNoMatchingTasksTitle": {
+        "description": "Título del estado vacío en el detalle del proyecto cuando los filtros ocultan todas las tareas"
+    },
+    "projectDetailNoMatchingTasksDescription": "Prueba con otro filtro.",
+    "@projectDetailNoMatchingTasksDescription": {
+        "description": "Descripción del estado vacío en el detalle del proyecto cuando los filtros ocultan todas las tareas"
+    },
+    "valueDetailProjectsAndTasksSectionTitle": "Proyectos y tareas",
+    "@valueDetailProjectsAndTasksSectionTitle": {
+        "description": "Título de la sección en el detalle del valor que agrupa proyectos y tareas alineados al valor"
+    },
+    "valueFormNameHint": "Nombre",
+    "@valueFormNameHint": {
+        "description": "Texto de sugerencia para el campo de nombre del valor en el editor de valores"
+    },
+    "valueFormNameRequired": "El nombre es obligatorio",
+    "@valueFormNameRequired": {
+        "description": "Error de validación mostrado cuando falta el nombre del valor"
+    },
+    "valueFormNameEmpty": "El nombre no debe estar vacío",
+    "@valueFormNameEmpty": {
+        "description": "Error de validación mostrado cuando el nombre del valor está vacío"
+    },
+    "valueFormNameTooLong": "El nombre debe tener {max} caracteres o menos",
+    "@valueFormNameTooLong": {
+        "description": "Error de validación mostrado cuando el nombre del valor excede la longitud máxima",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "50"
+            }
+        }
+    },
+    "valuePriorityLowLabel": "Baja",
+    "@valuePriorityLowLabel": {
+        "description": "Etiqueta para prioridad baja del valor"
+    },
+    "valuePriorityMediumLabel": "Media",
+    "@valuePriorityMediumLabel": {
+        "description": "Etiqueta para prioridad media del valor"
+    },
+    "valuePriorityHighLabel": "Alta",
+    "@valuePriorityHighLabel": {
+        "description": "Etiqueta para prioridad alta del valor"
+    },
     "createLabelTooltip": "Crear etiqueta",
     "@createLabelTooltip": {
         "description": "Tooltip del botón flotante para crear etiqueta"

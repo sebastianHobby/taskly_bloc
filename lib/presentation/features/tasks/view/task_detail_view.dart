@@ -14,10 +14,22 @@ import 'package:taskly_bloc/presentation/features/tasks/widgets/task_form.dart';
 class TaskDetailSheet extends StatefulWidget {
   const TaskDetailSheet({
     this.defaultProjectId,
+    this.defaultValueIds,
+    this.openToValues = false,
+    this.openToProjectPicker = false,
     super.key,
   });
 
   final String? defaultProjectId;
+  final List<String>? defaultValueIds;
+
+  /// When true, scrolls to the values section and opens the values alignment
+  /// sheet on first build.
+  final bool openToValues;
+
+  /// When true, scrolls to the project picker chip and opens the picker on
+  /// first build.
+  final bool openToProjectPicker;
 
   @override
   State<TaskDetailSheet> createState() => _TaskDetailSheetState();
@@ -168,6 +180,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
+                defaultValueIds: widget.defaultValueIds,
+                openToValues: widget.openToValues,
+                openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),
           loadSuccess:
@@ -227,6 +242,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 availableProjects: availableProjects,
                 availableValues: availableValues,
                 defaultProjectId: widget.defaultProjectId,
+                defaultValueIds: widget.defaultValueIds,
+                openToValues: widget.openToValues,
+                openToProjectPicker: widget.openToProjectPicker,
                 onClose: () => unawaited(closeEditor(context)),
               ),
           operationSuccess: (_) => const SizedBox.shrink(),

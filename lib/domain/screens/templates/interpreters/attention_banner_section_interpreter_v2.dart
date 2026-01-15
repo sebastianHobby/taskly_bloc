@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
@@ -7,56 +8,69 @@ import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
+import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
 
-class AttentionBannerSectionInterpreterV1
-    implements SectionTemplateInterpreter<AttentionBannerSectionParamsV1> {
-  AttentionBannerSectionInterpreterV1({required AttentionEngineContract engine})
-    : _engine = engine;
+class AttentionBannerSectionInterpreterV2
+    implements SectionTemplateInterpreter<AttentionBannerSectionParamsV2> {
+  AttentionBannerSectionInterpreterV2({
+    required AttentionEngineContract engine,
+    required TodayProgressService todayProgressService,
+  }) : _engine = engine,
+       _todayProgressService = todayProgressService;
 
   final AttentionEngineContract _engine;
+  final TodayProgressService _todayProgressService;
 
   @override
-  String get templateId => SectionTemplateId.attentionBannerV1;
+  String get templateId => SectionTemplateId.attentionBannerV2;
 
   @override
-  Stream<Object?> watch(AttentionBannerSectionParamsV1 params) {
+  Stream<Object?> watch(AttentionBannerSectionParamsV2 params) {
     final query = _buildQuery(params);
 
-    return _engine.watch(query).map((items) {
-      final actionCount = items
-          .where((i) => i.bucket == AttentionBucket.action)
-          .length;
-      final reviewCount = items
-          .where((i) => i.bucket == AttentionBucket.review)
-          .length;
+    return Rx.combineLatest2(
+      _engine.watch(query),
+      _todayProgressService.watchTodayProgress(),
+      (items, progress) {
+        final reviewCount = items
+            .where((i) => i.bucket == AttentionBucket.review)
+            .length;
 
-      final criticalCount = items
-          .where((i) => i.severity == AttentionSeverity.critical)
-          .length;
-      final warningCount = items
-          .where((i) => i.severity == AttentionSeverity.warning)
-          .length;
-      final infoCount = items.length - criticalCount - warningCount;
+        final criticalCount = items
+            .where((i) => i.severity == AttentionSeverity.critical)
+            .length;
+        final warningCount = items
+            .where((i) => i.severity == AttentionSeverity.warning)
+            .length;
 
-      return SectionDataResult.attentionBannerV1(
-        actionCount: actionCount,
-        reviewCount: reviewCount,
-        criticalCount: criticalCount,
-        warningCount: warningCount,
-        infoCount: infoCount,
-        previewItems: items.take(params.previewLimit).toList(growable: false),
-        overflowScreenKey: params.overflowScreenKey,
-      );
-    });
+        final alertsCount = items
+            .where(
+              (i) =>
+                  i.bucket == AttentionBucket.action &&
+                  i.severity != AttentionSeverity.info,
+            )
+            .length;
+
+        return SectionDataResult.attentionBannerV2(
+          reviewCount: reviewCount,
+          alertsCount: alertsCount,
+          criticalCount: criticalCount,
+          warningCount: warningCount,
+          overflowScreenKey: params.overflowScreenKey,
+          doneCount: progress.doneCount,
+          totalCount: progress.totalCount,
+        );
+      },
+    );
   }
 
   @override
-  Future<Object?> fetch(AttentionBannerSectionParamsV1 params) async {
+  Future<Object?> fetch(AttentionBannerSectionParamsV2 params) async {
     return watch(params).first;
   }
 
-  AttentionQuery _buildQuery(AttentionBannerSectionParamsV1 params) {
+  AttentionQuery _buildQuery(AttentionBannerSectionParamsV2 params) {
     final entityTypes = params.entityTypes
         ?.map(_parseEntityType)
         .whereType<AttentionEntityType>()

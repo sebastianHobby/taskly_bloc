@@ -100,18 +100,13 @@ void main() {
         verify(() => taskRepo.watchAllCount(taskQuery)).called(1);
       });
 
-      test('returns project count stream for project data section', () {
+      test('returns project count stream for CustomBadgeConfig', () {
         final projectQuery = ProjectQuery.incomplete();
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          modules: SlottedModules(
-            primary: [
-              ScreenModuleSpec.projectListV2(
-                params: _listParamsV2(DataConfig.project(query: projectQuery)),
-                title: 'Projects',
-              ),
-            ],
+          chrome: ScreenChrome(
+            badgeConfig: BadgeConfig.custom(projectQuery: projectQuery),
           ),
         );
 
@@ -146,7 +141,6 @@ void main() {
 
       test('uses first data section when multiple sections exist', () {
         final taskQuery = TaskQuery.incomplete();
-        final projectQuery = ProjectQuery.all();
         final screen = _makeScreen(
           id: 'mixed-1',
           name: 'Mixed',
@@ -156,11 +150,9 @@ void main() {
                 params: _listParamsV2(DataConfig.task(query: taskQuery)),
                 title: 'Tasks First',
               ),
-              ScreenModuleSpec.projectListV2(
-                params: _listParamsV2(
-                  DataConfig.project(query: projectQuery),
-                ),
-                title: 'Projects Second',
+              ScreenModuleSpec.valueListV2(
+                params: _listParamsV2(DataConfig.value()),
+                title: 'Values Second',
               ),
             ],
           ),
@@ -222,18 +214,13 @@ void main() {
       });
 
       test('returns null for project data section', () {
-        final projectQuery = ProjectQuery.incomplete();
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          modules: SlottedModules(
-            primary: [
-              ScreenModuleSpec.projectListV2(
-                params: _listParamsV2(
-                  DataConfig.project(query: projectQuery),
-                ),
-              ),
-            ],
+          chrome: ScreenChrome(
+            badgeConfig: BadgeConfig.custom(
+              projectQuery: ProjectQuery.incomplete(),
+            ),
           ),
         );
 
@@ -267,20 +254,13 @@ void main() {
         expect(query, isNull);
       });
 
-      test('returns project query from project data section', () {
+      test('returns project query from CustomBadgeConfig', () {
         final projectQuery = ProjectQuery.incomplete();
         final screen = _makeScreen(
           id: 'projects-1',
           name: 'Projects',
-          modules: SlottedModules(
-            primary: [
-              ScreenModuleSpec.projectListV2(
-                params: _listParamsV2(
-                  DataConfig.project(query: projectQuery),
-                ),
-                title: 'Projects',
-              ),
-            ],
+          chrome: ScreenChrome(
+            badgeConfig: BadgeConfig.custom(projectQuery: projectQuery),
           ),
         );
 

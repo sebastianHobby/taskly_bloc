@@ -4,7 +4,7 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 part 'content_config.freezed.dart';
 part 'content_config.g.dart';
 
-/// Content configuration for data-driven screens.
+/// Persisted content configuration for module-based screens.
 ///
 /// Combines sections and support blocks into a single JSON blob
 /// for efficient PowerSync sync. This structure is stored in the

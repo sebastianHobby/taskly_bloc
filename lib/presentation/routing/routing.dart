@@ -101,11 +101,24 @@ abstract final class Routing {
 
   // === NAV-01 CREATE/EDIT ROUTES (core entities) ===
 
-  static void toTaskNew(BuildContext context, {String? defaultProjectId}) {
-    final query = (defaultProjectId == null || defaultProjectId.isEmpty)
-        ? ''
-        : '?projectId=$defaultProjectId';
-    GoRouter.of(context).push('/task/new$query');
+  static void toTaskNew(
+    BuildContext context, {
+    String? defaultProjectId,
+    String? defaultValueId,
+  }) {
+    final queryParameters = <String, String>{};
+    if (defaultProjectId != null && defaultProjectId.isNotEmpty) {
+      queryParameters['projectId'] = defaultProjectId;
+    }
+    if (defaultValueId != null && defaultValueId.isNotEmpty) {
+      queryParameters['valueId'] = defaultValueId;
+    }
+
+    final uri = Uri(
+      path: '/task/new',
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    GoRouter.of(context).push(uri.toString());
   }
 
   static void toTaskEdit(BuildContext context, String taskId) =>

@@ -7,14 +7,12 @@ import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 class PinnedSection extends StatelessWidget {
   const PinnedSection({
     required this.pinnedTasks,
-    required this.onUnpin,
     required this.onTaskTap,
     required this.onToggleComplete,
     super.key,
   });
 
   final List<AllocatedTask> pinnedTasks;
-  final void Function(String taskId) onUnpin;
   final void Function(String taskId) onTaskTap;
   final void Function(String taskId) onToggleComplete;
 
@@ -71,10 +69,9 @@ class PinnedSection extends StatelessWidget {
               final allocatedTask = pinnedTasks[index];
               return TaskView(
                 task: allocatedTask.task,
+                isInFocus: true,
                 onTap: (task) => onTaskTap(task.id),
                 onCheckboxChanged: (task, _) => onToggleComplete(task.id),
-                onNextActionRemoved: (task) => onUnpin(task.id),
-                showNextActionIndicator: true,
               );
             },
           ),

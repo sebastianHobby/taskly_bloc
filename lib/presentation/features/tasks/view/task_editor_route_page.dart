@@ -17,11 +17,13 @@ class TaskEditorRoutePage extends StatefulWidget {
   const TaskEditorRoutePage({
     required this.taskId,
     this.defaultProjectId,
+    this.defaultValueIds,
     super.key,
   });
 
   final String? taskId;
   final String? defaultProjectId;
+  final List<String>? defaultValueIds;
 
   @override
   State<TaskEditorRoutePage> createState() => _TaskEditorRoutePageState();
@@ -48,6 +50,7 @@ class _TaskEditorRoutePageState extends State<TaskEditorRoutePage> {
       context,
       taskId: widget.taskId,
       defaultProjectId: widget.defaultProjectId,
+      defaultValueIds: widget.defaultValueIds,
       showDragHandle: true,
     );
 

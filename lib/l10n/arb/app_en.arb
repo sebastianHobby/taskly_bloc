@@ -102,6 +102,72 @@
     "@createTaskTooltip": {
         "description": "Tooltip for the create task floating action button"
     },
+    "loadingTitle": "Loading...",
+    "@loadingTitle": {
+        "description": "Title shown in an AppBar while a screen is loading"
+    },
+    "errorTitle": "Error",
+    "@errorTitle": {
+        "description": "Title shown in an AppBar when a screen fails to load"
+    },
+    "projectDetailTasksFilterAll": "All",
+    "@projectDetailTasksFilterAll": {
+        "description": "Project detail quick filter label to show all tasks"
+    },
+    "projectDetailTasksFilterOpen": "Open",
+    "@projectDetailTasksFilterOpen": {
+        "description": "Project detail quick filter label to show open (not completed) tasks"
+    },
+    "projectDetailTasksFilterCompleted": "Completed",
+    "@projectDetailTasksFilterCompleted": {
+        "description": "Project detail quick filter label to show completed tasks"
+    },
+    "projectDetailNoMatchingTasksTitle": "No matching tasks",
+    "@projectDetailNoMatchingTasksTitle": {
+        "description": "Empty state title shown on project detail when filters hide all tasks"
+    },
+    "projectDetailNoMatchingTasksDescription": "Try a different filter.",
+    "@projectDetailNoMatchingTasksDescription": {
+        "description": "Empty state description shown on project detail when filters hide all tasks"
+    },
+    "valueDetailProjectsAndTasksSectionTitle": "Projects & tasks",
+    "@valueDetailProjectsAndTasksSectionTitle": {
+        "description": "Section title on value detail that groups projects and tasks aligned to the value"
+    },
+    "valueFormNameHint": "Name",
+    "@valueFormNameHint": {
+        "description": "Hint text for the value name field in the value editor"
+    },
+    "valueFormNameRequired": "Name is required",
+    "@valueFormNameRequired": {
+        "description": "Validation error shown when value name is missing"
+    },
+    "valueFormNameEmpty": "Name must not be empty",
+    "@valueFormNameEmpty": {
+        "description": "Validation error shown when value name is empty"
+    },
+    "valueFormNameTooLong": "Name must be {max} characters or fewer",
+    "@valueFormNameTooLong": {
+        "description": "Validation error shown when value name exceeds the max length",
+        "placeholders": {
+            "max": {
+                "type": "int",
+                "example": "50"
+            }
+        }
+    },
+    "valuePriorityLowLabel": "Low",
+    "@valuePriorityLowLabel": {
+        "description": "Label for low value priority"
+    },
+    "valuePriorityMediumLabel": "Medium",
+    "@valuePriorityMediumLabel": {
+        "description": "Label for medium value priority"
+    },
+    "valuePriorityHighLabel": "High",
+    "@valuePriorityHighLabel": {
+        "description": "Label for high value priority"
+    },
     "deleteValue": "Delete value",
     "@deleteValue": {
         "description": "Label for deleting a value"

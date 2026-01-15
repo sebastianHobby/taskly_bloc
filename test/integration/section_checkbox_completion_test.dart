@@ -1,7 +1,7 @@
 /// Integration tests for SectionWidget checkbox completion callbacks.
 ///
 /// Tests that checkbox clicks in SectionWidget properly propagate to callbacks
-/// for both tasks and projects.
+/// for tasks and for the project entity header.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,13 +10,13 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
@@ -166,9 +166,9 @@ void main() {
     );
   });
 
-  group('SectionWidget project checkbox completion', () {
+  group('SectionWidget project header checkbox completion', () {
     testWidgetsSafe(
-      'does not render a checkbox for project list tiles',
+      'passes checkbox callback through to EntityHeader.project',
       (tester) async {
         final project = TestData.project(
           id: 'project-1',
@@ -176,13 +176,26 @@ void main() {
           completed: false,
         );
 
+        Project? receivedProject;
+        bool? receivedValue;
+
         await _pumpSectionWidget(
           tester,
-          section: _createProjectSection(projects: [project]),
-          onProjectCheckboxChanged: (_, __) {},
+          section: _createProjectHeaderSection(project: project),
+          onProjectCheckboxChanged: (p, v) {
+            receivedProject = p;
+            receivedValue = v;
+          },
         );
 
-        expect(find.byType(Checkbox), findsNothing);
+        final checkbox = find.byType(Checkbox);
+        expect(checkbox, findsOneWidget);
+        await tester.tap(checkbox);
+        await tester.pumpForStream();
+
+        expect(receivedProject, isNotNull);
+        expect(receivedProject!.id, equals('project-1'));
+        expect(receivedValue, isTrue);
       },
     );
   });
@@ -247,22 +260,24 @@ SectionVm _createTaskSection({
   );
 }
 
-/// Creates a test section with projects.
-SectionVm _createProjectSection({
-  required List<Project> projects,
+/// Creates a test section with a project entity header.
+SectionVm _createProjectHeaderSection({
+  required Project project,
   String? title,
+  bool showCheckbox = true,
 }) {
   return SectionVm(
     index: 0,
     title: title,
-    templateId: SectionTemplateId.projectListV2,
-    params: ListSectionParamsV2(
-      config: DataConfig.project(query: ProjectQuery()),
-      pack: StylePackV2.standard,
-      layout: const SectionLayoutSpecV2.flatList(),
+    templateId: SectionTemplateId.entityHeader,
+    params: EntityHeaderSectionParams(
+      entityType: 'project',
+      entityId: project.id,
+      showCheckbox: showCheckbox,
     ),
-    data: SectionDataResult.dataV2(
-      items: projects.map(ScreenItem.project).toList(),
+    data: SectionDataResult.entityHeaderProject(
+      project: project,
+      showCheckbox: showCheckbox,
     ),
     isLoading: false,
   );

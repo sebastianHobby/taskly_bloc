@@ -28,6 +28,9 @@ class TaskForm extends StatefulWidget {
     this.availableProjects = const [],
     this.availableValues = const [],
     this.defaultProjectId,
+    this.defaultValueIds,
+    this.openToValues = false,
+    this.openToProjectPicker = false,
     this.onDelete,
     this.onTogglePinned,
     this.onClose,
@@ -42,6 +45,13 @@ class TaskForm extends StatefulWidget {
   final List<Project> availableProjects;
   final List<Value> availableValues;
   final String? defaultProjectId;
+  final List<String>? defaultValueIds;
+
+  /// When true, scrolls to the values section and opens the values sheet.
+  final bool openToValues;
+
+  /// When true, scrolls to the project picker and opens the picker dialog.
+  final bool openToProjectPicker;
   final VoidCallback? onDelete;
 
   /// Called when the user toggles pinned state from the header.
@@ -61,9 +71,98 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
   @override
   VoidCallback? get onClose => widget.onClose;
 
+  final _scrollController = ScrollController();
+  final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _projectKey = GlobalKey();
+  bool _didAutoOpen = false;
+
   @override
   void initState() {
     super.initState();
+
+    // Auto-open is a one-shot affordance for deep-links (e.g., from "+N").
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _didAutoOpen) return;
+      if (!widget.openToValues && !widget.openToProjectPicker) return;
+      _didAutoOpen = true;
+
+      if (widget.openToProjectPicker) {
+        final ctx = _projectKey.currentContext;
+        if (ctx != null) {
+          await Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.1,
+            duration: const Duration(milliseconds: 220),
+          );
+        }
+
+        if (!mounted) return;
+        final currentProjectId =
+            (widget
+                    .formKey
+                    .currentState
+                    ?.fields[TaskFieldKeys.projectId.id]
+                    ?.value
+                as String?) ??
+            '';
+        final selected = await showDialog<Project>(
+          context: context,
+          builder: (context) => _ProjectPickerDialog(
+            availableProjects: widget.availableProjects,
+            currentProjectId: currentProjectId,
+          ),
+        );
+        if (!mounted || selected == null) return;
+        widget.formKey.currentState?.fields[TaskFieldKeys.projectId.id]
+            ?.didChange(selected.id);
+        markDirty();
+        setState(() {});
+        return;
+      }
+
+      if (widget.openToValues) {
+        final ctx = _valuesKey.currentContext;
+        if (ctx != null) {
+          await Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.1,
+            duration: const Duration(milliseconds: 220),
+          );
+        }
+        if (!mounted) return;
+
+        final valueIdsFieldState =
+            widget.formKey.currentState?.fields[TaskFieldKeys.valueIds.id];
+        final explicitValueIds = List<String>.of(
+          (valueIdsFieldState?.value as List<String>?) ?? const <String>[],
+        );
+
+        final projectId =
+            (widget
+                        .formKey
+                        .currentState
+                        ?.fields[TaskFieldKeys.projectId.id]
+                        ?.value
+                    as String?)
+                ?.trim() ??
+            '';
+        final selectedProject = widget.availableProjects
+            .where((p) => p.id == projectId)
+            .firstOrNull;
+
+        final result = await showValuesAlignmentSheetForTask(
+          context,
+          availableValues: widget.availableValues,
+          explicitValueIds: explicitValueIds,
+          selectedProject: selectedProject,
+        );
+        if (!mounted || result == null) return;
+        widget.formKey.currentState?.fields[TaskFieldKeys.valueIds.id]
+            ?.didChange(result);
+        markDirty();
+        setState(() {});
+      }
+    });
   }
 
   Future<void> _showDatePicker(
@@ -105,7 +204,8 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
           widget.initialData?.projectId ?? widget.defaultProjectId ?? '',
       TaskFieldKeys.priority.id: widget.initialData?.priority,
       TaskFieldKeys.valueIds.id:
-          widget.initialData?.values.map((e) => e.id).toList() ?? [],
+          widget.initialData?.values.map((e) => e.id).toList() ??
+          (widget.defaultValueIds ?? const <String>[]),
       TaskFieldKeys.repeatIcalRrule.id:
           widget.initialData?.repeatIcalRrule ?? '',
       TaskFieldKeys.repeatFromCompletion.id:
@@ -121,6 +221,7 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
       deleteTooltip: l10n.deleteTaskAction,
       onClose: widget.onClose != null ? handleClose : null,
       closeTooltip: l10n.closeLabel,
+      scrollController: _scrollController,
       leadingActions: [
         if (widget.initialData != null && widget.onTogglePinned != null)
           IconButton(
@@ -272,30 +373,33 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                               .where((p) => p.id == field.value)
                               .firstOrNull;
 
-                          return _ProjectChip(
-                            project: selectedProject,
-                            onTap: () async {
-                              final selected = await showDialog<Project>(
-                                context: context,
-                                builder: (context) => _ProjectPickerDialog(
-                                  availableProjects: widget.availableProjects,
-                                  currentProjectId: field.value,
-                                ),
-                              );
-                              if (selected != null) {
-                                field.didChange(selected.id);
-                                markDirty();
-                                setState(() {});
-                              }
-                            },
-                            onClear:
-                                field.value != null && field.value!.isNotEmpty
-                                ? () {
-                                    field.didChange('');
-                                    markDirty();
-                                    setState(() {});
-                                  }
-                                : null,
+                          return KeyedSubtree(
+                            key: _projectKey,
+                            child: _ProjectChip(
+                              project: selectedProject,
+                              onTap: () async {
+                                final selected = await showDialog<Project>(
+                                  context: context,
+                                  builder: (context) => _ProjectPickerDialog(
+                                    availableProjects: widget.availableProjects,
+                                    currentProjectId: field.value,
+                                  ),
+                                );
+                                if (selected != null) {
+                                  field.didChange(selected.id);
+                                  markDirty();
+                                  setState(() {});
+                                }
+                              },
+                              onClear:
+                                  field.value != null && field.value!.isNotEmpty
+                                  ? () {
+                                      field.didChange('');
+                                      markDirty();
+                                      setState(() {});
+                                    }
+                                  : null,
+                            ),
                           );
                         },
                       ),
@@ -478,35 +582,41 @@ class _TaskFormState extends State<TaskForm> with FormDirtyStateMixin {
                         ? primaryName
                         : '$primaryName + ${count - 1}';
 
-                    return Card(
-                      elevation: 0,
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      child: ListTile(
-                        title: Text(l10n.valuesAlignedToTitle),
-                        subtitle: Text(
-                          summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    return KeyedSubtree(
+                      key: _valuesKey,
+                      child: Card(
+                        elevation: 0,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        child: ListTile(
+                          title: Text(l10n.valuesAlignedToTitle),
+                          subtitle: Text(
+                            summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          leading: Icon(
+                            isInheriting && !hasExplicit
+                                ? Icons.call_merge
+                                : Icons.star_border,
+                          ),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () async {
+                            final result =
+                                await showValuesAlignmentSheetForTask(
+                                  context,
+                                  availableValues: widget.availableValues,
+                                  explicitValueIds: explicitValueIds,
+                                  selectedProject: selectedProject,
+                                );
+                            if (result != null) {
+                              field.didChange(result);
+                              markDirty();
+                              setState(() {});
+                            }
+                          },
                         ),
-                        leading: Icon(
-                          isInheriting && !hasExplicit
-                              ? Icons.call_merge
-                              : Icons.star_border,
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () async {
-                          final result = await showValuesAlignmentSheetForTask(
-                            context,
-                            availableValues: widget.availableValues,
-                            explicitValueIds: explicitValueIds,
-                            selectedProject: selectedProject,
-                          );
-                          if (result != null) {
-                            field.didChange(result);
-                            markDirty();
-                            setState(() {});
-                          }
-                        },
                       ),
                     );
                   },

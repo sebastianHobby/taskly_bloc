@@ -260,11 +260,65 @@ class AttentionEngine implements AttentionEngineContract {
     final predicate = rule.evaluatorParams['predicate'] as String?;
     if (predicate == null) return const <_EvaluatedItem>[];
 
+    final dueWithinDays =
+        _readInt(rule.evaluatorParams, 'dueWithinDays') ??
+        _readInt(rule.evaluatorParams, 'due_within_days');
+    final minUnscheduledCount =
+        _readInt(rule.evaluatorParams, 'minUnscheduledCount') ??
+        _readInt(rule.evaluatorParams, 'min_unscheduled_count');
+
     final now = inputs.now;
     final items = <_EvaluatedItem>[];
 
     for (final project in inputs.projects) {
       if (project.completed) continue;
+
+      if (predicate == 'dueSoonManyUnscheduledTasks') {
+        final dueWithin = dueWithinDays ?? 14;
+        final minUnscheduled = minUnscheduledCount ?? 5;
+
+        final details = _computeProjectDueSoonManyUnscheduledDetails(
+          project,
+          inputs.tasks,
+          now: now,
+          dueWithinDays: dueWithin,
+        );
+        if (details == null) continue;
+        if (details.unscheduledTasks.length < minUnscheduled) continue;
+
+        final stateHash = _computeProjectDueSoonManyUnscheduledStateHash(
+          project,
+          rule: rule,
+          dueWithinDays: dueWithin,
+          minUnscheduledCount: minUnscheduled,
+          unscheduledTasks: details.unscheduledTasks,
+        );
+
+        final sortKeyOverride = _computeSortKey(
+          rule: rule,
+          entityType: AttentionEntityType.project,
+          // Sort by due-ness first, then by stable entity id.
+          entityId: '${details.sortExtra}|${project.id}',
+        );
+
+        final item = _createProjectItem(
+          rule,
+          project,
+          detectedAt: now,
+          sortKeyOverride: sortKeyOverride,
+          additionalMetadata: {
+            'deadline_date': details.deadline.toIso8601String(),
+            'due_in_days': details.dueInDays,
+            'unscheduled_tasks_count': details.unscheduledTasks.length,
+            'due_within_days': dueWithin,
+            'min_unscheduled_count': minUnscheduled,
+            'detail_lines': details.detailLines,
+          },
+        );
+
+        items.add(_EvaluatedItem(item: item, stateHash: stateHash));
+        continue;
+      }
 
       final matches = switch (predicate) {
         'isIdle' => _isProjectIdle(
@@ -581,6 +635,43 @@ class AttentionEngine implements AttentionEngineContract {
     ]);
   }
 
+  String _computeProjectDueSoonManyUnscheduledStateHash(
+    Project project, {
+    required AttentionRule rule,
+    required int dueWithinDays,
+    required int minUnscheduledCount,
+    required List<Task> unscheduledTasks,
+  }) {
+    final ruleFingerprint = _ruleFingerprint(
+      rule,
+      predicate: 'dueSoonManyUnscheduledTasks',
+    );
+
+    final unscheduledFingerprints =
+        unscheduledTasks
+            .map(
+              (t) => [
+                t.id,
+                t.startDate?.toIso8601String() ?? '',
+                t.deadlineDate?.toIso8601String() ?? '',
+                t.completed.toString(),
+              ].join(':'),
+            )
+            .toList()
+          ..sort();
+
+    return _stableFingerprint([
+      'entity=project',
+      'projectId=${project.id}',
+      'predicate=dueSoonManyUnscheduledTasks',
+      'rule=$ruleFingerprint',
+      'projectDeadline=${project.deadlineDate?.toIso8601String() ?? ''}',
+      'dueWithinDays=$dueWithinDays',
+      'minUnscheduledCount=$minUnscheduledCount',
+      ...unscheduledFingerprints.map((p) => 't=$p'),
+    ]);
+  }
+
   String _computeAllocationTaskStateHash(
     Task task, {
     required AttentionRule rule,
@@ -659,6 +750,68 @@ class AttentionEngine implements AttentionEngineContract {
   bool _isProjectNoAllocatedRecently(Project project, DateTime now) {
     final threshold = now.subtract(const Duration(days: 30));
     return project.updatedAt.isBefore(threshold);
+  }
+
+  ({
+    DateTime deadline,
+    int dueInDays,
+    String sortExtra,
+    List<Task> unscheduledTasks,
+    List<String> detailLines,
+  })?
+  _computeProjectDueSoonManyUnscheduledDetails(
+    Project project,
+    List<Task> tasks, {
+    required DateTime now,
+    required int dueWithinDays,
+  }) {
+    final deadline = project.deadlineDate;
+    if (deadline == null) return null;
+
+    // Trigger when the deadline is within the configured horizon.
+    final dueThreshold = now.add(Duration(days: dueWithinDays));
+    if (deadline.isAfter(dueThreshold)) return null;
+
+    final activeProjectTasks = tasks
+        .where((t) => !t.completed && t.projectId == project.id)
+        .toList(growable: false);
+
+    final unscheduledTasks = activeProjectTasks
+        .where((t) => _isUnscheduledForDeadlineRiskRule(t, now: now))
+        .toList(growable: false);
+
+    final dueInDays = deadline.difference(now).inDays;
+    final dueSort = (dueInDays < 0 ? 0 : dueInDays).toString().padLeft(8, '0');
+
+    final dueLabel = switch (dueInDays) {
+      0 => 'Due today',
+      1 => 'Due tomorrow',
+      < 0 => 'Overdue by ${dueInDays.abs()} day(s)',
+      _ => 'Due in $dueInDays day(s)',
+    };
+
+    return (
+      deadline: deadline,
+      dueInDays: dueInDays,
+      sortExtra: dueSort,
+      unscheduledTasks: unscheduledTasks,
+      detailLines: <String>[
+        dueLabel,
+        'Unscheduled tasks: ${unscheduledTasks.length}',
+      ],
+    );
+  }
+
+  bool _isUnscheduledForDeadlineRiskRule(Task task, {required DateTime now}) {
+    final start = task.startDate;
+    final deadline = task.deadlineDate;
+
+    // Unscheduled definition (per request):
+    // - missing both start + deadline
+    // - OR start date is past AND no deadline is set
+    if (start == null && deadline == null) return true;
+    if (deadline == null && start != null && start.isBefore(now)) return true;
+    return false;
   }
 
   int? _readInt(Map<String, dynamic> map, String key) {
@@ -743,6 +896,8 @@ class AttentionEngine implements AttentionEngineContract {
     AttentionRule rule,
     Project project, {
     required DateTime detectedAt,
+    String? sortKeyOverride,
+    Map<String, dynamic>? additionalMetadata,
   }) {
     final displayConfig = rule.displayConfig;
     return AttentionItem(
@@ -760,14 +915,17 @@ class AttentionEngine implements AttentionEngineContract {
       ),
       availableActions: _parseResolutionActions(rule.resolutionActions),
       detectedAt: detectedAt,
-      sortKey: _computeSortKey(
-        rule: rule,
-        entityType: AttentionEntityType.project,
-        entityId: project.id,
-      ),
+      sortKey:
+          sortKeyOverride ??
+          _computeSortKey(
+            rule: rule,
+            entityType: AttentionEntityType.project,
+            entityId: project.id,
+          ),
       metadata: {
         'project_name': project.name,
         'updated_at': project.updatedAt.toIso8601String(),
+        ...?additionalMetadata,
       },
     );
   }

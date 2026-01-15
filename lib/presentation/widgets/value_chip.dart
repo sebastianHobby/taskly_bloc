@@ -33,8 +33,8 @@ class ValueChip extends StatelessWidget {
 
   /// When true, renders as a more compact chip.
   ///
-  /// This is primarily used in value-grouped list layouts to keep tiles
-  /// compact while still showing value identity.
+  /// This is primarily used in denser layouts (e.g., grouped headers) to keep
+  /// tiles compact while still showing value identity.
   final bool iconOnly;
 
   @override

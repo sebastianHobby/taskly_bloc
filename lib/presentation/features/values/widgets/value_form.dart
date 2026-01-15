@@ -5,6 +5,7 @@ import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/form_utils.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/presentation/widgets/form_shell.dart';
 import 'package:taskly_bloc/presentation/widgets/form_fields/form_fields.dart';
 
 /// A modern form for creating or editing values.
@@ -49,8 +50,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final l10n = context.l10n;
 
     final isCreating = widget.initialData == null;
@@ -64,229 +63,100 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
           widget.initialData?.priority ?? ValuePriority.medium,
     };
 
-    const entityName = 'Value';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Handle bar
-          Container(
-            width: 32,
-            height: 4,
-            margin: const EdgeInsets.only(top: 8),
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          // Header with title and close button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
-            child: Row(
-              children: [
-                // Title with icon
-                Icon(
-                  Icons.sell,
-                  color: colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    isCreating ? 'New $entityName' : 'Edit $entityName',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+    return FormShell(
+      onSubmit: widget.onSubmit,
+      submitTooltip: widget.submitTooltip,
+      submitIcon: isCreating ? Icons.add : Icons.check,
+      onDelete: widget.initialData != null ? widget.onDelete : null,
+      deleteTooltip: l10n.deleteValue,
+      onClose: widget.onClose != null ? handleClose : null,
+      closeTooltip: l10n.closeLabel,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: FormBuilder(
+          key: widget.formKey,
+          initialValue: initialValues,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          onChanged: () {
+            markDirty();
+            final values = widget.formKey.currentState?.value;
+            if (values != null) {
+              widget.onChanged?.call(values);
+            }
+          },
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              FormBuilderTextFieldModern(
+                name: ValueFieldKeys.name.id,
+                hint: l10n.projectFormTitleHint,
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.next,
+                fieldType: ModernFieldType.title,
+                maxLength: ValueForm.maxNameLength,
+                isRequired: true,
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: l10n.taskFormNameRequired,
                   ),
-                ),
-
-                // Delete button (if editing)
-                if (widget.initialData != null && widget.onDelete != null)
-                  IconButton(
-                    icon: Icon(
-                      Icons.delete_outline_rounded,
-                      color: colorScheme.error,
-                      size: 20,
-                    ),
-                    onPressed: widget.onDelete,
-                    tooltip: l10n.deleteValue,
-                    visualDensity: VisualDensity.compact,
+                  FormBuilderValidators.minLength(
+                    1,
+                    errorText: l10n.taskFormNameEmpty,
                   ),
-
-                // Close button (X) in top right
-                if (widget.onClose != null)
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: handleClose,
-                    tooltip: l10n.closeLabel,
-                    style: IconButton.styleFrom(
-                      foregroundColor: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          const Divider(height: 16),
-
-          // Form content
-          FormBuilder(
-            key: widget.formKey,
-            initialValue: initialValues,
-            autovalidateMode: AutovalidateMode.onUserInteraction,
-            onChanged: () {
-              markDirty();
-              final values = widget.formKey.currentState?.value;
-              if (values != null) {
-                widget.onChanged?.call(values);
-              }
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Name field
-                  FormBuilderTextField(
-                    name: ValueFieldKeys.name.id,
-                    maxLength: ValueForm.maxNameLength,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Name',
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerLow,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide(
-                          color: colorScheme.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                      isDense: true,
-                    ),
-                    validator: FormBuilderValidators.compose([
-                      FormBuilderValidators.required<String>(
-                        errorText: 'Name is required',
-                      ),
-                      FormBuilderValidators.maxLength(
-                        ValueForm.maxNameLength,
-                        errorText:
-                            'Name must be ${ValueForm.maxNameLength} characters or fewer',
-                      ),
-                    ]),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Priority Picker
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FormBuilderDropdown<ValuePriority>(
-                          name: ValueFieldKeys.priority.id,
-                          decoration: InputDecoration(
-                            labelText: 'Priority',
-                            filled: true,
-                            fillColor: colorScheme.surfaceContainerLow,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide.none,
-                            ),
-                          ),
-                          items: ValuePriority.values
-                              .map(
-                                (priority) => DropdownMenuItem(
-                                  value: priority,
-                                  child: Text(
-                                    priority.name[0].toUpperCase() +
-                                        priority.name.substring(1),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          validator:
-                              FormBuilderValidators.required<ValuePriority>(
-                                errorText: 'Priority is required',
+                  FormBuilderValidators.maxLength(ValueForm.maxNameLength),
+                ]),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FormBuilderField<ValuePriority>(
+                  name: ValueFieldKeys.priority.id,
+                  validator: FormBuilderValidators.required<ValuePriority>(),
+                  builder: (field) {
+                    final value = field.value ?? ValuePriority.medium;
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: SegmentedButton<ValuePriority>(
+                            segments: const [
+                              ButtonSegment(
+                                value: ValuePriority.low,
+                                label: Text('Low'),
                               ),
+                              ButtonSegment(
+                                value: ValuePriority.medium,
+                                label: Text('Medium'),
+                              ),
+                              ButtonSegment(
+                                value: ValuePriority.high,
+                                label: Text('High'),
+                              ),
+                            ],
+                            selected: {value},
+                            onSelectionChanged: (selection) {
+                              field.didChange(selection.first);
+                              markDirty();
+                            },
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Color picker
-                  Row(
-                    children: [
-                      FormBuilderColorPickerModern(
-                        name: ValueFieldKeys.colour.id,
-                        showLabel: false,
-                        compact: true,
-                        validator: FormBuilderValidators.required<Color>(
-                          errorText: 'Color is required',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Sticky footer with action button at bottom right
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                      ],
+                    );
+                  },
                 ),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                FilledButton.icon(
-                  onPressed: widget.onSubmit,
-                  icon: Icon(
-                    isCreating ? Icons.add : Icons.check,
-                    size: 18,
-                  ),
-                  label: Text(
-                    isCreating ? 'Create $entityName' : 'Save Changes',
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
-                    ),
-                  ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FormBuilderColorPickerModern(
+                  name: ValueFieldKeys.colour.id,
+                  showLabel: false,
+                  compact: true,
+                  validator: FormBuilderValidators.required<Color>(),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

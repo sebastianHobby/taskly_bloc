@@ -20,11 +20,11 @@ sealed class AttentionInboxEvent with _$AttentionInboxEvent {
   const factory AttentionInboxEvent.subscriptionRequested() =
       AttentionInboxSubscriptionRequested;
 
-  const factory AttentionInboxEvent._itemsUpdated({
+  const factory AttentionInboxEvent.itemsUpdated({
     required List<AttentionItem> items,
   }) = _AttentionInboxItemsUpdated;
 
-  const factory AttentionInboxEvent._watchFailed({
+  const factory AttentionInboxEvent.watchFailed({
     required Object error,
     required StackTrace stackTrace,
   }) = _AttentionInboxWatchFailed;
@@ -254,10 +254,10 @@ class AttentionInboxBloc
 
     _sub = items$.listen(
       (items) {
-        add(AttentionInboxEvent._itemsUpdated(items: items));
+        add(AttentionInboxEvent.itemsUpdated(items: items));
       },
       onError: (Object e, StackTrace s) {
-        add(AttentionInboxEvent._watchFailed(error: e, stackTrace: s));
+        add(AttentionInboxEvent.watchFailed(error: e, stackTrace: s));
       },
     );
   }

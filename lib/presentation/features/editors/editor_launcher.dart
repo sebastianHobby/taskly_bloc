@@ -8,6 +8,7 @@ import 'package:taskly_bloc/presentation/features/projects/view/project_create_e
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_view.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/widgets/wolt_modal_helpers.dart';
 
 /// Centralized entry point for launching create/edit entity forms.
@@ -44,7 +45,10 @@ class EditorLauncher {
     BuildContext context, {
     String? taskId,
     String? defaultProjectId,
-    bool showDragHandle = false,
+    List<String>? defaultValueIds,
+    bool openToValues = false,
+    bool openToProjectPicker = false,
+    bool? showDragHandle,
   }) {
     final taskRepository = _taskRepository;
     if (taskRepository == null) {
@@ -53,9 +57,13 @@ class EditorLauncher {
       );
     }
 
+    final windowSizeClass = WindowSizeClass.of(context);
+    final effectiveShowDragHandle =
+        windowSizeClass.isCompact && (showDragHandle ?? true);
+
     return showDetailModal<void>(
       context: context,
-      showDragHandle: showDragHandle,
+      showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
         return BlocProvider(
           create: (_) => TaskDetailBloc(
@@ -64,7 +72,12 @@ class EditorLauncher {
             projectRepository: _projectRepository,
             valueRepository: _valueRepository,
           ),
-          child: TaskDetailSheet(defaultProjectId: defaultProjectId),
+          child: TaskDetailSheet(
+            defaultProjectId: defaultProjectId,
+            defaultValueIds: defaultValueIds,
+            openToValues: openToValues,
+            openToProjectPicker: openToProjectPicker,
+          ),
         );
       },
     );
@@ -74,17 +87,23 @@ class EditorLauncher {
     BuildContext context, {
     String? projectId,
     void Function(String projectId)? onSaved,
-    bool showDragHandle = false,
+    bool openToValues = false,
+    bool? showDragHandle,
   }) {
+    final windowSizeClass = WindowSizeClass.of(context);
+    final effectiveShowDragHandle =
+        windowSizeClass.isCompact && (showDragHandle ?? true);
+
     return showDetailModal<void>(
       context: context,
-      showDragHandle: showDragHandle,
+      showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
         return ProjectEditSheetPage(
           projectId: projectId,
           projectRepository: _projectRepository,
           valueRepository: _valueRepository,
           onSaved: onSaved,
+          openToValues: openToValues,
         );
       },
     );
@@ -94,11 +113,15 @@ class EditorLauncher {
     BuildContext context, {
     String? valueId,
     void Function(String valueId)? onSaved,
-    bool showDragHandle = false,
+    bool? showDragHandle,
   }) {
+    final windowSizeClass = WindowSizeClass.of(context);
+    final effectiveShowDragHandle =
+        windowSizeClass.isCompact && (showDragHandle ?? true);
+
     return showDetailModal<void>(
       context: context,
-      showDragHandle: showDragHandle,
+      showDragHandle: effectiveShowDragHandle,
       childBuilder: (modalContext) {
         return ValueDetailSheetPage(
           valueId: valueId,

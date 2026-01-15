@@ -10,7 +10,7 @@ Last updated at: 2026-01-14T00:00:00Z
 ## Scope
 
 - In scope:
-  - Delete the unused ScreenDefinition-based rendering stack (explicit decision; delete-if-exists).
+  - Delete the unused legacy pre-`ScreenSpec` rendering stack (explicit decision; delete-if-exists).
   - Fix routing inconsistencies that violate the “two patterns only” rule.
   - Align contract docs/comments with the actual V2 implementation.
 - Out of scope:
@@ -26,19 +26,11 @@ Last updated at: 2026-01-14T00:00:00Z
   - Ensure `Routing.entityTypes` matches the actual registered entity routes.
     - Expected: `task`, `project`, `value`.
 - Legacy screen pipeline cleanup (only if zero runtime references)
-  - **Delete legacy ScreenDefinition artifacts from the repo** (explicit decision).
+  - **Delete legacy pre-`ScreenSpec` screen-pipeline artifacts from the repo** (explicit decision).
     - Implementation should be delete-if-exists (these files may already be gone when the plan is executed).
-    - Expected deletion candidates (confirm references are zero before deleting):
-      - `lib/presentation/screens/view/unified_screen_page.dart`
-      - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
-      - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
-
-    Note (2026-01-14): these files have been deleted in the repo; keep this
-    checklist as a guardrail for branches or older snapshots.
-  - Delete/adjust tests that only exercise the legacy stack.
-    - Search for tests referencing the deleted legacy screen-definition pipeline.
-    - Expected: remove `test/presentation/features/screens/bloc/screen_definition_bloc_test.dart` if it only covers deleted code.
-  - Remove or update any stale comments that still reference the legacy system.
+    - Keep this checklist as a guardrail for branches or older snapshots.
+  - Delete/adjust tests that only exercise the legacy pipeline.
+  - Remove or update any stale comments that still reference the legacy pipeline.
 - Documentation and naming consistency
   - Update the repository contract docs to reference `SystemScreenSpecs` (current source of system screens).
     - Update file: `lib/domain/interfaces/screen_catalog_repository_contract.dart`
@@ -49,7 +41,7 @@ Last updated at: 2026-01-14T00:00:00Z
   - `GoRouter '/:segment'` → `Routing.buildScreen` → `SystemScreenSpecs` → `UnifiedScreenPageFromSpec`.
 - No remaining routes point to missing/unregistered entity builders.
 - `/label/:id` is not present in routing.
-- No legacy ScreenDefinition stack files remain in the repo.
+- No legacy pre-`ScreenSpec` screen-pipeline files remain in the repo.
 - `flutter analyze` is clean.
 
 ## Implementation Notes
@@ -58,7 +50,7 @@ Last updated at: 2026-01-14T00:00:00Z
   - `lib/presentation/routing/router.dart`
   - `lib/presentation/routing/routing.dart`
   - `lib/domain/interfaces/screen_catalog_repository_contract.dart`
-  - Delete legacy presentation/domain screen-definition files and their tests.
+  - Delete legacy presentation/domain screen-pipeline files and their tests.
 
 ### Verification (high-signal grep checks)
 

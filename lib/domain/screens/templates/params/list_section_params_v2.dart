@@ -160,6 +160,10 @@ abstract class SectionFilterSpecV2 with _$SectionFilterSpecV2 {
     @Default(false) bool enableProjectsOnlyToggle,
     @Default(false) bool enableValueDropdown,
 
+    /// When true, show a toggle chip to only show tasks that are currently in
+    /// Focus (My Day membership / pinned to focus).
+    @Default(false) bool enableFocusOnlyToggle,
+
     /// When true, show a toggle chip to include/exclude items that start after
     /// today (local day boundary).
     @Default(false) bool enableIncludeFutureStartsToggle,
@@ -186,12 +190,6 @@ sealed class SectionLayoutSpecV2 with _$SectionLayoutSpecV2 {
   const factory SectionLayoutSpecV2.flatList({
     @Default(ListSeparatorV2.divider) ListSeparatorV2 separator,
   }) = _FlatListV2;
-
-  @FreezedUnionValue('timeline_month_sections')
-  @JsonSerializable(disallowUnrecognizedKeys: true)
-  const factory SectionLayoutSpecV2.timelineMonthSections({
-    @Default(true) bool pinnedSectionHeaders,
-  }) = _TimelineMonthSectionsV2;
 
   @FreezedUnionValue('hierarchy_value_project_task')
   @JsonSerializable(disallowUnrecognizedKeys: true)
