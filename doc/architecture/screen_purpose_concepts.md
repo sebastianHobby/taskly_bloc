@@ -9,6 +9,13 @@
 
 ## Definitions
 
+### Naming / routing note (engineering)
+
+- The **Anytime** screen is implemented under the legacy system screen key
+  `someday`.
+- Canonical route path is `/anytime`.
+- Legacy `/someday` deep links redirect to `/anytime`.
+
 - **Focus / Allocated / In My Day**: An item selected into the user’s curated
   focus list for the day (My Day). Focus is an *overlay* state, not a separate
   entity type.
