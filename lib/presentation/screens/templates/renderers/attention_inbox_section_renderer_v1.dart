@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 
 /// Renders the Attention Inbox as a USM section (no Scaffold/AppBar).
 class AttentionInboxSectionRendererV1 extends StatelessWidget {
@@ -116,6 +118,27 @@ class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
 class _AttentionInboxBody extends StatelessWidget {
   const _AttentionInboxBody();
 
+  bool _isMobilePlatform() {
+    if (kIsWeb) return false;
+    return switch (defaultTargetPlatform) {
+      TargetPlatform.android || TargetPlatform.iOS => true,
+      _ => false,
+    };
+  }
+
+  bool _hasActiveFilters(AttentionInboxViewConfig c) {
+    return c.minSeverity != null ||
+        c.entityTypeFilter.isNotEmpty ||
+        c.searchQuery.trim().isNotEmpty;
+  }
+
+  String _bucketTitle(AttentionBucket bucket) {
+    return switch (bucket) {
+      AttentionBucket.action => 'Action items',
+      AttentionBucket.review => 'Review items',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AttentionInboxBloc, AttentionInboxState>(
@@ -126,6 +149,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -138,6 +163,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -153,6 +180,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -165,6 +194,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -181,6 +212,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -221,11 +254,28 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
               ) => viewConfig,
           error: (viewConfig, message) => viewConfig,
+        );
+
+        final (actionCount, reviewCount) = state.maybeWhen(
+          loaded:
+              (
+                viewConfig,
+                groups,
+                totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
+                selectedKeys,
+                pendingUndo,
+                errorMessage,
+              ) => (actionVisibleCount, reviewVisibleCount),
+          orElse: () => (0, 0),
         );
 
         final selectedKeys = state.maybeWhen(
@@ -234,6 +284,8 @@ class _AttentionInboxBody extends StatelessWidget {
                 viewConfig,
                 groups,
                 totalVisibleCount,
+                actionVisibleCount,
+                reviewVisibleCount,
                 selectedKeys,
                 pendingUndo,
                 errorMessage,
@@ -242,6 +294,14 @@ class _AttentionInboxBody extends StatelessWidget {
         );
 
         final selectionMode = selectedKeys.isNotEmpty;
+        final hasActiveFilters = _hasActiveFilters(viewConfig);
+        final enableSwipeActions = _isMobilePlatform() && !selectionMode;
+
+        final filtersButton = IconButton(
+          tooltip: 'Filters',
+          onPressed: () => _openFilters(context),
+          icon: const Icon(Icons.tune),
+        );
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -251,15 +311,31 @@ class _AttentionInboxBody extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      'Inbox',
+                      _bucketTitle(viewConfig.bucket),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Filters',
-                    onPressed: () => _openFilters(context),
-                    icon: const Icon(Icons.tune),
-                  ),
+                  if (hasActiveFilters)
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        filtersButton,
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    filtersButton,
                   PopupMenuButton<_InboxMenuAction>(
                     onSelected: (a) {
                       final bloc = context.read<AttentionInboxBloc>();
@@ -291,7 +367,15 @@ class _AttentionInboxBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              _BucketSelector(viewConfig: viewConfig),
+              _BucketSelector(
+                viewConfig: viewConfig,
+                actionCount: actionCount,
+                reviewCount: reviewCount,
+              ),
+              if (hasActiveFilters) ...[
+                const SizedBox(height: 8),
+                _AppliedFiltersChips(viewConfig: viewConfig),
+              ],
               const SizedBox(height: 8),
               Expanded(
                 child: switch (state) {
@@ -314,6 +398,7 @@ class _AttentionInboxBody extends StatelessWidget {
                         : _GroupedList(
                             groups: groups,
                             selectionMode: selectionMode,
+                            enableSwipeActions: enableSwipeActions,
                             onTapItem: (item) => _onTapItem(context, item),
                             onToggleSelected: (key) =>
                                 context.read<AttentionInboxBloc>().add(
@@ -365,6 +450,8 @@ class _AttentionInboxBody extends StatelessWidget {
             viewConfig,
             groups,
             totalVisibleCount,
+            actionVisibleCount,
+            reviewVisibleCount,
             selectedKeys,
             pendingUndo,
             errorMessage,
@@ -399,24 +486,136 @@ String _labelForAction(AttentionResolutionAction action) {
 // === Below are copied UI helpers from the legacy page, kept private ===
 
 class _BucketSelector extends StatelessWidget {
-  const _BucketSelector({required this.viewConfig});
+  const _BucketSelector({
+    required this.viewConfig,
+    required this.actionCount,
+    required this.reviewCount,
+  });
 
   final AttentionInboxViewConfig viewConfig;
+  final int actionCount;
+  final int reviewCount;
 
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<AttentionInboxBloc>();
 
     return SegmentedButton<AttentionBucket>(
-      segments: const [
-        ButtonSegment(value: AttentionBucket.action, label: Text('Action')),
-        ButtonSegment(value: AttentionBucket.review, label: Text('Review')),
+      segments: [
+        ButtonSegment(
+          value: AttentionBucket.action,
+          label: Text('Action • $actionCount'),
+        ),
+        ButtonSegment(
+          value: AttentionBucket.review,
+          label: Text('Review • $reviewCount'),
+        ),
       ],
       selected: {viewConfig.bucket},
       onSelectionChanged: (values) {
         final bucket = values.first;
         bloc.add(AttentionInboxEvent.bucketChanged(bucket: bucket));
       },
+    );
+  }
+}
+
+class _AppliedFiltersChips extends StatelessWidget {
+  const _AppliedFiltersChips({required this.viewConfig});
+
+  final AttentionInboxViewConfig viewConfig;
+
+  String _severityLabel(AttentionSeverity s) {
+    return switch (s) {
+      AttentionSeverity.critical => 'Severity: Critical',
+      AttentionSeverity.warning => 'Severity: Warning+',
+      AttentionSeverity.info => 'Severity: Info+',
+    };
+  }
+
+  (IconData, String)? _entityTypeLabel(AttentionEntityType t) {
+    return switch (t) {
+      AttentionEntityType.task => (Icons.check_box_outlined, 'Task'),
+      AttentionEntityType.project => (Icons.folder_outlined, 'Project'),
+      AttentionEntityType.value => (Icons.flag_outlined, 'Value'),
+      AttentionEntityType.journal => null,
+      AttentionEntityType.tracker => null,
+      AttentionEntityType.reviewSession => null,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<AttentionInboxBloc>();
+
+    final chips = <Widget>[];
+
+    final minSeverity = viewConfig.minSeverity;
+    if (minSeverity != null) {
+      chips.add(
+        InputChip(
+          label: Text(_severityLabel(minSeverity)),
+          onDeleted: () {
+            bloc.add(
+              const AttentionInboxEvent.minSeverityChanged(
+                minSeverity: null,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    final query = viewConfig.searchQuery.trim();
+    if (query.isNotEmpty) {
+      chips.add(
+        InputChip(
+          label: Text('Search: "$query"'),
+          onDeleted: () {
+            bloc.add(const AttentionInboxEvent.searchQueryChanged(query: ''));
+          },
+        ),
+      );
+    }
+
+    final types = viewConfig.entityTypeFilter.toList(growable: false)
+      ..sort((a, b) => a.name.compareTo(b.name));
+    for (final t in types) {
+      final label = _entityTypeLabel(t);
+      if (label == null) continue;
+      chips.add(
+        InputChip(
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(label.$1, size: 16),
+              const SizedBox(width: 6),
+              Text(label.$2),
+            ],
+          ),
+          onDeleted: () {
+            bloc.add(AttentionInboxEvent.entityTypeToggled(entityType: t));
+          },
+        ),
+      );
+    }
+
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: chips,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -460,6 +659,7 @@ class _GroupedList extends StatelessWidget {
   const _GroupedList({
     required this.groups,
     required this.selectionMode,
+    required this.enableSwipeActions,
     required this.onTapItem,
     required this.onToggleSelected,
     required this.selectedKeys,
@@ -467,9 +667,39 @@ class _GroupedList extends StatelessWidget {
 
   final List<AttentionInboxGroupVm> groups;
   final bool selectionMode;
+  final bool enableSwipeActions;
   final void Function(AttentionItem item) onTapItem;
   final void Function(String key) onToggleSelected;
   final Set<String> selectedKeys;
+
+  Widget _swipeBackground(
+    BuildContext context, {
+    required Color color,
+    required IconData icon,
+    required String label,
+    required Alignment alignment,
+    required EdgeInsets padding,
+  }) {
+    return Container(
+      color: color,
+      alignment: alignment,
+      padding: padding,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -502,7 +732,7 @@ class _GroupedList extends StatelessWidget {
           if (index < cursor + group.items.length) {
             final vm = group.items[index - cursor];
             final selected = selectedKeys.contains(vm.key);
-            return _AttentionInboxItemCard(
+            final card = _AttentionInboxItemCard(
               item: vm.item,
               selectionMode: selectionMode,
               selected: selected,
@@ -524,6 +754,83 @@ class _GroupedList extends StatelessWidget {
                 );
                 return Future<void>.value();
               },
+            );
+
+            if (!enableSwipeActions) return card;
+
+            final enabledActions = vm.item.availableActions.isEmpty
+                ? AttentionResolutionAction.values
+                : vm.item.availableActions;
+
+            final startAction = vm.item.bucket == AttentionBucket.review
+                ? AttentionResolutionAction.reviewed
+                : AttentionResolutionAction.snoozed;
+            const endAction = AttentionResolutionAction.dismissed;
+
+            final allowStart = enabledActions.contains(startAction);
+            final allowEnd = enabledActions.contains(endAction);
+
+            final direction = allowStart && allowEnd
+                ? DismissDirection.horizontal
+                : allowStart
+                ? DismissDirection.startToEnd
+                : allowEnd
+                ? DismissDirection.endToStart
+                : DismissDirection.none;
+
+            if (direction == DismissDirection.none) return card;
+
+            final startLabel = startAction == AttentionResolutionAction.reviewed
+                ? 'Reviewed'
+                : 'Snooze';
+            final startIcon = startAction == AttentionResolutionAction.reviewed
+                ? Icons.done
+                : Icons.snooze;
+            final startColor = startAction == AttentionResolutionAction.reviewed
+                ? Colors.green
+                : Colors.orange;
+
+            return Dismissible(
+              key: ValueKey('attn_swipe_${vm.key}'),
+              direction: direction,
+              background: allowStart
+                  ? _swipeBackground(
+                      context,
+                      color: startColor,
+                      icon: startIcon,
+                      label: startLabel,
+                      alignment: Alignment.centerLeft,
+                      padding: const EdgeInsets.only(left: 16),
+                    )
+                  : null,
+              secondaryBackground: allowEnd
+                  ? _swipeBackground(
+                      context,
+                      color: Theme.of(context).colorScheme.error,
+                      icon: Icons.close,
+                      label: 'Dismiss',
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 16),
+                    )
+                  : null,
+              confirmDismiss: (d) async {
+                final action = switch (d) {
+                  DismissDirection.startToEnd => startAction,
+                  DismissDirection.endToStart => endAction,
+                  _ => null,
+                };
+
+                if (action == null) return false;
+
+                bloc.add(
+                  AttentionInboxEvent.applyActionToItem(
+                    itemKey: vm.key,
+                    action: action,
+                  ),
+                );
+                return true;
+              },
+              child: card,
             );
           }
 
@@ -555,82 +862,73 @@ class _AttentionInboxItemCard extends StatelessWidget {
   final VoidCallback onLongPress;
   final Future<void> Function(AttentionResolutionAction action) onAction;
 
-  List<String> _detailLines() {
-    final raw = item.metadata?['detail_lines'];
-    if (raw is! List) return const <String>[];
-    return raw.whereType<String>().where((s) => s.trim().isNotEmpty).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     final enabledActions = item.availableActions.isEmpty
         ? AttentionResolutionAction.values
         : item.availableActions;
 
-    final detailLines = _detailLines();
+    final tileLeading = selectionMode
+        ? Checkbox(
+            value: selected,
+            onChanged: (_) => onToggleSelected(),
+          )
+        : null;
 
     return Card(
       margin: EdgeInsets.zero,
-      child: ListTile(
+      child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
-        leading: selectionMode
-            ? Checkbox(
-                value: selected,
-                onChanged: (_) => onToggleSelected(),
-              )
-            : null,
-        title: Text(
-          item.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: (item.description.isNotEmpty || detailLines.isNotEmpty)
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (item.description.isNotEmpty)
-                    Text(
-                      item.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  for (final line in detailLines)
-                    Text(
-                      line,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              )
-            : null,
-        trailing: PopupMenuButton<AttentionResolutionAction>(
-          tooltip: 'Actions',
-          onSelected: onAction,
-          itemBuilder: (context) {
-            return [
-              if (enabledActions.contains(AttentionResolutionAction.reviewed))
-                const PopupMenuItem(
-                  value: AttentionResolutionAction.reviewed,
-                  child: Text('Reviewed'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: AttentionItemTile(
+                  item: item,
+                  leading: tileLeading,
                 ),
-              if (enabledActions.contains(AttentionResolutionAction.skipped))
-                const PopupMenuItem(
-                  value: AttentionResolutionAction.skipped,
-                  child: Text('Skipped'),
-                ),
-              if (enabledActions.contains(AttentionResolutionAction.snoozed))
-                const PopupMenuItem(
-                  value: AttentionResolutionAction.snoozed,
-                  child: Text('Snooze 1 day'),
-                ),
-              if (enabledActions.contains(AttentionResolutionAction.dismissed))
-                const PopupMenuItem(
-                  value: AttentionResolutionAction.dismissed,
-                  child: Text('Dismissed'),
-                ),
-            ];
-          },
+              ),
+              PopupMenuButton<AttentionResolutionAction>(
+                tooltip: 'Actions',
+                onSelected: onAction,
+                itemBuilder: (context) {
+                  return [
+                    if (enabledActions.contains(
+                      AttentionResolutionAction.reviewed,
+                    ))
+                      const PopupMenuItem(
+                        value: AttentionResolutionAction.reviewed,
+                        child: Text('Reviewed'),
+                      ),
+                    if (enabledActions.contains(
+                      AttentionResolutionAction.skipped,
+                    ))
+                      const PopupMenuItem(
+                        value: AttentionResolutionAction.skipped,
+                        child: Text('Skipped'),
+                      ),
+                    if (enabledActions.contains(
+                      AttentionResolutionAction.snoozed,
+                    ))
+                      const PopupMenuItem(
+                        value: AttentionResolutionAction.snoozed,
+                        child: Text('Snooze 1 day'),
+                      ),
+                    if (enabledActions.contains(
+                      AttentionResolutionAction.dismissed,
+                    ))
+                      const PopupMenuItem(
+                        value: AttentionResolutionAction.dismissed,
+                        child: Text('Dismissed'),
+                      ),
+                  ];
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -649,45 +947,94 @@ class _SelectionBar extends StatelessWidget {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            Expanded(child: Text('$selectedCount selected')),
-            TextButton(
-              onPressed: () =>
-                  bloc.add(const AttentionInboxEvent.clearSelection()),
-              child: const Text('Clear'),
-            ),
-            const SizedBox(width: 8),
-            FilledButton.icon(
-              onPressed: () => bloc.add(
-                const AttentionInboxEvent.applyActionToSelection(
-                  action: AttentionResolutionAction.reviewed,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 520;
+
+            if (isCompact) {
+              return Row(
+                children: [
+                  Expanded(child: Text('$selectedCount selected')),
+                  TextButton(
+                    onPressed: () =>
+                        bloc.add(const AttentionInboxEvent.clearSelection()),
+                    child: const Text('Clear'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton.icon(
+                    onPressed: () => bloc.add(
+                      const AttentionInboxEvent.applyActionToSelection(
+                        action: AttentionResolutionAction.reviewed,
+                      ),
+                    ),
+                    icon: const Icon(Icons.done),
+                    label: const Text('Reviewed'),
+                  ),
+                  const SizedBox(width: 8),
+                  PopupMenuButton<AttentionResolutionAction>(
+                    tooltip: 'Bulk actions',
+                    onSelected: (a) {
+                      bloc.add(
+                        AttentionInboxEvent.applyActionToSelection(action: a),
+                      );
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: AttentionResolutionAction.snoozed,
+                        child: Text('Snooze'),
+                      ),
+                      PopupMenuItem(
+                        value: AttentionResolutionAction.dismissed,
+                        child: Text('Dismiss'),
+                      ),
+                    ],
+                    child: const Icon(Icons.more_vert),
+                  ),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: Text('$selectedCount selected')),
+                TextButton(
+                  onPressed: () =>
+                      bloc.add(const AttentionInboxEvent.clearSelection()),
+                  child: const Text('Clear'),
                 ),
-              ),
-              icon: const Icon(Icons.done),
-              label: const Text('Reviewed'),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: () => bloc.add(
-                const AttentionInboxEvent.applyActionToSelection(
-                  action: AttentionResolutionAction.snoozed,
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () => bloc.add(
+                    const AttentionInboxEvent.applyActionToSelection(
+                      action: AttentionResolutionAction.reviewed,
+                    ),
+                  ),
+                  icon: const Icon(Icons.done),
+                  label: const Text('Reviewed'),
                 ),
-              ),
-              icon: const Icon(Icons.snooze),
-              label: const Text('Snooze'),
-            ),
-            const SizedBox(width: 8),
-            OutlinedButton.icon(
-              onPressed: () => bloc.add(
-                const AttentionInboxEvent.applyActionToSelection(
-                  action: AttentionResolutionAction.dismissed,
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => bloc.add(
+                    const AttentionInboxEvent.applyActionToSelection(
+                      action: AttentionResolutionAction.snoozed,
+                    ),
+                  ),
+                  icon: const Icon(Icons.snooze),
+                  label: const Text('Snooze'),
                 ),
-              ),
-              icon: const Icon(Icons.close),
-              label: const Text('Dismiss'),
-            ),
-          ],
+                const SizedBox(width: 8),
+                OutlinedButton.icon(
+                  onPressed: () => bloc.add(
+                    const AttentionInboxEvent.applyActionToSelection(
+                      action: AttentionResolutionAction.dismissed,
+                    ),
+                  ),
+                  icon: const Icon(Icons.close),
+                  label: const Text('Dismiss'),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -710,6 +1057,17 @@ class _FiltersSheet extends StatelessWidget {
         children: [
           const SizedBox(height: 8),
           Text('Filters', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.tune),
+            title: const Text('Manage rules'),
+            subtitle: const Text('Configure what shows up in Attention'),
+            onTap: () {
+              Navigator.of(context).pop();
+              Routing.toScreenKey(context, 'attention_rules');
+            },
+          ),
           const SizedBox(height: 12),
           TextFormField(
             decoration: const InputDecoration(
@@ -801,9 +1159,13 @@ class _FiltersSheet extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final t in AttentionEntityType.values)
+              for (final t in const [
+                AttentionEntityType.task,
+                AttentionEntityType.project,
+                AttentionEntityType.value,
+              ])
                 FilterChip(
-                  label: Text(t.name),
+                  label: _EntityTypeChipLabel(entityType: t),
                   selected: config.entityTypeFilter.contains(t),
                   onSelected: (_) => bloc.add(
                     AttentionInboxEvent.entityTypeToggled(entityType: t),
@@ -821,6 +1183,31 @@ class _FiltersSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EntityTypeChipLabel extends StatelessWidget {
+  const _EntityTypeChipLabel({required this.entityType});
+
+  final AttentionEntityType entityType;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label) = switch (entityType) {
+      AttentionEntityType.task => (Icons.check_box_outlined, 'Task'),
+      AttentionEntityType.project => (Icons.folder_outlined, 'Project'),
+      AttentionEntityType.value => (Icons.flag_outlined, 'Value'),
+      _ => (Icons.help_outline, entityType.name),
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 6),
+        Text(label),
+      ],
     );
   }
 }

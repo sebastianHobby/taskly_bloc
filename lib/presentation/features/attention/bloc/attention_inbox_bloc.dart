@@ -128,6 +128,8 @@ sealed class AttentionInboxState with _$AttentionInboxState {
     required AttentionInboxViewConfig viewConfig,
     required List<AttentionInboxGroupVm> groups,
     required int totalVisibleCount,
+    required int actionVisibleCount,
+    required int reviewVisibleCount,
     required Set<String> selectedKeys,
     required AttentionInboxPendingUndo? pendingUndo,
     required String? errorMessage,
@@ -537,6 +539,17 @@ class AttentionInboxBloc
     bool clearUndo = false,
     String? errorMessage,
   }) {
+    int visibleCountFor(AttentionBucket bucket) {
+      final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
+      return items
+          .where((i) => !_hiddenKeys.contains(_itemKey(i)))
+          .where(_matchesFilters)
+          .length;
+    }
+
+    final actionVisibleCount = visibleCountFor(AttentionBucket.action);
+    final reviewVisibleCount = visibleCountFor(AttentionBucket.review);
+
     final currentBucketItems =
         _itemsByBucket[_viewConfig.bucket] ?? const <AttentionItem>[];
 
@@ -567,7 +580,17 @@ class AttentionInboxBloc
         .toList(growable: false);
 
     final existingUndo = state.maybeWhen(
-      loaded: (_, __, ___, ____, pendingUndo, _____) => pendingUndo,
+      loaded:
+          (
+            _,
+            __,
+            ___,
+            ____,
+            _____,
+            ______,
+            pendingUndo,
+            _______,
+          ) => pendingUndo,
       orElse: () => null,
     );
 
@@ -577,6 +600,8 @@ class AttentionInboxBloc
       viewConfig: _viewConfig,
       groups: vms,
       totalVisibleCount: visible.length,
+      actionVisibleCount: actionVisibleCount,
+      reviewVisibleCount: reviewVisibleCount,
       selectedKeys: {..._selectedKeys},
       pendingUndo: resolvedUndo,
       errorMessage: errorMessage,

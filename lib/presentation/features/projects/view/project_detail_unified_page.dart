@@ -6,7 +6,12 @@ import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.da
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/screens/catalog/entity_screens/entity_detail_screen_specs.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
@@ -109,9 +114,37 @@ class _ProjectScreenWithData extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final spec = EntityDetailScreenSpecs.projectDetail(
-      project: project,
-      tasksTitle: l10n.tasksTitle,
+    final spec = ScreenSpec(
+      id: 'project_${project.id}',
+      screenKey: 'project_detail',
+      name: project.name,
+      template: const ScreenTemplateSpec.entityDetailScaffoldV1(),
+      modules: SlottedModules(
+        header: [
+          ScreenModuleSpec.entityHeader(
+            params: EntityHeaderSectionParams(
+              entityType: 'project',
+              entityId: project.id,
+              showCheckbox: true,
+              showMetadata: true,
+            ),
+          ),
+        ],
+        primary: [
+          ScreenModuleSpec.taskListV2(
+            title: l10n.tasksTitle,
+            params: ListSectionParamsV2(
+              config: DataConfig.task(
+                query: TaskQuery.forProject(projectId: project.id),
+              ),
+              pack: StylePackV2.standard,
+              layout: const SectionLayoutSpecV2.flatList(
+                separator: ListSeparatorV2.divider,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
     return BlocProvider<ScreenSpecBloc>(

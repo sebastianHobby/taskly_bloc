@@ -499,7 +499,6 @@ void main() {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -522,7 +521,6 @@ void main() {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.startDate,
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -545,7 +543,6 @@ void main() {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.timelineMonthSections(),
           ).toJson(),
         );
 
@@ -579,7 +576,6 @@ void main() {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.timelineMonthSections(),
             additionalFilter: additionalQuery,
           ).toJson(),
         );
