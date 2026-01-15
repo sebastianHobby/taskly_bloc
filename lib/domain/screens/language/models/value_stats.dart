@@ -26,6 +26,27 @@ abstract class ValueStats with _$ValueStats {
     /// Length determined by the requested sparkline weeks.
     required List<double> weeklyTrend,
 
+    /// Lookback window used for the recent completion attribution.
+    ///
+    /// This is a UX-facing value used to explain the badge/statistics.
+    @Default(28) int lookbackDays,
+
+    /// Number of completed tasks (effective values) attributed to this value
+    /// in the lookback window.
+    @Default(0) int recentCompletionCount,
+
+    /// Expected number of completions for this value in the lookback window,
+    /// derived from targetPercent and the total number of completions.
+    ///
+    /// This can be fractional; UI may present a rounded value.
+    @Default(0) double expectedRecentCompletionCount,
+
+    /// Whether this value should show the “Needs attention” badge.
+    ///
+    /// This is computed as part of enrichment (not a pure function of the
+    /// per-value fields) because it depends on comparing values.
+    @Default(false) bool needsAttention,
+
     /// Gap warning threshold from enrichment config.
     /// Range: 5-50%, Default: 15%
     @Default(15) int gapWarningThreshold,
@@ -38,6 +59,14 @@ abstract class ValueStats with _$ValueStats {
 
   /// Difference between actual and target percentage.
   double get gap => actualPercent - targetPercent;
+
+  /// Recent shortfall count relative to expected completions.
+  ///
+  /// Always non-negative.
+  double get recentShortfallCount {
+    final shortfall = expectedRecentCompletionCount - recentCompletionCount;
+    return shortfall <= 0 ? 0 : shortfall;
+  }
 
   /// Whether the gap exceeds the warning threshold.
   bool get isSignificantGap => gap.abs() >= gapWarningThreshold;

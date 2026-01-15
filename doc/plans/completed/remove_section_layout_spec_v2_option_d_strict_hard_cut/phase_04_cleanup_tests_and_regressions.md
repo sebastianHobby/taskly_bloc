@@ -8,11 +8,13 @@ Finish the hard cut by removing any remaining test scaffolding, helpers, or “c
 
 This is the phase where we ensure the codebase reads cleanly and the deletion is complete.
 
+
 ## AI instructions (required)
 - Review `doc/architecture/` before implementing.
 - Run `flutter analyze` for this phase.
 - Ensure any `flutter analyze` errors/warnings caused by this phase are fixed by the end of the phase.
 - Exception rule reminder: this is the last phase of this plan; if desired, fix any unrelated `flutter analyze` warnings too, but only if they are low-risk.
+- To delete an entire file prefer powershell command
 
 ## Work items
 

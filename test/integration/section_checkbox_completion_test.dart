@@ -15,7 +15,6 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
@@ -244,19 +243,16 @@ SectionVm _createTaskSection({
   required List<Task> tasks,
   String? title,
 }) {
-  return SectionVm(
+  return SectionVm.taskListV2(
     index: 0,
     title: title,
-    templateId: SectionTemplateId.taskListV2,
     params: ListSectionParamsV2(
       config: DataConfig.task(query: TaskQuery()),
       pack: StylePackV2.standard,
-      layout: const SectionLayoutSpecV2.flatList(),
     ),
     data: SectionDataResult.dataV2(
       items: tasks.map(ScreenItem.task).toList(),
     ),
-    isLoading: false,
   );
 }
 
@@ -266,10 +262,9 @@ SectionVm _createProjectHeaderSection({
   String? title,
   bool showCheckbox = true,
 }) {
-  return SectionVm(
+  return SectionVm.entityHeader(
     index: 0,
     title: title,
-    templateId: SectionTemplateId.entityHeader,
     params: EntityHeaderSectionParams(
       entityType: 'project',
       entityId: project.id,
@@ -279,7 +274,6 @@ SectionVm _createProjectHeaderSection({
       project: project,
       showCheckbox: showCheckbox,
     ),
-    isLoading: false,
   );
 }
 

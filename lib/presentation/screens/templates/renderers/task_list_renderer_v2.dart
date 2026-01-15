@@ -44,54 +44,27 @@ class TaskListRendererV2 extends StatelessWidget {
             child: TasklyHeader(title: title!),
           );
 
-    return params.layout.when(
-      flatList: (separator) {
-        return SliverSeparatedList(
-          header: header,
-          itemCount: tasks.length,
-          separatorBuilder: (context, index) => _separatorFor(
-            separator: separator,
-            current: tasks[index],
-            next: tasks[index + 1],
-          ),
-          itemBuilder: (context, index) {
-            final item = tasks[index];
-            final prefix = _titlePrefixForTask(
-              item,
-              showAgendaTagPills: showAgendaTagPills,
-            );
-
-            return registry.build(
-              context,
-              item: item,
-              onTaskToggle: onTaskToggle,
-              compactTiles: compactTiles,
-              titlePrefix: prefix,
-            );
-          },
+    return SliverSeparatedList(
+      header: header,
+      itemCount: tasks.length,
+      separatorBuilder: (context, index) => _separatorFor(
+        separator: params.separator,
+        current: tasks[index],
+        next: tasks[index + 1],
+      ),
+      itemBuilder: (context, index) {
+        final item = tasks[index];
+        final prefix = _titlePrefixForTask(
+          item,
+          showAgendaTagPills: showAgendaTagPills,
         );
-      },
-      hierarchyValueProjectTask: (_, __, ___) {
-        // This renderer only receives tasks; hierarchy is implemented in the
-        // interleaved renderer where values/projects are available.
-        return SliverSeparatedList(
-          header: header,
-          itemCount: tasks.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) {
-            final item = tasks[index];
-            final prefix = _titlePrefixForTask(
-              item,
-              showAgendaTagPills: showAgendaTagPills,
-            );
-            return registry.build(
-              context,
-              item: item,
-              onTaskToggle: onTaskToggle,
-              compactTiles: compactTiles,
-              titlePrefix: prefix,
-            );
-          },
+
+        return registry.build(
+          context,
+          item: item,
+          onTaskToggle: onTaskToggle,
+          compactTiles: compactTiles,
+          titlePrefix: prefix,
         );
       },
     );

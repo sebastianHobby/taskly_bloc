@@ -12,6 +12,7 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
@@ -83,6 +84,18 @@ class SectionDataService {
     InterleavedListSectionParamsV2 params,
   ) {
     return _watchInterleavedListSectionV2(params);
+  }
+
+  Future<SectionDataResult> fetchHierarchyValueProjectTaskV2(
+    HierarchyValueProjectTaskSectionParamsV2 params,
+  ) {
+    return _fetchHierarchyValueProjectTaskSectionV2(params);
+  }
+
+  Stream<SectionDataResult> watchHierarchyValueProjectTaskV2(
+    HierarchyValueProjectTaskSectionParamsV2 params,
+  ) {
+    return _watchHierarchyValueProjectTaskSectionV2(params);
   }
 
   Future<SectionDataResult> fetchAgendaV2(AgendaSectionParamsV2 params) {
@@ -228,6 +241,72 @@ class SectionDataService {
         );
       },
     );
+  }
+
+  // ===========================================================================
+  // HIERARCHY VALUE -> PROJECT -> TASK (V2)
+  // ===========================================================================
+
+  Future<SectionDataResult> _fetchHierarchyValueProjectTaskSectionV2(
+    HierarchyValueProjectTaskSectionParamsV2 params,
+  ) async {
+    if (params.sources.isEmpty) {
+      return const SectionDataResult.hierarchyValueProjectTaskV2(
+        items: <ScreenItem>[],
+      );
+    }
+
+    final results = await Future.wait(
+      params.sources.map(
+        (config) async {
+          final kind = _kindFor(config);
+          final entities = await _fetchPrimaryEntities(config);
+          return _toScreenItems(kind, entities);
+        },
+      ),
+    );
+
+    final items = results.expand((e) => e).toList(growable: false);
+    final sorted = _sortInterleavedItemsV2(items);
+    final enrichment = await _computeEnrichmentV2(params.enrichment, sorted);
+
+    return SectionDataResult.hierarchyValueProjectTaskV2(
+      items: sorted,
+      enrichment: enrichment,
+    );
+  }
+
+  Stream<SectionDataResult> _watchHierarchyValueProjectTaskSectionV2(
+    HierarchyValueProjectTaskSectionParamsV2 params,
+  ) {
+    if (params.sources.isEmpty) {
+      return Stream.value(
+        const SectionDataResult.hierarchyValueProjectTaskV2(
+          items: <ScreenItem>[],
+        ),
+      );
+    }
+
+    final streams = params.sources
+        .map(
+          (config) => _watchPrimaryEntities(config).map(
+            (entities) {
+              final kind = _kindFor(config);
+              return _toScreenItems(kind, entities);
+            },
+          ),
+        )
+        .toList(growable: false);
+
+    return Rx.combineLatestList(streams).switchMap((results) async* {
+      final items = results.expand((e) => e).toList(growable: false);
+      final sorted = _sortInterleavedItemsV2(items);
+      final enrichment = await _computeEnrichmentV2(params.enrichment, sorted);
+      yield SectionDataResult.hierarchyValueProjectTaskV2(
+        items: sorted,
+        enrichment: enrichment,
+      );
+    });
   }
 
   Future<SectionDataResult> _buildInterleavedResultV2(
@@ -704,14 +783,18 @@ class SectionDataService {
     }
 
     try {
+      final lookbackDays = sparklineWeeks * 7;
+      const minAbsoluteShortfallToBadge = 2.0;
+      const minExpectedCompletionsToConsider = 2.0;
+
       // Fetch all required data in parallel
       final results = await Future.wait([
         _analyticsService.getValueWeeklyTrends(weeks: sparklineWeeks),
         _analyticsService.getValueActivityStats(),
         _analyticsService.getRecentCompletionsByValue(
-          days: sparklineWeeks * 7,
+          days: lookbackDays,
         ),
-        _analyticsService.getTotalRecentCompletions(days: sparklineWeeks * 7),
+        _analyticsService.getTotalRecentCompletions(days: lookbackDays),
       ]);
 
       final weeklyTrends = results[0] as Map<String, List<double>>;
@@ -728,16 +811,40 @@ class SectionDataService {
       // Build stats map for each value
       final statsByValueId = <String, ValueStats>{};
 
+      String? mostNeglectedValueId;
+      double bestShortfall = 0;
+      int bestPriorityWeight = -1;
+
       for (final value in values) {
         // Calculate target percent from priority weight
         final targetPercent = totalWeight > 0
             ? (value.priority.weight / totalWeight) * 100
             : 0.0;
 
+        final recentCount = recentCompletions[value.id] ?? 0;
+        final expectedCount = totalRecentCompletions > 0
+            ? (totalRecentCompletions * (targetPercent / 100))
+            : 0.0;
+
+        final shortfall = expectedCount - recentCount;
+        final positiveShortfall = shortfall <= 0 ? 0.0 : shortfall;
+        final priorityWeight = value.priority.weight;
+
+        final isBestSoFar = positiveShortfall > bestShortfall;
+        final isTieBreakWinner =
+            positiveShortfall == bestShortfall &&
+            priorityWeight > bestPriorityWeight;
+
+        if (expectedCount >= minExpectedCompletionsToConsider &&
+            (isBestSoFar || isTieBreakWinner)) {
+          mostNeglectedValueId = value.id;
+          bestShortfall = positiveShortfall;
+          bestPriorityWeight = priorityWeight;
+        }
+
         // Calculate actual percent from recent completions
         final actualPercent = totalRecentCompletions > 0
-            ? ((recentCompletions[value.id] ?? 0) / totalRecentCompletions) *
-                  100
+            ? (recentCount / totalRecentCompletions) * 100
             : 0.0;
 
         // Get weekly trend data
@@ -754,8 +861,21 @@ class SectionDataService {
           taskCount: activity.taskCount,
           projectCount: activity.projectCount,
           weeklyTrend: weeklyTrend,
+          lookbackDays: lookbackDays,
+          recentCompletionCount: recentCount,
+          expectedRecentCompletionCount: expectedCount,
           gapWarningThreshold: gapWarningThreshold,
         );
+      }
+
+      if (mostNeglectedValueId != null &&
+          bestShortfall >= minAbsoluteShortfallToBadge) {
+        final existing = statsByValueId[mostNeglectedValueId];
+        if (existing != null) {
+          statsByValueId[mostNeglectedValueId] = existing.copyWith(
+            needsAttention: true,
+          );
+        }
       }
 
       return _ValueStatsEnrichmentV2Result(

@@ -32,7 +32,6 @@ ListSectionParamsV2 _listParamsV2(DataConfig config) {
   return ListSectionParamsV2(
     config: config,
     pack: StylePackV2.standard,
-    layout: const SectionLayoutSpecV2.flatList(),
   );
 }
 

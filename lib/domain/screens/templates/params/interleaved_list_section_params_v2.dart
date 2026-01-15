@@ -17,7 +17,7 @@ abstract class InterleavedListSectionParamsV2
   const factory InterleavedListSectionParamsV2({
     required List<DataConfig> sources,
     required StylePackV2 pack,
-    required SectionLayoutSpecV2 layout,
+    @Default(ListSeparatorV2.interleavedAuto) ListSeparatorV2 separator,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     SectionFilterSpecV2? filters,
   }) = _InterleavedListSectionParamsV2;

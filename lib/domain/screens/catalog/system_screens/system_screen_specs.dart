@@ -11,7 +11,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_param
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
@@ -125,18 +124,16 @@ abstract class SystemScreenSpecs {
         ),
       ],
       primary: [
-        ScreenModuleSpec.interleavedListV2(
-          params: InterleavedListSectionParamsV2(
+        ScreenModuleSpec.hierarchyValueProjectTaskV2(
+          params: HierarchyValueProjectTaskSectionParamsV2(
             sources: [
               DataConfig.task(query: TaskQuery.incomplete()),
               DataConfig.project(query: ProjectQuery.active()),
             ],
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.hierarchyValueProjectTask(
-              pinnedValueHeaders: true,
-              pinnedProjectHeaders: false,
-              singleInboxGroupForNoProjectTasks: true,
-            ),
+            pinnedValueHeaders: true,
+            pinnedProjectHeaders: false,
+            singleInboxGroupForNoProjectTasks: true,
             enrichment: const EnrichmentPlanV2(
               items: [EnrichmentPlanItemV2.allocationMembership()],
             ),
@@ -167,9 +164,7 @@ abstract class SystemScreenSpecs {
           params: ListSectionParamsV2(
             config: DataConfig.value(query: const ValueQuery()),
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(
-              separator: ListSeparatorV2.spaced8,
-            ),
+            separator: ListSeparatorV2.spaced8,
             enrichment: const EnrichmentPlanV2(
               items: [EnrichmentPlanItemV2.valueStats()],
             ),

@@ -183,29 +183,6 @@ abstract class SectionFilterSpecV2 with _$SectionFilterSpecV2 {
       _$SectionFilterSpecV2FromJson(json);
 }
 
-@Freezed(unionKey: 'type')
-sealed class SectionLayoutSpecV2 with _$SectionLayoutSpecV2 {
-  @FreezedUnionValue('flat_list')
-  @JsonSerializable(disallowUnrecognizedKeys: true)
-  const factory SectionLayoutSpecV2.flatList({
-    @Default(ListSeparatorV2.divider) ListSeparatorV2 separator,
-  }) = _FlatListV2;
-
-  @FreezedUnionValue('hierarchy_value_project_task')
-  @JsonSerializable(disallowUnrecognizedKeys: true)
-  const factory SectionLayoutSpecV2.hierarchyValueProjectTask({
-    @Default(true) bool pinnedValueHeaders,
-    @Default(false) bool pinnedProjectHeaders,
-
-    /// When true, tasks with no project are rendered in a single global Inbox
-    /// group instead of being shown under each Value group.
-    @Default(false) bool singleInboxGroupForNoProjectTasks,
-  }) = _HierarchyValueProjectTaskV2;
-
-  factory SectionLayoutSpecV2.fromJson(Map<String, dynamic> json) =>
-      _$SectionLayoutSpecV2FromJson(json);
-}
-
 /// Params for V2 list-style templates (task/project/value list families).
 @freezed
 abstract class ListSectionParamsV2 with _$ListSectionParamsV2 {
@@ -213,7 +190,7 @@ abstract class ListSectionParamsV2 with _$ListSectionParamsV2 {
   const factory ListSectionParamsV2({
     required DataConfig config,
     required StylePackV2 pack,
-    required SectionLayoutSpecV2 layout,
+    @Default(ListSeparatorV2.divider) ListSeparatorV2 separator,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     SectionFilterSpecV2? filters,
   }) = _ListSectionParamsV2;

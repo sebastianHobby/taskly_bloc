@@ -14,11 +14,15 @@ import 'package:taskly_bloc/domain/screens/templates/params/entity_header_sectio
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
 
 /// Unified project detail page using the screen model.
 ///
@@ -138,43 +142,57 @@ class _ProjectScreenWithData extends StatelessWidget {
                 query: TaskQuery.forProject(projectId: project.id),
               ),
               pack: StylePackV2.standard,
-              layout: const SectionLayoutSpecV2.flatList(
-                separator: ListSeparatorV2.divider,
-              ),
+              separator: ListSeparatorV2.divider,
             ),
           ),
         ],
       ),
     );
 
-    return BlocProvider<ScreenSpecBloc>(
-      create: (_) => ScreenSpecBloc(
-        interpreter: getIt(),
-      )..add(ScreenSpecLoadEvent(spec: spec)),
-      child: BlocListener<ScreenSpecBloc, ScreenSpecState>(
-        listenWhen: (previous, current) {
-          return previous is! ScreenSpecLoadedState &&
-              current is ScreenSpecLoadedState;
-        },
-        listener: (context, state) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            getIt<PerformanceLogger>().markFirstPaint();
-          });
-        },
-        child: BlocBuilder<ScreenSpecBloc, ScreenSpecState>(
-          builder: (context, state) {
-            return switch (state) {
-              ScreenSpecInitialState() ||
-              ScreenSpecLoadingState() => const LoadingStateWidget(),
-              ScreenSpecLoadedState(:final data) => ScreenTemplateWidget(
-                data: data,
-              ),
-              ScreenSpecErrorState(:final message) => ErrorStateWidget(
-                message: message,
-                onRetry: () => Navigator.of(context).pop(),
-              ),
-            };
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<SectionRendererRegistry>(
+          create: (_) => const DefaultSectionRendererRegistry(),
+        ),
+      ],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<ScreenSpecBloc>(
+            create: (_) => ScreenSpecBloc(
+              interpreter: getIt<ScreenSpecDataInterpreter>(),
+            )..add(ScreenSpecLoadEvent(spec: spec)),
+          ),
+          BlocProvider<ScreenActionsBloc>(
+            create: (_) => ScreenActionsBloc(
+              entityActionService: getIt<EntityActionService>(),
+            ),
+          ),
+        ],
+        child: BlocListener<ScreenSpecBloc, ScreenSpecState>(
+          listenWhen: (previous, current) {
+            return previous is! ScreenSpecLoadedState &&
+                current is ScreenSpecLoadedState;
           },
+          listener: (context, state) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              getIt<PerformanceLogger>().markFirstPaint();
+            });
+          },
+          child: BlocBuilder<ScreenSpecBloc, ScreenSpecState>(
+            builder: (context, state) {
+              return switch (state) {
+                ScreenSpecInitialState() ||
+                ScreenSpecLoadingState() => const LoadingStateWidget(),
+                ScreenSpecLoadedState(:final data) => ScreenTemplateWidget(
+                  data: data,
+                ),
+                ScreenSpecErrorState(:final message) => ErrorStateWidget(
+                  message: message,
+                  onRetry: () => Navigator.of(context).pop(),
+                ),
+              };
+            },
+          ),
         ),
       ),
     );

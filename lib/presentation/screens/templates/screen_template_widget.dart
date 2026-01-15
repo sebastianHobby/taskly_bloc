@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
@@ -13,7 +15,6 @@ import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
@@ -28,7 +29,9 @@ import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_f
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/identity/section_persistence_key.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/attention_app_bar_accessory.dart';
@@ -155,6 +158,8 @@ class _EntityDetailScaffoldV1TemplateState
     for (final section in header) {
       final result = section.data;
       switch (result) {
+        case null:
+          continue;
         case EntityHeaderProjectSectionResult(:final project):
           return (
             entityType: 'project',
@@ -167,6 +172,8 @@ class _EntityDetailScaffoldV1TemplateState
             entityId: value.id,
             entityName: value.name,
           );
+        default:
+          continue;
       }
     }
 
@@ -192,7 +199,7 @@ class _EntityDetailScaffoldV1TemplateState
 
   Future<void> _confirmAndDelete(BuildContext context) async {
     final l10n = context.l10n;
-    final entityActionService = getIt<EntityActionService>();
+    final actionsBloc = context.read<ScreenActionsBloc>();
 
     final (entityType: entityType, entityId: entityId, entityName: entityName) =
         _entityFromHeader(widget.data.sections.header);
@@ -219,11 +226,15 @@ class _EntityDetailScaffoldV1TemplateState
 
     if (!confirmed || !context.mounted) return;
 
-    await entityActionService.performAction(
-      entityId: entityId,
-      entityType: entityType,
-      action: EntityActionType.delete,
+    final completer = Completer<void>();
+    actionsBloc.add(
+      ScreenActionsDeleteEntity(
+        entityType: entityType,
+        entityId: entityId,
+        completer: completer,
+      ),
     );
+    await completer.future;
 
     if (context.mounted) {
       Navigator.of(context).pop();
@@ -235,7 +246,7 @@ class _EntityDetailScaffoldV1TemplateState
     final theme = Theme.of(context);
     final spec = widget.data.spec;
     final l10n = context.l10n;
-    final entityActionService = getIt<EntityActionService>();
+    final actionsBloc = context.read<ScreenActionsBloc>();
     final (entityType: entityType, entityId: entityId, entityName: entityName) =
         _entityFromHeader(widget.data.sections.header);
 
@@ -279,22 +290,37 @@ class _EntityDetailScaffoldV1TemplateState
           screenKey: spec.screenKey,
           onEntityHeaderTap: () => _openEditor(context),
           onProjectCheckboxChanged: (project, value) {
-            if (value ?? false) {
-              entityActionService.completeProject(project.id);
-            } else {
-              entityActionService.uncompleteProject(project.id);
-            }
+            actionsBloc.add(
+              ScreenActionsProjectCompletionChanged(
+                projectId: project.id,
+                completed: value ?? false,
+              ),
+            );
           },
           onTaskCheckboxChanged: (task, value) {
-            if (value ?? false) {
-              entityActionService.completeTask(task.id);
-            } else {
-              entityActionService.uncompleteTask(task.id);
-            }
+            actionsBloc.add(
+              ScreenActionsTaskCompletionChanged(
+                taskId: task.id,
+                completed: value ?? false,
+              ),
+            );
           },
-          onTaskDelete: (task) => entityActionService.deleteTask(task.id),
-          onProjectDelete: (project) =>
-              entityActionService.deleteProject(project.id),
+          onTaskDelete: (task) {
+            actionsBloc.add(
+              ScreenActionsDeleteEntity(
+                entityType: 'task',
+                entityId: task.id,
+              ),
+            );
+          },
+          onProjectDelete: (project) {
+            actionsBloc.add(
+              ScreenActionsDeleteEntity(
+                entityType: 'project',
+                entityId: project.id,
+              ),
+            );
+          },
         ),
 
       if (hasProjectTaskFilter && hasAnyTasks)
@@ -355,22 +381,37 @@ class _EntityDetailScaffoldV1TemplateState
             screenKey: spec.screenKey,
             onEntityHeaderTap: () => _openEditor(context),
             onProjectCheckboxChanged: (project, value) {
-              if (value ?? false) {
-                entityActionService.completeProject(project.id);
-              } else {
-                entityActionService.uncompleteProject(project.id);
-              }
+              actionsBloc.add(
+                ScreenActionsProjectCompletionChanged(
+                  projectId: project.id,
+                  completed: value ?? false,
+                ),
+              );
             },
             onTaskCheckboxChanged: (task, value) {
-              if (value ?? false) {
-                entityActionService.completeTask(task.id);
-              } else {
-                entityActionService.uncompleteTask(task.id);
-              }
+              actionsBloc.add(
+                ScreenActionsTaskCompletionChanged(
+                  taskId: task.id,
+                  completed: value ?? false,
+                ),
+              );
             },
-            onTaskDelete: (task) => entityActionService.deleteTask(task.id),
-            onProjectDelete: (project) =>
-                entityActionService.deleteProject(project.id),
+            onTaskDelete: (task) {
+              actionsBloc.add(
+                ScreenActionsDeleteEntity(
+                  entityType: 'task',
+                  entityId: task.id,
+                ),
+              );
+            },
+            onProjectDelete: (project) {
+              actionsBloc.add(
+                ScreenActionsDeleteEntity(
+                  entityType: 'project',
+                  entityId: project.id,
+                ),
+              );
+            },
           ),
         );
       }
@@ -500,7 +541,11 @@ class _EntityDetailModuleSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final persistenceKey = '$screenKey:${section.templateId}:${section.index}';
+    final persistenceKey = SectionPersistenceKey.fromParts(
+      screenKey: screenKey,
+      sectionTemplateId: section.templateId,
+      sectionIndex: section.index,
+    ).value;
     return SectionWidget(
       section: section,
       persistenceKey: persistenceKey,
@@ -877,25 +922,34 @@ class _ModuleSliver extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final persistenceKey = '$screenKey:${section.templateId}:${section.index}';
+    final persistenceKey = SectionPersistenceKey.fromParts(
+      screenKey: screenKey,
+      sectionTemplateId: section.templateId,
+      sectionIndex: section.index,
+    ).value;
 
-    final entityActionService = getIt<EntityActionService>();
+    final actionsBloc = context.read<ScreenActionsBloc>();
     return SectionWidget(
       section: section,
       persistenceKey: persistenceKey,
       onTaskCheckboxChanged: (task, value) async {
-        if (value ?? false) {
-          await entityActionService.completeTask(task.id);
-        } else {
-          await entityActionService.uncompleteTask(task.id);
-        }
+        actionsBloc.add(
+          ScreenActionsTaskCompletionChanged(
+            taskId: task.id,
+            completed: value ?? false,
+          ),
+        );
       },
       onTaskPinnedChanged: (task, pinned) async {
-        if (pinned) {
-          await entityActionService.pinTask(task.id);
-        } else {
-          await entityActionService.unpinTask(task.id);
-        }
+        final completer = Completer<void>();
+        actionsBloc.add(
+          ScreenActionsTaskPinnedChanged(
+            taskId: task.id,
+            pinned: pinned,
+            completer: completer,
+          ),
+        );
+        await completer.future;
       },
       onEntityTap: (entity) {
         if (entity is Task) {

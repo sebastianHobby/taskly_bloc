@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../../helpers/pump_app.dart';
@@ -17,9 +20,8 @@ Widget _wrapSliver(Widget sliver) {
 
 void main() {
   testWidgets('attentionBannerV2 uses section.title override', (tester) async {
-    const section = SectionVm(
+    const section = SectionVm.attentionBannerV2(
       index: 0,
-      templateId: SectionTemplateId.attentionBannerV2,
       title: 'My Issues',
       params: AttentionBannerSectionParamsV2(
         pack: StylePackV2.standard,
@@ -37,7 +39,7 @@ void main() {
 
     await pumpLocalizedApp(
       tester,
-      home: _wrapSliver(const SectionWidget(section: section)),
+      home: _wrapSliver(SectionWidget(section: section)),
     );
     await tester.pumpAndSettle();
 
@@ -46,10 +48,10 @@ void main() {
   });
 
   testWidgets('templateId guards prevent mismatched rendering', (tester) async {
-    const section = SectionVm(
+    final section = SectionVm.taskListV2(
       index: 0,
-      templateId: SectionTemplateId.taskListV2,
-      params: AttentionBannerSectionParamsV2(
+      params: ListSectionParamsV2(
+        config: DataConfig.task(query: TaskQuery.all()),
         pack: StylePackV2.standard,
       ),
       data: SectionDataResult.attentionBannerV2(
@@ -65,7 +67,7 @@ void main() {
 
     await pumpLocalizedApp(
       tester,
-      home: _wrapSliver(const SectionWidget(section: section)),
+      home: _wrapSliver(SectionWidget(section: section)),
     );
     await tester.pumpAndSettle();
 
@@ -96,9 +98,8 @@ void main() {
       primaryValueId: value.id,
     );
 
-    final section = SectionVm(
+    final section = SectionVm.entityHeader(
       index: 0,
-      templateId: SectionTemplateId.entityHeader,
       params: const EntityHeaderSectionParams(
         entityType: 'project',
         entityId: 'p1',

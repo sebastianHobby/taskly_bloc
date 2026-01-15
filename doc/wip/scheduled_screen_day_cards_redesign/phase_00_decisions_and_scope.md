@@ -128,3 +128,4 @@ This redesign replaces the timeline model. Plan intent:
 - For each phase: run `flutter analyze` and fix any analyzer issues caused by that phase.
 - In the last phase: fix any remaining `flutter analyze` issues even if unrelated.
 - Do not implement UI/UX changes beyond the scope above without explicit approval.
+DO NOT IMPLEMENT THE PLAN WITHOUT USER CONFIRMING THEY KNOW PLAN IS NOT IN LINE WITH CURRENT ARCHITECTURE.

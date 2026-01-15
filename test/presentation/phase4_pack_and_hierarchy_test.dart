@@ -4,7 +4,6 @@ import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
@@ -38,12 +37,10 @@ void main() {
         final params = ListSectionParamsV2(
           config: DataConfig.task(query: TaskQuery.all()),
           pack: pack,
-          layout: const SectionLayoutSpecV2.flatList(),
         );
 
-        final section = SectionVm(
+        final section = SectionVm.taskListV2(
           index: 0,
-          templateId: SectionTemplateId.taskListV2,
           params: params,
           data: data,
         );
@@ -78,12 +75,10 @@ void main() {
         final params = ListSectionParamsV2(
           config: DataConfig.value(query: ValueQuery.all()),
           pack: pack,
-          layout: const SectionLayoutSpecV2.flatList(),
         );
 
-        final section = SectionVm(
+        final section = SectionVm.valueListV2(
           index: 0,
-          templateId: SectionTemplateId.valueListV2,
           params: params,
           data: data,
         );
@@ -110,7 +105,6 @@ void main() {
       final original = ListSectionParamsV2(
         config: DataConfig.task(query: TaskQuery.all()),
         pack: StylePackV2.standard,
-        layout: const SectionLayoutSpecV2.flatList(),
       );
 
       final json = Map<String, dynamic>.from(original.toJson())..remove('pack');
@@ -134,15 +128,21 @@ void main() {
       final params = InterleavedListSectionParamsV2(
         sources: [DataConfig.task(query: TaskQuery.all())],
         pack: StylePackV2.standard,
-        layout: const SectionLayoutSpecV2.hierarchyValueProjectTask(
-          pinnedProjectHeaders: true,
-        ),
       );
 
       await tester.pumpApp(
         Scaffold(
           body: CustomScrollView(
-            slivers: [InterleavedListRendererV2(data: data, params: params)],
+            slivers: [
+              InterleavedListRendererV2(
+                items: data.items,
+                enrichment: data.enrichment,
+                params: params,
+                renderMode:
+                    InterleavedListRenderModeV2.hierarchyValueProjectTask,
+                pinnedProjectHeaders: true,
+              ),
+            ],
           ),
         ),
       );

@@ -9,7 +9,6 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
@@ -98,9 +97,8 @@ void main() {
           ],
         );
 
-        final section = SectionVm(
+        final section = SectionVm.agendaV2(
           index: 0,
-          templateId: SectionTemplateId.agendaV2,
           params: const AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,

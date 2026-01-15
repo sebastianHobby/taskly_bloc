@@ -9,6 +9,7 @@ import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
@@ -120,9 +121,7 @@ void main() {
           ),
         );
 
-        final specInterpreter = ScreenSpecDataInterpreter(
-          settingsRepository: settingsRepository,
-          valueRepository: valueRepository,
+        final moduleRegistry = DefaultScreenModuleInterpreterRegistry(
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
           interleavedListInterpreter:
@@ -138,6 +137,12 @@ void main() {
           ),
           attentionInboxInterpreter: _MockAttentionInboxSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
+        );
+
+        final specInterpreter = ScreenSpecDataInterpreter(
+          settingsRepository: settingsRepository,
+          valueRepository: valueRepository,
+          moduleInterpreterRegistry: moduleRegistry,
         );
 
         final bloc = ScreenSpecBloc(interpreter: specInterpreter);

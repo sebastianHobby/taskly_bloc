@@ -82,6 +82,7 @@ mobile platforms.
   * Ensure any `flutter analyze` errors/warnings **caused by that phase’s changes** are fixed by the end of the phase.
   * Exception: in the **last phase**, fix **any** `flutter analyze` error or warning.
   * Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
+  * When a phase is complete update the file immediately with summary of what was done with date completed (UTC).
 
 ### Plan completion workflow (required)
 

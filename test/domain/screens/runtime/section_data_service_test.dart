@@ -406,7 +406,6 @@ void main() {
         InterleavedListSectionParamsV2(
           sources: const [],
           pack: StylePackV2.standard,
-          layout: const SectionLayoutSpecV2.flatList(),
         ),
       );
 
@@ -445,7 +444,6 @@ void main() {
           ListSectionParamsV2(
             config: DataConfig.journal(query: JournalQuery.all()),
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(),
           ),
         );
 
@@ -491,7 +489,6 @@ void main() {
           ListSectionParamsV2(
             config: const DataConfig.allocationSnapshotTasksToday(),
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(),
           ),
         );
 

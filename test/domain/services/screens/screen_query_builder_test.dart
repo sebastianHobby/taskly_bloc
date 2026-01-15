@@ -457,7 +457,6 @@ void main() {
           params: ListSectionParamsV2(
             config: DataConfig.task(query: TaskQuery.incomplete()),
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
 
@@ -476,7 +475,6 @@ void main() {
           params: ListSectionParamsV2(
             config: DataConfig.project(query: ProjectQuery.all()),
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(),
           ).toJson(),
         );
 
