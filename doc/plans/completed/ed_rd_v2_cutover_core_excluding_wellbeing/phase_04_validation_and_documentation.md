@@ -22,7 +22,7 @@ Last updated at: 2026-01-14T00:00:00Z
 - Recorded test run passes (prefer `flutter_test_record`).
 - Any changed architecture is reflected in `doc/architecture/`.
 - The migration backlog docs remain accurate for the core entities/screens.
-- **Completion definition**: no legacy ScreenDefinition stack files remain in the repo.
+- **Completion definition**: no legacy pre-`ScreenSpec` screen-pipeline files remain in the repo.
 
 Note (2026-01-14): this completion definition is now met on `main`.
 
@@ -36,8 +36,7 @@ Note (2026-01-14): this completion definition is now met on `main`.
 
 - Repo content checks:
   - `lib/presentation/routing/router.dart` contains no `/label/:id` route.
-  - Legacy files are absent:
-    - `lib/presentation/screens/view/unified_screen_page.dart`
+  - Legacy pipeline files are absent.
     - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
     - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
 
