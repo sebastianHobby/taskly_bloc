@@ -76,6 +76,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_valu
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
@@ -437,6 +438,14 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.entityHeader,
     )
+    ..registerLazySingleton<MyDayRankedTasksV1ModuleInterpreter>(
+      () => MyDayRankedTasksV1ModuleInterpreter(
+        hierarchyValueProjectTaskInterpreter:
+            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
+              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
+            ),
+      ),
+    )
     ..registerLazySingleton<ScreenModuleInterpreterRegistry>(
       () => DefaultScreenModuleInterpreterRegistry(
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
@@ -465,6 +474,8 @@ Future<void> setupDependencies() async {
         entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,
         ),
+        myDayRankedTasksV1Interpreter:
+            getIt<MyDayRankedTasksV1ModuleInterpreter>(),
       ),
     )
     ..registerLazySingleton<ScreenSpecDataInterpreter>(

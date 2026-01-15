@@ -26,6 +26,18 @@ abstract class ValueStats with _$ValueStats {
     /// Length determined by the requested sparkline weeks.
     required List<double> weeklyTrend,
 
+    /// Number of active tasks where this value is the *primary* value.
+    @Default(0) int primaryTaskCount,
+
+    /// Number of active tasks where this value is a *secondary* value.
+    @Default(0) int secondaryTaskCount,
+
+    /// Number of active projects where this value is the *primary* value.
+    @Default(0) int primaryProjectCount,
+
+    /// Number of active projects where this value is a *secondary* value.
+    @Default(0) int secondaryProjectCount,
+
     /// Lookback window used for the recent completion attribution.
     ///
     /// This is a UX-facing value used to explain the badge/statistics.

@@ -1,7 +1,13 @@
 # Phase 04 — USM-003 (Option A): Sealed `SectionVm` hierarchy
 
 Created at: 2026-01-15T00:00:00Z
-Last updated at: 2026-01-15T00:00:00Z
+Last updated at: 2026-01-15 (UTC)
+
+Completed at: 2026-01-15 (UTC)
+
+## Completed summary
+- Replaced the old stringly-typed `SectionVm` with a Freezed sealed union carrying typed params and `SectionDataResult?`.
+- Updated the domain module interpreter registry and presentation renderer registry to switch on `SectionVm` variants (removing template-id casting).
 
 ## Outcome
 Replace the current loosely-typed `SectionVm`:

@@ -207,6 +207,14 @@ class AnalyticsServiceImpl implements AnalyticsService {
     return const <Value>[];
   }
 
+  String? _effectivePrimaryValueIdForTask(Task task) {
+    if (task.values.isNotEmpty) return task.primaryValueId;
+    if (task.project?.values.isNotEmpty ?? false) {
+      return task.project?.primaryValueId;
+    }
+    return null;
+  }
+
   @override
   Future<Map<String, int>> getRecentCompletionsByValue({
     required int days,
@@ -371,6 +379,96 @@ class AnalyticsServiceImpl implements AnalyticsService {
       stats[valueId] = ValueActivityStats(
         taskCount: taskCounts[valueId] ?? 0,
         projectCount: projectCounts[valueId] ?? 0,
+      );
+    }
+
+    return stats;
+  }
+
+  @override
+  Future<Map<String, ValuePrimarySecondaryStats>>
+  getValuePrimarySecondaryStats() async {
+    // Incomplete tasks using TaskQuery
+    final taskQuery = TaskQuery(
+      filter: const QueryFilter<TaskPredicate>(
+        shared: [
+          TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
+    );
+    final tasks = await _taskRepo.getAll(taskQuery);
+
+    final primaryTaskCounts = <String, int>{};
+    final secondaryTaskCounts = <String, int>{};
+
+    for (final task in tasks) {
+      final effectiveValues = _effectiveValuesForTask(
+        task,
+      ).map((v) => v.id).toSet();
+      if (effectiveValues.isEmpty) continue;
+
+      final primaryValueId = _effectivePrimaryValueIdForTask(task);
+
+      for (final valueId in effectiveValues) {
+        if (primaryValueId != null && valueId == primaryValueId) {
+          primaryTaskCounts[valueId] = (primaryTaskCounts[valueId] ?? 0) + 1;
+        } else {
+          secondaryTaskCounts[valueId] =
+              (secondaryTaskCounts[valueId] ?? 0) + 1;
+        }
+      }
+    }
+
+    // Incomplete projects using ProjectQuery
+    final projectQuery = ProjectQuery(
+      filter: const QueryFilter<ProjectPredicate>(
+        shared: [
+          ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+        ],
+      ),
+    );
+    final projects = await _projectRepo.getAll(projectQuery);
+
+    final primaryProjectCounts = <String, int>{};
+    final secondaryProjectCounts = <String, int>{};
+
+    for (final project in projects) {
+      final valueIds = project.values.map((v) => v.id).toSet();
+      if (valueIds.isEmpty) continue;
+
+      final primaryValueId = project.primaryValueId;
+
+      for (final valueId in valueIds) {
+        if (primaryValueId != null && valueId == primaryValueId) {
+          primaryProjectCounts[valueId] =
+              (primaryProjectCounts[valueId] ?? 0) + 1;
+        } else {
+          secondaryProjectCounts[valueId] =
+              (secondaryProjectCounts[valueId] ?? 0) + 1;
+        }
+      }
+    }
+
+    final allValueIds = {
+      ...primaryTaskCounts.keys,
+      ...secondaryTaskCounts.keys,
+      ...primaryProjectCounts.keys,
+      ...secondaryProjectCounts.keys,
+    };
+
+    final stats = <String, ValuePrimarySecondaryStats>{};
+    for (final valueId in allValueIds) {
+      stats[valueId] = ValuePrimarySecondaryStats(
+        primaryTaskCount: primaryTaskCounts[valueId] ?? 0,
+        secondaryTaskCount: secondaryTaskCounts[valueId] ?? 0,
+        primaryProjectCount: primaryProjectCounts[valueId] ?? 0,
+        secondaryProjectCount: secondaryProjectCounts[valueId] ?? 0,
       );
     }
 

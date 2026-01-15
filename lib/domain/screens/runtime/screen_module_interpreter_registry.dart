@@ -8,6 +8,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_sect
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Registry that routes typed [ScreenModuleSpec] variants to their interpreters.
@@ -38,6 +39,7 @@ final class DefaultScreenModuleInterpreterRegistry
     required AttentionBannerSectionInterpreterV2 attentionBannerV2Interpreter,
     required AttentionInboxSectionInterpreterV1 attentionInboxInterpreter,
     required EntityHeaderSectionInterpreter entityHeaderInterpreter,
+    required MyDayRankedTasksV1ModuleInterpreter myDayRankedTasksV1Interpreter,
   }) : _taskListInterpreter = taskListInterpreter,
        _valueListInterpreter = valueListInterpreter,
        _interleavedListInterpreter = interleavedListInterpreter,
@@ -46,7 +48,8 @@ final class DefaultScreenModuleInterpreterRegistry
        _agendaInterpreter = agendaInterpreter,
        _attentionBannerV2Interpreter = attentionBannerV2Interpreter,
        _attentionInboxInterpreter = attentionInboxInterpreter,
-       _entityHeaderInterpreter = entityHeaderInterpreter;
+       _entityHeaderInterpreter = entityHeaderInterpreter,
+       _myDayRankedTasksV1Interpreter = myDayRankedTasksV1Interpreter;
 
   final DataListSectionInterpreterV2 _taskListInterpreter;
   final DataListSectionInterpreterV2 _valueListInterpreter;
@@ -57,6 +60,7 @@ final class DefaultScreenModuleInterpreterRegistry
   final AttentionBannerSectionInterpreterV2 _attentionBannerV2Interpreter;
   final AttentionInboxSectionInterpreterV1 _attentionInboxInterpreter;
   final EntityHeaderSectionInterpreter _entityHeaderInterpreter;
+  final MyDayRankedTasksV1ModuleInterpreter _myDayRankedTasksV1Interpreter;
 
   SectionDataResult? _coerceSectionDataResult(Object? data) {
     if (data == null) return null;
@@ -234,6 +238,31 @@ final class DefaultScreenModuleInterpreterRegistry
                 error: error.toString(),
               );
             }),
+        myDayRankedTasksV1: (m) => _myDayRankedTasksV1Interpreter
+            .watch()
+            .map(
+              (data) {
+                return SectionVm.myDayRankedTasksV1(
+                  index: index,
+                  title: m.title,
+                  data: _coerceSectionDataResult(data),
+                );
+              },
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.myDayRankedTasksV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
+
+        createValueCtaV1: (m) => Stream.value(
+          SectionVm.createValueCtaV1(
+            index: index,
+            title: m.title,
+          ),
+        ),
       );
     } catch (e) {
       return Stream.value(

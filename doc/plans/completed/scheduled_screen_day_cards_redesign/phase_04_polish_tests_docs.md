@@ -1,7 +1,7 @@
 # Phase 04 — Polish, Tests, Docs
 
 Created at: 2026-01-15T05:07:20Z
-Last updated at: 2026-01-15T05:18:37Z
+Last updated at: 2026-01-15T11:40:16.5322380Z
 
 ## Objective
 Stabilize the redesign with regression coverage, accessibility polish, and documentation updates if architecture surface changed.
@@ -33,6 +33,10 @@ Stabilize the redesign with regression coverage, accessibility polish, and docum
   - Always include an absolute date string.
 - Ensure touch targets and truncation behaviors are good on small screens.
 
+## Mutations failure surfacing (SCH-002A)
+- If Scheduled rows dispatch any `ScreenActionsBloc` events, ensure the Scheduled screen/root has a listener that surfaces `ScreenActionsFailureState` via a `SnackBar`.
+- Prefer the standard friendly error mapping described in the updated USM architecture doc.
+
 ## Documentation updates
 - If Phase 01 introduced a new USM layout concept, update relevant architecture docs:
   - `doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md` (only if needed; keep minimal)
@@ -61,3 +65,11 @@ Doc update must include (if the layout catalog is documented):
 - It is OK to update/add tests in this phase; the user can run:
   - `flutter test --preset=quick`
   - or the existing Scheduled regression test directly.
+
+## Completed
+Completed at: 2026-01-15T11:40:16.5322380Z
+
+Summary:
+- Updated Scheduled regression test to assert the Range sheet and absolute day header.
+- Added targeted widget tests for range boundaries and in-progress collapse.
+- Analyzer is clean.

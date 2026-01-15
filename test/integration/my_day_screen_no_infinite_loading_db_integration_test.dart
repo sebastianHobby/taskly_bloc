@@ -17,6 +17,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_sect
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
@@ -118,13 +119,15 @@ void main() {
           temporalTriggerService: temporalTriggerService,
         );
 
+        final hierarchyInterpreter =
+            _MockHierarchyValueProjectTaskSectionInterpreterV2();
+
         final moduleRegistry = DefaultScreenModuleInterpreterRegistry(
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
           interleavedListInterpreter:
               _MockInterleavedListSectionInterpreterV2(),
-          hierarchyValueProjectTaskInterpreter:
-              _MockHierarchyValueProjectTaskSectionInterpreterV2(),
+          hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
           agendaInterpreter: _MockAgendaSectionInterpreterV2(),
           attentionBannerV2Interpreter: AttentionBannerSectionInterpreterV2(
             engine: attentionEngine,
@@ -132,6 +135,9 @@ void main() {
           ),
           attentionInboxInterpreter: _MockAttentionInboxSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
+          myDayRankedTasksV1Interpreter: MyDayRankedTasksV1ModuleInterpreter(
+            hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
+          ),
         );
 
         final specInterpreter = ScreenSpecDataInterpreter(

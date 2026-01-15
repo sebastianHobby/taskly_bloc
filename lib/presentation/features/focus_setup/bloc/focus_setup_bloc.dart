@@ -27,7 +27,8 @@ enum FocusSetupWizardStep {
 
 @freezed
 sealed class FocusSetupEvent with _$FocusSetupEvent {
-  const factory FocusSetupEvent.started() = FocusSetupStarted;
+  const factory FocusSetupEvent.started({FocusSetupWizardStep? initialStep}) =
+      FocusSetupStarted;
 
   const factory FocusSetupEvent.backPressed() = FocusSetupBackPressed;
   const factory FocusSetupEvent.nextPressed() = FocusSetupNextPressed;
@@ -404,6 +405,8 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
   StreamSubscription<dynamic>? _valuesSub;
   final Map<String, StreamSubscription<dynamic>> _resolutionSubs = {};
 
+  FocusSetupWizardStep? _pendingInitialStep;
+
   @override
   Future<void> close() async {
     await _allocationSub?.cancel();
@@ -420,6 +423,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     FocusSetupStarted event,
     Emitter<FocusSetupState> emit,
   ) async {
+    _pendingInitialStep = event.initialStep;
     emit(state.copyWith(isLoading: true, errorMessage: null));
 
     await _allocationSub?.cancel();
@@ -462,12 +466,13 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     FocusSetupAllocationStreamUpdated event,
     Emitter<FocusSetupState> emit,
   ) {
-    emit(
+    final next = _applyPendingInitialStepIfPossible(
       state.copyWith(
         persistedAllocationConfig: event.allocationConfig,
         isLoading: false,
       ),
     );
+    emit(next);
   }
 
   void _onReviewRulesStreamUpdated(
@@ -497,7 +502,7 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     // Subscribe to last-resolution updates for each visible rule.
     _refreshResolutionSubscriptions(reviewSessionRules);
 
-    emit(
+    final next = _applyPendingInitialStepIfPossible(
       state.copyWith(
         reviewSessionRules: reviewSessionRules,
         draftRuleEnabled: enabledDraft,
@@ -505,18 +510,31 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         isLoading: false,
       ),
     );
+    emit(next);
   }
 
   void _onValuesStreamUpdated(
     FocusSetupValuesStreamUpdated event,
     Emitter<FocusSetupState> emit,
   ) {
-    emit(
+    final next = _applyPendingInitialStepIfPossible(
       state.copyWith(
         valuesCount: event.valuesCount,
         isLoading: false,
       ),
     );
+    emit(next);
+  }
+
+  FocusSetupState _applyPendingInitialStepIfPossible(FocusSetupState next) {
+    final desired = _pendingInitialStep;
+    if (desired == null) return next;
+
+    final idx = next.steps.indexOf(desired);
+    if (idx < 0) return next;
+
+    _pendingInitialStep = null;
+    return next.copyWith(stepIndex: idx);
   }
 
   Future<void> _onQuickAddValueRequested(

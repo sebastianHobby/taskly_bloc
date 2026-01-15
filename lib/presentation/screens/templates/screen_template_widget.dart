@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
     as attention_repo_v2;
@@ -13,7 +14,6 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -30,7 +30,6 @@ import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dar
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/identity/section_persistence_key.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
@@ -39,7 +38,6 @@ import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 /// Switchboard for rendering a typed [ScreenTemplateSpec].
 class ScreenTemplateWidget extends StatelessWidget {
@@ -53,13 +51,21 @@ class ScreenTemplateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget buildFocusSetupWizard() {
+      FocusSetupWizardStep? parseInitialStep() {
+        final step = GoRouterState.of(context).uri.queryParameters['step'];
+        return switch (step) {
+          'select_focus_mode' => FocusSetupWizardStep.selectFocusMode,
+          _ => null,
+        };
+      }
+
       return BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
           attentionRepository:
               getIt<attention_repo_v2.AttentionRepositoryContract>(),
           valueRepository: getIt(),
-        )..add(const FocusSetupEvent.started()),
+        )..add(FocusSetupEvent.started(initialStep: parseInitialStep())),
         child: const FocusSetupWizardPage(),
       );
     }
@@ -600,7 +606,6 @@ class _StandardScaffoldV1Template extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final spec = data.spec;
-    final isMyDay = spec.screenKey == 'my_day';
 
     final description = spec.description?.trim();
     final hasDescription = description != null && description.isNotEmpty;
@@ -628,10 +633,7 @@ class _StandardScaffoldV1Template extends StatelessWidget {
         ? attentionBannerResult
         : null;
 
-    final appBarActions = <Widget>[
-      ..._buildAppBarActions(context, spec),
-      if (isMyDay) const _MyDayFocusModeAction(),
-    ];
+    final appBarActions = <Widget>[..._buildAppBarActions(context, spec)];
     final fab = _buildFab(spec);
 
     final slivers = <Widget>[
@@ -644,50 +646,24 @@ class _StandardScaffoldV1Template extends StatelessWidget {
     final scaffold = Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        toolbarHeight: isMyDay || hasDescription ? 72 : null,
-        title: isMyDay
-            ? BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
-                builder: (context, state) {
-                  final now = DateTime.now();
-                  final dateLabel = MaterialLocalizations.of(
-                    context,
-                  ).formatMediumDate(now);
-
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(spec.name),
-                      Text(
-                        '${state.focusMode.tagline} • $dateLabel',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          height: 1.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  );
-                },
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(spec.name),
-                  if (hasDescription)
-                    Text(
-                      description,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
+        toolbarHeight: hasDescription ? 72 : null,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(spec.name),
+            if (hasDescription)
+              Text(
+                description,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.2,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
+          ],
+        ),
         actions: appBarActions,
         bottom: showAttentionInAppBar
             ? PreferredSize(
@@ -719,67 +695,12 @@ class _StandardScaffoldV1Template extends StatelessWidget {
       ),
     );
 
-    if (!isMyDay) return scaffold;
-
-    return BlocProvider<MyDayHeaderBloc>(
-      create: (_) => getIt<MyDayHeaderBloc>()..add(const MyDayHeaderStarted()),
-      child: BlocListener<MyDayHeaderBloc, MyDayHeaderState>(
-        listenWhen: (previous, current) {
-          return previous.navRequestId != current.navRequestId &&
-              current.nav == MyDayHeaderNav.openFocusSetupWizard;
-        },
-        listener: (context, state) {
-          Routing.toScreenKey(context, 'focus_setup');
-        },
-        child: scaffold,
-      ),
-    );
+    return scaffold;
   }
 
   List<Widget> _buildPrimarySlivers(BuildContext context) {
     final spec = data.spec;
     final primary = data.sections.primary;
-
-    if (spec.screenKey == 'my_day') {
-      const myDayPrimaryTitle = "Today's Focus";
-
-      if (primary.length == 1) {
-        final section = primary.single;
-        final listData = section.data;
-        if (listData is DataV2SectionResult) {
-          final tasks = listData.items.whereType<ScreenItemTask>().toList(
-            growable: false,
-          );
-
-          if (tasks.isEmpty) {
-            return [
-              _MyDayEmptyStateSliver(
-                title: myDayPrimaryTitle,
-                onAddTask: () => Routing.toTaskNew(context),
-              ),
-            ];
-          }
-
-          return [
-            _MyDayPrimaryTitleSliver(
-              title: myDayPrimaryTitle,
-            ),
-            _ModuleSliver(
-              section: section.copyWith(title: myDayPrimaryTitle),
-              screenKey: spec.screenKey,
-            ),
-          ];
-        }
-      }
-
-      final titled = primary
-          .map((s) => s.copyWith(title: myDayPrimaryTitle))
-          .toList(growable: false);
-      return titled
-          .map((s) => _ModuleSliver(section: s, screenKey: spec.screenKey))
-          .toList(growable: false);
-    }
-
     return primary
         .map((s) => _ModuleSliver(section: s, screenKey: spec.screenKey))
         .toList(growable: false);
@@ -797,6 +718,13 @@ class _StandardScaffoldV1Template extends StatelessWidget {
                   : null,
             ),
             AppBarAction.help => const SizedBox.shrink(),
+            AppBarAction.createValue => IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Create value',
+              onPressed: () async {
+                await EditorLauncher.fromGetIt().openValueEditor(context);
+              },
+            ),
           };
         })
         .toList(growable: false);
@@ -824,93 +752,6 @@ class _StandardScaffoldV1Template extends StatelessWidget {
         heroTag: 'create_value_fab',
       ),
     };
-  }
-}
-
-class _MyDayPrimaryTitleSliver extends StatelessWidget {
-  const _MyDayPrimaryTitleSliver({
-    required this.title,
-  });
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-      sliver: SliverToBoxAdapter(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.center_focus_strong,
-                  size: 18,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MyDayFocusModeAction extends StatelessWidget {
-  const _MyDayFocusModeAction();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
-      builder: (context, state) {
-        final width = MediaQuery.sizeOf(context).width;
-
-        if (width < 360) {
-          return IconButton(
-            tooltip: state.focusMode.displayName,
-            onPressed: () {
-              context.read<MyDayHeaderBloc>().add(
-                const MyDayHeaderFocusModeBannerTapped(),
-              );
-            },
-            icon: const Icon(Icons.center_focus_strong),
-          );
-        }
-
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: ActionChip(
-            avatar: const Icon(
-              Icons.center_focus_strong,
-              size: 18,
-            ),
-            label: Text(
-              state.focusMode.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            visualDensity: VisualDensity.compact,
-            onPressed: () {
-              context.read<MyDayHeaderBloc>().add(
-                const MyDayHeaderFocusModeBannerTapped(),
-              );
-            },
-          ),
-        );
-      },
-    );
   }
 }
 
@@ -960,160 +801,6 @@ class _ModuleSliver extends StatelessWidget {
           Routing.toEntity(context, EntityType.value, entity.id);
         }
       },
-    );
-  }
-}
-
-class _MyDayEmptyStateSliver extends StatelessWidget {
-  const _MyDayEmptyStateSliver({
-    required this.title,
-    required this.onAddTask,
-  });
-
-  final String title;
-  final VoidCallback? onAddTask;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    final dateLabel = MaterialLocalizations.of(context).formatFullDate(
-      DateTime.now(),
-    );
-
-    void onPickFromAnytime() => Routing.toScreenKey(context, 'someday');
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-      sliver: SliverToBoxAdapter(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.center_focus_strong,
-                  size: 18,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: TasklyHeader(title: title)),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              dateLabel,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              margin: EdgeInsets.zero,
-              elevation: 0,
-              color: scheme.surfaceContainerHighest.withOpacity(0.35),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.check_circle_outline,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "You're all set for today",
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Add a task to shape your day.',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _MyDayEmptyStateActions(
-                            onPrimary: onAddTask,
-                            primaryLabel: 'Add a task',
-                            primaryIcon: Icons.add,
-                            onSecondary: onPickFromAnytime,
-                            secondaryLabel: 'Pick from Anytime',
-                            secondaryIcon: Icons.view_list_outlined,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MyDayEmptyStateActions extends StatelessWidget {
-  const _MyDayEmptyStateActions({
-    required this.onPrimary,
-    required this.primaryLabel,
-    required this.primaryIcon,
-    required this.onSecondary,
-    required this.secondaryLabel,
-    required this.secondaryIcon,
-  });
-
-  final VoidCallback? onPrimary;
-  final String primaryLabel;
-  final IconData primaryIcon;
-  final VoidCallback? onSecondary;
-  final String secondaryLabel;
-  final IconData secondaryIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final isNarrow = MediaQuery.sizeOf(context).width < 420;
-
-    final primary = FilledButton.icon(
-      onPressed: onPrimary,
-      icon: Icon(primaryIcon),
-      label: Text(primaryLabel),
-    );
-
-    final secondary = OutlinedButton.icon(
-      onPressed: onSecondary,
-      icon: Icon(secondaryIcon),
-      label: Text(secondaryLabel),
-    );
-
-    if (isNarrow) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Align(alignment: Alignment.centerLeft, child: primary),
-          const SizedBox(height: 10),
-          Align(alignment: Alignment.centerLeft, child: secondary),
-        ],
-      );
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        primary,
-        const SizedBox(width: 12),
-        secondary,
-      ],
     );
   }
 }

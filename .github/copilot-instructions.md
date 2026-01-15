@@ -47,7 +47,7 @@ mobile platforms.
 * Suggestions must be in small, prioritized batches (max 3–5 items). Each suggestion must have a unique ID (e.g., `UX-001`) and include 2–3 design options (e.g., A/B/C) plus a recommended option.
 * Do not implement UI/UX changes without explicit user approval. If approval is not yet given, either:
   * Provide the proposal/plan in chat (non-persisted), or
-  * Write a design decision log entry under `doc/ui_decisions/` (this is not a full plan).
+  * Write a design decision log entry under `doc/plans/ui_decisions/` (this is not a full plan).
 * When approval is given, restate the approved IDs/options and scope before making code changes.
 
 ### Testing (preferred workflow)
@@ -67,12 +67,23 @@ mobile platforms.
 
 ### Planning docs (required)
 
-* These rules apply **only if** the user explicitly asks you to create a persisted plan (a plan file/folder under `doc/backlog/` or `doc/wip/`).
+* These rules apply **only if** the user explicitly asks you to create a persisted plan (a plan file/folder under `doc/plans/`).
   * If the user asks for a plan but is not explicit about persistence, ask whether they want the plan **in chat** or as **plan files/folder**.
-* When creating a persisted plan, ask whether it should go into:
-  * **Backlog**: use `doc/backlog/`
-  * **Work in progress**: use `doc/wip/` (create `doc/wip/` if needed)
-* Create a new plan folder (with a meaningful plan name) under the chosen location.
+
+#### Plan lifecycle (required)
+
+* **Create plans in backlog:** persisted plans must be created under `doc/plans/backlog/`.
+* **Move to WIP when implementation starts:** before the first implementation step, move the entire plan folder from `doc/plans/backlog/<plan-name>/` to `doc/plans/wip/<plan-name>/`.
+  * “Move” means the folder path changes and the old location no longer exists (do not copy).
+  * If using git operations is permitted by the user, prefer `git mv`; otherwise use a real filesystem/VS Code move.
+* **Keep plans up to date at phase boundaries:** at the end of each phase, immediately update that phase file with:
+  * `Last updated at:` (UTC)
+  * a short summary of what was done in the phase
+  * the phase completion timestamp (UTC)
+
+#### Plan structure (required)
+
+* Create a new plan folder (with a meaningful plan name) under `doc/plans/backlog/`.
 * Inside that folder, create **one file per phase** (split plans into manageable phases).
 * Every plan phase file must include:
   * `Created at:` (UTC)
@@ -82,12 +93,14 @@ mobile platforms.
   * Ensure any `flutter analyze` errors/warnings **caused by that phase’s changes** are fixed by the end of the phase.
   * Exception: in the **last phase**, fix **any** `flutter analyze` error or warning.
   * Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
-  * When a phase is complete update the file immediately with summary of what was done with date completed (UTC).
+  * When a phase is complete, update the file immediately (same day) with summary + completion date (UTC).
 
 ### Plan completion workflow (required)
 
-* When a plan is fully implemented, move its plan folder from `doc/wip/` (or `doc/backlog/`, if it was implemented directly) to `doc/plans/completed/<plan-name>/` (create `doc/plans/completed/` if needed).
-* Add a summary document in that completed folder stating:
+* When a plan is fully implemented, move its plan folder from `doc/plans/wip/` to `doc/plans/completed/<plan-name>/`.
+  * “Move” means the folder path changes and the old location no longer exists (do not copy).
+  * If the plan was never started, it stays in `doc/plans/backlog/`.
+* Add a summary document in that completed folder (e.g. `SUMMARY.md`) stating:
   * Implementation date (UTC)
   * What shipped (high-level)
   * Any known issues/gaps and follow-ups

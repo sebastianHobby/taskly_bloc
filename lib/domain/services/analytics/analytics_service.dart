@@ -112,6 +112,18 @@ abstract class AnalyticsService {
   ///
   /// Task attribution uses effective values (task overrides project; else inherit).
   Future<Map<String, ValueActivityStats>> getValueActivityStats();
+
+  /// Returns active primary/secondary counts per value.
+  ///
+  /// Primary attribution uses the effective primary for an entity:
+  /// - Tasks: task primary when task has explicit values; otherwise inherited
+  ///   from its project when values are inherited.
+  /// - Projects: project primary value.
+  ///
+  /// Secondary attribution counts entities that include the value but do not
+  /// have it as the effective primary.
+  Future<Map<String, ValuePrimarySecondaryStats>>
+  getValuePrimarySecondaryStats();
 }
 
 /// Activity statistics for a single value.
@@ -123,4 +135,19 @@ class ValueActivityStats {
 
   final int taskCount;
   final int projectCount;
+}
+
+/// Primary/secondary activity statistics for a single value.
+class ValuePrimarySecondaryStats {
+  const ValuePrimarySecondaryStats({
+    required this.primaryTaskCount,
+    required this.secondaryTaskCount,
+    required this.primaryProjectCount,
+    required this.secondaryProjectCount,
+  });
+
+  final int primaryTaskCount;
+  final int secondaryTaskCount;
+  final int primaryProjectCount;
+  final int secondaryProjectCount;
 }

@@ -1,7 +1,13 @@
 # Phase 05 — USM-004 (Option B): Error semantics + cleanup
 
 Created at: 2026-01-15T00:00:00Z
-Last updated at: 2026-01-15T00:00:00Z
+Last updated at: 2026-01-15 (UTC)
+
+Completed at: 2026-01-15 (UTC)
+
+## Completed summary
+- Localized interpreter failures to section-level error VMs (both in the module registry and defensively in the screen interpreter orchestration).
+- Updated unified screen documentation to reflect registries, sealed VMs, and the actions BLoC boundary.
 
 ## Outcome
 Ensure errors are localized to the failing section/module wherever possible:

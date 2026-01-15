@@ -1,27 +1,27 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/core/logging/perf_phase_timer.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 
-/// Renders an agenda section with date-based timeline.
+/// Renders the Scheduled agenda section as a day-cards feed.
 ///
 /// Features:
-/// - Horizontal date picker with scroll sync
-/// - Collapsible overdue section
-/// - Semantic date labels (Today, Tomorrow, etc.)
-/// - Smooth scroll coordination between timeline and date picker
+/// - Range selection (presets + jump to week/month)
+/// - Grouping (Today/Next 7/Later) with collapse policies
+/// - Search + filter sheets
+/// - Semantic labels (Today, Tomorrow)
 class AgendaSectionRenderer extends StatefulWidget {
   const AgendaSectionRenderer({
+    required this.params,
     required this.data,
     this.showTagPills = false,
     this.onTaskToggle,
@@ -29,6 +29,7 @@ class AgendaSectionRenderer extends StatefulWidget {
     super.key,
   });
 
+  final AgendaSectionParamsV2 params;
   final AgendaSectionResult data;
   final bool showTagPills;
   final void Function(String taskId, bool? value)? onTaskToggle;
@@ -39,8 +40,6 @@ class AgendaSectionRenderer extends StatefulWidget {
 }
 
 class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
-  static const double _timelineWidth = 64;
-
   String _searchQuery = '';
   _AgendaEntityFilter _entityFilter = _AgendaEntityFilter.all;
   Set<AgendaDateTag> _tagFilter = {
@@ -49,159 +48,32 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     AgendaDateTag.inProgress,
   };
 
-  late ScrollController _scrollController;
-  late ScrollController _datePickerController;
+  _DateRangePreset _rangePreset = _DateRangePreset.thisMonth;
+  late DateTime _rangeStart;
+  late DateTime _rangeEndExclusive;
 
-  late DateTime _selectedMonth;
-  late DateTime _focusedDate;
-
-  // Prevent feedback loops during programmatic scrolling
-  bool _programmaticScroll = false;
-  Timer? _scrollDebounce;
-
-  final Map<DateTime, GlobalKey> _dateKeys = <DateTime, GlobalKey>{};
+  bool _thisWeekExpanded = true;
+  bool _nextWeekExpanded = true;
+  bool _laterExpanded = false;
+  final Set<DateTime> _expandedInProgressDates = <DateTime>{};
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _selectedMonth = _monthStart(now);
-    _focusedDate = _dateOnly(now);
-    _scrollController = ScrollController();
-    _datePickerController = ScrollController();
-
-    _scrollController.addListener(_onTimelineScrolled);
+    final today = _dateOnly(DateTime.now());
+    _rangeStart = today;
+    _rangeEndExclusive = DateTime(today.year, today.month + 1, 1);
   }
 
   @override
   void dispose() {
-    _scrollDebounce?.cancel();
-    _scrollController.dispose();
-    _datePickerController.dispose();
     super.dispose();
   }
 
   DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
-  DateTime _monthStart(DateTime d) => DateTime(d.year, d.month);
-
-  DateTime _monthEnd(DateTime d) => DateTime(d.year, d.month + 1, 0);
-
-  DateTime? get _loadedHorizonEnd => widget.data.agendaData.loadedHorizonEnd;
-
-  bool get _selectedMonthContainsToday {
-    final today = _dateOnly(DateTime.now());
-    return _selectedMonth.year == today.year &&
-        _selectedMonth.month == today.month;
-  }
-
-  void _onTimelineScrolled() {
-    if (_programmaticScroll) return;
-
-    // Debounce scroll events to avoid excessive updates
-    _scrollDebounce?.cancel();
-    _scrollDebounce = Timer(const Duration(milliseconds: 100), () {
-      // Calculate which date is currently visible
-      final visibleDate = _calculateVisibleDate();
-      if (visibleDate != null && !_isSameDay(visibleDate, _focusedDate)) {
-        setState(() => _focusedDate = visibleDate);
-        _scrollDatePickerToDate(visibleDate);
-      }
-    });
-  }
-
-  DateTime? _calculateVisibleDate() {
-    if (!_scrollController.hasClients) return null;
-
-    // Find the first date section that is currently visible.
-    final entries = _dateKeys.entries.toList(growable: false);
-    if (entries.isEmpty) return null;
-
-    DateTime? bestDate;
-    double bestDy = double.infinity;
-
-    for (final entry in entries) {
-      final context = entry.value.currentContext;
-      if (context == null) continue;
-      final box = context.findRenderObject();
-      if (box is! RenderBox) continue;
-      final dy = box.localToGlobal(Offset.zero).dy;
-      // Prefer the first element below the app bar region.
-      if (dy >= 0 && dy < bestDy) {
-        bestDy = dy;
-        bestDate = entry.key;
-      }
-    }
-
-    return bestDate;
-  }
-
-  void _onDateSelected(DateTime date) {
-    setState(() => _focusedDate = date);
-    _scrollTimelineToDate(date);
-  }
-
-  void _scrollTimelineToDate(DateTime date) {
-    final key = _dateKeys[_dateOnly(date)];
-    final ctx = key?.currentContext;
-    if (ctx == null) return;
-
-    _programmaticScroll = true;
-    Scrollable.ensureVisible(
-      ctx,
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeInOut,
-      alignment: 0.05,
-    ).whenComplete(() {
-      if (!mounted) return;
-      Future.delayed(const Duration(milliseconds: 150), () {
-        _programmaticScroll = false;
-      });
-    });
-  }
-
-  void _scrollDatePickerToDate(DateTime date) {
-    if (!_datePickerController.hasClients) return;
-
-    final dates = _datePickerDates();
-    final idx = dates.indexWhere((d) => _isSameDay(d, date));
-    if (idx < 0) return;
-
-    const itemWidth = 80.0;
-    final targetOffset = (idx * itemWidth) - (itemWidth * 2);
-    _datePickerController.animateTo(
-      targetOffset.clamp(0, _datePickerController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeInOut,
-    );
-  }
-
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  AgendaDateTag _dominantTag(Iterable<AgendaItem> items) {
-    var hasStarts = false;
-    var hasInProgress = false;
-    var hasDue = false;
-
-    for (final item in items) {
-      switch (item.tag) {
-        case AgendaDateTag.due:
-          hasDue = true;
-        case AgendaDateTag.inProgress:
-          hasInProgress = true;
-        case AgendaDateTag.starts:
-          hasStarts = true;
-      }
-    }
-
-    if (hasDue) return AgendaDateTag.due;
-    if (hasInProgress) return AgendaDateTag.inProgress;
-    if (hasStarts) return AgendaDateTag.starts;
-
-    // Fallback (should not happen since groups are non-empty)
-    return AgendaDateTag.starts;
   }
 
   Color _tagAccentColor(ThemeData theme, AgendaDateTag tag) {
@@ -213,18 +85,30 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     };
   }
 
+  DateTime _startOfWeekMonday(DateTime date) {
+    final d = _dateOnly(date);
+    return d.subtract(Duration(days: d.weekday - DateTime.monday));
+  }
+
+  String _formatWeekRangeLabel(BuildContext context, DateTime startInclusive) {
+    final locale = Localizations.localeOf(context);
+    final start = _dateOnly(startInclusive);
+    final endInclusive = start.add(const Duration(days: 6));
+
+    final startFmt = DateFormat.MMMd(locale.toLanguageTag()).format(start);
+    if (start.year == endInclusive.year && start.month == endInclusive.month) {
+      final endDay = DateFormat.d(locale.toLanguageTag()).format(endInclusive);
+      return '$startFmt - $endDay';
+    }
+
+    final endFmt = DateFormat.MMMd(locale.toLanguageTag()).format(endInclusive);
+    return '$startFmt - $endFmt';
+  }
+
   @override
   Widget build(BuildContext context) {
     final buildStart = kDebugMode ? DateTime.now() : null;
     final agendaData = widget.data.agendaData;
-
-    final phaseTimer = PerfPhaseTimer(
-      'Scheduled UI build',
-      category: 'scheduled_ui',
-      // Keep these fairly low so we get signal while iterating.
-      slowPhaseThresholdMs: 50,
-      slowTotalThresholdMs: 100,
-    );
 
     if (kDebugMode) {
       developer.log(
@@ -248,34 +132,18 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       );
     }
 
-    final monthHeader = phaseTimer.phase(
-      'monthHeader',
-      () => _buildMonthHeader(context),
-    );
-    final datePicker = phaseTimer.phase(
-      'datePicker',
-      () => _buildDatePicker(context, agendaData),
-    );
-    final timelineSlivers = phaseTimer.phase(
-      'timelineSlivers',
-      () => _buildTimelineSlivers(context, agendaData),
-    );
+    final layout = widget.params.layout;
+    if (kDebugMode && layout == AgendaLayoutV2.timeline) {
+      developer.log(
+        'Scheduled UI: timeline layout requested; using day-cards feed (back-compat).',
+        name: 'scheduled_ui',
+      );
+    }
 
-    final result = Column(
-      children: [
-        monthHeader,
-        datePicker,
-        Expanded(
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              ...timelineSlivers,
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
-          ),
-        ),
-      ],
-    );
+    final result = switch (layout) {
+      AgendaLayoutV2.dayCardsFeed => _buildDayCardsFeed(context, agendaData),
+      AgendaLayoutV2.timeline => _buildDayCardsFeed(context, agendaData),
+    };
 
     if (kDebugMode && buildStart != null) {
       final buildMs = DateTime.now().difference(buildStart).inMilliseconds;
@@ -295,15 +163,242 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       }
     }
 
-    // Coarse-grained breakdown of where build time is spent.
-    // This is intentionally independent of the existing total build logging
-    // above (which is debug-only); this runs in profile too.
-    phaseTimer.finish();
-
     return result;
   }
 
-  Widget _buildMonthHeader(BuildContext context) {
+  Widget _buildDayCardsFeed(BuildContext context, AgendaData agendaData) {
+    final today = _dateOnly(DateTime.now());
+    final selectedStart = _dateOnly(_rangeStart);
+    final selectedEndExclusive = _dateOnly(_rangeEndExclusive);
+
+    final loadedHorizonEnd = agendaData.loadedHorizonEnd;
+    final effectiveEndExclusive = (loadedHorizonEnd == null)
+        ? selectedEndExclusive
+        : () {
+            final horizonEndExclusive = _dateOnly(
+              loadedHorizonEnd,
+            ).add(const Duration(days: 1));
+            return selectedEndExclusive.isAfter(horizonEndExclusive)
+                ? horizonEndExclusive
+                : selectedEndExclusive;
+          }();
+
+    final showHorizonNote = effectiveEndExclusive != selectedEndExclusive;
+    final anchorDay = selectedStart.isAfter(today) ? selectedStart : today;
+
+    final filteredGroups = <({DateTime date, List<AgendaItem> items})>[];
+    for (final group in agendaData.groups) {
+      final date = _dateOnly(group.date);
+      if (date.isBefore(selectedStart)) continue;
+      if (!date.isBefore(effectiveEndExclusive)) continue;
+
+      final items = group.items.where(_matchesFilters).toList(growable: false);
+      if (items.isEmpty) continue;
+
+      filteredGroups.add((date: date, items: items));
+    }
+
+    final anchorEnd = anchorDay.add(const Duration(days: 1));
+    final weekStart = _startOfWeekMonday(anchorDay);
+    final thisWeekEndExclusive = weekStart.add(const Duration(days: 7));
+    final nextWeekStart = thisWeekEndExclusive;
+    final nextWeekEndExclusive = nextWeekStart.add(const Duration(days: 7));
+
+    final anchorGroups = filteredGroups
+        .where((g) => !g.date.isBefore(anchorDay) && g.date.isBefore(anchorEnd))
+        .toList(growable: false);
+
+    final thisWeekGroups = filteredGroups
+        .where(
+          (g) =>
+              !g.date.isBefore(anchorEnd) &&
+              g.date.isBefore(thisWeekEndExclusive),
+        )
+        .toList(growable: false);
+
+    final nextWeekGroups = filteredGroups
+        .where(
+          (g) =>
+              !g.date.isBefore(nextWeekStart) &&
+              g.date.isBefore(nextWeekEndExclusive),
+        )
+        .toList(growable: false);
+
+    final laterGroups = filteredGroups
+        .where((g) => !g.date.isBefore(nextWeekEndExclusive))
+        .toList(growable: false);
+
+    final laterDateCount = laterGroups.length;
+    final laterTooLong = laterDateCount > 7;
+    final visibleLaterGroups = laterTooLong && !_laterExpanded
+        ? laterGroups.take(3).toList()
+        : laterGroups;
+
+    final children = <Widget>[];
+
+    if (showHorizonNote) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          child: Text(
+            'More dates not loaded yet.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ),
+      );
+    }
+
+    final anchorLabel = _isSameDay(anchorDay, today)
+        ? 'Today'
+        : 'Starts ${DateFormat('EEE, MMM d').format(anchorDay)}';
+
+    void addBlock(
+      String label,
+      List<({DateTime date, List<AgendaItem> items})> groups,
+    ) {
+      if (groups.isEmpty) return;
+      children.add(_DayCardsBlockHeader(label: label));
+      for (final g in groups) {
+        children.add(
+          _DayCard(
+            date: g.date,
+            items: g.items,
+            inProgressExpanded: _expandedInProgressDates.contains(g.date),
+            onToggleInProgress: () {
+              setState(() {
+                if (!_expandedInProgressDates.add(g.date)) {
+                  _expandedInProgressDates.remove(g.date);
+                }
+              });
+            },
+            itemBuilder: (day, item) => _buildDayCardsItem(context, day, item),
+            sortItems: _sortedAgendaItems,
+          ),
+        );
+      }
+    }
+
+    void addWeekBlock({
+      required String label,
+      required String rangeLabel,
+      required bool expanded,
+      required VoidCallback onToggle,
+      required List<({DateTime date, List<AgendaItem> items})> groups,
+    }) {
+      if (groups.isEmpty) return;
+
+      children.add(
+        _DayCardsSuperHeader(
+          label: label,
+          rangeLabel: rangeLabel,
+          expanded: expanded,
+          onToggle: onToggle,
+        ),
+      );
+
+      if (!expanded) return;
+      for (final g in groups) {
+        children.add(
+          _DayCard(
+            date: g.date,
+            items: g.items,
+            inProgressExpanded: _expandedInProgressDates.contains(g.date),
+            onToggleInProgress: () {
+              setState(() {
+                if (!_expandedInProgressDates.add(g.date)) {
+                  _expandedInProgressDates.remove(g.date);
+                }
+              });
+            },
+            itemBuilder: (day, item) => _buildDayCardsItem(context, day, item),
+            sortItems: _sortedAgendaItems,
+          ),
+        );
+      }
+    }
+
+    addBlock(anchorLabel, anchorGroups);
+
+    addWeekBlock(
+      label: 'This week',
+      rangeLabel: _formatWeekRangeLabel(context, weekStart),
+      expanded: _thisWeekExpanded,
+      onToggle: () => setState(() => _thisWeekExpanded = !_thisWeekExpanded),
+      groups: thisWeekGroups,
+    );
+
+    addWeekBlock(
+      label: 'Next week',
+      rangeLabel: _formatWeekRangeLabel(context, nextWeekStart),
+      expanded: _nextWeekExpanded,
+      onToggle: () => setState(() => _nextWeekExpanded = !_nextWeekExpanded),
+      groups: nextWeekGroups,
+    );
+
+    if (laterGroups.isNotEmpty) {
+      children.add(_DayCardsBlockHeader(label: 'Later'));
+      for (final g in visibleLaterGroups) {
+        children.add(
+          _DayCard(
+            date: g.date,
+            items: g.items,
+            inProgressExpanded: _expandedInProgressDates.contains(g.date),
+            onToggleInProgress: () {
+              setState(() {
+                if (!_expandedInProgressDates.add(g.date)) {
+                  _expandedInProgressDates.remove(g.date);
+                }
+              });
+            },
+            itemBuilder: (day, item) => _buildDayCardsItem(context, day, item),
+            sortItems: _sortedAgendaItems,
+          ),
+        );
+      }
+
+      if (laterTooLong) {
+        children.add(
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: TextButton(
+              onPressed: () => setState(() => _laterExpanded = !_laterExpanded),
+              child: Text(
+                _laterExpanded
+                    ? 'Collapse later'
+                    : 'Show all later ($laterDateCount dates)',
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    if (children.isEmpty) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 24),
+          child: Text(
+            'No scheduled items in this range.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildDayCardsHeader(context),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 24),
+            children: children,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDayCardsHeader(BuildContext context) {
     final theme = Theme.of(context);
     final typography =
         theme.extension<TasklyTypography>() ??
@@ -311,8 +406,8 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
           textTheme: theme.textTheme,
           colorScheme: theme.colorScheme,
         );
-    final selectedMonthLabel = DateFormat.yMMMM().format(_selectedMonth);
-    final showTodayPill = !_selectedMonthContainsToday;
+
+    final label = _rangeLabel();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
@@ -320,16 +415,13 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => _pickDate(context, initial: _selectedMonth),
+            onTap: _openRange,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    selectedMonthLabel,
-                    style: typography.screenTitleTight,
-                  ),
+                  Text(label, style: typography.screenTitleTight),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_drop_down),
                 ],
@@ -337,14 +429,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
             ),
           ),
           const Spacer(),
-          if (showTodayPill)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ActionChip(
-                label: const Text('Today'),
-                onPressed: _jumpToToday,
-              ),
-            ),
           IconButton(
             tooltip: 'Search',
             onPressed: _openSearch,
@@ -355,325 +439,235 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
             onPressed: _openFilter,
             icon: const Icon(Icons.filter_list),
           ),
-          IconButton(
-            tooltip: 'Calendar',
-            onPressed: () => _pickDate(context, initial: _focusedDate),
-            icon: const Icon(Icons.calendar_month_outlined),
-          ),
         ],
       ),
     );
   }
 
-  Future<void> _pickDate(
-    BuildContext context, {
-    required DateTime initial,
-  }) async {
-    final picked = await showDatePicker(
+  String _rangeLabel() {
+    return switch (_rangePreset) {
+      _DateRangePreset.today => 'Today',
+      _DateRangePreset.next7Days => 'Next 7 days',
+      _DateRangePreset.thisMonth => 'This month',
+      _DateRangePreset.nextMonth => 'Next month',
+      _DateRangePreset.custom =>
+        '${DateFormat('MMM d').format(_rangeStart)} – ${DateFormat('MMM d').format(_rangeEndExclusive.subtract(const Duration(days: 1)))}',
+    };
+  }
+
+  Future<void> _openRange() async {
+    await showModalBottomSheet<void>(
       context: context,
-      initialDate: initial,
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-    );
-    if (picked == null) return;
-    _setSelectedMonthAndFocus(_monthStart(picked), _dateOnly(picked));
-  }
-
-  void _jumpToToday() {
-    final today = _dateOnly(DateTime.now());
-    _setSelectedMonthAndFocus(_monthStart(today), today);
-  }
-
-  void _setSelectedMonthAndFocus(DateTime month, DateTime focus) {
-    setState(() {
-      _selectedMonth = month;
-      _focusedDate = focus;
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _scrollDatePickerToDate(_focusedDate);
-      _scrollTimelineToDate(_focusedDate);
-    });
-  }
-
-  List<DateTime> _datePickerDates() {
-    final today = _dateOnly(DateTime.now());
-    final monthStart = _monthStart(_selectedMonth);
-    final start = _selectedMonthContainsToday ? today : monthStart;
-
-    // Show up to ~2 weeks of chips (enough for scroll-sync + next-week spill).
-    final end = start.add(const Duration(days: 13));
-    final hardEnd = _loadedHorizonEnd;
-    final effectiveEnd = hardEnd == null
-        ? end
-        : (end.isAfter(hardEnd) ? hardEnd : end);
-
-    final days = effectiveEnd.difference(start).inDays;
-    return List.generate(
-      days + 1,
-      (i) => start.add(Duration(days: i)),
-      growable: false,
-    );
-  }
-
-  Widget _buildDatePicker(BuildContext context, AgendaData agendaData) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final dates = _datePickerDates();
-    final datesWithItems = _datesWithAnyItems(agendaData);
-    final today = _dateOnly(DateTime.now());
-
-    return Container(
-      height: 84,
-      decoration: BoxDecoration(color: colorScheme.surfaceContainerHighest),
-      child: ListView.builder(
-        controller: _datePickerController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        itemCount: dates.length,
-        itemBuilder: (context, index) {
-          final date = dates[index];
-          final isSelected = _isSameDay(date, _focusedDate);
-          final isToday = _isSameDay(date, today);
-          final hasDot = datesWithItems.contains(_dateOnly(date));
-
-          Color? dotColor;
-          if (hasDot) {
-            final itemsForDate = _filteredItemsForDate(agendaData, date);
-            if (itemsForDate.isNotEmpty) {
-              dotColor = _tagAccentColor(
-                theme,
-                _dominantTag(itemsForDate),
-              );
-            }
-          }
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: _DateChip(
-              date: date,
-              isSelected: isSelected,
-              isToday: isToday,
-              hasDot: hasDot,
-              dotColor: dotColor,
-              onTap: () => _onDateSelected(date),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Set<DateTime> _datesWithAnyItems(AgendaData agendaData) {
-    final set = <DateTime>{};
-    for (final group in agendaData.groups) {
-      if (group.items.isNotEmpty) set.add(_dateOnly(group.date));
-    }
-    return set;
-  }
-
-  List<Widget> _buildTimelineSlivers(
-    BuildContext context,
-    AgendaData agendaData,
-  ) {
-    final slivers = <Widget>[];
-
-    final today = _dateOnly(DateTime.now());
-    final monthStart = _monthStart(_selectedMonth);
-    final monthEnd = _monthEnd(_selectedMonth);
-
-    final restOfWeekEnd = _endOfWeekSunday(today);
-    final restOfWeekStart = today.add(const Duration(days: 1));
-
-    final nextWeekStart = _startOfWeekMonday(today).add(
-      const Duration(days: 7),
-    );
-    final nextWeekEnd = nextWeekStart.add(const Duration(days: 6));
-
-    final sections = <_AgendaSectionSpec>[];
-    if (_selectedMonthContainsToday) {
-      sections.add(
-        _AgendaSectionSpec(
-          title: 'Today',
-          subtitle: DateFormat('EEEE, MMM d').format(today),
-          dates: [today],
-          alwaysShowHeader: true,
-          emphasizeHeader: true,
-        ),
-      );
-      sections.add(
-        _AgendaSectionSpec(
-          title: 'REST OF WEEK',
-          rangeLabel: _formatRangeLabel(restOfWeekStart, restOfWeekEnd),
-          dates: _datesInRange(restOfWeekStart, restOfWeekEnd),
-        ),
-      );
-      sections.add(
-        _AgendaSectionSpec(
-          title: 'NEXT WEEK',
-          rangeLabel: _formatRangeLabel(nextWeekStart, nextWeekEnd),
-          dates: _datesInRange(nextWeekStart, nextWeekEnd),
-        ),
-      );
-    }
-
-    final laterStart = _selectedMonthContainsToday
-        ? nextWeekEnd.add(const Duration(days: 1))
-        : monthStart;
-    final laterEnd = monthEnd;
-    if (!laterStart.isAfter(laterEnd)) {
-      sections.add(
-        _AgendaSectionSpec(
-          title: 'LATER',
-          rangeLabel: _formatRangeLabel(laterStart, laterEnd),
-          dates: _datesInRange(laterStart, laterEnd),
-        ),
-      );
-    }
-
-    var anyContent = false;
-    for (final section in sections) {
-      final dateGroups = _buildDateGroupsForDates(
-        agendaData: agendaData,
-        dates: section.dates,
-      );
-
-      if (!section.alwaysShowHeader && dateGroups.isEmpty) {
-        continue;
-      }
-      anyContent = true;
-
-      slivers.add(
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _SectionHeaderDelegate(
-            title: section.title,
-            subtitle: section.subtitle,
-            rangeLabel: section.rangeLabel,
-            emphasize: section.emphasizeHeader,
-          ),
-        ),
-      );
-
-      if (dateGroups.isEmpty) {
-        slivers.add(
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(12, 12, 12, 4),
-              child: Text('No scheduled items.'),
-            ),
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Range',
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              _RangeTile(
+                title: 'Today',
+                selected: _rangePreset == _DateRangePreset.today,
+                onTap: () {
+                  _setPresetRange(_DateRangePreset.today);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              _RangeTile(
+                title: 'Next 7 days',
+                selected: _rangePreset == _DateRangePreset.next7Days,
+                onTap: () {
+                  _setPresetRange(_DateRangePreset.next7Days);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              _RangeTile(
+                title: 'This month',
+                selected: _rangePreset == _DateRangePreset.thisMonth,
+                onTap: () {
+                  _setPresetRange(_DateRangePreset.thisMonth);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              _RangeTile(
+                title: 'Next month',
+                selected: _rangePreset == _DateRangePreset.nextMonth,
+                onTap: () {
+                  _setPresetRange(_DateRangePreset.nextMonth);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Jump',
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              _RangeTile(
+                title: 'Jump to week',
+                selected: false,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    initialDate: _rangeStart,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked == null) return;
+                  _setWeekRange(picked);
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                },
+              ),
+              _RangeTile(
+                title: 'Jump to month',
+                selected: false,
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: sheetContext,
+                    initialDate: _rangeStart,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked == null) return;
+                  _setMonthRange(picked);
+                  if (!mounted) return;
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
           ),
         );
-        continue;
-      }
-
-      slivers.add(
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: _SectionTimeline(
-              dateGroups: dateGroups,
-              buildAgendaItem: (item) => _buildAgendaItem(context, item),
-              dominantTagFor: _dominantTag,
-              accentColorFor: (tag) => _tagAccentColor(Theme.of(context), tag),
-              dateKeyFor: (date) {
-                final normalized = _dateOnly(date);
-                return _dateKeys.putIfAbsent(normalized, GlobalKey.new);
-              },
-              showDateMarkers: section.title != 'Today',
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (!anyContent) {
-      slivers.add(
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('No scheduled items in this month.'),
-          ),
-        ),
-      );
-    }
-
-    return slivers;
+      },
+    );
   }
 
-  List<_DateGroup> _buildDateGroupsForDates({
-    required AgendaData agendaData,
-    required List<DateTime> dates,
-  }) {
-    final dateGroups = <_DateGroup>[];
-    for (final date in dates) {
-      final items = _filteredItemsForDate(agendaData, date);
-      if (items.isEmpty) continue;
-      dateGroups.add(_DateGroup(date: date, items: items));
-    }
-    return dateGroups;
+  void _setPresetRange(_DateRangePreset preset) {
+    final today = _dateOnly(DateTime.now());
+
+    final (DateTime start, DateTime endExclusive) = switch (preset) {
+      _DateRangePreset.today => (
+        today,
+        today.add(const Duration(days: 1)),
+      ),
+      _DateRangePreset.next7Days => (
+        today,
+        today.add(const Duration(days: 8)),
+      ),
+      _DateRangePreset.thisMonth => (
+        today,
+        DateTime(today.year, today.month + 1, 1),
+      ),
+      _DateRangePreset.nextMonth => () {
+        final nextMonthStart = DateTime(today.year, today.month + 1, 1);
+        return (
+          nextMonthStart,
+          DateTime(nextMonthStart.year, nextMonthStart.month + 1, 1),
+        );
+      }(),
+      _DateRangePreset.custom => (_rangeStart, _rangeEndExclusive),
+    };
+
+    setState(() {
+      _rangePreset = preset;
+      _rangeStart = start;
+      _rangeEndExclusive = endExclusive;
+      _thisWeekExpanded = true;
+      _nextWeekExpanded = true;
+      _laterExpanded = false;
+      _expandedInProgressDates.clear();
+    });
   }
 
-  DateTime _startOfWeekMonday(DateTime date) {
-    return _dateOnly(date).subtract(Duration(days: date.weekday - 1));
+  void _setWeekRange(DateTime picked) {
+    final d = _dateOnly(picked);
+    final weekStart = d.subtract(Duration(days: d.weekday - DateTime.monday));
+    final endExclusive = weekStart.add(const Duration(days: 7));
+
+    setState(() {
+      _rangePreset = _DateRangePreset.custom;
+      _rangeStart = weekStart;
+      _rangeEndExclusive = endExclusive;
+      _thisWeekExpanded = true;
+      _nextWeekExpanded = true;
+      _laterExpanded = false;
+      _expandedInProgressDates.clear();
+    });
   }
 
-  DateTime _endOfWeekSunday(DateTime date) {
-    return _dateOnly(
-      date,
-    ).add(Duration(days: DateTime.daysPerWeek - date.weekday));
+  void _setMonthRange(DateTime picked) {
+    final d = _dateOnly(picked);
+    final start = DateTime(d.year, d.month, 1);
+    final endExclusive = DateTime(d.year, d.month + 1, 1);
+
+    setState(() {
+      _rangePreset = _DateRangePreset.custom;
+      _rangeStart = start;
+      _rangeEndExclusive = endExclusive;
+      _thisWeekExpanded = true;
+      _nextWeekExpanded = true;
+      _laterExpanded = false;
+      _expandedInProgressDates.clear();
+    });
   }
 
-  List<DateTime> _datesInRange(DateTime start, DateTime end) {
-    if (start.isAfter(end)) return const [];
-    final s = _dateOnly(start);
-    final e = _dateOnly(end);
-    final days = e.difference(s).inDays;
-    return List.generate(days + 1, (i) => s.add(Duration(days: i)));
+  List<AgendaItem> _sortedAgendaItems(Iterable<AgendaItem> items) {
+    final list = items.toList(growable: false);
+    final sorted = List<AgendaItem>.of(list);
+
+    int entityRank(AgendaItem i) => i.isTask ? 0 : 1;
+    bool pinned(AgendaItem i) =>
+        (i.task?.isPinned ?? false) || (i.project?.isPinned ?? false);
+
+    sorted.sort((a, b) {
+      final er = entityRank(a).compareTo(entityRank(b));
+      if (er != 0) return er;
+
+      final pr = (pinned(a) ? 0 : 1).compareTo(pinned(b) ? 0 : 1);
+      if (pr != 0) return pr;
+
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    return sorted;
   }
 
-  String _formatRangeLabel(DateTime start, DateTime end) {
-    final s = _dateOnly(start);
-    final e = _dateOnly(end);
-    // Example: Oct 26 - 29, or Oct 30 - Nov 5
-    final startFmt = DateFormat.MMMd().format(s);
-    final endFmt = s.month == e.month
-        ? DateFormat.d().format(e)
-        : DateFormat.MMMd().format(e);
-    return '$startFmt - $endFmt';
+  Widget _buildStatusBadge(BuildContext context, AgendaDateTag tag) {
+    final scheme = Theme.of(context).colorScheme;
+    return switch (tag) {
+      AgendaDateTag.starts => _StatusPill(
+        label: 'START',
+        background: scheme.primaryContainer,
+        foreground: scheme.onPrimaryContainer,
+      ),
+      AgendaDateTag.due => _StatusPill(
+        label: 'DUE',
+        background: scheme.errorContainer,
+        foreground: scheme.onErrorContainer,
+      ),
+      AgendaDateTag.inProgress => _StatusPill(
+        label: 'IN PROGRESS',
+        background: scheme.surfaceContainerHighest,
+        foreground: scheme.onSurfaceVariant,
+      ),
+    };
   }
 
-  List<AgendaItem> _itemsForDate(AgendaData agendaData, DateTime date) {
-    final normalized = _dateOnly(date);
-    for (final group in agendaData.groups) {
-      if (_dateOnly(group.date) == normalized) return group.items;
-    }
-    return const [];
-  }
-
-  List<AgendaItem> _filteredItemsForDate(AgendaData agendaData, DateTime date) {
-    final items = _itemsForDate(agendaData, date);
-    if (items.isEmpty) return const [];
-    return items.where(_matchesFilters).toList(growable: false);
-  }
-
-  bool _matchesFilters(AgendaItem item) {
-    if (_entityFilter == _AgendaEntityFilter.tasksOnly && !item.isTask) {
-      return false;
-    }
-    if (_entityFilter == _AgendaEntityFilter.projectsOnly && !item.isProject) {
-      return false;
-    }
-    if (!_tagFilter.contains(item.tag)) return false;
-
-    final q = _searchQuery.trim().toLowerCase();
-    if (q.isEmpty) return true;
-    return item.name.toLowerCase().contains(q);
-  }
-
-  Widget _buildAgendaItem(BuildContext context, AgendaItem item) {
-    if (item.isCondensed) {
+  Widget _buildDayCardsItem(
+    BuildContext context,
+    DateTime day,
+    AgendaItem item,
+  ) {
+    if (item.isCondensed && item.tag == AgendaDateTag.inProgress) {
       final endDate = item.task?.deadlineDate ?? item.project?.deadlineDate;
       return _InProgressCard(
         title: item.name,
@@ -690,30 +684,20 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       );
     }
 
-    // Scheduled mock shows tag pills on items consistently.
-    final tagLabel = switch (item.tag) {
-      AgendaDateTag.starts => 'START',
-      AgendaDateTag.due => 'DUE',
-      AgendaDateTag.inProgress => 'IN PROGRESS',
-    };
+    final statusBadge = _buildStatusBadge(context, item.tag);
+    final accentColor = _tagAccentColor(Theme.of(context), item.tag);
 
-    final tagStyle = switch (item.tag) {
-      AgendaDateTag.starts => _TagStyle.start,
-      AgendaDateTag.due => _TagStyle.due,
-      AgendaDateTag.inProgress => _TagStyle.inProgress,
-    };
-
-    final titlePrefix = _TagPill(label: tagLabel, style: tagStyle);
-
-    // Prefer entity-level view variants for Scheduled so the styling lives at
-    // the entity layer (consistent with the unified screen architecture).
     if (item.isTask && item.task != null) {
+      final isAllocated =
+          widget.data.enrichment?.isAllocatedByTaskId[item.task!.id] ?? false;
       return TaskView(
         task: item.task!,
         variant: TaskViewVariant.agendaCard,
         onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
         onTap: widget.onTaskTap,
-        titlePrefix: titlePrefix,
+        isInFocus: isAllocated,
+        accentColor: accentColor,
+        titlePrefix: statusBadge,
       );
     }
 
@@ -721,12 +705,28 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       return ProjectView(
         project: item.project!,
         variant: ProjectViewVariant.agendaCard,
-        titlePrefix: titlePrefix,
+        taskCount: item.project!.taskCount,
+        completedTaskCount: item.project!.completedTaskCount,
+        accentColor: accentColor,
+        titlePrefix: statusBadge,
       );
     }
 
-    // Fallback for unexpected data.
     return const SizedBox.shrink();
+  }
+
+  bool _matchesFilters(AgendaItem item) {
+    if (_entityFilter == _AgendaEntityFilter.tasksOnly && !item.isTask) {
+      return false;
+    }
+    if (_entityFilter == _AgendaEntityFilter.projectsOnly && !item.isProject) {
+      return false;
+    }
+    if (!_tagFilter.contains(item.tag)) return false;
+
+    final q = _searchQuery.trim().toLowerCase();
+    if (q.isEmpty) return true;
+    return item.name.toLowerCase().contains(q);
   }
 
   Future<void> _openSearch() async {
@@ -922,151 +922,67 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   }
 }
 
-/// Date chip widget for the horizontal date picker
-class _DateChip extends StatelessWidget {
-  const _DateChip({
-    required this.date,
-    required this.isSelected,
-    required this.isToday,
-    required this.hasDot,
-    required this.dotColor,
-    required this.onTap,
+class _DayCardsSuperHeader extends StatelessWidget {
+  const _DayCardsSuperHeader({
+    required this.label,
+    required this.rangeLabel,
+    required this.expanded,
+    required this.onToggle,
   });
 
-  final DateTime date;
-  final bool isSelected;
-  final bool isToday;
-  final bool hasDot;
-  final Color? dotColor;
-  final VoidCallback onTap;
+  final String label;
+  final String rangeLabel;
+  final bool expanded;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final typography =
-        theme.extension<TasklyTypography>() ??
-        TasklyTypography.from(
-          textTheme: theme.textTheme,
-          colorScheme: theme.colorScheme,
-        );
+    final scheme = theme.colorScheme;
 
-    final dayName = DateFormat.E().format(date).toUpperCase();
-    final dayNumber = date.day.toString();
-
-    return Transform.scale(
-      scale: isSelected ? 1.05 : 1.0,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 18, 12, 8),
       child: InkWell(
-        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: 72,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? colorScheme.primaryContainer
-                : isToday
-                ? colorScheme.secondaryContainer.withOpacity(0.3)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isSelected
-                  ? colorScheme.primary
-                  : isToday
-                  ? colorScheme.secondary
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        onTap: onToggle,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+          child: Row(
             children: [
-              Text(
-                dayName,
-                style: typography.badgeTinyCaps.copyWith(
-                  color: isSelected
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                dayNumber,
-                style:
-                    (isSelected
-                            ? typography.agendaChipDateNumberSelected
-                            : typography.agendaChipDateNumber)
-                        .copyWith(
-                          color: isSelected
-                              ? colorScheme.onPrimaryContainer
-                              : colorScheme.onSurface,
-                        ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  rangeLabel,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-              const SizedBox(height: 6),
-              SizedBox(
-                height: 6,
-                child: hasDot
-                    ? Container(
-                        width: 6,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? colorScheme.onPrimaryContainer
-                              : (dotColor ?? colorScheme.primary),
-                          shape: BoxShape.circle,
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+              const SizedBox(width: 8),
+              Icon(
+                expanded ? Icons.expand_less : Icons.expand_more,
+                color: scheme.onSurfaceVariant,
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-enum _TagStyle { start, due, inProgress }
-
-class _TagPill extends StatelessWidget {
-  const _TagPill({required this.label, required this.style});
-
-  final String label;
-  final _TagStyle style;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final (bg, fg) = switch (style) {
-      _TagStyle.start => (
-        colorScheme.secondaryContainer,
-        colorScheme.onSecondaryContainer,
-      ),
-      _TagStyle.due => (
-        colorScheme.errorContainer,
-        colorScheme.onErrorContainer,
-      ),
-      _TagStyle.inProgress => (
-        colorScheme.surfaceContainerHighest,
-        colorScheme.onSurfaceVariant,
-      ),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-        border: style == _TagStyle.inProgress
-            ? Border.all(color: colorScheme.outlineVariant)
-            : null,
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: fg,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 0.4,
         ),
       ),
     );
@@ -1245,14 +1161,204 @@ class _StatusPill extends StatelessWidget {
   }
 }
 
-class _DateGroup {
-  const _DateGroup({required this.date, required this.items});
+enum _AgendaEntityFilter { all, tasksOnly, projectsOnly }
+
+enum _DateRangePreset {
+  today,
+  next7Days,
+  thisMonth,
+  nextMonth,
+  custom,
+}
+
+class _RangeTile extends StatelessWidget {
+  const _RangeTile({
+    required this.title,
+    required this.selected,
+    required this.onTap,
+    this.trailing,
+  });
+
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      title: Text(title),
+      trailing: trailing ?? (selected ? const Icon(Icons.check) : null),
+      onTap: onTap,
+    );
+  }
+}
+
+class _DayCardsBlockHeader extends StatelessWidget {
+  const _DayCardsBlockHeader({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: scheme.onSurface,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _DayCard extends StatelessWidget {
+  const _DayCard({
+    required this.date,
+    required this.items,
+    required this.inProgressExpanded,
+    required this.onToggleInProgress,
+    required this.itemBuilder,
+    required this.sortItems,
+  });
 
   final DateTime date;
   final List<AgendaItem> items;
-}
+  final bool inProgressExpanded;
+  final VoidCallback onToggleInProgress;
+  final Widget Function(DateTime date, AgendaItem item) itemBuilder;
+  final List<AgendaItem> Function(Iterable<AgendaItem> items) sortItems;
 
-enum _AgendaEntityFilter { all, tasksOnly, projectsOnly }
+  bool _isSameDay(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    final semantic = _isSameDay(date, today)
+        ? 'Today'
+        : _isSameDay(date, tomorrow)
+        ? 'Tomorrow'
+        : null;
+    final absolute = DateFormat('EEE, MMM d').format(date);
+
+    final dueItems = sortItems(
+      items.where((i) => i.tag == AgendaDateTag.due),
+    );
+    final startsItems = sortItems(
+      items.where((i) => i.tag == AgendaDateTag.starts),
+    );
+    final inProgressItems = sortItems(
+      items.where((i) => i.tag == AgendaDateTag.inProgress),
+    );
+
+    Widget buildSection(String label, List<AgendaItem> sectionItems) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 6),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          ...sectionItems.map((i) => itemBuilder(date, i)),
+        ],
+      );
+    }
+
+    Widget? buildInProgressSection() {
+      if (inProgressItems.isEmpty) return null;
+
+      if (!inProgressExpanded) {
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text('In progress (${inProgressItems.length})'),
+            trailing: const Icon(Icons.expand_more),
+            onTap: onToggleInProgress,
+          ),
+        );
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'In progress',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onToggleInProgress,
+                  child: const Text('Hide'),
+                ),
+              ],
+            ),
+          ),
+          ...inProgressItems.map((i) => itemBuilder(date, i)),
+        ],
+      );
+    }
+
+    final inProgressSection = buildInProgressSection();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  if (semantic != null) ...[
+                    Text(
+                      semantic,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    absolute,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              if (dueItems.isNotEmpty) buildSection('Due', dueItems),
+              if (startsItems.isNotEmpty) buildSection('Starts', startsItems),
+              ?inProgressSection,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _AgendaFilterSelection {
   const _AgendaFilterSelection({
@@ -1262,484 +1368,6 @@ class _AgendaFilterSelection {
 
   final _AgendaEntityFilter entityFilter;
   final Set<AgendaDateTag> tagFilter;
-}
-
-class _AgendaSectionSpec {
-  const _AgendaSectionSpec({
-    required this.title,
-    required this.dates,
-    this.subtitle,
-    this.rangeLabel,
-    this.alwaysShowHeader = false,
-    this.emphasizeHeader = false,
-  });
-
-  final String title;
-  final String? subtitle;
-  final String? rangeLabel;
-  final List<DateTime> dates;
-  final bool alwaysShowHeader;
-  final bool emphasizeHeader;
-}
-
-class _SectionHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _SectionHeaderDelegate({
-    required this.title,
-    required this.emphasize,
-    this.subtitle,
-    this.rangeLabel,
-  });
-
-  final String title;
-  final String? subtitle;
-  final String? rangeLabel;
-  final bool emphasize;
-
-  double get _extent => subtitle == null ? 64 : 84;
-
-  @override
-  double get minExtent => _extent;
-
-  @override
-  double get maxExtent => _extent;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final typography =
-        theme.extension<TasklyTypography>() ??
-        TasklyTypography.from(
-          textTheme: theme.textTheme,
-          colorScheme: theme.colorScheme,
-        );
-
-    return Container(
-      color: theme.scaffoldBackgroundColor,
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-      alignment: Alignment.bottomCenter,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: colorScheme.outlineVariant.withOpacity(0.35),
-            ),
-          ),
-        ),
-        child: Row(
-          children: [
-            if (emphasize)
-              Padding(
-                padding: const EdgeInsets.only(right: 10),
-                child: Container(
-                  width: 4,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    title,
-                    style: emphasize
-                        ? typography.agendaSectionHeaderHeavy
-                        : theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                  ),
-                  if (subtitle != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        subtitle!.toUpperCase(),
-                        style: typography.subHeaderCaps.copyWith(
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.85),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (rangeLabel != null)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5),
-                  ),
-                ),
-                child: Text(rangeLabel!, style: theme.textTheme.labelMedium),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant _SectionHeaderDelegate oldDelegate) {
-    return title != oldDelegate.title ||
-        subtitle != oldDelegate.subtitle ||
-        rangeLabel != oldDelegate.rangeLabel ||
-        emphasize != oldDelegate.emphasize;
-  }
-}
-
-class _SectionTimeline extends StatelessWidget {
-  const _SectionTimeline({
-    required this.dateGroups,
-    required this.buildAgendaItem,
-    required this.dominantTagFor,
-    required this.accentColorFor,
-    required this.dateKeyFor,
-    required this.showDateMarkers,
-  });
-
-  final List<_DateGroup> dateGroups;
-  final Widget Function(AgendaItem item) buildAgendaItem;
-  final AgendaDateTag Function(Iterable<AgendaItem> items) dominantTagFor;
-  final Color Function(AgendaDateTag tag) accentColorFor;
-  final GlobalKey Function(DateTime date) dateKeyFor;
-  final bool showDateMarkers;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final baseLineColor = theme.colorScheme.outlineVariant;
-
-    return Column(
-      children: [
-        for (final group in dateGroups)
-          _DateTimelineGroup(
-            key: dateKeyFor(group.date),
-            group: group,
-            timelineWidth: _AgendaSectionRendererState._timelineWidth,
-            dominantTag: dominantTagFor(group.items),
-            baseLineColor: baseLineColor,
-            accentColorFor: accentColorFor,
-            buildAgendaItem: buildAgendaItem,
-            showDateMarker: showDateMarkers,
-          ),
-      ],
-    );
-  }
-}
-
-class _DateTimelineGroup extends StatefulWidget {
-  const _DateTimelineGroup({
-    required this.group,
-    required this.timelineWidth,
-    required this.dominantTag,
-    required this.baseLineColor,
-    required this.accentColorFor,
-    required this.buildAgendaItem,
-    required this.showDateMarker,
-    super.key,
-  });
-
-  final _DateGroup group;
-  final double timelineWidth;
-  final AgendaDateTag dominantTag;
-  final Color baseLineColor;
-  final Color Function(AgendaDateTag tag) accentColorFor;
-  final Widget Function(AgendaItem item) buildAgendaItem;
-  final bool showDateMarker;
-
-  @override
-  State<_DateTimelineGroup> createState() => _DateTimelineGroupState();
-}
-
-class _DateTimelineGroupState extends State<_DateTimelineGroup> {
-  final GlobalKey _groupKey = GlobalKey();
-  final GlobalKey _itemsKey = GlobalKey();
-
-  final List<GlobalKey> _itemKeys = <GlobalKey>[];
-
-  double? _anchorY;
-  List<double> _itemAnchorYs = const [];
-  double? _itemsHeight;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchor());
-  }
-
-  @override
-  void didUpdateWidget(covariant _DateTimelineGroup oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.group.items != widget.group.items) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAnchor());
-    }
-  }
-
-  void _measureAnchor() {
-    if (!mounted) return;
-
-    final groupBox = _groupKey.currentContext?.findRenderObject() as RenderBox?;
-    final firstItemBox = _itemKeys.isEmpty
-        ? null
-        : (_itemKeys.first.currentContext?.findRenderObject() as RenderBox?);
-    final itemsBox = _itemsKey.currentContext?.findRenderObject() as RenderBox?;
-
-    if (itemsBox != null) {
-      final newItemsHeight = itemsBox.size.height;
-      if (_itemsHeight == null || (_itemsHeight! - newItemsHeight).abs() > 1) {
-        setState(() => _itemsHeight = newItemsHeight);
-      }
-    }
-
-    if (groupBox == null || firstItemBox == null) return;
-
-    double anchorOffsetFor(AgendaItem item) {
-      if (item.isCondensed) return 24;
-      if (item.isTask) return 28;
-      if (item.isProject) return 36;
-      return 24;
-    }
-
-    final firstItemTop = firstItemBox.localToGlobal(
-      Offset.zero,
-      ancestor: groupBox,
-    );
-    final first = widget.group.items.first;
-    final newAnchorY = firstItemTop.dy + anchorOffsetFor(first);
-
-    // Also compute a dot anchor for every item so the timeline reads like an
-    // event stream (closer to the mockup).
-    final measuredAnchors = <double>[];
-    for (var i = 0; i < widget.group.items.length; i++) {
-      if (i >= _itemKeys.length) continue;
-      final itemBox =
-          _itemKeys[i].currentContext?.findRenderObject() as RenderBox?;
-      if (itemBox == null) continue;
-      final itemTop = itemBox.localToGlobal(
-        Offset.zero,
-        ancestor: groupBox,
-      );
-      measuredAnchors.add(itemTop.dy + anchorOffsetFor(widget.group.items[i]));
-    }
-
-    if (_anchorY == null || (_anchorY! - newAnchorY).abs() > 1) {
-      setState(() => _anchorY = newAnchorY);
-    }
-
-    if (measuredAnchors.isNotEmpty) {
-      final sameCount = measuredAnchors.length == _itemAnchorYs.length;
-      var changed = !sameCount;
-      if (!changed) {
-        for (var i = 0; i < measuredAnchors.length; i++) {
-          if ((measuredAnchors[i] - _itemAnchorYs[i]).abs() > 1) {
-            changed = true;
-            break;
-          }
-        }
-      }
-      if (changed) {
-        setState(() => _itemAnchorYs = measuredAnchors);
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Ensure we have stable keys for each rendered item.
-    while (_itemKeys.length < widget.group.items.length) {
-      _itemKeys.add(GlobalKey());
-    }
-
-    final dayName = DateFormat.E().format(widget.group.date).toUpperCase();
-    final dayNumber = widget.group.date.day.toString();
-
-    final dotColor = widget.accentColorFor(widget.dominantTag);
-    final lineColor = Color.lerp(
-      widget.baseLineColor,
-      dotColor,
-      0.45,
-    )!.withOpacity(0.7);
-
-    // Keep the marker/dot aligned with the first item, rather than floating at
-    // the top of the group.
-    final anchorY = _anchorY ?? 36;
-    final markerTop = (anchorY - 28).clamp(0.0, double.infinity);
-    final dotTop = (anchorY - 7).clamp(0.0, double.infinity);
-
-    // Geometry (mockup-like): date badge sits to the left of the line, and the
-    // dot sits on the line. Keeping this as local constants makes it easy to
-    // tweak without changing the widget API.
-    const dateMarkerWidth = 44.0;
-    const dotSize = 14.0;
-    const smallDotSize = 10.0;
-
-    // Place the line toward the right edge of the timeline gutter so the date
-    // marker doesn't overlap it.
-    final lineCenterX = (widget.timelineWidth - 12).clamp(
-      0.0,
-      widget.timelineWidth,
-    );
-    final dotLeft = lineCenterX - (dotSize / 2);
-    final smallDotLeft = lineCenterX - (smallDotSize / 2);
-
-    return Padding(
-      key: _groupKey,
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: widget.timelineWidth,
-            height: _itemsHeight ?? 0,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(
-                  top: 0,
-                  bottom: 0,
-                  left: lineCenterX - 1,
-                  child: Container(width: 2, color: lineColor),
-                ),
-                if (widget.showDateMarker)
-                  Positioned(
-                    top: markerTop,
-                    left: 0,
-                    child: SizedBox(
-                      width: dateMarkerWidth,
-                      child: _TimelineDateMarker(
-                        dayName: dayName,
-                        dayNumber: dayNumber,
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  top: dotTop,
-                  left: dotLeft,
-                  child: _TimelineDot(
-                    color: dotColor,
-                    borderColor: Theme.of(context).scaffoldBackgroundColor,
-                  ),
-                ),
-
-                // Additional, smaller dots for each item to strengthen the
-                // timeline-to-card mapping (mockup-like readability).
-                for (var i = 1; i < _itemAnchorYs.length; i++)
-                  Positioned(
-                    top: (_itemAnchorYs[i] - 5).clamp(0.0, double.infinity),
-                    left: smallDotLeft,
-                    child: _TimelineDot(
-                      color: dotColor.withOpacity(0.55),
-                      borderColor: Theme.of(context).scaffoldBackgroundColor,
-                      size: smallDotSize,
-                      borderWidth: 1.5,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              key: _itemsKey,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < widget.group.items.length; i++) ...[
-                  KeyedSubtree(
-                    key: _itemKeys[i],
-                    child: widget.buildAgendaItem(widget.group.items[i]),
-                  ),
-                  if (i != widget.group.items.length - 1)
-                    const SizedBox(height: 14),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TimelineDot extends StatelessWidget {
-  const _TimelineDot({
-    required this.color,
-    required this.borderColor,
-    this.size = 14,
-    this.borderWidth = 2,
-  });
-
-  final Color color;
-  final Color borderColor;
-  final double size;
-  final double borderWidth;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: borderColor, width: borderWidth),
-      ),
-    );
-  }
-}
-
-class _TimelineDateMarker extends StatelessWidget {
-  const _TimelineDateMarker({required this.dayName, required this.dayNumber});
-
-  final String dayName;
-  final String dayNumber;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final typography =
-        theme.extension<TasklyTypography>() ??
-        TasklyTypography.from(
-          textTheme: theme.textTheme,
-          colorScheme: theme.colorScheme,
-        );
-    return Container(
-      width: 44,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.7),
-        ),
-      ),
-      child: Column(
-        children: [
-          Text(
-            dayName,
-            style: typography.badgeTinyCaps,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            dayNumber,
-            style: typography.agendaChipDateNumber,
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _DashedRoundedRectPainter extends CustomPainter {

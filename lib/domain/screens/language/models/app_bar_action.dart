@@ -14,4 +14,10 @@ enum AppBarAction {
   /// Shows screen-specific help content.
   @JsonValue('help')
   help,
+
+  /// Create a new Value.
+  ///
+  /// This is used by screens that want an AppBar "+" action instead of a FAB.
+  @JsonValue('create_value')
+  createValue,
 }

@@ -1,8 +1,8 @@
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
-import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
@@ -29,8 +29,6 @@ abstract class SystemScreenSpecs {
     ),
     chrome: const ScreenChrome(
       fabOperations: [FabOperation.createTask],
-      appBarActions: [AppBarAction.settingsLink],
-      settingsRoute: 'focus_setup',
     ),
     modules: SlottedModules(
       header: [
@@ -42,19 +40,7 @@ abstract class SystemScreenSpecs {
         ),
       ],
       primary: [
-        ScreenModuleSpec.hierarchyValueProjectTaskV2(
-          params: HierarchyValueProjectTaskSectionParamsV2(
-            sources: const [DataConfig.allocationSnapshotTasksToday()],
-            pack: StylePackV2.standard,
-            pinnedValueHeaders: true,
-            pinnedProjectHeaders: false,
-            singleInboxGroupForNoProjectTasks: false,
-            enrichment: const EnrichmentPlanV2(
-              items: [EnrichmentPlanItemV2.allocationMembership()],
-            ),
-          ),
-          title: 'Today',
-        ),
+        ScreenModuleSpec.myDayRankedTasksV1(title: 'Today'),
       ],
     ),
   );
@@ -89,6 +75,7 @@ abstract class SystemScreenSpecs {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
+            layout: AgendaLayoutV2.dayCardsFeed,
             enrichment: EnrichmentPlanV2(
               items: [
                 EnrichmentPlanItemV2.agendaTags(
@@ -153,10 +140,10 @@ abstract class SystemScreenSpecs {
   static final values = ScreenSpec(
     id: 'values',
     screenKey: 'values',
-    name: 'Values',
+    name: 'My Values',
     template: const ScreenTemplateSpec.standardScaffoldV1(),
     chrome: const ScreenChrome(
-      fabOperations: [FabOperation.createValue],
+      appBarActions: [AppBarAction.createValue],
     ),
     modules: SlottedModules(
       primary: [
@@ -170,6 +157,7 @@ abstract class SystemScreenSpecs {
             ),
           ),
         ),
+        const ScreenModuleSpec.createValueCtaV1(),
       ],
     ),
   );

@@ -15,7 +15,7 @@ enum TaskViewVariant {
   /// Default list-row style used across most list templates.
   list,
 
-  /// Rounded card variant intended for the Scheduled agenda timeline.
+  /// Rounded card variant intended for the Scheduled agenda.
   agendaCard,
 }
 
@@ -30,39 +30,38 @@ class TaskView extends StatelessWidget {
     this.onTap,
     this.compact = false,
     this.isInFocus = false,
+    this.variant = TaskViewVariant.list,
     this.titlePrefix,
     this.trailing,
-    this.variant = TaskViewVariant.list,
+    this.accentColor,
     super.key,
   });
 
   final Task task;
-  final void Function(Task, bool?) onCheckboxChanged;
 
-  /// Optional tap handler. If null, navigates to task detail via EntityNavigator.
-  final void Function(Task)? onTap;
+  /// Callback invoked when the completion checkbox is toggled.
+  final void Function(Task task, bool? value) onCheckboxChanged;
+
+  /// Optional tap handler. If null, navigates to task detail.
+  final void Function(Task task)? onTap;
 
   /// Whether to use a compact (2-row) layout.
   final bool compact;
 
-  /// Whether this task is currently in the user's focus list (My Day).
-  ///
-  /// Used by screens like Anytime and Scheduled to provide subtle focus cues.
+  /// Whether this task is considered in focus for the current screen.
   final bool isInFocus;
 
+  /// Visual variant.
+  final TaskViewVariant variant;
+
   /// Optional widget shown inline before the task title.
-  ///
-  /// Used by some list templates (e.g. Agenda) to display a tag pill like
-  /// START/DUE without overlaying the tile content.
   final Widget? titlePrefix;
 
-  /// Optional widget shown at the end of the title row.
-  ///
-  /// Intended for per-row actions in list templates (e.g., pin/unpin).
+  /// Optional trailing control.
   final Widget? trailing;
 
-  /// Visual variant used to align with the Scheduled agenda mock.
-  final TaskViewVariant variant;
+  /// Optional accent color used by [TaskViewVariant.agendaCard].
+  final Color? accentColor;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || task.completed) return false;
@@ -99,7 +98,7 @@ class TaskView extends StatelessWidget {
 
   Widget _buildListRow(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final scheme = theme.colorScheme;
 
     final effectivePrimaryValue = task.effectivePrimaryValue;
     final effectiveSecondaryValues = task.effectiveSecondaryValues;
@@ -108,31 +107,27 @@ class TaskView extends StatelessWidget {
     final isDueToday = _isDueToday(task.deadlineDate);
     final isDueSoon = _isDueSoon(task.deadlineDate);
 
-    return Material(
+    return Container(
       key: Key('task-${task.id}'),
-      color: Colors.transparent,
+      decoration: BoxDecoration(
+        color: task.completed
+            ? scheme.surfaceContainerLowest.withValues(alpha: 0.5)
+            : scheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: scheme.outlineVariant.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+      ),
       child: InkWell(
         onTap: () => onTap != null
             ? onTap!(task)
             : Routing.toEntity(context, EntityType.task, task.id),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: isInFocus
-                ? colorScheme.primary.withValues(alpha: 0.04)
-                : null,
-            border: Border(
-              left: isInFocus
-                  ? BorderSide(
-                      color: colorScheme.primary.withValues(alpha: 0.65),
-                      width: 3,
-                    )
-                  : BorderSide.none,
-              bottom: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: compact ? 10 : 12,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,6 +147,7 @@ class TaskView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (titlePrefix != null) ...[
                           titlePrefix!,
@@ -161,15 +157,15 @@ class TaskView extends StatelessWidget {
                           child: Text(
                             task.name,
                             style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                               decoration: task.completed
                                   ? TextDecoration.lineThrough
                                   : null,
                               color: task.completed
-                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
-                                  : colorScheme.onSurface,
+                                  ? scheme.onSurface.withValues(alpha: 0.5)
+                                  : scheme.onSurface,
                             ),
-                            maxLines: 2,
+                            maxLines: compact ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -177,7 +173,7 @@ class TaskView extends StatelessWidget {
                           const SizedBox(width: 8),
                           trailing!,
                         ],
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 10),
                         _TaskTodayStatusMenuButton(
                           taskId: task.id,
                           isPinnedToMyDay: task.isPinned,
@@ -185,23 +181,6 @@ class TaskView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    // Explicitly removed subtitle/description logic to align with list view mockup
-                    /*
-                    if (!compact && subtitle != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isReasonSubtitle
-                              ? (reasonColor ?? colorScheme.onSurfaceVariant)
-                              : colorScheme.onSurfaceVariant,
-                          fontWeight: isReasonSubtitle ? FontWeight.w500 : null,
-                        ),
-                        maxLines: isReasonSubtitle ? 2 : 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    */
                     _MetaLine(
                       primaryValue: effectivePrimaryValue,
                       projectName: task.project?.name,
@@ -235,7 +214,7 @@ class TaskView extends StatelessWidget {
 
   Widget _buildAgendaCard(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final scheme = theme.colorScheme;
 
     final effectivePrimaryValue = task.effectivePrimaryValue;
     final effectiveSecondaryValues = task.effectiveSecondaryValues;
@@ -244,8 +223,9 @@ class TaskView extends StatelessWidget {
     final isDueToday = _isDueToday(task.deadlineDate);
     final isDueSoon = _isDueSoon(task.deadlineDate);
 
-    // Keep checkbox interaction (important affordance), but switch the container
-    // and hierarchy to a card style that matches the Scheduled mock better.
+    final effectiveAccent = accentColor ?? (isInFocus ? scheme.primary : null);
+    final outline = scheme.outlineVariant.withValues(alpha: 0.35);
+
     return Material(
       key: Key('task-${task.id}'),
       color: Colors.transparent,
@@ -260,30 +240,19 @@ class TaskView extends StatelessWidget {
           decoration: BoxDecoration(
             color: isInFocus
                 ? Color.alphaBlend(
-                    colorScheme.primary.withValues(alpha: 0.06),
-                    colorScheme.surfaceContainerLow,
+                    scheme.primary.withValues(alpha: 0.06),
+                    scheme.surfaceContainerLow,
                   )
-                : colorScheme.surfaceContainerLow,
+                : scheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
-            border: isInFocus
+            border: effectiveAccent != null
                 ? Border(
-                    left: BorderSide(
-                      color: colorScheme.primary.withValues(alpha: 0.55),
-                      width: 4,
-                    ),
-                    top: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    ),
-                    right: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    ),
-                    bottom: BorderSide(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                    ),
+                    left: BorderSide(color: effectiveAccent, width: 4),
+                    top: BorderSide(color: outline),
+                    right: BorderSide(color: outline),
+                    bottom: BorderSide(color: outline),
                   )
-                : Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-                  ),
+                : Border.all(color: outline),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,8 +287,8 @@ class TaskView extends StatelessWidget {
                                   ? TextDecoration.lineThrough
                                   : null,
                               color: task.completed
-                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
-                                  : colorScheme.onSurface,
+                                  ? scheme.onSurface.withValues(alpha: 0.5)
+                                  : scheme.onSurface,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -435,15 +404,31 @@ class _MetaLine extends StatelessWidget {
 
     if (secondaryValues.isNotEmpty) {
       final allNames = secondaryValues.map((v) => v.name).join(', ');
-      leftChildren.add(
-        Tooltip(
-          message: allNames,
-          child: _CountPill(
-            label: '+${secondaryValues.length}',
-            onTap: onTapValues,
+      if (secondaryValues.length <= 2) {
+        leftChildren.addAll(
+          secondaryValues.map(
+            (v) => Tooltip(
+              message: v.name,
+              child: ValueChip(
+                value: v,
+                variant: ValueChipVariant.outlined,
+                iconOnly: false,
+                onTap: onTapValues,
+              ),
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        leftChildren.add(
+          Tooltip(
+            message: allNames,
+            child: _CountPill(
+              label: '+${secondaryValues.length}',
+              onTap: onTapValues,
+            ),
+          ),
+        );
+      }
     }
 
     if (hasRepeat) {
@@ -481,6 +466,8 @@ class _MetaLine extends StatelessWidget {
                 },
         ),
       );
+    } else if (projectId == null || projectId!.isEmpty) {
+      leftChildren.add(const ProjectPill(projectName: 'Inbox'));
     }
 
     if (leftChildren.isEmpty && startDate == null && deadlineDate == null) {

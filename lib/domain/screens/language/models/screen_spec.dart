@@ -139,4 +139,13 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     required EntityHeaderSectionParams params,
     String? title,
   }) = ScreenModuleEntityHeader;
+
+  const factory ScreenModuleSpec.myDayRankedTasksV1({
+    String? title,
+  }) = ScreenModuleMyDayRankedTasksV1;
+
+  /// A lightweight CTA module shown on the Values screen.
+  const factory ScreenModuleSpec.createValueCtaV1({
+    String? title,
+  }) = ScreenModuleCreateValueCtaV1;
 }

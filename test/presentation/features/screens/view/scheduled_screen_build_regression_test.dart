@@ -4,6 +4,7 @@
 /// `UnifiedScreenPageFromSpec` without throwing during layout.
 library;
 
+import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
@@ -47,6 +48,7 @@ void main() {
             params: const AgendaSectionParamsV2(
               dateField: AgendaDateFieldV2.deadlineDate,
               pack: StylePackV2.standard,
+              layout: AgendaLayoutV2.dayCardsFeed,
             ),
           ),
         ],
@@ -69,19 +71,20 @@ void main() {
     testWidgetsSafe(
       'loads and lays out agenda section without throwing',
       (tester) async {
-        final now = DateTime(2026, 1, 15);
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
         final task = TestData.task(
           id: 'task-1',
           name: 'Task with deadline',
           now: now,
-          deadlineDate: now.add(const Duration(days: 1)),
+          deadlineDate: today.add(const Duration(days: 1)),
         );
 
         final agendaData = AgendaData(
-          focusDate: now,
+          focusDate: today,
           groups: [
             AgendaDateGroup(
-              date: now,
+              date: today,
               semanticLabel: 'Today',
               formattedHeader: 'Today',
               items: [
@@ -102,6 +105,7 @@ void main() {
           params: const AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
+            layout: AgendaLayoutV2.dayCardsFeed,
           ),
           data: SectionDataResult.agenda(agendaData: agendaData),
         );
@@ -128,6 +132,19 @@ void main() {
         // If the scheduled agenda layout regresses, Flutter will report a
         // framework exception (often unbounded height/flex constraints).
         expect(tester.takeException(), isNull);
+
+        // Day-cards feed header shows the current preset label.
+        expect(find.text('This month'), findsOneWidget);
+
+        // Opening the range picker sheet should show a "Range" title.
+        await tester.tap(find.text('This month'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(find.text('Range'), findsOneWidget);
+
+        // Day card header must include an absolute date string.
+        final absolute = DateFormat('EEE, MMM d').format(today);
+        expect(find.text(absolute), findsWidgets);
 
         expect(find.text('Scheduled'), findsOneWidget);
       },

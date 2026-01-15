@@ -240,7 +240,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
     final countText = Text(parts.join(' • '), style: labelStyle);
 
-    if (!_isMyDayAllocation) {
+    if (!_isAllocationSnapshotTasksToday) {
       return Padding(
         padding: const EdgeInsets.only(top: 6),
         child: countText,
@@ -327,14 +327,14 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     return parts.join(' • ');
   }
 
-  bool get _isMyDayAllocation {
+  bool get _isAllocationSnapshotTasksToday {
     return widget.params.sources.any(
       (c) => c is AllocationSnapshotTasksTodayDataConfig,
     );
   }
 
   Widget? _buildTodayDateLine(BuildContext context) {
-    if (!_isMyDayAllocation) return null;
+    if (!_isAllocationSnapshotTasksToday) return null;
 
     final scheme = Theme.of(context).colorScheme;
     final label = MaterialLocalizations.of(context).formatFullDate(
@@ -360,9 +360,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     required List<Value> availableValues,
     required List<ScreenItem> filteredItems,
   }) {
-    // My Day already has an app-level scaffold header; suppress the section
-    // header block (Today/date/status/collapse) for the allocation list.
-    final suppressHeaderBlock = _isMyDayAllocation;
+    // Some screens provide their own header; suppress the section header block
+    // (Today/date/status/collapse) for allocation-snapshot lists.
+    final suppressHeaderBlock = _isAllocationSnapshotTasksToday;
     final showProjectsOnlyToggle = filters?.enableProjectsOnlyToggle ?? false;
     final showValueDropdown = filters?.enableValueDropdown ?? false;
     final showFocusOnlyToggle = filters?.enableFocusOnlyToggle ?? false;
@@ -869,8 +869,10 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                   for (final t in tasks) t.task.id: inferredValueId,
                 });
 
-    // Only My Day uses allocation rank as a global ordering policy.
-    if (_isMyDayAllocation && rankByTaskId != null && rankByTaskId.isNotEmpty) {
+    // Allocation snapshots may use rank as a global ordering policy.
+    if (_isAllocationSnapshotTasksToday &&
+        rankByTaskId != null &&
+        rankByTaskId.isNotEmpty) {
       final originalIndexById = <String, int>{
         for (final (i, t) in tasks.indexed) t.task.id: i,
       };
@@ -1285,14 +1287,16 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final prefixParts = <Widget>[];
 
     final isInFocus =
-        !_isMyDayAllocation &&
+        !_isAllocationSnapshotTasksToday &&
         (widget.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
     if (isInFocus) {
       prefixParts.add(const _InFocusPill());
     }
 
     final rankByTaskId = widget.enrichment?.allocationRankByTaskId;
-    if (_isMyDayAllocation && rankByTaskId != null && rankByTaskId.isNotEmpty) {
+    if (_isAllocationSnapshotTasksToday &&
+        rankByTaskId != null &&
+        rankByTaskId.isNotEmpty) {
       final minRank = rankByTaskId.values.reduce(
         (a, b) => a < b ? a : b,
       );

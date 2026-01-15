@@ -41,7 +41,7 @@ sealed class SectionDataResult with _$SectionDataResult {
     EnrichmentResultV2? enrichment,
   }) = HierarchyValueProjectTaskV2SectionResult;
 
-  /// Agenda section result - timeline with tasks and projects grouped by date
+  /// Agenda section result - Scheduled agenda items grouped by date.
   const factory SectionDataResult.agenda({
     required AgendaData agendaData,
     EnrichmentResultV2? enrichment,

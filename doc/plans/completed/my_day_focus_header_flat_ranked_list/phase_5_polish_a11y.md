@@ -1,7 +1,7 @@
 # WIP Plan — Phase 5: Polish, accessibility, and guardrails
 
 Created at: 2026-01-15T05:09:10.4635911Z
-Last updated at: 2026-01-15T05:29:39.3878277Z
+Last updated at: 2026-01-15T06:30:00Z
 
 ## Purpose
 Ensure the new My Day experience is polished, mobile-first, and doesn’t regress other screens.
@@ -16,10 +16,13 @@ Ensure the new My Day experience is polished, mobile-first, and doesn’t regres
   - Ensure the list remains the primary visual focus.
 - Regression guardrails:
   - Confirm other screens using hierarchy/value grouping remain unchanged.
-  - If a shared renderer must be touched, ensure the behavior is gated by `screenKey == my_day`.
-  - Prefer keeping My Day-only widgets/private helpers inside `lib/presentation/screens/templates/screen_template_widget.dart` unless reuse becomes obvious.
+  - Prefer scoping My Day behavior by rendering a dedicated My Day `SectionVm` variant (rather than `screenKey == my_day` branching).
+  - Keep My Day-only widgets/private helpers in the My Day section renderer/widget unless reuse becomes obvious.
 - Documentation:
   - Add/update a small note in the relevant architecture/product doc if behavior changes are meaningful.
+
+## Notes (implemented)
+- Expansion behavior: implemented as **single-expanded (accordion)** for simplicity and to keep the ranked list scannable on mobile.
 
 ## Acceptance criteria
 - My Day reads clearly on a narrow viewport.

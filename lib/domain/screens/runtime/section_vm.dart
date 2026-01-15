@@ -98,6 +98,24 @@ sealed class SectionVm with _$SectionVm {
     String? error,
   }) = EntityHeaderSectionVm;
 
+  const factory SectionVm.myDayRankedTasksV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = MyDayRankedTasksV1SectionVm;
+
+  const factory SectionVm.createValueCtaV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = CreateValueCtaV1SectionVm;
+
   const factory SectionVm.unknown({
     required int index,
     required Object params,
@@ -120,6 +138,8 @@ sealed class SectionVm with _$SectionVm {
     attentionBannerV2: (_) => SectionTemplateId.attentionBannerV2,
     attentionInboxV1: (_) => SectionTemplateId.attentionInboxV1,
     entityHeader: (_) => SectionTemplateId.entityHeader,
+    myDayRankedTasksV1: (_) => SectionTemplateId.myDayRankedTasksV1,
+    createValueCtaV1: (_) => SectionTemplateId.createValueCtaV1,
     unknown: (_) => 'unknown',
   );
 }
