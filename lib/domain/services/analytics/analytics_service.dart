@@ -85,7 +85,10 @@ abstract class AnalyticsService {
   /// Returns map of valueId -> completion count.
   ///
   /// Tasks are counted based on their completion date, not creation date.
-  /// Only tasks that have a value label assigned are counted.
+  ///
+  /// Value attribution uses the task's effective values:
+  /// - Explicit task values when present
+  /// - Otherwise inherited project values (when present)
   Future<Map<String, int>> getRecentCompletionsByValue({required int days});
 
   /// Returns the total number of completions in the last [days] days.
@@ -99,11 +102,15 @@ abstract class AnalyticsService {
   ///
   /// Returns a map of valueId -> list of weekly completion percentages.
   /// Each inner list has [weeks] elements, oldest first.
+  ///
+  /// Value attribution uses the task's effective values.
   Future<Map<String, List<double>>> getValueWeeklyTrends({required int weeks});
 
   /// Returns active task and project counts per value.
   ///
   /// "Active" means incomplete tasks and projects.
+  ///
+  /// Task attribution uses effective values (task overrides project; else inherit).
   Future<Map<String, ValueActivityStats>> getValueActivityStats();
 }
 

@@ -200,6 +200,13 @@ class AnalyticsServiceImpl implements AnalyticsService {
     return allTasks;
   }
 
+  Iterable<Value> _effectiveValuesForTask(Task task) {
+    if (task.values.isNotEmpty) return task.values;
+    final inherited = task.project?.values;
+    if (inherited != null && inherited.isNotEmpty) return inherited;
+    return const <Value>[];
+  }
+
   @override
   Future<Map<String, int>> getRecentCompletionsByValue({
     required int days,
@@ -227,9 +234,12 @@ class AnalyticsServiceImpl implements AnalyticsService {
     // Count by value
     final counts = <String, int>{};
     for (final task in completedTasks) {
-      // Get values for this task
-      for (final value in task.values) {
-        counts[value.id] = (counts[value.id] ?? 0) + 1;
+      // Count effective values (task overrides project; else inherit).
+      final effectiveValueIds = _effectiveValuesForTask(
+        task,
+      ).map((v) => v.id).toSet();
+      for (final valueId in effectiveValueIds) {
+        counts[valueId] = (counts[valueId] ?? 0) + 1;
       }
     }
 
@@ -278,22 +288,29 @@ class AnalyticsServiceImpl implements AnalyticsService {
       );
       final completions = await _taskRepo.getAll(query);
 
-      // Count total completions this week
-      final totalThisWeek = completions.length;
-      if (totalThisWeek == 0) continue;
-
-      // Count per value and calculate percentage
+      // Count per value based on effective values.
+      // IMPORTANT: use a denominator consistent with multi-value tagging.
+      // Each completed task may contribute to multiple values.
       final valueCounts = <String, int>{};
+      var totalTaggedThisWeek = 0;
       for (final task in completions) {
-        for (final value in task.values) {
-          valueCounts[value.id] = (valueCounts[value.id] ?? 0) + 1;
+        final effectiveValueIds = _effectiveValuesForTask(
+          task,
+        ).map((v) => v.id).toSet();
+        if (effectiveValueIds.isEmpty) continue;
+        totalTaggedThisWeek += effectiveValueIds.length;
+        for (final valueId in effectiveValueIds) {
+          valueCounts[valueId] = (valueCounts[valueId] ?? 0) + 1;
         }
       }
+
+      if (totalTaggedThisWeek == 0) continue;
 
       for (final entry in valueCounts.entries) {
         final weekIndex = weeks - 1 - i;
         if (trends.containsKey(entry.key)) {
-          trends[entry.key]![weekIndex] = entry.value / totalThisWeek * 100;
+          trends[entry.key]![weekIndex] =
+              entry.value / totalTaggedThisWeek * 100;
         }
       }
     }
@@ -320,8 +337,11 @@ class AnalyticsServiceImpl implements AnalyticsService {
 
     final taskCounts = <String, int>{};
     for (final task in tasks) {
-      for (final value in task.values) {
-        taskCounts[value.id] = (taskCounts[value.id] ?? 0) + 1;
+      final effectiveValueIds = _effectiveValuesForTask(
+        task,
+      ).map((v) => v.id).toSet();
+      for (final valueId in effectiveValueIds) {
+        taskCounts[valueId] = (taskCounts[valueId] ?? 0) + 1;
       }
     }
 

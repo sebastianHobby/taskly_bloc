@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
@@ -20,9 +19,15 @@ import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
+enum InterleavedListRenderModeV2 {
+  flat,
+  hierarchyValueProjectTask,
+}
+
 class InterleavedListRendererV2 extends StatefulWidget {
   const InterleavedListRendererV2({
-    required this.data,
+    required this.items,
+    required this.enrichment,
     required this.params,
     super.key,
     this.title,
@@ -30,15 +35,23 @@ class InterleavedListRendererV2 extends StatefulWidget {
     this.onTaskToggle,
     this.onTaskPinnedChanged,
     this.persistenceKey,
+    this.renderMode = InterleavedListRenderModeV2.flat,
+    this.pinnedProjectHeaders = false,
+    this.singleInboxGroupForNoProjectTasks = false,
   });
 
-  final DataV2SectionResult data;
+  final List<ScreenItem> items;
+  final EnrichmentResultV2? enrichment;
   final InterleavedListSectionParamsV2 params;
   final String? title;
   final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
   final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
+
+  final InterleavedListRenderModeV2 renderMode;
+  final bool pinnedProjectHeaders;
+  final bool singleInboxGroupForNoProjectTasks;
 
   @override
   State<InterleavedListRendererV2> createState() =>
@@ -542,7 +555,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   @override
   Widget build(BuildContext context) {
     const registry = ScreenItemTileRegistry();
-    final items = widget.data.items;
+    final items = widget.items;
 
     final filters = widget.params.filters;
     final showValueDropdown = filters?.enableValueDropdown ?? false;
@@ -625,43 +638,34 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       );
     }
 
-    return widget.params.layout.when(
-      flatList: (separator) {
-        return SliverMainAxisGroup(
-          slivers: [
-            ...headerSlivers,
-            SliverSeparatedList(
-              itemCount: filteredItems.length,
-              separatorBuilder: (context, index) => _separatorFor(
-                separator: separator,
-                current: filteredItems[index],
-                next: filteredItems[index + 1],
-              ),
-              itemBuilder: (context, index) => _buildItem(
-                context,
-                registry: registry,
-                item: filteredItems[index],
-              ),
+    return switch (widget.renderMode) {
+      InterleavedListRenderModeV2.flat => SliverMainAxisGroup(
+        slivers: [
+          ...headerSlivers,
+          SliverSeparatedList(
+            itemCount: filteredItems.length,
+            separatorBuilder: (context, index) => _separatorFor(
+              separator: widget.params.separator,
+              current: filteredItems[index],
+              next: filteredItems[index + 1],
             ),
-          ],
-        );
-      },
-      hierarchyValueProjectTask:
-          (
-            _,
-            pinnedProjectHeaders,
-            singleInboxGroupForNoProjectTasks,
-          ) {
-            return _buildHierarchy(
+            itemBuilder: (context, index) => _buildItem(
+              context,
               registry: registry,
-              headerSlivers: headerSlivers,
-              pinnedProjectHeaders: pinnedProjectHeaders,
-              singleInboxGroupForNoProjectTasks:
-                  singleInboxGroupForNoProjectTasks,
-              items: filteredItems,
-            );
-          },
-    );
+              item: filteredItems[index],
+            ),
+          ),
+        ],
+      ),
+      InterleavedListRenderModeV2.hierarchyValueProjectTask => _buildHierarchy(
+        registry: registry,
+        headerSlivers: headerSlivers,
+        pinnedProjectHeaders: widget.pinnedProjectHeaders,
+        singleInboxGroupForNoProjectTasks:
+            widget.singleInboxGroupForNoProjectTasks,
+        items: filteredItems,
+      ),
+    };
   }
 
   List<Value> _collectAvailableValues(List<ScreenItem> items) {
@@ -712,8 +716,8 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     bool? includeFutureStartsOverride,
   }) {
     final qualifyingValueIdByTaskId =
-        widget.data.enrichment?.qualifyingValueIdByTaskId;
-    final isAllocatedByTaskId = widget.data.enrichment?.isAllocatedByTaskId;
+        widget.enrichment?.qualifyingValueIdByTaskId;
+    final isAllocatedByTaskId = widget.enrichment?.isAllocatedByTaskId;
 
     final focusOnlyEnabled =
         showFocusOnlyToggle && (focusOnlyOverride ?? _focusOnly);
@@ -815,12 +819,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   }) {
     final isInFocus =
         item is ScreenItemTask &&
-        (widget.data.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
+        (widget.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
     final prefix =
         titlePrefix ??
         (item is ScreenItemTask ? _titlePrefixForTask(item) : null);
     final valueStats = item is ScreenItemValue
-        ? widget.data.enrichment?.valueStatsByValueId[item.value.id]
+        ? widget.enrichment?.valueStatsByValueId[item.value.id]
         : null;
 
     final base = registry.build(
@@ -851,9 +855,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     );
     final tasks = items.whereType<ScreenItemTask>().toList();
 
-    final rankByTaskId = widget.data.enrichment?.allocationRankByTaskId;
+    final rankByTaskId = widget.enrichment?.allocationRankByTaskId;
     final qualifyingValueIdByTaskIdFromEnrichment =
-        widget.data.enrichment?.qualifyingValueIdByTaskId;
+        widget.enrichment?.qualifyingValueIdByTaskId;
     final inferredValueId = _inferSingleValueIdFromForValueSources();
     final qualifyingValueIdByTaskId =
         (qualifyingValueIdByTaskIdFromEnrichment != null &&
@@ -1032,7 +1036,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
         // Sort focus tasks to the top within each project, preserving
         // existing ordering within each partition.
-        final isAllocatedByTaskId = widget.data.enrichment?.isAllocatedByTaskId;
+        final isAllocatedByTaskId = widget.enrichment?.isAllocatedByTaskId;
         final projectTasks =
             (isAllocatedByTaskId == null ||
                 isAllocatedByTaskId.isEmpty ||
@@ -1282,12 +1286,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
     final isInFocus =
         !_isMyDayAllocation &&
-        (widget.data.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
+        (widget.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
     if (isInFocus) {
       prefixParts.add(const _InFocusPill());
     }
 
-    final rankByTaskId = widget.data.enrichment?.allocationRankByTaskId;
+    final rankByTaskId = widget.enrichment?.allocationRankByTaskId;
     if (_isMyDayAllocation && rankByTaskId != null && rankByTaskId.isNotEmpty) {
       final minRank = rankByTaskId.values.reduce(
         (a, b) => a < b ? a : b,
@@ -1302,7 +1306,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
     );
     if (!showAgendaTagPills) return null;
-    final tag = widget.data.enrichment?.agendaTagByTaskId[item.task.id];
+    final tag = widget.enrichment?.agendaTagByTaskId[item.task.id];
     if (tag == null) return null;
 
     final label = switch (tag) {

@@ -43,9 +43,7 @@ abstract class EntityDetailScreenSpecs {
                 query: TaskQuery.forProject(projectId: project.id),
               ),
               pack: pack,
-              layout: const SectionLayoutSpecV2.flatList(
-                separator: ListSeparatorV2.divider,
-              ),
+              separator: ListSeparatorV2.divider,
             ),
           ),
         ],

@@ -65,6 +65,7 @@ import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.
 import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
@@ -436,10 +437,8 @@ Future<void> setupDependencies() async {
       ),
       instanceName: SectionTemplateId.entityHeader,
     )
-    ..registerLazySingleton<ScreenSpecDataInterpreter>(
-      () => ScreenSpecDataInterpreter(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
+    ..registerLazySingleton<ScreenModuleInterpreterRegistry>(
+      () => DefaultScreenModuleInterpreterRegistry(
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.taskListV2,
         ),
@@ -466,6 +465,13 @@ Future<void> setupDependencies() async {
         entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,
         ),
+      ),
+    )
+    ..registerLazySingleton<ScreenSpecDataInterpreter>(
+      () => ScreenSpecDataInterpreter(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        moduleInterpreterRegistry: getIt<ScreenModuleInterpreterRegistry>(),
       ),
     )
     // Notifications (server-enqueued + PowerSync synced)

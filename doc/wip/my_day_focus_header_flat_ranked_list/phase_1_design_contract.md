@@ -62,6 +62,8 @@ Definition of “tasks-only list” for this project:
 - Still show the task’s project name as secondary metadata where available.
 
 ## AI instructions
+DO NOT IMPLEMENT THE PLAN WITHOUT USER CONFIRMING THEY KNOW PLAN IS NOT IN LINE WITH CURRENT ARCHITECTURE.
+
 - Review `doc/architecture/` before implementing this phase.
 - Run `flutter analyze` for this phase.
 - Fix any `flutter analyze` errors/warnings caused by this phase’s changes by the end of the phase.

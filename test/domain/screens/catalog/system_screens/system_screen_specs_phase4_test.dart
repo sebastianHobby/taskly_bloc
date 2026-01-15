@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
@@ -16,6 +17,15 @@ void main() {
     test('Routing.buildScreen uses typed specs for system screens', () {
       final widget = Routing.buildScreen('my_day');
       expect(widget, isA<UnifiedScreenPageFromSpec>());
+    });
+
+    test('Anytime screen uses hierarchy module directly', () {
+      final primaryModules = SystemScreenSpecs.someday.modules.primary;
+      expect(primaryModules, hasLength(1));
+      expect(
+        primaryModules.single,
+        isA<ScreenModuleHierarchyValueProjectTaskV2>(),
+      );
     });
   });
 }

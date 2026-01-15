@@ -31,6 +31,16 @@ sealed class SectionDataResult with _$SectionDataResult {
     EnrichmentResultV2? enrichment,
   }) = DataV2SectionResult;
 
+  /// V2 hierarchy section result - value -> project -> task grouping.
+  ///
+  /// This carries the same raw item list as other V2 list sections, but is a
+  /// distinct result type so presentation can route to the hierarchy renderer
+  /// without relying on a layout union.
+  const factory SectionDataResult.hierarchyValueProjectTaskV2({
+    required List<ScreenItem> items,
+    EnrichmentResultV2? enrichment,
+  }) = HierarchyValueProjectTaskV2SectionResult;
+
   /// Agenda section result - timeline with tasks and projects grouped by date
   const factory SectionDataResult.agenda({
     required AgendaData agendaData,
@@ -89,6 +99,12 @@ sealed class SectionDataResult with _$SectionDataResult {
           .map((i) => i.task)
           .whereType<Task>()
           .toList(),
+    HierarchyValueProjectTaskV2SectionResult(:final items) =>
+      items
+          .whereType<ScreenItemTask>()
+          .map((i) => i.task)
+          .whereType<Task>()
+          .toList(),
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups
           .expand((g) => g.items)
@@ -113,6 +129,12 @@ sealed class SectionDataResult with _$SectionDataResult {
           .map((i) => i.project)
           .whereType<Project>()
           .toList(),
+    HierarchyValueProjectTaskV2SectionResult(:final items) =>
+      items
+          .whereType<ScreenItemProject>()
+          .map((i) => i.project)
+          .whereType<Project>()
+          .toList(),
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups
           .expand((g) => g.items)
@@ -130,6 +152,8 @@ sealed class SectionDataResult with _$SectionDataResult {
       items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
     DataV2SectionResult(:final items) =>
       items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
+    HierarchyValueProjectTaskV2SectionResult(:final items) =>
+      items.whereType<ScreenItemValue>().map((i) => i.value).toList(),
     EntityHeaderValueSectionResult(:final value) => [value],
     _ => [],
   };
@@ -138,6 +162,7 @@ sealed class SectionDataResult with _$SectionDataResult {
   int get primaryCount => switch (this) {
     DataSectionResult(:final items) => items.length,
     DataV2SectionResult(:final items) => items.length,
+    HierarchyValueProjectTaskV2SectionResult(:final items) => items.length,
     AgendaSectionResult(:final agendaData) =>
       agendaData.groups.fold(0, (sum, g) => sum + g.items.length) +
           agendaData.overdueItems.length,

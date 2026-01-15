@@ -16,8 +16,13 @@ Taskly renders screens through a single, typed, declarative model:
 - **`ScreenModuleSpec`**: typed modules placed into slots (`header`, `primary`).
 - **`ScreenSpecDataInterpreter`**: interprets a `ScreenSpec` into reactive
   **`ScreenSpecData`** by routing module params to typed interpreters.
+- **`ScreenModuleInterpreterRegistry`**: centralizes module → interpreter
+  mapping and ensures interpreter failures are localized to section-level
+  error VMs.
 - **`UnifiedScreenPageFromSpec` → `ScreenSpecBloc` → `ScreenTemplateWidget`**:
   builds UI from interpreted `ScreenSpecData`.
+- **`ScreenActionsBloc`**: executes mutations triggered by templates/sections
+  so widgets do not call domain services directly.
 
 Presentation boundary (normative): widgets/pages do not call repositories or
 domain/data services directly and do not subscribe to non-UI streams directly.
@@ -59,6 +64,7 @@ The supported entity route types are `task`, `project`, and `value`.
 ### Domain pipeline (spec -> data)
 - Typed interpreters + spec interpreter (`ScreenSpecData`, `SectionVm`)
   - [lib/domain/screens/runtime/screen_spec_data_interpreter.dart](../../lib/domain/screens/runtime/screen_spec_data_interpreter.dart)
+  - [lib/domain/screens/runtime/screen_module_interpreter_registry.dart](../../lib/domain/screens/runtime/screen_module_interpreter_registry.dart)
   - [lib/domain/screens/runtime/](../../lib/domain/screens/runtime/)
   - [lib/domain/screens/templates/interpreters/](../../lib/domain/screens/templates/interpreters/)
 
@@ -74,8 +80,11 @@ The supported entity route types are `task`, `project`, and `value`.
 - Unified screen view (typed) + templates + renderers
   - [lib/presentation/screens/view/unified_screen_spec_page.dart](../../lib/presentation/screens/view/unified_screen_spec_page.dart)
   - [lib/presentation/screens/templates/screen_template_widget.dart](../../lib/presentation/screens/templates/screen_template_widget.dart)
+- Mutations/actions boundary
+  - [lib/presentation/screens/bloc/screen_actions_bloc.dart](../../lib/presentation/screens/bloc/screen_actions_bloc.dart)
 - Per-section rendering switchboard
   - [lib/presentation/widgets/section_widget.dart](../../lib/presentation/widgets/section_widget.dart)
+  - [lib/presentation/screens/templates/renderers/section_renderer_registry.dart](../../lib/presentation/screens/templates/renderers/section_renderer_registry.dart)
 
 ### Routing
 - Single place for conventions and screen construction
@@ -110,6 +119,7 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 |    -> ScreenTemplateWidget   |
 |       -> StandardScaffoldV1  |
 |          -> SectionWidget(s) |
+|             -> SectionRendererRegistry |
 +--------------+---------------+
                |
                v
@@ -150,15 +160,17 @@ Plain-text sequence (portable Markdown):
    - evaluates optional screen gate criteria
    - if gate is active: emits ScreenSpecData with gate template and no sections
    - otherwise interprets modules:
-     a) for each slotted module, routes typed params to a typed interpreter
-     b) wraps interpreter output into SectionVm (with a SectionTemplateId)
-     c) combines streams into one ScreenSpecData
+     a) for each slotted module, routes typed params via ScreenModuleInterpreterRegistry
+     b) wraps interpreter output into a typed SectionVm variant (params are strongly typed)
+     c) interpreter failures yield section-level error VMs (screen stays alive)
+     d) combines streams into one ScreenSpecData
 8) ScreenSpecBloc converts domain/runtime outputs into widget-friendly state
   (and owns any stream subscriptions).
 9) ScreenTemplateWidget renders ScreenSpecBloc state:
    - standardScaffoldV1: builds scaffold and renders header/primary sections
    - full-screen templates: render a dedicated feature page
-10) SectionWidget renders each SectionVm by section.templateId
+10) SectionWidget delegates rendering to SectionRendererRegistry and switches
+    on the SectionVm variant (no casting required)
 ```
 
 ### 3.3 Entity Routes (ED/RD) — Runtime Flow
@@ -493,12 +505,16 @@ See: [lib/domain/screens/language/models/data_config.dart](../../lib/domain/scre
 | `value` | `query: ValueQuery?` (optional) | When the section's primary entity is values; omit `query` to use defaults. |
 | `journal` | `query: JournalQuery?` (optional) | When fetching journal entries (not used by the current V2 list modules). |
 
-#### 6.6.2 `SectionLayoutSpecV2` and `EnrichmentPlanV2`
+#### 6.6.2 `ListSeparatorV2` and `EnrichmentPlanV2`
 
 Many V2 list-like sections use:
 
-- `SectionLayoutSpecV2` to control layout (list/timeline separators, pinning)
+- `ListSeparatorV2` to control separator/spacing behavior in list renderers
 - `EnrichmentPlanV2` to request computed metadata (e.g. value stats, agenda tags)
+
+Structural UI differences (for example, hierarchy vs flat list) are expressed
+via **module selection** (for example `hierarchyValueProjectTaskV2` vs
+`interleavedListV2`) rather than a layout-discriminator union.
 
 Enrichment is **opt-in** per section. A section that does not request an
 enrichment will not pay its compute cost and will not observe its behavior.
@@ -587,7 +603,7 @@ final screen = ScreenSpec(
         params: ListSectionParamsV2(
           config: DataConfig.task(query: TaskQuery.inbox()),
           pack: StylePackV2.standard,
-          layout: const SectionLayoutSpecV2.flatList(),
+          separator: ListSeparatorV2.divider,
         ),
       ),
     ],

@@ -1225,6 +1225,46 @@
             }
         }
     },
+    "valueNeedsAttentionBadgeLabel": "Needs attention",
+    "@valueNeedsAttentionBadgeLabel": {
+        "description": "Badge label shown on a value card when it is the most neglected value."
+    },
+    "valueNeedsAttentionSheetTitle": "Needs attention",
+    "@valueNeedsAttentionSheetTitle": {
+        "description": "Title for the value needs-attention explanation bottom sheet."
+    },
+    "valueNeedsAttentionSheetBody": "{valueName} is your most neglected value over the last {days} days. This compares where your completed tasks went (Actual) to your value priorities (Target).",
+    "@valueNeedsAttentionSheetBody": {
+        "description": "Explanation text for why a value is marked as needs attention.",
+        "placeholders": {
+            "valueName": {
+                "type": "String"
+            },
+            "days": {
+                "type": "int"
+            }
+        }
+    },
+    "valueNeedsAttentionSheetCounts": "Expected ~{expectedCount}, completed {actualCount}.",
+    "@valueNeedsAttentionSheetCounts": {
+        "description": "Summary line comparing expected vs actual recent completions.",
+        "placeholders": {
+            "expectedCount": {
+                "type": "int"
+            },
+            "actualCount": {
+                "type": "int"
+            }
+        }
+    },
+    "valueNeedsAttentionSheetOnlyOne": "Only your #1 most neglected value gets this badge.",
+    "@valueNeedsAttentionSheetOnlyOne": {
+        "description": "Explanation that only one value is badged at a time."
+    },
+    "pickSmallWinCta": "Pick a small win",
+    "@pickSmallWinCta": {
+        "description": "CTA button label that creates a new task aligned to the value."
+    },
     "unassignedWorkTitle": "Unassigned Work",
     "@unassignedWorkTitle": {
         "description": "Title for unassigned work section in values screen"

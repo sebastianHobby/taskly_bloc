@@ -59,7 +59,6 @@ void registerAllFallbackValues() {
       params: ListSectionParamsV2(
         config: DataConfig.task(query: TaskQuery.all()),
         pack: StylePackV2.standard,
-        layout: const SectionLayoutSpecV2.flatList(),
       ).toJson(),
       overrides: const SectionOverrides(title: 'Fallback Section'),
     ),
