@@ -37,7 +37,7 @@ class ValueForm extends StatefulWidget {
   final VoidCallback? onClose;
 
   static const _defaultColorHex = '#000000';
-  static const _defaultValueEmoji = '⭐';
+  static const maxNameLength = 50;
 
   @override
   State<ValueForm> createState() => _ValueFormState();
@@ -62,8 +62,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
       ),
       ValueFieldKeys.priority.id:
           widget.initialData?.priority ?? ValuePriority.medium,
-      ValueFieldKeys.iconName.id:
-          widget.initialData?.iconName ?? ValueForm._defaultValueEmoji,
     };
 
     const entityName = 'Value';
@@ -157,6 +155,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                   // Name field
                   FormBuilderTextField(
                     name: ValueFieldKeys.name.id,
+                    maxLength: ValueForm.maxNameLength,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -188,6 +187,11 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                     validator: FormBuilderValidators.compose([
                       FormBuilderValidators.required<String>(
                         errorText: 'Name is required',
+                      ),
+                      FormBuilderValidators.maxLength(
+                        ValueForm.maxNameLength,
+                        errorText:
+                            'Name must be ${ValueForm.maxNameLength} characters or fewer',
                       ),
                     ]),
                   ),
@@ -231,7 +235,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
                   const SizedBox(height: 12),
 
-                  // Color and Emoji pickers
+                  // Color picker
                   Row(
                     children: [
                       FormBuilderColorPickerModern(
@@ -240,15 +244,6 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                         compact: true,
                         validator: FormBuilderValidators.required<Color>(
                           errorText: 'Color is required',
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      FormBuilderEmojiPickerModern(
-                        name: ValueFieldKeys.iconName.id,
-                        showLabel: false,
-                        compact: true,
-                        validator: FormBuilderValidators.required<String>(
-                          errorText: 'Emoji is required',
                         ),
                       ),
                     ],

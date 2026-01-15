@@ -46,7 +46,7 @@ Constraints/decisions already agreed:
 
 ## Non-goals
 - Re-introducing custom screens.
-- Backward compatibility with legacy persisted screen definitions.
+- Backward compatibility with legacy persisted screen configuration.
 - Keeping old screen/template registries around “just in case”.
 
 ## Key deliverables

@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
+import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
+import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
@@ -23,6 +25,7 @@ class InterleavedListRendererV2 extends StatefulWidget {
     this.title,
     this.compactTiles = false,
     this.onTaskToggle,
+    this.persistenceKey,
   });
 
   final DataV2SectionResult data;
@@ -30,6 +33,7 @@ class InterleavedListRendererV2 extends StatefulWidget {
   final String? title;
   final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
+  final String? persistenceKey;
 
   @override
   State<InterleavedListRendererV2> createState() =>
@@ -37,12 +41,82 @@ class InterleavedListRendererV2 extends StatefulWidget {
 }
 
 class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
-  bool _projectsOnly = false;
+  String? _inferSingleValueIdFromForValueSources() {
+    final taskSources = widget.params.sources.whereType<TaskDataConfig>();
+    String? inferred;
+
+    for (final source in taskSources) {
+      String? sourceValueId;
+      for (final predicate in source.query.filter.shared) {
+        if (predicate is! TaskValuePredicate) continue;
+        if (predicate.operator != ValueOperator.hasAll) continue;
+        if (predicate.valueIds.length != 1) continue;
+        sourceValueId = predicate.valueIds.single;
+        break;
+      }
+
+      if (sourceValueId == null) return null;
+      if (inferred == null) {
+        inferred = sourceValueId;
+      } else if (inferred != sourceValueId) {
+        return null;
+      }
+    }
+
+    return inferred;
+  }
+
+  bool get _isValueDetailScreen {
+    return widget.persistenceKey?.startsWith('value_detail:') ?? false;
+  }
+
+  SectionEntityViewModeV2 _entityViewMode = SectionEntityViewModeV2.all;
   String? _selectedValueId;
+  bool _includeFutureStarts = true;
   final Set<String> _collapsedProjectIds = <String>{};
+
+  bool _restoredCollapsedState = false;
+
+  String? get _collapsedProjectsStorageKey {
+    final base = widget.persistenceKey;
+    if (base == null || base.isEmpty) return null;
+    return '$base:collapsedProjects';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_restoredCollapsedState) return;
+    final storageKey = _collapsedProjectsStorageKey;
+    if (storageKey == null) {
+      _restoredCollapsedState = true;
+      return;
+    }
+
+    final bucket = PageStorage.of(context);
+    final stored = bucket.readState(context, identifier: storageKey);
+    if (stored is List) {
+      _collapsedProjectIds
+        ..clear()
+        ..addAll(stored.whereType<String>());
+    }
+    _restoredCollapsedState = true;
+  }
 
   bool _isProjectCollapsed(String projectId) {
     return _collapsedProjectIds.contains(projectId);
+  }
+
+  void _persistCollapsedProjects() {
+    final storageKey = _collapsedProjectsStorageKey;
+    if (storageKey == null) return;
+
+    PageStorage.of(context).writeState(
+      context,
+      _collapsedProjectIds.toList(growable: false),
+      identifier: storageKey,
+    );
   }
 
   void _toggleProjectCollapsed(String projectId) {
@@ -50,7 +124,330 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       if (!_collapsedProjectIds.add(projectId)) {
         _collapsedProjectIds.remove(projectId);
       }
+
+      _persistCollapsedProjects();
     });
+  }
+
+  void _setProjectsCollapsed({
+    required Set<String> projectIds,
+    required bool collapsed,
+  }) {
+    if (projectIds.isEmpty) return;
+
+    setState(() {
+      if (collapsed) {
+        _collapsedProjectIds.addAll(projectIds);
+      } else {
+        _collapsedProjectIds.removeAll(projectIds);
+      }
+      _persistCollapsedProjects();
+    });
+  }
+
+  Set<String> _collectVisibleProjectIds(List<ScreenItem> items) {
+    final ids = <String>{};
+    for (final item in items) {
+      switch (item) {
+        case ScreenItemProject(:final project):
+          ids.add(project.id);
+        case ScreenItemTask(:final task):
+          final projectId = task.projectId;
+          if (projectId != null && projectId.isNotEmpty) {
+            ids.add(projectId);
+          }
+        default:
+          break;
+      }
+    }
+    return ids;
+  }
+
+  ({int taskCount, int projectCount}) _countsFor(List<ScreenItem> items) {
+    var taskCount = 0;
+    var projectCount = 0;
+    for (final item in items) {
+      switch (item) {
+        case ScreenItemTask():
+          taskCount++;
+        case ScreenItemProject():
+          projectCount++;
+        default:
+          break;
+      }
+    }
+    return (taskCount: taskCount, projectCount: projectCount);
+  }
+
+  String _plural(int count, String singular, String plural) {
+    return count == 1 ? singular : plural;
+  }
+
+  ({int doneCount, int totalCount}) _taskCompletionCountsFor(
+    List<ScreenItem> items,
+  ) {
+    var doneCount = 0;
+    var totalCount = 0;
+
+    for (final item in items) {
+      switch (item) {
+        case ScreenItemTask(:final task):
+          totalCount++;
+          if (task.completed) doneCount++;
+        default:
+          break;
+      }
+    }
+
+    return (doneCount: doneCount, totalCount: totalCount);
+  }
+
+  Widget? _buildStatusLine(BuildContext context, List<ScreenItem> items) {
+    final (:taskCount, :projectCount) = _countsFor(items);
+    if (taskCount == 0 && projectCount == 0) return null;
+
+    final parts = <String>[];
+    if (taskCount > 0) {
+      parts.add('$taskCount ${_plural(taskCount, 'task', 'tasks')}');
+    }
+    if (projectCount > 0) {
+      parts.add(
+        '$projectCount ${_plural(projectCount, 'project', 'projects')}',
+      );
+    }
+
+    final scheme = Theme.of(context).colorScheme;
+
+    final labelStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+      color: scheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+
+    final countText = Text(parts.join(' • '), style: labelStyle);
+
+    if (!_isMyDayAllocation) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: countText,
+      );
+    }
+
+    final visibleProjectIds = _collectVisibleProjectIds(items);
+    final showCollapseAll = visibleProjectIds.isNotEmpty;
+    final allCollapsed =
+        showCollapseAll &&
+        visibleProjectIds.every(_collapsedProjectIds.contains);
+
+    final progress = _taskCompletionCountsFor(items);
+    final showProgress = progress.totalCount > 0;
+    final fraction = showProgress
+        ? (progress.doneCount / progress.totalCount).clamp(0.0, 1.0)
+        : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: countText),
+              if (showCollapseAll)
+                TextButton.icon(
+                  onPressed: () => _setProjectsCollapsed(
+                    projectIds: visibleProjectIds,
+                    collapsed: !allCollapsed,
+                  ),
+                  icon: Icon(
+                    allCollapsed
+                        ? Icons.unfold_more_outlined
+                        : Icons.unfold_less_outlined,
+                    size: 18,
+                  ),
+                  label: Text(allCollapsed ? 'Expand all' : 'Collapse all'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: scheme.onSurfaceVariant,
+                    textStyle: Theme.of(context).textTheme.labelMedium,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+            ],
+          ),
+          if (showProgress) ...[
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: fraction,
+                minHeight: 6,
+                backgroundColor: scheme.surfaceContainerHighest,
+                color: scheme.primary.withOpacity(0.65),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  bool get _isMyDayAllocation {
+    return widget.params.sources.any(
+      (c) => c is AllocationSnapshotTasksTodayDataConfig,
+    );
+  }
+
+  Widget? _buildTodayDateLine(BuildContext context) {
+    if (!_isMyDayAllocation) return null;
+
+    final scheme = Theme.of(context).colorScheme;
+    final label = MaterialLocalizations.of(context).formatFullDate(
+      DateTime.now(),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: scheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildHeaderSlivers({
+    required BuildContext context,
+    required String? title,
+    required SectionFilterSpecV2? filters,
+    required List<Value> availableValues,
+    required List<ScreenItem> filteredItems,
+  }) {
+    // My Day already has an app-level scaffold header; suppress the section
+    // header block (Today/date/status/collapse) for the allocation list.
+    final suppressHeaderBlock = _isMyDayAllocation;
+    final showProjectsOnlyToggle = filters?.enableProjectsOnlyToggle ?? false;
+    final showValueDropdown = filters?.enableValueDropdown ?? false;
+    final showIncludeFutureStartsToggle =
+        filters?.enableIncludeFutureStartsToggle ?? false;
+    final showFilters =
+        showProjectsOnlyToggle ||
+        showValueDropdown ||
+        showIncludeFutureStartsToggle;
+
+    final statusLine = suppressHeaderBlock
+        ? null
+        : _buildStatusLine(context, filteredItems);
+    final todayLine = suppressHeaderBlock ? null : _buildTodayDateLine(context);
+    final effectiveTitle = suppressHeaderBlock ? null : title;
+
+    final titleBlock = (effectiveTitle == null && statusLine == null)
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (effectiveTitle != null) TasklyHeader(title: effectiveTitle),
+                ?todayLine,
+                ?statusLine,
+              ],
+            ),
+          );
+
+    if (!showFilters) {
+      return [if (titleBlock != null) SliverToBoxAdapter(child: titleBlock)];
+    }
+
+    final placement =
+        filters?.filterBarPlacement ?? FilterBarPlacementV2.inline;
+
+    if (placement == FilterBarPlacementV2.pinned) {
+      final reservePinnedSpace = filters?.reservePinnedSpace ?? false;
+      return [
+        if (titleBlock != null) SliverToBoxAdapter(child: titleBlock),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _PinnedFilterBarDelegate(
+            showEntityModePicker: showProjectsOnlyToggle,
+            showValuePicker: showValueDropdown,
+            values: availableValues,
+            entityViewMode: _entityViewMode,
+            selectedValueId: _selectedValueId,
+            onEntityViewModeChanged: (SectionEntityViewModeV2 v) =>
+                setState(() => _entityViewMode = v),
+            onSelectedValueChanged: (String? v) =>
+                setState(() => _selectedValueId = v),
+            showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+            includeFutureStarts: _includeFutureStarts,
+            onIncludeFutureStartsChanged: (bool v) =>
+                setState(() => _includeFutureStarts = v),
+            onClearFilters:
+                (_entityViewMode != SectionEntityViewModeV2.all ||
+                    _selectedValueId != null ||
+                    (showIncludeFutureStartsToggle && !_includeFutureStarts))
+                ? () => setState(() {
+                    _entityViewMode = SectionEntityViewModeV2.all;
+                    _selectedValueId = null;
+                    _includeFutureStarts = true;
+                  })
+                : null,
+            reservePinnedSpace: reservePinnedSpace,
+          ),
+        ),
+      ];
+    }
+
+    // Inline placement: render title + filters as a single header widget.
+    final inlineHeader = Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (effectiveTitle != null) TasklyHeader(title: effectiveTitle),
+          ?statusLine,
+          SectionFilterBarV2(
+            showEntityModePicker: showProjectsOnlyToggle,
+            entityViewMode: _entityViewMode,
+            onEntityViewModeChanged: (SectionEntityViewModeV2 v) =>
+                setState(() => _entityViewMode = v),
+            showValuePicker: showValueDropdown,
+            values: availableValues,
+            selectedValueId: _selectedValueId,
+            onSelectedValueChanged: (String? v) =>
+                setState(() => _selectedValueId = v),
+            showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+            includeFutureStarts: _includeFutureStarts,
+            onIncludeFutureStartsChanged: (bool v) =>
+                setState(() => _includeFutureStarts = v),
+            onClearFilters:
+                (_entityViewMode != SectionEntityViewModeV2.all ||
+                    _selectedValueId != null ||
+                    (showIncludeFutureStartsToggle && !_includeFutureStarts))
+                ? () => setState(() {
+                    _entityViewMode = SectionEntityViewModeV2.all;
+                    _selectedValueId = null;
+                    _includeFutureStarts = true;
+                  })
+                : null,
+            singleLine: false,
+          ),
+        ],
+      ),
+    );
+    return [SliverToBoxAdapter(child: inlineHeader)];
+  }
+
+  bool _isAfterTodayLocal(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final day = DateTime(date.year, date.month, date.day);
+    return day.isAfter(today);
   }
 
   @override
@@ -59,8 +456,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final items = widget.data.items;
 
     final filters = widget.params.filters;
-    final showProjectsOnlyToggle = filters?.enableProjectsOnlyToggle ?? false;
     final showValueDropdown = filters?.enableValueDropdown ?? false;
+    final showIncludeFutureStartsToggle =
+        filters?.enableIncludeFutureStartsToggle ?? false;
     final valueFilterMode =
         filters?.valueFilterMode ?? ValueFilterModeV2.anyValues;
 
@@ -68,60 +466,73 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         ? _collectAvailableValues(items)
         : const <Value>[];
 
-    final header = _buildHeader(
-      title: widget.title,
-      showProjectsOnlyToggle: showProjectsOnlyToggle,
-      showValueDropdown: showValueDropdown,
-      availableValues: availableValues,
-    );
-
     final filteredItems = _applyFiltersToItems(
       items: items,
       valueFilterMode: valueFilterMode,
       showValueDropdown: showValueDropdown,
+      showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+    );
+
+    final headerSlivers = _buildHeaderSlivers(
+      context: context,
+      title: widget.title,
+      filters: filters,
+      availableValues: availableValues,
+      filteredItems: filteredItems,
     );
 
     if (filteredItems.isEmpty) {
-      final hasActiveFilters = _projectsOnly || _selectedValueId != null;
+      final hasActiveFilters =
+          _entityViewMode != SectionEntityViewModeV2.all ||
+          _selectedValueId != null ||
+          (showIncludeFutureStartsToggle && !_includeFutureStarts);
       return _EmptyStateSliverGroup(
-        header: header,
+        headerSlivers: headerSlivers,
         hasActiveFilters: hasActiveFilters,
         onClearFilters: () => setState(() {
-          _projectsOnly = false;
+          _entityViewMode = SectionEntityViewModeV2.all;
           _selectedValueId = null;
+          _includeFutureStarts = true;
         }),
+        onAddTask: hasActiveFilters ? null : () => Routing.toTaskNew(context),
       );
     }
 
     return widget.params.layout.when(
       flatList: (separator) {
-        return SliverSeparatedList(
-          header: header,
-          itemCount: filteredItems.length,
-          separatorBuilder: (context, index) => _separatorFor(
-            separator: separator,
-            current: filteredItems[index],
-            next: filteredItems[index + 1],
-          ),
-          itemBuilder: (context, index) => _buildItem(
-            context,
-            registry: registry,
-            item: filteredItems[index],
-          ),
+        return SliverMainAxisGroup(
+          slivers: [
+            ...headerSlivers,
+            SliverSeparatedList(
+              itemCount: filteredItems.length,
+              separatorBuilder: (context, index) => _separatorFor(
+                separator: separator,
+                current: filteredItems[index],
+                next: filteredItems[index + 1],
+              ),
+              itemBuilder: (context, index) => _buildItem(
+                context,
+                registry: registry,
+                item: filteredItems[index],
+              ),
+            ),
+          ],
         );
       },
       timelineMonthSections: (_) {
-        // This renderer is interleaved (tasks/projects/values). Fall back to a
-        // simple flat list for timeline layouts.
-        return SliverSeparatedList(
-          header: header,
-          itemCount: filteredItems.length,
-          separatorBuilder: (_, __) => const Divider(height: 1),
-          itemBuilder: (context, index) => _buildItem(
-            context,
-            registry: registry,
-            item: filteredItems[index],
-          ),
+        return SliverMainAxisGroup(
+          slivers: [
+            ...headerSlivers,
+            SliverSeparatedList(
+              itemCount: filteredItems.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) => _buildItem(
+                context,
+                registry: registry,
+                item: filteredItems[index],
+              ),
+            ),
+          ],
         );
       },
       hierarchyValueProjectTask:
@@ -132,7 +543,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           ) {
             return _buildHierarchy(
               registry: registry,
-              header: header,
+              headerSlivers: headerSlivers,
               pinnedValueHeaders: pinnedValueHeaders,
               pinnedProjectHeaders: pinnedProjectHeaders,
               singleInboxGroupForNoProjectTasks:
@@ -140,44 +551,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
               items: filteredItems,
             );
           },
-    );
-  }
-
-  Widget? _buildHeader({
-    required String? title,
-    required bool showProjectsOnlyToggle,
-    required bool showValueDropdown,
-    required List<Value> availableValues,
-  }) {
-    if (title == null && !showProjectsOnlyToggle && !showValueDropdown) {
-      return null;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (title != null) TasklyHeader(title: title),
-          if (showProjectsOnlyToggle || showValueDropdown)
-            SectionFilterBarV2(
-              showProjectsOnlyToggle: showProjectsOnlyToggle,
-              projectsOnly: _projectsOnly,
-              onProjectsOnlyChanged: (v) => setState(() => _projectsOnly = v),
-              showValuePicker: showValueDropdown,
-              values: availableValues,
-              selectedValueId: _selectedValueId,
-              onSelectedValueChanged: (v) =>
-                  setState(() => _selectedValueId = v),
-              onClearFilters: (_projectsOnly || _selectedValueId != null)
-                  ? () => setState(() {
-                      _projectsOnly = false;
-                      _selectedValueId = null;
-                    })
-                  : null,
-            ),
-        ],
-      ),
     );
   }
 
@@ -223,13 +596,21 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     required List<ScreenItem> items,
     required ValueFilterModeV2 valueFilterMode,
     required bool showValueDropdown,
+    required bool showIncludeFutureStartsToggle,
   }) {
-    // Decision: when a specific Value is selected, the Inbox group disappears.
-    final hideNoProjectTasksForValue =
-        showValueDropdown && _selectedValueId != null;
+    final qualifyingValueIdByTaskId =
+        widget.data.enrichment?.qualifyingValueIdByTaskId;
 
     bool taskMatchesSelectedValue(ScreenItemTask item) {
       if (!showValueDropdown || _selectedValueId == null) return true;
+
+      // If the renderer is using a "qualifying" value (e.g. allocation/focus
+      // enrichment), keep filtering semantics consistent with the grouping.
+      final qualifying = qualifyingValueIdByTaskId?[item.task.id];
+      if (qualifying != null && qualifying.isNotEmpty) {
+        return qualifying == _selectedValueId;
+      }
+
       return switch (valueFilterMode) {
         ValueFilterModeV2.anyValues => item.task.effectiveValues.any(
           (v) => v.id == _selectedValueId,
@@ -244,15 +625,29 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       return item.project.values.any((v) => v.id == _selectedValueId);
     }
 
+    bool taskMatchesFutureStarts(ScreenItemTask item) {
+      if (!showIncludeFutureStartsToggle || _includeFutureStarts) return true;
+      final start = item.task.startDate;
+      return start == null || !_isAfterTodayLocal(start);
+    }
+
+    bool projectMatchesFutureStarts(ScreenItemProject item) {
+      if (!showIncludeFutureStartsToggle || _includeFutureStarts) return true;
+      final start = item.project.startDate;
+      return start == null || !_isAfterTodayLocal(start);
+    }
+
     return items
         .where((item) {
           return switch (item) {
             ScreenItemTask() =>
-              (!_projectsOnly || item.task.projectId != null) &&
-                  (!hideNoProjectTasksForValue ||
-                      item.task.projectId != null) &&
-                  taskMatchesSelectedValue(item),
-            ScreenItemProject() => projectMatchesSelectedValue(item),
+              _entityViewMode != SectionEntityViewModeV2.projects &&
+                  taskMatchesSelectedValue(item) &&
+                  taskMatchesFutureStarts(item),
+            ScreenItemProject() =>
+              _entityViewMode != SectionEntityViewModeV2.tasks &&
+                  projectMatchesSelectedValue(item) &&
+                  projectMatchesFutureStarts(item),
             ScreenItemValue() => true,
             _ => true,
           };
@@ -267,7 +662,11 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     Widget? titlePrefix,
     Widget? projectTrailing,
     bool showProjectTrailingProgressLabel = false,
+    ScreenItemGroupingContext? groupingContext,
   }) {
+    final isInFocus =
+        item is ScreenItemTask &&
+        (widget.data.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
     final prefix =
         titlePrefix ??
         (item is ScreenItemTask ? _titlePrefixForTask(item) : null);
@@ -278,23 +677,29 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     return registry.build(
       context,
       item: item,
+      isInFocus: isInFocus,
       onTaskToggle: widget.onTaskToggle,
       compactTiles: widget.compactTiles,
       valueStats: valueStats,
       titlePrefix: prefix,
       projectTrailing: projectTrailing,
       showProjectTrailingProgressLabel: showProjectTrailingProgressLabel,
+      groupingContext: groupingContext,
+      suppressValueChipsWhenValueImplied: _isValueDetailScreen,
     );
   }
 
   SliverMainAxisGroup _buildHierarchy({
     required ScreenItemTileRegistry registry,
-    required Widget? header,
+    required List<Widget> headerSlivers,
     required bool pinnedValueHeaders,
     required bool pinnedProjectHeaders,
     required bool singleInboxGroupForNoProjectTasks,
     required List<ScreenItem> items,
   }) {
+    // UX: value-group headers should not be sticky on grouped pages.
+    // Keep the parameter for API compatibility, but enforce inline headers.
+
     final values = items.whereType<ScreenItemValue>().toList(growable: false);
     final projects = items.whereType<ScreenItemProject>().toList(
       growable: false,
@@ -302,10 +707,21 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final tasks = items.whereType<ScreenItemTask>().toList();
 
     final rankByTaskId = widget.data.enrichment?.allocationRankByTaskId;
-    final qualifyingValueIdByTaskId =
+    final qualifyingValueIdByTaskIdFromEnrichment =
         widget.data.enrichment?.qualifyingValueIdByTaskId;
+    final inferredValueId = _inferSingleValueIdFromForValueSources();
+    final qualifyingValueIdByTaskId =
+        (qualifyingValueIdByTaskIdFromEnrichment != null &&
+            qualifyingValueIdByTaskIdFromEnrichment.isNotEmpty)
+        ? qualifyingValueIdByTaskIdFromEnrichment
+        : (inferredValueId == null
+              ? null
+              : <String, String>{
+                  for (final t in tasks) t.task.id: inferredValueId,
+                });
 
-    if (rankByTaskId != null && rankByTaskId.isNotEmpty) {
+    // Only My Day uses allocation rank as a global ordering policy.
+    if (_isMyDayAllocation && rankByTaskId != null && rankByTaskId.isNotEmpty) {
       final originalIndexById = <String, int>{
         for (final (i, t) in tasks.indexed) t.task.id: i,
       };
@@ -357,18 +773,20 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final tasksByValueId = <String, List<ScreenItemTask>>{};
     final tasksWithoutValue = <ScreenItemTask>[];
 
+    final forcedGroupValueId =
+        (widget.params.filters?.enableValueDropdown ?? false)
+        ? _selectedValueId
+        : null;
+
     bool isSomedayInboxTask(ScreenItemTask t) {
-      // Someday backlog semantics: "no dates" means start + deadline are null.
-      // This inbox group additionally requires no project.
-      return t.task.projectId == null &&
-          t.task.startDate == null &&
-          t.task.deadlineDate == null;
+      // Global Inbox semantics: no project.
+      return t.task.projectId == null;
     }
 
     final allowInboxGroup =
         singleInboxGroupForNoProjectTasks &&
         _selectedValueId == null &&
-        !_projectsOnly;
+        _entityViewMode != SectionEntityViewModeV2.projects;
     final inboxTasks = allowInboxGroup
         ? tasks.where(isSomedayInboxTask).toList(growable: false)
         : const <ScreenItemTask>[];
@@ -377,9 +795,11 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         continue;
       }
       final qualifyingOverride = qualifyingValueIdByTaskId?[t.task.id];
-      final valueIds = qualifyingOverride == null
-          ? t.task.effectiveValues.map((v) => v.id).toSet()
-          : <String>{qualifyingOverride};
+      final valueIds = forcedGroupValueId != null
+          ? <String>{forcedGroupValueId}
+          : (qualifyingOverride == null
+                ? t.task.effectiveValues.map((v) => v.id).toSet()
+                : <String>{qualifyingOverride});
       if (valueIds.isEmpty) {
         tasksWithoutValue.add(t);
         continue;
@@ -392,7 +812,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final projectsByValueId = <String, List<ScreenItemProject>>{};
     final projectsWithoutValue = <ScreenItemProject>[];
     for (final p in projects) {
-      final valueIds = p.project.values.map((v) => v.id).toSet();
+      final valueIds = forcedGroupValueId != null
+          ? <String>{forcedGroupValueId}
+          : p.project.values.map((v) => v.id).toSet();
       if (valueIds.isEmpty) {
         projectsWithoutValue.add(p);
         continue;
@@ -403,18 +825,16 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     }
 
     final slivers = <Widget>[];
-    if (header != null) {
-      slivers.add(SliverToBoxAdapter(child: header));
-    }
+    slivers.addAll(headerSlivers);
+
+    // Grouped hierarchy readability defaults.
+    // Applies to any screen using value->project grouping (e.g., My Day, Someday).
+    const projectBlockGap = 6.0;
+    const taskIndent = 16.0;
 
     if (inboxTasks.isNotEmpty) {
       slivers.add(
-        pinnedValueHeaders
-            ? SliverPersistentHeader(
-                pinned: true,
-                delegate: _PinnedHeaderDelegate(title: 'Inbox'),
-              )
-            : const SliverToBoxAdapter(child: _InlineHeader(title: 'Inbox')),
+        const SliverToBoxAdapter(child: _InlineHeader(title: 'Inbox')),
       );
       slivers.add(
         SliverSeparatedList(
@@ -443,20 +863,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           ? null
           : embeddedValueById[valueId]?.color;
       slivers.add(
-        pinnedValueHeaders
-            ? SliverPersistentHeader(
-                pinned: true,
-                delegate: _PinnedHeaderDelegate(
-                  title: title,
-                  dotColorHex: valueColorHex,
-                ),
-              )
-            : SliverToBoxAdapter(
-                child: _InlineHeader(
-                  title: title,
-                  dotColorHex: valueColorHex,
-                ),
-              ),
+        SliverToBoxAdapter(
+          child: _InlineHeader(
+            title: title,
+            dotColorHex: valueColorHex,
+          ),
+        ),
       );
 
       final projectsInGroupById = {
@@ -470,26 +882,61 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
       for (final projectId in projectsInGroupById.keys) {
         final projectItem = projectsInGroupById[projectId]!;
-        final projectTasks =
+        final rawProjectTasks =
             tasksByProjectId.remove(projectId) ?? const <ScreenItemTask>[];
+
+        // Sort focus tasks to the top within each project, preserving
+        // existing ordering within each partition.
+        final isAllocatedByTaskId = widget.data.enrichment?.isAllocatedByTaskId;
+        final projectTasks =
+            (isAllocatedByTaskId == null ||
+                isAllocatedByTaskId.isEmpty ||
+                rawProjectTasks.isEmpty)
+            ? rawProjectTasks
+            : (() {
+                final focused = <ScreenItemTask>[];
+                final other = <ScreenItemTask>[];
+                for (final t in rawProjectTasks) {
+                  final isFocus = isAllocatedByTaskId[t.task.id] ?? false;
+                  (isFocus ? focused : other).add(t);
+                }
+                return <ScreenItemTask>[...focused, ...other];
+              })();
 
         final collapsed = _isProjectCollapsed(projectId);
 
-        slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
+        slivers.add(
+          SliverToBoxAdapter(child: SizedBox(height: projectBlockGap)),
+        );
 
         slivers.add(
           SliverSeparatedList(
             itemCount: 1 + (collapsed ? 0 : projectTasks.length),
             separatorBuilder: (context, index) {
-              if (index == 0) return const SizedBox(height: 8);
+              if (index == 0) return SizedBox(height: projectBlockGap);
               return const Divider(height: 1);
             },
             itemBuilder: (context, index) {
               if (index == 0) {
+                if (_entityViewMode == SectionEntityViewModeV2.tasks) {
+                  return _FallbackProjectHeaderRow(
+                    title: projectItem.project.name,
+                    count: projectTasks.length,
+                    collapsed: collapsed,
+                    onToggle: () => _toggleProjectCollapsed(projectId),
+                    onOpen: () => Routing.toEntity(
+                      context,
+                      EntityType.project,
+                      projectId,
+                    ),
+                  );
+                }
+
                 return _buildItem(
                   context,
                   registry: registry,
                   item: projectItem,
+                  groupingContext: ScreenItemGroupingContext(valueId: valueId),
                   projectTrailing: _CollapseChevron(
                     collapsed: collapsed,
                     onPressed: () => _toggleProjectCollapsed(projectId),
@@ -497,10 +944,19 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                   showProjectTrailingProgressLabel: true,
                 );
               }
-              return _buildItem(
+              final tile = _buildItem(
                 context,
                 registry: registry,
                 item: projectTasks[index - 1],
+                groupingContext: ScreenItemGroupingContext(
+                  valueId: valueId,
+                  projectId: projectId,
+                ),
+              );
+              if (taskIndent <= 0) return tile;
+              return Padding(
+                padding: EdgeInsets.only(left: taskIndent),
+                child: tile,
               );
             },
           ),
@@ -528,6 +984,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
               context,
               registry: registry,
               item: tasksNoProject[index],
+              groupingContext: ScreenItemGroupingContext(valueId: valueId),
             ),
           ),
         );
@@ -553,12 +1010,17 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                       .firstWhere((_) => true, orElse: () => null) ??
                   'Unknown project');
 
-        // Match My Day spacing: small gap before each project block.
-        slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
+        // Small gap before each project block.
+        slivers.add(
+          SliverToBoxAdapter(child: SizedBox(height: projectBlockGap)),
+        );
 
         // If we can render a project tile, that becomes the header.
         // If not, render a folder row with count (still navigable by id).
-        if (project == null && pinnedProjectHeaders) {
+        // In Tasks-only mode, always render the folder header row.
+        if ((_entityViewMode == SectionEntityViewModeV2.tasks ||
+                project == null) &&
+            pinnedProjectHeaders) {
           // Preserve pinned text-header behavior for other screens.
           slivers.add(
             SliverPersistentHeader(
@@ -581,11 +1043,21 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
               SliverSeparatedList(
                 itemCount: projectTasks.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) => _buildItem(
-                  context,
-                  registry: registry,
-                  item: projectTasks[index],
-                ),
+                itemBuilder: (context, index) {
+                  final tile = _buildItem(
+                    context,
+                    registry: registry,
+                    item: projectTasks[index],
+                    groupingContext: ScreenItemGroupingContext(
+                      valueId: valueId,
+                      projectId: orphanProjectId,
+                    ),
+                  );
+                  return Padding(
+                    padding: const EdgeInsets.only(left: taskIndent),
+                    child: tile,
+                  );
+                },
               ),
             );
           }
@@ -596,16 +1068,20 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           SliverSeparatedList(
             itemCount: 1 + (collapsed ? 0 : projectTasks.length),
             separatorBuilder: (context, index) {
-              if (index == 0) return const SizedBox(height: 8);
+              if (index == 0) return SizedBox(height: projectBlockGap);
               return const Divider(height: 1);
             },
             itemBuilder: (context, index) {
               if (index == 0) {
-                if (project != null) {
+                if (project != null &&
+                    _entityViewMode != SectionEntityViewModeV2.tasks) {
                   return _buildItem(
                     context,
                     registry: registry,
                     item: ScreenItem.project(project),
+                    groupingContext: ScreenItemGroupingContext(
+                      valueId: valueId,
+                    ),
                     projectTrailing: _CollapseChevron(
                       collapsed: collapsed,
                       onPressed: () => _toggleProjectCollapsed(orphanProjectId),
@@ -627,10 +1103,19 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                 );
               }
 
-              return _buildItem(
+              final tile = _buildItem(
                 context,
                 registry: registry,
                 item: projectTasks[index - 1],
+                groupingContext: ScreenItemGroupingContext(
+                  valueId: valueId,
+                  projectId: orphanProjectId,
+                ),
+              );
+              if (taskIndent <= 0) return tile;
+              return Padding(
+                padding: EdgeInsets.only(left: taskIndent),
+                child: tile,
               );
             },
           ),
@@ -665,6 +1150,26 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   }
 
   Widget? _titlePrefixForTask(ScreenItemTask item) {
+    final prefixParts = <Widget>[];
+
+    final isInFocus =
+        !_isMyDayAllocation &&
+        (widget.data.enrichment?.isAllocatedByTaskId[item.task.id] ?? false);
+    if (isInFocus) {
+      prefixParts.add(const _InFocusPill());
+    }
+
+    final rankByTaskId = widget.data.enrichment?.allocationRankByTaskId;
+    if (_isMyDayAllocation && rankByTaskId != null && rankByTaskId.isNotEmpty) {
+      final minRank = rankByTaskId.values.reduce(
+        (a, b) => a < b ? a : b,
+      );
+      final rank = rankByTaskId[item.task.id];
+      if (rank != null && rank == minRank) {
+        prefixParts.add(const _UpNextPill());
+      }
+    }
+
     final showAgendaTagPills = widget.params.enrichment.items.any(
       (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
     );
@@ -678,7 +1183,82 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       AgendaTagV2.inProgress => 'In progress',
     };
 
-    return _TagPill(label: label);
+    prefixParts.add(_TagPill(label: label));
+
+    if (prefixParts.isEmpty) return null;
+    if (prefixParts.length == 1) return prefixParts.single;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final p in prefixParts) p,
+      ],
+    );
+  }
+}
+
+class _InFocusPill extends StatelessWidget {
+  const _InFocusPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: scheme.primary.withValues(alpha: 0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.center_focus_strong,
+            size: 14,
+            color: scheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            'In Focus',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UpNextPill extends StatelessWidget {
+  const _UpNextPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        'Up next',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: scheme.onPrimaryContainer,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
   }
 }
 
@@ -698,7 +1278,7 @@ class _CollapseChevron extends StatelessWidget {
     return IconButton(
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+      constraints: const BoxConstraints.tightFor(width: 40, height: 40),
       tooltip: collapsed ? 'Expand project' : 'Collapse project',
       onPressed: onPressed,
       icon: AnimatedRotation(
@@ -706,7 +1286,7 @@ class _CollapseChevron extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         child: Icon(
           Icons.expand_more,
-          size: 20,
+          size: 22,
           color: colorScheme.onSurfaceVariant,
         ),
       ),
@@ -798,14 +1378,16 @@ class _TagPill extends StatelessWidget {
 
 class _EmptyStateSliverGroup extends StatelessWidget {
   const _EmptyStateSliverGroup({
-    required this.header,
+    required this.headerSlivers,
     required this.hasActiveFilters,
     required this.onClearFilters,
+    required this.onAddTask,
   });
 
-  final Widget? header;
+  final List<Widget> headerSlivers;
   final bool hasActiveFilters;
   final VoidCallback onClearFilters;
+  final VoidCallback? onAddTask;
 
   @override
   Widget build(BuildContext context) {
@@ -821,7 +1403,7 @@ class _EmptyStateSliverGroup extends StatelessWidget {
 
     return SliverMainAxisGroup(
       slivers: [
-        if (header != null) SliverToBoxAdapter(child: header),
+        ...headerSlivers,
         SliverToBoxAdapter(
           child: Card(
             margin: EdgeInsets.zero,
@@ -862,6 +1444,17 @@ class _EmptyStateSliverGroup extends StatelessWidget {
                               onPressed: onClearFilters,
                               icon: const Icon(Icons.clear),
                               label: const Text('Clear filters'),
+                            ),
+                          ),
+                        ],
+                        if (!hasActiveFilters && onAddTask != null) ...[
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: FilledButton.icon(
+                              onPressed: onAddTask,
+                              icon: const Icon(Icons.add),
+                              label: const Text('Add task'),
                             ),
                           ),
                         ],
@@ -942,10 +1535,9 @@ class _InlineHeader extends StatelessWidget {
 }
 
 class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
-  _PinnedHeaderDelegate({required this.title, this.dotColorHex});
+  _PinnedHeaderDelegate({required this.title});
 
   final String title;
-  final String? dotColorHex;
 
   @override
   double get minExtent => 48;
@@ -960,51 +1552,99 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     final theme = Theme.of(context);
-    if (dotColorHex == null) {
-      return Container(
-        color: theme.scaffoldBackgroundColor,
-        padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
-        alignment: Alignment.bottomLeft,
-        child: Text(title, style: theme.textTheme.titleMedium),
-      );
-    }
-
-    final dotColor = ColorUtils.fromHexWithThemeFallback(context, dotColorHex);
-
     return Container(
       color: theme.scaffoldBackgroundColor,
       padding: const EdgeInsets.fromLTRB(0, 12, 0, 8),
       alignment: Alignment.bottomLeft,
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: dotColor,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.2,
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: Text(title, style: theme.textTheme.titleMedium),
     );
   }
 
   @override
   bool shouldRebuild(covariant _PinnedHeaderDelegate oldDelegate) {
     return oldDelegate.title != title;
+  }
+}
+
+class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
+  _PinnedFilterBarDelegate({
+    required this.showEntityModePicker,
+    required this.entityViewMode,
+    required this.onEntityViewModeChanged,
+    required this.showValuePicker,
+    required this.values,
+    required this.selectedValueId,
+    required this.onSelectedValueChanged,
+    required this.showIncludeFutureStartsToggle,
+    required this.includeFutureStarts,
+    required this.onIncludeFutureStartsChanged,
+    required this.reservePinnedSpace,
+    this.onClearFilters,
+  });
+
+  final bool showEntityModePicker;
+  final SectionEntityViewModeV2 entityViewMode;
+  final ValueChanged<SectionEntityViewModeV2> onEntityViewModeChanged;
+
+  final bool showValuePicker;
+  final List<Value> values;
+  final String? selectedValueId;
+  final ValueChanged<String?> onSelectedValueChanged;
+
+  final bool showIncludeFutureStartsToggle;
+  final bool includeFutureStarts;
+  final ValueChanged<bool> onIncludeFutureStartsChanged;
+
+  final VoidCallback? onClearFilters;
+  final bool reservePinnedSpace;
+
+  @override
+  double get minExtent => reservePinnedSpace ? 56 : 48;
+
+  @override
+  double get maxExtent => reservePinnedSpace ? 56 : 48;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: scheme.surface,
+      elevation: overlapsContent ? 1 : 0,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: reservePinnedSpace ? 8 : 0),
+        child: SectionFilterBarV2(
+          showEntityModePicker: showEntityModePicker,
+          entityViewMode: entityViewMode,
+          onEntityViewModeChanged: onEntityViewModeChanged,
+          showValuePicker: showValuePicker,
+          values: values,
+          selectedValueId: selectedValueId,
+          onSelectedValueChanged: onSelectedValueChanged,
+          showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+          includeFutureStarts: includeFutureStarts,
+          onIncludeFutureStartsChanged: onIncludeFutureStartsChanged,
+          onClearFilters: onClearFilters,
+          singleLine: true,
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _PinnedFilterBarDelegate oldDelegate) {
+    return oldDelegate.showEntityModePicker != showEntityModePicker ||
+        oldDelegate.entityViewMode != entityViewMode ||
+        oldDelegate.showValuePicker != showValuePicker ||
+        oldDelegate.showIncludeFutureStartsToggle !=
+            showIncludeFutureStartsToggle ||
+        oldDelegate.includeFutureStarts != includeFutureStarts ||
+        oldDelegate.selectedValueId != selectedValueId ||
+        oldDelegate.onClearFilters != onClearFilters;
   }
 }
 

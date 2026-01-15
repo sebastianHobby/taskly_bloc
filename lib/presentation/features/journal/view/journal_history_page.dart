@@ -1,51 +1,62 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 
 class JournalHistoryPage extends StatelessWidget {
   const JournalHistoryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final repo = getIt<JournalRepositoryContract>();
+    return BlocProvider<JournalHistoryBloc>(
+      create: (_) => getIt<JournalHistoryBloc>(),
+      child: BlocBuilder<JournalHistoryBloc, JournalHistoryState>(
+        builder: (context, state) {
+          return switch (state) {
+            JournalHistoryLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            JournalHistoryError() => const Center(
+              child: Text('Failed to load history.'),
+            ),
+            JournalHistoryLoaded(:final entries) => _HistoryList(entries),
+          };
+        },
+      ),
+    );
+  }
+}
 
-    return StreamBuilder<List<JournalEntry>>(
-      stream: repo.watchJournalEntriesByQuery(JournalQuery.recent(days: 30)),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Failed to load history.'));
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
+class _HistoryList extends StatelessWidget {
+  const _HistoryList(this.entries);
 
-        final entries = snapshot.data ?? const <JournalEntry>[];
-        if (entries.isEmpty) {
-          return const Center(child: Text('No recent logs.'));
-        }
+  final List<JournalEntry> entries;
 
-        final grouped = <DateTime, List<JournalEntry>>{};
-        for (final entry in entries) {
-          final day = dateOnly(entry.entryDate.toUtc());
-          (grouped[day] ??= <JournalEntry>[]).add(entry);
-        }
+  @override
+  Widget build(BuildContext context) {
+    if (entries.isEmpty) {
+      return const Center(child: Text('No recent logs.'));
+    }
 
-        final days = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    final grouped = <DateTime, List<JournalEntry>>{};
+    for (final entry in entries) {
+      final day = dateOnly(entry.entryDate.toUtc());
+      (grouped[day] ??= <JournalEntry>[]).add(entry);
+    }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: days.length,
-          itemBuilder: (context, index) {
-            final day = days[index];
-            final dayEntries = grouped[day] ?? const <JournalEntry>[];
+    final days = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
 
-            return _DaySection(day: day, entries: dayEntries);
-          },
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemCount: days.length,
+      itemBuilder: (context, index) {
+        final day = days[index];
+        final dayEntries = grouped[day] ?? const <JournalEntry>[];
+
+        return _DaySection(day: day, entries: dayEntries);
       },
     );
   }

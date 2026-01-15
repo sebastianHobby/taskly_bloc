@@ -19,6 +19,12 @@ Taskly renders screens through a single, typed, declarative model:
 - **`UnifiedScreenPageFromSpec` → `ScreenSpecBloc` → `ScreenTemplateWidget`**:
   builds UI from interpreted `ScreenSpecData`.
 
+Presentation boundary (normative): widgets/pages do not call repositories or
+domain/data services directly and do not subscribe to non-UI streams directly.
+All cross-layer interaction for unified screens happens inside `ScreenSpecBloc`
+(or other presentation BLoCs), which subscribes to domain-level
+streams and emits widget-friendly state.
+
 System screens are defined in code via `SystemScreenSpecs`. Screen ordering and
 visibility preferences are persisted separately.
 
@@ -62,7 +68,7 @@ The supported entity route types are `task`, `project`, and `value`.
 
 ### Persistence + maintenance
 - Screen preferences persistence (visibility + ordering)
-  - [lib/data/screens/repositories/screen_definitions_repository_impl.dart](../../lib/data/screens/repositories/screen_definitions_repository_impl.dart)
+  - [lib/data/screens/repositories/screen_catalog_repository_impl.dart](../../lib/data/screens/repositories/screen_catalog_repository_impl.dart)
 
 ### Presentation (UI + BLoCs)
 - Unified screen view (typed) + templates + renderers
@@ -147,10 +153,12 @@ Plain-text sequence (portable Markdown):
      a) for each slotted module, routes typed params to a typed interpreter
      b) wraps interpreter output into SectionVm (with a SectionTemplateId)
      c) combines streams into one ScreenSpecData
-8) ScreenTemplateWidget renders ScreenSpecData.template:
+8) ScreenSpecBloc converts domain/runtime outputs into widget-friendly state
+  (and owns any stream subscriptions).
+9) ScreenTemplateWidget renders ScreenSpecBloc state:
    - standardScaffoldV1: builds scaffold and renders header/primary sections
    - full-screen templates: render a dedicated feature page
-9) SectionWidget renders each SectionVm by section.templateId
+10) SectionWidget renders each SectionVm by section.templateId
 ```
 
 ### 3.3 Entity Routes (ED/RD) — Runtime Flow
@@ -292,7 +300,7 @@ See:
 
 Key entry points:
 - Repository (system screens + DB preferences):
-  [lib/data/screens/repositories/screen_definitions_repository_impl.dart](../../lib/data/screens/repositories/screen_definitions_repository_impl.dart)
+  [lib/data/screens/repositories/screen_catalog_repository_impl.dart](../../lib/data/screens/repositories/screen_catalog_repository_impl.dart)
 - Catalog (system screen specs):
   [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
 
@@ -492,6 +500,37 @@ Many V2 list-like sections use:
 
 - `SectionLayoutSpecV2` to control layout (list/timeline separators, pinning)
 - `EnrichmentPlanV2` to request computed metadata (e.g. value stats, agenda tags)
+
+Enrichment is **opt-in** per section. A section that does not request an
+enrichment will not pay its compute cost and will not observe its behavior.
+
+See:
+- [lib/domain/screens/templates/params/list_section_params_v2.dart](../../lib/domain/screens/templates/params/list_section_params_v2.dart)
+- [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
+
+Current enrichment items include:
+- Value stats (`EnrichmentPlanItemV2.valueStats`) and open task counts
+- Agenda tags (`EnrichmentPlanItemV2.agendaTags`) derived from a selected date field
+- Allocation snapshot membership (`EnrichmentPlanItemV2.allocationMembership`)
+
+##### Allocation snapshot membership enrichment
+
+`allocationMembership` exposes **global allocation state** derived from the
+latest allocation snapshot for the **current UTC day**.
+
+Intended use:
+- My Day requests it to render allocation-driven grouping and stable ordering.
+- Screens like Someday do not request it, so allocation semantics do not leak
+  into query-driven screens.
+
+Provided fields (keyed by `taskId`) in `EnrichmentResultV2`:
+- `isAllocatedByTaskId`: whether the task is present in the latest snapshot
+- `allocationRankByTaskId`: stable ordering hint for allocated tasks
+- `qualifyingValueIdByTaskId`: optional Value grouping override for allocated tasks
+
+Renderer rule of thumb:
+- If these fields are absent/empty, renderers must behave as if allocation does
+  not exist.
 
 **Full-screen templates**
 

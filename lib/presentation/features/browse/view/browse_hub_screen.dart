@@ -86,6 +86,7 @@ class BrowseHubScreen extends StatelessWidget {
       'projects' => colorScheme.secondaryContainer,
       'values' => colorScheme.tertiaryContainer,
       'statistics' => colorScheme.primaryContainer,
+      'review_inbox' => colorScheme.errorContainer,
       'settings' => colorScheme.surfaceContainerHighest,
       _ => colorScheme.surfaceContainerHigh,
     };

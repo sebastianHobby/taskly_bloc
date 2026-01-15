@@ -4,7 +4,6 @@ import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 /// The canonical, entity-level value UI entrypoint.
 ///
@@ -88,7 +87,7 @@ class ValueView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(theme, colorScheme),
+              _buildHeader(context, theme, colorScheme),
               const SizedBox(height: 12),
               if (valueStats != null) ...[
                 _StatsRow(stats: valueStats, colorScheme: colorScheme),
@@ -130,6 +129,8 @@ class ValueView extends StatelessWidget {
       context,
       value.color,
     );
+
+    final indicatorColor = valueColor.withOpacity(0.9);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -175,13 +176,15 @@ class ValueView extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                   ],
-                  Text(
-                    (value.iconName?.isNotEmpty ?? false)
-                        ? value.iconName!
-                        : 'â­',
-                    style: EmojiUtils.emojiTextStyle(fontSize: 18),
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: indicatorColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       value.name,
@@ -238,7 +241,17 @@ class ValueView extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildHeader(
+    BuildContext context,
+    ThemeData theme,
+    ColorScheme colorScheme,
+  ) {
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
+    final indicatorColor = valueColor.withOpacity(0.9);
+
     return Row(
       children: [
         if (showDragHandle && rank != null)
@@ -264,11 +277,15 @@ class ValueView extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Text(
-          (value.iconName?.isNotEmpty ?? false) ? value.iconName! : 'â­',
-          style: EmojiUtils.emojiTextStyle(fontSize: 22),
+        Container(
+          width: 14,
+          height: 14,
+          decoration: BoxDecoration(
+            color: indicatorColor,
+            shape: BoxShape.circle,
+          ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         if (titlePrefix != null) ...[
           titlePrefix!,
           const SizedBox(width: 6),

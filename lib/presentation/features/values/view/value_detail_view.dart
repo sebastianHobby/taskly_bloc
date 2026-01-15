@@ -82,16 +82,11 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
     final priority =
         (formValues[ValueFieldKeys.priority.id] as ValuePriority?) ??
         _draft.priority;
-    final iconName = extractStringValue(
-      formValues,
-      ValueFieldKeys.iconName.id,
-    ).trim();
 
     _draft = _draft.copyWith(
       name: name,
       color: color,
       priority: priority,
-      iconName: iconName,
     );
   }
 
@@ -101,8 +96,6 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
 
     _syncDraftFromFormValues(formValues);
 
-    final iconName = _draft.iconName.trim().isEmpty ? null : _draft.iconName;
-
     final bloc = context.read<ValueDetailBloc>();
     if (id == null) {
       bloc.add(
@@ -111,7 +104,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             name: _draft.name,
             color: _draft.color,
             priority: _draft.priority,
-            iconName: iconName,
+            iconName: null,
           ),
         ),
       );
@@ -123,7 +116,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             name: _draft.name,
             color: _draft.color,
             priority: _draft.priority,
-            iconName: iconName,
+            iconName: null,
           ),
         ),
       );

@@ -19,6 +19,10 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
   const factory ProjectDetailEvent.update({
     required UpdateProjectCommand command,
   }) = _ProjectDetailUpdate;
+  const factory ProjectDetailEvent.setPinned({
+    required String id,
+    required bool isPinned,
+  }) = _ProjectDetailSetPinned;
   const factory ProjectDetailEvent.delete({
     required String id,
   }) = _ProjectDetailDelete;
@@ -38,6 +42,10 @@ sealed class ProjectDetailEvent with _$ProjectDetailEvent {
 @freezed
 class ProjectDetailState with _$ProjectDetailState {
   const factory ProjectDetailState.initial() = ProjectDetailInitial;
+
+  const factory ProjectDetailState.inlineActionSuccess({
+    required String message,
+  }) = ProjectDetailInlineActionSuccess;
 
   const factory ProjectDetailState.validationFailure({
     required ValidationFailure failure,
@@ -79,6 +87,7 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     );
     on<_ProjectDetailCreate>(_onCreate, transformer: droppable());
     on<_ProjectDetailUpdate>(_onUpdate, transformer: droppable());
+    on<_ProjectDetailSetPinned>(_onSetPinned, transformer: droppable());
     on<_ProjectDetailDelete>(_onDelete, transformer: droppable());
     on<_ProjectDetailLoadInitialData>(
       (event, emit) => _onLoadInitialData(emit),
@@ -180,6 +189,54 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
       EntityOperation.create,
       () => _commandHandler.handleCreate(event.command),
     );
+  }
+
+  Future<void> _onSetPinned(
+    _ProjectDetailSetPinned event,
+    Emitter<ProjectDetailState> emit,
+  ) async {
+    try {
+      await _projectRepository.setPinned(
+        id: event.id,
+        isPinned: event.isPinned,
+      );
+
+      emit(
+        ProjectDetailState.inlineActionSuccess(
+          message: event.isPinned ? 'Pinned' : 'Unpinned',
+        ),
+      );
+
+      // Refresh entity (keep editor open)
+      final values = await _valueRepository.getAll();
+      final project = await _projectRepository.getById(event.id);
+      if (project == null) {
+        emit(
+          const ProjectDetailState.operationFailure(
+            errorDetails: DetailBlocError<Project>(
+              error: NotFoundEntity.project,
+            ),
+          ),
+        );
+        return;
+      }
+
+      emit(
+        ProjectDetailState.loadSuccess(
+          availableValues: values,
+          project: project,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        ProjectDetailState.operationFailure(
+          errorDetails: DetailBlocError<Project>(
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _executeValidatedCommand(

@@ -82,6 +82,9 @@ export 'disposables.dart';
 export 'test_clock.dart';
 export 'test_environment.dart';
 
+/// Standard fixture builders (Object Mother).
+export '../fixtures/test_data.dart';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Specialized Test Helpers
 // ═══════════════════════════════════════════════════════════════════════════

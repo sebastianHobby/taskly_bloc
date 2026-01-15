@@ -60,7 +60,7 @@ Ordering:
 - created/updated asc (when available)
 
 ## Overflow destination (make it real)
-Screen key stays `review_inbox`, but UI title becomes `Attention Inbox`.
+Screen key stays `review_inbox`, but UI title becomes `Attention`.
 
 Requirements:
 - Shows the same scoped set as the banner that navigated there.
@@ -146,7 +146,7 @@ tried to surface coaching. Under Action/Review, keep Focus Setup scoped to
     - Remove/avoid rendering coaching/action rules here.
 
 - Overflow destination:
-  - Keep screen key `review_inbox`, UI title `Attention Inbox`.
+  - Keep screen key `review_inbox`, UI title `Attention`.
   - Implement the list UI on the `review_inbox` template path.
 
 ## Migration + cleanup (Tier 2 hard cutover)
@@ -184,7 +184,7 @@ and no legacy column references remain.
 
 ## Acceptance criteria
 - System screens render using the unified banner with Action/Review grouping.
-- Overflow `review_inbox` is a real `Attention Inbox` UI and deep-linkable.
+- Overflow `review_inbox` is a real `Attention` UI and deep-linkable.
 - No references remain to legacy columns or legacy banner modules.
 - `flutter analyze` is clean at end of phase (fix *any* analyze error/warning in this last phase).
 - Run tests once at the end (via the recorded runner task).

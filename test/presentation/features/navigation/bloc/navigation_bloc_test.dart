@@ -5,7 +5,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/test_imports.dart';
 
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
@@ -13,8 +13,8 @@ import 'package:taskly_bloc/presentation/features/navigation/bloc/navigation_blo
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
 
-class MockScreenDefinitionsRepositoryContract extends Mock
-    implements ScreenDefinitionsRepositoryContract {}
+class MockScreenCatalogRepositoryContract extends Mock
+    implements ScreenCatalogRepositoryContract {}
 
 class MockNavigationBadgeService extends Mock
     implements NavigationBadgeService {}
@@ -24,7 +24,7 @@ void main() {
   setUp(setUpTestEnvironment);
 
   group('NavigationBloc', () {
-    late MockScreenDefinitionsRepositoryContract mockScreensRepository;
+    late MockScreenCatalogRepositoryContract mockScreensRepository;
     late MockNavigationBadgeService mockBadgeService;
     late NavigationIconResolver iconResolver;
     late TestStreamController<List<ScreenWithPreferences>> screensController;
@@ -41,7 +41,7 @@ void main() {
     });
 
     setUp(() {
-      mockScreensRepository = MockScreenDefinitionsRepositoryContract();
+      mockScreensRepository = MockScreenCatalogRepositoryContract();
       mockBadgeService = MockNavigationBadgeService();
       iconResolver = const NavigationIconResolver();
       screensController = TestStreamController<List<ScreenWithPreferences>>();

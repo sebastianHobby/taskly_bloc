@@ -191,7 +191,7 @@ class IdGenerator {
   /// Generate random ID for a tracker event (append-only).
   String trackerEventId() => _uuid.v4();
 
-  /// Generate deterministic ID for screen definition.
+  /// Generate deterministic ID for screen preferences.
   /// Natural key: userId + screenKey
   String screenDefinitionId({required String screenKey}) {
     return _v5('screens/$screenKey');

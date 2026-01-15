@@ -18,7 +18,7 @@ Hard cutover assumption:
   plan (no migration/backcompat work required).
 
 ## Implementation outline
-1) **Update system screen definitions**
+1) **Update system screen specs**
    - Update `SystemScreenDefinitions` to specify `pack` for:
      - Scheduled (`agenda_v2`)
      - Someday (`hierarchy_value_project_task_v2`)

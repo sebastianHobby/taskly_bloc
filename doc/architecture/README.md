@@ -16,6 +16,31 @@ model:
 - **Offline-first**: the local DB is the primary source of truth for UI; sync is
   responsible for convergence.
 
+### 1.2 Presentation boundary rule (BLoC-only)
+
+**Normative rule:** Widgets/pages in the presentation layer must not talk to
+repositories or domain/data services directly, and must not subscribe to
+non-UI streams directly.
+
+- Presentation widgets/pages may only interact with other layers through a
+  **BLoC** that is owned by the presentation layer.
+- BLoCs may depend on domain services/use-cases and repository
+  contracts.
+- Streams belong below the widget layer: any stream subscriptions that produce
+  UI state must live in the BLoC (or deeper), and the widget consumes the
+  resulting BLoC state.
+
+#### Allowed exceptions (narrow)
+
+- **Ephemeral UI-only state** that does not represent domain/data state, such as
+  `AnimationController`s, `TextEditingController`s, focus nodes, scroll
+  controllers, and other widget-local concerns.
+- **Already-cached UI-only streams** that do not touch repositories/services
+  (for example, navigation badge streams that are derived from UI-layer state).
+
+If an exception starts to depend on domain/data or becomes shared across screens,
+promote it into a BLoC (or lower layer) and expose a BLoC state instead.
+
 ### 1.1 System-level architecture diagram
 
 ```text
@@ -85,9 +110,14 @@ Important: PowerSync applies the client schema using SQLite views, and SQLite ca
 UPSERT (`INSERT ... ON CONFLICT DO UPDATE`) a view. Avoid Drift UPSERT helpers on
 PowerSync schema tables; prefer update-then-insert or insert-or-ignore patterns.
 
-- **UI reads**: from the local DB (reactive watchers drive UI updates).
+- **UI reads**: BLoCs read from the local DB (reactive watchers) and
+  drive UI updates.
 - **Writes**: recorded locally and uploaded to Supabase via PostgREST.
 - **Downloads**: arrive via PowerSync replication and are applied locally.
+
+Note: in this codebase, “UI reads” means **BLoCs read from the local
+DB/repositories and expose derived UI state**; widgets do not directly watch the
+DB or repository streams.
 
 #### Sync pipeline diagram
 
@@ -144,6 +174,7 @@ For the deeper dive see:
 ## 3) Architecture Docs Index (This Folder)
 
 - Unified screens: [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
+- Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
 - Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
 - Allocation: [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
 - Attention: [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)

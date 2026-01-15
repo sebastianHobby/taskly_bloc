@@ -39,6 +39,30 @@ final router = GoRouter(
         );
       },
       routes: [
+        // === LEGACY ROUTE ALIASES / REDIRECTS ===
+        // Projects list destination has been removed.
+        GoRoute(
+          path: '/projects',
+          redirect: (_, __) => Routing.screenPath('someday'),
+          builder: (_, __) => const SizedBox.shrink(),
+        ),
+        // Legacy plural project detail route.
+        GoRoute(
+          path: '/projects/:id',
+          redirect: (_, state) {
+            final id = state.pathParameters['id'];
+            if (id == null || id.isEmpty) return null;
+            return '/project/$id';
+          },
+          builder: (_, __) => const SizedBox.shrink(),
+        ),
+        // Legacy Someday route redirects to canonical Anytime path.
+        GoRoute(
+          path: '/someday',
+          redirect: (_, __) => Routing.screenPath('someday'),
+          builder: (_, __) => const SizedBox.shrink(),
+        ),
+
         // === ENTITY EDITOR ROUTES (NAV-01) ===
         // Create + edit are route-backed editor entry points.
         // They open the modal editor and then return (pop or my-day fallback).

@@ -18,6 +18,7 @@ class ScreenItemTileRegistry {
   Widget build(
     BuildContext context, {
     required ScreenItem item,
+    bool isInFocus = false,
     bool compactTiles = false,
     void Function(String taskId, bool? value)? onTaskToggle,
     VoidCallback? onTap,
@@ -26,14 +27,36 @@ class ScreenItemTileRegistry {
     Widget? titlePrefix,
     Widget? projectTrailing,
     bool showProjectTrailingProgressLabel = false,
+    ScreenItemGroupingContext? groupingContext,
+    bool suppressValueChipsWhenValueImplied = false,
   }) {
+    final effectiveProjectId = groupingContext?.projectId?.trim();
+    final effectiveValueId = groupingContext?.valueId?.trim();
+    final projectIsImplied =
+        effectiveProjectId != null && effectiveProjectId.isNotEmpty;
+    final valueIsImplied =
+        effectiveValueId != null && effectiveValueId.isNotEmpty;
+
+    final showValueChips =
+        !(valueIsImplied && suppressValueChipsWhenValueImplied);
+    final maxSecondaryValueChips = valueIsImplied
+        ? (showValueChips ? 2 : 0)
+        : 1;
+
     return switch (item) {
       ScreenItemTask(:final task) => TaskView(
         task: task,
+        isInFocus: isInFocus,
         compact: compactTiles,
         onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
         titlePrefix: titlePrefix,
+        showProjectNameInMeta: true,
+        projectNameIsTertiary: projectIsImplied,
+        groupedValueId: valueIsImplied ? effectiveValueId : null,
+        showPrimaryValueChip: showValueChips,
+        maxSecondaryValueChips: maxSecondaryValueChips,
+        excludeValueIdFromChips: valueIsImplied ? effectiveValueId : null,
       ),
       ScreenItemProject(:final project) => ProjectView(
         project: project,
@@ -45,6 +68,10 @@ class ScreenItemTileRegistry {
         titlePrefix: titlePrefix,
         trailing: projectTrailing,
         showTrailingProgressLabel: showProjectTrailingProgressLabel,
+        groupedValueId: valueIsImplied ? effectiveValueId : null,
+        showPrimaryValueChip: showValueChips,
+        maxSecondaryValueChips: maxSecondaryValueChips,
+        excludeValueIdFromChips: valueIsImplied ? effectiveValueId : null,
       ),
       ScreenItemValue(:final value) => ValueView(
         value: value,
@@ -72,4 +99,22 @@ class ProjectTileStats {
 
   final int taskCount;
   final int completedTaskCount;
+}
+
+/// Context passed by grouped list renderers to avoid repeating implied metadata.
+///
+/// Example:
+/// - If tasks are rendered under a project header, set [projectId] so task tiles
+///   don't repeat the project name.
+/// - If tasks are rendered under a value header, set [valueId] so task tiles
+///   don't repeat the value chip.
+@immutable
+class ScreenItemGroupingContext {
+  const ScreenItemGroupingContext({
+    this.valueId,
+    this.projectId,
+  });
+
+  final String? valueId;
+  final String? projectId;
 }

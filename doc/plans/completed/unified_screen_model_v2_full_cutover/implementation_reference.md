@@ -290,7 +290,7 @@ This is the “don’t forget these” list.
 ### Phase 5 (cutover/cleanup/docs)
 
 - Cut system screens:
-  - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+  - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
 - Generated detail screen defs:
   - whichever file defines `forProject()` / `forValue()` in the screen catalog
 - Delete legacy:

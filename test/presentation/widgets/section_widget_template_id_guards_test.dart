@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('My Issues'), findsOneWidget);
-    expect(find.text('All clear! Nothing needs attention.'), findsOneWidget);
+    expect(find.text('All clear'), findsOneWidget);
   });
 
   testWidgets('templateId guards prevent mismatched rendering', (tester) async {

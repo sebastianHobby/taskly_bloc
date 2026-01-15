@@ -55,11 +55,13 @@ void testContract(
   String description,
   dynamic Function() callback, {
   Duration timeout = kContractTestTimeout,
+  Object? tags,
   bool skip = false,
 }) {
   test(
     description,
     skip: skip,
+    tags: tags,
     () async {
       final result = callback();
       if (result is Future) {

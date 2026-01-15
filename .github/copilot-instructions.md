@@ -36,6 +36,20 @@ mobile platforms.
 * When changes affect architecture (new module boundaries, responsibilities, data flow, storage/sync behavior, cross-feature patterns), update the relevant files under `doc/architecture/` in the same PR.
 * If a change introduces a new architectural pattern or approach get explicit confirmation from user before implementing.
 
+### UI/UX work (strict — align to Unified Screen Model)
+
+* For UI/UX design tasks, always align changes to the Unified Screen Model (USM). Prefer expressing changes via `ScreenSpec`/module specs, section VMs, and template/section widgets per `doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md`.
+* Explicitly mention impacts on:
+  * Other screens/routes that reuse the same templates/sections
+  * Shared section widgets/renderers and shared components
+  * Design tokens/theme extensions and any cross-feature styling conventions
+* Always consider future reuse of anything being changed: prefer configurable, composable primitives over screen-specific forks.
+* Suggestions must be in small, prioritized batches (max 3–5 items). Each suggestion must have a unique ID (e.g., `UX-001`) and include 2–3 design options (e.g., A/B/C) plus a recommended option.
+* Do not implement UI/UX changes without explicit user approval. If approval is not yet given, either:
+  * Provide the proposal/plan in chat (non-persisted), or
+  * Write a design decision log entry under `doc/ui_decisions/` (this is not a full plan).
+* When approval is given, restate the approved IDs/options and scope before making code changes.
+
 ### Testing (preferred workflow)
 
 

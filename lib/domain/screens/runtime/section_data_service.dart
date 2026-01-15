@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
@@ -366,7 +367,15 @@ class SectionDataService {
       rangeEnd: rangeEnd,
     );
 
-    return SectionDataResult.agenda(agendaData: agendaData);
+    final enrichment = await _computeAgendaEnrichmentV2(
+      params.enrichment,
+      agendaData,
+    );
+
+    return SectionDataResult.agenda(
+      agendaData: agendaData,
+      enrichment: enrichment,
+    );
   }
 
   Stream<SectionDataResult> _watchAgendaSectionV2(
@@ -383,7 +392,50 @@ class SectionDataService {
           rangeStart: today,
           rangeEnd: rangeEnd,
         )
-        .map((agendaData) => SectionDataResult.agenda(agendaData: agendaData));
+        .asyncMap((agendaData) async {
+          final enrichment = await _computeAgendaEnrichmentV2(
+            params.enrichment,
+            agendaData,
+          );
+          return SectionDataResult.agenda(
+            agendaData: agendaData,
+            enrichment: enrichment,
+          );
+        });
+  }
+
+  Future<EnrichmentResultV2?> _computeAgendaEnrichmentV2(
+    EnrichmentPlanV2 plan,
+    AgendaData agendaData,
+  ) async {
+    if (plan.items.isEmpty) return null;
+
+    final tasksById = <String, Task>{};
+    final projectsById = <String, Project>{};
+
+    void addAgendaItem(AgendaItem item) {
+      final task = item.task;
+      if (task != null) {
+        tasksById[task.id] = task;
+      }
+
+      final project = item.project;
+      if (project != null) {
+        projectsById[project.id] = project;
+      }
+    }
+
+    for (final group in agendaData.groups) {
+      group.items.forEach(addAgendaItem);
+    }
+    agendaData.overdueItems.forEach(addAgendaItem);
+
+    final items = <ScreenItem>[
+      ...tasksById.values.map(ScreenItem.task),
+      ...projectsById.values.map(ScreenItem.project),
+    ];
+
+    return _computeEnrichmentV2(plan, items);
   }
 
   // ===========================================================================

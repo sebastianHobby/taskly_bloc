@@ -35,6 +35,7 @@ sealed class SectionDataResult with _$SectionDataResult {
   /// Agenda section result - timeline with tasks and projects grouped by date
   const factory SectionDataResult.agenda({
     required AgendaData agendaData,
+    EnrichmentResultV2? enrichment,
   }) = AgendaSectionResult;
 
   /// Unified attention banner (bucket-aware cutover v1).

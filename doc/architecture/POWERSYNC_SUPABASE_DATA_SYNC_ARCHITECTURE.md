@@ -8,10 +8,15 @@
 
 Taskly uses an **offline-first** data architecture:
 
-- **Local source of truth for UI**: a SQLite database accessed via **Drift**.
+- **Local source of truth for UI state**: a SQLite database accessed via
+  **Drift**, consumed by the presentation layer through BLoCs.
 - **Sync engine**: PowerSync keeps the local DB synchronized with Supabase Postgres.
 - **Writes go through Supabase PostgREST** (not direct Postgres from clients).
 - **Reads/downloads come from PowerSync replication** (logical replication stream filtered by server-side sync rules).
+
+Presentation boundary (normative): widgets/pages do not call repositories
+directly and do not subscribe to Drift/repository streams directly. BLoCs own
+those subscriptions and expose derived UI state.
 
 Key implications:
 
@@ -139,7 +144,8 @@ Note: this repo currently does not ship a dedicated migration for PowerSync repl
 ```text
 +----------------------------+
 |         Flutter App         |
-| presentation/domain + repos |
+| presentation (BLoC/VM)      |
+| + domain + repositories     |
 +--------------+-------------+
      |
      v

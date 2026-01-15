@@ -1,110 +1,84 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 
 class JournalTrackersPage extends StatelessWidget {
   const JournalTrackersPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final repo = getIt<JournalRepositoryContract>();
+    return BlocProvider<JournalTrackersCubit>(
+      create: (_) => getIt<JournalTrackersCubit>(),
+      child: BlocBuilder<JournalTrackersCubit, JournalTrackersState>(
+        builder: (context, state) {
+          return switch (state) {
+            JournalTrackersLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            JournalTrackersError(:final message) => Center(
+              child: Text(message),
+            ),
+            JournalTrackersLoaded(
+              :final visibleDefinitions,
+              :final preferenceByTrackerId,
+            ) =>
+              _JournalTrackersLoadedView(
+                visibleDefinitions: visibleDefinitions,
+                preferenceByTrackerId: preferenceByTrackerId,
+              ),
+          };
+        },
+      ),
+    );
+  }
+}
 
-    return StreamBuilder<List<TrackerDefinition>>(
-      stream: repo.watchTrackerDefinitions(),
-      builder: (context, defsSnapshot) {
-        if (defsSnapshot.hasError) {
-          return const Center(child: Text('Failed to load trackers.'));
+class _JournalTrackersLoadedView extends StatelessWidget {
+  const _JournalTrackersLoadedView({
+    required this.visibleDefinitions,
+    required this.preferenceByTrackerId,
+  });
+
+  final List<TrackerDefinition> visibleDefinitions;
+  final Map<String, TrackerPreference> preferenceByTrackerId;
+
+  @override
+  Widget build(BuildContext context) {
+    final extraRows = visibleDefinitions.isEmpty ? 1 : 0;
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      itemCount: visibleDefinitions.length + 1 + extraRows,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _CreateTrackerCard(
+            onCreate: (name) {
+              context.read<JournalTrackersCubit>().createTracker(name);
+            },
+          );
         }
-        if (!defsSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+
+        if (visibleDefinitions.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 24,
+            ),
+            child: Center(child: Text('No trackers yet.')),
+          );
         }
 
-        final definitions = defsSnapshot.data ?? const <TrackerDefinition>[];
+        final definition = visibleDefinitions[index - 1];
+        final pref = preferenceByTrackerId[definition.id];
 
-        return StreamBuilder<List<TrackerPreference>>(
-          stream: repo.watchTrackerPreferences(),
-          builder: (context, prefsSnapshot) {
-            if (prefsSnapshot.hasError) {
-              return const Center(child: Text('Failed to load preferences.'));
-            }
-            if (!prefsSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final prefs = prefsSnapshot.data ?? const <TrackerPreference>[];
-            final prefsByTrackerId = {
-              for (final p in prefs) p.trackerId: p,
-            };
-
-            final visible =
-                definitions
-                    .where((d) => d.deletedAt == null)
-                    .toList(
-                      growable: false,
-                    )
-                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: visible.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return _CreateTrackerCard(
-                    onCreate: (name) async {
-                      final nowUtc = DateTime.now().toUtc();
-                      await repo.saveTrackerDefinition(
-                        TrackerDefinition(
-                          id: '',
-                          name: name,
-                          description: null,
-                          scope: 'entry',
-                          valueType: 'yes_no',
-                          valueKind: 'boolean',
-                          opKind: 'set',
-                          createdAt: nowUtc,
-                          updatedAt: nowUtc,
-                          roles: const <String>[],
-                          config: const <String, dynamic>{},
-                          goal: const <String, dynamic>{},
-                          isActive: true,
-                          sortOrder: visible.length * 10 + 100,
-                          deletedAt: null,
-                          source: 'user',
-                          systemKey: null,
-                          minInt: null,
-                          maxInt: null,
-                          stepInt: null,
-                          linkedValueId: null,
-                          isOutcome: false,
-                          isInsightEnabled: false,
-                          higherIsBetter: null,
-                          unitKind: null,
-                          userId: null,
-                        ),
-                      );
-                    },
-                  );
-                }
-
-                if (visible.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 24),
-                    child: Center(child: Text('No trackers yet.')),
-                  );
-                }
-
-                final definition = visible[index - 1];
-                final pref = prefsByTrackerId[definition.id];
-
-                return _TrackerRow(
-                  definition: definition,
-                  preference: pref,
-                  onChanged: repo.saveTrackerPreference,
-                );
-              },
-            );
+        return _TrackerRow(
+          definition: definition,
+          preference: pref,
+          onChanged: (p) {
+            context.read<JournalTrackersCubit>().savePreference(p);
           },
         );
       },

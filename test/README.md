@@ -352,9 +352,24 @@ Target coverage: **80%+ overall**, **90%+ for critical paths**
 
 ## Common Patterns
 
+### Safe defaults (required)
+
+Prefer the repo's safe wrappers from `test/helpers/test_imports.dart`:
+
+- `testSafe(...)` for async unit tests (hard timeout)
+- `testWidgetsSafe(...)` for widget tests (hard timeout)
+- `blocTestSafe(...)` for BLoC tests (hard timeout around `act`)
+
+Policy:
+
+- Avoid raw `testWidgets()` unless you add a justification comment like
+  `// safe:` and you are confident the test cannot hang.
+- Avoid `pumpAndSettle()` for stream/BLoC-driven widgets; prefer
+  `tester.pumpForStream()` or `tester.pumpUntilFound(...)`.
+
 ### Testing Bloc State Transitions
 ```dart
-blocTest<MyBloc, MyState>(
+blocTestSafe<MyBloc, MyState>(
   'emits [loading, success] when data loads',
   build: () {
     when(() => mockRepo.load()).thenAnswer((_) async => data);
@@ -390,7 +405,7 @@ testSafe('repository emits updated data', () async {
 
 ### Testing Error Handling
 ```dart
-test('handles repository error gracefully', () async {
+testSafe('handles repository error gracefully', () async {
   when(() => mockRepo.load()).thenThrow(Exception('Network error'));
   
   expect(
@@ -412,7 +427,8 @@ test('handles repository error gracefully', () async {
 1. Add explicit timeouts for async operations
 2. Avoid `Future.delayed` - use proper stream/bloc testing
 3. Ensure tests don't depend on execution order
-4. Use `pump()` and `pumpAndSettle()` in widget tests
+4. Avoid `pumpAndSettle()` for stream/BLoC-driven widgets
+  (prefer `pumpForStream()` / `pumpUntilFound(...)`)
 
 ### Mock Issues
 1. Register fallback values in `setUpAll()`

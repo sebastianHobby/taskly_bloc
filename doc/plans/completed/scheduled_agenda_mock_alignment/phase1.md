@@ -11,7 +11,7 @@ Align Scheduled screen (agenda renderer) with the reference mock by:
 
 ## Scope
 - Presentation-only changes.
-- No changes to domain models, unified screen definitions, or interpreters.
+- No changes to domain models, unified screen specs, or interpreters.
 
 ## Plan
 1. Add `agendaCard` visual variants to `TaskView` and `ProjectView`.

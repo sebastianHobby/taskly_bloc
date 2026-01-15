@@ -23,6 +23,10 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
   const factory TaskDetailEvent.update({
     required UpdateTaskCommand command,
   }) = _TaskDetailUpdate;
+  const factory TaskDetailEvent.setPinned({
+    required String id,
+    required bool isPinned,
+  }) = _TaskDetailSetPinned;
   const factory TaskDetailEvent.delete({
     required String id,
   }) = _TaskDetailDelete;
@@ -40,6 +44,10 @@ sealed class TaskDetailEvent with _$TaskDetailEvent {
 @freezed
 class TaskDetailState with _$TaskDetailState {
   const factory TaskDetailState.initial() = TaskDetailInitial;
+
+  const factory TaskDetailState.inlineActionSuccess({
+    required String message,
+  }) = TaskDetailInlineActionSuccess;
 
   const factory TaskDetailState.validationFailure({
     required ValidationFailure failure,
@@ -85,6 +93,7 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     on<_TaskDetailLoadById>(_onGet, transformer: restartable());
     on<_TaskDetailCreate>(_onCreate, transformer: droppable());
     on<_TaskDetailUpdate>(_onUpdate, transformer: droppable());
+    on<_TaskDetailSetPinned>(_onSetPinned, transformer: droppable());
     on<_TaskDetailDelete>(_onDelete, transformer: droppable());
 
     if (autoLoad) {
@@ -209,6 +218,51 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     Emitter<TaskDetailState> emit,
   ) async {
     await executeDeleteOperation(emit, () => _taskRepository.delete(event.id));
+  }
+
+  Future<void> _onSetPinned(
+    _TaskDetailSetPinned event,
+    Emitter<TaskDetailState> emit,
+  ) async {
+    try {
+      await _taskRepository.setPinned(id: event.id, isPinned: event.isPinned);
+
+      emit(
+        TaskDetailState.inlineActionSuccess(
+          message: event.isPinned ? 'Pinned' : 'Unpinned',
+        ),
+      );
+
+      // Refresh entity (keep editor open)
+      final task = await _taskRepository.getById(event.id);
+      if (task == null) {
+        emit(
+          const TaskDetailState.operationFailure(
+            errorDetails: DetailBlocError<Task>(error: NotFoundEntity.task),
+          ),
+        );
+        return;
+      }
+
+      final projects = await _projectRepository.getAll();
+      final values = await _valueRepository.getAll();
+      emit(
+        TaskDetailState.loadSuccess(
+          task: task,
+          availableProjects: projects,
+          availableValues: values,
+        ),
+      );
+    } catch (error, stackTrace) {
+      emit(
+        TaskDetailState.operationFailure(
+          errorDetails: DetailBlocError<Task>(
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _executeValidatedCommand(

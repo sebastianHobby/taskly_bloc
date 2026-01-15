@@ -1,8 +1,8 @@
-﻿import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
-/// A screen definition combined with user preferences.
+/// A screen spec combined with user preferences.
 class ScreenWithPreferences {
   const ScreenWithPreferences({
     required this.screen,
@@ -19,26 +19,14 @@ class ScreenWithPreferences {
   bool get isActive => preferences.isActive;
 }
 
-/// Repository contract for managing screen definitions.
+/// Repository contract for system screen catalog + user preferences.
 ///
 /// ## Architecture
 ///
-/// Screens come from code via `SystemScreenSpecs`.
-///
-/// User preferences (sortOrder, isActive) for system screens are stored in
-/// `screen_preferences`.
-///
-/// ## Why System Screens Are Code-Based
-///
-/// System screens are generated from code rather than stored in the database
-/// to avoid PowerSync sync conflicts. This ensures:
-/// - No V5 CONFLICT errors during seeding
-/// - System screens available immediately on app start
-/// - Template updates applied automatically
-abstract class ScreenDefinitionsRepositoryContract {
+/// - Screen specs are code-based via [SystemScreenSpecs].
+/// - User preferences (`sortOrder`, `isActive`) are stored in `screen_preferences`.
+abstract class ScreenCatalogRepositoryContract {
   /// Watch all active screens (system), sorted by effective sortOrder.
-  ///
-  /// Applies preferences to determine visibility and sort order.
   Stream<List<ScreenWithPreferences>> watchAllScreens();
 
   /// Watch all system screens with preferences applied.
@@ -46,12 +34,10 @@ abstract class ScreenDefinitionsRepositoryContract {
 
   /// Watch a specific screen by screenKey.
   ///
-  /// Returns system screen from code.
+  /// Returns system screen from code (or null if unknown).
   Stream<ScreenWithPreferences?> watchScreen(String screenKey);
 
-  /// Update preferences for any screen (system).
-  ///
-  /// Preferences are stored in `screen_preferences`.
+  /// Update preferences for a system screen.
   Future<void> updateScreenPreferences(
     String screenKey,
     ScreenPreferences preferences,

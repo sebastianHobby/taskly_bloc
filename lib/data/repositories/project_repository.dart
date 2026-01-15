@@ -489,6 +489,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
     int? priority,
   }) async {
@@ -516,6 +517,7 @@ class ProjectRepository implements ProjectRepositoryContract {
           deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
           repeatIcalRrule: drift_pkg.Value(repeatIcalRrule ?? ''),
           repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+          seriesEnded: drift_pkg.Value(seriesEnded),
           priority: drift_pkg.Value(priority),
           createdAt: drift_pkg.Value(now),
           updatedAt: drift_pkg.Value(now),
@@ -552,6 +554,7 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     int? priority,
     bool? isPinned,
@@ -596,8 +599,9 @@ class ProjectRepository implements ProjectRepositoryContract {
           isPinned: isPinned == null
               ? drift_pkg.Value(existing.isPinned)
               : drift_pkg.Value(isPinned),
-          // Preserve seriesEnded - only modified via dedicated methods
-          seriesEnded: const drift_pkg.Value<bool>.absent(),
+          seriesEnded: seriesEnded == null
+              ? const drift_pkg.Value<bool>.absent()
+              : drift_pkg.Value(seriesEnded),
           updatedAt: drift_pkg.Value(now),
         ),
       );

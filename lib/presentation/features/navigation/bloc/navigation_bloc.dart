@@ -6,7 +6,7 @@ import 'package:meta/meta.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -63,7 +63,7 @@ class NavigationState {
 
 class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
   NavigationBloc({
-    required ScreenDefinitionsRepositoryContract screensRepository,
+    required ScreenCatalogRepositoryContract screensRepository,
     required NavigationBadgeService badgeService,
     required NavigationIconResolver iconResolver,
   }) : _screensRepository = screensRepository,
@@ -75,7 +75,7 @@ class NavigationBloc extends Bloc<NavigationEvent, NavigationState> {
     on<NavigationFailed>(_onFailed, transformer: sequential());
   }
 
-  final ScreenDefinitionsRepositoryContract _screensRepository;
+  final ScreenCatalogRepositoryContract _screensRepository;
   final NavigationBadgeService _badgeService;
   final NavigationIconResolver _iconResolver;
 

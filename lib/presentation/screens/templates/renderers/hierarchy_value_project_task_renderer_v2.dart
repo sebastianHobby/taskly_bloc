@@ -13,6 +13,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
     this.compactTiles = false,
     this.onTaskToggle,
     super.key,
+    this.persistenceKey,
   });
 
   final DataV2SectionResult data;
@@ -20,6 +21,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
   final String? title;
   final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
+  final String? persistenceKey;
 
   InterleavedListSectionParamsV2 _toInterleavedParams() {
     return InterleavedListSectionParamsV2(
@@ -42,6 +44,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
       data: data,
       params: _toInterleavedParams(),
       title: title,
+      persistenceKey: persistenceKey,
       compactTiles: compactTiles,
       onTaskToggle: onTaskToggle,
     );

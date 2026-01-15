@@ -39,7 +39,7 @@ Note (2026-01-14): this completion definition is now met on `main`.
   - Legacy files are absent:
     - `lib/presentation/screens/view/unified_screen_page.dart`
     - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
-    - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+    - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
 
   Note: references to these paths may still appear in historical plan files
   under `doc/plans/**`; those are archival and do not indicate runtime usage.

@@ -6,7 +6,7 @@ import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contrac
 import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
@@ -39,8 +39,8 @@ class MockOccurrenceWriteHelperContract extends Mock
 
 // === Screens & Workflows ===
 
-class MockScreenDefinitionsRepositoryContract extends Mock
-    implements ScreenDefinitionsRepositoryContract {}
+class MockScreenCatalogRepositoryContract extends Mock
+    implements ScreenCatalogRepositoryContract {}
 
 // === Notifications ===
 

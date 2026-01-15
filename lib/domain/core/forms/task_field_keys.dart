@@ -9,6 +9,8 @@ abstract final class TaskFieldKeys {
   static const startDate = FieldKey('task.startDate');
   static const deadlineDate = FieldKey('task.deadlineDate');
   static const repeatIcalRrule = FieldKey('task.repeatIcalRrule');
+  static const repeatFromCompletion = FieldKey('task.repeatFromCompletion');
+  static const seriesEnded = FieldKey('task.seriesEnded');
   static const priority = FieldKey('task.priority');
   static const valueIds = FieldKey('task.valueIds');
 }

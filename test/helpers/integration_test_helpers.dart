@@ -46,10 +46,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
@@ -147,8 +147,8 @@ class IntegrationTestContext {
     final db = createTestDb();
     final settingsRepository = SettingsRepository(driftDb: db);
 
-    final screensRepository = ScreenDefinitionsRepository(
-      databaseRepository: ScreenDefinitionsRepositoryImpl(
+    final screensRepository = ScreenCatalogRepository(
+      databaseRepository: ScreenCatalogRepositoryImpl(
         db,
       ),
     );
@@ -161,7 +161,7 @@ class IntegrationTestContext {
   }
 
   final AppDatabase db;
-  final ScreenDefinitionsRepositoryContract screensRepository;
+  final ScreenCatalogRepositoryContract screensRepository;
   final SettingsRepositoryContract settingsRepository;
 
   final DisposableBag _bag = DisposableBag();

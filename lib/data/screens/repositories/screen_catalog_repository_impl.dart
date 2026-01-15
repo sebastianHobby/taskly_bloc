@@ -2,22 +2,16 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/daos/screen_preferences_dao.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as db;
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
-/// Drift implementation of [ScreenDefinitionsRepositoryContract].
+/// Drift implementation of [ScreenCatalogRepositoryContract].
 ///
-/// ## Architecture (Option B)
-///
-/// - System screen definitions come from code via [SystemScreenSpecs].
-/// - Preferences (sort order + visibility) come from `screen_preferences`.
-///
-/// Hard cutover assumption: custom screens are removed and the app ships only
-/// the typed system screens.
-class ScreenDefinitionsRepositoryImpl
-    implements ScreenDefinitionsRepositoryContract {
-  ScreenDefinitionsRepositoryImpl(
+/// Screens come from code via [SystemScreenSpecs].
+/// Preferences (sort order + visibility) come from `screen_preferences`.
+class ScreenCatalogRepositoryImpl implements ScreenCatalogRepositoryContract {
+  ScreenCatalogRepositoryImpl(
     db.AppDatabase db,
   ) : _preferencesDao = ScreenPreferencesDao(db);
 
@@ -84,7 +78,7 @@ class ScreenDefinitionsRepositoryImpl
   Stream<ScreenWithPreferences?> watchScreen(String screenKey) {
     final systemScreen = SystemScreenSpecs.getByKey(screenKey);
     if (systemScreen != null) {
-      // System screen definition comes from code; preferences come from DB.
+      // System screen spec comes from code; preferences come from DB.
       return _preferencesDao
           .watchOne(systemScreen.screenKey)
           .map(
@@ -95,7 +89,7 @@ class ScreenDefinitionsRepositoryImpl
           );
     }
 
-    // Custom screens removed: unknown keys are not resolvable.
+    // Unknown keys are not resolvable.
     return Stream<ScreenWithPreferences?>.value(null);
   }
 
@@ -104,7 +98,6 @@ class ScreenDefinitionsRepositoryImpl
     String screenKey,
     ScreenPreferences preferences,
   ) async {
-    // Option B: persist preferences in screen_preferences.
     await _preferencesDao.upsert(screenKey, preferences);
     talker.repositoryLog(
       'Screens',
@@ -115,7 +108,6 @@ class ScreenDefinitionsRepositoryImpl
 
   @override
   Future<void> reorderScreens(List<String> orderedScreenKeys) async {
-    // Option B: persist ordering in screen_preferences.
     await _preferencesDao.upsertManyOrdered(orderedScreenKeys);
 
     talker.repositoryLog(

@@ -31,7 +31,7 @@ Last updated at: 2026-01-14T00:00:00Z
     - Expected deletion candidates (confirm references are zero before deleting):
       - `lib/presentation/screens/view/unified_screen_page.dart`
       - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
-      - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+      - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
 
     Note (2026-01-14): these files have been deleted in the repo; keep this
     checklist as a guardrail for branches or older snapshots.
@@ -41,7 +41,7 @@ Last updated at: 2026-01-14T00:00:00Z
   - Remove or update any stale comments that still reference the legacy system.
 - Documentation and naming consistency
   - Update the repository contract docs to reference `SystemScreenSpecs` (current source of system screens).
-    - Update file: `lib/domain/interfaces/screen_definitions_repository_contract.dart`
+    - Update file: `lib/domain/interfaces/screen_catalog_repository_contract.dart`
 
 ## Acceptance Criteria
 
@@ -57,7 +57,7 @@ Last updated at: 2026-01-14T00:00:00Z
 - Expected touchpoints:
   - `lib/presentation/routing/router.dart`
   - `lib/presentation/routing/routing.dart`
-  - `lib/domain/interfaces/screen_definitions_repository_contract.dart`
+  - `lib/domain/interfaces/screen_catalog_repository_contract.dart`
   - Delete legacy presentation/domain screen-definition files and their tests.
 
 ### Verification (high-signal grep checks)
@@ -66,7 +66,7 @@ Last updated at: 2026-01-14T00:00:00Z
   - `\/label\/:id`
   - `lib/presentation/screens/view/unified_screen_page.dart`
   - `lib/presentation/screens/bloc/screen_definition_bloc.dart`
-  - `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+  - `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
 
 ## AI instructions
 

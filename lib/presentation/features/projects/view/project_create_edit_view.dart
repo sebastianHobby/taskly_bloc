@@ -88,6 +88,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
     return BlocConsumer<ProjectDetailBloc, ProjectDetailState>(
       listenWhen: (previous, current) {
         return current is ProjectDetailOperationSuccess ||
+            current is ProjectDetailInlineActionSuccess ||
             current is ProjectDetailValidationFailure ||
             current is ProjectDetailOperationFailure ||
             current is ProjectDetailLoadSuccess;
@@ -108,6 +109,9 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               ),
             );
           },
+          inlineActionSuccess: (success) {
+            showEditorSuccessSnackBar(context, success.message);
+          },
           validationFailure: (failure) {
             applyValidationFailureToForm(_formKey, failure.failure, context);
           },
@@ -127,6 +131,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
+          inlineActionSuccess: (_) => const SizedBox.shrink(),
           initialDataLoadSuccess: (availableValues) {
             void syncDraft(Map<String, dynamic> values) {
               final name = extractStringValue(values, ProjectFieldKeys.name.id);
@@ -155,6 +160,15 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                   (repeatCandidate == null || repeatCandidate.isEmpty)
                   ? null
                   : repeatCandidate;
+
+              final repeatFromCompletion = extractBoolValue(
+                values,
+                ProjectFieldKeys.repeatFromCompletion.id,
+              );
+              final seriesEnded = extractBoolValue(
+                values,
+                ProjectFieldKeys.seriesEnded.id,
+              );
               final valueIds = extractStringListValue(
                 values,
                 ProjectFieldKeys.valueIds.id,
@@ -168,6 +182,8 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 deadlineDate: deadlineDate,
                 priority: priority,
                 repeatIcalRrule: repeatIcalRrule,
+                repeatFromCompletion: repeatFromCompletion,
+                seriesEnded: seriesEnded,
                 valueIds: valueIds,
               );
             }
@@ -194,6 +210,8 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                       deadlineDate: _draft.deadlineDate,
                       priority: _draft.priority,
                       repeatIcalRrule: _draft.repeatIcalRrule,
+                      repeatFromCompletion: _draft.repeatFromCompletion,
+                      seriesEnded: _draft.seriesEnded,
                       valueIds: _draft.valueIds,
                     ),
                   ),
@@ -231,6 +249,15 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                   (repeatCandidate == null || repeatCandidate.isEmpty)
                   ? null
                   : repeatCandidate;
+
+              final repeatFromCompletion = extractBoolValue(
+                values,
+                ProjectFieldKeys.repeatFromCompletion.id,
+              );
+              final seriesEnded = extractBoolValue(
+                values,
+                ProjectFieldKeys.seriesEnded.id,
+              );
               final valueIds = extractStringListValue(
                 values,
                 ProjectFieldKeys.valueIds.id,
@@ -244,6 +271,8 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                 deadlineDate: deadlineDate,
                 priority: priority,
                 repeatIcalRrule: repeatIcalRrule,
+                repeatFromCompletion: repeatFromCompletion,
+                seriesEnded: seriesEnded,
                 valueIds: valueIds,
               );
             }
@@ -271,8 +300,18 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
                       deadlineDate: _draft.deadlineDate,
                       priority: _draft.priority,
                       repeatIcalRrule: _draft.repeatIcalRrule,
+                      repeatFromCompletion: _draft.repeatFromCompletion,
+                      seriesEnded: _draft.seriesEnded,
                       valueIds: _draft.valueIds,
                     ),
+                  ),
+                );
+              },
+              onTogglePinned: (isPinned) {
+                context.read<ProjectDetailBloc>().add(
+                  ProjectDetailEvent.setPinned(
+                    id: project.id,
+                    isPinned: isPinned,
                   ),
                 );
               },

@@ -44,12 +44,16 @@ class NavigationIconResolver {
       'planned' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'scheduled' => (icon: Icons.event_outlined, selectedIcon: Icons.event),
       'someday' => (
-        icon: Icons.weekend_outlined,
-        selectedIcon: Icons.weekend,
+        icon: Icons.list_alt_outlined,
+        selectedIcon: Icons.list_alt,
       ),
       'statistics' => (
         icon: Icons.bar_chart_outlined,
         selectedIcon: Icons.bar_chart,
+      ),
+      'review_inbox' || 'review-inbox' => (
+        icon: Icons.notifications_outlined,
+        selectedIcon: Icons.notifications,
       ),
       // Legacy screen key (map to my_day icon)
       'next_actions' || 'next-actions' => (

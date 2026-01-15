@@ -75,7 +75,7 @@ This implies overflow should not always be a single destination.
 
 ### Option 1: Two destinations (strict separation)
 - Reviews CTA navigates to a reviews-only destination.
-- Issues/allocation CTA navigates to a separate “attention inbox” destination.
+- Issues/allocation CTA navigates to a separate “Attention” destination.
 
 Pros:
 - Matches the “reviews are different” constraint.
@@ -108,7 +108,7 @@ Cons:
 
 Because a dedicated workflow is not implemented today, the “reviews overflow” destination must start as one of:
 
-1) **Placeholder** (minimal): a screen that says “Review inbox not implemented yet”.
+1) **Placeholder** (minimal): a screen that says “Attention not implemented yet”.
 2) **Review launcher**: a list of due `review_session` attention items; tapping one marks it `reviewed` (records an `AttentionResolution`) and/or opens a placeholder step page.
 3) **True workflows** (future): implement separate experiences per `review_type`:
    - Values alignment review
@@ -140,7 +140,7 @@ Key design questions:
 3) Separately design and implement:
    - Review workflows per review type
    - Project-health review evaluation
-   - A non-review attention inbox (issues/allocation)
+   - A non-review Attention destination (issues/allocation)
 
 ## Notes
 - This doc reflects analysis as of 2026-01-14.

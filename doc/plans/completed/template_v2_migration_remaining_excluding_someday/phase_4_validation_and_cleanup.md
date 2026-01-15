@@ -15,7 +15,7 @@ Finish the migration safely: validate behavior, remove dead wiring, and (optiona
 ## Checklist
 - Update `doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md` if any catalog entries change.
 - Run recorded tests (`flutter_test_record`).
-- Verify no orphaned template IDs exist in system screen definitions.
+- Verify no orphaned template IDs exist in system screen specs.
 - Remove unused helpers, imports, and any now-dead branches related to migrated templates.
 
 ## AI instructions

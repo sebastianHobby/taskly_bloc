@@ -17,7 +17,7 @@ Goal: switch all shipped screens to `*_v2`, delete legacy codepaths, then valida
 
 ### 1) Convert system screens + generated detail screens
 
-- Update: `lib/domain/screens/catalog/system_screens/system_screen_definitions.dart`
+- Update: `lib/domain/screens/catalog/system_screens/system_screen_specs.dart`
   - Replace legacy template IDs with V2 IDs.
   - Replace legacy params JSON with V2 params JSON.
 

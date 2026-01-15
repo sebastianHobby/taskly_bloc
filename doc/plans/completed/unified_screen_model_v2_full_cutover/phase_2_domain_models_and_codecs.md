@@ -94,7 +94,7 @@ If any existing converter/codec drops the query:
 - Add new V2 template IDs and params types:
   - `task_list_v2`, `project_list_v2`, `value_list_v2`, `interleaved_list_v2`, `agenda_v2`
 - Updated params decoding in `SectionTemplateParamsCodec` to decode V2 params for the new V2 template IDs.
-- Update system screen definitions to compile against the new model surface (conversion may happen in Phase 5, but types + codecs should exist now).
+- Update system screen specs to compile against the new model surface (conversion may happen in Phase 5, but types + codecs should exist now).
 
 Explicit exclusions:
 - Do not reintroduce a `RelatedDataConfig`-style concept in V2.

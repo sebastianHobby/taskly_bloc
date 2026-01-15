@@ -1,21 +1,20 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart'
-    show ScreenDefinitionsRepositoryImpl;
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart'
+    show ScreenCatalogRepositoryImpl;
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 /// Repository wrapper that delegates to the database implementation.
 ///
 /// This wrapper provides logging and potential future cross-cutting concerns.
 ///
-/// For the database implementation, see [ScreenDefinitionsRepositoryImpl].
-class ScreenDefinitionsRepository
-    implements ScreenDefinitionsRepositoryContract {
-  ScreenDefinitionsRepository({
-    required ScreenDefinitionsRepositoryContract databaseRepository,
+/// For the database implementation, see [ScreenCatalogRepositoryImpl].
+class ScreenCatalogRepository implements ScreenCatalogRepositoryContract {
+  ScreenCatalogRepository({
+    required ScreenCatalogRepositoryContract databaseRepository,
   }) : _dbRepo = databaseRepository;
 
-  final ScreenDefinitionsRepositoryContract _dbRepo;
+  final ScreenCatalogRepositoryContract _dbRepo;
 
   @override
   Stream<List<ScreenWithPreferences>> watchAllScreens() {

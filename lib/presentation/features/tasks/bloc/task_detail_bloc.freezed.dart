@@ -55,11 +55,12 @@ extension TaskDetailEventPatterns on TaskDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _TaskDetailUpdate value)?  update,TResult Function( _TaskDetailDelete value)?  delete,TResult Function( _TaskDetailCreate value)?  create,TResult Function( _TaskDetailLoadById value)?  loadById,TResult Function( _TaskDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _TaskDetailUpdate value)?  update,TResult Function( _TaskDetailSetPinned value)?  setPinned,TResult Function( _TaskDetailDelete value)?  delete,TResult Function( _TaskDetailCreate value)?  create,TResult Function( _TaskDetailLoadById value)?  loadById,TResult Function( _TaskDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that);case _TaskDetailDelete() when delete != null:
+return update(_that);case _TaskDetailSetPinned() when setPinned != null:
+return setPinned(_that);case _TaskDetailDelete() when delete != null:
 return delete(_that);case _TaskDetailCreate() when create != null:
 return create(_that);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that);case _TaskDetailLoadInitialData() when loadInitialData != null:
@@ -81,11 +82,12 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _TaskDetailUpdate value)  update,required TResult Function( _TaskDetailDelete value)  delete,required TResult Function( _TaskDetailCreate value)  create,required TResult Function( _TaskDetailLoadById value)  loadById,required TResult Function( _TaskDetailLoadInitialData value)  loadInitialData,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _TaskDetailUpdate value)  update,required TResult Function( _TaskDetailSetPinned value)  setPinned,required TResult Function( _TaskDetailDelete value)  delete,required TResult Function( _TaskDetailCreate value)  create,required TResult Function( _TaskDetailLoadById value)  loadById,required TResult Function( _TaskDetailLoadInitialData value)  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
-return update(_that);case _TaskDetailDelete():
+return update(_that);case _TaskDetailSetPinned():
+return setPinned(_that);case _TaskDetailDelete():
 return delete(_that);case _TaskDetailCreate():
 return create(_that);case _TaskDetailLoadById():
 return loadById(_that);case _TaskDetailLoadInitialData():
@@ -103,11 +105,12 @@ return loadInitialData(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _TaskDetailUpdate value)?  update,TResult? Function( _TaskDetailDelete value)?  delete,TResult? Function( _TaskDetailCreate value)?  create,TResult? Function( _TaskDetailLoadById value)?  loadById,TResult? Function( _TaskDetailLoadInitialData value)?  loadInitialData,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _TaskDetailUpdate value)?  update,TResult? Function( _TaskDetailSetPinned value)?  setPinned,TResult? Function( _TaskDetailDelete value)?  delete,TResult? Function( _TaskDetailCreate value)?  create,TResult? Function( _TaskDetailLoadById value)?  loadById,TResult? Function( _TaskDetailLoadInitialData value)?  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that);case _TaskDetailDelete() when delete != null:
+return update(_that);case _TaskDetailSetPinned() when setPinned != null:
+return setPinned(_that);case _TaskDetailDelete() when delete != null:
 return delete(_that);case _TaskDetailCreate() when create != null:
 return create(_that);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that);case _TaskDetailLoadInitialData() when loadInitialData != null:
@@ -128,10 +131,11 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( UpdateTaskCommand command)?  update,TResult Function( String id)?  delete,TResult Function( CreateTaskCommand command)?  create,TResult Function( String taskId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( UpdateTaskCommand command)?  update,TResult Function( String id,  bool isPinned)?  setPinned,TResult Function( String id)?  delete,TResult Function( CreateTaskCommand command)?  create,TResult Function( String taskId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.command);case _TaskDetailDelete() when delete != null:
+return update(_that.command);case _TaskDetailSetPinned() when setPinned != null:
+return setPinned(_that.id,_that.isPinned);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
 return create(_that.command);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
@@ -153,10 +157,11 @@ return loadInitialData();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( UpdateTaskCommand command)  update,required TResult Function( String id)  delete,required TResult Function( CreateTaskCommand command)  create,required TResult Function( String taskId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( UpdateTaskCommand command)  update,required TResult Function( String id,  bool isPinned)  setPinned,required TResult Function( String id)  delete,required TResult Function( CreateTaskCommand command)  create,required TResult Function( String taskId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate():
-return update(_that.command);case _TaskDetailDelete():
+return update(_that.command);case _TaskDetailSetPinned():
+return setPinned(_that.id,_that.isPinned);case _TaskDetailDelete():
 return delete(_that.id);case _TaskDetailCreate():
 return create(_that.command);case _TaskDetailLoadById():
 return loadById(_that.taskId);case _TaskDetailLoadInitialData():
@@ -174,10 +179,11 @@ return loadInitialData();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( UpdateTaskCommand command)?  update,TResult? Function( String id)?  delete,TResult? Function( CreateTaskCommand command)?  create,TResult? Function( String taskId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( UpdateTaskCommand command)?  update,TResult? Function( String id,  bool isPinned)?  setPinned,TResult? Function( String id)?  delete,TResult? Function( CreateTaskCommand command)?  create,TResult? Function( String taskId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _TaskDetailUpdate() when update != null:
-return update(_that.command);case _TaskDetailDelete() when delete != null:
+return update(_that.command);case _TaskDetailSetPinned() when setPinned != null:
+return setPinned(_that.id,_that.isPinned);case _TaskDetailDelete() when delete != null:
 return delete(_that.id);case _TaskDetailCreate() when create != null:
 return create(_that.command);case _TaskDetailLoadById() when loadById != null:
 return loadById(_that.taskId);case _TaskDetailLoadInitialData() when loadInitialData != null:
@@ -249,6 +255,74 @@ class __$TaskDetailUpdateCopyWithImpl<$Res>
   return _then(_TaskDetailUpdate(
 command: null == command ? _self.command : command // ignore: cast_nullable_to_non_nullable
 as UpdateTaskCommand,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class _TaskDetailSetPinned implements TaskDetailEvent {
+  const _TaskDetailSetPinned({required this.id, required this.isPinned});
+  
+
+ final  String id;
+ final  bool isPinned;
+
+/// Create a copy of TaskDetailEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$TaskDetailSetPinnedCopyWith<_TaskDetailSetPinned> get copyWith => __$TaskDetailSetPinnedCopyWithImpl<_TaskDetailSetPinned>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskDetailSetPinned&&(identical(other.id, id) || other.id == id)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,isPinned);
+
+@override
+String toString() {
+  return 'TaskDetailEvent.setPinned(id: $id, isPinned: $isPinned)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$TaskDetailSetPinnedCopyWith<$Res> implements $TaskDetailEventCopyWith<$Res> {
+  factory _$TaskDetailSetPinnedCopyWith(_TaskDetailSetPinned value, $Res Function(_TaskDetailSetPinned) _then) = __$TaskDetailSetPinnedCopyWithImpl;
+@useResult
+$Res call({
+ String id, bool isPinned
+});
+
+
+
+
+}
+/// @nodoc
+class __$TaskDetailSetPinnedCopyWithImpl<$Res>
+    implements _$TaskDetailSetPinnedCopyWith<$Res> {
+  __$TaskDetailSetPinnedCopyWithImpl(this._self, this._then);
+
+  final _TaskDetailSetPinned _self;
+  final $Res Function(_TaskDetailSetPinned) _then;
+
+/// Create a copy of TaskDetailEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? isPinned = null,}) {
+  return _then(_TaskDetailSetPinned(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,isPinned: null == isPinned ? _self.isPinned : isPinned // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -529,11 +603,12 @@ extension TaskDetailStatePatterns on TaskDetailState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskDetailInitial value)?  initial,TResult Function( TaskDetailValidationFailure value)?  validationFailure,TResult Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult Function( TaskDetailOperationFailure value)?  operationFailure,TResult Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult Function( TaskDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TaskDetailInitial value)?  initial,TResult Function( TaskDetailInlineActionSuccess value)?  inlineActionSuccess,TResult Function( TaskDetailValidationFailure value)?  validationFailure,TResult Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult Function( TaskDetailOperationFailure value)?  operationFailure,TResult Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult Function( TaskDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial(_that);case TaskDetailValidationFailure() when validationFailure != null:
+return initial(_that);case TaskDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that);case TaskDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case TaskDetailOperationFailure() when operationFailure != null:
@@ -557,11 +632,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskDetailInitial value)  initial,required TResult Function( TaskDetailValidationFailure value)  validationFailure,required TResult Function( TaskDetailInitialDataLoadSuccess value)  initialDataLoadSuccess,required TResult Function( TaskDetailOperationSuccess value)  operationSuccess,required TResult Function( TaskDetailOperationFailure value)  operationFailure,required TResult Function( TaskDetailLoadInProgress value)  loadInProgress,required TResult Function( TaskDetailLoadSuccess value)  loadSuccess,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TaskDetailInitial value)  initial,required TResult Function( TaskDetailInlineActionSuccess value)  inlineActionSuccess,required TResult Function( TaskDetailValidationFailure value)  validationFailure,required TResult Function( TaskDetailInitialDataLoadSuccess value)  initialDataLoadSuccess,required TResult Function( TaskDetailOperationSuccess value)  operationSuccess,required TResult Function( TaskDetailOperationFailure value)  operationFailure,required TResult Function( TaskDetailLoadInProgress value)  loadInProgress,required TResult Function( TaskDetailLoadSuccess value)  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial():
-return initial(_that);case TaskDetailValidationFailure():
+return initial(_that);case TaskDetailInlineActionSuccess():
+return inlineActionSuccess(_that);case TaskDetailValidationFailure():
 return validationFailure(_that);case TaskDetailInitialDataLoadSuccess():
 return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess():
 return operationSuccess(_that);case TaskDetailOperationFailure():
@@ -584,11 +660,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskDetailInitial value)?  initial,TResult? Function( TaskDetailValidationFailure value)?  validationFailure,TResult? Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult? Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult? Function( TaskDetailOperationFailure value)?  operationFailure,TResult? Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult? Function( TaskDetailLoadSuccess value)?  loadSuccess,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TaskDetailInitial value)?  initial,TResult? Function( TaskDetailInlineActionSuccess value)?  inlineActionSuccess,TResult? Function( TaskDetailValidationFailure value)?  validationFailure,TResult? Function( TaskDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult? Function( TaskDetailOperationSuccess value)?  operationSuccess,TResult? Function( TaskDetailOperationFailure value)?  operationFailure,TResult? Function( TaskDetailLoadInProgress value)?  loadInProgress,TResult? Function( TaskDetailLoadSuccess value)?  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial(_that);case TaskDetailValidationFailure() when validationFailure != null:
+return initial(_that);case TaskDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that);case TaskDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case TaskDetailOperationFailure() when operationFailure != null:
@@ -611,10 +688,11 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( ValidationFailure failure)?  validationFailure,TResult Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  inlineActionSuccess,TResult Function( ValidationFailure failure)?  validationFailure,TResult Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial();case TaskDetailValidationFailure() when validationFailure != null:
+return initial();case TaskDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that.message);case TaskDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that.failure);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
@@ -638,10 +716,11 @@ return loadSuccess(_that.availableProjects,_that.availableValues,_that.task);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( ValidationFailure failure)  validationFailure,required TResult Function( List<Project> availableProjects,  List<Value> availableValues)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Task> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  inlineActionSuccess,required TResult Function( ValidationFailure failure)  validationFailure,required TResult Function( List<Project> availableProjects,  List<Value> availableValues)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Task> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial():
-return initial();case TaskDetailValidationFailure():
+return initial();case TaskDetailInlineActionSuccess():
+return inlineActionSuccess(_that.message);case TaskDetailValidationFailure():
 return validationFailure(_that.failure);case TaskDetailInitialDataLoadSuccess():
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess():
 return operationSuccess(_that.operation);case TaskDetailOperationFailure():
@@ -664,10 +743,11 @@ return loadSuccess(_that.availableProjects,_that.availableValues,_that.task);cas
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( ValidationFailure failure)?  validationFailure,TResult? Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  inlineActionSuccess,TResult? Function( ValidationFailure failure)?  validationFailure,TResult? Function( List<Project> availableProjects,  List<Value> availableValues)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Task> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Project> availableProjects,  List<Value> availableValues,  Task task)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case TaskDetailInitial() when initial != null:
-return initial();case TaskDetailValidationFailure() when validationFailure != null:
+return initial();case TaskDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that.message);case TaskDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that.failure);case TaskDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableProjects,_that.availableValues);case TaskDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case TaskDetailOperationFailure() when operationFailure != null:
@@ -712,6 +792,72 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class TaskDetailInlineActionSuccess implements TaskDetailState {
+  const TaskDetailInlineActionSuccess({required this.message});
+  
+
+ final  String message;
+
+/// Create a copy of TaskDetailState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$TaskDetailInlineActionSuccessCopyWith<TaskDetailInlineActionSuccess> get copyWith => _$TaskDetailInlineActionSuccessCopyWithImpl<TaskDetailInlineActionSuccess>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskDetailInlineActionSuccess&&(identical(other.message, message) || other.message == message));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message);
+
+@override
+String toString() {
+  return 'TaskDetailState.inlineActionSuccess(message: $message)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $TaskDetailInlineActionSuccessCopyWith<$Res> implements $TaskDetailStateCopyWith<$Res> {
+  factory $TaskDetailInlineActionSuccessCopyWith(TaskDetailInlineActionSuccess value, $Res Function(TaskDetailInlineActionSuccess) _then) = _$TaskDetailInlineActionSuccessCopyWithImpl;
+@useResult
+$Res call({
+ String message
+});
+
+
+
+
+}
+/// @nodoc
+class _$TaskDetailInlineActionSuccessCopyWithImpl<$Res>
+    implements $TaskDetailInlineActionSuccessCopyWith<$Res> {
+  _$TaskDetailInlineActionSuccessCopyWithImpl(this._self, this._then);
+
+  final TaskDetailInlineActionSuccess _self;
+  final $Res Function(TaskDetailInlineActionSuccess) _then;
+
+/// Create a copy of TaskDetailState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(TaskDetailInlineActionSuccess(
+message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
 
 /// @nodoc
 

@@ -15,7 +15,7 @@ import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
-/// Builds concrete query objects from persisted screen definitions.
+/// Builds concrete query objects from persisted screen configuration.
 class ScreenQueryBuilder {
   /// Builds a [TaskQuery] from a screen [selector] and [display] config.
   TaskQuery buildTaskQuery({

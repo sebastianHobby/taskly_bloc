@@ -76,11 +76,12 @@ class FocusModeCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        focusMode.wizardTagline.toUpperCase(),
+                        focusMode.wizardTagline,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: colorScheme.primary,
-                          letterSpacing: 0.6,
+                          fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),

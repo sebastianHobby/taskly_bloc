@@ -32,6 +32,8 @@ class FormShell extends StatelessWidget {
     required this.submitTooltip,
     this.onClose,
     this.onDelete,
+    this.leadingActions = const <Widget>[],
+    this.trailingActions = const <Widget>[],
     this.submitIcon = Icons.check,
     this.deleteTooltip = 'Delete',
     this.closeTooltip = 'Close',
@@ -58,6 +60,16 @@ class FormShell extends StatelessWidget {
   /// Called when the delete button is tapped. If null, no delete button shown.
   final VoidCallback? onDelete;
 
+  /// Additional action widgets to render on the left side of the header row.
+  ///
+  /// Rendered after the built-in delete button (if present).
+  final List<Widget> leadingActions;
+
+  /// Additional action widgets to render on the right side of the header row.
+  ///
+  /// Rendered before the built-in close button (if present).
+  final List<Widget> trailingActions;
+
   /// Tooltip for the delete button.
   final String deleteTooltip;
 
@@ -74,6 +86,29 @@ class FormShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    final resolvedLeadingActions = <Widget>[
+      if (onDelete != null)
+        IconButton(
+          onPressed: onDelete,
+          icon: Icon(
+            Icons.delete_outline,
+            color: colorScheme.error,
+          ),
+          tooltip: deleteTooltip,
+        ),
+      ...leadingActions,
+    ];
+
+    final resolvedTrailingActions = <Widget>[
+      ...trailingActions,
+      if (onClose != null)
+        IconButton(
+          onPressed: onClose,
+          icon: const Icon(Icons.close),
+          tooltip: closeTooltip,
+        ),
+    ];
 
     return Container(
       decoration: BoxDecoration(
@@ -100,24 +135,9 @@ class FormShell extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Delete button (if editing)
-                if (onDelete != null)
-                  IconButton(
-                    onPressed: onDelete,
-                    icon: Icon(
-                      Icons.delete_outline,
-                      color: colorScheme.error,
-                    ),
-                    tooltip: deleteTooltip,
-                  ),
+                ...resolvedLeadingActions,
                 const Spacer(),
-                // Close button
-                if (onClose != null)
-                  IconButton(
-                    onPressed: onClose,
-                    icon: const Icon(Icons.close),
-                    tooltip: closeTooltip,
-                  ),
+                ...resolvedTrailingActions,
               ],
             ),
           ),

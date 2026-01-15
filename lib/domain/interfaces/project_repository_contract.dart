@@ -46,6 +46,7 @@ abstract class ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
     int? priority,
   });
@@ -59,6 +60,7 @@ abstract class ProjectRepositoryContract {
     DateTime? deadlineDate,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     int? priority,
     bool? isPinned,
