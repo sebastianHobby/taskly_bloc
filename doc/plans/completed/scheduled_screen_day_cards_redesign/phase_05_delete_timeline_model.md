@@ -1,7 +1,7 @@
 # Phase 05 — Delete Timeline Model (Repository-wide)
 
 Created at: 2026-01-15T05:10:06Z
-Last updated at: 2026-01-15T05:18:37Z
+Last updated at: 2026-01-15T11:40:16.5322380Z
 
 ## Objective
 Remove the legacy timeline model (`timelineMonthSections` and any related rendering/data-shaping code) after migrating all references to the new layout.
@@ -61,3 +61,11 @@ This phase exists to ensure we don’t accidentally delete something still in us
 - Review `doc/architecture/` before implementing.
 - Run `flutter analyze` for this phase.
 - Fix analyzer issues caused by this phase.
+
+## Completed
+Completed at: 2026-01-15T11:40:16.5322380Z
+
+Summary:
+- Removed the legacy timeline UI path from the agenda renderer.
+- Preserved backward compatibility by mapping the legacy layout value to the day-cards feed.
+- Analyzer is clean.

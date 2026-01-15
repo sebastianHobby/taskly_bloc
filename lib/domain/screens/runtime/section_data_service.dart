@@ -791,6 +791,7 @@ class SectionDataService {
       final results = await Future.wait([
         _analyticsService.getValueWeeklyTrends(weeks: sparklineWeeks),
         _analyticsService.getValueActivityStats(),
+        _analyticsService.getValuePrimarySecondaryStats(),
         _analyticsService.getRecentCompletionsByValue(
           days: lookbackDays,
         ),
@@ -799,8 +800,10 @@ class SectionDataService {
 
       final weeklyTrends = results[0] as Map<String, List<double>>;
       final activityStats = results[1] as Map<String, ValueActivityStats>;
-      final recentCompletions = results[2] as Map<String, int>;
-      final totalRecentCompletions = results[3] as int;
+      final primarySecondaryStats =
+          results[2] as Map<String, ValuePrimarySecondaryStats>;
+      final recentCompletions = results[3] as Map<String, int>;
+      final totalRecentCompletions = results[4] as int;
 
       // Calculate total weight for percentage calculation
       final totalWeight = values.fold<int>(
@@ -855,11 +858,17 @@ class SectionDataService {
             activityStats[value.id] ??
             const ValueActivityStats(taskCount: 0, projectCount: 0);
 
+        final primarySecondary = primarySecondaryStats[value.id];
+
         statsByValueId[value.id] = ValueStats(
           targetPercent: targetPercent,
           actualPercent: actualPercent,
           taskCount: activity.taskCount,
           projectCount: activity.projectCount,
+          primaryTaskCount: primarySecondary?.primaryTaskCount ?? 0,
+          secondaryTaskCount: primarySecondary?.secondaryTaskCount ?? 0,
+          primaryProjectCount: primarySecondary?.primaryProjectCount ?? 0,
+          secondaryProjectCount: primarySecondary?.secondaryProjectCount ?? 0,
           weeklyTrend: weeklyTrend,
           lookbackDays: lookbackDays,
           recentCompletionCount: recentCount,

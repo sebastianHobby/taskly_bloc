@@ -313,7 +313,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
       'Health',
       'Family',
       'Learning',
-      'Deep Work',
+      'Focus',
       'Friendship',
       'Creativity',
     ];

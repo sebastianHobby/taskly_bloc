@@ -1,7 +1,7 @@
 # Phase 02 — Renderer: Day Cards Feed + Grouping + Range
 
 Created at: 2026-01-15T05:07:20Z
-Last updated at: 2026-01-15T05:18:37Z
+Last updated at: 2026-01-15T11:40:16.5322380Z
 
 ## Objective
 Implement the new Scheduled UI in the agenda renderer when `layout == agendaDayCardsFeed`.
@@ -66,6 +66,12 @@ Use only:
 - `widget.data.agendaData.loadedHorizonEnd` (may be null)
 
 No other reads.
+
+## Search + filter ownership (SCH-003A)
+- Keep the existing Search + Filter entry points and their current presentation ownership.
+- Search/filter state must be owned by presentation BLoCs (e.g. the existing bottom sheet flows).
+- The day-cards renderer/widget consumes that presentation state and applies it when filtering the already-provided `agendaData.groups`.
+- The renderer must not introduce any new repository/service reads or domain/data stream subscriptions.
 
 ## Filtering algorithm (exact)
 
@@ -147,3 +153,9 @@ In addition to the existing ones:
 - Review `doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md` and confirm renderer changes remain presentation-only.
 - Run `flutter analyze` for this phase.
 - Fix analyzer issues caused by this phase’s changes by end of phase.
+
+## Completed
+Completed at: 2026-01-15T11:40:16.5322380Z
+
+Summary:
+- Implemented the day-cards feed UI in the agenda renderer, including range presets, jump-to-week/month, horizon clamp note, grouping, and in-progress collapse.

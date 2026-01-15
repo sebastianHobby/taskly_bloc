@@ -101,6 +101,10 @@ Route -> Screen key
 
 For the deeper dive see:
 - [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
+  - non-negotiable invariants (how to avoid layering drift)
+  - ED/RD outline (routing + editor/detail data contract)
+  - decision guide (module vs template vs params/variant vs enrichment)
+  - mutations boundary (`ScreenActionsBloc`) and error surfacing
 
 ### 2.2 Offline-first persistence + sync (PowerSync + Supabase)
 

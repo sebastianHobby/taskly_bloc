@@ -16,7 +16,8 @@ import 'package:taskly_bloc/presentation/features/values/view/value_editor_route
 /// - **Entities**: `/:entityType/:id` → handled by [Routing.buildEntityDetail]
 ///
 /// All screen/entity builders are registered in [Routing] at bootstrap.
-/// No legacy redirects - all paths are canonical.
+/// Note: a small number of legacy aliases/redirects still exist for backwards
+/// compatibility.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
   observers: [

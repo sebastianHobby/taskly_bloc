@@ -33,20 +33,44 @@ streams and emits widget-friendly state.
 System screens are defined in code via `SystemScreenSpecs`. Screen ordering and
 visibility preferences are persisted separately.
 
-Routing follows two supported URL patterns:
+Routing supports the following URL patterns:
 
-- **Screens**: `/:segment` → `Routing.buildScreen(screenKey)` → `SystemScreenSpecs` → unified rendering.
+- **Screens (unified)**: `/:segment` → `Routing.buildScreen(screenKey)` → `SystemScreenSpecs` → unified rendering.
 - **Entity editors (NAV-01)**:
   - Create: `/<entityType>/new` (e.g. `/task/new?projectId=abc`)
   - Edit: `/<entityType>/:id/edit`
-  - Legacy task detail route: `/task/:id` redirects to `/task/:id/edit`
-- **Entity detail (read/composite)**: `/<entityType>/:id` (only for entities with a detail surface)
+- **Entity detail (read/composite)**: `/<entityType>/:id` (only for entities that have a read/composite surface)
+
+There are also a small number of **route aliases/redirects** (for backwards
+compatibility) implemented in the router (for example `/task/:id` →
+`/task/:id/edit`, and historical `/projects`/`/someday` paths).
 
 As of the core ED/RD cutover, **tasks are editor-only**: navigating to
 `/task/:id` opens the task editor modal (there is no read-only task detail
 page).
 
 The supported entity route types are `task`, `project`, and `value`.
+
+### 1.1 Non-negotiable invariants (keep the system clean)
+
+These rules are intentionally strict. If you need to break one, treat it as an
+architecture change and document the rationale.
+
+- **Presentation boundary**: widgets/pages do not call repositories, and do not
+  subscribe to domain/data streams directly. Use a presentation BLoC.
+- **Reactive UI**: interpreters should expose reactive outputs (prefer
+  `watch(...)`/streams) so offline-first DB changes are reflected automatically.
+- **Section isolation**: interpreter failures yield a section-level error VM;
+  do not fail the whole screen stream for section-specific errors.
+- **Mutations funnel**: user-triggered mutations (create/edit/delete/pin/etc)
+  are executed via `ScreenActionsBloc` (or a dedicated presentation BLoC), not
+  from widgets.
+- **Typed configuration**: do not introduce stringly-typed module params or
+  ad-hoc JSON screen definitions. Extend the typed model.
+- **No cross-layer imports**: domain must not import presentation; presentation
+  must not depend on data implementations (only contracts/services).
+- **Stable identity**: shipped `screenKey` values are stable; changes must
+  include routing and preference-migration consideration.
 
 ---
 
@@ -105,6 +129,7 @@ The following diagram uses plain text so it renders in any Markdown viewer:
 |  GoRouter '/:segment'        |
 |         '/<entity>/new'      |
 |         '/<entity>/:id/edit' |
+|         '/task/:id' (redirect) |
 |         '/project/:id'       |
 |         '/value/:id'         |
 |  Routing.buildScreen         |
@@ -251,6 +276,52 @@ in:
 - After the editor closes, detail UI refreshes from the offline-first source of
   truth (reactive watches), not from editor return values.
 
+### 3.5 Entity Editor/Detail (ED/RD) — Outline (developer rules)
+
+This expands the ED/RD overview into a practical outline so changes stay
+consistent.
+
+#### Routing surface (NAV-01)
+
+- **Create editor**: `/<entityType>/new` (optional query params like
+  `?projectId=...` are allowed when they represent editor defaults).
+- **Edit editor**: `/<entityType>/:id/edit`
+- **Detail (read/composite)**: `/<entityType>/:id` (only when the entity has a
+  real read/composite surface).
+- **Task special case**: tasks are editor-only; `/task/:id` redirects/behaves
+  like edit.
+
+#### Responsibilities (what lives where)
+
+- **Routing**: parses route params, selects the correct editor/detail route
+  page, and uses `Routing.buildEntityDetail(...)` for RD surfaces.
+- **Editor route pages**: own the modal editor UX lifecycle (open modal, await,
+  pop). They should not persist data directly.
+- **Draft -> Command**: editors maintain explicit `*Draft` state and produce a
+  `Create*Command` / `Update*Command` on save.
+- **Persistence**: consumes commands in lower layers (domain/data). The editor
+  UI does not call repositories/services directly.
+
+#### Validation contract (field-addressable)
+
+- Domain validation returns a structured error model keyed by **stable typed
+  field keys** (avoid ad-hoc string literals).
+- Presentation maps domain errors onto FormBuilder field errors using those
+  keys, plus optional form-level errors.
+
+#### Refresh semantics (offline-first)
+
+- After an editor closes, the parent/detail UI refreshes from the local DB via
+  reactive watches (BLoC/domain streams), not from editor return values.
+- Avoid passing “updated entity” objects back through navigation; treat the DB
+  as the source of truth.
+
+#### Testing expectations
+
+- Unit tests: command mapping and domain validation error shapes.
+- Widget tests: field key mapping and “save disabled / error displayed” flows.
+- Integration tests (when needed): route conventions and modal lifecycle.
+
 ---
 
 ## 4) Core Concepts (What each piece is responsible for)
@@ -298,6 +369,64 @@ See:
 - [lib/presentation/screens/view/unified_screen_spec_page.dart](../../lib/presentation/screens/view/unified_screen_spec_page.dart)
 - [lib/presentation/screens/templates/screen_template_widget.dart](../../lib/presentation/screens/templates/screen_template_widget.dart)
 - [lib/presentation/widgets/section_widget.dart](../../lib/presentation/widgets/section_widget.dart)
+
+### 4.5 Mutations (UI actions) — `ScreenActionsBloc`
+
+Unified screens follow a strict “read is reactive, write is explicit” rule:
+
+- **Reads**: BLoCs subscribe to domain/data streams and emit renderable state.
+- **Writes**: user-triggered mutations flow through a presentation BLoC.
+
+In the unified screen pipeline, the standard write boundary is
+`ScreenActionsBloc`:
+
+- Events represent user intent (toggle completion, pin/unpin, delete, …).
+- The bloc delegates to domain actions (`EntityActionService`).
+- Failures are logged (`talker`) and surfaced as a short-lived failure state.
+
+Entry points:
+
+- Bloc: [lib/presentation/screens/bloc/screen_actions_bloc.dart](../../lib/presentation/screens/bloc/screen_actions_bloc.dart)
+- State: [lib/presentation/screens/bloc/screen_actions_state.dart](../../lib/presentation/screens/bloc/screen_actions_state.dart)
+- Action execution: [lib/domain/screens/runtime/entity_action_service.dart](../../lib/domain/screens/runtime/entity_action_service.dart)
+
+#### UI invocation patterns
+
+There are two supported invocation patterns:
+
+1) **Fire-and-forget** (best for cheap toggles)
+
+- UI dispatches an event and returns immediately.
+- If the write fails, the bloc emits `ScreenActionsFailureState` and then
+  returns to idle so future failures can be surfaced again.
+
+2) **Await completion** (best for flows that must sequence UI)
+
+- Event carries an optional `Completer<void>`.
+- UI awaits the completer to sequence follow-up actions (e.g. pop a page after
+  delete completes).
+
+This pattern is used in the codebase for destructive actions and pin/unpin.
+
+#### Surfacing failures to the user
+
+`ScreenActionsBloc` failures are ephemeral; without a listener they will only
+be visible in logs.
+
+Recommendation for unified screens and entity detail screens:
+
+- Add a `BlocListener<ScreenActionsBloc, ScreenActionsState>` at the page/screen
+  root (above templates/sections).
+- When receiving `ScreenActionsFailureState`, show a `SnackBar`.
+
+Use the existing friendly error mapping and localization utilities:
+
+- Prefer `friendlyErrorMessageForUi(state.error, l10n)` when `error` is present
+  (fallback to `state.message` when it is not).
+- Helper reference: [lib/presentation/shared/errors/friendly_error_message.dart](../../lib/presentation/shared/errors/friendly_error_message.dart)
+
+If you need richer error UX (undo actions, retries, confirmation), keep it in
+presentation. Do not move UI concerns (SnackBars, dialogs) into domain.
 
 ---
 
@@ -369,16 +498,13 @@ These correspond to `ScreenModuleSpec` cases and are rendered using
 
 | SectionTemplateId | Params type | What it renders | When to use |
 |---|---|---|---|
-| `issues_summary` | `IssuesSummarySectionParams` | Issues/warnings summary | Top-of-screen attention summary. |
-| `check_in_summary` | `CheckInSummarySectionParams` | Check-in summary | Summary section on focus screens. |
-| `allocation_alerts` | `AllocationAlertsSectionParams` | Allocation-related alerts | Warning banners near allocation sections. |
-| `allocation` | `AllocationSectionParams` | Allocation/focus view for tasks | "My Day" / focus experiences. |
 | `task_list_v2` | `ListSectionParamsV2` | Task list driven by `TaskQuery` | Default for task-based screens. |
-| `project_list_v2` | `ListSectionParamsV2` | Project list driven by `ProjectQuery` | Project overviews and selection. |
 | `value_list_v2` | `ListSectionParamsV2` | Value list driven by `ValueQuery` | Value dashboards and selection. |
 | `interleaved_list_v2` | `InterleavedListSectionParamsV2` | Mixed list feed (tasks/projects/values) | When one feed combines multiple sources. |
 | `hierarchy_value_project_task_v2` | `HierarchyValueProjectTaskSectionParamsV2` | Hierarchical Value → Project → Task view | When you need a structured hierarchy view. |
 | `agenda_v2` | `AgendaSectionParamsV2` | Date-grouped agenda view | Upcoming/scheduled/calendar-like screens. |
+| `attention_banner_v2` | `AttentionBannerSectionParamsV2` | Attention banner | Top-of-screen “attention” summary banners. |
+| `attention_inbox_v1` | `AttentionInboxSectionParamsV1` | Attention inbox | Review/attention flow UI. |
 | `entity_header` | `EntityHeaderSectionParams` | Entity header section (project/value) | Top section for entity detail screens. |
 
 #### 6.4.2 Full-screen templates (rendered by `ScreenTemplateWidget`)
@@ -390,14 +516,14 @@ do not rely on section modules.
 |---|---|---|
 | `settingsMenu` | none | Settings feature UI. |
 | `journalHub` | none | Journal hub UI (Today / History / Trackers). |
-| `journalTimeline` | none | Legacy placeholder Journal timeline UI (being phased out). |
-| `navigationSettings` | none | Navigation settings UI. |
-| `allocationSettings` | none | Allocation/focus setup UI. |
 | `attentionRules` | none | Attention rules UI. |
 | `focusSetupWizard` | none | Focus setup wizard UI. |
 | `trackerManagement` | none | Tracker management UI. |
 | `statisticsDashboard` | none | Statistics dashboard UI (placeholder at the moment). |
 | `myDayFocusModeRequired` | none | Gate screen shown when My Day focus mode is missing. |
+
+Note: `entityDetailScaffoldV1` is also a screen template, but it is used for
+entity read/composite (RD) surfaces that still render sections via modules.
 
 **Guidance**
 - Prefer *parameterized* templates (`*_list_v2`, `agenda_v2`, `allocation`) for screens where the primary purpose is "show data in a consistent, configurable way".
@@ -437,6 +563,20 @@ broadly applicable.
 - `ReviewItemTileVariant`: `standard`
 
 **When to add a new variant**
+
+Add a new variant only when a real screen requires a distinct presentation and
+there is (or will be) a concrete renderer implementation for it.
+
+Guidance:
+
+- Prefer extending `StylePackV2` for broadly-applicable spacing/typography
+  decisions.
+- Use a variant when the change is a cohesive, named UI mode for a specific
+  entity tile type (task/project/value/attention/review).
+- Avoid “mega variants” that implicitly change multiple unrelated UI
+  decisions.
+- Add new enum values deliberately: they are API surface area and should be
+  test-covered.
 
 ### 6.6 Presentation-only list filters (filter bar pattern)
 
@@ -487,14 +627,11 @@ Use a different mechanism when:
 - The filter must persist across sessions/screens.
   - Prefer screen preferences persistence or a dedicated domain setting.
 
-- Add a new enum value only when a *real* screen requires a distinct presentation and there is already (or will be) a concrete widget renderer for it.
-- Keep variants narrowly scoped to the entity they render (task/project/value/attention/review). Avoid "mega variants" that implicitly change multiple unrelated UI decisions.
-
-### 6.6 Common nested config types (used by multiple templates)
+### 6.7 Common nested config types (used by multiple templates)
 
 These configs show up inside section params (especially list templates) and are the primary knobs for reuse.
 
-#### 6.6.1 `DataConfig` (what to fetch)
+#### 6.7.1 `DataConfig` (what to fetch)
 
 See: [lib/domain/screens/language/models/data_config.dart](../../lib/domain/screens/language/models/data_config.dart)
 
@@ -505,7 +642,7 @@ See: [lib/domain/screens/language/models/data_config.dart](../../lib/domain/scre
 | `value` | `query: ValueQuery?` (optional) | When the section's primary entity is values; omit `query` to use defaults. |
 | `journal` | `query: JournalQuery?` (optional) | When fetching journal entries (not used by the current V2 list modules). |
 
-#### 6.6.2 `ListSeparatorV2` and `EnrichmentPlanV2`
+#### 6.7.2 `ListSeparatorV2` and `EnrichmentPlanV2`
 
 Many V2 list-like sections use:
 
@@ -555,6 +692,28 @@ Some templates are full-screen feature UIs. They are defined by
 - [lib/domain/screens/language/models/screen_spec.dart](../../lib/domain/screens/language/models/screen_spec.dart)
 - [lib/presentation/screens/templates/screen_template_widget.dart](../../lib/presentation/screens/templates/screen_template_widget.dart)
 
+### 6.8 Decision guide: module vs template vs params vs enrichment
+
+Use this to keep the unified screen model from turning into an ad-hoc feature
+flag/config system.
+
+| You want to… | Prefer | Why |
+|---|---|---|
+| Add a new type of section UI that can be reused across multiple screens | **New section module** (`ScreenModuleSpec` + interpreter + renderer) | Keeps UI composition declarative; reuse stays cheap and consistent |
+| Build a standalone feature UI with its own layout and navigation | **Full-screen template** (`ScreenTemplateSpec`) | Avoids nested scaffolds and one-off per-screen widget trees |
+| Make a small, localized visual tweak (spacing/density/typography) | **`StylePackV2`** | Centralizes system-wide style knobs |
+| Offer a small set of named presentation modes for a tile type | **Variant enum** (e.g. `TaskTileVariant`) | Ensures modes are explicit, testable, and renderer-driven |
+| Add computed metadata used by multiple renderers (and it can be optional) | **Enrichment** (`EnrichmentPlanV2`) | Compute is opt-in; avoids bloating base models |
+| Add a local “show/hide” control that should not affect the underlying query | **Presentation-only filters** | Keeps domain queries stable; avoids persistence and extra data fetch logic |
+
+Rules of thumb:
+
+- If it must change what data is fetched, it is not a presentation-only filter;
+  encode it into `DataConfig`/queries and interpreter behavior.
+- If it must persist across sessions, use preferences or a domain setting.
+- If it is specific to one screen and unlikely to be reused, consider whether
+  it belongs in a full-screen template (feature UI) rather than a new module.
+
 ---
 
 
@@ -575,7 +734,7 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/issues_summary_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -591,9 +750,10 @@ final screen = ScreenSpec(
   ),
   modules: SlottedModules(
     header: [
-      ScreenModuleSpec.issuesSummary(
-        params: IssuesSummarySectionParams(
+      ScreenModuleSpec.attentionBannerV2(
+        params: AttentionBannerSectionParamsV2(
           pack: StylePackV2.standard,
+          buckets: const ['action', 'review'],
           entityTypes: const ['task'],
         ),
       ),
@@ -627,7 +787,7 @@ final screen = ScreenSpec(
   id: 'settings_example',
   screenKey: 'settings_example',
   name: 'Settings Example',
-  template: const ScreenTemplateSpec.navigationSettings(),
+  template: const ScreenTemplateSpec.settingsMenu(),
 );
 ```
 
@@ -644,22 +804,30 @@ When to use:
 1. **Define/extend the typed API**
   - Add a new case to `ScreenModuleSpec` (or `ScreenTemplateSpec` if it is a
     full-screen feature UI).
+  - If it is a section-style module, add a corresponding `SectionVm` variant.
 2. **Define params (optional)**
-  - Create a params model in `lib/domain/screens/templates/params/` (Freezed).
-3. **Implement the interpreter**
-  - Add a typed interpreter in `lib/domain/screens/templates/interpreters/`.
-  - Prefer `watch(...)` to keep the UI reactive.
-4. **Wire it into the spec interpreter**
-  - Add a mapping in `ScreenSpecDataInterpreter._watchModule(...)` to route the
-    new module type to the new interpreter.
-5. **Implement the renderer**
-  - Add a renderer widget in `lib/presentation/screens/templates/renderers/`.
-  - Wire it into `SectionWidget`.
-6. **Register interpreter in DI**
-  - Ensure dependency injection provides the interpreter.
+  - Create a params model in `lib/domain/screens/templates/params/`.
+3. **Implement the interpreter (domain)**
+  - Add a typed interpreter under `lib/domain/screens/templates/interpreters/`.
+  - Prefer `watch(...)` returning a stream so the UI stays reactive.
+4. **Register the module interpreter (domain registry)**
+  - Wire the new `ScreenModuleSpec` case into
+    `DefaultScreenModuleInterpreterRegistry`.
+  - Ensure errors are localized: map interpreter failures to a `SectionVm.*`
+    with `error:` set, rather than failing the whole screen stream.
+5. **Implement + register the renderer (presentation registry)**
+  - Add a renderer under `lib/presentation/screens/templates/renderers/`.
+  - Wire it into `DefaultSectionRendererRegistry` using `section.map(...)`.
+6. **Wire DI**
+  - Ensure DI provides the interpreter and the registries.
 7. **Add tests**
-  - Domain: params correctness + interpreter behavior where feasible.
-  - Presentation: widget tests for loading/error rendering and key UI.
+  - Domain: interpreter outputs and error localization.
+  - Presentation: renderer behavior for `isLoading` / `error` / missing data.
+
+If the module needs mutations (create/edit/delete/pin/etc), add an event to
+`ScreenActionsBloc` and execute it through the domain `EntityActionService`.
+
+See also: “Mutations (UI actions) — `ScreenActionsBloc`” in this document.
 
 ### 8.2 Add/modify a system screen
 
@@ -669,16 +837,70 @@ When to use:
 
 See: [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
 
+### 8.3 Common change cookbooks (what to touch)
+
+These recipes are intentionally explicit so new contributors don’t miss a
+registry, DI wiring, or tests.
+
+#### A) Add a new section module
+
+- Add a new `ScreenModuleSpec` case and any typed params model.
+- Add a corresponding `SectionVm` variant.
+- Implement the domain interpreter and wire it into
+  `DefaultScreenModuleInterpreterRegistry`.
+- Implement the renderer and wire it into `DefaultSectionRendererRegistry`.
+- Wire DI for interpreter/registries.
+- Add tests:
+  - interpreter output + error localization (section-level failures)
+  - renderer handling of loading/error/empty states
+
+#### B) Add a new full-screen template
+
+- Add a `ScreenTemplateSpec` case.
+- Implement template rendering in `ScreenTemplateWidget`.
+- Prefer to keep the template internally BLoC-driven; do not have it call
+  repositories directly from widgets.
+
+#### C) Add a new system screen (no new UI)
+
+- Add/modify a `ScreenSpec` in `SystemScreenSpecs`.
+- Ensure `screenKey` is stable; if changing a shipped key, plan for routing and
+  preference migration.
+- If it must appear in navigation defaults, update default ordering/visibility
+  seeding logic.
+
+#### D) Add a new presentation-only filter
+
+- Add to `SectionFilterSpecV2` (domain) only what is required to configure the
+  filter’s *presence/behavior*.
+- Keep filter state ephemeral in presentation (renderer/widget), and filter
+  `ScreenItem`s in-memory.
+- If you find yourself needing the filter to change data fetching, stop and
+  move the behavior into `DataConfig`/queries/interpreters instead.
+
+#### E) Add a new enrichment
+
+- Add a new `EnrichmentPlanItemV2` and implement it in the domain enrichment
+  pipeline.
+- Keep enrichments optional and cheap by default; require explicit opt-in via
+  `EnrichmentPlanV2` in section params.
+
 ---
 
 ## 9) Operational Notes & Common Pitfalls
 
 - **Missing module wiring**: adding a new `ScreenModuleSpec` without updating
-  `ScreenSpecDataInterpreter` and `SectionWidget` will fail at runtime.
+  `DefaultScreenModuleInterpreterRegistry` and `DefaultSectionRendererRegistry`
+  will fail at runtime.
 - **Screen key changes**: changing `screenKey` affects routing and preferences.
   Treat shipped keys as stable.
 - **Gates**: when a gate is active, `ScreenSpecData` renders the gate template
   with no sections.
+
+**Error semantics rule of thumb**
+- Prefer section-local errors: interpreter failures should surface as
+  `SectionVm.*(error: ...)` so the screen stays alive.
+- Reserve `ScreenSpecData.error` for truly fatal screen-level failures.
 
 ---
 

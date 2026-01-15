@@ -1,7 +1,7 @@
 # Phase 03 — Row Content: Tag Pills, Metadata, Ordering
 
 Created at: 2026-01-15T05:07:20Z
-Last updated at: 2026-01-15T05:18:37Z
+Last updated at: 2026-01-15T11:40:16.5322380Z
 
 ## Objective
 Implement the detailed row requirements for tasks/projects under each Day Card.
@@ -15,6 +15,13 @@ Implement the detailed row requirements for tasks/projects under each Day Card.
 - `lib/presentation/screens/templates/renderers/agenda_section_renderer.dart`
   - Apply ordering rules within each day.
   - Apply in-progress collapse behavior.
+
+## Mutations funnel (SCH-002A)
+If the day card rows expose any interactive mutations (complete, pin/unpin, delete, etc.):
+
+- The row widgets must dispatch those intents via `ScreenActionsBloc`.
+- Row widgets must not call repositories/services directly.
+- Errors must be surfaced via the standard page/root `BlocListener<ScreenActionsBloc, ScreenActionsState>` -> `SnackBar` pattern.
 
 ## Row policy (from decisions)
 Tasks:
@@ -98,3 +105,9 @@ In-progress section is collapsed by default and only expands within the day card
 - Review USM boundary rule: widgets do not fetch domain/data.
 - Run `flutter analyze` for this phase.
 - Fix analyzer issues caused by this phase’s changes by end of phase.
+
+## Completed
+Completed at: 2026-01-15T11:40:16.5322380Z
+
+Summary:
+- Implemented tag pill display rules and row ordering, and updated task/project agenda-card variants to match the approved metadata behavior.

@@ -1,7 +1,7 @@
 # Scheduled Screen Redesign (Day Cards Feed)
 
 Created at: 2026-01-15T05:07:20Z
-Last updated at: 2026-01-15T05:18:37Z
+Last updated at: 2026-01-15T11:40:16.5322380Z
 
 ## Goal
 Redesign the Scheduled screen to the approved non-timeline UX direction:
@@ -66,7 +66,7 @@ Default selected range is **This month**:
 ### Jump behavior
 - Jump to week: week starts **Monday**. For a chosen date `d`,
 	- `weekStart = dateOnly(d) - Duration(days: d.weekday - DateTime.monday)`
-	- range is `[weekStart, weekStart + 7 days)`
+	- range is `[weekStart, weekStart + 7 days)`.
 - Jump to month: for chosen year/month `y/m`, range is `[DateTime(y,m,1), DateTime(y,m+1,1))`.
 
 ### Loaded-horizon constraint
@@ -116,6 +116,23 @@ Keep `timelineMonthSections` in the Scheduled spec, but render it as day-cards a
 **Decision**
 Proceed with Option A, with a layout name that matches the UX: `agendaDayCardsFeed`.
 
+## Architecture alignment decisions (locked)
+
+These decisions align the plan with the updated USM invariants.
+
+### SCH-001A — Typed params plumbing (no casts)
+- Agenda section params must be carried as typed data on the agenda `SectionVm` variant.
+- Rendering must not rely on `as AgendaSectionParamsV2` casts from a loosely typed `params` surface.
+
+### SCH-002A — Mutations funnel
+- Any task/project row mutations (complete, pin, delete, etc.) must dispatch events through `ScreenActionsBloc`.
+- Failures should be surfaced via the standard page/root listener -> `SnackBar` pattern described in the architecture doc.
+
+### SCH-003A — Search/filter ownership
+- Search/filter state remains owned by presentation BLoCs (existing bottom sheets + BLoC wiring).
+- The day-cards renderer consumes the resulting presentation state and applies it to already-provided section VM data.
+- The renderer must not introduce any new repository/service reads.
+
 ## Legacy timeline removal policy
 This redesign replaces the timeline model. Plan intent:
 
@@ -129,3 +146,9 @@ This redesign replaces the timeline model. Plan intent:
 - In the last phase: fix any remaining `flutter analyze` issues even if unrelated.
 - Do not implement UI/UX changes beyond the scope above without explicit approval.
 DO NOT IMPLEMENT THE PLAN WITHOUT USER CONFIRMING THEY KNOW PLAN IS NOT IN LINE WITH CURRENT ARCHITECTURE.
+
+## Completed
+Completed at: 2026-01-15T11:40:16.5322380Z
+
+Implementation note:
+- The repo did not match the `SectionLayoutSpecV2.timelineMonthSections` assumptions in this plan; the implementation adapted by introducing `AgendaLayoutV2` on `AgendaSectionParamsV2` and branching in the agenda renderer.

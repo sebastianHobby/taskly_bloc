@@ -18,12 +18,11 @@ import 'package:taskly_bloc/domain/queries/project_query.dart';
 
 /// Service for fetching and transforming data for the AgendaSection renderer.
 ///
-/// Supports the Scheduled view's timeline display with:
+/// Supports the Scheduled agenda (day cards feed) with:
 /// - Date-grouped items with semantic labels
 /// - Date tags (Starts/In Progress/Due)
 /// - Hybrid empty day handling (show near-term, skip distant empty days)
-/// - Bidirectional date picker sync
-/// - On-demand loading for infinite scroll
+/// - On-demand loading for the loaded horizon
 class AgendaSectionDataService {
   AgendaSectionDataService({
     required this.taskRepository,

@@ -11,9 +11,11 @@ import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_inbox_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/create_value_cta_section_renderer_v1.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/hierarchy_value_project_task_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/my_day_ranked_tasks_v1_section.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_renderer_v2.dart';
 
@@ -111,6 +113,9 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             params: s.params,
             title: s.title,
             compactTiles: s.params.pack == StylePackV2.compact,
+            persistenceKey: persistenceKey,
+            enableSegmentedTabs:
+                persistenceKey != null && persistenceKey.startsWith('values:'),
           );
         }
 
@@ -168,6 +173,7 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
           return SliverFillRemaining(
             hasScrollBody: true,
             child: AgendaSectionRenderer(
+              params: s.params,
               data: d,
               showTagPills: s.params.enrichment.items.any(
                 (i) => i.maybeMap(
@@ -192,10 +198,10 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
         return SliverToBoxAdapter(child: _buildUnknownSection(section));
       },
       attentionBannerV2: (s) {
-        if (result case final AttentionBannerV2SectionResult _) {
+        if (result case final AttentionBannerV2SectionResult d) {
           return SliverToBoxAdapter(
             child: AttentionBannerSectionRendererV2(
-              data: result,
+              data: d,
               title: s.title,
             ),
           );
@@ -229,6 +235,25 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
         }
 
         return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
+      myDayRankedTasksV1: (s) {
+        if (result case final HierarchyValueProjectTaskV2SectionResult d) {
+          return MyDayRankedTasksV1Section(
+            data: d.items,
+            title: s.title,
+            enrichment: d.enrichment,
+            onTaskCheckboxChanged: onTaskCheckboxChanged,
+          );
+        }
+
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
+      createValueCtaV1: (s) {
+        return SliverToBoxAdapter(
+          child: CreateValueCtaSectionRendererV1(
+            title: s.title ?? 'Create New Value',
+          ),
+        );
       },
       unknown: (_) => SliverToBoxAdapter(child: _buildUnknownSection(section)),
     );

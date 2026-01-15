@@ -1,6 +1,7 @@
 # UI Decision: <short title>
 
-Date (UTC): <YYYY-MM-DD>
+Created at: <YYYY-MM-DDTHH:MM:SSZ>
+Last updated at: <YYYY-MM-DDTHH:MM:SSZ>
 Status: Proposed | Accepted | Rejected | Superseded
 Owner: <name/team>
 

@@ -1,7 +1,7 @@
 # WIP Plan — Phase 4: Today’s mix (MIX-B) computation + UI
 
 Created at: 2026-01-15T05:09:10.4635911Z
-Last updated at: 2026-01-15T05:29:39.3878277Z
+Last updated at: 2026-01-15T06:30:00Z
 
 ## Purpose
 Implement the “Today’s mix” summary and inline expansion.
@@ -26,16 +26,24 @@ Implement the “Today’s mix” summary and inline expansion.
 
 ## Concrete implementation map
 - Render path:
-  - Implement as part of the My Day-only scroll body in `lib/presentation/screens/templates/screen_template_widget.dart` (same My Day branch used for Phase 3).
-  - The mix widget should be positioned above the ranked task list.
+  - Render inside the dedicated My Day section renderer/widget (same renderer that builds the ranked list).
+  - The mix row sits above the ranked task list in that section widget.
 - Data inputs (no repository reads in widgets):
-  - The same `DataV2SectionResult` used for the task list.
-  - Tasks: `items.whereType<ScreenItemTask>()`.
-  - Value lookup: `items.whereType<ScreenItemValue>()` (resolve value name + color dot).
-  - Qualifying override: `enrichment?.qualifyingValueIdByTaskId`.
-- UI-only state:
-  - Collapsed/expanded state is ephemeral UI state and may be held in a local `StatefulWidget` (allowed exception).
-  - Expansion must not write to settings/storage.
+  - Consume the My Day `SectionVm` for tasks and any value lookup metadata.
+  - Do not re-read repositories/services for values/colors.
+
+### Mix computation location (ARCH-002 B)
+Compute the mix breakdown in a presentation BLoC (not in the widget tree):
+
+- Introduce a `MyDayRankedListBloc` (or extend an existing My Day presentation BLoC) that:
+  - takes the My Day `SectionVm` as input (or takes `ScreenSpecBloc` state and selects the My Day section)
+  - computes the collapsed summary fields and expanded breakdown list
+  - emits a widget-friendly `MyDayMixVm`.
+- The section widget renders `MyDayMixVm` via `BlocBuilder` (or equivalent) and remains dumb.
+
+UI-only state:
+- Collapsed/expanded state is ephemeral UI state and may remain local to the widget (allowed exception), but the *computed breakdown* comes from the BLoC.
+- Expansion must not write to settings/storage.
 
 ## Acceptance criteria
 - Mix is stable for the visible list and updates when the list membership changes.

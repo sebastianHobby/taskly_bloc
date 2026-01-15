@@ -1,7 +1,13 @@
 # Phase 03 — USM-005 (Option A): Identity value types
 
 Created at: 2026-01-15T00:00:00Z
-Last updated at: 2026-01-15T00:00:00Z
+Last updated at: 2026-01-15 (UTC)
+
+Completed at: 2026-01-15 (UTC)
+
+## Completed summary
+- Added `ScreenKey` as a small identity value type.
+- Centralized persistence key formatting via `SectionPersistenceKey` and adopted it in unified screen templates while preserving the existing string format (so PageStorage state does not reset).
 
 ## Outcome
 Reduce “stringly-typed identity” for:

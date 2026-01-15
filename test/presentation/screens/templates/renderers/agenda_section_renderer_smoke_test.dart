@@ -4,6 +4,9 @@ import '../../../../helpers/test_imports.dart';
 
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 
 void main() {
@@ -40,7 +43,13 @@ void main() {
       await pumpLocalizedApp(
         tester,
         home: Scaffold(
-          body: AgendaSectionRenderer(data: agendaResult),
+          body: AgendaSectionRenderer(
+            params: const AgendaSectionParamsV2(
+              dateField: AgendaDateFieldV2.deadlineDate,
+              pack: StylePackV2.standard,
+            ),
+            data: agendaResult,
+          ),
         ),
       );
 
@@ -64,7 +73,13 @@ void main() {
       await pumpLocalizedApp(
         tester,
         home: Scaffold(
-          body: AgendaSectionRenderer(data: agendaResult),
+          body: AgendaSectionRenderer(
+            params: const AgendaSectionParamsV2(
+              dateField: AgendaDateFieldV2.deadlineDate,
+              pack: StylePackV2.standard,
+            ),
+            data: agendaResult,
+          ),
         ),
       );
 

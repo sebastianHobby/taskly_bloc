@@ -1,7 +1,7 @@
 # WIP Plan — My Day: Focus Header + Mix + Flat Ranked List
 
 Created at: 2026-01-15T05:09:10.4635911Z
-Last updated at: 2026-01-15T05:24:01.3710619Z
+Last updated at: 2026-01-15T06:30:00Z
 
 ## Goal
 Implement the agreed My Day experience:
@@ -29,7 +29,7 @@ Non-goals:
 
 Implementation constraints:
 - Keep Unified Screen Model layering: widgets do not read repositories; use existing BLoC/interpreted section data.
-- Prefer My Day-specific rendering inside the existing My Day branch of `ScreenTemplateWidget` rather than modifying shared renderers.
+- Prefer a My Day-specific **screen module + interpreter + dedicated `SectionVm` + section renderer** (section isolation), rather than rendering My Day-only list logic inside the screen template.
 - Keep copy changes scoped to My Day.
 
 ## Task tile density (chosen)
@@ -62,8 +62,6 @@ Definition of “tasks-only list” for this project:
 - Still show the task’s project name as secondary metadata where available.
 
 ## AI instructions
-DO NOT IMPLEMENT THE PLAN WITHOUT USER CONFIRMING THEY KNOW PLAN IS NOT IN LINE WITH CURRENT ARCHITECTURE.
-
 - Review `doc/architecture/` before implementing this phase.
 - Run `flutter analyze` for this phase.
 - Fix any `flutter analyze` errors/warnings caused by this phase’s changes by the end of the phase.

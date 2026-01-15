@@ -10,7 +10,7 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
     this.title,
   });
 
-  final SectionDataResult data;
+  final AttentionBannerV2SectionResult data;
   final String? title;
 
   @override
@@ -18,14 +18,12 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final result = data as AttentionBannerV2SectionResult;
-
-    final showReviews = result.reviewCount > 0;
-    final showAlerts = result.alertsCount > 0;
+    final showReviews = data.reviewCount > 0;
+    final showAlerts = data.alertsCount > 0;
     final showAny = showReviews || showAlerts;
 
-    final doneCount = result.doneCount;
-    final totalCount = result.totalCount;
+    final doneCount = data.doneCount;
+    final totalCount = data.totalCount;
     final fraction = totalCount <= 0
         ? 0.0
         : (doneCount / totalCount).clamp(0.0, 1.0);
@@ -49,12 +47,12 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
     if (showReviews) {
       chips.add(
         ActionChip(
-          label: Text('Reviews • ${result.reviewCount}'),
+          label: Text('Reviews • ${data.reviewCount}'),
           visualDensity: VisualDensity.compact,
           onPressed: () {
             Routing.toScreenKeyWithQuery(
               context,
-              result.overflowScreenKey,
+              data.overflowScreenKey,
               queryParameters: const {'bucket': 'review'},
             );
           },
@@ -64,12 +62,12 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
     if (showAlerts) {
       chips.add(
         ActionChip(
-          label: Text('Alerts • ${result.alertsCount}'),
+          label: Text('Alerts • ${data.alertsCount}'),
           visualDensity: VisualDensity.compact,
           onPressed: () {
             Routing.toScreenKeyWithQuery(
               context,
-              result.overflowScreenKey,
+              data.overflowScreenKey,
               queryParameters: const {'bucket': 'warning'},
             );
           },
@@ -87,7 +85,7 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () {
-                Routing.toScreenKey(context, result.overflowScreenKey);
+                Routing.toScreenKey(context, data.overflowScreenKey);
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
@@ -112,8 +110,8 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
                                   showReviews: showReviews,
                                   showAlerts: showAlerts,
                                   showAny: showAny,
-                                  result: result,
-                                  overflowScreenKey: result.overflowScreenKey,
+                                  result: data,
+                                  overflowScreenKey: data.overflowScreenKey,
                                   buildAllClearChip: buildAllClearChip,
                                 ),
                               )
@@ -121,8 +119,8 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
                                 showReviews: showReviews,
                                 showAlerts: showAlerts,
                                 showAny: showAny,
-                                result: result,
-                                overflowScreenKey: result.overflowScreenKey,
+                                result: data,
+                                overflowScreenKey: data.overflowScreenKey,
                                 buildAllClearChip: buildAllClearChip,
                               ),
                       ),

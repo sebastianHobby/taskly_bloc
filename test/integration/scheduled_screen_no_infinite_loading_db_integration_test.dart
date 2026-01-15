@@ -25,6 +25,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_sect
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 
 import '../helpers/integration_test_helpers.dart';
 import '../helpers/test_db.dart';
@@ -121,13 +122,15 @@ void main() {
           ),
         );
 
+        final hierarchyInterpreter =
+            _MockHierarchyValueProjectTaskSectionInterpreterV2();
+
         final moduleRegistry = DefaultScreenModuleInterpreterRegistry(
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
           interleavedListInterpreter:
               _MockInterleavedListSectionInterpreterV2(),
-          hierarchyValueProjectTaskInterpreter:
-              _MockHierarchyValueProjectTaskSectionInterpreterV2(),
+          hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
           agendaInterpreter: AgendaSectionInterpreterV2(
             sectionDataService: sectionDataService,
           ),
@@ -137,6 +140,9 @@ void main() {
           ),
           attentionInboxInterpreter: _MockAttentionInboxSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
+          myDayRankedTasksV1Interpreter: MyDayRankedTasksV1ModuleInterpreter(
+            hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
+          ),
         );
 
         final specInterpreter = ScreenSpecDataInterpreter(

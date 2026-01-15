@@ -13,7 +13,7 @@ enum ProjectViewVariant {
   /// Default list-row style used across most list templates.
   list,
 
-  /// Rounded card variant intended for the Scheduled agenda timeline.
+  /// Rounded card variant intended for the Scheduled agenda.
   agendaCard,
 }
 
@@ -27,6 +27,7 @@ class ProjectView extends StatelessWidget {
     this.onTap,
     this.compact = false,
     this.isInMyDayAuto = false,
+    this.accentColor,
     this.taskCount,
     this.completedTaskCount,
     this.trailing,
@@ -67,6 +68,9 @@ class ProjectView extends StatelessWidget {
   ///
   /// Not yet supported by allocation, but wired for future use.
   final bool isInMyDayAuto;
+
+  /// Optional accent color used by [ProjectViewVariant.agendaCard].
+  final Color? accentColor;
 
   /// Visual variant used to align with the Scheduled agenda mock.
   final ProjectViewVariant variant;
@@ -227,6 +231,14 @@ class ProjectView extends StatelessWidget {
                         taskCount: taskCount!,
                         completedTaskCount: completedTaskCount!,
                       ),
+                    ] else if (taskCount == 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'No tasks yet',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -261,6 +273,9 @@ class ProjectView extends StatelessWidget {
     final isDueToday = _isDueToday(project.deadlineDate);
     final isDueSoon = _isDueSoon(project.deadlineDate);
 
+    final effectiveAccent = accentColor;
+    final outline = colorScheme.outlineVariant.withValues(alpha: 0.35);
+
     return Material(
       key: Key('project-${project.id}'),
       color: Colors.transparent,
@@ -275,9 +290,14 @@ class ProjectView extends StatelessWidget {
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
+            border: effectiveAccent != null
+                ? Border(
+                    left: BorderSide(color: effectiveAccent, width: 4),
+                    top: BorderSide(color: outline),
+                    right: BorderSide(color: outline),
+                    bottom: BorderSide(color: outline),
+                  )
+                : Border.all(color: outline),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
