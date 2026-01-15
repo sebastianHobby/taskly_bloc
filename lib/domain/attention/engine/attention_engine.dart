@@ -885,6 +885,7 @@ class AttentionEngine implements AttentionEngineContract {
         entityId: task.id,
       ),
       metadata: {
+        'entity_display_name': task.name,
         'task_name': task.name,
         'deadline_date': task.deadlineDate?.toIso8601String(),
         'updated_at': task.updatedAt.toIso8601String(),
@@ -923,6 +924,7 @@ class AttentionEngine implements AttentionEngineContract {
             entityId: project.id,
           ),
       metadata: {
+        'entity_display_name': project.name,
         'project_name': project.name,
         'updated_at': project.updatedAt.toIso8601String(),
         ...?additionalMetadata,
@@ -994,6 +996,7 @@ class AttentionEngine implements AttentionEngineContract {
         extra: allocationVersion.toString().padLeft(8, '0'),
       ),
       metadata: {
+        'entity_display_name': task.name,
         'task_name': task.name,
         'deadline_date': task.deadlineDate?.toIso8601String(),
         'updated_at': task.updatedAt.toIso8601String(),

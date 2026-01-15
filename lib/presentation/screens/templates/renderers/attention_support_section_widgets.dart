@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 
 class SupportSectionCard extends StatelessWidget {
@@ -40,9 +41,49 @@ class SupportSectionCard extends StatelessWidget {
 }
 
 class AttentionItemTile extends StatelessWidget {
-  const AttentionItemTile({required this.item, super.key});
+  const AttentionItemTile({
+    required this.item,
+    super.key,
+    this.leading,
+  });
 
   final AttentionItem item;
+  final Widget? leading;
+
+  String? _entityDisplayName() {
+    final metadata = item.metadata;
+    if (metadata == null) return null;
+
+    final explicit = metadata['entity_display_name'];
+    if (explicit is String && explicit.trim().isNotEmpty) {
+      return explicit.trim();
+    }
+
+    final key = switch (item.entityType) {
+      AttentionEntityType.task => 'task_name',
+      AttentionEntityType.project => 'project_name',
+      AttentionEntityType.value => 'value_name',
+      AttentionEntityType.journal => null,
+      AttentionEntityType.tracker => null,
+      AttentionEntityType.reviewSession => null,
+    };
+
+    if (key == null) return null;
+    final v = metadata[key];
+    if (v is String && v.trim().isNotEmpty) return v.trim();
+    return null;
+  }
+
+  (IconData, String)? _entityBadge() {
+    return switch (item.entityType) {
+      AttentionEntityType.task => (Icons.check_box_outlined, 'Task'),
+      AttentionEntityType.project => (Icons.folder_outlined, 'Project'),
+      AttentionEntityType.value => (Icons.flag_outlined, 'Value'),
+      AttentionEntityType.journal => null,
+      AttentionEntityType.tracker => null,
+      AttentionEntityType.reviewSession => null,
+    };
+  }
 
   List<String> _detailLines() {
     final raw = item.metadata?['detail_lines'];
@@ -52,17 +93,49 @@ class AttentionItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final entityName = _entityDisplayName();
+    final entityBadge = _entityBadge();
     final detailLines = _detailLines();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          SeverityIcon(severity: item.severity),
+          leading ?? SeverityIcon(severity: item.severity),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (entityName != null && entityBadge != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      children: [
+                        Icon(
+                          entityBadge.$1,
+                          size: 14,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            '${entityBadge.$2} • $entityName',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 Text(
                   item.title,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(

@@ -48,9 +48,6 @@ void main() {
             params: const AgendaSectionParamsV2(
               dateField: AgendaDateFieldV2.deadlineDate,
               pack: StylePackV2.standard,
-              layout: SectionLayoutSpecV2.timelineMonthSections(
-                pinnedSectionHeaders: true,
-              ),
             ),
           ),
         ],
@@ -107,9 +104,6 @@ void main() {
           params: const AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
-            layout: SectionLayoutSpecV2.timelineMonthSections(
-              pinnedSectionHeaders: true,
-            ),
           ),
           data: SectionDataResult.agenda(agendaData: agendaData),
         );
