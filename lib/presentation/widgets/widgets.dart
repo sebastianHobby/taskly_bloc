@@ -10,6 +10,7 @@ export 'loading_state_widget.dart';
 export 'next_action_indicator.dart';
 export 'pinned_indicator.dart';
 export 'priority_flag.dart';
+export 'project_pill.dart';
 export 'section_widget.dart';
 export 'settings_section_card.dart';
 export 'swipe_to_delete.dart';

@@ -1,6 +1,4 @@
 import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
@@ -12,6 +10,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
@@ -61,6 +60,7 @@ abstract class SystemScreenSpecs {
               items: [EnrichmentPlanItemV2.allocationMembership()],
             ),
           ),
+          title: 'Today',
         ),
       ],
     ),
@@ -69,7 +69,7 @@ abstract class SystemScreenSpecs {
   static final reviewInbox = ScreenSpec(
     id: 'review_inbox',
     screenKey: 'review_inbox',
-    name: 'Attention Inbox',
+    name: 'Attention',
     template: const ScreenTemplateSpec.reviewInbox(),
   );
 
@@ -95,6 +95,7 @@ abstract class SystemScreenSpecs {
                 EnrichmentPlanItemV2.agendaTags(
                   dateField: AgendaDateFieldV2.deadlineDate,
                 ),
+                EnrichmentPlanItemV2.allocationMembership(),
               ],
             ),
           ),
@@ -106,7 +107,9 @@ abstract class SystemScreenSpecs {
   static final someday = ScreenSpec(
     id: 'someday',
     screenKey: 'someday',
-    name: 'Someday',
+    name: 'Anytime',
+    description:
+        "Your actionable backlog. Use filters to hide 'start later' items.",
     template: const ScreenTemplateSpec.standardScaffoldV1(),
     chrome: const ScreenChrome(
       fabOperations: [FabOperation.createTask],
@@ -117,66 +120,31 @@ abstract class SystemScreenSpecs {
           params: AttentionBannerSectionParamsV1(
             pack: StylePackV2.standard,
             buckets: const ['action', 'review'],
-            entityTypes: const ['task'],
+            entityTypes: const ['task', 'project'],
           ),
         ),
       ],
       primary: [
-        ScreenModuleSpec.hierarchyValueProjectTaskV2(
-          params: HierarchyValueProjectTaskSectionParamsV2(
+        ScreenModuleSpec.interleavedListV2(
+          params: InterleavedListSectionParamsV2(
             sources: [
-              DataConfig.task(
-                query: TaskQuery(
-                  filter: QueryFilter<TaskPredicate>(
-                    shared: const [
-                      TaskBoolPredicate(
-                        field: TaskBoolField.completed,
-                        operator: BoolOperator.isFalse,
-                      ),
-                      TaskDatePredicate(
-                        field: TaskDateField.startDate,
-                        operator: DateOperator.isNull,
-                      ),
-                      TaskDatePredicate(
-                        field: TaskDateField.deadlineDate,
-                        operator: DateOperator.isNull,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              DataConfig.task(query: TaskQuery.incomplete()),
+              DataConfig.project(query: ProjectQuery.active()),
             ],
             pack: StylePackV2.standard,
-            pinnedValueHeaders: true,
-            pinnedProjectHeaders: false,
-            singleInboxGroupForNoProjectTasks: true,
-            filters: SectionFilterSpecV2(
+            layout: const SectionLayoutSpecV2.hierarchyValueProjectTask(
+              pinnedValueHeaders: true,
+              pinnedProjectHeaders: false,
+              singleInboxGroupForNoProjectTasks: true,
+            ),
+            enrichment: const EnrichmentPlanV2(
+              items: [EnrichmentPlanItemV2.allocationMembership()],
+            ),
+            filters: const SectionFilterSpecV2(
               enableValueDropdown: true,
               enableProjectsOnlyToggle: true,
+              enableIncludeFutureStartsToggle: true,
               valueFilterMode: ValueFilterModeV2.anyValues,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-
-  static final projects = ScreenSpec(
-    id: 'projects',
-    screenKey: 'projects',
-    name: 'Projects',
-    template: const ScreenTemplateSpec.standardScaffoldV1(),
-    chrome: const ScreenChrome(
-      fabOperations: [FabOperation.createProject],
-    ),
-    modules: SlottedModules(
-      primary: [
-        ScreenModuleSpec.projectListV2(
-          params: ListSectionParamsV2(
-            config: DataConfig.project(query: const ProjectQuery()),
-            pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.flatList(
-              separator: ListSeparatorV2.spaced8,
             ),
           ),
         ),
@@ -266,8 +234,8 @@ abstract class SystemScreenSpecs {
     someday,
     journal,
     values,
-    projects,
     statistics,
+    reviewInbox,
     settings,
   ];
 
@@ -282,7 +250,6 @@ abstract class SystemScreenSpecs {
     'someday': 2,
     'journal': 4,
     'values': 5,
-    'projects': 6,
     'statistics': 7,
     'browse': 8,
     'review_inbox': 9,
@@ -300,7 +267,6 @@ abstract class SystemScreenSpecs {
     myDay.screenKey: myDay,
     scheduled.screenKey: scheduled,
     someday.screenKey: someday,
-    projects.screenKey: projects,
     values.screenKey: values,
     settings.screenKey: settings,
     statistics.screenKey: statistics,

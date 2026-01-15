@@ -5,7 +5,7 @@ import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart'
     show SparklinePainter;
-import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
+import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 
 /// Modal showing detailed statistics for a value.
 class ValueDetailModal extends StatelessWidget {
@@ -67,11 +67,16 @@ class ValueDetailModal extends StatelessWidget {
               // Header
               Row(
                 children: [
-                  Text(
-                    (value.iconName?.isNotEmpty ?? false)
-                        ? value.iconName!
-                        : 'â­',
-                    style: EmojiUtils.emojiTextStyle(fontSize: 28),
+                  Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: ColorUtils.fromHexWithThemeFallback(
+                        context,
+                        value.color,
+                      ).withOpacity(0.9),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Text(

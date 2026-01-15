@@ -46,6 +46,7 @@ abstract class ScreenSpec with _$ScreenSpec {
     required String screenKey,
     required String name,
     required ScreenTemplateSpec template,
+    String? description,
     @Default(ScreenChrome.empty) ScreenChrome chrome,
     ScreenGateSpec? gate,
     @Default(SlottedModules()) SlottedModules modules,

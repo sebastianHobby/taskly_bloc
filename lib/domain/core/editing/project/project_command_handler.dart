@@ -22,6 +22,8 @@ final class ProjectCommandHandler {
       deadlineDate: command.deadlineDate,
       priority: command.priority,
       repeatIcalRrule: command.repeatIcalRrule,
+      repeatFromCompletion: command.repeatFromCompletion,
+      seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
     );
 
@@ -41,6 +43,8 @@ final class ProjectCommandHandler {
       deadlineDate: command.deadlineDate,
       priority: command.priority,
       repeatIcalRrule: command.repeatIcalRrule,
+      repeatFromCompletion: command.repeatFromCompletion,
+      seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
     );
 

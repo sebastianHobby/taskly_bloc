@@ -406,7 +406,7 @@ double _coverageGatePercent() {
   // Supports staged gates so developers don't need permanent --no-verify.
   //
   // Overrides:
-  // - TASKLYgit_COVERAGE_MIN: a direct percent (e.g. "55")
+  // - TASKLY_COVERAGE_MIN: a direct percent (e.g. "55")
   // - TASKLY_COVERAGE_GATE: an integer stage 1..6
   //
   // Gate ramp:

@@ -1,119 +1,81 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
 /// Settings page for managing attention rules.
 ///
 /// Allows users to view and toggle system attention rules.
 /// User-created rules are out of scope for v1.
-class AttentionRulesSettingsPage extends StatefulWidget {
-  const AttentionRulesSettingsPage({
-    required this.attentionRepository,
-    super.key,
-  });
-
-  final AttentionRepositoryContract attentionRepository;
-
-  @override
-  State<AttentionRulesSettingsPage> createState() =>
-      _AttentionRulesSettingsPageState();
-}
-
-class _AttentionRulesSettingsPageState
-    extends State<AttentionRulesSettingsPage> {
-  AttentionRepositoryContract get _repo => widget.attentionRepository;
-
-  List<AttentionRule> _rules = [];
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadRules());
-  }
-
-  Future<void> _loadRules() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final rules = await _repo.watchAllRules().first;
-      setState(() {
-        _rules = rules;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _toggleRule(AttentionRule rule) async {
-    try {
-      await _repo.updateRuleActive(rule.id, !rule.active);
-      await _loadRules();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating rule: $e')),
-        );
-      }
-    }
-  }
+class AttentionRulesSettingsPage extends StatelessWidget {
+  const AttentionRulesSettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Attention Rules'),
+    return BlocProvider<AttentionRulesCubit>(
+      create: (_) => getIt<AttentionRulesCubit>(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Attention Rules'),
+        ),
+        body: BlocListener<AttentionRulesCubit, AttentionRulesState>(
+          listenWhen: (prev, next) => next is AttentionRulesError,
+          listener: (context, state) {
+            if (state case AttentionRulesError(:final message)) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(message)),
+              );
+            }
+          },
+          child: const _AttentionRulesBody(),
+        ),
       ),
-      body: _buildBody(),
     );
   }
+}
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+class _AttentionRulesBody extends StatelessWidget {
+  const _AttentionRulesBody();
 
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
-            const SizedBox(height: 16),
-            Text('Error loading rules: $_error'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadRules,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AttentionRulesCubit, AttentionRulesState>(
+      builder: (context, state) {
+        return switch (state) {
+          AttentionRulesLoading() => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          AttentionRulesError(:final message) => Center(
+            child: Text(message),
+          ),
+          AttentionRulesLoaded(:final rules) => _RulesList(rules: rules),
+        };
+      },
+    );
+  }
+}
 
-    if (_rules.isEmpty) {
+class _RulesList extends StatelessWidget {
+  const _RulesList({required this.rules});
+
+  final List<AttentionRule> rules;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rules.isEmpty) {
       return const Center(
         child: Text('No attention rules configured'),
       );
     }
 
     // Group rules by bucket/evaluator.
-    final reviewRules = _rules
+    final reviewRules = rules
         .where((r) => r.bucket == AttentionBucket.review)
         .toList(growable: false);
 
-    final actionRules = _rules
+    final actionRules = rules
         .where((r) => r.bucket == AttentionBucket.action)
         .toList(growable: false);
 
@@ -129,37 +91,44 @@ class _AttentionRulesSettingsPageState
       child: ListView(
         children: [
           if (problemRules.isNotEmpty) ...[
-            _buildSectionHeader(context, 'Problem Detection'),
-            _buildRuleDescription(
-              context,
-              'Detect tasks and projects that need attention due to being '
-              'overdue, stale, or idle.',
+            _SectionHeader(title: 'Problem Detection'),
+            _SectionDescription(
+              description:
+                  'Detect tasks and projects that need attention due to being '
+                  'overdue, stale, or idle.',
             ),
-            ...problemRules.map(_buildRuleTile),
+            ...problemRules.map((rule) => _RuleTile(rule: rule)),
           ],
           if (reviewRules.isNotEmpty) ...[
-            _buildSectionHeader(context, 'Periodic Reviews'),
-            _buildRuleDescription(
-              context,
-              'Scheduled reminders to review your tasks, projects, and values.',
+            _SectionHeader(title: 'Periodic Reviews'),
+            _SectionDescription(
+              description:
+                  'Scheduled reminders to review your tasks, projects, and values.',
             ),
-            ...reviewRules.map(_buildRuleTile),
+            ...reviewRules.map((rule) => _RuleTile(rule: rule)),
           ],
           if (allocationRules.isNotEmpty) ...[
-            _buildSectionHeader(context, 'Allocation Alerts'),
-            _buildRuleDescription(
-              context,
-              "Warnings when tasks should be in your day allocation but aren't.",
+            _SectionHeader(title: 'Allocation Alerts'),
+            _SectionDescription(
+              description:
+                  "Warnings when tasks should be in your day allocation but aren't.",
             ),
-            ...allocationRules.map(_buildRuleTile),
+            ...allocationRules.map((rule) => _RuleTile(rule: rule)),
           ],
           const SizedBox(height: 32),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
       child: Text(
@@ -171,8 +140,15 @@ class _AttentionRulesSettingsPageState
       ),
     );
   }
+}
 
-  Widget _buildRuleDescription(BuildContext context, String description) {
+class _SectionDescription extends StatelessWidget {
+  const _SectionDescription({required this.description});
+
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       child: Text(
@@ -183,15 +159,24 @@ class _AttentionRulesSettingsPageState
       ),
     );
   }
+}
 
-  Widget _buildRuleTile(AttentionRule rule) {
+class _RuleTile extends StatelessWidget {
+  const _RuleTile({required this.rule});
+
+  final AttentionRule rule;
+
+  @override
+  Widget build(BuildContext context) {
     final displayConfig = rule.displayConfig;
     final title = displayConfig['title'] as String? ?? rule.ruleKey;
     final description = displayConfig['description'] as String?;
 
     return SwitchListTile(
       value: rule.active,
-      onChanged: (_) => _toggleRule(rule),
+      onChanged: (_) {
+        context.read<AttentionRulesCubit>().toggleRule(rule);
+      },
       title: Text(title),
       subtitle: description != null
           ? Text(
@@ -200,11 +185,18 @@ class _AttentionRulesSettingsPageState
               overflow: TextOverflow.ellipsis,
             )
           : null,
-      secondary: _buildSeverityIcon(rule.severity),
+      secondary: _SeverityIcon(severity: rule.severity),
     );
   }
+}
 
-  Widget _buildSeverityIcon(AttentionSeverity severity) {
+class _SeverityIcon extends StatelessWidget {
+  const _SeverityIcon({required this.severity});
+
+  final AttentionSeverity severity;
+
+  @override
+  Widget build(BuildContext context) {
     // Use theme colors to respect the app's design system.
     final colorScheme = Theme.of(context).colorScheme;
 

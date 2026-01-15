@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
 
 class JournalTodayPage extends StatelessWidget {
@@ -15,89 +12,27 @@ class JournalTodayPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final repo = getIt<JournalRepositoryContract>();
-    final nowUtc = DateTime.now().toUtc();
-    final startUtc = dateOnly(nowUtc);
-    final endUtc = startUtc
-        .add(const Duration(days: 1))
-        .subtract(const Duration(microseconds: 1));
-
-    return StreamBuilder<List<TrackerDefinition>>(
-      stream: repo.watchTrackerDefinitions(),
-      builder: (context, defsSnapshot) {
-        if (defsSnapshot.hasError) return const _ErrorState();
-        if (!defsSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final definitions = defsSnapshot.data ?? const <TrackerDefinition>[];
-        final definitionById = {
-          for (final d in definitions) d.id: d,
-        };
-        final moodTrackerId = definitions
-            .where((d) => d.systemKey == 'mood')
-            .map((d) => d.id)
-            .cast<String?>()
-            .firstWhere((id) => id != null, orElse: () => null);
-
-        return StreamBuilder<List<TrackerPreference>>(
-          stream: repo.watchTrackerPreferences(),
-          builder: (context, prefsSnapshot) {
-            if (prefsSnapshot.hasError) return const _ErrorState();
-            if (!prefsSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            final prefs = prefsSnapshot.data ?? const <TrackerPreference>[];
-            final pinnedTrackers =
-                definitions
-                    .where((d) => d.isActive && d.deletedAt == null)
-                    .where((d) => d.systemKey != 'mood')
-                    .where((d) {
-                      final pref = prefs
-                          .where((p) => p.trackerId == d.id)
-                          .cast<TrackerPreference?>()
-                          .firstWhere(
-                            (p) => p != null,
-                            orElse: () => null,
-                          );
-                      return (pref?.pinned ?? false) ||
-                          (pref?.showInQuickAdd ?? false);
-                    })
-                    .toList(growable: false)
-                  ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
-
-            return StreamBuilder<List<JournalEntry>>(
-              stream: repo.watchJournalEntriesByQuery(
-                JournalQuery.forDate(nowUtc),
-              ),
-              builder: (context, entriesSnapshot) {
-                final entries = entriesSnapshot.data ?? const <JournalEntry>[];
-
-                return StreamBuilder<List<TrackerEvent>>(
-                  stream: repo.watchTrackerEvents(
-                    range: DateRange(start: startUtc, end: endUtc),
-                    anchorType: 'entry',
-                  ),
-                  builder: (context, eventsSnapshot) {
-                    final events =
-                        eventsSnapshot.data ?? const <TrackerEvent>[];
-
-                    if (entriesSnapshot.hasError || eventsSnapshot.hasError) {
-                      return const _ErrorState();
-                    }
-
-                    if (!entriesSnapshot.hasData || !eventsSnapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (entries.isEmpty) {
-                      return _EmptyToday(
-                        onAdd: () => AddLogSheet.show(context: context),
-                      );
-                    }
-
-                    return ListView.separated(
+    return BlocProvider<JournalTodayBloc>(
+      create: (_) => getIt<JournalTodayBloc>(),
+      child: BlocBuilder<JournalTodayBloc, JournalTodayState>(
+        builder: (context, state) {
+          return switch (state) {
+            JournalTodayLoading() => const Center(
+              child: CircularProgressIndicator(),
+            ),
+            JournalTodayError(:final message) => _ErrorState(message: message),
+            JournalTodayLoaded(
+              :final pinnedTrackers,
+              :final entries,
+              :final eventsByEntryId,
+              :final definitionById,
+              :final moodTrackerId,
+            ) =>
+              entries.isEmpty
+                  ? _EmptyToday(
+                      onAdd: () => AddLogSheet.show(context: context),
+                    )
+                  : ListView.separated(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       itemCount: entries.length + 1,
                       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -113,9 +48,8 @@ class JournalTodayPage extends StatelessWidget {
                         }
 
                         final entry = entries[index - 1];
-                        final entryEvents = events
-                            .where((e) => e.entryId == entry.id)
-                            .toList(growable: false);
+                        final entryEvents =
+                            eventsByEntryId[entry.id] ?? const <TrackerEvent>[];
 
                         return _JournalEntryCard(
                           entry: entry,
@@ -124,14 +58,10 @@ class JournalTodayPage extends StatelessWidget {
                           moodTrackerId: moodTrackerId,
                         );
                       },
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
+                    ),
+          };
+        },
+      ),
     );
   }
 }
@@ -214,14 +144,16 @@ class _EmptyToday extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState();
+  const _ErrorState({required this.message});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Failed to load Journal data.'),
+        padding: const EdgeInsets.all(24),
+        child: Text(message),
       ),
     );
   }

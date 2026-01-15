@@ -5,7 +5,7 @@
 /// - PowerSync started via `tool/e2e/Start-LocalE2EStack.ps1`
 ///
 /// Run (example):
-/// `flutter test test/integration_test/powersync_supabase_pipeline_test.dart --dart-define-from-file=dart_defines.local.json --dart-define=RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS=true`
+/// `flutter test test/integration_test/powersync_supabase_pipeline_extended_test.dart --dart-define-from-file=dart_defines.local.json --dart-define=RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS=true --tags=pipeline`
 library;
 
 import 'dart:async';
@@ -45,6 +45,10 @@ import 'e2e_test_helpers.dart';
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseAnonKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 const _powersyncUrl = String.fromEnvironment('POWERSYNC_URL');
+const _pipelineOptIn = bool.fromEnvironment(
+  'RUN_POWERSYNC_SUPABASE_PIPELINE_TESTS',
+  defaultValue: false,
+);
 
 bool _isLocalUrl(String url) {
   final trimmed = url.trim().toLowerCase();
@@ -55,6 +59,7 @@ bool _isLocalUrl(String url) {
 }
 
 final bool _canRunAgainstLocalStack =
+    _pipelineOptIn &&
     _supabaseUrl.trim().isNotEmpty &&
     _supabaseAnonKey.trim().isNotEmpty &&
     _powersyncUrl.trim().isNotEmpty &&

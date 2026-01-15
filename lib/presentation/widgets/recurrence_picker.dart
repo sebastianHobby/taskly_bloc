@@ -1,9 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:rrule/rrule.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-
-import 'dart:async';
+import 'package:taskly_bloc/l10n/l10n.dart';
 
 /// A user-friendly widget for configuring recurring dates using RRULE format.
 ///
@@ -12,12 +14,14 @@ import 'dart:async';
 class RecurrencePicker extends StatefulWidget {
   const RecurrencePicker({
     required this.initialRRule,
-    required this.onRRuleChanged,
+    required this.initialRepeatFromCompletion,
+    required this.initialSeriesEnded,
     super.key,
   });
 
   final String? initialRRule;
-  final ValueChanged<String?> onRRuleChanged;
+  final bool initialRepeatFromCompletion;
+  final bool initialSeriesEnded;
 
   @override
   State<RecurrencePicker> createState() => _RecurrencePickerState();
@@ -32,12 +36,18 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   late TextEditingController _intervalController;
   RruleL10nEn? _l10n;
 
+  late bool _repeatFromCompletion;
+  late bool _seriesEnded;
+
   @override
   void initState() {
     super.initState();
     _intervalController = TextEditingController(text: _interval.toString());
     unawaited(_initializeL10n());
     _parseRRule(widget.initialRRule);
+
+    _repeatFromCompletion = widget.initialRepeatFromCompletion;
+    _seriesEnded = widget.initialSeriesEnded;
   }
 
   Future<void> _initializeL10n() async {
@@ -121,6 +131,26 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     return recurrenceRule.toString();
   }
 
+  void _updateRRule() {
+    // This widget no longer streams changes upward. Keeping this method allows
+    // existing UI handlers to remain simple while still triggering rebuilds.
+  }
+
+  RecurrencePickerResult _currentResult() {
+    if (_frequency == RecurrenceFrequency.none) {
+      return const RecurrencePickerResult(
+        rrule: null,
+        repeatFromCompletion: false,
+        seriesEnded: false,
+      );
+    }
+    return RecurrencePickerResult(
+      rrule: _buildRRule(),
+      repeatFromCompletion: _repeatFromCompletion,
+      seriesEnded: _seriesEnded,
+    );
+  }
+
   String _getHumanReadableText() {
     if (_frequency == RecurrenceFrequency.none) {
       return 'Does not repeat';
@@ -167,14 +197,11 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     return text;
   }
 
-  void _updateRRule() {
-    widget.onRRuleChanged(_buildRRule());
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -183,7 +210,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Repeat',
+            l10n.recurrenceTitle,
             style: theme.textTheme.headlineSmall,
           ),
           const SizedBox(height: 24),
@@ -212,7 +239,10 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             onSelectionChanged: (selected) {
               setState(() {
                 _frequency = selected.first;
-                _updateRRule();
+                if (_frequency == RecurrenceFrequency.none) {
+                  _repeatFromCompletion = false;
+                  _seriesEnded = false;
+                }
               });
             },
             showSelectedIcon: false,
@@ -251,7 +281,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
                       if (interval != null && interval > 0 && interval <= 999) {
                         setState(() {
                           _interval = interval;
-                          _updateRRule();
                         });
                       }
                     },
@@ -476,6 +505,22 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
           const SizedBox(height: 24),
 
+          if (_frequency != RecurrenceFrequency.none) ...[
+            SwitchListTile.adaptive(
+              value: _repeatFromCompletion,
+              onChanged: (v) => setState(() => _repeatFromCompletion = v),
+              title: Text(l10n.recurrenceRepeatFromCompletionLabel),
+              contentPadding: EdgeInsets.zero,
+            ),
+            SwitchListTile.adaptive(
+              value: _seriesEnded,
+              onChanged: (v) => setState(() => _seriesEnded = v),
+              title: Text(l10n.recurrenceSeriesEndedLabel),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 24),
+          ],
+
           // Summary
           if (_frequency != RecurrenceFrequency.none)
             Container(
@@ -512,12 +557,12 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
             children: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
+                child: Text(l10n.cancelLabel),
               ),
               const SizedBox(width: 8),
               FilledButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Done'),
+                onPressed: () => Navigator.of(context).pop(_currentResult()),
+                child: Text(l10n.doneLabel),
               ),
             ],
           ),
@@ -559,4 +604,17 @@ enum EndCondition {
   never,
   after,
   on,
+}
+
+@immutable
+class RecurrencePickerResult {
+  const RecurrencePickerResult({
+    required this.rrule,
+    required this.repeatFromCompletion,
+    required this.seriesEnded,
+  });
+
+  final String? rrule;
+  final bool repeatFromCompletion;
+  final bool seriesEnded;
 }

@@ -119,7 +119,6 @@ void main() {
           SystemScreenSpecs.someday,
           SystemScreenSpecs.journal,
           SystemScreenSpecs.values,
-          SystemScreenSpecs.projects,
         ];
 
         for (final screen in screens) {

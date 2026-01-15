@@ -4,6 +4,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
 enum ProjectViewVariant {
@@ -28,6 +29,10 @@ class ProjectView extends StatelessWidget {
     this.nextTask,
     this.showNextTask = false,
     this.showPinnedIndicator = true,
+    this.groupedValueId,
+    this.showPrimaryValueChip = true,
+    this.maxSecondaryValueChips = 1,
+    this.excludeValueIdFromChips,
     this.trailing,
     this.showTrailingProgressLabel = false,
     super.key,
@@ -58,6 +63,27 @@ class ProjectView extends StatelessWidget {
   /// Whether to show a pinned indicator when the project is pinned.
   final bool showPinnedIndicator;
 
+  /// When set, the project is being rendered under a value grouping.
+  ///
+  /// Used to render compact, icon-only value chips for the grouped layout.
+  final String? groupedValueId;
+
+  /// Whether to show the primary value chip in the value line.
+  ///
+  /// Useful when the project is displayed under a value grouping where the
+  /// value is already implied by the section header.
+  final bool showPrimaryValueChip;
+
+  /// Maximum number of secondary value chips to show.
+  ///
+  /// Defaults to 1 to keep list rows compact.
+  final int maxSecondaryValueChips;
+
+  /// When set, excludes this value id from any chips shown in the value line.
+  ///
+  /// This is typically the current value group id.
+  final String? excludeValueIdFromChips;
+
   /// Optional trailing control, typically used for collapse/expand in grouped
   /// list renderers.
   final Widget? trailing;
@@ -80,6 +106,23 @@ class ProjectView extends StatelessWidget {
     final today = DateTime(now.year, now.month, now.day);
     final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
     return deadlineDay.isBefore(today);
+  }
+
+  bool _isDueToday(DateTime? deadline) {
+    if (deadline == null || project.completed) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+    return deadlineDay.isAtSameMomentAs(today);
+  }
+
+  bool _isDueSoon(DateTime? deadline) {
+    if (deadline == null || project.completed) return false;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final deadlineDay = DateTime(deadline.year, deadline.month, deadline.day);
+    final daysUntil = deadlineDay.difference(today).inDays;
+    return daysUntil > 0 && daysUntil <= 3;
   }
 
   String _formatMonthDay(BuildContext context, DateTime date) {
@@ -105,6 +148,30 @@ class ProjectView extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final isOverdue = _isOverdue(project.deadlineDate);
+    final isDueToday = _isDueToday(project.deadlineDate);
+    final isDueSoon = _isDueSoon(project.deadlineDate);
+
+    final groupedId = groupedValueId?.trim();
+    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
+
+    Value? groupedValue;
+    if (isValueGrouped) {
+      final primary = project.primaryValue;
+      if (primary?.id == groupedId) {
+        groupedValue = primary;
+      } else {
+        for (final v in project.secondaryValues) {
+          if (v.id == groupedId) {
+            groupedValue = v;
+            break;
+          }
+        }
+      }
+    }
+
+    final primaryValueForChip = isValueGrouped
+        ? (groupedValue ?? project.primaryValue)
+        : project.primaryValue;
 
     return Container(
       key: Key('project-${project.id}'),
@@ -151,14 +218,10 @@ class ProjectView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Row 1: Title + indicators + priority flag
+                    // Row 1: Title + primary value chip
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (showPinnedIndicator && project.isPinned) ...[
-                          const PinnedIndicator(),
-                          const SizedBox(width: 8),
-                        ],
                         if (titlePrefix != null) ...[
                           titlePrefix!,
                           const SizedBox(width: 8),
@@ -179,24 +242,33 @@ class ProjectView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        PriorityFlag(priority: project.priority),
+                        if (showPrimaryValueChip &&
+                            primaryValueForChip != null) ...[
+                          const SizedBox(width: 12),
+                          ValueChip(
+                            value: primaryValueForChip,
+                            variant: ValueChipVariant.solid,
+                            iconOnly: isValueGrouped,
+                          ),
+                        ],
                       ],
                     ),
 
-                    if (!compact) ...[
-                      _ValueLine(
-                        primaryValue: project.primaryValue,
-                        secondaryValues: project.secondaryValues,
-                      ),
-                      _ProjectDatesRow(
-                        startDate: project.startDate,
-                        deadlineDate: project.deadlineDate,
-                        hasRepeat: project.repeatIcalRrule != null,
-                        formatMonthDay: (date) =>
-                            _formatMonthDay(context, date),
-                      ),
-                    ],
+                    _MetaLine(
+                      formatDate: _formatMonthDay,
+                      startDate: project.startDate,
+                      deadlineDate: project.deadlineDate,
+                      isOverdue: isOverdue,
+                      isDueToday: isDueToday,
+                      isDueSoon: isDueSoon,
+                      hasRepeat: project.repeatIcalRrule != null,
+                      secondaryValues: project.secondaryValues,
+                      groupedValueId: groupedValueId,
+                      maxSecondaryValueChips: maxSecondaryValueChips,
+                      excludeValueIdFromChips: excludeValueIdFromChips,
+                      isPinned: showPinnedIndicator && project.isPinned,
+                      priority: project.priority,
+                    ),
                   ],
                 ),
               ),
@@ -227,6 +299,30 @@ class ProjectView extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isOverdue = _isOverdue(project.deadlineDate);
+    final isDueToday = _isDueToday(project.deadlineDate);
+    final isDueSoon = _isDueSoon(project.deadlineDate);
+
+    final groupedId = groupedValueId?.trim();
+    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
+
+    Value? groupedValue;
+    if (isValueGrouped) {
+      final primary = project.primaryValue;
+      if (primary?.id == groupedId) {
+        groupedValue = primary;
+      } else {
+        for (final v in project.secondaryValues) {
+          if (v.id == groupedId) {
+            groupedValue = v;
+            break;
+          }
+        }
+      }
+    }
+
+    final primaryValueForChip = isValueGrouped
+        ? (groupedValue ?? project.primaryValue)
+        : project.primaryValue;
 
     return Material(
       key: Key('project-${project.id}'),
@@ -284,18 +380,32 @@ class ProjectView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (showPrimaryValueChip &&
+                            primaryValueForChip != null) ...[
+                          const SizedBox(width: 12),
+                          ValueChip(
+                            value: primaryValueForChip,
+                            variant: ValueChipVariant.solid,
+                            iconOnly: isValueGrouped,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),
-                    _ValueLine(
-                      primaryValue: project.primaryValue,
-                      secondaryValues: project.secondaryValues,
-                    ),
-                    _ProjectDatesRow(
+                    _MetaLine(
+                      formatDate: _formatMonthDay,
                       startDate: project.startDate,
                       deadlineDate: project.deadlineDate,
+                      isOverdue: isOverdue,
+                      isDueToday: isDueToday,
+                      isDueSoon: isDueSoon,
                       hasRepeat: project.repeatIcalRrule != null,
-                      formatMonthDay: (date) => _formatMonthDay(context, date),
+                      secondaryValues: project.secondaryValues,
+                      groupedValueId: groupedValueId,
+                      maxSecondaryValueChips: maxSecondaryValueChips,
+                      excludeValueIdFromChips: excludeValueIdFromChips,
+                      isPinned: showPinnedIndicator && project.isPinned,
+                      priority: project.priority,
                     ),
                   ],
                 ),
@@ -308,145 +418,202 @@ class ProjectView extends StatelessWidget {
   }
 }
 
-class _ValueLine extends StatelessWidget {
-  const _ValueLine({
-    required this.primaryValue,
+class _MetaLine extends StatelessWidget {
+  const _MetaLine({
+    required this.formatDate,
     required this.secondaryValues,
-  });
-
-  final Value? primaryValue;
-  final List<Value> secondaryValues;
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = primaryValue;
-    final children = <Widget>[];
-
-    if (primary != null) {
-      children.add(
-        ValueChip(
-          value: primary,
-          variant: ValueChipVariant.solid,
-        ),
-      );
-    }
-
-    if (secondaryValues.isNotEmpty) {
-      children.add(
-        ValueChip(
-          value: secondaryValues.first,
-          variant: ValueChipVariant.outlined,
-        ),
-      );
-    }
-
-    if (children.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _ProjectDatesRow extends StatelessWidget {
-  const _ProjectDatesRow({
-    required this.formatMonthDay,
+    required this.groupedValueId,
+    required this.maxSecondaryValueChips,
+    required this.excludeValueIdFromChips,
+    required this.isPinned,
+    required this.priority,
     this.startDate,
     this.deadlineDate,
+    this.isOverdue = false,
+    this.isDueToday = false,
+    this.isDueSoon = false,
     this.hasRepeat = false,
   });
 
   final DateTime? startDate;
   final DateTime? deadlineDate;
+  final bool isOverdue;
+  final bool isDueToday;
+  final bool isDueSoon;
   final bool hasRepeat;
-  final String Function(DateTime date) formatMonthDay;
+  final String Function(BuildContext, DateTime) formatDate;
+  final List<Value> secondaryValues;
+  final String? groupedValueId;
+  final int maxSecondaryValueChips;
+  final String? excludeValueIdFromChips;
+  final bool isPinned;
+  final int? priority;
+
+  Color _priorityColor(ColorScheme scheme, int priority) {
+    return switch (priority) {
+      1 => AppColors.rambutan80,
+      2 => AppColors.cempedak80,
+      3 => AppColors.blueberry80,
+      4 => scheme.onSurfaceVariant,
+      _ => scheme.onSurfaceVariant,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
 
-    if (startDate == null && deadlineDate == null && !hasRepeat) {
-      return const SizedBox.shrink();
-    }
+    final groupedId = groupedValueId?.trim();
+    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
 
-    final children = <Widget>[];
+    final leftChildren = <Widget>[];
 
-    if (startDate != null) {
-      children.add(
-        _IconLabel(
-          icon: Icons.calendar_today,
-          label: formatMonthDay(startDate!),
-          color: scheme.onSurfaceVariant,
-        ),
-      );
-    }
+    if (maxSecondaryValueChips > 0) {
+      final filteredSecondary = secondaryValues
+          .where(
+            (v) =>
+                v.id != excludeValueIdFromChips &&
+                (!isValueGrouped || v.id != groupedId),
+          )
+          .toList(growable: false);
 
-    if (deadlineDate != null) {
-      children.add(
-        _IconLabel(
-          icon: Icons.sports_score,
-          label: formatMonthDay(deadlineDate!),
-          color: scheme.onSurfaceVariant,
-        ),
-      );
+      if (filteredSecondary.isNotEmpty) {
+        final visible = filteredSecondary.take(maxSecondaryValueChips).toList();
+        for (final v in visible) {
+          leftChildren.add(
+            Tooltip(
+              message: v.name,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: ValueChip(
+                  value: v,
+                  variant: ValueChipVariant.outlined,
+                  iconOnly: isValueGrouped,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final remaining = filteredSecondary.length - visible.length;
+        if (remaining > 0) {
+          final allNames = filteredSecondary.map((v) => v.name).join(', ');
+          leftChildren.add(
+            Tooltip(
+              message: allNames,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                constraints: const BoxConstraints(minHeight: 20),
+                child: Text(
+                  '+$remaining',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    height: 1.1,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+      }
     }
 
     if (hasRepeat) {
-      children.add(
+      leftChildren.add(
         Icon(
-          Icons.repeat,
-          size: 16,
+          Icons.sync_rounded,
+          size: 14,
           color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
         ),
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 4,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: children,
-      ),
-    );
-  }
-}
-
-class _IconLabel extends StatelessWidget {
-  const _IconLabel({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w500,
+    if (isPinned) {
+      leftChildren.add(
+        Tooltip(
+          message: 'Pinned',
+          child: Icon(
+            Icons.push_pin,
+            size: 14,
+            color: scheme.primary,
           ),
         ),
-      ],
+      );
+    }
+
+    final p = priority;
+    if (p != null) {
+      leftChildren.add(
+        Tooltip(
+          message: 'Priority P$p',
+          child: Icon(
+            Icons.flag,
+            size: 14,
+            color: _priorityColor(scheme, p),
+          ),
+        ),
+      );
+    }
+
+    final dateTokens = <Widget>[];
+    if (startDate != null) {
+      dateTokens.add(
+        DateChip.startDate(
+          context: context,
+          label: formatDate(context, startDate!),
+        ),
+      );
+    }
+    if (deadlineDate != null) {
+      dateTokens.add(
+        DateChip.deadline(
+          context: context,
+          label: formatDate(context, deadlineDate!),
+          isOverdue: isOverdue,
+          isDueToday: isDueToday,
+          isDueSoon: isDueSoon,
+        ),
+      );
+    }
+
+    if (leftChildren.isEmpty && dateTokens.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: leftChildren,
+            ),
+          ),
+          if (dateTokens.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: dateTokens,
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -66,6 +66,7 @@ abstract class TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
   });
 
@@ -80,6 +81,7 @@ abstract class TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
   });

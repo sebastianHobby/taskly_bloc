@@ -139,13 +139,40 @@ enum ValueFilterModeV2 {
   primaryOnly,
 }
 
+/// Where a section's filter controls should be rendered.
+///
+/// This is presentation-only configuration: it affects UI placement but does
+/// not change interpreter behavior or data fetching.
+enum FilterBarPlacementV2 {
+  /// Render filter controls inline in the section header area.
+  @JsonValue('inline')
+  inline,
+
+  /// Render filter controls as a pinned sliver header.
+  @JsonValue('pinned')
+  pinned,
+}
+
 @freezed
 abstract class SectionFilterSpecV2 with _$SectionFilterSpecV2 {
   @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory SectionFilterSpecV2({
     @Default(false) bool enableProjectsOnlyToggle,
     @Default(false) bool enableValueDropdown,
+
+    /// When true, show a toggle chip to include/exclude items that start after
+    /// today (local day boundary).
+    @Default(false) bool enableIncludeFutureStartsToggle,
     @Default(ValueFilterModeV2.anyValues) ValueFilterModeV2 valueFilterMode,
+
+    /// Presentation-only placement policy for the filter bar.
+    @Default(FilterBarPlacementV2.inline)
+    FilterBarPlacementV2 filterBarPlacement,
+
+    /// When pinned, keep a consistent occupied area (avoid layout jumping).
+    ///
+    /// This is a visual policy; it does not affect data or interpreter output.
+    @Default(false) bool reservePinnedSpace,
   }) = _SectionFilterSpecV2;
 
   factory SectionFilterSpecV2.fromJson(Map<String, dynamic> json) =>

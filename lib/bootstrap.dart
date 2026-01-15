@@ -12,6 +12,7 @@ import 'package:taskly_bloc/core/env/env.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.dart';
 import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
@@ -209,6 +210,9 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
         // In-app invalidation pulses for time-based attention sections.
         getIt<AttentionTemporalInvalidationService>().start();
+
+        // Prewarm common attention queries so Inbox/banners render instantly.
+        getIt<AttentionPrewarmService>().start();
 
         // Centralized trigger coordinator for keeping today's allocation
         // snapshot generated and refreshed (debounced, no reshuffle policy).

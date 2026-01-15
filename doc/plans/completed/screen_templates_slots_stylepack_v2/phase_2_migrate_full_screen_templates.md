@@ -28,7 +28,7 @@ This reduces complexity in `SectionWidget` and makes the mental model consistent
    - Add matching entries in the typed `ScreenTemplateSpec`.
    - Implement their shell widgets under the screen-template presentation folder.
 
-3) **Update system screen definitions**
+3) **Update system screen specs**
    - For screens that are currently a single section pointing at a full-screen section template:
      - set `template: ScreenTemplateSpec.*` to the new screen template
      - remove the full-screen module from `modules` (or leave modules empty if

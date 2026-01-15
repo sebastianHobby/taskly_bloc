@@ -55,11 +55,12 @@ extension ProjectDetailEventPatterns on ProjectDetailEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  update,TResult Function( _ProjectDetailDelete value)?  delete,TResult Function( _ProjectDetailCreate value)?  create,TResult Function( _ProjectDetailLoadById value)?  loadById,TResult Function( _ProjectDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( _ProjectDetailUpdate value)?  update,TResult Function( _ProjectDetailSetPinned value)?  setPinned,TResult Function( _ProjectDetailDelete value)?  delete,TResult Function( _ProjectDetailCreate value)?  create,TResult Function( _ProjectDetailLoadById value)?  loadById,TResult Function( _ProjectDetailLoadInitialData value)?  loadInitialData,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
-return update(_that);case _ProjectDetailDelete() when delete != null:
+return update(_that);case _ProjectDetailSetPinned() when setPinned != null:
+return setPinned(_that);case _ProjectDetailDelete() when delete != null:
 return delete(_that);case _ProjectDetailCreate() when create != null:
 return create(_that);case _ProjectDetailLoadById() when loadById != null:
 return loadById(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
@@ -81,11 +82,12 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  update,required TResult Function( _ProjectDetailDelete value)  delete,required TResult Function( _ProjectDetailCreate value)  create,required TResult Function( _ProjectDetailLoadById value)  loadById,required TResult Function( _ProjectDetailLoadInitialData value)  loadInitialData,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( _ProjectDetailUpdate value)  update,required TResult Function( _ProjectDetailSetPinned value)  setPinned,required TResult Function( _ProjectDetailDelete value)  delete,required TResult Function( _ProjectDetailCreate value)  create,required TResult Function( _ProjectDetailLoadById value)  loadById,required TResult Function( _ProjectDetailLoadInitialData value)  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
-return update(_that);case _ProjectDetailDelete():
+return update(_that);case _ProjectDetailSetPinned():
+return setPinned(_that);case _ProjectDetailDelete():
 return delete(_that);case _ProjectDetailCreate():
 return create(_that);case _ProjectDetailLoadById():
 return loadById(_that);case _ProjectDetailLoadInitialData():
@@ -103,11 +105,12 @@ return loadInitialData(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  update,TResult? Function( _ProjectDetailDelete value)?  delete,TResult? Function( _ProjectDetailCreate value)?  create,TResult? Function( _ProjectDetailLoadById value)?  loadById,TResult? Function( _ProjectDetailLoadInitialData value)?  loadInitialData,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( _ProjectDetailUpdate value)?  update,TResult? Function( _ProjectDetailSetPinned value)?  setPinned,TResult? Function( _ProjectDetailDelete value)?  delete,TResult? Function( _ProjectDetailCreate value)?  create,TResult? Function( _ProjectDetailLoadById value)?  loadById,TResult? Function( _ProjectDetailLoadInitialData value)?  loadInitialData,}){
 final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
-return update(_that);case _ProjectDetailDelete() when delete != null:
+return update(_that);case _ProjectDetailSetPinned() when setPinned != null:
+return setPinned(_that);case _ProjectDetailDelete() when delete != null:
 return delete(_that);case _ProjectDetailCreate() when create != null:
 return create(_that);case _ProjectDetailLoadById() when loadById != null:
 return loadById(_that);case _ProjectDetailLoadInitialData() when loadInitialData != null:
@@ -128,10 +131,11 @@ return loadInitialData(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( UpdateProjectCommand command)?  update,TResult Function( String id)?  delete,TResult Function( CreateProjectCommand command)?  create,TResult Function( String projectId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( UpdateProjectCommand command)?  update,TResult Function( String id,  bool isPinned)?  setPinned,TResult Function( String id)?  delete,TResult Function( CreateProjectCommand command)?  create,TResult Function( String projectId)?  loadById,TResult Function()?  loadInitialData,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
-return update(_that.command);case _ProjectDetailDelete() when delete != null:
+return update(_that.command);case _ProjectDetailSetPinned() when setPinned != null:
+return setPinned(_that.id,_that.isPinned);case _ProjectDetailDelete() when delete != null:
 return delete(_that.id);case _ProjectDetailCreate() when create != null:
 return create(_that.command);case _ProjectDetailLoadById() when loadById != null:
 return loadById(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
@@ -153,10 +157,11 @@ return loadInitialData();case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( UpdateProjectCommand command)  update,required TResult Function( String id)  delete,required TResult Function( CreateProjectCommand command)  create,required TResult Function( String projectId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( UpdateProjectCommand command)  update,required TResult Function( String id,  bool isPinned)  setPinned,required TResult Function( String id)  delete,required TResult Function( CreateProjectCommand command)  create,required TResult Function( String projectId)  loadById,required TResult Function()  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate():
-return update(_that.command);case _ProjectDetailDelete():
+return update(_that.command);case _ProjectDetailSetPinned():
+return setPinned(_that.id,_that.isPinned);case _ProjectDetailDelete():
 return delete(_that.id);case _ProjectDetailCreate():
 return create(_that.command);case _ProjectDetailLoadById():
 return loadById(_that.projectId);case _ProjectDetailLoadInitialData():
@@ -174,10 +179,11 @@ return loadInitialData();}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( UpdateProjectCommand command)?  update,TResult? Function( String id)?  delete,TResult? Function( CreateProjectCommand command)?  create,TResult? Function( String projectId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( UpdateProjectCommand command)?  update,TResult? Function( String id,  bool isPinned)?  setPinned,TResult? Function( String id)?  delete,TResult? Function( CreateProjectCommand command)?  create,TResult? Function( String projectId)?  loadById,TResult? Function()?  loadInitialData,}) {final _that = this;
 switch (_that) {
 case _ProjectDetailUpdate() when update != null:
-return update(_that.command);case _ProjectDetailDelete() when delete != null:
+return update(_that.command);case _ProjectDetailSetPinned() when setPinned != null:
+return setPinned(_that.id,_that.isPinned);case _ProjectDetailDelete() when delete != null:
 return delete(_that.id);case _ProjectDetailCreate() when create != null:
 return create(_that.command);case _ProjectDetailLoadById() when loadById != null:
 return loadById(_that.projectId);case _ProjectDetailLoadInitialData() when loadInitialData != null:
@@ -249,6 +255,74 @@ class __$ProjectDetailUpdateCopyWithImpl<$Res>
   return _then(_ProjectDetailUpdate(
 command: null == command ? _self.command : command // ignore: cast_nullable_to_non_nullable
 as UpdateProjectCommand,
+  ));
+}
+
+
+}
+
+/// @nodoc
+
+
+class _ProjectDetailSetPinned implements ProjectDetailEvent {
+  const _ProjectDetailSetPinned({required this.id, required this.isPinned});
+  
+
+ final  String id;
+ final  bool isPinned;
+
+/// Create a copy of ProjectDetailEvent
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ProjectDetailSetPinnedCopyWith<_ProjectDetailSetPinned> get copyWith => __$ProjectDetailSetPinnedCopyWithImpl<_ProjectDetailSetPinned>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ProjectDetailSetPinned&&(identical(other.id, id) || other.id == id)&&(identical(other.isPinned, isPinned) || other.isPinned == isPinned));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,id,isPinned);
+
+@override
+String toString() {
+  return 'ProjectDetailEvent.setPinned(id: $id, isPinned: $isPinned)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$ProjectDetailSetPinnedCopyWith<$Res> implements $ProjectDetailEventCopyWith<$Res> {
+  factory _$ProjectDetailSetPinnedCopyWith(_ProjectDetailSetPinned value, $Res Function(_ProjectDetailSetPinned) _then) = __$ProjectDetailSetPinnedCopyWithImpl;
+@useResult
+$Res call({
+ String id, bool isPinned
+});
+
+
+
+
+}
+/// @nodoc
+class __$ProjectDetailSetPinnedCopyWithImpl<$Res>
+    implements _$ProjectDetailSetPinnedCopyWith<$Res> {
+  __$ProjectDetailSetPinnedCopyWithImpl(this._self, this._then);
+
+  final _ProjectDetailSetPinned _self;
+  final $Res Function(_ProjectDetailSetPinned) _then;
+
+/// Create a copy of ProjectDetailEvent
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? isPinned = null,}) {
+  return _then(_ProjectDetailSetPinned(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,isPinned: null == isPinned ? _self.isPinned : isPinned // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -529,11 +603,12 @@ extension ProjectDetailStatePatterns on ProjectDetailState {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectDetailInitial value)?  initial,TResult Function( ProjectDetailValidationFailure value)?  validationFailure,TResult Function( ProjectDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult Function( ProjectDetailOperationFailure value)?  operationFailure,TResult Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult Function( ProjectDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectDetailInitial value)?  initial,TResult Function( ProjectDetailInlineActionSuccess value)?  inlineActionSuccess,TResult Function( ProjectDetailValidationFailure value)?  validationFailure,TResult Function( ProjectDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult Function( ProjectDetailOperationFailure value)?  operationFailure,TResult Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult Function( ProjectDetailLoadSuccess value)?  loadSuccess,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
-return initial(_that);case ProjectDetailValidationFailure() when validationFailure != null:
+return initial(_that);case ProjectDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that);case ProjectDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that);case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that);case ProjectDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case ProjectDetailOperationFailure() when operationFailure != null:
@@ -557,11 +632,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectDetailInitial value)  initial,required TResult Function( ProjectDetailValidationFailure value)  validationFailure,required TResult Function( ProjectDetailInitialDataLoadSuccess value)  initialDataLoadSuccess,required TResult Function( ProjectDetailOperationSuccess value)  operationSuccess,required TResult Function( ProjectDetailOperationFailure value)  operationFailure,required TResult Function( ProjectDetailLoadInProgress value)  loadInProgress,required TResult Function( ProjectDetailLoadSuccess value)  loadSuccess,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectDetailInitial value)  initial,required TResult Function( ProjectDetailInlineActionSuccess value)  inlineActionSuccess,required TResult Function( ProjectDetailValidationFailure value)  validationFailure,required TResult Function( ProjectDetailInitialDataLoadSuccess value)  initialDataLoadSuccess,required TResult Function( ProjectDetailOperationSuccess value)  operationSuccess,required TResult Function( ProjectDetailOperationFailure value)  operationFailure,required TResult Function( ProjectDetailLoadInProgress value)  loadInProgress,required TResult Function( ProjectDetailLoadSuccess value)  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case ProjectDetailInitial():
-return initial(_that);case ProjectDetailValidationFailure():
+return initial(_that);case ProjectDetailInlineActionSuccess():
+return inlineActionSuccess(_that);case ProjectDetailValidationFailure():
 return validationFailure(_that);case ProjectDetailInitialDataLoadSuccess():
 return initialDataLoadSuccess(_that);case ProjectDetailOperationSuccess():
 return operationSuccess(_that);case ProjectDetailOperationFailure():
@@ -584,11 +660,12 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectDetailInitial value)?  initial,TResult? Function( ProjectDetailValidationFailure value)?  validationFailure,TResult? Function( ProjectDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult? Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult? Function( ProjectDetailOperationFailure value)?  operationFailure,TResult? Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult? Function( ProjectDetailLoadSuccess value)?  loadSuccess,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectDetailInitial value)?  initial,TResult? Function( ProjectDetailInlineActionSuccess value)?  inlineActionSuccess,TResult? Function( ProjectDetailValidationFailure value)?  validationFailure,TResult? Function( ProjectDetailInitialDataLoadSuccess value)?  initialDataLoadSuccess,TResult? Function( ProjectDetailOperationSuccess value)?  operationSuccess,TResult? Function( ProjectDetailOperationFailure value)?  operationFailure,TResult? Function( ProjectDetailLoadInProgress value)?  loadInProgress,TResult? Function( ProjectDetailLoadSuccess value)?  loadSuccess,}){
 final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
-return initial(_that);case ProjectDetailValidationFailure() when validationFailure != null:
+return initial(_that);case ProjectDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that);case ProjectDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that);case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that);case ProjectDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that);case ProjectDetailOperationFailure() when operationFailure != null:
@@ -611,10 +688,11 @@ return loadSuccess(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( ValidationFailure failure)?  validationFailure,TResult Function( List<Value> availableValues)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Value> availableValues,  Project project)?  loadSuccess,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function()?  initial,TResult Function( String message)?  inlineActionSuccess,TResult Function( ValidationFailure failure)?  validationFailure,TResult Function( List<Value> availableValues)?  initialDataLoadSuccess,TResult Function( EntityOperation operation)?  operationSuccess,TResult Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult Function()?  loadInProgress,TResult Function( List<Value> availableValues,  Project project)?  loadSuccess,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
-return initial();case ProjectDetailValidationFailure() when validationFailure != null:
+return initial();case ProjectDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that.message);case ProjectDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that.failure);case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableValues);case ProjectDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case ProjectDetailOperationFailure() when operationFailure != null:
@@ -638,10 +716,11 @@ return loadSuccess(_that.availableValues,_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( ValidationFailure failure)  validationFailure,required TResult Function( List<Value> availableValues)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Project> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Value> availableValues,  Project project)  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function()  initial,required TResult Function( String message)  inlineActionSuccess,required TResult Function( ValidationFailure failure)  validationFailure,required TResult Function( List<Value> availableValues)  initialDataLoadSuccess,required TResult Function( EntityOperation operation)  operationSuccess,required TResult Function( DetailBlocError<Project> errorDetails)  operationFailure,required TResult Function()  loadInProgress,required TResult Function( List<Value> availableValues,  Project project)  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial():
-return initial();case ProjectDetailValidationFailure():
+return initial();case ProjectDetailInlineActionSuccess():
+return inlineActionSuccess(_that.message);case ProjectDetailValidationFailure():
 return validationFailure(_that.failure);case ProjectDetailInitialDataLoadSuccess():
 return initialDataLoadSuccess(_that.availableValues);case ProjectDetailOperationSuccess():
 return operationSuccess(_that.operation);case ProjectDetailOperationFailure():
@@ -664,10 +743,11 @@ return loadSuccess(_that.availableValues,_that.project);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( ValidationFailure failure)?  validationFailure,TResult? Function( List<Value> availableValues)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Value> availableValues,  Project project)?  loadSuccess,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function()?  initial,TResult? Function( String message)?  inlineActionSuccess,TResult? Function( ValidationFailure failure)?  validationFailure,TResult? Function( List<Value> availableValues)?  initialDataLoadSuccess,TResult? Function( EntityOperation operation)?  operationSuccess,TResult? Function( DetailBlocError<Project> errorDetails)?  operationFailure,TResult? Function()?  loadInProgress,TResult? Function( List<Value> availableValues,  Project project)?  loadSuccess,}) {final _that = this;
 switch (_that) {
 case ProjectDetailInitial() when initial != null:
-return initial();case ProjectDetailValidationFailure() when validationFailure != null:
+return initial();case ProjectDetailInlineActionSuccess() when inlineActionSuccess != null:
+return inlineActionSuccess(_that.message);case ProjectDetailValidationFailure() when validationFailure != null:
 return validationFailure(_that.failure);case ProjectDetailInitialDataLoadSuccess() when initialDataLoadSuccess != null:
 return initialDataLoadSuccess(_that.availableValues);case ProjectDetailOperationSuccess() when operationSuccess != null:
 return operationSuccess(_that.operation);case ProjectDetailOperationFailure() when operationFailure != null:
@@ -712,6 +792,72 @@ String toString() {
 
 
 
+
+/// @nodoc
+
+
+class ProjectDetailInlineActionSuccess implements ProjectDetailState {
+  const ProjectDetailInlineActionSuccess({required this.message});
+  
+
+ final  String message;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectDetailInlineActionSuccessCopyWith<ProjectDetailInlineActionSuccess> get copyWith => _$ProjectDetailInlineActionSuccessCopyWithImpl<ProjectDetailInlineActionSuccess>(this, _$identity);
+
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectDetailInlineActionSuccess&&(identical(other.message, message) || other.message == message));
+}
+
+
+@override
+int get hashCode => Object.hash(runtimeType,message);
+
+@override
+String toString() {
+  return 'ProjectDetailState.inlineActionSuccess(message: $message)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectDetailInlineActionSuccessCopyWith<$Res> implements $ProjectDetailStateCopyWith<$Res> {
+  factory $ProjectDetailInlineActionSuccessCopyWith(ProjectDetailInlineActionSuccess value, $Res Function(ProjectDetailInlineActionSuccess) _then) = _$ProjectDetailInlineActionSuccessCopyWithImpl;
+@useResult
+$Res call({
+ String message
+});
+
+
+
+
+}
+/// @nodoc
+class _$ProjectDetailInlineActionSuccessCopyWithImpl<$Res>
+    implements $ProjectDetailInlineActionSuccessCopyWith<$Res> {
+  _$ProjectDetailInlineActionSuccessCopyWithImpl(this._self, this._then);
+
+  final ProjectDetailInlineActionSuccess _self;
+  final $Res Function(ProjectDetailInlineActionSuccess) _then;
+
+/// Create a copy of ProjectDetailState
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? message = null,}) {
+  return _then(ProjectDetailInlineActionSuccess(
+message: null == message ? _self.message : message // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
+}
 
 /// @nodoc
 

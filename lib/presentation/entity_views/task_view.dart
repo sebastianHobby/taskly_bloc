@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
+import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
 enum TaskViewVariant {
@@ -27,7 +28,10 @@ class TaskView extends StatelessWidget {
     this.compact = false,
     this.onNextActionRemoved,
     this.showNextActionIndicator = true,
+    this.isInFocus = false,
     this.showProjectNameInMeta = true,
+    this.projectNameIsTertiary = false,
+    this.groupedValueId,
     this.showPrimaryValueChip = true,
     this.maxSecondaryValueChips = 1,
     this.excludeValueIdFromChips,
@@ -54,10 +58,28 @@ class TaskView extends StatelessWidget {
   /// Whether to show the Next Action indicator for pinned tasks.
   final bool showNextActionIndicator;
 
+  /// Whether this task is currently in the user's focus list (My Day).
+  ///
+  /// Used by screens like Anytime and Scheduled to provide subtle focus cues.
+  final bool isInFocus;
+
   /// Whether to show the project name in the meta line.
   ///
   /// Useful when the task is already displayed under a project header.
   final bool showProjectNameInMeta;
+
+  /// Whether the project name should be rendered with tertiary emphasis.
+  ///
+  /// This is useful when the project is already implied by the surrounding UI
+  /// (e.g., grouped under a project header) but we still want the project name
+  /// present as a subtle reminder.
+  final bool projectNameIsTertiary;
+
+  /// When set, the task is being rendered under a value grouping.
+  ///
+  /// Used to (a) render a compact, icon-only primary value chip for the grouped
+  /// value and (b) avoid repeating that value among secondary chips.
+  final String? groupedValueId;
 
   /// Whether to show the primary value chip in the meta line.
   ///
@@ -117,43 +139,6 @@ class TaskView extends StatelessWidget {
     return daysUntil > 0 && daysUntil <= 3;
   }
 
-  DateTime _today() {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
-  }
-
-  DateChip? _buildStrictDateToken(
-    BuildContext context, {
-    required DateTime? startDate,
-    required DateTime? deadlineDate,
-    required bool isOverdue,
-    required bool isDueToday,
-    required bool isDueSoon,
-    required String Function(BuildContext, DateTime) formatDate,
-  }) {
-    if (deadlineDate != null) {
-      return DateChip.deadline(
-        context: context,
-        label: formatDate(context, deadlineDate),
-        isOverdue: isOverdue,
-        isDueToday: isDueToday,
-        isDueSoon: isDueSoon,
-      );
-    }
-
-    if (startDate != null) {
-      final startDay = DateTime(startDate.year, startDate.month, startDate.day);
-      if (!startDay.isBefore(_today())) {
-        return DateChip.startDate(
-          context: context,
-          label: formatDate(context, startDate),
-        );
-      }
-    }
-
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return switch (variant) {
@@ -183,7 +168,16 @@ class TaskView extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
+            color: isInFocus
+                ? colorScheme.primary.withValues(alpha: 0.04)
+                : null,
             border: Border(
+              left: isInFocus
+                  ? BorderSide(
+                      color: colorScheme.primary.withValues(alpha: 0.65),
+                      width: 3,
+                    )
+                  : BorderSide.none,
               bottom: BorderSide(
                 color: colorScheme.outlineVariant.withValues(alpha: 0.2),
                 width: 1,
@@ -209,14 +203,6 @@ class TaskView extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        if (showNextActionIndicator && task.isPinned) ...[
-                          NextActionIndicator(
-                            onUnpin: onNextActionRemoved != null
-                                ? () => onNextActionRemoved!(task)
-                                : null,
-                          ),
-                          const SizedBox(width: 8),
-                        ],
                         if (titlePrefix != null) ...[
                           titlePrefix!,
                           const SizedBox(width: 8),
@@ -237,8 +223,15 @@ class TaskView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        PriorityFlag(priority: task.priority),
+                        if (showPrimaryValueChip &&
+                            effectivePrimaryValue != null) ...[
+                          const SizedBox(width: 12),
+                          ValueChip(
+                            value: effectivePrimaryValue,
+                            variant: ValueChipVariant.solid,
+                            iconOnly: false,
+                          ),
+                        ],
                       ],
                     ),
                     // Explicitly removed subtitle/description logic to align with list view mockup
@@ -262,6 +255,7 @@ class TaskView extends StatelessWidget {
                       projectName: showProjectNameInMeta
                           ? task.project?.name
                           : null,
+                      projectNameIsTertiary: projectNameIsTertiary,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -269,20 +263,12 @@ class TaskView extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       formatDate: DateLabelFormatter.format,
                       hasRepeat: task.repeatIcalRrule != null,
-                      primaryValue: effectivePrimaryValue,
                       secondaryValues: effectiveSecondaryValues,
-                      showPrimaryValueChip: showPrimaryValueChip,
+                      groupedValueId: groupedValueId,
                       maxSecondaryValueChips: maxSecondaryValueChips,
                       excludeValueIdFromChips: excludeValueIdFromChips,
-                      buildDateToken: (context) => _buildStrictDateToken(
-                        context,
-                        startDate: task.startDate,
-                        deadlineDate: task.deadlineDate,
-                        isOverdue: isOverdue,
-                        isDueToday: isDueToday,
-                        isDueSoon: isDueSoon,
-                        formatDate: DateLabelFormatter.format,
-                      ),
+                      isPinned: task.isPinned,
+                      priority: task.priority,
                     ),
                   ],
                 ),
@@ -319,11 +305,32 @@ class TaskView extends StatelessWidget {
           margin: const EdgeInsets.symmetric(vertical: 2),
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
+            color: isInFocus
+                ? Color.alphaBlend(
+                    colorScheme.primary.withValues(alpha: 0.06),
+                    colorScheme.surfaceContainerLow,
+                  )
+                : colorScheme.surfaceContainerLow,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
+            border: isInFocus
+                ? Border(
+                    left: BorderSide(
+                      color: colorScheme.primary.withValues(alpha: 0.55),
+                      width: 4,
+                    ),
+                    top: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                    right: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                    bottom: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                  )
+                : Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -365,6 +372,15 @@ class TaskView extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (showPrimaryValueChip &&
+                            effectivePrimaryValue != null) ...[
+                          const SizedBox(width: 12),
+                          ValueChip(
+                            value: effectivePrimaryValue,
+                            variant: ValueChipVariant.solid,
+                            iconOnly: false,
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -372,6 +388,7 @@ class TaskView extends StatelessWidget {
                       projectName: showProjectNameInMeta
                           ? task.project?.name
                           : null,
+                      projectNameIsTertiary: projectNameIsTertiary,
                       startDate: task.startDate,
                       deadlineDate: task.deadlineDate,
                       isOverdue: isOverdue,
@@ -379,20 +396,12 @@ class TaskView extends StatelessWidget {
                       isDueSoon: isDueSoon,
                       formatDate: DateLabelFormatter.format,
                       hasRepeat: task.repeatIcalRrule != null,
-                      primaryValue: effectivePrimaryValue,
                       secondaryValues: effectiveSecondaryValues,
-                      showPrimaryValueChip: showPrimaryValueChip,
+                      groupedValueId: groupedValueId,
                       maxSecondaryValueChips: maxSecondaryValueChips,
                       excludeValueIdFromChips: excludeValueIdFromChips,
-                      buildDateToken: (context) => _buildStrictDateToken(
-                        context,
-                        startDate: task.startDate,
-                        deadlineDate: task.deadlineDate,
-                        isOverdue: isOverdue,
-                        isDueToday: isDueToday,
-                        isDueSoon: isDueSoon,
-                        formatDate: DateLabelFormatter.format,
-                      ),
+                      isPinned: task.isPinned,
+                      priority: task.priority,
                     ),
                   ],
                 ),
@@ -408,13 +417,14 @@ class TaskView extends StatelessWidget {
 class _MetaLine extends StatelessWidget {
   const _MetaLine({
     required this.formatDate,
-    required this.primaryValue,
     required this.secondaryValues,
-    required this.buildDateToken,
-    required this.showPrimaryValueChip,
+    required this.groupedValueId,
     required this.maxSecondaryValueChips,
     required this.excludeValueIdFromChips,
+    required this.isPinned,
+    required this.priority,
     this.projectName,
+    this.projectNameIsTertiary = false,
     this.startDate,
     this.deadlineDate,
     this.isOverdue = false,
@@ -424,6 +434,7 @@ class _MetaLine extends StatelessWidget {
   });
 
   final String? projectName;
+  final bool projectNameIsTertiary;
   final DateTime? startDate;
   final DateTime? deadlineDate;
   final bool isOverdue;
@@ -431,52 +442,94 @@ class _MetaLine extends StatelessWidget {
   final bool isDueSoon;
   final bool hasRepeat;
   final String Function(BuildContext, DateTime) formatDate;
-  final Value? primaryValue;
   final List<Value> secondaryValues;
-  final DateChip? Function(BuildContext context) buildDateToken;
-  final bool showPrimaryValueChip;
+  final String? groupedValueId;
   final int maxSecondaryValueChips;
   final String? excludeValueIdFromChips;
+  final bool isPinned;
+  final int? priority;
+
+  Color _priorityColor(ColorScheme scheme, int p) {
+    return switch (p) {
+      1 => AppColors.rambutan80,
+      2 => AppColors.cempedak80,
+      3 => AppColors.blueberry80,
+      4 => scheme.onSurfaceVariant,
+      _ => scheme.onSurfaceVariant,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final primary = primaryValue;
+    final groupedId = groupedValueId?.trim();
+    final isValueGrouped = groupedId != null && groupedId.isNotEmpty;
 
-    final dateToken = buildDateToken(context);
-
-    final children = <Widget>[];
-
-    if (showPrimaryValueChip &&
-        primary != null &&
-        primary.id != excludeValueIdFromChips) {
-      children.add(
-        ValueChip(
-          value: primary,
-          variant: ValueChipVariant.solid,
-        ),
-      );
-    }
+    final leftChildren = <Widget>[];
 
     if (maxSecondaryValueChips > 0) {
       final filteredSecondary = secondaryValues
-          .where((v) => v.id != excludeValueIdFromChips)
-          .take(maxSecondaryValueChips);
+          .where(
+            (v) =>
+                v.id != excludeValueIdFromChips &&
+                (!isValueGrouped || v.id != groupedId),
+          )
+          .toList(growable: false);
 
-      for (final v in filteredSecondary) {
-        children.add(
-          ValueChip(
-            value: v,
-            variant: ValueChipVariant.outlined,
-          ),
-        );
+      if (filteredSecondary.isNotEmpty) {
+        final visible = filteredSecondary.take(maxSecondaryValueChips).toList();
+        for (final v in visible) {
+          leftChildren.add(
+            Tooltip(
+              message: v.name,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: ValueChip(
+                  value: v,
+                  variant: ValueChipVariant.outlined,
+                  iconOnly: isValueGrouped,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final remaining = filteredSecondary.length - visible.length;
+        if (remaining > 0) {
+          final allNames = filteredSecondary.map((v) => v.name).join(', ');
+          leftChildren.add(
+            Tooltip(
+              message: allNames,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                constraints: const BoxConstraints(minHeight: 20),
+                child: Text(
+                  '+$remaining',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    height: 1.1,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
       }
     }
 
     if (hasRepeat) {
-      children.add(
+      leftChildren.add(
         Icon(
           Icons.sync_rounded,
           size: 14,
@@ -485,41 +538,90 @@ class _MetaLine extends StatelessWidget {
       );
     }
 
-    final pName = projectName?.trim();
-    if (pName != null && pName.isNotEmpty) {
-      if (children.isNotEmpty) {
-        children.add(
-          Container(
-            height: 14,
-            width: 1,
-            color: scheme.outlineVariant,
-          ),
-        );
-      }
-      children.add(
-        Text(
-          'Project: $pName',
-          style: theme.textTheme.labelSmall?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
+    if (isPinned) {
+      leftChildren.add(
+        Tooltip(
+          message: 'Pinned',
+          child: Icon(
+            Icons.push_pin,
+            size: 14,
             color: scheme.primary,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
       );
     }
 
-    if (children.isEmpty && dateToken == null) return const SizedBox.shrink();
+    final p = priority;
+    if (p != null) {
+      leftChildren.add(
+        Tooltip(
+          message: 'Priority P$p',
+          child: Icon(
+            Icons.flag,
+            size: 14,
+            color: _priorityColor(scheme, p),
+          ),
+        ),
+      );
+    }
+
+    final pName = projectName?.trim();
+    if (pName != null && pName.isNotEmpty) {
+      leftChildren.add(
+        ProjectPill(
+          projectName: pName,
+          isTertiary: projectNameIsTertiary,
+        ),
+      );
+    }
+
+    final dateTokens = <Widget>[];
+    if (startDate != null) {
+      dateTokens.add(
+        DateChip.startDate(
+          context: context,
+          label: formatDate(context, startDate!),
+        ),
+      );
+    }
+    if (deadlineDate != null) {
+      dateTokens.add(
+        DateChip.deadline(
+          context: context,
+          label: formatDate(context, deadlineDate!),
+          isOverdue: isOverdue,
+          isDueToday: isDueToday,
+          isDueSoon: isDueSoon,
+        ),
+      );
+    }
+
+    if (leftChildren.isEmpty && dateTokens.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 6,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...children,
-          ?dateToken,
+          Expanded(
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: leftChildren,
+            ),
+          ),
+          if (dateTokens.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: dateTokens,
+            ),
+          ],
         ],
       ),
     );

@@ -28,8 +28,8 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
 import 'package:taskly_bloc/data/features/journal/repositories/journal_repository_impl.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository_impl.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_definitions_repository.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
+import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
 import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
 import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
@@ -40,7 +40,7 @@ import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_definitions_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
@@ -53,12 +53,16 @@ import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract
     as attention_engine_v2;
 import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
     as attention_repo_v2;
+import 'package:taskly_bloc/domain/attention/engine/cached_attention_engine.dart';
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart'
     as attention_engine_v2_impl;
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart'
     as attention_repo_v2_impl;
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
 import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
+import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.dart';
+import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
+import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
@@ -70,6 +74,15 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_valu
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -188,10 +201,10 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
       () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
-    // Screens - all screens come from DB (system seeded + custom)
-    ..registerLazySingleton<ScreenDefinitionsRepositoryContract>(
-      () => ScreenDefinitionsRepository(
-        databaseRepository: ScreenDefinitionsRepositoryImpl(
+    // Screens - system screens come from code; user preferences come from DB.
+    ..registerLazySingleton<ScreenCatalogRepositoryContract>(
+      () => ScreenCatalogRepository(
+        databaseRepository: ScreenCatalogRepositoryImpl(
           getIt<AppDatabase>(),
         ),
       ),
@@ -274,7 +287,7 @@ Future<void> setupDependencies() async {
         db: getIt<AppDatabase>(),
       ),
     )
-    ..registerLazySingleton<attention_engine_v2.AttentionEngineContract>(
+    ..registerLazySingleton<attention_engine_v2_impl.AttentionEngine>(
       () => attention_engine_v2_impl.AttentionEngine(
         attentionRepository:
             getIt<attention_repo_v2.AttentionRepositoryContract>(),
@@ -286,6 +299,77 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
+      ),
+    )
+    ..registerLazySingleton<attention_engine_v2.AttentionEngineContract>(
+      () => CachedAttentionEngine(
+        inner: getIt<attention_engine_v2_impl.AttentionEngine>(),
+      ),
+    )
+    ..registerLazySingleton<AttentionPrewarmService>(
+      () => AttentionPrewarmService(
+        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
+      ),
+    )
+    // Debug/maintenance services (used by Settings in debug builds)
+    ..registerLazySingleton<TemplateDataService>(
+      () => TemplateDataService(
+        taskRepository: getIt<TaskRepositoryContract>(),
+        projectRepository: getIt<ProjectRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        allocationSnapshotRepository:
+            getIt<AllocationSnapshotRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<LocalDataMaintenanceService>(
+      () => LocalDataMaintenanceService(database: getIt<PowerSyncDatabase>()),
+    )
+    // Presentation BLoCs/Cubits
+    ..registerFactory<AttentionInboxBloc>(
+      () => AttentionInboxBloc(
+        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
+        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
+        idGenerator: getIt<IdGenerator>(),
+      ),
+    )
+    ..registerFactory<AttentionRulesCubit>(
+      () => AttentionRulesCubit(
+        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
+      ),
+    )
+    ..registerFactory<JournalTodayBloc>(
+      () => JournalTodayBloc(repository: getIt<JournalRepositoryContract>()),
+    )
+    ..registerFactory<JournalHistoryBloc>(
+      () => JournalHistoryBloc(repository: getIt<JournalRepositoryContract>()),
+    )
+    ..registerFactoryParam<AddLogCubit, Set<String>, void>(
+      (preselectedTrackerIds, _) => AddLogCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        preselectedTrackerIds: preselectedTrackerIds,
+      ),
+    )
+    ..registerFactory<JournalTrackersCubit>(
+      () =>
+          JournalTrackersCubit(repository: getIt<JournalRepositoryContract>()),
+    )
+    ..registerFactory<MyDayGateBloc>(
+      () => MyDayGateBloc(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+        valueRepository: getIt<ValueRepositoryContract>(),
+      ),
+    )
+    ..registerFactory<MyDayHeaderBloc>(
+      () => MyDayHeaderBloc(
+        settingsRepository: getIt<SettingsRepositoryContract>(),
+      ),
+    )
+    ..registerFactory<SettingsMaintenanceCubit>(
+      () => SettingsMaintenanceCubit(
+        templateDataService: getIt<TemplateDataService>(),
+        localDataMaintenanceService: getIt<LocalDataMaintenanceService>(),
+        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
       ),
     )
     ..registerLazySingleton<DataListSectionInterpreterV2>(

@@ -32,11 +32,19 @@ abstract final class Routing {
   // === PATH UTILITIES ===
 
   /// Get screen route path for building navigation destinations.
-  static String screenPath(String screenKey) =>
-      '/${screenKey.replaceAll('_', '-')}';
+  static String screenPath(String screenKey) {
+    // Canonical path alias: 'someday' has been renamed to the Anytime concept
+    // while keeping the underlying screenKey stable.
+    if (screenKey == 'someday') return '/anytime';
+    return '/${screenKey.replaceAll('_', '-')}';
+  }
 
   /// Parse URL segment back to screenKey.
-  static String parseScreenKey(String segment) => segment.replaceAll('-', '_');
+  static String parseScreenKey(String segment) {
+    // Alias: '/anytime' maps to the legacy 'someday' system screen key.
+    if (segment == 'anytime') return 'someday';
+    return segment.replaceAll('-', '_');
+  }
 
   /// Entity types that have detail pages.
   static const entityTypes = {'task', 'project', 'value'};
@@ -49,6 +57,21 @@ abstract final class Routing {
   /// Navigate to screen by key (when definition is unavailable).
   static void toScreenKey(BuildContext context, String screenKey) =>
       GoRouter.of(context).go(screenPath(screenKey));
+
+  /// Navigate to screen by key with query parameters.
+  ///
+  /// Use this for deep links like `review_inbox?bucket=critical`.
+  static void toScreenKeyWithQuery(
+    BuildContext context,
+    String screenKey, {
+    required Map<String, String> queryParameters,
+  }) {
+    final uri = Uri(
+      path: screenPath(screenKey),
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    GoRouter.of(context).go(uri.toString());
+  }
 
   // === ENTITY NAVIGATION (typed) ===
 

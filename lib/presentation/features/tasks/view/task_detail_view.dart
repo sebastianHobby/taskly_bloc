@@ -54,6 +54,15 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
         ? null
         : repeatCandidate;
 
+    final repeatFromCompletion = extractBoolValue(
+      formValues,
+      TaskFieldKeys.repeatFromCompletion.id,
+    );
+    final seriesEnded = extractBoolValue(
+      formValues,
+      TaskFieldKeys.seriesEnded.id,
+    );
+
     final startDate = extractDateTimeValue(
       formValues,
       TaskFieldKeys.startDate.id,
@@ -74,6 +83,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
       completed: completed,
       projectId: projectId,
       repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
       startDate: startDate,
       deadlineDate: deadlineDate,
       priority: priority,
@@ -86,6 +97,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
     return BlocConsumer<TaskDetailBloc, TaskDetailState>(
       listenWhen: (previous, current) =>
           current is TaskDetailOperationSuccess ||
+          current is TaskDetailInlineActionSuccess ||
           current is TaskDetailValidationFailure ||
           current is TaskDetailOperationFailure,
       listener: (context, state) {
@@ -100,6 +112,9 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                 deletedMessage: context.l10n.taskDeletedSuccessfully,
               ),
             );
+          },
+          inlineActionSuccess: (message) {
+            showEditorSuccessSnackBar(context, message);
           },
           validationFailure: (failure) {
             applyValidationFailureToForm(_formKey, failure, context);
@@ -120,6 +135,7 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
           initial: () => const Center(child: CircularProgressIndicator()),
           loadInProgress: () =>
               const Center(child: CircularProgressIndicator()),
+          inlineActionSuccess: (_) => const SizedBox.shrink(),
           initialDataLoadSuccess: (availableProjects, availableValues) =>
               TaskForm(
                 formKey: _formKey,
@@ -141,6 +157,8 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         projectId: _draft.projectId,
                         priority: _draft.priority,
                         repeatIcalRrule: _draft.repeatIcalRrule,
+                        repeatFromCompletion: _draft.repeatFromCompletion,
+                        seriesEnded: _draft.seriesEnded,
                         valueIds: _draft.valueIds,
                       ),
                     ),
@@ -179,9 +197,16 @@ class _TaskDetailSheetState extends State<TaskDetailSheet>
                         projectId: _draft.projectId,
                         priority: _draft.priority,
                         repeatIcalRrule: _draft.repeatIcalRrule,
+                        repeatFromCompletion: _draft.repeatFromCompletion,
+                        seriesEnded: _draft.seriesEnded,
                         valueIds: _draft.valueIds,
                       ),
                     ),
+                  );
+                },
+                onTogglePinned: (isPinned) {
+                  context.read<TaskDetailBloc>().add(
+                    TaskDetailEvent.setPinned(id: task.id, isPinned: isPinned),
                   );
                 },
                 onDelete: () async {

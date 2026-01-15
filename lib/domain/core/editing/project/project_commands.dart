@@ -10,6 +10,8 @@ final class CreateProjectCommand {
     this.deadlineDate,
     this.priority,
     this.repeatIcalRrule,
+    this.repeatFromCompletion = false,
+    this.seriesEnded = false,
     this.valueIds,
   });
 
@@ -20,6 +22,10 @@ final class CreateProjectCommand {
   final DateTime? deadlineDate;
   final int? priority;
   final String? repeatIcalRrule;
+  final bool repeatFromCompletion;
+
+  /// When true, stops generating future occurrences.
+  final bool seriesEnded;
   final List<String>? valueIds;
 }
 
@@ -34,6 +40,8 @@ final class UpdateProjectCommand {
     this.deadlineDate,
     this.priority,
     this.repeatIcalRrule,
+    this.repeatFromCompletion,
+    this.seriesEnded,
     this.valueIds,
   });
 
@@ -45,5 +53,7 @@ final class UpdateProjectCommand {
   final DateTime? deadlineDate;
   final int? priority;
   final String? repeatIcalRrule;
+  final bool? repeatFromCompletion;
+  final bool? seriesEnded;
   final List<String>? valueIds;
 }

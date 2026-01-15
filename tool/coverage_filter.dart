@@ -45,6 +45,7 @@ final excludedPatterns = [
   RegExp(r'\.g\.dart$'),
   RegExp(r'\.freezed\.dart$'),
   RegExp(r'\.gen\.dart$'),
+  RegExp(r'\.drift\.dart$'),
 
   // Localization
   RegExp(r'lib[/\\]core[/\\]l10n[/\\]'),

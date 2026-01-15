@@ -9,11 +9,14 @@ class SupportSectionCard extends StatelessWidget {
     super.key,
   });
 
-  final String title;
+  final String? title;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
+    final effectiveTitle = title?.trim();
+    final hasTitle = effectiveTitle != null && effectiveTitle.isNotEmpty;
+
     return Card(
       margin: EdgeInsets.zero,
       child: Padding(
@@ -21,11 +24,13 @@ class SupportSectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 12),
+            if (hasTitle) ...[
+              Text(
+                effectiveTitle,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+            ],
             child,
           ],
         ),

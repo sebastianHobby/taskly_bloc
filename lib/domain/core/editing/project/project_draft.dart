@@ -11,6 +11,8 @@ final class ProjectDraft {
     this.deadlineDate,
     this.priority,
     this.repeatIcalRrule,
+    this.repeatFromCompletion = false,
+    this.seriesEnded = false,
     this.valueIds = const <String>[],
   });
 
@@ -22,6 +24,8 @@ final class ProjectDraft {
     deadlineDate: null,
     priority: null,
     repeatIcalRrule: null,
+    repeatFromCompletion: false,
+    seriesEnded: false,
     valueIds: <String>[],
   );
 
@@ -33,6 +37,8 @@ final class ProjectDraft {
     deadlineDate: project.deadlineDate,
     priority: project.priority,
     repeatIcalRrule: project.repeatIcalRrule,
+    repeatFromCompletion: project.repeatFromCompletion,
+    seriesEnded: project.seriesEnded,
     valueIds: project.values.map((v) => v.id).toList(),
   );
 
@@ -43,6 +49,8 @@ final class ProjectDraft {
   final DateTime? deadlineDate;
   final int? priority;
   final String? repeatIcalRrule;
+  final bool repeatFromCompletion;
+  final bool seriesEnded;
   final List<String> valueIds;
 
   ProjectDraft copyWith({
@@ -53,6 +61,8 @@ final class ProjectDraft {
     DateTime? deadlineDate,
     int? priority,
     String? repeatIcalRrule,
+    bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
   }) {
     return ProjectDraft(
@@ -63,6 +73,8 @@ final class ProjectDraft {
       deadlineDate: deadlineDate ?? this.deadlineDate,
       priority: priority ?? this.priority,
       repeatIcalRrule: repeatIcalRrule ?? this.repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion ?? this.repeatFromCompletion,
+      seriesEnded: seriesEnded ?? this.seriesEnded,
       valueIds: valueIds ?? this.valueIds,
     );
   }

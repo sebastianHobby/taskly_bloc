@@ -8,6 +8,10 @@ abstract final class ProjectFieldKeys {
   static const startDate = FieldKey('project.startDate');
   static const deadlineDate = FieldKey('project.deadlineDate');
   static const repeatIcalRrule = FieldKey('project.repeatIcalRrule');
+  static const repeatFromCompletion = FieldKey(
+    'project.repeatFromCompletion',
+  );
+  static const seriesEnded = FieldKey('project.seriesEnded');
   static const priority = FieldKey('project.priority');
   static const valueIds = FieldKey('project.valueIds');
 }

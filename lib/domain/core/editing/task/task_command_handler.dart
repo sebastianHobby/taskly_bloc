@@ -23,6 +23,8 @@ final class TaskCommandHandler {
       projectId: command.projectId,
       priority: command.priority,
       repeatIcalRrule: command.repeatIcalRrule,
+      repeatFromCompletion: command.repeatFromCompletion,
+      seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
     );
 
@@ -43,6 +45,8 @@ final class TaskCommandHandler {
       projectId: command.projectId,
       priority: command.priority,
       repeatIcalRrule: command.repeatIcalRrule,
+      repeatFromCompletion: command.repeatFromCompletion,
+      seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
     );
 

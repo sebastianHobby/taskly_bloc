@@ -227,8 +227,8 @@ These templates are not “V2 list templates” by design (they are standalone s
   - [lib/presentation/widgets/section_widget.dart](lib/presentation/widgets/section_widget.dart)
   - [lib/core/di/dependency_injection.dart](lib/core/di/dependency_injection.dart)
   - [lib/domain/screens/templates/interpreters/section_template_params_codec.dart](lib/domain/screens/templates/interpreters/section_template_params_codec.dart)
-- Ensure system screen definitions still reference only valid template IDs:
-  - [lib/domain/screens/catalog/system_screens/system_screen_definitions.dart](lib/domain/screens/catalog/system_screens/system_screen_definitions.dart)
+- Ensure system screen specs still reference only valid template IDs:
+  - [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
 - If any template catalog meaning changes, update:
   - [doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
 

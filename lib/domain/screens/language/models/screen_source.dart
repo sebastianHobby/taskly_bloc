@@ -1,6 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-/// The source/origin of a screen definition.
+/// The source/origin of a screen spec.
 ///
 /// Distinguishes between built-in system templates and user-created screens.
 enum ScreenSource {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/shared/utils/emoji_utils.dart';
 
 enum ValueChipVariant { solid, outlined }
 
@@ -10,7 +9,7 @@ enum ValueChipVariant { solid, outlined }
 /// Designed to be more visually distinct than regular label chips:
 /// - Larger size with more padding
 /// - Optional rank badge showing priority
-/// - Colored background with emoji icon
+/// - Colored background emphasizing the value color
 /// - Subtle border/elevation for emphasis
 ///
 /// Use [LabelChip] for regular labels, use this for values.
@@ -19,6 +18,7 @@ class ValueChip extends StatelessWidget {
     required this.value,
     this.onTap,
     this.variant = ValueChipVariant.solid,
+    this.iconOnly = false,
     super.key,
   });
 
@@ -31,83 +31,62 @@ class ValueChip extends StatelessWidget {
   /// The visual variant (solid or outlined).
   final ValueChipVariant variant;
 
+  /// When true, renders as a more compact chip.
+  ///
+  /// This is primarily used in value-grouped list layouts to keep tiles
+  /// compact while still showing value identity.
+  final bool iconOnly;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final color = ColorUtils.fromHexWithThemeFallback(context, value.color);
 
-    Color backgroundColor;
-    Color textColor;
-    BoxBorder? border;
-    List<BoxShadow>? boxShadow;
+    // Visual language:
+    // - Primary (solid): subtle tint fill, colored dot, neutral readable text.
+    // - Secondary (outlined): outline, colored dot, neutral readable text.
+    final backgroundColor = switch (variant) {
+      ValueChipVariant.solid => color.withValues(alpha: 0.18),
+      ValueChipVariant.outlined => Colors.transparent,
+    };
 
-    if (variant == ValueChipVariant.solid) {
-      backgroundColor = color;
-      textColor = color.computeLuminance() > 0.5
-          ? Colors.black87
-          : Colors.white;
-      border = Border.all(
-        color: colorScheme.outline.withOpacity(0.2),
-        width: 1,
-      );
-      boxShadow = [
-        BoxShadow(
-          color: color.withOpacity(0.3),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ];
-    } else {
-      backgroundColor = Colors.transparent;
-      textColor = color;
-      border = Border.all(color: color, width: 1);
-      boxShadow = null;
-    }
+    final borderColor = switch (variant) {
+      ValueChipVariant.solid => color.withValues(alpha: 0.22),
+      ValueChipVariant.outlined => color.withValues(alpha: 0.55),
+    };
 
-    // Get emoji icon
-    final emoji = value.iconName?.isNotEmpty ?? false ? value.iconName! : '⭐';
+    final textColor = theme.colorScheme.onSurface;
 
     final chip = Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(
-          variant == ValueChipVariant.solid ? 8 : 12,
-        ),
-        border: border,
-        boxShadow: boxShadow,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor, width: 1),
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: variant == ValueChipVariant.solid ? 8 : 8,
-        vertical: variant == ValueChipVariant.solid ? 2 : 2,
-      ),
-      constraints: BoxConstraints(
-        minHeight: variant == ValueChipVariant.solid ? 20 : 20,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      constraints: const BoxConstraints(minHeight: 20),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Emoji icon (smaller)
-          if (variant == ValueChipVariant.solid) ...[
-            Text(
-              emoji,
-              style: EmojiUtils.emojiTextStyle(fontSize: 10),
-            ),
-            const SizedBox(width: 4),
-          ],
-          // Value name (smaller, less bold)
           Flexible(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 1),
-              child: Text(
-                value.name,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: textColor, // Use contrasting color
-                  fontWeight: FontWeight.w600, // Less bold
-                  fontSize: 10, // Smaller
-                  height: 1.1,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  // Keep grouped/value-header layouts compact.
+                  maxWidth: iconOnly ? 56 : 140,
                 ),
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  value.name,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: textColor,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                    height: 1.1,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ),

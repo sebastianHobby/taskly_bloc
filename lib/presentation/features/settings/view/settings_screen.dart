@@ -2,21 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import 'package:powersync/powersync.dart' show PowerSyncDatabase;
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
-import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
+import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
@@ -32,70 +25,73 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
-        builder: (context, state) {
-          if (state.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return BlocProvider<SettingsMaintenanceCubit>(
+      create: (_) => getIt<SettingsMaintenanceCubit>(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Settings'),
+        ),
+        body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final settings = state.settings;
+            final settings = state.settings;
 
-          return ResponsiveBody(
-            child: ListView(
-              children: [
-                _buildSection(
-                  context: context,
-                  title: 'Appearance',
-                  children: [
-                    _ThemeModeSelector(settings: settings),
-                    _ColorPicker(settings: settings),
-                    _TextSizeSlider(settings: settings),
-                  ],
-                ),
-                _buildSection(
-                  context: context,
-                  title: 'Language & Region',
-                  children: [
-                    _LanguageSelector(settings: settings),
-                    _HomeTimeZoneSelector(settings: settings),
-                  ],
-                ),
-                _buildSection(
-                  context: context,
-                  title: 'Customization',
-                  children: [
-                    if (_showLegacyFocusItems)
-                      _buildTaskAllocationItem(context),
-                    if (_showLegacyFocusItems)
-                      _buildAttentionRulesItem(context),
-                  ],
-                ),
-                _buildSection(
-                  context: context,
-                  title: 'Developer',
-                  children: [
-                    _buildViewLogsItem(context),
-                    if (kDebugMode) const _GenerateTemplateDataItem(),
-                    if (kDebugMode) const _ClearLocalDataItem(),
-                  ],
-                ),
-                _buildSection(
-                  context: context,
-                  title: 'Account',
-                  children: const [
-                    _AccountInfo(),
-                    _SignOutItem(),
-                  ],
-                ),
-                const SizedBox(height: 32),
-              ],
-            ),
-          );
-        },
+            return ResponsiveBody(
+              child: ListView(
+                children: [
+                  _buildSection(
+                    context: context,
+                    title: 'Appearance',
+                    children: [
+                      _ThemeModeSelector(settings: settings),
+                      _ColorPicker(settings: settings),
+                      _TextSizeSlider(settings: settings),
+                    ],
+                  ),
+                  _buildSection(
+                    context: context,
+                    title: 'Language & Region',
+                    children: [
+                      _LanguageSelector(settings: settings),
+                      _HomeTimeZoneSelector(settings: settings),
+                    ],
+                  ),
+                  _buildSection(
+                    context: context,
+                    title: 'Customization',
+                    children: [
+                      if (_showLegacyFocusItems)
+                        _buildTaskAllocationItem(context),
+                      if (_showLegacyFocusItems)
+                        _buildAttentionRulesItem(context),
+                    ],
+                  ),
+                  _buildSection(
+                    context: context,
+                    title: 'Developer',
+                    children: [
+                      _buildViewLogsItem(context),
+                      if (kDebugMode) const _GenerateTemplateDataItem(),
+                      if (kDebugMode) const _ClearLocalDataItem(),
+                    ],
+                  ),
+                  _buildSection(
+                    context: context,
+                    title: 'Account',
+                    children: const [
+                      _AccountInfo(),
+                      _SignOutItem(),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -364,18 +360,54 @@ class _GenerateTemplateDataItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        Icons.auto_awesome,
-        color: Theme.of(context).colorScheme.error,
+    return BlocListener<SettingsMaintenanceCubit, SettingsMaintenanceState>(
+      listenWhen: (prev, next) =>
+          prev.status.runtimeType != next.status.runtimeType,
+      listener: (context, state) {
+        final messenger = ScaffoldMessenger.of(context);
+
+        switch (state.status) {
+          case SettingsMaintenanceRunning(:final action)
+              when action == SettingsMaintenanceAction.generateTemplateData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Generating template data…'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          case SettingsMaintenanceSuccess(:final action)
+              when action == SettingsMaintenanceAction.generateTemplateData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(content: Text('Template data generated.')),
+            );
+          case SettingsMaintenanceFailure(:final action, :final message)
+              when action == SettingsMaintenanceAction.generateTemplateData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          default:
+            break;
+        }
+      },
+      child: ListTile(
+        leading: Icon(
+          Icons.auto_awesome,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: const Text('Generate Template Data'),
+        subtitle: const Text('Deletes user data and seeds a demo set'),
+        trailing: Icon(
+          Icons.warning_amber,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        onTap: () => _confirmAndRun(context),
       ),
-      title: const Text('Generate Template Data'),
-      subtitle: const Text('Deletes user data and seeds a demo set'),
-      trailing: Icon(
-        Icons.warning_amber,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      onTap: () => _confirmAndRun(context),
     );
   }
 
@@ -406,50 +438,7 @@ class _GenerateTemplateDataItem extends StatelessWidget {
     );
 
     if (!(confirmed ?? false) || !context.mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Generating template data…'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    try {
-      final getIt = GetIt.instance;
-      final service = TemplateDataService(
-        taskRepository: getIt<TaskRepositoryContract>(),
-        projectRepository: getIt<ProjectRepositoryContract>(),
-        valueRepository: getIt<ValueRepositoryContract>(),
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-        allocationSnapshotRepository:
-            getIt<AllocationSnapshotRepositoryContract>(),
-      );
-
-      await service.resetAndSeed();
-
-      // Ensure My Day allocation recomputes immediately for the new dataset.
-      getIt<AllocationSnapshotCoordinator>().requestRefreshNow(
-        AllocationSnapshotRefreshReason.manual,
-      );
-
-      if (!context.mounted) return;
-      messenger.clearSnackBars();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Template data generated.')),
-      );
-    } catch (e, st) {
-      talker.handle(e, st, '[Settings] Failed to generate template data');
-      if (!context.mounted) return;
-      messenger.clearSnackBars();
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Failed to generate template data: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    }
+    await context.read<SettingsMaintenanceCubit>().generateTemplateData();
   }
 }
 
@@ -458,18 +447,58 @@ class _ClearLocalDataItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        Icons.delete_forever,
-        color: Theme.of(context).colorScheme.error,
+    return BlocListener<SettingsMaintenanceCubit, SettingsMaintenanceState>(
+      listenWhen: (prev, next) =>
+          prev.status.runtimeType != next.status.runtimeType,
+      listener: (context, state) {
+        final messenger = ScaffoldMessenger.of(context);
+
+        switch (state.status) {
+          case SettingsMaintenanceRunning(:final action)
+              when action == SettingsMaintenanceAction.clearLocalData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Clearing local data…'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          case SettingsMaintenanceSuccess(:final action)
+              when action == SettingsMaintenanceAction.clearLocalData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              const SnackBar(
+                content: Text('Local data cleared. Restarting…'),
+                duration: Duration(seconds: 5),
+              ),
+            );
+            context.read<AuthBloc>().add(const AuthSignOutRequested());
+          case SettingsMaintenanceFailure(:final action, :final message)
+              when action == SettingsMaintenanceAction.clearLocalData:
+            messenger.clearSnackBars();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(message),
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+            );
+          default:
+            break;
+        }
+      },
+      child: ListTile(
+        leading: Icon(
+          Icons.delete_forever,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        title: const Text('Clear Local Data'),
+        subtitle: const Text('Delete all cached data and resync'),
+        trailing: Icon(
+          Icons.warning_amber,
+          color: Theme.of(context).colorScheme.error,
+        ),
+        onTap: () => _showClearLocalDataConfirmation(context),
       ),
-      title: const Text('Clear Local Data'),
-      subtitle: const Text('Delete all cached data and resync'),
-      trailing: Icon(
-        Icons.warning_amber,
-        color: Theme.of(context).colorScheme.error,
-      ),
-      onTap: () => _showClearLocalDataConfirmation(context),
     );
   }
 
@@ -500,43 +529,7 @@ class _ClearLocalDataItem extends StatelessWidget {
     );
 
     if ((confirmed ?? false) && context.mounted) {
-      await _clearLocalData(context);
-    }
-  }
-
-  Future<void> _clearLocalData(BuildContext context) async {
-    try {
-      final db = GetIt.instance<PowerSyncDatabase>();
-
-      // Disconnect from sync
-      await db.disconnect();
-
-      // Delete all local data
-      await db.disconnectedAndClear();
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Local data cleared. Please restart the app.'),
-            duration: Duration(seconds: 5),
-          ),
-        );
-      }
-
-      // Force sign out to trigger full re-auth and resync
-      if (context.mounted) {
-        context.read<AuthBloc>().add(const AuthSignOutRequested());
-      }
-    } catch (e, st) {
-      talker.handle(e, st, '[Settings] Failed to clear local data');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to clear data: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
+      await context.read<SettingsMaintenanceCubit>().clearLocalData();
     }
   }
 }

@@ -30,6 +30,7 @@ class SectionWidget extends StatelessWidget {
   const SectionWidget({
     required this.section,
     super.key,
+    this.persistenceKey,
     this.displayConfig,
     this.focusMode,
     this.onEntityTap,
@@ -43,6 +44,12 @@ class SectionWidget extends StatelessWidget {
 
   /// The section data to render
   final SectionVm section;
+
+  /// Stable key for persisting presentation-only UI state (e.g. via PageStorage).
+  ///
+  /// This is derived in the unified screen rendering path and should be stable
+  /// for a given screen + section instance.
+  final String? persistenceKey;
 
   /// Optional display configuration override
   final DisplayConfig? displayConfig;
@@ -104,13 +111,9 @@ class SectionWidget extends StatelessWidget {
     final result = section.data;
 
     final sliver = switch (result) {
-      final AttentionBannerV1SectionResult d
-          when section.templateId == SectionTemplateId.attentionBannerV1 =>
+      _ when section.templateId == SectionTemplateId.attentionBannerV1 =>
         SliverToBoxAdapter(
-          child: AttentionBannerSectionRendererV1(
-            data: d,
-            title: section.title,
-          ),
+          child: AttentionBannerSectionRendererV1(title: section.title),
         ),
       EntityHeaderProjectSectionResult() ||
       EntityHeaderValueSectionResult() ||
@@ -163,6 +166,7 @@ class SectionWidget extends StatelessWidget {
           data: d,
           params: section.params as InterleavedListSectionParamsV2,
           title: section.title,
+          persistenceKey: persistenceKey,
           compactTiles:
               (section.params as InterleavedListSectionParamsV2).pack ==
               StylePackV2.compact,
@@ -176,6 +180,7 @@ class SectionWidget extends StatelessWidget {
             data: d,
             params: section.params as HierarchyValueProjectTaskSectionParamsV2,
             title: section.title,
+            persistenceKey: persistenceKey,
             compactTiles:
                 (section.params as HierarchyValueProjectTaskSectionParamsV2)
                     .pack ==

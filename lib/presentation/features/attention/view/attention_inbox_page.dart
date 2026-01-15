@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
-    as attention_repo_v2;
 import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
 import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
@@ -18,14 +15,95 @@ class AttentionInboxPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider<AttentionInboxBloc>(
-      create: (_) => AttentionInboxBloc(
-        engine: getIt<AttentionEngineContract>(),
-        repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
-        idGenerator: getIt<IdGenerator>(),
-      ),
-      child: const _AttentionInboxScaffold(),
+      create: (_) => getIt<AttentionInboxBloc>(),
+      child: const _ApplyInitialQueryParams(child: _AttentionInboxScaffold()),
     );
   }
+}
+
+class _ApplyInitialQueryParams extends StatefulWidget {
+  const _ApplyInitialQueryParams({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_ApplyInitialQueryParams> createState() =>
+      _ApplyInitialQueryParamsState();
+}
+
+class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
+  var _applied = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_applied) return;
+    _applied = true;
+
+    final bucketParam = GoRouterState.of(
+      context,
+    ).uri.queryParameters['bucket']?.toLowerCase();
+    if (bucketParam == null || bucketParam.isEmpty) return;
+
+    final bloc = context.read<AttentionInboxBloc>();
+
+    switch (bucketParam) {
+      case 'action':
+        bloc.add(
+          const AttentionInboxEvent.bucketChanged(
+            bucket: AttentionBucket.action,
+          ),
+        );
+        bloc.add(
+          const AttentionInboxEvent.minSeverityChanged(minSeverity: null),
+        );
+      case 'review':
+        bloc.add(
+          const AttentionInboxEvent.bucketChanged(
+            bucket: AttentionBucket.review,
+          ),
+        );
+        bloc.add(
+          const AttentionInboxEvent.minSeverityChanged(minSeverity: null),
+        );
+      case 'critical':
+        bloc.add(
+          const AttentionInboxEvent.bucketChanged(
+            bucket: AttentionBucket.action,
+          ),
+        );
+        bloc.add(
+          const AttentionInboxEvent.minSeverityChanged(
+            minSeverity: AttentionSeverity.critical,
+          ),
+        );
+      case 'warning':
+        bloc.add(
+          const AttentionInboxEvent.bucketChanged(
+            bucket: AttentionBucket.action,
+          ),
+        );
+        bloc.add(
+          const AttentionInboxEvent.minSeverityChanged(
+            minSeverity: AttentionSeverity.warning,
+          ),
+        );
+      case 'info':
+        bloc.add(
+          const AttentionInboxEvent.bucketChanged(
+            bucket: AttentionBucket.action,
+          ),
+        );
+        bloc.add(
+          const AttentionInboxEvent.minSeverityChanged(
+            minSeverity: AttentionSeverity.info,
+          ),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _AttentionInboxScaffold extends StatelessWidget {
@@ -160,7 +238,7 @@ class _AttentionInboxScaffold extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Attention Inbox'),
+            title: const Text('Attention'),
             actions: [
               IconButton(
                 tooltip: 'Filters',
@@ -608,7 +686,7 @@ class _EmptyBucketState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.inbox_outlined,
+              Icons.notifications_outlined,
               size: 40,
               color: Theme.of(context).colorScheme.primary,
             ),

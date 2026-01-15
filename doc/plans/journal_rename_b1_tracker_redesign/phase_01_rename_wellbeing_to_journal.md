@@ -11,7 +11,7 @@ This phase is a **pure rename + wiring update** phase to reduce churn/risk befor
 
 ## Current state (observed)
 
-- The repo currently implements “wellbeing” as a feature package and a set of system/unified screen definitions.
+- The repo currently implements “wellbeing” as a feature package and a set of system/unified screen specs.
 - The wellbeing feature code is tightly coupled to the legacy journal + tracker-response model.
 - The unified screen system also still references a wellbeing dashboard spec/definition.
 

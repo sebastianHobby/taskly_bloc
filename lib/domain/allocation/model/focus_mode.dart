@@ -33,30 +33,29 @@ extension FocusModeX on FocusMode {
 
   /// Short tagline for the focus mode.
   String get tagline => switch (this) {
-    FocusMode.intentional => 'Important over urgent',
-    FocusMode.sustainable => 'Balance values and urgency',
-    FocusMode.responsive => 'Time-sensitive first',
-    FocusMode.personalized => 'Your own formula',
+    FocusMode.intentional => 'Do what matters most today.',
+    FocusMode.sustainable => 'Make steady progress across what matters.',
+    FocusMode.responsive => 'Handle what’s time-sensitive first.',
+    FocusMode.personalized => 'Run today your way.',
   };
 
   /// Tagline used in the Focus Setup wizard cards.
-  String get wizardTagline => switch (this) {
-    FocusMode.intentional => 'Important over urgent',
-    FocusMode.sustainable => 'Balance values and urgency',
-    FocusMode.responsive => 'Time-sensitive first',
-    FocusMode.personalized => 'Your own formula',
-  };
+  String get wizardTagline => tagline;
 
   /// Short description used in the Focus Setup wizard cards.
   String get wizardDescription => switch (this) {
     FocusMode.intentional =>
-      'Focuses on what matters most to you, filtering out distractions.',
+      'Do what matters most, not what shouts loudest. Value-first prioritization '
+          'with fewer urgent distractions.',
     FocusMode.sustainable =>
-      'Focus on maintaining balance across all your values and meeting deadlines.',
+      'Keep moving across what matters without over-optimizing one area. '
+          'Balance-first with deadline awareness.',
     FocusMode.responsive =>
-      'Ensures time-sensitive tasks get attention regardless of their value alignment.',
+      'Clear the time-sensitive stuff with confidence. Due-date-first '
+          'prioritization to prevent slips.',
     FocusMode.personalized =>
-      'Fine-tune importance, urgency, synergy, and balance weights.',
+      'Run today your way—without fighting the defaults. Custom weights for '
+          'importance/urgency/balance.',
   };
 
   /// Longer description explaining the focus mode behavior.

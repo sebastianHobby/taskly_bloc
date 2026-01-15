@@ -26,6 +26,10 @@ The core idea:
   state changes” is implemented using engine-owned runtime state
   (state-hash + dismissal/snooze semantics).
 
+Prewarm policy (normative): any **attention prewarm** (e.g. seeding caches or
+priming common `AttentionQuery` results) must be triggered from **core
+bootstrap/post-auth maintenance**, not from widgets/pages.
+
 ---
 
 ## 2) Where Things Live (Folder Map)
@@ -339,7 +343,8 @@ Important nuance in the current repo state:
 
 ### 5.2 Settings: toggling attention rules
 
-- The settings UI reads all rules once and lets users toggle `active`.
+- The attention settings feature uses a BLoC to load all rules once
+  and lets users toggle `active`.
   - [lib/presentation/features/attention/view/attention_rules_settings_page.dart](../../lib/presentation/features/attention/view/attention_rules_settings_page.dart)
 
 ### 5.3 Attention widgets

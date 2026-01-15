@@ -8,7 +8,7 @@ Implementation date (UTC): 2026-01-14
   - Domain: `SectionTemplateId.attentionBannerV1`, `ScreenModuleSpec.attentionBannerV1`, `SectionDataResult.attentionBannerV1`.
   - Interpreter: `AttentionBannerSectionInterpreterV1` (counts + preview driven by `AttentionEngineContract.watch`).
   - Presentation: `AttentionBannerSectionRendererV1` wired via `SectionWidget`.
-- Overflow screen replacement: “Attention Inbox”
+- Overflow screen replacement: “Attention”
   - Replaced the placeholder `review_inbox` template with a functional inbox page featuring Action/Review tabs and resolution actions.
   - Resolutions recorded via `AttentionRepositoryContract` with `actionDetails` populated for snooze/dismiss.
 - System screen migration

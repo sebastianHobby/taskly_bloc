@@ -91,6 +91,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
   }) async {
@@ -99,9 +100,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = Task(
-      id: old.id,
-      createdAt: old.createdAt,
+    updated[idx] = old.copyWith(
       updatedAt: DateTime.now(),
       name: name,
       completed: completed,
@@ -111,7 +110,9 @@ class FakeTaskRepository implements TaskRepositoryContract {
       projectId: projectId,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
-      values: old.values,
+      repeatFromCompletion: repeatFromCompletion ?? old.repeatFromCompletion,
+      seriesEnded: seriesEnded ?? old.seriesEnded,
+      isPinned: isPinned ?? old.isPinned,
     );
 
     _last = updated;
@@ -143,6 +144,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
   }) async {
     final now = DateTime.now();
@@ -159,6 +161,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
       projectId: projectId,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
     );
     _last = [..._last, newTask];
     _controller.add(_last);
@@ -420,6 +424,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
   }) async {
     final now = DateTime.now();
@@ -435,6 +440,8 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       deadlineDate: deadlineDate,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion,
+      seriesEnded: seriesEnded,
     );
     _last = [..._last, newProject];
     _controller.add(_last);
@@ -451,6 +458,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
   }) async {
@@ -459,9 +467,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = Project(
-      id: old.id,
-      createdAt: old.createdAt,
+    updated[idx] = old.copyWith(
       updatedAt: DateTime.now(),
       name: name,
       completed: completed,
@@ -470,7 +476,9 @@ class FakeProjectRepository implements ProjectRepositoryContract {
       deadlineDate: deadlineDate,
       priority: priority,
       repeatIcalRrule: repeatIcalRrule,
-      values: old.values,
+      repeatFromCompletion: repeatFromCompletion ?? old.repeatFromCompletion,
+      seriesEnded: seriesEnded ?? old.seriesEnded,
+      isPinned: isPinned ?? old.isPinned,
     );
 
     _last = updated;

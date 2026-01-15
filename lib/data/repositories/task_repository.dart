@@ -341,6 +341,7 @@ class TaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool repeatFromCompletion = false,
+    bool seriesEnded = false,
     List<String>? valueIds,
   }) async {
     talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
@@ -368,7 +369,7 @@ class TaskRepository implements TaskRepositoryContract {
                   ? const drift_pkg.Value<String>.absent()
                   : drift_pkg.Value(repeatIcalRrule),
               repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
-              seriesEnded: const drift_pkg.Value(false),
+              seriesEnded: drift_pkg.Value(seriesEnded),
               createdAt: drift_pkg.Value(now),
               updatedAt: drift_pkg.Value(now),
             ),
@@ -408,6 +409,7 @@ class TaskRepository implements TaskRepositoryContract {
     int? priority,
     String? repeatIcalRrule,
     bool? repeatFromCompletion,
+    bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
   }) async {
@@ -447,7 +449,9 @@ class TaskRepository implements TaskRepositoryContract {
               repeatFromCompletion: repeatFromCompletion == null
                   ? drift_pkg.Value(existing.repeatFromCompletion)
                   : drift_pkg.Value(repeatFromCompletion),
-              seriesEnded: drift_pkg.Value(existing.seriesEnded),
+              seriesEnded: seriesEnded == null
+                  ? drift_pkg.Value(existing.seriesEnded)
+                  : drift_pkg.Value(seriesEnded),
               createdAt: drift_pkg.Value(existing.createdAt),
               updatedAt: drift_pkg.Value(now),
             ),

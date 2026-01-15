@@ -11,6 +11,8 @@ final class CreateTaskCommand {
     this.projectId,
     this.priority,
     this.repeatIcalRrule,
+    this.repeatFromCompletion = false,
+    this.seriesEnded = false,
     this.valueIds,
   });
 
@@ -22,6 +24,10 @@ final class CreateTaskCommand {
   final String? projectId;
   final int? priority;
   final String? repeatIcalRrule;
+  final bool repeatFromCompletion;
+
+  /// When true, stops generating future occurrences.
+  final bool seriesEnded;
   final List<String>? valueIds;
 }
 
@@ -37,6 +43,8 @@ final class UpdateTaskCommand {
     this.projectId,
     this.priority,
     this.repeatIcalRrule,
+    this.repeatFromCompletion,
+    this.seriesEnded,
     this.valueIds,
   });
 
@@ -49,5 +57,7 @@ final class UpdateTaskCommand {
   final String? projectId;
   final int? priority;
   final String? repeatIcalRrule;
+  final bool? repeatFromCompletion;
+  final bool? seriesEnded;
   final List<String>? valueIds;
 }
