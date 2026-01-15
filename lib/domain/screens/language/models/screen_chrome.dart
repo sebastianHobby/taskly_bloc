@@ -27,6 +27,11 @@ abstract class ScreenChrome with _$ScreenChrome {
 
     /// Route for settings link action (when appBarActions contains settingsLink).
     String? settingsRoute,
+
+    /// When true, supported header modules may render as an AppBar accessory
+    /// (e.g. the attention banner can be shown under the title instead of in
+    /// the scroll body). Set false to opt out per screen.
+    @Default(true) bool showHeaderAccessoryInAppBar,
   }) = _ScreenChrome;
 
   const ScreenChrome._();

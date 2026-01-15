@@ -15,6 +15,7 @@ class AddTaskFab extends StatelessWidget {
     required this.projectRepository,
     required this.valueRepository,
     this.defaultProjectId,
+    this.defaultValueIds,
     super.key,
   });
 
@@ -24,6 +25,11 @@ class AddTaskFab extends StatelessWidget {
 
   /// Optional project ID to pre-select in the task form.
   final String? defaultProjectId;
+
+  /// Optional value IDs to pre-select in the task form.
+  ///
+  /// Useful for creating a task "aligned" to a Value detail screen.
+  final List<String>? defaultValueIds;
 
   @override
   Widget build(BuildContext fabContext) {
@@ -38,6 +44,7 @@ class AddTaskFab extends StatelessWidget {
         await launcher.openTaskEditor(
           fabContext,
           defaultProjectId: defaultProjectId,
+          defaultValueIds: defaultValueIds,
         );
       },
       heroTag: 'create_task_fab',

@@ -35,10 +35,6 @@ class DataListSectionInterpreterV2
         config is! TaskDataConfig) {
       throw ArgumentError('task_list_v2 requires DataConfig.task');
     }
-    if (templateId == SectionTemplateId.projectListV2 &&
-        config is! ProjectDataConfig) {
-      throw ArgumentError('project_list_v2 requires DataConfig.project');
-    }
     if (templateId == SectionTemplateId.valueListV2 &&
         config is! ValueDataConfig) {
       throw ArgumentError('value_list_v2 requires DataConfig.value');

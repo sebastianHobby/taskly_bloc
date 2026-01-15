@@ -711,7 +711,6 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       return TaskView(
         task: item.task!,
         variant: TaskViewVariant.agendaCard,
-        showNextActionIndicator: false,
         onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
         onTap: widget.onTaskTap,
         titlePrefix: titlePrefix,
@@ -1467,11 +1466,13 @@ class _DateTimelineGroup extends StatefulWidget {
 
 class _DateTimelineGroupState extends State<_DateTimelineGroup> {
   final GlobalKey _groupKey = GlobalKey();
+  final GlobalKey _itemsKey = GlobalKey();
 
   final List<GlobalKey> _itemKeys = <GlobalKey>[];
 
   double? _anchorY;
   List<double> _itemAnchorYs = const [];
+  double? _itemsHeight;
 
   @override
   void initState() {
@@ -1494,6 +1495,14 @@ class _DateTimelineGroupState extends State<_DateTimelineGroup> {
     final firstItemBox = _itemKeys.isEmpty
         ? null
         : (_itemKeys.first.currentContext?.findRenderObject() as RenderBox?);
+    final itemsBox = _itemsKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (itemsBox != null) {
+      final newItemsHeight = itemsBox.size.height;
+      if (_itemsHeight == null || (_itemsHeight! - newItemsHeight).abs() > 1) {
+        setState(() => _itemsHeight = newItemsHeight);
+      }
+    }
 
     if (groupBox == null || firstItemBox == null) return;
 
@@ -1589,76 +1598,76 @@ class _DateTimelineGroupState extends State<_DateTimelineGroup> {
     return Padding(
       key: _groupKey,
       padding: const EdgeInsets.only(bottom: 12),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(
-              width: widget.timelineWidth,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: widget.timelineWidth,
+            height: _itemsHeight ?? 0,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  top: 0,
+                  bottom: 0,
+                  left: lineCenterX - 1,
+                  child: Container(width: 2, color: lineColor),
+                ),
+                if (widget.showDateMarker)
                   Positioned(
-                    top: 0,
-                    bottom: 0,
-                    left: lineCenterX - 1,
-                    child: Container(width: 2, color: lineColor),
-                  ),
-                  if (widget.showDateMarker)
-                    Positioned(
-                      top: markerTop,
-                      left: 0,
-                      child: SizedBox(
-                        width: dateMarkerWidth,
-                        child: _TimelineDateMarker(
-                          dayName: dayName,
-                          dayNumber: dayNumber,
-                        ),
+                    top: markerTop,
+                    left: 0,
+                    child: SizedBox(
+                      width: dateMarkerWidth,
+                      child: _TimelineDateMarker(
+                        dayName: dayName,
+                        dayNumber: dayNumber,
                       ),
                     ),
-                  Positioned(
-                    top: dotTop,
-                    left: dotLeft,
-                    child: _TimelineDot(
-                      color: dotColor,
-                      borderColor: Theme.of(context).scaffoldBackgroundColor,
-                    ),
                   ),
+                Positioned(
+                  top: dotTop,
+                  left: dotLeft,
+                  child: _TimelineDot(
+                    color: dotColor,
+                    borderColor: Theme.of(context).scaffoldBackgroundColor,
+                  ),
+                ),
 
-                  // Additional, smaller dots for each item to strengthen the
-                  // timeline-to-card mapping (mockup-like readability).
-                  for (var i = 1; i < _itemAnchorYs.length; i++)
-                    Positioned(
-                      top: (_itemAnchorYs[i] - 5).clamp(0.0, double.infinity),
-                      left: smallDotLeft,
-                      child: _TimelineDot(
-                        color: dotColor.withOpacity(0.55),
-                        borderColor: Theme.of(context).scaffoldBackgroundColor,
-                        size: smallDotSize,
-                        borderWidth: 1.5,
-                      ),
+                // Additional, smaller dots for each item to strengthen the
+                // timeline-to-card mapping (mockup-like readability).
+                for (var i = 1; i < _itemAnchorYs.length; i++)
+                  Positioned(
+                    top: (_itemAnchorYs[i] - 5).clamp(0.0, double.infinity),
+                    left: smallDotLeft,
+                    child: _TimelineDot(
+                      color: dotColor.withOpacity(0.55),
+                      borderColor: Theme.of(context).scaffoldBackgroundColor,
+                      size: smallDotSize,
+                      borderWidth: 1.5,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < widget.group.items.length; i++) ...[
-                    KeyedSubtree(
-                      key: _itemKeys[i],
-                      child: widget.buildAgendaItem(widget.group.items[i]),
-                    ),
-                    if (i != widget.group.items.length - 1)
-                      const SizedBox(height: 14),
-                  ],
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              key: _itemsKey,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < widget.group.items.length; i++) ...[
+                  KeyedSubtree(
+                    key: _itemKeys[i],
+                    child: widget.buildAgendaItem(widget.group.items[i]),
+                  ),
+                  if (i != widget.group.items.length - 1)
+                    const SizedBox(height: 14),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

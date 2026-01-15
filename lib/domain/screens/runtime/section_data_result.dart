@@ -5,7 +5,6 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
 
 part 'section_data_result.freezed.dart';
 
@@ -38,16 +37,21 @@ sealed class SectionDataResult with _$SectionDataResult {
     EnrichmentResultV2? enrichment,
   }) = AgendaSectionResult;
 
-  /// Unified attention banner (bucket-aware cutover v1).
-  const factory SectionDataResult.attentionBannerV1({
-    required int actionCount,
+  /// Unified attention banner (v2).
+  ///
+  /// UX intent:
+  /// - Reviews chip uses [reviewCount]
+  /// - Alerts chip uses [alertsCount] (excludes info)
+  /// - Progress line uses [doneCount]/[totalCount]
+  const factory SectionDataResult.attentionBannerV2({
     required int reviewCount,
+    required int alertsCount,
     required int criticalCount,
     required int warningCount,
-    required int infoCount,
     required String overflowScreenKey,
-    @Default(<AttentionItem>[]) List<AttentionItem> previewItems,
-  }) = AttentionBannerV1SectionResult;
+    required int doneCount,
+    required int totalCount,
+  }) = AttentionBannerV2SectionResult;
 
   /// Entity header for project detail screens.
   const factory SectionDataResult.entityHeaderProject({

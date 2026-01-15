@@ -36,11 +36,11 @@ void main() {
         MaterialApp(
           home: ScaffoldWithNavigationBar(
             body: const SizedBox.shrink(),
-            destinations: const [home],
-            browseDestination: browse,
+            destinations: const [home, browse],
             activeScreenId: 'home',
-            bottomVisibleCount: 1,
+            bottomVisibleCount: 2,
             onDestinationSelected: (_) {},
+            onMorePressed: () {},
           ),
         ),
       );

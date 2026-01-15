@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/widgets/modal_chrome_scope.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///
@@ -98,7 +99,12 @@ Future<T?> _showAsBottomSheet<T>({
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              Flexible(child: childBuilder(modalContext)),
+              Flexible(
+                child: ModalChromeScope(
+                  modalHasDragHandle: showDragHandle,
+                  child: childBuilder(modalContext),
+                ),
+              ),
             ],
           ),
         ),
@@ -136,7 +142,10 @@ Future<T?> _showAsDialog<T>({
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(dialogContext).viewInsets.bottom,
             ),
-            child: childBuilder(dialogContext),
+            child: ModalChromeScope(
+              modalHasDragHandle: false,
+              child: childBuilder(dialogContext),
+            ),
           ),
         ),
       );

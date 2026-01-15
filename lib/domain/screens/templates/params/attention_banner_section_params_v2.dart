@@ -1,17 +1,14 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
-part 'attention_banner_section_params_v1.freezed.dart';
-part 'attention_banner_section_params_v1.g.dart';
+part 'attention_banner_section_params_v2.freezed.dart';
+part 'attention_banner_section_params_v2.g.dart';
 
-/// Params for the unified attention banner.
-///
-/// This is a compact, bucket-aware replacement for legacy attention summary
-/// sections (issues, allocation alerts, check-in summary).
+/// Params for the unified attention banner (v2).
 @freezed
-abstract class AttentionBannerSectionParamsV1
-    with _$AttentionBannerSectionParamsV1 {
-  const factory AttentionBannerSectionParamsV1({
+abstract class AttentionBannerSectionParamsV2
+    with _$AttentionBannerSectionParamsV2 {
+  const factory AttentionBannerSectionParamsV2({
     required StylePackV2 pack,
 
     /// Restrict to these buckets (e.g. ['action', 'review']).
@@ -29,13 +26,10 @@ abstract class AttentionBannerSectionParamsV1
     /// When null, includes all severities.
     String? minSeverity,
 
-    /// Maximum number of items to show as preview under the counts.
-    @Default(2) int previewLimit,
-
     /// Destination screen key for overflow.
     @Default('review_inbox') String overflowScreenKey,
-  }) = _AttentionBannerSectionParamsV1;
+  }) = _AttentionBannerSectionParamsV2;
 
-  factory AttentionBannerSectionParamsV1.fromJson(Map<String, dynamic> json) =>
-      _$AttentionBannerSectionParamsV1FromJson(json);
+  factory AttentionBannerSectionParamsV2.fromJson(Map<String, dynamic> json) =>
+      _$AttentionBannerSectionParamsV2FromJson(json);
 }

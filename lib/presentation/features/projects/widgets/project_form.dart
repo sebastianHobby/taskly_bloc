@@ -27,6 +27,7 @@ class ProjectForm extends StatefulWidget {
     required this.submitTooltip,
     this.onChanged,
     this.availableValues = const <Value>[],
+    this.openToValues = false,
     this.onDelete,
     this.onTogglePinned,
     this.onClose,
@@ -39,6 +40,10 @@ class ProjectForm extends StatefulWidget {
   final Project? initialData;
   final ValueChanged<Map<String, dynamic>>? onChanged;
   final List<Value> availableValues;
+
+  /// When true, scrolls to the values section and opens the values alignment
+  /// sheet on first build.
+  final bool openToValues;
   final VoidCallback? onDelete;
 
   /// Called when the user toggles pinned state from the header.
@@ -57,6 +62,50 @@ class ProjectForm extends StatefulWidget {
 class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
   @override
   VoidCallback? get onClose => widget.onClose;
+
+  final _scrollController = ScrollController();
+  final GlobalKey<State<StatefulWidget>> _valuesKey = GlobalKey();
+  bool _didAutoOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || _didAutoOpen) return;
+      if (!widget.openToValues) return;
+      _didAutoOpen = true;
+
+      final ctx = _valuesKey.currentContext;
+      if (ctx != null) {
+        await Scrollable.ensureVisible(
+          ctx,
+          alignment: 0.1,
+          duration: const Duration(milliseconds: 220),
+        );
+      }
+      if (!mounted) return;
+
+      final current = widget
+          .formKey
+          .currentState
+          ?.fields[ProjectFieldKeys.valueIds.id]
+          ?.value;
+      final valueIds = List<String>.of(current as List<String>? ?? const []);
+
+      final result = await showValuesAlignmentSheetForProject(
+        context,
+        availableValues: widget.availableValues,
+        valueIds: valueIds,
+      );
+      if (!mounted || result == null) return;
+
+      widget.formKey.currentState?.fields[ProjectFieldKeys.valueIds.id]
+          ?.didChange(result);
+      markDirty();
+      setState(() {});
+    });
+  }
 
   Future<void> _showDatePicker(
     BuildContext context,
@@ -113,6 +162,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
       deleteTooltip: l10n.deleteProjectAction,
       onClose: widget.onClose != null ? handleClose : null,
       closeTooltip: l10n.closeLabel,
+      scrollController: _scrollController,
       leadingActions: [
         if (widget.initialData != null && widget.onTogglePinned != null)
           IconButton(
@@ -195,7 +245,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                 child: FormBuilderField<bool>(
                   name: ProjectFieldKeys.completed.id,
                   builder: (field) {
-                    return SwitchListTile.adaptive(
+                    return CheckboxListTile.adaptive(
                       value: field.value ?? false,
                       onChanged: (value) {
                         field.didChange(value);
@@ -203,6 +253,7 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                       },
                       title: Text(l10n.projectCompletedLabel),
                       contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
                     );
                   },
                 ),
@@ -380,31 +431,36 @@ class _ProjectFormState extends State<ProjectForm> with FormDirtyStateMixin {
                         ? primaryName
                         : '$primaryName + ${valueIds.length - 1}';
 
-                    return Card(
-                      elevation: 0,
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      child: ListTile(
-                        title: Text(l10n.projectFormValuesLabel),
-                        subtitle: Text(
-                          summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                    return KeyedSubtree(
+                      key: _valuesKey,
+                      child: Card(
+                        elevation: 0,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerLow,
+                        child: ListTile(
+                          title: Text(l10n.projectFormValuesLabel),
+                          subtitle: Text(
+                            summary,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          leading: const Icon(Icons.star_border),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () async {
+                            final result =
+                                await showValuesAlignmentSheetForProject(
+                                  context,
+                                  availableValues: widget.availableValues,
+                                  valueIds: valueIds,
+                                );
+                            if (result != null) {
+                              field.didChange(result);
+                              markDirty();
+                              setState(() {});
+                            }
+                          },
                         ),
-                        leading: const Icon(Icons.star_border),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () async {
-                          final result =
-                              await showValuesAlignmentSheetForProject(
-                                context,
-                                availableValues: widget.availableValues,
-                                valueIds: valueIds,
-                              );
-                          if (result != null) {
-                            field.didChange(result);
-                            markDirty();
-                            setState(() {});
-                          }
-                        },
                       ),
                     );
                   },

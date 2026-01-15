@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_bloc/presentation/widgets/modal_chrome_scope.dart';
 
 /// A composable shell for modal forms with consistent styling.
 ///
@@ -34,11 +36,13 @@ class FormShell extends StatelessWidget {
     this.onDelete,
     this.leadingActions = const <Widget>[],
     this.trailingActions = const <Widget>[],
+    this.scrollController,
     this.submitIcon = Icons.check,
     this.deleteTooltip = 'Delete',
     this.closeTooltip = 'Close',
     this.handleBarWidth = 40.0,
     this.borderRadius = 20.0,
+    this.showHandleBar,
     super.key,
   });
 
@@ -70,6 +74,9 @@ class FormShell extends StatelessWidget {
   /// Rendered before the built-in close button (if present).
   final List<Widget> trailingActions;
 
+  /// Optional scroll controller for the scrollable content area.
+  final ScrollController? scrollController;
+
   /// Tooltip for the delete button.
   final String deleteTooltip;
 
@@ -82,10 +89,24 @@ class FormShell extends StatelessWidget {
   /// Border radius for the top corners.
   final double borderRadius;
 
+  /// Whether to show the handle bar at the top of the form.
+  ///
+  /// When null (default), the handle bar is shown only on compact screens and
+  /// only when the surrounding modal container does not already render a drag
+  /// handle.
+  final bool? showHandleBar;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    final modalChrome = ModalChromeScope.maybeOf(context);
+    final windowSizeClass = WindowSizeClass.of(context);
+    final resolvedShowHandleBar =
+        showHandleBar ??
+        (windowSizeClass.isCompact &&
+            !(modalChrome?.modalHasDragHandle ?? false));
 
     final resolvedLeadingActions = <Widget>[
       if (onDelete != null)
@@ -118,16 +139,16 @@ class FormShell extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Handle bar
-          Container(
-            width: handleBarWidth,
-            height: 4,
-            margin: const EdgeInsets.only(top: 12),
-            decoration: BoxDecoration(
-              color: colorScheme.outline.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(2),
+          if (resolvedShowHandleBar)
+            Container(
+              width: handleBarWidth,
+              height: 4,
+              margin: const EdgeInsets.only(top: 12),
+              decoration: BoxDecoration(
+                color: colorScheme.outline.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
 
           // Action buttons row
           Container(
@@ -145,6 +166,7 @@ class FormShell extends StatelessWidget {
           // Scrollable content
           Flexible(
             child: SingleChildScrollView(
+              controller: scrollController,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: child,
             ),

@@ -23,12 +23,10 @@ Last updated at: 2026-01-14T00:00:00Z
 - System screens are routed via a convention-based catch-all route (`/:segment`) and built through `Routing.buildScreen`.
 - System screens are defined as typed `ScreenSpec`s (see `SystemScreenSpecs`) and rendered via `UnifiedScreenPageFromSpec`.
 - Entity detail routes exist for `/task/:id`, `/project/:id`, `/value/:id`.
-- A legacy/parallel screen-definition pipeline existed but was unused by current routing (removed as part of Phase 03 cleanup).
+- A legacy, parallel screen pipeline existed but was unused by current routing (removed as part of Phase 03 cleanup).
 
-Note (2026-01-14): the legacy ScreenDefinition-based files referenced by this
-plan (e.g. `UnifiedScreenPage`, `ScreenDefinitionBloc`,
-`SystemScreenDefinitions`) are now deleted; only the typed `ScreenSpec` pipeline
-remains.
+Note (2026-01-14): the legacy pre-`ScreenSpec` screen pipeline referenced by
+older drafts is now deleted; only the typed `ScreenSpec` pipeline remains.
 - There is still a `/label/:id` route, but the entity builder registry and `Routing.buildEntityDetail` do not include `label`.
 
 ## Decisions / Constraints
@@ -39,10 +37,10 @@ remains.
 ### Confirmed design decisions (locked)
 
 - **Label route**: Option A — remove `/label/:id` entirely.
-- **Legacy ScreenDefinition stack**: delete legacy files from the repo. Note: by the time this plan is implemented, some of these files may already be deleted; implementation should be resilient (delete-if-exists).
+- **Legacy pre-`ScreenSpec` screen stack**: delete legacy files from the repo. Note: by the time this plan is implemented, some of these files may already be deleted; implementation should be resilient (delete-if-exists).
 - **Task routing semantics**: task is **editor-only**. Visiting `/task/:id` always opens the editor sheet; there is no separate read-only task detail page.
 - **Project vs Value UX**: keep them **identical** (same action locations, menu structure, loading/error/empty patterns).
-- **Completion definition**: *0 legacy files remain in the repo* (not just “unreachable”).
+- **Completion definition**: *0 legacy screen-pipeline files remain in the repo* (not just “unreachable”).
 
 ## Acceptance Criteria
 

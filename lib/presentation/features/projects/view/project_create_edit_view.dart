@@ -20,12 +20,17 @@ class ProjectEditSheetPage extends StatelessWidget {
     required this.valueRepository,
     this.projectId,
     this.onSaved,
+    this.openToValues = false,
     super.key,
   });
 
   final ProjectRepositoryContract projectRepository;
   final ValueRepositoryContract valueRepository;
   final String? projectId;
+
+  /// When true, scrolls to the values section and opens the values alignment
+  /// sheet on first build.
+  final bool openToValues;
 
   /// Optional callback when a project is saved (created or updated).
   /// Called with the project ID after successful save.
@@ -42,6 +47,7 @@ class ProjectEditSheetPage extends StatelessWidget {
       child: ProjectEditSheetView(
         projectId: projectId,
         onSaved: onSaved,
+        openToValues: openToValues,
       ),
     );
   }
@@ -51,6 +57,7 @@ class ProjectEditSheetView extends StatefulWidget {
   const ProjectEditSheetView({
     this.projectId,
     this.onSaved,
+    this.openToValues = false,
     super.key,
   });
 
@@ -58,6 +65,8 @@ class ProjectEditSheetView extends StatefulWidget {
 
   /// Optional callback when a project is saved (created or updated).
   final void Function(String projectId)? onSaved;
+
+  final bool openToValues;
 
   @override
   State<ProjectEditSheetView> createState() => _ProjectEditSheetViewState();
@@ -194,6 +203,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               formKey: _formKey,
               availableValues: availableValues,
               onChanged: syncDraft,
+              openToValues: widget.openToValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;
@@ -283,6 +293,7 @@ class _ProjectEditSheetViewState extends State<ProjectEditSheetView>
               formKey: _formKey,
               availableValues: availableValues,
               onChanged: syncDraft,
+              openToValues: widget.openToValues,
               onSubmit: () {
                 final formValues = validateAndGetFormValues(_formKey);
                 if (formValues == null) return;

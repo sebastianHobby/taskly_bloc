@@ -5,23 +5,23 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
   const ScaffoldWithNavigationBar({
     required this.body,
     required this.destinations,
-    required this.browseDestination,
     required this.activeScreenId,
     required this.bottomVisibleCount,
     required this.onDestinationSelected,
+    required this.onMorePressed,
     super.key,
   });
 
   final Widget body;
   final List<NavigationDestinationVm> destinations;
-  final NavigationDestinationVm browseDestination;
   final String? activeScreenId;
   final int bottomVisibleCount;
   final ValueChanged<String> onDestinationSelected;
+  final VoidCallback onMorePressed;
 
   @override
   Widget build(BuildContext context) {
-    // L4: bottom bar shows first N system screens + Browse hub.
+    // L4: bottom bar shows first N system screens + an overflow.
     final visible = destinations.take(bottomVisibleCount).toList();
 
     final selectedIndex = _selectedIndex(visibleLength: visible.length);
@@ -32,14 +32,18 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
         selectedIndex: selectedIndex,
         destinations: [
           ...visible.map(_toNavDestination),
-          _toNavDestination(browseDestination),
+          const NavigationDestination(
+            label: 'More',
+            icon: Icon(Icons.more_horiz),
+            selectedIcon: Icon(Icons.more_horiz),
+          ),
         ],
         onDestinationSelected: (index) {
           if (index < visible.length) {
             onDestinationSelected(visible[index].screenId);
             return;
           }
-          onDestinationSelected(browseDestination.screenId);
+          onMorePressed();
         },
       ),
     );
@@ -53,8 +57,8 @@ class ScaffoldWithNavigationBar extends StatelessWidget {
           (d) => d.screenId == activeScreenId,
         );
     if (idx == -1) {
-      // Highlight Browse when not on a bottom-bar system screen.
-      return activeScreenId == null ? 0 : visibleLength;
+      // Highlight More when not on a bottom-bar system screen.
+      return visibleLength;
     }
     return idx;
   }

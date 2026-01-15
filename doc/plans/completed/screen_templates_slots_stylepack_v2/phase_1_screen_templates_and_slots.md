@@ -54,11 +54,10 @@ This phase establishes the core types and the rendering entry points.
 3) **Unified screen rendering flow changes**
    - Introduce a rendering entry point that renders **from typed specs**:
      - either a new `UnifiedScreenPageFromSpec`, or
-     - extend existing `UnifiedScreenPage` with a `ScreenSpec` input.
+     - extend an existing unified-screen entry point to accept `ScreenSpec`.
 
-  Note (2026-01-14): `UnifiedScreenPage` was a legacy ScreenDefinition-based
-  widget and has since been deleted. The supported path is
-  `UnifiedScreenPageFromSpec`.
+  Note (2026-01-14): the older unified-screen entry point has been deleted.
+  The supported path is `UnifiedScreenPageFromSpec`.
    - Rendering path:
      - `ScreenSpec` -> partition into slots -> `ScreenTemplateWidget`
 

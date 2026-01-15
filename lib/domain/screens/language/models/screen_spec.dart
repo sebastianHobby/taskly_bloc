@@ -2,7 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
@@ -73,8 +74,13 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
   const factory ScreenTemplateSpec.standardScaffoldV1() =
       ScreenTemplateStandardScaffoldV1;
 
-  /// Placeholder screen for attention/review overflow.
-  const factory ScreenTemplateSpec.reviewInbox() = ScreenTemplateReviewInbox;
+  /// Entity detail scaffold template (projects/values RD surfaces).
+  ///
+  /// This is used for RD pages where the primary content is driven by unified
+  /// modules but the top-level chrome is entity-specific (edit/delete actions,
+  /// desktop width constraints, etc.).
+  const factory ScreenTemplateSpec.entityDetailScaffoldV1() =
+      ScreenTemplateEntityDetailScaffoldV1;
 
   // Full-screen, self-contained templates (feature UIs)
   const factory ScreenTemplateSpec.settingsMenu() = ScreenTemplateSettingsMenu;
@@ -83,15 +89,10 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
   const factory ScreenTemplateSpec.statisticsDashboard() =
       ScreenTemplateStatisticsDashboard;
   const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
-  const factory ScreenTemplateSpec.journalTimeline() =
-      ScreenTemplateJournalTimeline;
-  const factory ScreenTemplateSpec.allocationSettings() =
-      ScreenTemplateAllocationSettings;
   const factory ScreenTemplateSpec.attentionRules() =
       ScreenTemplateAttentionRules;
   const factory ScreenTemplateSpec.focusSetupWizard() =
       ScreenTemplateFocusSetupWizard;
-  const factory ScreenTemplateSpec.browseHub() = ScreenTemplateBrowseHub;
   const factory ScreenTemplateSpec.myDayFocusModeRequired() =
       ScreenTemplateMyDayFocusModeRequired;
 }
@@ -103,11 +104,6 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     required ListSectionParamsV2 params,
     String? title,
   }) = ScreenModuleTaskListV2;
-
-  const factory ScreenModuleSpec.projectListV2({
-    required ListSectionParamsV2 params,
-    String? title,
-  }) = ScreenModuleProjectListV2;
 
   const factory ScreenModuleSpec.valueListV2({
     required ListSectionParamsV2 params,
@@ -129,10 +125,15 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     String? title,
   }) = ScreenModuleAgendaV2;
 
-  const factory ScreenModuleSpec.attentionBannerV1({
-    required AttentionBannerSectionParamsV1 params,
+  const factory ScreenModuleSpec.attentionBannerV2({
+    required AttentionBannerSectionParamsV2 params,
     String? title,
-  }) = ScreenModuleAttentionBannerV1;
+  }) = ScreenModuleAttentionBannerV2;
+
+  const factory ScreenModuleSpec.attentionInboxV1({
+    required AttentionInboxSectionParamsV1 params,
+    String? title,
+  }) = ScreenModuleAttentionInboxV1;
 
   const factory ScreenModuleSpec.entityHeader({
     required EntityHeaderSectionParams params,

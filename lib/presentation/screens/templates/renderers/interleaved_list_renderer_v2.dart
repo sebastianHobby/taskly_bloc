@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
@@ -11,6 +13,7 @@ import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/section_filter_bar_v2.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
@@ -25,6 +28,7 @@ class InterleavedListRendererV2 extends StatefulWidget {
     this.title,
     this.compactTiles = false,
     this.onTaskToggle,
+    this.onTaskPinnedChanged,
     this.persistenceKey,
   });
 
@@ -33,6 +37,7 @@ class InterleavedListRendererV2 extends StatefulWidget {
   final String? title;
   final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
+  final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
 
   @override
@@ -66,12 +71,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     return inferred;
   }
 
-  bool get _isValueDetailScreen {
-    return widget.persistenceKey?.startsWith('value_detail:') ?? false;
-  }
-
   SectionEntityViewModeV2 _entityViewMode = SectionEntityViewModeV2.all;
   String? _selectedValueId;
+  bool _focusOnly = false;
   bool _includeFutureStarts = true;
   final Set<String> _collapsedProjectIds = <String>{};
 
@@ -295,6 +297,23 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     );
   }
 
+  String? _countsLabelFor(List<ScreenItem> items) {
+    final (:taskCount, :projectCount) = _countsFor(items);
+    if (taskCount == 0 && projectCount == 0) return null;
+
+    final parts = <String>[];
+    if (taskCount > 0) {
+      parts.add('$taskCount ${_plural(taskCount, 'task', 'tasks')}');
+    }
+    if (projectCount > 0) {
+      parts.add(
+        '$projectCount ${_plural(projectCount, 'project', 'projects')}',
+      );
+    }
+
+    return parts.join(' • ');
+  }
+
   bool get _isMyDayAllocation {
     return widget.params.sources.any(
       (c) => c is AllocationSnapshotTasksTodayDataConfig,
@@ -333,11 +352,13 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final suppressHeaderBlock = _isMyDayAllocation;
     final showProjectsOnlyToggle = filters?.enableProjectsOnlyToggle ?? false;
     final showValueDropdown = filters?.enableValueDropdown ?? false;
+    final showFocusOnlyToggle = filters?.enableFocusOnlyToggle ?? false;
     final showIncludeFutureStartsToggle =
         filters?.enableIncludeFutureStartsToggle ?? false;
     final showFilters =
         showProjectsOnlyToggle ||
         showValueDropdown ||
+        showFocusOnlyToggle ||
         showIncludeFutureStartsToggle;
 
     final statusLine = suppressHeaderBlock
@@ -367,13 +388,71 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final placement =
         filters?.filterBarPlacement ?? FilterBarPlacementV2.inline;
 
-    if (placement == FilterBarPlacementV2.pinned) {
+    // UX-001B: keep filters inline on mobile/tablet, but pin them on desktop
+    // (expanded) layouts to reduce scroll churn on list-heavy screens.
+    final effectivePlacement =
+        (placement == FilterBarPlacementV2.inline && context.isExpandedScreen)
+        ? FilterBarPlacementV2.pinned
+        : placement;
+
+    if (effectivePlacement == FilterBarPlacementV2.pinned) {
       final reservePinnedSpace = filters?.reservePinnedSpace ?? false;
+
+      String? activeFiltersSummary() {
+        final parts = <String>[];
+
+        if (_entityViewMode != SectionEntityViewModeV2.all) {
+          parts.add(
+            switch (_entityViewMode) {
+              SectionEntityViewModeV2.projects => 'Projects',
+              SectionEntityViewModeV2.tasks => 'Tasks',
+              SectionEntityViewModeV2.all => 'All',
+            },
+          );
+        }
+
+        if (_selectedValueId != null) {
+          final label = availableValues
+              .where((v) => v.id == _selectedValueId)
+              .map((v) => v.name)
+              .cast<String?>()
+              .firstWhere(
+                (v) => v != null && v.trim().isNotEmpty,
+                orElse: () => null,
+              );
+          parts.add('Value: ${label ?? 'Selected'}');
+        }
+
+        if (showFocusOnlyToggle && _focusOnly) {
+          parts.add('Focus only');
+        }
+
+        if (showIncludeFutureStartsToggle && !_includeFutureStarts) {
+          parts.add('Future starts hidden');
+        }
+
+        if (parts.isEmpty) return null;
+        return parts.join(' • ');
+      }
+
+      final countsLabel = suppressHeaderBlock
+          ? null
+          : _countsLabelFor(
+              filteredItems,
+            );
+      final filtersLabel = activeFiltersSummary();
+      final summaryText = (countsLabel == null)
+          ? filtersLabel
+          : (filtersLabel == null
+                ? countsLabel
+                : '$countsLabel — $filtersLabel');
+
       return [
         if (titleBlock != null) SliverToBoxAdapter(child: titleBlock),
         SliverPersistentHeader(
           pinned: true,
           delegate: _PinnedFilterBarDelegate(
+            summaryText: summaryText,
             showEntityModePicker: showProjectsOnlyToggle,
             showValuePicker: showValueDropdown,
             values: availableValues,
@@ -383,6 +462,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                 setState(() => _entityViewMode = v),
             onSelectedValueChanged: (String? v) =>
                 setState(() => _selectedValueId = v),
+            showFocusOnlyToggle: showFocusOnlyToggle,
+            focusOnly: _focusOnly,
+            onFocusOnlyChanged: (bool v) => setState(() => _focusOnly = v),
             showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
             includeFutureStarts: _includeFutureStarts,
             onIncludeFutureStartsChanged: (bool v) =>
@@ -390,14 +472,16 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             onClearFilters:
                 (_entityViewMode != SectionEntityViewModeV2.all ||
                     _selectedValueId != null ||
+                    (showFocusOnlyToggle && _focusOnly) ||
                     (showIncludeFutureStartsToggle && !_includeFutureStarts))
                 ? () => setState(() {
                     _entityViewMode = SectionEntityViewModeV2.all;
                     _selectedValueId = null;
+                    _focusOnly = false;
                     _includeFutureStarts = true;
                   })
                 : null,
-            reservePinnedSpace: reservePinnedSpace,
+            reservePinnedSpace: reservePinnedSpace || context.isExpandedScreen,
           ),
         ),
       ];
@@ -421,6 +505,9 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             selectedValueId: _selectedValueId,
             onSelectedValueChanged: (String? v) =>
                 setState(() => _selectedValueId = v),
+            showFocusOnlyToggle: showFocusOnlyToggle,
+            focusOnly: _focusOnly,
+            onFocusOnlyChanged: (bool v) => setState(() => _focusOnly = v),
             showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
             includeFutureStarts: _includeFutureStarts,
             onIncludeFutureStartsChanged: (bool v) =>
@@ -428,10 +515,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             onClearFilters:
                 (_entityViewMode != SectionEntityViewModeV2.all ||
                     _selectedValueId != null ||
+                    (showFocusOnlyToggle && _focusOnly) ||
                     (showIncludeFutureStartsToggle && !_includeFutureStarts))
                 ? () => setState(() {
                     _entityViewMode = SectionEntityViewModeV2.all;
                     _selectedValueId = null;
+                    _focusOnly = false;
                     _includeFutureStarts = true;
                   })
                 : null,
@@ -457,6 +546,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
     final filters = widget.params.filters;
     final showValueDropdown = filters?.enableValueDropdown ?? false;
+    final showFocusOnlyToggle = filters?.enableFocusOnlyToggle ?? false;
     final showIncludeFutureStartsToggle =
         filters?.enableIncludeFutureStartsToggle ?? false;
     final valueFilterMode =
@@ -470,6 +560,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       items: items,
       valueFilterMode: valueFilterMode,
       showValueDropdown: showValueDropdown,
+      showFocusOnlyToggle: showFocusOnlyToggle,
       showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
     );
 
@@ -485,15 +576,51 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       final hasActiveFilters =
           _entityViewMode != SectionEntityViewModeV2.all ||
           _selectedValueId != null ||
+          (showFocusOnlyToggle && _focusOnly) ||
           (showIncludeFutureStartsToggle && !_includeFutureStarts);
+
+      final includeFutureStartsWouldHelp =
+          showIncludeFutureStartsToggle &&
+          !_includeFutureStarts &&
+          _applyFiltersToItems(
+            items: items,
+            valueFilterMode: valueFilterMode,
+            showValueDropdown: showValueDropdown,
+            showFocusOnlyToggle: showFocusOnlyToggle,
+            showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+            includeFutureStartsOverride: true,
+          ).isNotEmpty;
+
+      final disablingFocusOnlyWouldHelp =
+          showFocusOnlyToggle &&
+          _focusOnly &&
+          _applyFiltersToItems(
+            items: items,
+            valueFilterMode: valueFilterMode,
+            showValueDropdown: showValueDropdown,
+            showFocusOnlyToggle: showFocusOnlyToggle,
+            showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+            focusOnlyOverride: false,
+          ).isNotEmpty;
+
       return _EmptyStateSliverGroup(
         headerSlivers: headerSlivers,
         hasActiveFilters: hasActiveFilters,
         onClearFilters: () => setState(() {
           _entityViewMode = SectionEntityViewModeV2.all;
           _selectedValueId = null;
+          _focusOnly = false;
           _includeFutureStarts = true;
         }),
+        showEnableFutureStartsAction:
+            showIncludeFutureStartsToggle && !_includeFutureStarts,
+        onEnableFutureStarts: includeFutureStartsWouldHelp
+            ? () => setState(() => _includeFutureStarts = true)
+            : null,
+        showDisableFocusOnlyAction: showFocusOnlyToggle && _focusOnly,
+        onDisableFocusOnly: disablingFocusOnlyWouldHelp
+            ? () => setState(() => _focusOnly = false)
+            : null,
         onAddTask: hasActiveFilters ? null : () => Routing.toTaskNew(context),
       );
     }
@@ -519,32 +646,15 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           ],
         );
       },
-      timelineMonthSections: (_) {
-        return SliverMainAxisGroup(
-          slivers: [
-            ...headerSlivers,
-            SliverSeparatedList(
-              itemCount: filteredItems.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) => _buildItem(
-                context,
-                registry: registry,
-                item: filteredItems[index],
-              ),
-            ),
-          ],
-        );
-      },
       hierarchyValueProjectTask:
           (
-            pinnedValueHeaders,
+            _,
             pinnedProjectHeaders,
             singleInboxGroupForNoProjectTasks,
           ) {
             return _buildHierarchy(
               registry: registry,
               headerSlivers: headerSlivers,
-              pinnedValueHeaders: pinnedValueHeaders,
               pinnedProjectHeaders: pinnedProjectHeaders,
               singleInboxGroupForNoProjectTasks:
                   singleInboxGroupForNoProjectTasks,
@@ -596,10 +706,34 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     required List<ScreenItem> items,
     required ValueFilterModeV2 valueFilterMode,
     required bool showValueDropdown,
+    required bool showFocusOnlyToggle,
     required bool showIncludeFutureStartsToggle,
+    bool? focusOnlyOverride,
+    bool? includeFutureStartsOverride,
   }) {
     final qualifyingValueIdByTaskId =
         widget.data.enrichment?.qualifyingValueIdByTaskId;
+    final isAllocatedByTaskId = widget.data.enrichment?.isAllocatedByTaskId;
+
+    final focusOnlyEnabled =
+        showFocusOnlyToggle && (focusOnlyOverride ?? _focusOnly);
+    final effectiveIncludeFutureStarts =
+        includeFutureStartsOverride ?? _includeFutureStarts;
+
+    bool taskIsInFocus(ScreenItemTask item) {
+      final allocated = isAllocatedByTaskId?[item.task.id] ?? false;
+      return allocated || item.task.isPinned;
+    }
+
+    final focusProjectIds = focusOnlyEnabled
+        ? items
+              .whereType<ScreenItemTask>()
+              .where(taskIsInFocus)
+              .map((t) => t.task.projectId)
+              .whereType<String>()
+              .where((id) => id.trim().isNotEmpty)
+              .toSet()
+        : const <String>{};
 
     bool taskMatchesSelectedValue(ScreenItemTask item) {
       if (!showValueDropdown || _selectedValueId == null) return true;
@@ -626,15 +760,29 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     }
 
     bool taskMatchesFutureStarts(ScreenItemTask item) {
-      if (!showIncludeFutureStartsToggle || _includeFutureStarts) return true;
+      if (!showIncludeFutureStartsToggle || effectiveIncludeFutureStarts) {
+        return true;
+      }
       final start = item.task.startDate;
       return start == null || !_isAfterTodayLocal(start);
     }
 
     bool projectMatchesFutureStarts(ScreenItemProject item) {
-      if (!showIncludeFutureStartsToggle || _includeFutureStarts) return true;
+      if (!showIncludeFutureStartsToggle || effectiveIncludeFutureStarts) {
+        return true;
+      }
       final start = item.project.startDate;
       return start == null || !_isAfterTodayLocal(start);
+    }
+
+    bool taskMatchesFocusOnly(ScreenItemTask item) {
+      if (!focusOnlyEnabled) return true;
+      return taskIsInFocus(item);
+    }
+
+    bool projectMatchesFocusOnly(ScreenItemProject item) {
+      if (!focusOnlyEnabled) return true;
+      return focusProjectIds.contains(item.project.id);
     }
 
     return items
@@ -643,10 +791,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             ScreenItemTask() =>
               _entityViewMode != SectionEntityViewModeV2.projects &&
                   taskMatchesSelectedValue(item) &&
+                  taskMatchesFocusOnly(item) &&
                   taskMatchesFutureStarts(item),
             ScreenItemProject() =>
               _entityViewMode != SectionEntityViewModeV2.tasks &&
                   projectMatchesSelectedValue(item) &&
+                  projectMatchesFocusOnly(item) &&
                   projectMatchesFutureStarts(item),
             ScreenItemValue() => true,
             _ => true,
@@ -662,7 +812,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     Widget? titlePrefix,
     Widget? projectTrailing,
     bool showProjectTrailingProgressLabel = false,
-    ScreenItemGroupingContext? groupingContext,
   }) {
     final isInFocus =
         item is ScreenItemTask &&
@@ -674,7 +823,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         ? widget.data.enrichment?.valueStatsByValueId[item.value.id]
         : null;
 
-    return registry.build(
+    final base = registry.build(
       context,
       item: item,
       isInFocus: isInFocus,
@@ -684,22 +833,18 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       titlePrefix: prefix,
       projectTrailing: projectTrailing,
       showProjectTrailingProgressLabel: showProjectTrailingProgressLabel,
-      groupingContext: groupingContext,
-      suppressValueChipsWhenValueImplied: _isValueDetailScreen,
     );
+
+    return base;
   }
 
   SliverMainAxisGroup _buildHierarchy({
     required ScreenItemTileRegistry registry,
     required List<Widget> headerSlivers,
-    required bool pinnedValueHeaders,
     required bool pinnedProjectHeaders,
     required bool singleInboxGroupForNoProjectTasks,
     required List<ScreenItem> items,
   }) {
-    // UX: value-group headers should not be sticky on grouped pages.
-    // Keep the parameter for API compatibility, but enforce inline headers.
-
     final values = items.whereType<ScreenItemValue>().toList(growable: false);
     final projects = items.whereType<ScreenItemProject>().toList(
       growable: false,
@@ -827,7 +972,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final slivers = <Widget>[];
     slivers.addAll(headerSlivers);
 
-    // Grouped hierarchy readability defaults.
+    // Readability defaults for the value->project->task hierarchy layout.
     // Applies to any screen using value->project grouping (e.g., My Day, Someday).
     const projectBlockGap = 6.0;
     const taskIndent = 16.0;
@@ -936,7 +1081,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                   context,
                   registry: registry,
                   item: projectItem,
-                  groupingContext: ScreenItemGroupingContext(valueId: valueId),
                   projectTrailing: _CollapseChevron(
                     collapsed: collapsed,
                     onPressed: () => _toggleProjectCollapsed(projectId),
@@ -948,10 +1092,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                 context,
                 registry: registry,
                 item: projectTasks[index - 1],
-                groupingContext: ScreenItemGroupingContext(
-                  valueId: valueId,
-                  projectId: projectId,
-                ),
               );
               if (taskIndent <= 0) return tile;
               return Padding(
@@ -984,7 +1124,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
               context,
               registry: registry,
               item: tasksNoProject[index],
-              groupingContext: ScreenItemGroupingContext(valueId: valueId),
             ),
           ),
         );
@@ -1048,10 +1187,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                     context,
                     registry: registry,
                     item: projectTasks[index],
-                    groupingContext: ScreenItemGroupingContext(
-                      valueId: valueId,
-                      projectId: orphanProjectId,
-                    ),
                   );
                   return Padding(
                     padding: const EdgeInsets.only(left: taskIndent),
@@ -1079,9 +1214,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                     context,
                     registry: registry,
                     item: ScreenItem.project(project),
-                    groupingContext: ScreenItemGroupingContext(
-                      valueId: valueId,
-                    ),
                     projectTrailing: _CollapseChevron(
                       collapsed: collapsed,
                       onPressed: () => _toggleProjectCollapsed(orphanProjectId),
@@ -1107,10 +1239,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                 context,
                 registry: registry,
                 item: projectTasks[index - 1],
-                groupingContext: ScreenItemGroupingContext(
-                  valueId: valueId,
-                  projectId: orphanProjectId,
-                ),
               );
               if (taskIndent <= 0) return tile;
               return Padding(
@@ -1382,11 +1510,22 @@ class _EmptyStateSliverGroup extends StatelessWidget {
     required this.hasActiveFilters,
     required this.onClearFilters,
     required this.onAddTask,
+    this.showEnableFutureStartsAction = false,
+    this.onEnableFutureStarts,
+    this.showDisableFocusOnlyAction = false,
+    this.onDisableFocusOnly,
   });
 
   final List<Widget> headerSlivers;
   final bool hasActiveFilters;
   final VoidCallback onClearFilters;
+
+  final bool showEnableFutureStartsAction;
+  final VoidCallback? onEnableFutureStarts;
+
+  final bool showDisableFocusOnlyAction;
+  final VoidCallback? onDisableFocusOnly;
+
   final VoidCallback? onAddTask;
 
   @override
@@ -1397,8 +1536,13 @@ class _EmptyStateSliverGroup extends StatelessWidget {
     final title = hasActiveFilters
         ? 'No items match your filters'
         : 'Nothing here yet';
+
     final body = hasActiveFilters
-        ? 'Try clearing filters to see more.'
+        ? (showDisableFocusOnlyAction && onDisableFocusOnly != null)
+              ? 'Try showing all items instead of focus-only.'
+              : (showEnableFutureStartsAction && onEnableFutureStarts != null)
+              ? 'Try including future starts to see more.'
+              : 'Try clearing filters to see more.'
         : 'This section will populate as you add items.';
 
     return SliverMainAxisGroup(
@@ -1438,13 +1582,30 @@ class _EmptyStateSliverGroup extends StatelessWidget {
                         ),
                         if (hasActiveFilters) ...[
                           const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: onClearFilters,
-                              icon: const Icon(Icons.clear),
-                              label: const Text('Clear filters'),
-                            ),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              if (showDisableFocusOnlyAction &&
+                                  onDisableFocusOnly != null)
+                                TextButton.icon(
+                                  onPressed: onDisableFocusOnly,
+                                  icon: const Icon(Icons.view_list_outlined),
+                                  label: const Text('Show all'),
+                                ),
+                              if (showEnableFutureStartsAction &&
+                                  onEnableFutureStarts != null)
+                                TextButton.icon(
+                                  onPressed: onEnableFutureStarts,
+                                  icon: const Icon(Icons.schedule),
+                                  label: const Text('Show future starts'),
+                                ),
+                              TextButton.icon(
+                                onPressed: onClearFilters,
+                                icon: const Icon(Icons.clear),
+                                label: const Text('Clear filters'),
+                              ),
+                            ],
                           ),
                         ],
                         if (!hasActiveFilters && onAddTask != null) ...[
@@ -1568,6 +1729,7 @@ class _PinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
 
 class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
   _PinnedFilterBarDelegate({
+    required this.summaryText,
     required this.showEntityModePicker,
     required this.entityViewMode,
     required this.onEntityViewModeChanged,
@@ -1575,12 +1737,17 @@ class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
     required this.values,
     required this.selectedValueId,
     required this.onSelectedValueChanged,
+    required this.showFocusOnlyToggle,
+    required this.focusOnly,
+    required this.onFocusOnlyChanged,
     required this.showIncludeFutureStartsToggle,
     required this.includeFutureStarts,
     required this.onIncludeFutureStartsChanged,
     required this.reservePinnedSpace,
     this.onClearFilters,
   });
+
+  final String? summaryText;
 
   final bool showEntityModePicker;
   final SectionEntityViewModeV2 entityViewMode;
@@ -1591,6 +1758,10 @@ class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
   final String? selectedValueId;
   final ValueChanged<String?> onSelectedValueChanged;
 
+  final bool showFocusOnlyToggle;
+  final bool focusOnly;
+  final ValueChanged<bool> onFocusOnlyChanged;
+
   final bool showIncludeFutureStartsToggle;
   final bool includeFutureStarts;
   final ValueChanged<bool> onIncludeFutureStartsChanged;
@@ -1598,11 +1769,13 @@ class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
   final VoidCallback? onClearFilters;
   final bool reservePinnedSpace;
 
-  @override
-  double get minExtent => reservePinnedSpace ? 56 : 48;
+  double get _summaryExtent => summaryText == null ? 0 : 22;
 
   @override
-  double get maxExtent => reservePinnedSpace ? 56 : 48;
+  double get minExtent => (reservePinnedSpace ? 56 : 48) + _summaryExtent;
+
+  @override
+  double get maxExtent => (reservePinnedSpace ? 56 : 48) + _summaryExtent;
 
   @override
   Widget build(
@@ -1617,19 +1790,40 @@ class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
       elevation: overlapsContent ? 1 : 0,
       child: Padding(
         padding: EdgeInsets.only(bottom: reservePinnedSpace ? 8 : 0),
-        child: SectionFilterBarV2(
-          showEntityModePicker: showEntityModePicker,
-          entityViewMode: entityViewMode,
-          onEntityViewModeChanged: onEntityViewModeChanged,
-          showValuePicker: showValuePicker,
-          values: values,
-          selectedValueId: selectedValueId,
-          onSelectedValueChanged: onSelectedValueChanged,
-          showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
-          includeFutureStarts: includeFutureStarts,
-          onIncludeFutureStartsChanged: onIncludeFutureStartsChanged,
-          onClearFilters: onClearFilters,
-          singleLine: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (summaryText != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: Text(
+                  summaryText!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            SectionFilterBarV2(
+              showEntityModePicker: showEntityModePicker,
+              entityViewMode: entityViewMode,
+              onEntityViewModeChanged: onEntityViewModeChanged,
+              showValuePicker: showValuePicker,
+              values: values,
+              selectedValueId: selectedValueId,
+              onSelectedValueChanged: onSelectedValueChanged,
+              showFocusOnlyToggle: showFocusOnlyToggle,
+              focusOnly: focusOnly,
+              onFocusOnlyChanged: onFocusOnlyChanged,
+              showIncludeFutureStartsToggle: showIncludeFutureStartsToggle,
+              includeFutureStarts: includeFutureStarts,
+              onIncludeFutureStartsChanged: onIncludeFutureStartsChanged,
+              onClearFilters: onClearFilters,
+              singleLine: true,
+            ),
+          ],
         ),
       ),
     );
@@ -1637,9 +1831,12 @@ class _PinnedFilterBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant _PinnedFilterBarDelegate oldDelegate) {
-    return oldDelegate.showEntityModePicker != showEntityModePicker ||
+    return oldDelegate.summaryText != summaryText ||
+        oldDelegate.showEntityModePicker != showEntityModePicker ||
         oldDelegate.entityViewMode != entityViewMode ||
         oldDelegate.showValuePicker != showValuePicker ||
+        oldDelegate.showFocusOnlyToggle != showFocusOnlyToggle ||
+        oldDelegate.focusOnly != focusOnly ||
         oldDelegate.showIncludeFutureStartsToggle !=
             showIncludeFutureStartsToggle ||
         oldDelegate.includeFutureStarts != includeFutureStarts ||

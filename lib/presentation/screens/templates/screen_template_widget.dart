@@ -13,24 +13,28 @@ import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
-import 'package:taskly_bloc/presentation/features/browse/view/browse_hub_screen.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
+import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
-import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_bloc.dart';
-import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_support_section_widgets.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
+import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
+import 'package:taskly_bloc/presentation/screens/templates/widgets/attention_app_bar_accessory.dart';
+import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
+import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
+import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -45,9 +49,21 @@ class ScreenTemplateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget buildFocusSetupWizard() {
+      return BlocProvider(
+        create: (_) => FocusSetupBloc(
+          settingsRepository: getIt<SettingsRepositoryContract>(),
+          attentionRepository:
+              getIt<attention_repo_v2.AttentionRepositoryContract>(),
+          valueRepository: getIt(),
+        )..add(const FocusSetupEvent.started()),
+        child: const FocusSetupWizardPage(),
+      );
+    }
+
     return data.template.when(
       standardScaffoldV1: () => _StandardScaffoldV1Template(data: data),
-      reviewInbox: () => const AttentionInboxPage(),
+      entityDetailScaffoldV1: () => _EntityDetailScaffoldV1Template(data: data),
       settingsMenu: () => const SettingsScreen(),
       trackerManagement: () => const _PlaceholderTemplate(
         title: 'Trackers',
@@ -59,39 +75,450 @@ class ScreenTemplateWidget extends StatelessWidget {
         ),
       ),
       journalHub: () => const JournalHubPage(),
-      journalTimeline: () => const _PlaceholderTemplate(
-        title: 'Journal',
-        message: 'Journal is being rebuilt into a hub.',
+      attentionRules: () => const _PlaceholderTemplate(
+        title: 'Attention Rules',
+        message: 'Attention rules UI is being rebuilt.',
       ),
-      allocationSettings: () => BlocProvider(
-        create: (_) => FocusSetupBloc(
-          settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository:
-              getIt<attention_repo_v2.AttentionRepositoryContract>(),
-          valueRepository: getIt(),
-        )..add(const FocusSetupEvent.started()),
-        child: const FocusSetupWizardPage(),
-      ),
-      attentionRules: () => BlocProvider(
-        create: (_) => FocusSetupBloc(
-          settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository:
-              getIt<attention_repo_v2.AttentionRepositoryContract>(),
-          valueRepository: getIt(),
-        )..add(const FocusSetupEvent.started()),
-        child: const FocusSetupWizardPage(),
-      ),
-      focusSetupWizard: () => BlocProvider(
-        create: (_) => FocusSetupBloc(
-          settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository:
-              getIt<attention_repo_v2.AttentionRepositoryContract>(),
-          valueRepository: getIt(),
-        )..add(const FocusSetupEvent.started()),
-        child: const FocusSetupWizardPage(),
-      ),
-      browseHub: () => const BrowseHubScreen(),
+      focusSetupWizard: buildFocusSetupWizard,
       myDayFocusModeRequired: () => const MyDayFocusModeRequiredPage(),
+    );
+  }
+}
+
+class _EntityDetailScaffoldV1Template extends StatefulWidget {
+  const _EntityDetailScaffoldV1Template({required this.data});
+
+  final ScreenSpecData data;
+
+  @override
+  State<_EntityDetailScaffoldV1Template> createState() =>
+      _EntityDetailScaffoldV1TemplateState();
+}
+
+class _EntityDetailScaffoldV1TemplateState
+    extends State<_EntityDetailScaffoldV1Template> {
+  TaskCompletionFilter _projectTasksFilter = TaskCompletionFilter.open;
+  bool _restoredFilter = false;
+
+  String? get _projectTasksFilterStorageKey {
+    final entity = _entityFromHeader(widget.data.sections.header);
+    if (entity.entityType != 'project') return null;
+    final entityId = entity.entityId;
+    if (entityId == null || entityId.isEmpty) return null;
+    return '${widget.data.spec.screenKey}:$entityId:projectTasksFilter';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_restoredFilter) return;
+    final storageKey = _projectTasksFilterStorageKey;
+    if (storageKey == null) {
+      _restoredFilter = true;
+      return;
+    }
+
+    final bucket = PageStorage.of(context);
+    final stored = bucket.readState(context, identifier: storageKey);
+    if (stored is String) {
+      final restored = switch (stored) {
+        'all' => TaskCompletionFilter.all,
+        'open' => TaskCompletionFilter.open,
+        'completed' => TaskCompletionFilter.completed,
+        _ => null,
+      };
+      if (restored != null) _projectTasksFilter = restored;
+    }
+    _restoredFilter = true;
+  }
+
+  void _persistProjectTasksFilter() {
+    final storageKey = _projectTasksFilterStorageKey;
+    if (storageKey == null) return;
+    final stored = switch (_projectTasksFilter) {
+      TaskCompletionFilter.all => 'all',
+      TaskCompletionFilter.open => 'open',
+      TaskCompletionFilter.completed => 'completed',
+    };
+
+    PageStorage.of(context).writeState(
+      context,
+      stored,
+      identifier: storageKey,
+    );
+  }
+
+  ({String? entityType, String? entityId, String? entityName})
+  _entityFromHeader(
+    List<SectionVm> header,
+  ) {
+    for (final section in header) {
+      final result = section.data;
+      switch (result) {
+        case EntityHeaderProjectSectionResult(:final project):
+          return (
+            entityType: 'project',
+            entityId: project.id,
+            entityName: project.name,
+          );
+        case EntityHeaderValueSectionResult(:final value):
+          return (
+            entityType: 'value',
+            entityId: value.id,
+            entityName: value.name,
+          );
+      }
+    }
+
+    return (entityType: null, entityId: null, entityName: null);
+  }
+
+  Future<void> _openEditor(BuildContext context) async {
+    final launcher = EditorLauncher.fromGetIt();
+    final entity = _entityFromHeader(widget.data.sections.header);
+    final entityType = entity.entityType;
+    final entityId = entity.entityId;
+    if (entityType == null || entityId == null) return;
+
+    switch (entityType) {
+      case 'project':
+        await launcher.openProjectEditor(context, projectId: entityId);
+      case 'value':
+        await launcher.openValueEditor(context, valueId: entityId);
+      default:
+        return;
+    }
+  }
+
+  Future<void> _confirmAndDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final entityActionService = getIt<EntityActionService>();
+
+    final (entityType: entityType, entityId: entityId, entityName: entityName) =
+        _entityFromHeader(widget.data.sections.header);
+    if (entityType == null || entityId == null) return;
+
+    final (title, description) = switch (entityType) {
+      'project' => (
+        l10n.deleteProjectAction,
+        l10n.deleteProjectCascadeDescription,
+      ),
+      'value' => (
+        l10n.deleteValue,
+        l10n.deleteValueCascadeDescription,
+      ),
+      _ => (l10n.deleteLabel, ''),
+    };
+
+    final confirmed = await showDeleteConfirmationDialog(
+      context: context,
+      title: title,
+      itemName: entityName ?? '',
+      description: description,
+    );
+
+    if (!confirmed || !context.mounted) return;
+
+    await entityActionService.performAction(
+      entityId: entityId,
+      entityType: entityType,
+      action: EntityActionType.delete,
+    );
+
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final spec = widget.data.spec;
+    final l10n = context.l10n;
+    final entityActionService = getIt<EntityActionService>();
+    final (entityType: entityType, entityId: entityId, entityName: entityName) =
+        _entityFromHeader(widget.data.sections.header);
+
+    final title = (entityName != null && entityName.trim().isNotEmpty)
+        ? entityName
+        : spec.name;
+
+    final hasProjectTaskFilter = entityType == 'project';
+
+    final headerSections = widget.data.sections.header;
+    final primarySections = widget.data.sections.primary;
+
+    final allPrimaryTasks = <Task>[];
+    for (final section in primarySections) {
+      final result = section.data;
+      if (result is SectionDataResult) {
+        allPrimaryTasks.addAll(result.allTasks);
+      }
+    }
+
+    final hasAnyTasks = allPrimaryTasks.isNotEmpty;
+
+    final filteredPrimarySections = hasProjectTaskFilter
+        ? _filterPrimarySectionsByCompletion(primarySections)
+        : primarySections;
+
+    final filteredPrimaryTasks = <Task>[];
+    for (final section in filteredPrimarySections) {
+      final result = section.data;
+      if (result is SectionDataResult) {
+        filteredPrimaryTasks.addAll(result.allTasks);
+      }
+    }
+
+    final hasFilteredTasks = filteredPrimaryTasks.isNotEmpty;
+
+    final slivers = <Widget>[
+      for (final section in headerSections)
+        _EntityDetailModuleSliver(
+          section: section,
+          screenKey: spec.screenKey,
+          onEntityHeaderTap: () => _openEditor(context),
+          onProjectCheckboxChanged: (project, value) {
+            if (value ?? false) {
+              entityActionService.completeProject(project.id);
+            } else {
+              entityActionService.uncompleteProject(project.id);
+            }
+          },
+          onTaskCheckboxChanged: (task, value) {
+            if (value ?? false) {
+              entityActionService.completeTask(task.id);
+            } else {
+              entityActionService.uncompleteTask(task.id);
+            }
+          },
+          onTaskDelete: (task) => entityActionService.deleteTask(task.id),
+          onProjectDelete: (project) =>
+              entityActionService.deleteProject(project.id),
+        ),
+
+      if (hasProjectTaskFilter && hasAnyTasks)
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          sliver: SliverToBoxAdapter(
+            child: TaskStatusFilterBar(
+              filter: _projectTasksFilter,
+              allLabel: l10n.projectDetailTasksFilterAll,
+              openLabel: l10n.projectDetailTasksFilterOpen,
+              completedLabel: l10n.projectDetailTasksFilterCompleted,
+              onChanged: (next) {
+                setState(() => _projectTasksFilter = next);
+                _persistProjectTasksFilter();
+              },
+            ),
+          ),
+        ),
+    ];
+
+    if (!hasAnyTasks) {
+      slivers.add(
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: EmptyStateWidget.noTasks(
+            title: l10n.emptyTasksTitle,
+            description: l10n.emptyTasksDescription,
+            actionLabel: l10n.createTaskTooltip,
+            onAction: () {
+              final launcher = EditorLauncher.fromGetIt();
+
+              launcher.openTaskEditor(
+                context,
+                defaultProjectId: entityType == 'project' ? entityId : null,
+                defaultValueIds: entityType == 'value' && entityId != null
+                    ? [entityId]
+                    : null,
+              );
+            },
+          ),
+        ),
+      );
+    } else if (hasProjectTaskFilter && !hasFilteredTasks) {
+      slivers.add(
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: EmptyStateWidget.noTasks(
+            title: l10n.projectDetailNoMatchingTasksTitle,
+            description: l10n.projectDetailNoMatchingTasksDescription,
+          ),
+        ),
+      );
+    } else {
+      for (final section in filteredPrimarySections) {
+        slivers.add(
+          _EntityDetailModuleSliver(
+            section: section,
+            screenKey: spec.screenKey,
+            onEntityHeaderTap: () => _openEditor(context),
+            onProjectCheckboxChanged: (project, value) {
+              if (value ?? false) {
+                entityActionService.completeProject(project.id);
+              } else {
+                entityActionService.uncompleteProject(project.id);
+              }
+            },
+            onTaskCheckboxChanged: (task, value) {
+              if (value ?? false) {
+                entityActionService.completeTask(task.id);
+              } else {
+                entityActionService.uncompleteTask(task.id);
+              }
+            },
+            onTaskDelete: (task) => entityActionService.deleteTask(task.id),
+            onProjectDelete: (project) =>
+                entityActionService.deleteProject(project.id),
+          ),
+        );
+      }
+    }
+
+    slivers.add(const SliverPadding(padding: EdgeInsets.only(bottom: 80)));
+
+    final fab = switch (entityType) {
+      'project' =>
+        entityId == null
+            ? null
+            : AddTaskFab(
+                taskRepository: getIt(),
+                projectRepository: getIt(),
+                valueRepository: getIt(),
+                defaultProjectId: entityId,
+              ),
+      'value' =>
+        entityId == null
+            ? null
+            : AddTaskFab(
+                taskRepository: getIt(),
+                projectRepository: getIt(),
+                valueRepository: getIt(),
+                defaultValueIds: [entityId],
+              ),
+      _ => null,
+    };
+
+    return Scaffold(
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: theme.scaffoldBackgroundColor,
+        elevation: 0,
+        actions: [
+          if (entityType == 'project' || entityType == 'value')
+            IconButton(
+              tooltip: l10n.editLabel,
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () => _openEditor(context),
+            ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'delete') _confirmAndDelete(context);
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.delete,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.deleteLabel,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverContentConstraint(
+            maxWidth: 840,
+            sliver: SliverMainAxisGroup(slivers: slivers),
+          ),
+        ],
+      ),
+      floatingActionButton: fab,
+    );
+  }
+
+  List<SectionVm> _filterPrimarySectionsByCompletion(List<SectionVm> sections) {
+    if (_projectTasksFilter == TaskCompletionFilter.all) return sections;
+
+    return sections
+        .map((section) {
+          final result = section.data;
+          if (result is! DataV2SectionResult) return section;
+
+          final filteredItems = result.items
+              .where((item) {
+                if (item is! ScreenItemTask) return true;
+                return switch (_projectTasksFilter) {
+                  TaskCompletionFilter.open => !item.task.completed,
+                  TaskCompletionFilter.completed => item.task.completed,
+                  TaskCompletionFilter.all => true,
+                };
+              })
+              .toList(growable: false);
+
+          return section.copyWith(
+            data: result.copyWith(items: filteredItems),
+          );
+        })
+        .toList(growable: false);
+  }
+}
+
+class _EntityDetailModuleSliver extends StatelessWidget {
+  const _EntityDetailModuleSliver({
+    required this.section,
+    required this.screenKey,
+    required this.onEntityHeaderTap,
+    required this.onTaskCheckboxChanged,
+    required this.onProjectCheckboxChanged,
+    required this.onTaskDelete,
+    required this.onProjectDelete,
+  });
+
+  final SectionVm section;
+  final String screenKey;
+  final VoidCallback onEntityHeaderTap;
+  final void Function(Task task, bool? value) onTaskCheckboxChanged;
+  final void Function(Project project, bool? value) onProjectCheckboxChanged;
+  final void Function(Task task) onTaskDelete;
+  final void Function(Project project) onProjectDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final persistenceKey = '$screenKey:${section.templateId}:${section.index}';
+    return SectionWidget(
+      section: section,
+      persistenceKey: persistenceKey,
+      displayConfig: section.displayConfig,
+      onEntityHeaderTap: onEntityHeaderTap,
+      onTaskCheckboxChanged: onTaskCheckboxChanged,
+      onProjectCheckboxChanged: onProjectCheckboxChanged,
+      onTaskDelete: onTaskDelete,
+      onProjectDelete: onProjectDelete,
+      onEntityTap: (entity) {
+        if (entity is Task) {
+          Routing.toEntity(context, EntityType.task, entity.id);
+        } else if (entity is Project) {
+          Routing.toEntity(context, EntityType.project, entity.id);
+        } else if (entity is Value) {
+          Routing.toEntity(context, EntityType.value, entity.id);
+        }
+      },
     );
   }
 }
@@ -130,47 +557,53 @@ class _StandardScaffoldV1Template extends StatelessWidget {
     final spec = data.spec;
     final isMyDay = spec.screenKey == 'my_day';
 
-    final myDayProgress = isMyDay
-        ? _myDayTaskProgress(data.sections.primary)
-        : null;
-
     final description = spec.description?.trim();
     final hasDescription = description != null && description.isNotEmpty;
 
-    final headerSections = isMyDay
-        ? data.sections.header
-              .where((s) => s.templateId != SectionTemplateId.attentionBannerV1)
-              .toList(growable: false)
-        : data.sections.header;
+    final headerSections = data.sections.header;
 
-    final appBarActions = _buildAppBarActions(context, spec);
+    SectionVm? attentionHeader;
+    for (final section in headerSections) {
+      if (section.templateId == SectionTemplateId.attentionBannerV2) {
+        attentionHeader = section;
+        break;
+      }
+    }
+
+    final showHeaderAccessoryInAppBar = spec.chrome.showHeaderAccessoryInAppBar;
+
+    final showAttentionInAppBar =
+        showHeaderAccessoryInAppBar && attentionHeader != null;
+
+    final attentionBannerResult = showAttentionInAppBar
+        ? attentionHeader.data
+        : null;
+    final attentionBannerData =
+        attentionBannerResult is AttentionBannerV2SectionResult
+        ? attentionBannerResult
+        : null;
+
+    final appBarActions = <Widget>[
+      ..._buildAppBarActions(context, spec),
+      if (isMyDay) const _MyDayFocusModeAction(),
+    ];
     final fab = _buildFab(spec);
 
     final slivers = <Widget>[
-      if (isMyDay) _MyDayMyFocusCardSliver(progress: myDayProgress),
-      ...headerSections.map(
-        (s) => _ModuleSliver(section: s, screenKey: spec.screenKey),
-      ),
+      ...headerSections
+          .where((s) => !(showAttentionInAppBar && s == attentionHeader))
+          .map((s) => _ModuleSliver(section: s, screenKey: spec.screenKey)),
       ..._buildPrimarySlivers(context),
     ];
-
-    String smartGreeting(DateTime now) {
-      final hour = now.hour;
-
-      if (hour >= 5 && hour < 12) return 'Good morning';
-      if (hour >= 12 && hour < 18) return 'Good afternoon';
-      return 'Good evening';
-    }
 
     final scaffold = Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         toolbarHeight: isMyDay || hasDescription ? 72 : null,
         title: isMyDay
-            ? Builder(
-                builder: (context) {
+            ? BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
+                builder: (context, state) {
                   final now = DateTime.now();
-                  final greeting = smartGreeting(now);
                   final dateLabel = MaterialLocalizations.of(
                     context,
                   ).formatMediumDate(now);
@@ -181,7 +614,7 @@ class _StandardScaffoldV1Template extends StatelessWidget {
                     children: [
                       Text(spec.name),
                       Text(
-                        '$greeting • $dateLabel',
+                        '${state.focusMode.tagline} • $dateLabel',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.2,
@@ -211,6 +644,26 @@ class _StandardScaffoldV1Template extends StatelessWidget {
                 ],
               ),
         actions: appBarActions,
+        bottom: showAttentionInAppBar
+            ? PreferredSize(
+                preferredSize: Size.fromHeight(
+                  AttentionAppBarAccessory.preferredHeight(
+                    showProgressRail:
+                        (attentionBannerData?.totalCount ?? 0) > 0,
+                  ),
+                ),
+                child: Builder(
+                  builder: (context) {
+                    if (attentionBannerData == null) {
+                      return const SizedBox.shrink();
+                    }
+                    return AttentionAppBarAccessory(
+                      result: attentionBannerData,
+                    );
+                  },
+                ),
+              )
+            : null,
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
       ),
@@ -243,26 +696,32 @@ class _StandardScaffoldV1Template extends StatelessWidget {
     final primary = data.sections.primary;
 
     if (spec.screenKey == 'my_day') {
-      final attentionState = context.watch<AttentionBannerBloc>().state;
       const myDayPrimaryTitle = "Today's Focus";
 
       if (primary.length == 1) {
         final section = primary.single;
         final listData = section.data;
-        if (listData is DataV2SectionResult && listData.items.isEmpty) {
-          final hasAttention = attentionState.totalCount > 0;
+        if (listData is DataV2SectionResult) {
+          final tasks = listData.items.whereType<ScreenItemTask>().toList(
+            growable: false,
+          );
+
+          if (tasks.isEmpty) {
+            return [
+              _MyDayEmptyStateSliver(
+                title: myDayPrimaryTitle,
+                onAddTask: () => Routing.toTaskNew(context),
+              ),
+            ];
+          }
 
           return [
-            _MyDayEmptyStateSliver(
+            _MyDayPrimaryTitleSliver(
               title: myDayPrimaryTitle,
-              hasAttention: hasAttention,
-              onReviewInbox: hasAttention
-                  ? () => Routing.toScreenKey(
-                      context,
-                      AttentionBannerBloc.overflowScreenKey,
-                    )
-                  : null,
-              onAddTask: hasAttention ? null : () => Routing.toTaskNew(context),
+            ),
+            _ModuleSliver(
+              section: section.copyWith(title: myDayPrimaryTitle),
+              screenKey: spec.screenKey,
             ),
           ];
         }
@@ -323,283 +782,89 @@ class _StandardScaffoldV1Template extends StatelessWidget {
   }
 }
 
-({int doneCount, int totalCount})? _myDayTaskProgress(List<SectionVm> primary) {
-  if (primary.length != 1) return null;
-  final data = primary.single.data;
-  if (data is! DataV2SectionResult) return null;
+class _MyDayPrimaryTitleSliver extends StatelessWidget {
+  const _MyDayPrimaryTitleSliver({
+    required this.title,
+  });
 
-  final tasks = data.items.whereType<ScreenItemTask>().toList(growable: false);
-  if (tasks.isEmpty) return (doneCount: 0, totalCount: 0);
-
-  final doneCount = tasks.where((t) => t.task.completed).length;
-  return (doneCount: doneCount, totalCount: tasks.length);
-}
-
-class _MyDayMyFocusCardSliver extends StatelessWidget {
-  const _MyDayMyFocusCardSliver({required this.progress});
-
-  final ({int doneCount, int totalCount})? progress;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
-    final doneCount = progress?.doneCount ?? 0;
-    final totalCount = progress?.totalCount ?? 0;
-    final showProgress = totalCount > 0;
-    final fraction = showProgress
-        ? (doneCount / totalCount).clamp(0.0, 1.0)
-        : 0.0;
-
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
       sliver: SliverToBoxAdapter(
-        child: BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
-          builder: (context, state) {
-            return Card(
-              margin: EdgeInsets.zero,
-              elevation: 0,
-              clipBehavior: Clip.antiAlias,
-              color: scheme.surfaceContainerHighest.withOpacity(0.35),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      scheme.primary.withOpacity(0.16),
-                      scheme.surface.withOpacity(0),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.center_focus_strong,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: scheme.surfaceContainerHighest.withOpacity(
-                            0.55,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.center_focus_strong,
-                                  size: 18,
-                                  color: scheme.onSurfaceVariant,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    state.focusMode.tagline,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      height: 1.15,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            ActionChip(
-                              label: Text(
-                                state.focusMode.displayName,
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: scheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              backgroundColor: Colors.transparent,
-                              shape: StadiumBorder(
-                                side: BorderSide(
-                                  color: scheme.onSurfaceVariant.withOpacity(
-                                    0.35,
-                                  ),
-                                ),
-                              ),
-                              visualDensity: VisualDensity.compact,
-                              onPressed: () {
-                                context.read<MyDayHeaderBloc>().add(
-                                  const MyDayHeaderFocusModeBannerTapped(),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(10),
-                          onTap: () => Routing.toScreenKey(
-                            context,
-                            AttentionBannerBloc.overflowScreenKey,
-                          ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: scheme.surfaceContainerHighest.withOpacity(
-                                0.35,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child:
-                                BlocBuilder<
-                                  AttentionBannerBloc,
-                                  AttentionBannerState
-                                >(
-                                  builder: (context, attentionState) {
-                                    final total = attentionState.totalCount;
-
-                                    if (attentionState.isLoading) {
-                                      return const LinearProgressIndicator();
-                                    }
-
-                                    final badges = <Widget>[];
-                                    if (attentionState.criticalCount > 0) {
-                                      badges.add(
-                                        CountBadge(
-                                          count: attentionState.criticalCount,
-                                          color: scheme.error,
-                                          label: 'Critical',
-                                        ),
-                                      );
-                                    }
-                                    if (attentionState.warningCount > 0) {
-                                      badges.add(
-                                        CountBadge(
-                                          count: attentionState.warningCount,
-                                          color: Colors.orange,
-                                          label: 'Warning',
-                                        ),
-                                      );
-                                    }
-                                    if (attentionState.infoCount > 0) {
-                                      badges.add(
-                                        CountBadge(
-                                          count: attentionState.infoCount,
-                                          color: scheme.primary,
-                                          label: 'Info',
-                                        ),
-                                      );
-                                    }
-
-                                    return Row(
-                                      children: [
-                                        Icon(
-                                          total == 0
-                                              ? Icons.check_circle_outline
-                                              : Icons.notifications_none,
-                                          color: scheme.onSurfaceVariant,
-                                        ),
-                                        const SizedBox(width: 10),
-                                        Expanded(
-                                          child:
-                                              attentionState.errorMessage !=
-                                                  null
-                                              ? Text(
-                                                  'Attention unavailable',
-                                                  style: theme
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: scheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                )
-                                              : badges.isEmpty
-                                              ? Text(
-                                                  'All clear',
-                                                  style: theme
-                                                      .textTheme
-                                                      .bodySmall
-                                                      ?.copyWith(
-                                                        color: scheme
-                                                            .onSurfaceVariant,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                )
-                                              : Wrap(
-                                                  spacing: 8,
-                                                  runSpacing: 8,
-                                                  children: badges,
-                                                ),
-                                        ),
-                                        Icon(
-                                          Icons.chevron_right,
-                                          color: scheme.onSurfaceVariant,
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                          ),
-                        ),
-                      ),
-                      if (showProgress) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Text(
-                              "Today's progress",
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(999),
-                                child: LinearProgressIndicator(
-                                  value: fraction,
-                                  minHeight: 6,
-                                  backgroundColor:
-                                      scheme.surfaceContainerHighest,
-                                  color: scheme.primary.withOpacity(0.70),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '$doneCount/$totalCount',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ],
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _MyDayFocusModeAction extends StatelessWidget {
+  const _MyDayFocusModeAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
+      builder: (context, state) {
+        final width = MediaQuery.sizeOf(context).width;
+
+        if (width < 360) {
+          return IconButton(
+            tooltip: state.focusMode.displayName,
+            onPressed: () {
+              context.read<MyDayHeaderBloc>().add(
+                const MyDayHeaderFocusModeBannerTapped(),
+              );
+            },
+            icon: const Icon(Icons.center_focus_strong),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: ActionChip(
+            avatar: const Icon(
+              Icons.center_focus_strong,
+              size: 18,
+            ),
+            label: Text(
+              state.focusMode.displayName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            visualDensity: VisualDensity.compact,
+            onPressed: () {
+              context.read<MyDayHeaderBloc>().add(
+                const MyDayHeaderFocusModeBannerTapped(),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -613,9 +878,25 @@ class _ModuleSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final persistenceKey = '$screenKey:${section.templateId}:${section.index}';
+
+    final entityActionService = getIt<EntityActionService>();
     return SectionWidget(
       section: section,
       persistenceKey: persistenceKey,
+      onTaskCheckboxChanged: (task, value) async {
+        if (value ?? false) {
+          await entityActionService.completeTask(task.id);
+        } else {
+          await entityActionService.uncompleteTask(task.id);
+        }
+      },
+      onTaskPinnedChanged: (task, pinned) async {
+        if (pinned) {
+          await entityActionService.pinTask(task.id);
+        } else {
+          await entityActionService.unpinTask(task.id);
+        }
+      },
       onEntityTap: (entity) {
         if (entity is Task) {
           Routing.toEntity(context, EntityType.task, entity.id);
@@ -632,14 +913,10 @@ class _ModuleSliver extends StatelessWidget {
 class _MyDayEmptyStateSliver extends StatelessWidget {
   const _MyDayEmptyStateSliver({
     required this.title,
-    required this.hasAttention,
-    required this.onReviewInbox,
     required this.onAddTask,
   });
 
   final String title;
-  final bool hasAttention;
-  final VoidCallback? onReviewInbox;
   final VoidCallback? onAddTask;
 
   @override
@@ -650,17 +927,7 @@ class _MyDayEmptyStateSliver extends StatelessWidget {
       DateTime.now(),
     );
 
-    final cta = hasAttention
-        ? (
-            label: 'Attention',
-            icon: Icons.notifications_outlined,
-            onPressed: onReviewInbox,
-          )
-        : (
-            label: 'Add task',
-            icon: Icons.add,
-            onPressed: onAddTask,
-          );
+    void onPickFromAnytime() => Routing.toScreenKey(context, 'someday');
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -668,7 +935,17 @@ class _MyDayEmptyStateSliver extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TasklyHeader(title: title),
+            Row(
+              children: [
+                Icon(
+                  Icons.center_focus_strong,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Expanded(child: TasklyHeader(title: title)),
+              ],
+            ),
             const SizedBox(height: 6),
             Text(
               dateLabel,
@@ -704,21 +981,19 @@ class _MyDayEmptyStateSliver extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            hasAttention
-                                ? 'You have items waiting for attention.'
-                                : 'Add a task to shape your day.',
+                            'Add a task to shape your day.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: FilledButton.icon(
-                              onPressed: cta.onPressed,
-                              icon: Icon(cta.icon),
-                              label: Text(cta.label),
-                            ),
+                          _MyDayEmptyStateActions(
+                            onPrimary: onAddTask,
+                            primaryLabel: 'Add a task',
+                            primaryIcon: Icons.add,
+                            onSecondary: onPickFromAnytime,
+                            secondaryLabel: 'Pick from Anytime',
+                            secondaryIcon: Icons.view_list_outlined,
                           ),
                         ],
                       ),
@@ -730,6 +1005,61 @@ class _MyDayEmptyStateSliver extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _MyDayEmptyStateActions extends StatelessWidget {
+  const _MyDayEmptyStateActions({
+    required this.onPrimary,
+    required this.primaryLabel,
+    required this.primaryIcon,
+    required this.onSecondary,
+    required this.secondaryLabel,
+    required this.secondaryIcon,
+  });
+
+  final VoidCallback? onPrimary;
+  final String primaryLabel;
+  final IconData primaryIcon;
+  final VoidCallback? onSecondary;
+  final String secondaryLabel;
+  final IconData secondaryIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final isNarrow = MediaQuery.sizeOf(context).width < 420;
+
+    final primary = FilledButton.icon(
+      onPressed: onPrimary,
+      icon: Icon(primaryIcon),
+      label: Text(primaryLabel),
+    );
+
+    final secondary = OutlinedButton.icon(
+      onPressed: onSecondary,
+      icon: Icon(secondaryIcon),
+      label: Text(secondaryLabel),
+    );
+
+    if (isNarrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(alignment: Alignment.centerLeft, child: primary),
+          const SizedBox(height: 10),
+          Align(alignment: Alignment.centerLeft, child: secondary),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        primary,
+        const SizedBox(width: 12),
+        secondary,
+      ],
     );
   }
 }

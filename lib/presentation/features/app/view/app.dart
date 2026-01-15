@@ -16,12 +16,10 @@ import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_up_view.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/forgot_password_view.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
-import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
 
 /// Root application widget with auth-gated UI.
 ///
@@ -170,37 +168,31 @@ class _AuthenticatedApp extends StatelessWidget {
           ),
         ),
       ],
-      child: BlocProvider<AttentionBannerBloc>(
-        lazy: false,
-        create: (_) => AttentionBannerBloc(
-          engine: getIt<AttentionEngineContract>(),
-        ),
-        child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
-          builder: (context, state) {
-            final settings = state.settings;
+      child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+        builder: (context, state) {
+          final settings = state.settings;
 
-            return MaterialApp.router(
-              theme: AppTheme.lightTheme(seedColor: state.seedColor),
-              darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
-              themeMode: state.flutterThemeMode,
-              locale: settings.localeCode == null
-                  ? null
-                  : Locale(settings.localeCode!),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: router,
-              debugShowCheckedModeBanner: false,
-              builder: (context, child) {
-                return MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(settings.textScaleFactor),
-                  ),
-                  child: _NotificationsBootstrapper(child: child!),
-                );
-              },
-            );
-          },
-        ),
+          return MaterialApp.router(
+            theme: AppTheme.lightTheme(seedColor: state.seedColor),
+            darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
+            themeMode: state.flutterThemeMode,
+            locale: settings.localeCode == null
+                ? null
+                : Locale(settings.localeCode!),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+            debugShowCheckedModeBanner: false,
+            builder: (context, child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  textScaler: TextScaler.linear(settings.textScaleFactor),
+                ),
+                child: _NotificationsBootstrapper(child: child!),
+              );
+            },
+          );
+        },
       ),
     );
   }

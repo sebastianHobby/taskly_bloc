@@ -73,6 +73,10 @@ final router = GoRouter(
           builder: (_, state) => TaskEditorRoutePage(
             taskId: null,
             defaultProjectId: state.uri.queryParameters['projectId'],
+            defaultValueIds: switch (state.uri.queryParameters['valueId']) {
+              final v? when v.trim().isNotEmpty => [v],
+              _ => null,
+            },
           ),
         ),
         GoRoute(

@@ -14,7 +14,6 @@ abstract class AgendaSectionParamsV2 with _$AgendaSectionParamsV2 {
   const factory AgendaSectionParamsV2({
     required AgendaDateFieldV2 dateField,
     required StylePackV2 pack,
-    required SectionLayoutSpecV2 layout,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     @NullableTaskQueryConverter() TaskQuery? additionalFilter,
   }) = _AgendaSectionParamsV2;

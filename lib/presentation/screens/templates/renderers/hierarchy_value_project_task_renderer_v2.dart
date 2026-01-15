@@ -12,6 +12,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
     this.title,
     this.compactTiles = false,
     this.onTaskToggle,
+    this.onTaskPinnedChanged,
     super.key,
     this.persistenceKey,
   });
@@ -21,6 +22,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
   final String? title;
   final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
+  final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
 
   InterleavedListSectionParamsV2 _toInterleavedParams() {
@@ -47,6 +49,7 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
       persistenceKey: persistenceKey,
       compactTiles: compactTiles,
       onTaskToggle: onTaskToggle,
+      onTaskPinnedChanged: onTaskPinnedChanged,
     );
   }
 }

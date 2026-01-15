@@ -80,9 +80,6 @@ class NavigationBadgeService {
         ScreenModuleTaskListV2(:final params) => _badgeTargetFromListParams(
           params,
         ),
-        ScreenModuleProjectListV2(:final params) => _badgeTargetFromListParams(
-          params,
-        ),
         ScreenModuleValueListV2(:final params) => _badgeTargetFromListParams(
           params,
         ),

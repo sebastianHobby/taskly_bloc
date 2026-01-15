@@ -5,26 +5,22 @@ abstract final class SectionTemplateId {
 
   // V2 list/section templates
   static const taskListV2 = 'task_list_v2';
-  static const projectListV2 = 'project_list_v2';
   static const valueListV2 = 'value_list_v2';
   static const interleavedListV2 = 'interleaved_list_v2';
   static const agendaV2 = 'agenda_v2';
 
   // Support-block behaviors
-  static const attentionBannerV1 = 'attention_banner_v1';
+  static const attentionBannerV2 = 'attention_banner_v2';
+  static const attentionInboxV1 = 'attention_inbox_v1';
   static const entityHeader = 'entity_header';
 
   // Former custom screens (now templated)
   static const settingsMenu = 'settings_menu';
-  static const journalTimeline = 'journal_timeline';
   static const allocationSettings = 'allocation_settings';
   static const attentionRules = 'attention_rules';
   static const focusSetupWizard = 'focus_setup_wizard';
   static const trackerManagement = 'tracker_management';
   static const statisticsDashboard = 'statistics_dashboard';
-
-  // Navigation hub / browse
-  static const browseHub = 'browse_hub';
 
   // Screen-level gates (full-screen)
   static const myDayFocusModeRequired = 'my_day_focus_mode_required';

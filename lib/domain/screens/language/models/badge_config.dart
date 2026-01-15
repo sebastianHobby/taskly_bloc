@@ -14,9 +14,9 @@ part 'badge_config.g.dart';
 sealed class BadgeConfig with _$BadgeConfig {
   /// Show count from the first data section's query.
   ///
-  /// This is the default for data-driven screens. The badge service
-  /// will automatically extract the query from the first DataSection
-  /// and watch for count changes.
+  /// This is the default for module-based screens using list/agenda modules.
+  /// The badge service will automatically extract the query from the first
+  /// compatible module and watch for count changes.
   @FreezedUnionValue('fromFirstSection')
   const factory BadgeConfig.fromFirstSection() = BadgeFromFirstSection;
 

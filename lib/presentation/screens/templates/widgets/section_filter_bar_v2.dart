@@ -20,6 +20,9 @@ class SectionFilterBarV2 extends StatelessWidget {
     required this.values,
     required this.selectedValueId,
     required this.onSelectedValueChanged,
+    this.showFocusOnlyToggle = false,
+    this.focusOnly = false,
+    this.onFocusOnlyChanged,
     this.showIncludeFutureStartsToggle = false,
     this.includeFutureStarts = true,
     this.onIncludeFutureStartsChanged,
@@ -36,6 +39,10 @@ class SectionFilterBarV2 extends StatelessWidget {
   final List<Value> values;
   final String? selectedValueId;
   final ValueChanged<String?> onSelectedValueChanged;
+
+  final bool showFocusOnlyToggle;
+  final bool focusOnly;
+  final ValueChanged<bool>? onFocusOnlyChanged;
 
   final bool showIncludeFutureStartsToggle;
   final bool includeFutureStarts;
@@ -55,6 +62,7 @@ class SectionFilterBarV2 extends StatelessWidget {
 
     if (!showEntityModePicker &&
         !showValuePicker &&
+        !showFocusOnlyToggle &&
         !showIncludeFutureStartsToggle) {
       return const SizedBox.shrink();
     }
@@ -105,6 +113,17 @@ class SectionFilterBarV2 extends StatelessWidget {
             if (selected == null && selectedValueId == null) return;
             onSelectedValueChanged(selected);
           },
+        ),
+      if (showFocusOnlyToggle)
+        FilterChip(
+          avatar: Icon(
+            Icons.center_focus_strong,
+            size: 18,
+            color: scheme.onSurfaceVariant,
+          ),
+          label: const Text('Focus only'),
+          selected: focusOnly,
+          onSelected: onFocusOnlyChanged,
         ),
       if (showIncludeFutureStartsToggle)
         FilterChip(

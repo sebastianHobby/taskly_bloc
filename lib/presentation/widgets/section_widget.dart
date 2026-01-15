@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -12,12 +13,12 @@ import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 
-import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v2.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_inbox_section_renderer_v1.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/hierarchy_value_project_task_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart';
-import 'package:taskly_bloc/presentation/screens/templates/renderers/project_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_renderer_v2.dart';
 
@@ -37,6 +38,7 @@ class SectionWidget extends StatelessWidget {
     this.onEntityHeaderTap,
     this.onTaskComplete,
     this.onTaskCheckboxChanged,
+    this.onTaskPinnedChanged,
     this.onProjectCheckboxChanged,
     this.onTaskDelete,
     this.onProjectDelete,
@@ -71,6 +73,9 @@ class SectionWidget extends StatelessWidget {
 
   /// Callback when a task checkbox is changed
   final void Function(Task task, bool? value)? onTaskCheckboxChanged;
+
+  /// Callback when a task is pinned/unpinned for allocation (My Day).
+  final Future<void> Function(Task task, bool pinned)? onTaskPinnedChanged;
 
   /// Callback when a project checkbox is changed
   final void Function(Project project, bool? value)? onProjectCheckboxChanged;
@@ -111,9 +116,13 @@ class SectionWidget extends StatelessWidget {
     final result = section.data;
 
     final sliver = switch (result) {
-      _ when section.templateId == SectionTemplateId.attentionBannerV1 =>
+      AttentionBannerV2SectionResult()
+          when section.templateId == SectionTemplateId.attentionBannerV2 =>
         SliverToBoxAdapter(
-          child: AttentionBannerSectionRendererV1(title: section.title),
+          child: AttentionBannerSectionRendererV2(
+            data: result as SectionDataResult,
+            title: section.title,
+          ),
         ),
       EntityHeaderProjectSectionResult() ||
       EntityHeaderValueSectionResult() ||
@@ -128,6 +137,13 @@ class SectionWidget extends StatelessWidget {
                 onProjectCheckboxChanged?.call(result.project, val);
               }
             },
+          ),
+        ),
+      _ when section.templateId == SectionTemplateId.attentionInboxV1 =>
+        SliverFillRemaining(
+          hasScrollBody: true,
+          child: AttentionInboxSectionRendererV1(
+            params: section.params as AttentionInboxSectionParamsV1,
           ),
         ),
       final DataSectionResult d => SliverToBoxAdapter(
@@ -145,14 +161,6 @@ class SectionWidget extends StatelessWidget {
             final task = d.allTasks.firstWhere((t) => t.id == taskId);
             onTaskCheckboxChanged?.call(task, val);
           },
-        ),
-        SectionTemplateId.projectListV2 => ProjectListRendererV2(
-          data: d,
-          params: section.params as ListSectionParamsV2,
-          title: section.title,
-          compactTiles:
-              (section.params as ListSectionParamsV2).pack ==
-              StylePackV2.compact,
         ),
         SectionTemplateId.valueListV2 => ValueListRendererV2(
           data: d,
@@ -174,6 +182,12 @@ class SectionWidget extends StatelessWidget {
             final task = d.allTasks.firstWhere((t) => t.id == taskId);
             onTaskCheckboxChanged?.call(task, val);
           },
+          onTaskPinnedChanged: onTaskPinnedChanged == null
+              ? null
+              : (taskId, pinned) async {
+                  final task = d.allTasks.firstWhere((t) => t.id == taskId);
+                  await onTaskPinnedChanged!.call(task, pinned);
+                },
         ),
         SectionTemplateId.hierarchyValueProjectTaskV2 =>
           HierarchyValueProjectTaskRendererV2(
@@ -189,12 +203,19 @@ class SectionWidget extends StatelessWidget {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
             },
+            onTaskPinnedChanged: onTaskPinnedChanged == null
+                ? null
+                : (taskId, pinned) async {
+                    final task = d.allTasks.firstWhere((t) => t.id == taskId);
+                    await onTaskPinnedChanged!.call(task, pinned);
+                  },
           ),
         _ => SliverToBoxAdapter(child: _buildUnsupportedSection(d)),
       },
       final AgendaSectionResult d
           when section.templateId == SectionTemplateId.agendaV2 =>
-        SliverToBoxAdapter(
+        SliverFillRemaining(
+          hasScrollBody: true,
           child: AgendaSectionRenderer(
             data: d,
             showTagPills: (section.params as AgendaSectionParamsV2)

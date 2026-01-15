@@ -147,6 +147,15 @@ class EntityHeader extends StatelessWidget {
                       isCompleted: completed,
                       colorScheme: colorScheme,
                     ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 4),
+                    IconButton(
+                      onPressed: onTap,
+                      icon: const Icon(Icons.edit_outlined),
+                      tooltip: context.l10n.editLabel,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ],
                 ],
               ),
 

@@ -5,16 +5,22 @@ import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
+import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
+import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
+import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
@@ -36,8 +42,8 @@ class _MockHierarchyValueProjectTaskSectionInterpreterV2 extends Mock
 class _MockEntityHeaderSectionInterpreter extends Mock
     implements EntityHeaderSectionInterpreter {}
 
-class _MockAttentionBannerSectionInterpreterV1 extends Mock
-    implements AttentionBannerSectionInterpreterV1 {}
+class _MockAttentionInboxSectionInterpreterV1 extends Mock
+    implements AttentionInboxSectionInterpreterV1 {}
 
 void main() {
   group('Scheduled screen (integration)', () {
@@ -93,11 +99,31 @@ void main() {
           dayKeyService: dayKeyService,
         );
 
+        final attentionRepository = AttentionRepositoryV2(db: db);
+        final attentionEngine = AttentionEngine(
+          attentionRepository: attentionRepository,
+          taskRepository: taskRepository,
+          projectRepository: projectRepository,
+          allocationSnapshotRepository: allocationSnapshotRepository,
+          settingsRepository: settingsRepository,
+          dayKeyService: dayKeyService,
+          invalidations: const Stream<void>.empty(),
+        );
+
+        final todayProgressService = TodayProgressService(
+          allocationSnapshotRepository: allocationSnapshotRepository,
+          taskRepository: taskRepository,
+          dayKeyService: dayKeyService,
+          temporalTriggerService: TemporalTriggerService(
+            dayKeyService: dayKeyService,
+            lifecycleService: AppLifecycleService(),
+          ),
+        );
+
         final specInterpreter = ScreenSpecDataInterpreter(
           settingsRepository: settingsRepository,
           valueRepository: valueRepository,
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
-          projectListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
           interleavedListInterpreter:
               _MockInterleavedListSectionInterpreterV2(),
@@ -106,8 +132,11 @@ void main() {
           agendaInterpreter: AgendaSectionInterpreterV2(
             sectionDataService: sectionDataService,
           ),
-          attentionBannerInterpreter:
-              _MockAttentionBannerSectionInterpreterV1(),
+          attentionBannerV2Interpreter: AttentionBannerSectionInterpreterV2(
+            engine: attentionEngine,
+            todayProgressService: todayProgressService,
+          ),
+          attentionInboxInterpreter: _MockAttentionInboxSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
         );
 

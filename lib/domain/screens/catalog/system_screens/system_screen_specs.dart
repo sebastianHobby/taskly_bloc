@@ -8,7 +8,8 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -17,13 +18,6 @@ import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 /// Typed system screen specs for the hard-cutover system-screen path.
 abstract class SystemScreenSpecs {
   SystemScreenSpecs._();
-
-  static final browse = ScreenSpec(
-    id: 'browse',
-    screenKey: 'browse',
-    name: 'Browse',
-    template: const ScreenTemplateSpec.browseHub(),
-  );
 
   static final myDay = ScreenSpec(
     id: 'my_day',
@@ -41,8 +35,8 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
-        ScreenModuleSpec.attentionBannerV1(
-          params: AttentionBannerSectionParamsV1(
+        ScreenModuleSpec.attentionBannerV2(
+          params: AttentionBannerSectionParamsV2(
             pack: StylePackV2.standard,
             buckets: const ['action', 'review'],
           ),
@@ -70,7 +64,16 @@ abstract class SystemScreenSpecs {
     id: 'review_inbox',
     screenKey: 'review_inbox',
     name: 'Attention',
-    template: const ScreenTemplateSpec.reviewInbox(),
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    modules: SlottedModules(
+      primary: [
+        ScreenModuleSpec.attentionInboxV1(
+          params: const AttentionInboxSectionParamsV1(
+            pack: StylePackV2.standard,
+          ),
+        ),
+      ],
+    ),
   );
 
   static final scheduled = ScreenSpec(
@@ -87,9 +90,6 @@ abstract class SystemScreenSpecs {
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
             pack: StylePackV2.standard,
-            layout: const SectionLayoutSpecV2.timelineMonthSections(
-              pinnedSectionHeaders: true,
-            ),
             enrichment: EnrichmentPlanV2(
               items: [
                 EnrichmentPlanItemV2.agendaTags(
@@ -116,8 +116,8 @@ abstract class SystemScreenSpecs {
     ),
     modules: SlottedModules(
       header: [
-        ScreenModuleSpec.attentionBannerV1(
-          params: AttentionBannerSectionParamsV1(
+        ScreenModuleSpec.attentionBannerV2(
+          params: AttentionBannerSectionParamsV2(
             pack: StylePackV2.standard,
             buckets: const ['action', 'review'],
             entityTypes: const ['task', 'project'],
@@ -143,6 +143,7 @@ abstract class SystemScreenSpecs {
             filters: const SectionFilterSpecV2(
               enableValueDropdown: true,
               enableProjectsOnlyToggle: true,
+              enableFocusOnlyToggle: true,
               enableIncludeFutureStartsToggle: true,
               valueFilterMode: ValueFilterModeV2.anyValues,
             ),
@@ -210,7 +211,7 @@ abstract class SystemScreenSpecs {
     id: 'allocation_settings',
     screenKey: 'allocation_settings',
     name: 'Allocation Settings',
-    template: const ScreenTemplateSpec.allocationSettings(),
+    template: const ScreenTemplateSpec.focusSetupWizard(),
   );
 
   static final focusSetup = ScreenSpec(
@@ -240,9 +241,7 @@ abstract class SystemScreenSpecs {
   ];
 
   /// All system screens.
-  ///
-  /// Note: this includes Browse, which is typically shown separately.
-  static List<ScreenSpec> get all => [...navigationScreens, browse];
+  static List<ScreenSpec> get all => [...navigationScreens];
 
   static const Map<String, int> _defaultSortOrders = {
     'my_day': 0,
@@ -251,7 +250,6 @@ abstract class SystemScreenSpecs {
     'journal': 4,
     'values': 5,
     'statistics': 7,
-    'browse': 8,
     'review_inbox': 9,
     'settings': 100,
   };
@@ -263,7 +261,6 @@ abstract class SystemScreenSpecs {
   static bool isSystemScreen(String screenKey) => getByKey(screenKey) != null;
 
   static final _byKey = <String, ScreenSpec>{
-    browse.screenKey: browse,
     myDay.screenKey: myDay,
     scheduled.screenKey: scheduled,
     someday.screenKey: someday,

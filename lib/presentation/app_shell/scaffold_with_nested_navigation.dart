@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_bar_scaffold.dart';
 import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart';
+import 'package:taskly_bloc/presentation/app_shell/more_destinations_sheet.dart';
 import 'package:taskly_bloc/core/logging/app_log.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
@@ -56,43 +57,30 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
         )
         .toList(growable: false);
 
-    final browseScreen = SystemScreenSpecs.browse;
-    final browseIconSet = iconResolver.resolve(
-      screenId: browseScreen.screenKey,
-      iconName: browseScreen.chrome.iconName,
-    );
-    final browseDestination = NavigationDestinationVm(
-      id: browseScreen.id,
-      screenId: browseScreen.screenKey,
-      label: browseScreen.name,
-      icon: browseIconSet.icon,
-      selectedIcon: browseIconSet.selectedIcon,
-      route: Routing.screenPath(browseScreen.screenKey),
-      badgeStream: null,
-      sortOrder: 1000,
-    );
-
-    final railDestinations = <NavigationDestinationVm>[
-      ...systemDestinations,
-      browseDestination,
-    ];
-
     return LayoutBuilder(
       builder: (context, constraints) {
         if (Breakpoints.isCompact(constraints.maxWidth)) {
           return ScaffoldWithNavigationBar(
             body: child,
             destinations: systemDestinations,
-            browseDestination: browseDestination,
             activeScreenId: activeScreenId,
             bottomVisibleCount: bottomVisibleCount,
             onDestinationSelected: (screenId) => _goTo(context, screenId),
+            onMorePressed: () async {
+              final selected = await showMoreDestinationsSheet(
+                context: context,
+                destinations: systemDestinations,
+                activeScreenId: activeScreenId,
+              );
+              if (selected == null || !context.mounted) return;
+              _goTo(context, selected);
+            },
           );
         }
 
         return ScaffoldWithNavigationRail(
           body: child,
-          destinations: railDestinations,
+          destinations: systemDestinations,
           activeScreenId: activeScreenId,
           onDestinationSelected: (screenId) => _goTo(context, screenId),
         );

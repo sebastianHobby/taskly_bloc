@@ -1,6 +1,7 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
 
 /// Actions that can be performed on entities.
@@ -21,13 +22,16 @@ class EntityActionService {
   EntityActionService({
     required TaskRepositoryContract taskRepository,
     required ProjectRepositoryContract projectRepository,
+    required ValueRepositoryContract valueRepository,
     required AllocationOrchestrator allocationOrchestrator,
   }) : _taskRepository = taskRepository,
        _projectRepository = projectRepository,
+       _valueRepository = valueRepository,
        _allocationOrchestrator = allocationOrchestrator;
 
   final TaskRepositoryContract _taskRepository;
   final ProjectRepositoryContract _projectRepository;
+  final ValueRepositoryContract _valueRepository;
   final AllocationOrchestrator _allocationOrchestrator;
 
   // ===========================================================================
@@ -135,6 +139,28 @@ class EntityActionService {
     await _projectRepository.delete(projectId);
   }
 
+  /// Pin a project for allocation.
+  Future<void> pinProject(String projectId) async {
+    talker.serviceLog('EntityActionService', 'pinProject: $projectId');
+    await _allocationOrchestrator.pinProject(projectId);
+  }
+
+  /// Unpin a project from allocation.
+  Future<void> unpinProject(String projectId) async {
+    talker.serviceLog('EntityActionService', 'unpinProject: $projectId');
+    await _allocationOrchestrator.unpinProject(projectId);
+  }
+
+  // ===========================================================================
+  // VALUE ACTIONS
+  // ===========================================================================
+
+  /// Delete a value.
+  Future<void> deleteValue(String valueId) async {
+    talker.serviceLog('EntityActionService', 'deleteValue: $valueId');
+    await _valueRepository.delete(valueId);
+  }
+
   // ===========================================================================
   // GENERIC DISPATCH
   // ===========================================================================
@@ -159,6 +185,8 @@ class EntityActionService {
         await _performTaskAction(entityId, action, params);
       case 'project':
         await _performProjectAction(entityId, action);
+      case 'value':
+        await _performValueAction(entityId, action);
       default:
         throw ArgumentError('Unknown entity type: $entityType');
     }
@@ -198,9 +226,27 @@ class EntityActionService {
       case EntityActionType.delete:
         await deleteProject(projectId);
       case EntityActionType.pin:
+        await pinProject(projectId);
       case EntityActionType.unpin:
+        await unpinProject(projectId);
       case EntityActionType.move:
         throw UnsupportedError('Action $action not supported for projects');
+    }
+  }
+
+  Future<void> _performValueAction(
+    String valueId,
+    EntityActionType action,
+  ) async {
+    switch (action) {
+      case EntityActionType.delete:
+        await deleteValue(valueId);
+      case EntityActionType.complete:
+      case EntityActionType.uncomplete:
+      case EntityActionType.pin:
+      case EntityActionType.unpin:
+      case EntityActionType.move:
+        throw UnsupportedError('Action $action not supported for values');
     }
   }
 }

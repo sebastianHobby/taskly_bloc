@@ -74,6 +74,30 @@ abstract class SystemAttentionRules {
     sortOrder: 30,
   );
 
+  /// Detects projects that are due soon but still have many unscheduled tasks.
+  ///
+  /// “Unscheduled” (for this rule) means:
+  /// - missing both start + deadline
+  /// - OR start date is in the past AND no deadline is set
+  static const problemProjectDeadlineRisk = AttentionRuleTemplate(
+    ruleKey: 'problem_project_deadline_risk',
+    bucket: AttentionBucket.action,
+    evaluator: 'project_predicate_v1',
+    evaluatorParams: {
+      'predicate': 'dueSoonManyUnscheduledTasks',
+      'dueWithinDays': 14,
+      'minUnscheduledCount': 5,
+    },
+    severity: AttentionSeverity.warning,
+    displayConfig: {
+      'title': 'Deadline Risk',
+      'description': 'Project due soon with many unscheduled tasks.',
+      'icon': 'warning',
+    },
+    resolutionActions: ['reviewed', 'snoozed', 'dismissed'],
+    sortOrder: 40,
+  );
+
   // ==========================================================================
   // REVIEW RULES (3 rules)
   // ==========================================================================
@@ -261,6 +285,7 @@ abstract class SystemAttentionRules {
     problemTaskOverdue,
     problemTaskStale,
     problemProjectIdle,
+    problemProjectDeadlineRisk,
     // Reviews (3 + 3 project health)
     reviewValuesAlignment,
     reviewBalance,

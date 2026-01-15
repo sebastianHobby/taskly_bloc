@@ -20,8 +20,8 @@ mobile platforms.
   formatting.
 * **Fixes:** Use the `dart_fix` tool to automatically fix many common errors,
   and to help code conform to configured analysis options.
-* **Linting:** Use the Dart linter with a recommended set of rules to catch
-  common issues. Use the `analyze_files` tool to run the linter.
+* **Linting:** Use the Dart/Flutter analyzer to catch common issues. Prefer
+  running `flutter analyze` from the command line.
 
 ## Repo Workflow Rules (Taskly)
 
@@ -60,7 +60,7 @@ mobile platforms.
 
 ### Analysis first (strict)
 
-* Always run `flutter analyze` before working on failing tests.
+* Always run `flutter analyze` (command line) before working on failing tests.
 * Do not attempt to "fix tests to make them pass" while `flutter analyze` is reporting problems.
 * When implementing a multi-phase plan (with plan files/folder), only fix `flutter analyze` errors/warnings that are caused by the current plan phase changes.
   * Exception: in the **last phase** of the plan, fix **any** `flutter analyze` error or warning (regardless of whether it is related to the plan).

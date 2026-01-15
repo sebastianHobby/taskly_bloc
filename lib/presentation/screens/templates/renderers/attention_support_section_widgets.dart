@@ -44,8 +44,15 @@ class AttentionItemTile extends StatelessWidget {
 
   final AttentionItem item;
 
+  List<String> _detailLines() {
+    final raw = item.metadata?['detail_lines'];
+    if (raw is! List) return const <String>[];
+    return raw.whereType<String>().where((s) => s.trim().isNotEmpty).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final detailLines = _detailLines();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -67,6 +74,15 @@ class AttentionItemTile extends StatelessWidget {
                 if (item.description.isNotEmpty)
                   Text(
                     item.description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                for (final line in detailLines)
+                  Text(
+                    line,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
