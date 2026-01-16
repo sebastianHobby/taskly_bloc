@@ -19,7 +19,6 @@ class MyDayRankedTasksV1Section extends StatefulWidget {
     required this.title,
     required this.enrichment,
     required this.entityStyle,
-    required this.onTaskCheckboxChanged,
     super.key,
   });
 
@@ -27,7 +26,6 @@ class MyDayRankedTasksV1Section extends StatefulWidget {
   final String? title;
   final EnrichmentResultV2? enrichment;
   final EntityStyleV1 entityStyle;
-  final void Function(Task task, bool? value)? onTaskCheckboxChanged;
 
   @override
   State<MyDayRankedTasksV1Section> createState() =>
@@ -85,6 +83,36 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
         .toList(growable: false);
   }
 
+  List<_RankedTask> _rankedTaskItems() {
+    final rankByTaskId =
+        widget.enrichment?.allocationRankByTaskId ?? const <String, int>{};
+
+    final ranked = <_RankedTask>[];
+    for (final item in widget.data.whereType<ScreenItemTask>()) {
+      final task = item.task;
+      final rank = rankByTaskId[task.id];
+      ranked.add(_RankedTask(item: item, rank: rank));
+    }
+
+    ranked.sort(
+      (a, b) {
+        final ar = a.rank;
+        final br = b.rank;
+
+        if (ar == null && br == null) {
+          return a.task.name.compareTo(b.task.name);
+        }
+
+        if (ar == null) return 1;
+        if (br == null) return -1;
+
+        return ar.compareTo(br);
+      },
+    );
+
+    return ranked;
+  }
+
   Map<String, Value> get _valueById {
     final map = <String, Value>{};
 
@@ -103,40 +131,7 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
     return map;
   }
 
-  List<_RankedTask> _rankedTasks() {
-    final rankByTaskId =
-        widget.enrichment?.allocationRankByTaskId ?? const <String, int>{};
-
-    final ranked = <_RankedTask>[];
-    for (final task in _tasks) {
-      final rank = rankByTaskId[task.id];
-      ranked.add(_RankedTask(task: task, rank: rank));
-    }
-
-    ranked.sort(
-      (a, b) {
-        final ar = a.rank;
-        final br = b.rank;
-
-        if (ar != null && br != null) {
-          final byRank = ar.compareTo(br);
-          if (byRank != 0) return byRank;
-        } else if (ar != null) {
-          return -1;
-        } else if (br != null) {
-          return 1;
-        }
-
-        final byName = a.task.name.toLowerCase().compareTo(
-          b.task.name.toLowerCase(),
-        );
-        if (byName != 0) return byName;
-        return a.task.id.compareTo(b.task.id);
-      },
-    );
-
-    return ranked;
-  }
+  List<_RankedTask> _rankedTasks() => _rankedTaskItems();
 
   Widget _buildMixRow(BuildContext context, MyDayMixVm mix) {
     final theme = Theme.of(context);
@@ -342,6 +337,7 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
             }
 
             final rankedTask = ranked[taskIndex];
+            final item = rankedTask.item;
             final task = rankedTask.task;
 
             final isExpanded = _expandedTaskId == task.id;
@@ -368,14 +364,10 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
               children: [
                 const ScreenItemTileBuilder().build(
                   context,
-                  item: ScreenItem.task(task),
+                  item: item,
                   entityStyle: widget.entityStyle,
                   isInFocus: true,
                   titlePrefix: titlePrefix,
-                  onTaskToggle: (taskId, val) {
-                    if (taskId != task.id) return;
-                    widget.onTaskCheckboxChanged?.call(task, val);
-                  },
                   onTap: () {
                     setState(() {
                       _expandedTaskId = _expandedTaskId == task.id
@@ -422,8 +414,11 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
 }
 
 final class _RankedTask {
-  const _RankedTask({required this.task, required this.rank});
+  const _RankedTask({required this.item, required this.rank});
 
-  final Task task;
+  final ScreenItemTask item;
+
+  Task get task => item.task;
+
   final int? rank;
 }

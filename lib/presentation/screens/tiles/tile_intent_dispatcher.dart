@@ -64,9 +64,11 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
       if (intent.occurrenceDate == null ||
           intent.originalOccurrenceDate == null) {
         bloc.add(
-          const ScreenActionsFailureEvent(
+          ScreenActionsFailureEvent(
             failureKind: ScreenActionsFailureKind.invalidOccurrenceData,
             fallbackMessage: 'Invalid occurrence data',
+            entityType: intent.entityType,
+            entityId: intent.entityId,
           ),
         );
         return;
@@ -207,6 +209,10 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
   ) async {
     final l10n = context.l10n;
 
+    if (!intent.allowOpenEditor && !intent.allowQuickMove) {
+      return;
+    }
+
     final choice = await showModalBottomSheet<_MoveToProjectChoice>(
       context: context,
       showDragHandle: true,
@@ -221,22 +227,28 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
                 subtitle: Text(intent.taskName),
               ),
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.flash_on_outlined),
-                title: const Text('Move now'),
-                subtitle: const Text('Select a project and move immediately.'),
-                onTap: () =>
-                    Navigator.of(context).pop(_MoveToProjectChoice.quickMove),
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined),
-                title: const Text('Open editor'),
-                subtitle: const Text(
-                  'Open the task editor and choose a project.',
+              if (intent.allowQuickMove)
+                ListTile(
+                  leading: const Icon(Icons.flash_on_outlined),
+                  title: const Text('Move now'),
+                  subtitle: const Text(
+                    'Select a project and move immediately.',
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(_MoveToProjectChoice.quickMove),
                 ),
-                onTap: () =>
-                    Navigator.of(context).pop(_MoveToProjectChoice.openEditor),
-              ),
+              if (intent.allowOpenEditor)
+                ListTile(
+                  leading: const Icon(Icons.edit_outlined),
+                  title: const Text('Open editor'),
+                  subtitle: const Text(
+                    'Open the task editor and choose a project.',
+                  ),
+                  onTap: () => Navigator.of(
+                    context,
+                  ).pop(_MoveToProjectChoice.openEditor),
+                ),
               const SizedBox(height: 8),
             ],
           ),

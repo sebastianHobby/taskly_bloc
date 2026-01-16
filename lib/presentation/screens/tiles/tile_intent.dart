@@ -82,10 +82,18 @@ final class TileIntentOpenMoveToProject extends TileIntent {
   const TileIntentOpenMoveToProject({
     required this.taskId,
     required this.taskName,
+    required this.allowOpenEditor,
+    required this.allowQuickMove,
   });
 
   final String taskId;
   final String taskName;
+
+  /// Whether the UX may offer the "open editor" option.
+  final bool allowOpenEditor;
+
+  /// Whether the UX may offer the "quick move" option.
+  final bool allowQuickMove;
 }
 
 final class TileIntentMoveTaskToProject extends TileIntent {

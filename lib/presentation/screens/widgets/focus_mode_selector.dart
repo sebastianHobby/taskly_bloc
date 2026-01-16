@@ -1,6 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/presentation/features/next_action/widgets/focus_mode_card.dart';
+import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 
 /// Horizontal selector for choosing a focus mode.
 class FocusModeSelector extends StatelessWidget {

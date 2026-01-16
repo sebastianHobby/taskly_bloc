@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/field_catalog/field_catalog.dart';
+import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
@@ -27,7 +30,7 @@ enum TaskViewVariant {
 class TaskView extends StatelessWidget {
   const TaskView({
     required this.task,
-    required this.onCheckboxChanged,
+    required this.tileCapabilities,
     this.onTap,
     this.compact = false,
     this.isInFocus = false,
@@ -43,8 +46,8 @@ class TaskView extends StatelessWidget {
 
   final Task task;
 
-  /// Callback invoked when the completion checkbox is toggled.
-  final void Function(Task task, bool? value) onCheckboxChanged;
+  /// Domain-sourced capability policy for this tile.
+  final EntityTileCapabilities tileCapabilities;
 
   /// Optional tap handler. If null, navigates to task detail.
   final void Function(Task task)? onTap;
@@ -111,6 +114,31 @@ class TaskView extends StatelessWidget {
     };
   }
 
+  void _dispatchCompletion(BuildContext context, bool? value) {
+    if (!tileCapabilities.canToggleCompletion) return;
+
+    final dispatcher = context.read<TileIntentDispatcher>();
+    final completed = value ?? false;
+
+    final occurrenceDate = task.occurrence?.date;
+    final originalOccurrenceDate =
+        task.occurrence?.originalDate ?? occurrenceDate;
+
+    unawaited(
+      dispatcher.dispatch(
+        context,
+        TileIntentSetCompletion(
+          entityType: EntityType.task,
+          entityId: task.id,
+          completed: completed,
+          scope: tileCapabilities.completionScope,
+          occurrenceDate: occurrenceDate,
+          originalOccurrenceDate: originalOccurrenceDate,
+        ),
+      ),
+    );
+  }
+
   Widget _buildListRow(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
@@ -121,6 +149,12 @@ class TaskView extends StatelessWidget {
     final isOverdue = _isOverdue(task.deadlineDate);
     final isDueToday = _isDueToday(task.deadlineDate);
     final isDueSoon = _isDueSoon(task.deadlineDate);
+
+    final resolvedOnTap =
+        onTap ??
+        (tileCapabilities.canOpenDetails
+            ? (Task task) => Routing.toEntity(context, EntityType.task, task.id)
+            : null);
 
     return Container(
       key: Key('task-${task.id}'),
@@ -136,9 +170,7 @@ class TaskView extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => onTap != null
-            ? onTap!(task)
-            : Routing.toEntity(context, EntityType.task, task.id),
+        onTap: resolvedOnTap == null ? null : () => resolvedOnTap(task),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: 16,
@@ -152,7 +184,9 @@ class TaskView extends StatelessWidget {
                 child: _TaskCheckbox(
                   completed: task.completed,
                   isOverdue: isOverdue,
-                  onChanged: (value) => onCheckboxChanged(task, value),
+                  onChanged: tileCapabilities.canToggleCompletion
+                      ? (value) => _dispatchCompletion(context, value)
+                      : null,
                   taskName: task.name,
                 ),
               ),
@@ -191,8 +225,10 @@ class TaskView extends StatelessWidget {
                         const SizedBox(width: 10),
                         _TaskTodayStatusMenuButton(
                           taskId: task.id,
+                          taskName: task.name,
                           isPinnedToMyDay: task.isPinned,
                           isInMyDayAuto: isInFocus,
+                          tileCapabilities: tileCapabilities,
                         ),
                       ],
                     ),
@@ -210,10 +246,17 @@ class TaskView extends StatelessWidget {
                       secondaryValues: effectiveSecondaryValues,
                       priority: task.priority,
                       onTapValues: () {
-                        EditorLauncher.fromGetIt().openTaskEditor(
-                          context,
-                          taskId: task.id,
-                          openToValues: true,
+                        if (!tileCapabilities.canAlignValues) return;
+                        final dispatcher = context.read<TileIntentDispatcher>();
+                        unawaited(
+                          dispatcher.dispatch(
+                            context,
+                            TileIntentOpenEditor(
+                              entityType: EntityType.task,
+                              entityId: task.id,
+                              openToValues: true,
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -250,13 +293,17 @@ class TaskView extends StatelessWidget {
           )
         : scheme.surfaceContainerLow;
 
+    final resolvedOnTap =
+        onTap ??
+        (tileCapabilities.canOpenDetails
+            ? (Task task) => Routing.toEntity(context, EntityType.task, task.id)
+            : null);
+
     return Material(
       key: Key('task-${task.id}'),
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onTap != null
-            ? onTap!(task)
-            : Routing.toEntity(context, EntityType.task, task.id),
+        onTap: resolvedOnTap == null ? null : () => resolvedOnTap(task),
         borderRadius: BorderRadius.circular(16),
         child: _AgendaCardContainer(
           dashedOutline: agendaInProgressStyle,
@@ -278,7 +325,9 @@ class TaskView extends StatelessWidget {
                   child: _TaskCheckbox(
                     completed: task.completed,
                     isOverdue: isOverdue,
-                    onChanged: (value) => onCheckboxChanged(task, value),
+                    onChanged: tileCapabilities.canToggleCompletion
+                        ? (value) => _dispatchCompletion(context, value)
+                        : null,
                     taskName: task.name,
                   ),
                 ),
@@ -321,9 +370,11 @@ class TaskView extends StatelessWidget {
                           const SizedBox(width: 10),
                           _TaskTodayStatusMenuButton(
                             taskId: task.id,
+                            taskName: task.name,
                             isPinnedToMyDay: task.isPinned,
                             isInMyDayAuto: isInFocus,
                             compact: true,
+                            tileCapabilities: tileCapabilities,
                           ),
                         ],
                       ),
@@ -347,10 +398,18 @@ class TaskView extends StatelessWidget {
                               secondaryValues: effectiveSecondaryValues,
                               priority: task.priority,
                               onTapValues: () {
-                                EditorLauncher.fromGetIt().openTaskEditor(
-                                  context,
-                                  taskId: task.id,
-                                  openToValues: true,
+                                if (!tileCapabilities.canAlignValues) return;
+                                final dispatcher = context
+                                    .read<TileIntentDispatcher>();
+                                unawaited(
+                                  dispatcher.dispatch(
+                                    context,
+                                    TileIntentOpenEditor(
+                                      entityType: EntityType.task,
+                                      entityId: task.id,
+                                      openToValues: true,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -802,27 +861,19 @@ enum _TaskOverflowAction {
 class _TaskTodayStatusMenuButton extends StatelessWidget {
   const _TaskTodayStatusMenuButton({
     required this.taskId,
+    required this.taskName,
     required this.isPinnedToMyDay,
     required this.isInMyDayAuto,
+    required this.tileCapabilities,
     this.compact = false,
   });
 
   final String taskId;
+  final String taskName;
   final bool isPinnedToMyDay;
   final bool isInMyDayAuto;
+  final EntityTileCapabilities tileCapabilities;
   final bool compact;
-
-  void _showSnackBar(ScaffoldMessengerState? messenger, String message) {
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -856,6 +907,20 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
             ),
           );
 
+    final availableActions = <_TaskOverflowAction>[
+      if (tileCapabilities.canTogglePinned)
+        _TaskOverflowAction.togglePinnedToMyDay,
+      if (tileCapabilities.canOpenEditor) _TaskOverflowAction.edit,
+      if (tileCapabilities.canOpenMoveToProject)
+        _TaskOverflowAction.moveToProject,
+      if (tileCapabilities.canAlignValues) _TaskOverflowAction.alignValues,
+      if (tileCapabilities.canDelete) _TaskOverflowAction.delete,
+    ];
+
+    if (availableActions.isEmpty) {
+      return statusWidget ?? const SizedBox.shrink();
+    }
+
     return PopupMenuButton<_TaskOverflowAction>(
       tooltip: 'More',
       child: Padding(
@@ -876,70 +941,117 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
         ),
       ),
       onSelected: (action) async {
+        final dispatcher = context.read<TileIntentDispatcher>();
         switch (action) {
           case _TaskOverflowAction.togglePinnedToMyDay:
-            final messenger = ScaffoldMessenger.maybeOf(context);
-            try {
-              final service = getIt<EntityActionService>();
-              if (isPinnedToMyDay) {
-                await service.unpinTask(taskId);
-                _showSnackBar(messenger, 'Unpinned (may still stay in My Day)');
-              } else {
-                await service.pinTask(taskId);
-                _showSnackBar(messenger, 'Pinned to My Day');
-              }
-            } catch (_) {
-              _showSnackBar(messenger, 'Could not update My Day pin');
-            }
-          case _TaskOverflowAction.edit:
-            await EditorLauncher.fromGetIt().openTaskEditor(
+            return dispatcher.dispatch(
               context,
-              taskId: taskId,
+              TileIntentSetPinned(
+                entityType: EntityType.task,
+                entityId: taskId,
+                isPinned: !isPinnedToMyDay,
+              ),
+            );
+          case _TaskOverflowAction.edit:
+            return dispatcher.dispatch(
+              context,
+              TileIntentOpenEditor(
+                entityType: EntityType.task,
+                entityId: taskId,
+              ),
             );
           case _TaskOverflowAction.moveToProject:
-            await EditorLauncher.fromGetIt().openTaskEditor(
+            return dispatcher.dispatch(
               context,
-              taskId: taskId,
-              openToProjectPicker: true,
+              TileIntentOpenMoveToProject(
+                taskId: taskId,
+                taskName: taskName,
+                allowOpenEditor: tileCapabilities.canOpenEditor,
+                allowQuickMove: tileCapabilities.canQuickMoveToProject,
+              ),
             );
           case _TaskOverflowAction.alignValues:
-            await EditorLauncher.fromGetIt().openTaskEditor(
+            return dispatcher.dispatch(
               context,
-              taskId: taskId,
-              openToValues: true,
+              TileIntentOpenEditor(
+                entityType: EntityType.task,
+                entityId: taskId,
+                openToValues: true,
+              ),
             );
           case _TaskOverflowAction.delete:
-            await getIt<EntityActionService>().deleteTask(taskId);
+            return dispatcher.dispatch(
+              context,
+              TileIntentRequestDelete(
+                entityType: EntityType.task,
+                entityId: taskId,
+                entityName: taskName,
+              ),
+            );
         }
       },
       itemBuilder: (context) {
         final pinLabel = isPinnedToMyDay
             ? 'Unpin from My Day'
             : 'Pin to My Day';
-        return [
-          PopupMenuItem(
-            value: _TaskOverflowAction.togglePinnedToMyDay,
-            child: Text(pinLabel),
-          ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: _TaskOverflowAction.edit,
-            child: Text('Edit'),
-          ),
-          const PopupMenuItem(
-            value: _TaskOverflowAction.moveToProject,
-            child: Text('Move to project…'),
-          ),
-          const PopupMenuItem(
-            value: _TaskOverflowAction.alignValues,
-            child: Text('Align values…'),
-          ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: _TaskOverflowAction.delete,
-            child: Text('Delete'),
-          ),
-        ];
+
+        final items = <PopupMenuEntry<_TaskOverflowAction>>[];
+
+        if (tileCapabilities.canTogglePinned) {
+          items.add(
+            PopupMenuItem(
+              value: _TaskOverflowAction.togglePinnedToMyDay,
+              child: Text(pinLabel),
+            ),
+          );
+        }
+
+        final hasEditGroup =
+            tileCapabilities.canOpenEditor ||
+            tileCapabilities.canOpenMoveToProject ||
+            tileCapabilities.canAlignValues;
+        if (items.isNotEmpty && hasEditGroup) {
+          items.add(const PopupMenuDivider());
+        }
+
+        if (tileCapabilities.canOpenEditor) {
+          items.add(
+            const PopupMenuItem(
+              value: _TaskOverflowAction.edit,
+              child: Text('Edit'),
+            ),
+          );
+        }
+
+        if (tileCapabilities.canOpenMoveToProject) {
+          items.add(
+            const PopupMenuItem(
+              value: _TaskOverflowAction.moveToProject,
+              child: Text('Move to project…'),
+            ),
+          );
+        }
+
+        if (tileCapabilities.canAlignValues) {
+          items.add(
+            const PopupMenuItem(
+              value: _TaskOverflowAction.alignValues,
+              child: Text('Align values…'),
+            ),
+          );
+        }
+
+        if (tileCapabilities.canDelete) {
+          if (items.isNotEmpty) items.add(const PopupMenuDivider());
+          items.add(
+            const PopupMenuItem(
+              value: _TaskOverflowAction.delete,
+              child: Text('Delete'),
+            ),
+          );
+        }
+
+        return items;
       },
     );
   }
@@ -955,7 +1067,7 @@ class _TaskCheckbox extends StatelessWidget {
 
   final bool completed;
   final bool isOverdue;
-  final ValueChanged<bool?> onChanged;
+  final ValueChanged<bool?>? onChanged;
   final String taskName;
 
   @override
@@ -971,10 +1083,12 @@ class _TaskCheckbox extends StatelessWidget {
         height: 24,
         child: Checkbox(
           value: completed,
-          onChanged: (bool? value) {
-            HapticFeedback.lightImpact();
-            onChanged(value);
-          },
+          onChanged: onChanged == null
+              ? null
+              : (bool? value) {
+                  HapticFeedback.lightImpact();
+                  onChanged!(value);
+                },
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
           ),

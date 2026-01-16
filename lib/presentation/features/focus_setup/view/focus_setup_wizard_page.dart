@@ -9,7 +9,7 @@ import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
-import 'package:taskly_bloc/presentation/features/next_action/widgets/focus_mode_card.dart';
+import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 

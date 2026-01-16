@@ -95,6 +95,26 @@ Resolution precedence:
 entity widgets (e.g. `TaskView`, `ProjectView`) directly. Renderers must build
 tiles via a central tile builder that requires the resolved `EntityStyleV1`.
 
+### 1.3 Tile action surface (capabilities + intents)
+
+Unified screens also standardize *behavior* (what a tile can do) via a single
+tile action surface.
+
+- **Domain owns capabilities**: `EntityTileCapabilities` + `CompletionScope`
+  are computed from domain models (and optional module overrides) and are
+  carried on renderable item models (e.g. `ScreenItem.*`, `AgendaItem`).
+- **Presentation owns intents + dispatcher**: tiles emit typed `TileIntent`
+  values (context-free data). A `TileIntentDispatcher` executes those intents
+  using `BuildContext` (for navigation/dialogs) and funnels mutations through
+  `ScreenActionsBloc`.
+
+Failure surfacing policy (non-negotiable):
+
+- Tiles do not show local SnackBars for mutation failures.
+- `ScreenActionsBloc` failure states are surfaced by exactly one listener at
+  the authenticated app shell (via `scaffoldMessengerKey`), with dedupe/throttle
+  keyed by `(failureKind, entityType, entityId)`.
+
 ---
 
 ## 2) Where Things Live (Folder Map)

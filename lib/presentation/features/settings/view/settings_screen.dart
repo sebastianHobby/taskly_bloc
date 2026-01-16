@@ -10,10 +10,11 @@ import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
-import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
+import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
+import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
 
 /// Settings screen for global app configuration.
 ///
@@ -53,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Appearance',
                     children: [
                       _ThemeModeSelector(settings: settings),
-                      _ColorPicker(settings: settings),
+                      _AccentPalettePicker(settings: settings),
                       _TextSizeSlider(settings: settings),
                     ],
                   ),
@@ -203,24 +204,23 @@ class _ThemeModeSelector extends StatelessWidget {
   }
 }
 
-class _ColorPicker extends StatelessWidget {
-  const _ColorPicker({required this.settings});
+class _AccentPalettePicker extends StatelessWidget {
+  const _AccentPalettePicker({required this.settings});
 
   final GlobalSettings settings;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ColorPickerField(
-        label: 'Accent color',
-        color: Color(settings.colorSchemeSeedArgb),
-        onColorChanged: (Color color) {
-          context.read<GlobalSettingsBloc>().add(
-            GlobalSettingsEvent.colorChanged(color.value),
-          );
-        },
-      ),
+    return AccentPaletteGallery(
+      title: 'Accent palette',
+      subtitle: 'Pick a focused productivity theme',
+      palettes: AppSeedPalettes.focusedProductivity,
+      selectedSeedArgb: settings.colorSchemeSeedArgb,
+      onSelected: (palette) {
+        context.read<GlobalSettingsBloc>().add(
+          GlobalSettingsEvent.colorChanged(palette.seedArgb),
+        );
+      },
     );
   }
 }

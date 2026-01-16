@@ -1,7 +1,7 @@
 # Plan Phase 05 — Cleanup, Guardrails, Documentation
 
 Created at: 2026-01-16T00:00:00Z
-Last updated at: 2026-01-16T04:36:01.7618276Z
+Last updated at: 2026-01-16T05:53:35.7913185Z
 
 ## Goal
 Finish the migration by removing dead code paths, preventing regressions, and updating architecture docs.
@@ -66,8 +66,15 @@ Suggested target doc:
 - When the phase is complete, update this file immediately (same day) with summary + completion date (UTC).
 
 ## Completion checklist
-- [ ] No remaining widget-layer DI mutation calls in entity view widgets
-- [ ] No remaining duplicated failure SnackBar listeners
-- [ ] Guardrail added (if approved)
-- [ ] Docs updated
-- [ ] Analyzer clean
+- [x] No remaining widget-layer DI mutation calls in entity view widgets
+- [x] No remaining duplicated failure SnackBar listeners for screen actions
+- [x] Guardrail added (tool/usm_tile_action_guardrail.dart)
+- [x] Docs updated (USM architecture doc updated with tile action surface + failure policy)
+- [x] Analyzer clean
+
+Completed at: 2026-01-16T05:53:35.7913185Z
+
+Summary:
+- Added a narrow, grep-style guardrail script to prevent regressions in entity views/tiles.
+- Updated USM architecture doc with the tile action surface and global failure listener policy.
+- `flutter analyze` passes cleanly.

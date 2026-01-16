@@ -276,7 +276,6 @@ class _EntityDetailScaffoldV1TemplateState
     final theme = Theme.of(context);
     final spec = widget.data.spec;
     final l10n = context.l10n;
-    final actionsBloc = context.read<ScreenActionsBloc>();
     final (entityType: entityType, entityId: entityId, entityName: entityName) =
         _entityFromHeader(widget.data.sections.header);
 
@@ -319,38 +318,6 @@ class _EntityDetailScaffoldV1TemplateState
           section: section,
           screenKey: spec.screenKey,
           onEntityHeaderTap: () => _openEditor(context),
-          onProjectCheckboxChanged: (project, value) {
-            actionsBloc.add(
-              ScreenActionsProjectCompletionChanged(
-                projectId: project.id,
-                completed: value ?? false,
-              ),
-            );
-          },
-          onTaskCheckboxChanged: (task, value) {
-            actionsBloc.add(
-              ScreenActionsTaskCompletionChanged(
-                taskId: task.id,
-                completed: value ?? false,
-              ),
-            );
-          },
-          onTaskDelete: (task) {
-            actionsBloc.add(
-              ScreenActionsDeleteEntity(
-                entityType: EntityType.task,
-                entityId: task.id,
-              ),
-            );
-          },
-          onProjectDelete: (project) {
-            actionsBloc.add(
-              ScreenActionsDeleteEntity(
-                entityType: EntityType.project,
-                entityId: project.id,
-              ),
-            );
-          },
         ),
 
       if (hasProjectTaskFilter && hasAnyTasks)
@@ -413,38 +380,6 @@ class _EntityDetailScaffoldV1TemplateState
             section: section,
             screenKey: spec.screenKey,
             onEntityHeaderTap: () => _openEditor(context),
-            onProjectCheckboxChanged: (project, value) {
-              actionsBloc.add(
-                ScreenActionsProjectCompletionChanged(
-                  projectId: project.id,
-                  completed: value ?? false,
-                ),
-              );
-            },
-            onTaskCheckboxChanged: (task, value) {
-              actionsBloc.add(
-                ScreenActionsTaskCompletionChanged(
-                  taskId: task.id,
-                  completed: value ?? false,
-                ),
-              );
-            },
-            onTaskDelete: (task) {
-              actionsBloc.add(
-                ScreenActionsDeleteEntity(
-                  entityType: EntityType.task,
-                  entityId: task.id,
-                ),
-              );
-            },
-            onProjectDelete: (project) {
-              actionsBloc.add(
-                ScreenActionsDeleteEntity(
-                  entityType: EntityType.project,
-                  entityId: project.id,
-                ),
-              );
-            },
           ),
         );
       }
@@ -564,19 +499,11 @@ class _EntityDetailModuleSliver extends StatelessWidget {
     required this.section,
     required this.screenKey,
     required this.onEntityHeaderTap,
-    required this.onTaskCheckboxChanged,
-    required this.onProjectCheckboxChanged,
-    required this.onTaskDelete,
-    required this.onProjectDelete,
   });
 
   final SectionVm section;
   final String screenKey;
   final VoidCallback onEntityHeaderTap;
-  final void Function(Task task, bool? value) onTaskCheckboxChanged;
-  final void Function(Project project, bool? value) onProjectCheckboxChanged;
-  final void Function(Task task) onTaskDelete;
-  final void Function(Project project) onProjectDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -590,10 +517,6 @@ class _EntityDetailModuleSliver extends StatelessWidget {
       persistenceKey: persistenceKey,
       displayConfig: section.displayConfig,
       onEntityHeaderTap: onEntityHeaderTap,
-      onTaskCheckboxChanged: onTaskCheckboxChanged,
-      onProjectCheckboxChanged: onProjectCheckboxChanged,
-      onTaskDelete: onTaskDelete,
-      onProjectDelete: onProjectDelete,
       onEntityTap: (entity) {
         if (entity is Task) {
           Routing.toEntity(context, EntityType.task, entity.id);
@@ -835,30 +758,9 @@ class _ModuleSliver extends StatelessWidget {
       sectionTemplateId: section.templateId,
       sectionIndex: section.index,
     ).value;
-
-    final actionsBloc = context.read<ScreenActionsBloc>();
     return SectionWidget(
       section: section,
       persistenceKey: persistenceKey,
-      onTaskCheckboxChanged: (task, value) async {
-        actionsBloc.add(
-          ScreenActionsTaskCompletionChanged(
-            taskId: task.id,
-            completed: value ?? false,
-          ),
-        );
-      },
-      onTaskPinnedChanged: (task, pinned) async {
-        final completer = Completer<void>();
-        actionsBloc.add(
-          ScreenActionsTaskPinnedChanged(
-            taskId: task.id,
-            pinned: pinned,
-            completer: completer,
-          ),
-        );
-        await completer.future;
-      },
       onEntityTap: (entity) {
         if (entity is Task) {
           Routing.toEntity(context, EntityType.task, entity.id);

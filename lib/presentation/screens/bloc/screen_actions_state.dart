@@ -1,3 +1,5 @@
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+
 sealed class ScreenActionsState {
   const ScreenActionsState();
 }
@@ -27,7 +29,7 @@ final class ScreenActionsFailureState extends ScreenActionsState {
   final String fallbackMessage;
 
   /// Optional entity context for dedupe keying.
-  final String? entityType;
+  final EntityType? entityType;
   final String? entityId;
   final Object? error;
 }

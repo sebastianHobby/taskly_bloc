@@ -5,11 +5,14 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
@@ -17,7 +20,11 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
@@ -27,7 +34,7 @@ void main() {
   setUpAll(initializeTalkerForTest);
   group('SectionWidget task checkbox completion', () {
     testWidgetsSafe(
-      'passes checkbox callback through to TaskListTile',
+      'dispatches completion intent for task checkbox',
       (tester) async {
         final task = TestData.task(
           id: 'task-1',
@@ -35,16 +42,12 @@ void main() {
           completed: false,
         );
 
-        Task? receivedTask;
-        bool? receivedValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createTaskSection(tasks: [task]),
-          onTaskCheckboxChanged: (t, v) {
-            receivedTask = t;
-            receivedValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         // Find and tap the checkbox
@@ -53,10 +56,11 @@ void main() {
         await tester.tap(checkbox);
         await tester.pumpForStream();
 
-        // Verify callback was received
-        expect(receivedTask, isNotNull);
-        expect(receivedTask!.id, equals('task-1'));
-        expect(receivedValue, isTrue);
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.task);
+        expect(intents.single.entityId, equals('task-1'));
+        expect(intents.single.completed, isTrue);
       },
     );
 
@@ -74,14 +78,12 @@ void main() {
           completed: false,
         );
 
-        final callbackLog = <(String, bool?)>[];
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createTaskSection(tasks: [task1, task2]),
-          onTaskCheckboxChanged: (t, v) {
-            callbackLog.add((t.id, v));
-          },
+          dispatcher: dispatcher,
         );
 
         // Find all checkboxes
@@ -92,10 +94,10 @@ void main() {
         await tester.tap(checkboxes.at(1));
         await tester.pumpForStream();
 
-        // Verify the second task's callback was triggered
-        expect(callbackLog, hasLength(1));
-        expect(callbackLog.first.$1, equals('task-2'));
-        expect(callbackLog.first.$2, isTrue);
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityId, equals('task-2'));
+        expect(intents.single.completed, isTrue);
       },
     );
 
@@ -108,26 +110,23 @@ void main() {
           completed: true,
         );
 
-        Task? receivedTask;
-        bool? receivedValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createTaskSection(tasks: [completedTask]),
-          onTaskCheckboxChanged: (t, v) {
-            receivedTask = t;
-            receivedValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         // Tap the checkbox to uncomplete
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        // Verify callback received false (uncomplete)
-        expect(receivedTask, isNotNull);
-        expect(receivedTask!.id, equals('task-1'));
-        expect(receivedValue, isFalse);
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.task);
+        expect(intents.single.entityId, equals('task-1'));
+        expect(intents.single.completed, isFalse);
       },
     );
 
@@ -141,33 +140,32 @@ void main() {
           repeatIcalRrule: 'FREQ=DAILY',
         );
 
-        Task? receivedTask;
-        bool? receivedValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createTaskSection(tasks: [repeatingTask]),
-          onTaskCheckboxChanged: (t, v) {
-            receivedTask = t;
-            receivedValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        // Verify repeating task data was passed correctly
-        expect(receivedTask, isNotNull);
-        expect(receivedTask!.id, equals('repeating-task'));
-        expect(receivedTask!.repeatIcalRrule, equals('FREQ=DAILY'));
-        expect(receivedValue, isTrue);
+        // Verify intent targets the repeating task.
+        expect(repeatingTask.repeatIcalRrule, equals('FREQ=DAILY'));
+
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.task);
+        expect(intents.single.entityId, equals('repeating-task'));
+        expect(intents.single.completed, isTrue);
       },
     );
   });
 
   group('SectionWidget project header checkbox completion', () {
     testWidgetsSafe(
-      'passes checkbox callback through to EntityHeader.project',
+      'dispatches completion intent for project header checkbox',
       (tester) async {
         final project = TestData.project(
           id: 'project-1',
@@ -175,16 +173,12 @@ void main() {
           completed: false,
         );
 
-        Project? receivedProject;
-        bool? receivedValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createProjectHeaderSection(project: project),
-          onProjectCheckboxChanged: (p, v) {
-            receivedProject = p;
-            receivedValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         final checkbox = find.byType(Checkbox);
@@ -192,9 +186,11 @@ void main() {
         await tester.tap(checkbox);
         await tester.pumpForStream();
 
-        expect(receivedProject, isNotNull);
-        expect(receivedProject!.id, equals('project-1'));
-        expect(receivedValue, isTrue);
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.project);
+        expect(intents.single.entityId, equals('project-1'));
+        expect(intents.single.completed, isTrue);
       },
     );
   });
@@ -211,24 +207,22 @@ void main() {
           completed: false,
         );
 
-        Task? receivedTask;
-        bool? receivedTaskValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpSectionWidget(
           tester,
           section: _createTaskSection(tasks: [task]),
-          onTaskCheckboxChanged: (t, v) {
-            receivedTask = t;
-            receivedTaskValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        expect(receivedTask, isNotNull);
-        expect(receivedTask!.id, equals('task-1'));
-        expect(receivedTaskValue, isTrue);
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.task);
+        expect(intents.single.entityId, equals('task-1'));
+        expect(intents.single.completed, isTrue);
       },
     );
   });
@@ -251,7 +245,18 @@ SectionVm _createTaskSection({
       config: DataConfig.task(query: TaskQuery()),
     ),
     data: SectionDataResult.dataV2(
-      items: tasks.map(ScreenItem.task).toList(),
+      items: tasks
+          .map(
+            (t) => ScreenItem.task(
+              t,
+              tileCapabilities: const EntityTileCapabilities(
+                canToggleCompletion: true,
+                canOpenEditor: true,
+                canOpenDetails: true,
+              ),
+            ),
+          )
+          .toList(),
     ),
   );
 }
@@ -281,28 +286,45 @@ SectionVm _createProjectHeaderSection({
 Future<void> _pumpSectionWidget(
   WidgetTester tester, {
   required SectionVm section,
-  void Function(Task, bool?)? onTaskCheckboxChanged,
-  void Function(Project, bool?)? onProjectCheckboxChanged,
+  required _CapturingTileIntentDispatcher dispatcher,
   void Function(dynamic)? onEntityTap,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.lightTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: CustomScrollView(
-          slivers: [
-            SectionWidget(
-              section: section,
-              onTaskCheckboxChanged: onTaskCheckboxChanged,
-              onProjectCheckboxChanged: onProjectCheckboxChanged,
-              onEntityTap: onEntityTap,
+    MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<SectionRendererRegistry>.value(
+          value: const DefaultSectionRendererRegistry(),
+        ),
+      ],
+      child: Provider<TileIntentDispatcher>.value(
+        value: dispatcher,
+        child: MaterialApp(
+          theme: AppTheme.lightTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                SectionWidget(
+                  section: section,
+                  onEntityTap: onEntityTap,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     ),
   );
   await tester.pumpForStream();
+}
+
+final class _CapturingTileIntentDispatcher implements TileIntentDispatcher {
+  final List<TileIntent> intents = [];
+
+  @override
+  Future<void> dispatch(BuildContext context, TileIntent intent) {
+    intents.add(intent);
+    return Future<void>.value();
+  }
 }

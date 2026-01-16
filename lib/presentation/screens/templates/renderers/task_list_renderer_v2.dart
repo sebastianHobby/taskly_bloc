@@ -14,14 +14,12 @@ class TaskListRendererV2 extends StatelessWidget {
     required this.entityStyle,
     super.key,
     this.title,
-    this.onTaskToggle,
   });
 
   final DataV2SectionResult data;
   final ListSectionParamsV2 params;
   final EntityStyleV1 entityStyle;
   final String? title;
-  final void Function(String, bool?)? onTaskToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +64,6 @@ class TaskListRendererV2 extends StatelessWidget {
           context,
           item: item,
           entityStyle: entityStyle,
-          onTaskToggle: onTaskToggle,
           titlePrefix: prefix,
         );
       },

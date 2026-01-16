@@ -1,7 +1,7 @@
 # Plan Phase 01 — Audit & Lock Decisions (Option C + Shell Failure Policy)
 
 Created at: 2026-01-16T00:00:00Z
-Last updated at: 2026-01-16T04:36:01.7618276Z
+Last updated at: 2026-01-16T05:52:12.9402093Z
 ## Goal
 Lock the canonical design for a global, reusable USM tile action system (Option C) and align it with a single, app-shell-level failure surfacing policy for `ScreenActionsBloc`.
 
@@ -144,6 +144,16 @@ Guardrails (locked):
 ## AI instructions (required)
 
 ## Completion checklist
+
+- [x] Canonical decisions locked and validated against repo state
+- [x] Confirmed global failure policy exists in authenticated app shell
+- [x] Confirmed intents + dispatcher + capabilities types exist
+
+Completed at: 2026-01-16T05:52:12.9402093Z
+
+Summary:
+- Verified Option C architecture is already implemented in code (typed intents + domain capabilities).
+- Confirmed authenticated app shell hosts the single `ScreenActionsBloc` and single SnackBar failure listener.
 
 ## Migration checklist (call site → intended replacement)
 
