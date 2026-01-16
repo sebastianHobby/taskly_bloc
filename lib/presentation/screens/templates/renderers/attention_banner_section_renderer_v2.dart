@@ -22,155 +22,97 @@ class AttentionBannerSectionRendererV2 extends StatelessWidget {
     final showAlerts = data.alertsCount > 0;
     final showAny = showReviews || showAlerts;
 
-    final doneCount = data.doneCount;
-    final totalCount = data.totalCount;
-    final fraction = totalCount <= 0
-        ? 0.0
-        : (doneCount / totalCount).clamp(0.0, 1.0);
-
     final width = MediaQuery.sizeOf(context).width;
     final useHorizontalScroll = width < 480;
 
-    final progressLabel = totalCount > 0
-        ? 'My Day • $doneCount/$totalCount completed'
-        : 'My Day';
+    final showCriticalHint = data.criticalCount > 0;
 
-    Widget buildAllClearChip() {
-      return Chip(
-        label: const Text('All clear'),
-        visualDensity: VisualDensity.compact,
-        side: BorderSide(color: scheme.outlineVariant),
-      );
-    }
-
-    final chips = <Widget>[];
-    if (showReviews) {
-      chips.add(
-        ActionChip(
-          label: Text('Reviews • ${data.reviewCount}'),
-          visualDensity: VisualDensity.compact,
-          onPressed: () {
-            Routing.toScreenKeyWithQuery(
-              context,
-              data.overflowScreenKey,
-              queryParameters: const {'bucket': 'review'},
-            );
-          },
-        ),
-      );
-    }
-    if (showAlerts) {
-      chips.add(
-        ActionChip(
-          label: Text('Alerts • ${data.alertsCount}'),
-          visualDensity: VisualDensity.compact,
-          onPressed: () {
-            Routing.toScreenKeyWithQuery(
-              context,
-              data.overflowScreenKey,
-              queryParameters: const {'bucket': 'warning'},
-            );
-          },
-        ),
-      );
-    }
-
-    return SupportSectionCard(
+    final strip = SupportSectionCard(
       title: title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(10),
-              onTap: () {
-                Routing.toScreenKey(context, data.overflowScreenKey);
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  children: [
-                    Icon(
-                      showAny
-                          ? Icons.notifications_none
-                          : Icons.check_circle_outline,
-                      color: scheme.onSurfaceVariant,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: useHorizontalScroll
-                            ? SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                physics: const BouncingScrollPhysics(),
-                                child: _CollapsedChipsRow(
-                                  showReviews: showReviews,
-                                  showAlerts: showAlerts,
-                                  showAny: showAny,
-                                  result: data,
-                                  overflowScreenKey: data.overflowScreenKey,
-                                  buildAllClearChip: buildAllClearChip,
-                                ),
-                              )
-                            : _CollapsedChipsRow(
-                                showReviews: showReviews,
-                                showAlerts: showAlerts,
-                                showAny: showAny,
-                                result: data,
-                                overflowScreenKey: data.overflowScreenKey,
-                                buildAllClearChip: buildAllClearChip,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxWidth: useHorizontalScroll ? 160 : 220,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.wb_sunny,
-                            size: 16,
-                            color: scheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              progressLabel,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            Routing.toScreenKey(context, data.overflowScreenKey);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.notifications_none,
+                  color: scheme.onSurfaceVariant,
+                  size: 22,
                 ),
-              ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: useHorizontalScroll
+                        ? SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            physics: const BouncingScrollPhysics(),
+                            child: _CollapsedChipsRow(
+                              showReviews: showReviews,
+                              showAlerts: showAlerts,
+                              result: data,
+                              overflowScreenKey: data.overflowScreenKey,
+                            ),
+                          )
+                        : _CollapsedChipsRow(
+                            showReviews: showReviews,
+                            showAlerts: showAlerts,
+                            result: data,
+                            overflowScreenKey: data.overflowScreenKey,
+                          ),
+                  ),
+                ),
+                if (showCriticalHint) ...[
+                  const SizedBox(width: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        size: 10,
+                        color: scheme.error,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${data.criticalCount} critical',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ),
-          if (totalCount > 0) ...[
-            const SizedBox(height: 6),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: fraction,
-                minHeight: 3,
-                backgroundColor: scheme.outlineVariant.withOpacity(0.35),
-                color: scheme.primary.withOpacity(0.70),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
+    );
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 220),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SizeTransition(
+            sizeFactor: animation,
+            axisAlignment: -1,
+            child: child,
+          ),
+        );
+      },
+      child: showAny
+          ? KeyedSubtree(key: const ValueKey('strip'), child: strip)
+          : const SizedBox.shrink(key: ValueKey('hidden')),
     );
   }
 }
@@ -179,18 +121,14 @@ class _CollapsedChipsRow extends StatelessWidget {
   const _CollapsedChipsRow({
     required this.showReviews,
     required this.showAlerts,
-    required this.showAny,
     required this.result,
     required this.overflowScreenKey,
-    required this.buildAllClearChip,
   });
 
   final bool showReviews;
   final bool showAlerts;
-  final bool showAny;
   final AttentionBannerV2SectionResult result;
   final String overflowScreenKey;
-  final Widget Function() buildAllClearChip;
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +161,6 @@ class _CollapsedChipsRow extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(width: 8),
-        ],
-        if (!showAny) ...[
-          buildAllClearChip(),
           const SizedBox(width: 8),
         ],
       ],

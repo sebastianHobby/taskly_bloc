@@ -107,6 +107,15 @@ sealed class SectionVm with _$SectionVm {
     String? error,
   }) = MyDayRankedTasksV1SectionVm;
 
+  const factory SectionVm.myDayHeroV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = MyDayHeroV1SectionVm;
+
   const factory SectionVm.createValueCtaV1({
     required int index,
     String? title,
@@ -115,6 +124,53 @@ sealed class SectionVm with _$SectionVm {
     @Default(false) bool isLoading,
     String? error,
   }) = CreateValueCtaV1SectionVm;
+
+  // === Journal (Today-first) ===
+
+  const factory SectionVm.journalTodayComposerV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = JournalTodayComposerV1SectionVm;
+
+  const factory SectionVm.journalTodayEntriesV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = JournalTodayEntriesV1SectionVm;
+
+  const factory SectionVm.journalHistoryTeaserV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = JournalHistoryTeaserV1SectionVm;
+
+  const factory SectionVm.journalHistoryListV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = JournalHistoryListV1SectionVm;
+
+  const factory SectionVm.journalManageTrackersV1({
+    required int index,
+    String? title,
+    SectionDataResult? data,
+    DisplayConfig? displayConfig,
+    @Default(false) bool isLoading,
+    String? error,
+  }) = JournalManageTrackersV1SectionVm;
 
   const factory SectionVm.unknown({
     required int index,
@@ -139,7 +195,13 @@ sealed class SectionVm with _$SectionVm {
     attentionInboxV1: (_) => SectionTemplateId.attentionInboxV1,
     entityHeader: (_) => SectionTemplateId.entityHeader,
     myDayRankedTasksV1: (_) => SectionTemplateId.myDayRankedTasksV1,
+    myDayHeroV1: (_) => SectionTemplateId.myDayHeroV1,
     createValueCtaV1: (_) => SectionTemplateId.createValueCtaV1,
+    journalTodayComposerV1: (_) => SectionTemplateId.journalTodayComposerV1,
+    journalTodayEntriesV1: (_) => SectionTemplateId.journalTodayEntriesV1,
+    journalHistoryTeaserV1: (_) => SectionTemplateId.journalHistoryTeaserV1,
+    journalHistoryListV1: (_) => SectionTemplateId.journalHistoryListV1,
+    journalManageTrackersV1: (_) => SectionTemplateId.journalManageTrackersV1,
     unknown: (_) => 'unknown',
   );
 }

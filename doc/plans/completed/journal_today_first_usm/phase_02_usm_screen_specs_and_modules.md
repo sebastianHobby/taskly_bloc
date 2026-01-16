@@ -1,7 +1,7 @@
 # Phase 02 — USM screen specs + module scaffolding
 
 Created at: 2026-01-15T12:30:44.4044895Z
-Last updated at: 2026-01-15T12:30:44.4044895Z
+Last updated at: 2026-01-15T23:41:37.1752056Z
 
 ## Goal
 
@@ -56,6 +56,8 @@ No deep UI polish in this phase; focus on structure and compile-time correctness
 
 ## Completion
 
-Completed at: <UTC>
+Completed at: 2026-01-15T23:41:37.1752056Z
 Summary:
-- <fill when complete>
+- Journal system screens now render via `standardScaffoldV1` USM template.
+- Added typed journal module specs and interpreter wiring to produce section VMs.
+- Wired section renderers via the template switchboard/registry, keeping repo reads/streams out of widgets.

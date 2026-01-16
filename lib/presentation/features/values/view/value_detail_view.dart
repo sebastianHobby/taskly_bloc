@@ -74,6 +74,11 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
 
   void _syncDraftFromFormValues(Map<String, dynamic> formValues) {
     final name = extractStringValue(formValues, ValueFieldKeys.name.id);
+    final rawIconName = extractStringValue(
+      formValues,
+      ValueFieldKeys.iconName.id,
+    );
+    final iconName = rawIconName.trim().isEmpty ? null : rawIconName.trim();
     final colorValue = formValues[ValueFieldKeys.colour.id] as Color?;
     final color = colorValue != null
         ? ColorUtils.toHexWithHash(colorValue)
@@ -87,6 +92,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
       name: name,
       color: color,
       priority: priority,
+      iconName: iconName,
     );
   }
 
@@ -104,7 +110,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             name: _draft.name,
             color: _draft.color,
             priority: _draft.priority,
-            iconName: null,
+            iconName: _draft.iconName,
           ),
         ),
       );
@@ -116,7 +122,7 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             name: _draft.name,
             color: _draft.color,
             priority: _draft.priority,
-            iconName: null,
+            iconName: _draft.iconName,
           ),
         ),
       );

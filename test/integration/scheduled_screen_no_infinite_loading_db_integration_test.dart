@@ -4,6 +4,7 @@ import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_rep
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1_module_interpreter.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
@@ -15,6 +16,10 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
 import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
@@ -28,6 +33,7 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_li
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 
 import '../helpers/integration_test_helpers.dart';
+import '../helpers/stub_journal_repository.dart';
 import '../helpers/test_db.dart';
 import '../mocks/fake_id_generator.dart';
 import '../mocks/repository_mocks.dart';
@@ -125,6 +131,8 @@ void main() {
         final hierarchyInterpreter =
             _MockHierarchyValueProjectTaskSectionInterpreterV2();
 
+        const journalRepository = StubJournalRepository();
+
         final moduleRegistry = DefaultScreenModuleInterpreterRegistry(
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
@@ -140,9 +148,28 @@ void main() {
           ),
           attentionInboxInterpreter: _MockAttentionInboxSectionInterpreterV1(),
           entityHeaderInterpreter: _MockEntityHeaderSectionInterpreter(),
+          myDayHeroV1Interpreter: MyDayHeroV1ModuleInterpreter(
+            hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
+          ),
           myDayRankedTasksV1Interpreter: MyDayRankedTasksV1ModuleInterpreter(
             hierarchyValueProjectTaskInterpreter: hierarchyInterpreter,
           ),
+          journalTodayComposerV1Interpreter:
+              JournalTodayComposerModuleInterpreterV1(
+                repository: journalRepository,
+              ),
+          journalTodayEntriesV1Interpreter:
+              JournalTodayEntriesModuleInterpreterV1(
+                repository: journalRepository,
+              ),
+          journalHistoryListV1Interpreter:
+              JournalHistoryListModuleInterpreterV1(
+                repository: journalRepository,
+              ),
+          journalManageTrackersV1Interpreter:
+              JournalManageTrackersModuleInterpreterV1(
+                repository: journalRepository,
+              ),
         );
 
         final specInterpreter = ScreenSpecDataInterpreter(

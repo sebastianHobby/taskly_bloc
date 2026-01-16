@@ -28,6 +28,9 @@ class ProjectView extends StatelessWidget {
     this.compact = false,
     this.isInMyDayAuto = false,
     this.accentColor,
+    this.statusBadge,
+    this.agendaInProgressStyle = false,
+    this.endDate,
     this.taskCount,
     this.completedTaskCount,
     this.trailing,
@@ -64,6 +67,9 @@ class ProjectView extends StatelessWidget {
   /// START/DUE without overlaying the tile content.
   final Widget? titlePrefix;
 
+  /// Optional status badge shown to the right of the title.
+  final Widget? statusBadge;
+
   /// Whether this project is currently in the user's My Day (auto-selected).
   ///
   /// Not yet supported by allocation, but wired for future use.
@@ -71,6 +77,14 @@ class ProjectView extends StatelessWidget {
 
   /// Optional accent color used by [ProjectViewVariant.agendaCard].
   final Color? accentColor;
+
+  /// Whether to render the agenda card with dashed outline + end marker.
+  ///
+  /// Intended for in-progress items in the Scheduled agenda.
+  final bool agendaInProgressStyle;
+
+  /// Optional end date for the in-progress end-day marker.
+  final DateTime? endDate;
 
   /// Visual variant used to align with the Scheduled agenda mock.
   final ProjectViewVariant variant;
@@ -275,6 +289,9 @@ class ProjectView extends StatelessWidget {
 
     final effectiveAccent = accentColor;
     final outline = colorScheme.outlineVariant.withValues(alpha: 0.35);
+    final backgroundColor = colorScheme.surfaceContainerLow;
+
+    final endDay = _endDayLabel(context);
 
     return Material(
       key: Key('project-${project.id}'),
@@ -284,124 +301,309 @@ class ProjectView extends StatelessWidget {
             ? onTap!(project)
             : Routing.toEntity(context, EntityType.project, project.id),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: effectiveAccent != null
-                ? Border(
-                    left: BorderSide(color: effectiveAccent, width: 4),
-                    top: BorderSide(color: outline),
-                    right: BorderSide(color: outline),
-                    bottom: BorderSide(color: outline),
-                  )
-                : Border.all(color: outline),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox.square(
-                dimension: 44,
-                child: Center(
-                  child: Icon(
-                    Icons.folder_outlined,
-                    size: 22,
-                    color: colorScheme.onSurfaceVariant,
+        child: _AgendaCardContainer(
+          dashedOutline: agendaInProgressStyle,
+          accentColor: effectiveAccent,
+          outlineColor: outline,
+          backgroundColor: backgroundColor,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              agendaInProgressStyle ? 28 : 14,
+              14,
+              14,
+              14,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox.square(
+                  dimension: 44,
+                  child: Center(
+                    child: Icon(
+                      Icons.folder_outlined,
+                      size: 22,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (titlePrefix != null) ...[
-                          titlePrefix!,
-                          const SizedBox(width: 10),
-                        ],
-                        Expanded(
-                          child: Text(
-                            project.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              decoration: project.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: project.completed
-                                  ? colorScheme.onSurface.withValues(alpha: 0.5)
-                                  : colorScheme.onSurface,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (titlePrefix != null) ...[
+                            titlePrefix!,
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Text(
+                              project.name,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                decoration: project.completed
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: project.completed
+                                    ? colorScheme.onSurface.withValues(
+                                        alpha: 0.5,
+                                      )
+                                    : colorScheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(width: 10),
-                        _ProjectTodayStatusMenuButton(
-                          projectId: project.id,
-                          isPinnedToMyDay: project.isPinned,
-                          isInMyDayAuto: isInMyDayAuto,
+                          if (statusBadge != null) ...[
+                            const SizedBox(width: 10),
+                            statusBadge!,
+                          ],
+                          const SizedBox(width: 10),
+                          _ProjectTodayStatusMenuButton(
+                            projectId: project.id,
+                            isPinnedToMyDay: project.isPinned,
+                            isInMyDayAuto: isInMyDayAuto,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _MetaLine(
+                              primaryValue: project.primaryValue,
+                              formatDate: _formatMonthDay,
+                              startDate: project.startDate,
+                              deadlineDate: project.deadlineDate,
+                              isOverdue: isOverdue,
+                              isDueToday: isDueToday,
+                              isDueSoon: isDueSoon,
+                              showDates: !agendaInProgressStyle,
+                              hasRepeat: project.repeatIcalRrule != null,
+                              secondaryValues: project.secondaryValues,
+                              priority: project.priority,
+                              onTapValues: () {
+                                EditorLauncher.fromGetIt().openProjectEditor(
+                                  context,
+                                  projectId: project.id,
+                                  openToValues: true,
+                                );
+                              },
+                            ),
+                          ),
+                          if (agendaInProgressStyle && endDay != null) ...[
+                            const SizedBox(width: 12),
+                            _EndDayMarker(label: endDay),
+                          ],
+                        ],
+                      ),
+
+                      if (_hasKnownProgress) ...[
+                        const SizedBox(height: 8),
+                        _ProjectProgressBar(
+                          projectName: project.name,
+                          isOverdue: isOverdue,
+                          taskCount: taskCount!,
+                          completedTaskCount: completedTaskCount!,
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 8),
-                    _MetaLine(
-                      primaryValue: project.primaryValue,
-                      formatDate: _formatMonthDay,
-                      startDate: project.startDate,
-                      deadlineDate: project.deadlineDate,
-                      isOverdue: isOverdue,
-                      isDueToday: isDueToday,
-                      isDueSoon: isDueSoon,
-                      hasRepeat: project.repeatIcalRrule != null,
-                      secondaryValues: project.secondaryValues,
-                      priority: project.priority,
-                      onTapValues: () {
-                        EditorLauncher.fromGetIt().openProjectEditor(
-                          context,
-                          projectId: project.id,
-                          openToValues: true,
-                        );
-                      },
-                    ),
-
-                    if (_hasKnownProgress) ...[
-                      const SizedBox(height: 8),
-                      _ProjectProgressBar(
-                        projectName: project.name,
-                        isOverdue: isOverdue,
-                        taskCount: taskCount!,
-                        completedTaskCount: completedTaskCount!,
-                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
 
-              if (trailing != null || showTrailingProgressLabel) ...[
-                const SizedBox(width: 8),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    ?trailing,
-                    if (showTrailingProgressLabel)
-                      _ProjectProgressLabel(
-                        taskCount: taskCount,
-                        completedTaskCount: completedTaskCount,
-                      ),
-                  ],
-                ),
+                if (trailing != null || showTrailingProgressLabel) ...[
+                  const SizedBox(width: 8),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ?trailing,
+                      if (showTrailingProgressLabel)
+                        _ProjectProgressLabel(
+                          taskCount: taskCount,
+                          completedTaskCount: completedTaskCount,
+                        ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String? _endDayLabel(BuildContext context) {
+    final end = endDate;
+    if (end == null) return null;
+    final locale = Localizations.localeOf(context);
+    return DateFormat.E(locale.toLanguageTag()).format(end);
+  }
+}
+
+class _AgendaCardContainer extends StatelessWidget {
+  const _AgendaCardContainer({
+    required this.child,
+    required this.backgroundColor,
+    required this.outlineColor,
+    this.accentColor,
+    this.dashedOutline = false,
+  });
+
+  final Widget child;
+  final Color backgroundColor;
+  final Color outlineColor;
+  final Color? accentColor;
+  final bool dashedOutline;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(16);
+
+    if (!dashedOutline) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: radius,
+          border: accentColor != null
+              ? Border(
+                  left: BorderSide(color: accentColor!, width: 4),
+                  top: BorderSide(color: outlineColor),
+                  right: BorderSide(color: outlineColor),
+                  bottom: BorderSide(color: outlineColor),
+                )
+              : Border.all(color: outlineColor),
+        ),
+        child: child,
+      );
+    }
+
+    final dashColor =
+        Color.lerp(
+          accentColor ?? outlineColor,
+          outlineColor,
+          0.35,
+        )?.withValues(alpha: 0.85) ??
+        outlineColor;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: backgroundColor),
+          child: CustomPaint(
+            foregroundPainter: _DashedRoundedRectPainter(
+              color: dashColor,
+              strokeWidth: 1.2,
+              radius: 16,
+              dashLength: 6,
+              gapLength: 4,
+            ),
+            child: Stack(
+              children: [
+                if (accentColor != null)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 4,
+                    child: ColoredBox(color: accentColor!),
+                  ),
+                child,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EndDayMarker extends StatelessWidget {
+  const _EndDayMarker({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.hourglass_bottom_rounded,
+          size: 16,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 10,
+            height: 1.1,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashedRoundedRectPainter extends CustomPainter {
+  const _DashedRoundedRectPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.radius,
+    required this.dashLength,
+    required this.gapLength,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+  final double dashLength;
+  final double gapLength;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = color;
+
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + dashLength;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0.0, metric.length)),
+          paint,
+        );
+        distance = next + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius ||
+        oldDelegate.dashLength != dashLength ||
+        oldDelegate.gapLength != gapLength;
   }
 }
 
@@ -455,6 +657,7 @@ class _MetaLine extends StatelessWidget {
     this.isDueToday = false,
     this.isDueSoon = false,
     this.hasRepeat = false,
+    this.showDates = true,
     this.onTapValues,
   });
 
@@ -465,6 +668,7 @@ class _MetaLine extends StatelessWidget {
   final bool isDueToday;
   final bool isDueSoon;
   final bool hasRepeat;
+  final bool showDates;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
   final int? priority;
@@ -494,9 +698,7 @@ class _MetaLine extends StatelessWidget {
           value: pValue,
           variant: ValueChipVariant.solid,
           iconOnly: false,
-          onTap: () {
-            Routing.toEntity(context, EntityType.value, pValue.id);
-          },
+          onTap: null,
         ),
       );
     }
@@ -508,7 +710,7 @@ class _MetaLine extends StatelessWidget {
           message: allNames,
           child: _CountPill(
             label: '+${secondaryValues.length}',
-            onTap: onTapValues,
+            onTap: null,
           ),
         ),
       );
@@ -537,7 +739,9 @@ class _MetaLine extends StatelessWidget {
       );
     }
 
-    if (leftChildren.isEmpty && startDate == null && deadlineDate == null) {
+    final hasAnyDates =
+        showDates && (startDate != null || deadlineDate != null);
+    if (leftChildren.isEmpty && !hasAnyDates) {
       return const SizedBox.shrink();
     }
 
@@ -545,37 +749,39 @@ class _MetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final showBothDates =
-              startDate != null &&
-              deadlineDate != null &&
-              constraints.maxWidth >= 420;
-
           final dateTokens = <Widget>[];
-          if (showBothDates && startDate != null) {
-            dateTokens.add(
-              DateChip.startDate(
-                context: context,
-                label: formatDate(context, startDate!),
-              ),
-            );
-          }
-          if (deadlineDate != null) {
-            dateTokens.add(
-              DateChip.deadline(
-                context: context,
-                label: formatDate(context, deadlineDate!),
-                isOverdue: isOverdue,
-                isDueToday: isDueToday,
-                isDueSoon: isDueSoon,
-              ),
-            );
-          } else if (!showBothDates && startDate != null) {
-            dateTokens.add(
-              DateChip.startDate(
-                context: context,
-                label: formatDate(context, startDate!),
-              ),
-            );
+          if (showDates) {
+            final showBothDates =
+                startDate != null &&
+                deadlineDate != null &&
+                constraints.maxWidth >= 420;
+
+            if (showBothDates && startDate != null) {
+              dateTokens.add(
+                DateChip.startDate(
+                  context: context,
+                  label: formatDate(context, startDate!),
+                ),
+              );
+            }
+            if (deadlineDate != null) {
+              dateTokens.add(
+                DateChip.deadline(
+                  context: context,
+                  label: formatDate(context, deadlineDate!),
+                  isOverdue: isOverdue,
+                  isDueToday: isDueToday,
+                  isDueSoon: isDueSoon,
+                ),
+              );
+            } else if (!showBothDates && startDate != null) {
+              dateTokens.add(
+                DateChip.startDate(
+                  context: context,
+                  label: formatDate(context, startDate!),
+                ),
+              );
+            }
           }
 
           return Row(

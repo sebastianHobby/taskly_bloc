@@ -46,7 +46,11 @@ class ValuesListView extends StatelessWidget {
             },
             child: ListTile(
               title: Text(value.name),
-              leading: ValueChip(value: value),
+              leading: ValueChip(
+                value: value,
+                variant: ValueChipVariant.outlined,
+                iconOnly: true,
+              ),
               onTap: () async {
                 isSheetOpen?.value = true;
                 Routing.toEntity(context, EntityType.value, value.id);

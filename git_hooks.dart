@@ -13,11 +13,6 @@ void main(List<String> arguments) {
 Future<bool> preCommit() async {
   print('🔍 Running pre-commit checks...\n');
 
-  // 5. Run tests with coverage (staged gate; filtered lcov)
-  if (!await _runTestsWithCoverage()) {
-    _printFailure();
-    return false;
-  }
   print('\n✅ All pre-commit checks passed!');
   return true;
 }

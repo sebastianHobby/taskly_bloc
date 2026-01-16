@@ -4,6 +4,14 @@ import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_picker_dialog.dart';
+
+enum ValueViewVariant {
+  standard,
+
+  /// Screenshot-style card variant used on the system “My Values” screen.
+  myValuesCardV1,
+}
 
 /// The canonical, entity-level value UI entrypoint.
 ///
@@ -19,6 +27,7 @@ class ValueView extends StatelessWidget {
     this.notRankedMessage,
     this.showDragHandle = false,
     this.titlePrefix,
+    this.variant = ValueViewVariant.standard,
     super.key,
   });
 
@@ -32,7 +41,8 @@ class ValueView extends StatelessWidget {
     this.showDragHandle = false,
     this.titlePrefix,
     super.key,
-  }) : compact = true;
+  }) : compact = true,
+       variant = ValueViewVariant.standard;
 
   final Value value;
 
@@ -61,9 +71,126 @@ class ValueView extends StatelessWidget {
   /// core entity view.
   final Widget? titlePrefix;
 
+  /// Which full-card layout to render.
+  ///
+  /// This is ignored when [compact] is true.
+  final ValueViewVariant variant;
+
   @override
   Widget build(BuildContext context) {
-    return compact ? _buildCompact(context) : _buildFull(context);
+    if (compact) return _buildCompact(context);
+
+    return switch (variant) {
+      ValueViewVariant.standard => _buildFull(context),
+      ValueViewVariant.myValuesCardV1 => _buildMyValuesCardV1(context),
+    };
+  }
+
+  Widget _buildMyValuesCardV1(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = context.l10n;
+
+    final valueColor = ColorUtils.fromHexWithThemeFallback(
+      context,
+      value.color,
+    );
+
+    final iconName = value.iconName;
+    final iconData = getIconDataFromName(iconName) ?? Icons.star;
+
+    final stats = this.stats;
+    final primaryLabel = stats == null
+        ? null
+        : l10n.valueActivityCounts(
+            stats.primaryTaskCount,
+            stats.primaryProjectCount,
+          );
+    final secondaryLabel = stats == null
+        ? null
+        : l10n.valueActivityCounts(
+            stats.secondaryTaskCount,
+            stats.secondaryProjectCount,
+          );
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 0,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withOpacity(0.6),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ValueIconAvatar(
+                icon: iconData,
+                color: valueColor,
+                size: 44,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        if (titlePrefix != null) ...[
+                          titlePrefix!,
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            value.name,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    if (stats == null)
+                      Text(
+                        l10n.loadingTitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      )
+                    else ...[
+                      _MyValuesCountRow(
+                        label: 'Primary',
+                        value: primaryLabel ?? '',
+                        colorScheme: colorScheme,
+                      ),
+                      const SizedBox(height: 6),
+                      _MyValuesCountRow(
+                        label: 'Secondary',
+                        value: secondaryLabel ?? '',
+                        colorScheme: colorScheme,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildFull(BuildContext context) {
@@ -250,7 +377,7 @@ class ValueView extends StatelessWidget {
       context,
       value.color,
     );
-    final indicatorColor = valueColor.withOpacity(0.9);
+    final iconData = getIconDataFromName(value.iconName) ?? Icons.star;
 
     return Row(
       children: [
@@ -263,9 +390,10 @@ class ValueView extends StatelessWidget {
             ),
           )
         else
-          Icon(
-            Icons.star_outline,
-            color: colorScheme.onSurfaceVariant,
+          _ValueIconAvatar(
+            icon: iconData,
+            color: valueColor,
+            size: 32,
           ),
         const SizedBox(width: 8),
         if (rank != null) ...[
@@ -277,15 +405,15 @@ class ValueView extends StatelessWidget {
           ),
           const SizedBox(width: 8),
         ],
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(
-            color: indicatorColor,
-            shape: BoxShape.circle,
+        if (showDragHandle && rank != null) ...[
+          _ValueIconAvatar(
+            icon: iconData,
+            color: valueColor,
+            size: 32,
           ),
-        ),
-        const SizedBox(width: 10),
+          const SizedBox(width: 10),
+        ] else
+          const SizedBox(width: 2),
         if (titlePrefix != null) ...[
           titlePrefix!,
           const SizedBox(width: 6),
@@ -300,6 +428,35 @@ class ValueView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ValueIconAvatar extends StatelessWidget {
+  const _ValueIconAvatar({
+    required this.icon,
+    required this.color,
+    required this.size,
+  });
+
+  final IconData icon;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.14),
+        shape: BoxShape.circle,
+      ),
+      child: Icon(
+        icon,
+        color: color,
+        size: size * 0.52,
+      ),
     );
   }
 }
@@ -383,6 +540,46 @@ class _CompactGapIndicator extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _MyValuesCountRow extends StatelessWidget {
+  const _MyValuesCountRow({
+    required this.label,
+    required this.value,
+    required this.colorScheme,
+  });
+
+  final String label;
+  final String value;
+  final ColorScheme colorScheme;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        SizedBox(
+          width: 78,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

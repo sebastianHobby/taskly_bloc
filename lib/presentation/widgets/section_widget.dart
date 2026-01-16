@@ -75,6 +75,7 @@ class SectionWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final registry = context.read<SectionRendererRegistry>();
     return registry.buildSection(
+      context: context,
       section: section,
       persistenceKey: persistenceKey,
       displayConfig: displayConfig,

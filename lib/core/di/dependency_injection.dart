@@ -76,12 +76,20 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_valu
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_inbox_section_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1_module_interpreter.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
+import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_bloc.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
@@ -348,6 +356,11 @@ Future<void> setupDependencies() async {
         idGenerator: getIt<IdGenerator>(),
       ),
     )
+    ..registerLazySingleton<AttentionBellCubit>(
+      () => AttentionBellCubit(
+        engine: getIt<attention_engine_v2.AttentionEngineContract>(),
+      ),
+    )
     ..registerFactory<AttentionRulesCubit>(
       () => AttentionRulesCubit(
         repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
@@ -363,6 +376,18 @@ Future<void> setupDependencies() async {
       (preselectedTrackerIds, _) => AddLogCubit(
         repository: getIt<JournalRepositoryContract>(),
         preselectedTrackerIds: preselectedTrackerIds,
+      ),
+    )
+    ..registerFactoryParam<JournalEntryEditorCubit, String?, Set<String>>(
+      (entryId, preselectedTrackerIds) => JournalEntryEditorCubit(
+        repository: getIt<JournalRepositoryContract>(),
+        entryId: entryId,
+        preselectedTrackerIds: preselectedTrackerIds,
+      ),
+    )
+    ..registerFactory<JournalManageTrackersCubit>(
+      () => JournalManageTrackersCubit(
+        repository: getIt<JournalRepositoryContract>(),
       ),
     )
     ..registerFactory<JournalTrackersCubit>(
@@ -446,6 +471,34 @@ Future<void> setupDependencies() async {
             ),
       ),
     )
+    ..registerLazySingleton<MyDayHeroV1ModuleInterpreter>(
+      () => MyDayHeroV1ModuleInterpreter(
+        hierarchyValueProjectTaskInterpreter:
+            getIt<HierarchyValueProjectTaskSectionInterpreterV2>(
+              instanceName: SectionTemplateId.hierarchyValueProjectTaskV2,
+            ),
+      ),
+    )
+    ..registerLazySingleton<JournalTodayComposerModuleInterpreterV1>(
+      () => JournalTodayComposerModuleInterpreterV1(
+        repository: getIt<JournalRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<JournalTodayEntriesModuleInterpreterV1>(
+      () => JournalTodayEntriesModuleInterpreterV1(
+        repository: getIt<JournalRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<JournalHistoryListModuleInterpreterV1>(
+      () => JournalHistoryListModuleInterpreterV1(
+        repository: getIt<JournalRepositoryContract>(),
+      ),
+    )
+    ..registerLazySingleton<JournalManageTrackersModuleInterpreterV1>(
+      () => JournalManageTrackersModuleInterpreterV1(
+        repository: getIt<JournalRepositoryContract>(),
+      ),
+    )
     ..registerLazySingleton<ScreenModuleInterpreterRegistry>(
       () => DefaultScreenModuleInterpreterRegistry(
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
@@ -474,8 +527,17 @@ Future<void> setupDependencies() async {
         entityHeaderInterpreter: getIt<EntityHeaderSectionInterpreter>(
           instanceName: SectionTemplateId.entityHeader,
         ),
+        myDayHeroV1Interpreter: getIt<MyDayHeroV1ModuleInterpreter>(),
         myDayRankedTasksV1Interpreter:
             getIt<MyDayRankedTasksV1ModuleInterpreter>(),
+        journalTodayComposerV1Interpreter:
+            getIt<JournalTodayComposerModuleInterpreterV1>(),
+        journalTodayEntriesV1Interpreter:
+            getIt<JournalTodayEntriesModuleInterpreterV1>(),
+        journalHistoryListV1Interpreter:
+            getIt<JournalHistoryListModuleInterpreterV1>(),
+        journalManageTrackersV1Interpreter:
+            getIt<JournalManageTrackersModuleInterpreterV1>(),
       ),
     )
     ..registerLazySingleton<ScreenSpecDataInterpreter>(

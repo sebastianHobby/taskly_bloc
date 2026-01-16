@@ -15,9 +15,16 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/create_valu
 import 'package:taskly_bloc/presentation/screens/templates/renderers/entity_header_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/hierarchy_value_project_task_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/journal_history_list_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/journal_history_teaser_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/journal_manage_trackers_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/journal_today_composer_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/journal_today_entries_section_renderer_v1.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/my_day_hero_v1_section.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/my_day_ranked_tasks_v1_section.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/task_list_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_renderer_v2.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 /// Registry that renders a [SectionVm] into a sliver widget.
 ///
@@ -26,6 +33,7 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/value_list_
 abstract interface class SectionRendererRegistry {
   /// Builds the sliver for a resolved section.
   Widget buildSection({
+    required BuildContext context,
     required SectionVm section,
     required String? persistenceKey,
     required DisplayConfig? displayConfig,
@@ -48,6 +56,7 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
 
   @override
   Widget buildSection({
+    required BuildContext context,
     required SectionVm section,
     required String? persistenceKey,
     required DisplayConfig? displayConfig,
@@ -248,12 +257,87 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
 
         return SliverToBoxAdapter(child: _buildUnknownSection(section));
       },
+      myDayHeroV1: (s) {
+        if (result case final MyDayHeroV1SectionResult d) {
+          return SliverToBoxAdapter(child: MyDayHeroV1Section(data: d));
+        }
+
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
       createValueCtaV1: (s) {
         return SliverToBoxAdapter(
           child: CreateValueCtaSectionRendererV1(
             title: s.title ?? 'Create New Value',
           ),
         );
+      },
+      journalTodayComposerV1: (s) {
+        if (result case final JournalTodayComposerV1SectionResult d) {
+          return SliverToBoxAdapter(
+            child: JournalTodayComposerSectionRendererV1(
+              pinnedTrackers: d.pinnedTrackers,
+              onAddLog: () {
+                Routing.toJournalEntryNew(context);
+              },
+              onQuickAddTracker: (trackerId) {
+                Routing.toJournalEntryNew(
+                  context,
+                  preselectedTrackerIds: {trackerId},
+                );
+              },
+            ),
+          );
+        }
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
+      journalTodayEntriesV1: (s) {
+        if (result case final JournalTodayEntriesV1SectionResult d) {
+          return SliverToBoxAdapter(
+            child: JournalTodayEntriesSectionRendererV1(
+              entries: d.entries,
+              eventsByEntryId: d.eventsByEntryId,
+              definitionById: d.definitionById,
+              moodTrackerId: d.moodTrackerId,
+              onEntryTap: (entry) {
+                Routing.toJournalEntryEdit(context, entry.id);
+              },
+            ),
+          );
+        }
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
+      journalHistoryTeaserV1: (s) {
+        return SliverToBoxAdapter(
+          child: JournalHistoryTeaserSectionRendererV1(
+            onOpenHistory: () {
+              Routing.pushScreenKey(context, 'journal_history');
+            },
+          ),
+        );
+      },
+      journalHistoryListV1: (s) {
+        if (result case final JournalHistoryListV1SectionResult d) {
+          return SliverToBoxAdapter(
+            child: JournalHistoryListSectionRendererV1(
+              entries: d.entries,
+              onEntryTap: (entry) {
+                Routing.toJournalEntryEdit(context, entry.id);
+              },
+            ),
+          );
+        }
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
+      },
+      journalManageTrackersV1: (s) {
+        if (result case final JournalManageTrackersV1SectionResult d) {
+          return SliverToBoxAdapter(
+            child: JournalManageTrackersSectionRendererV1(
+              definitions: d.visibleDefinitions,
+              preferenceByTrackerId: d.preferenceByTrackerId,
+            ),
+          );
+        }
+        return SliverToBoxAdapter(child: _buildUnknownSection(section));
       },
       unknown: (_) => SliverToBoxAdapter(child: _buildUnknownSection(section)),
     );

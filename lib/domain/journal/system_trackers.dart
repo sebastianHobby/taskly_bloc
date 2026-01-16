@@ -26,6 +26,7 @@ class SystemTrackerTemplate {
     this.minInt,
     this.maxInt,
     this.stepInt,
+    this.isOutcome = false,
     this.defaultSortOrder = 0,
     this.defaultPinned = false,
     this.defaultQuickAdd = false,
@@ -42,6 +43,11 @@ class SystemTrackerTemplate {
   final int? minInt;
   final int? maxInt;
   final int? stepInt;
+
+  /// Whether this tracker represents a target/outcome variable.
+  ///
+  /// Example: Mood is an outcome, whereas Exercise is a factor.
+  final bool isOutcome;
 
   final int defaultSortOrder;
   final bool defaultPinned;
@@ -65,6 +71,7 @@ class SystemTrackers {
     minInt: 1,
     maxInt: 5,
     stepInt: 1,
+    isOutcome: true,
     defaultSortOrder: 0,
     defaultPinned: false,
     defaultQuickAdd: false,

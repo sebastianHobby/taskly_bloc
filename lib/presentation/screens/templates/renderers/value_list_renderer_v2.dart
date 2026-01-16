@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_needs_attention_badge.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
@@ -250,6 +251,7 @@ class _SegmentedValueListState extends State<_SegmentedValueList> {
               item: item,
               valueStats: stats,
               compactTiles: widget.compactTiles,
+              valueVariant: ValueViewVariant.myValuesCardV1,
               titlePrefix: stats?.needsAttention ?? false
                   ? ValueNeedsAttentionBadge(value: item.value, stats: stats!)
                   : null,

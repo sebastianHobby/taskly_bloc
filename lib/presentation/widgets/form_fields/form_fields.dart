@@ -14,6 +14,7 @@ export 'form_builder_project_picker_modern.dart';
 export 'form_builder_completion_toggle_modern.dart';
 export 'form_builder_color_picker_modern.dart';
 export 'form_builder_emoji_picker_modern.dart'; // Settings and utility fields
+export 'form_builder_icon_picker.dart';
 export 'form_builder_value_picker.dart';
 export 'form_builder_number_field.dart';
 export 'form_builder_enum_field.dart';

@@ -59,8 +59,8 @@ class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
     switch (bucketParam) {
       case 'action':
         bloc.add(
-          const AttentionInboxEvent.bucketChanged(
-            bucket: AttentionBucket.action,
+          const AttentionInboxEvent.bucketFilterSet(
+            buckets: {AttentionBucket.action},
           ),
         );
         bloc.add(
@@ -68,8 +68,8 @@ class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
         );
       case 'review':
         bloc.add(
-          const AttentionInboxEvent.bucketChanged(
-            bucket: AttentionBucket.review,
+          const AttentionInboxEvent.bucketFilterSet(
+            buckets: {AttentionBucket.review},
           ),
         );
         bloc.add(
@@ -77,32 +77,17 @@ class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
         );
       case 'critical':
         bloc.add(
-          const AttentionInboxEvent.bucketChanged(
-            bucket: AttentionBucket.action,
-          ),
-        );
-        bloc.add(
           const AttentionInboxEvent.minSeverityChanged(
             minSeverity: AttentionSeverity.critical,
           ),
         );
       case 'warning':
         bloc.add(
-          const AttentionInboxEvent.bucketChanged(
-            bucket: AttentionBucket.action,
-          ),
-        );
-        bloc.add(
           const AttentionInboxEvent.minSeverityChanged(
             minSeverity: AttentionSeverity.warning,
           ),
         );
       case 'info':
-        bloc.add(
-          const AttentionInboxEvent.bucketChanged(
-            bucket: AttentionBucket.action,
-          ),
-        );
         bloc.add(
           const AttentionInboxEvent.minSeverityChanged(
             minSeverity: AttentionSeverity.info,
@@ -118,25 +103,11 @@ class _ApplyInitialQueryParamsState extends State<_ApplyInitialQueryParams> {
 class _AttentionInboxBody extends StatelessWidget {
   const _AttentionInboxBody();
 
-  bool _isMobilePlatform() {
-    if (kIsWeb) return false;
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.android || TargetPlatform.iOS => true,
-      _ => false,
-    };
-  }
-
   bool _hasActiveFilters(AttentionInboxViewConfig c) {
     return c.minSeverity != null ||
+        c.bucketFilter.length != AttentionBucket.values.length ||
         c.entityTypeFilter.isNotEmpty ||
         c.searchQuery.trim().isNotEmpty;
-  }
-
-  String _bucketTitle(AttentionBucket bucket) {
-    return switch (bucket) {
-      AttentionBucket.action => 'Action items',
-      AttentionBucket.review => 'Review items',
-    };
   }
 
   @override
@@ -263,39 +234,7 @@ class _AttentionInboxBody extends StatelessWidget {
           error: (viewConfig, message) => viewConfig,
         );
 
-        final (actionCount, reviewCount) = state.maybeWhen(
-          loaded:
-              (
-                viewConfig,
-                groups,
-                totalVisibleCount,
-                actionVisibleCount,
-                reviewVisibleCount,
-                selectedKeys,
-                pendingUndo,
-                errorMessage,
-              ) => (actionVisibleCount, reviewVisibleCount),
-          orElse: () => (0, 0),
-        );
-
-        final selectedKeys = state.maybeWhen(
-          loaded:
-              (
-                viewConfig,
-                groups,
-                totalVisibleCount,
-                actionVisibleCount,
-                reviewVisibleCount,
-                selectedKeys,
-                pendingUndo,
-                errorMessage,
-              ) => selectedKeys,
-          orElse: () => const <String>{},
-        );
-
-        final selectionMode = selectedKeys.isNotEmpty;
         final hasActiveFilters = _hasActiveFilters(viewConfig);
-        final enableSwipeActions = _isMobilePlatform() && !selectionMode;
 
         final filtersButton = IconButton(
           tooltip: 'Filters',
@@ -311,7 +250,7 @@ class _AttentionInboxBody extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      _bucketTitle(viewConfig.bucket),
+                      'Attention',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
@@ -336,42 +275,9 @@ class _AttentionInboxBody extends StatelessWidget {
                     )
                   else
                     filtersButton,
-                  PopupMenuButton<_InboxMenuAction>(
-                    onSelected: (a) {
-                      final bloc = context.read<AttentionInboxBloc>();
-                      switch (a) {
-                        case _InboxMenuAction.clearSelection:
-                          bloc.add(const AttentionInboxEvent.clearSelection());
-                        case _InboxMenuAction.markAllReviewed:
-                          bloc.add(
-                            const AttentionInboxEvent.applyActionToVisible(
-                              action: AttentionResolutionAction.reviewed,
-                            ),
-                          );
-                      }
-                    },
-                    itemBuilder: (context) {
-                      return [
-                        if (selectionMode)
-                          const PopupMenuItem(
-                            value: _InboxMenuAction.clearSelection,
-                            child: Text('Clear selection'),
-                          ),
-                        const PopupMenuItem(
-                          value: _InboxMenuAction.markAllReviewed,
-                          child: Text('Mark all reviewed'),
-                        ),
-                      ];
-                    },
-                  ),
                 ],
               ),
               const SizedBox(height: 8),
-              _BucketSelector(
-                viewConfig: viewConfig,
-                actionCount: actionCount,
-                reviewCount: reviewCount,
-              ),
               if (hasActiveFilters) ...[
                 const SizedBox(height: 8),
                 _AppliedFiltersChips(viewConfig: viewConfig),
@@ -391,41 +297,28 @@ class _AttentionInboxBody extends StatelessWidget {
                   AttentionInboxLoaded(
                     :final groups,
                     :final totalVisibleCount,
-                    :final selectedKeys,
                   ) =>
                     totalVisibleCount == 0
-                        ? _EmptyBucketState(bucket: viewConfig.bucket)
-                        : _GroupedList(
+                        ? const _EmptyInboxState()
+                        : _GroupedEntityList(
                             groups: groups,
-                            selectionMode: selectionMode,
-                            enableSwipeActions: enableSwipeActions,
-                            onTapItem: (item) => _onTapItem(context, item),
-                            onToggleSelected: (key) =>
-                                context.read<AttentionInboxBloc>().add(
-                                  AttentionInboxEvent.toggleSelected(
-                                    itemKey: key,
-                                  ),
-                                ),
-                            selectedKeys: selectedKeys,
+                            onTapEntity: (entityType, entityId) {
+                              final t = _toEntityType(entityType);
+                              if (t == null) return;
+                              Routing.toEntity(context, t, entityId);
+                            },
+                            onShowReasons: (entity) =>
+                                _openReasonsSheet(context, entity),
+                            onAction: (entity, action) =>
+                                _openActionSheet(context, entity, action),
                           ),
                 },
               ),
-              if (selectionMode)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: _SelectionBar(selectedCount: selectedKeys.length),
-                ),
             ],
           ),
         );
       },
     );
-  }
-
-  void _onTapItem(BuildContext context, AttentionItem item) {
-    final entityType = _toEntityType(item.entityType);
-    if (entityType == null) return;
-    Routing.toEntity(context, entityType, item.entityId);
   }
 
   EntityType? _toEntityType(AttentionEntityType t) {
@@ -437,6 +330,144 @@ class _AttentionInboxBody extends StatelessWidget {
       AttentionEntityType.tracker => null,
       AttentionEntityType.reviewSession => null,
     };
+  }
+
+  Future<void> _openReasonsSheet(
+    BuildContext context,
+    AttentionInboxEntityVm entity,
+  ) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                'Reasons',
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              for (final r in entity.reasons)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: SeverityIcon(severity: r.item.severity),
+                  title: Text(r.item.title),
+                  subtitle: r.item.description.isNotEmpty
+                      ? Text(r.item.description)
+                      : null,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _openActionSheet(
+    BuildContext context,
+    AttentionInboxEntityVm entity,
+    AttentionResolutionAction action,
+  ) async {
+    final bloc = context.read<AttentionInboxBloc>();
+
+    final selected = <String>{
+      for (final r in entity.reasons) r.key,
+    };
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setState) {
+            final label = _labelForAction(action);
+            final allSelected = selected.length == entity.reasons.length;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    style: Theme.of(sheetContext).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  if (action == AttentionResolutionAction.dismissed)
+                    Text(
+                      'Dismiss until state changes. If the situation changes, it will reappear.',
+                      style: Theme.of(sheetContext).textTheme.bodySmall
+                          ?.copyWith(
+                            color: Theme.of(
+                              sheetContext,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    value: allSelected,
+                    onChanged: (v) {
+                      setState(() {
+                        selected
+                          ..clear()
+                          ..addAll(
+                            v ?? false
+                                ? entity.reasons.map((r) => r.key)
+                                : const <String>[],
+                          );
+                      });
+                    },
+                    title: const Text('All reasons'),
+                    controlAffinity: ListTileControlAffinity.leading,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  const Divider(height: 1),
+                  for (final r in entity.reasons)
+                    CheckboxListTile(
+                      value: selected.contains(r.key),
+                      onChanged: (v) {
+                        setState(() {
+                          if (v ?? false) {
+                            selected.add(r.key);
+                          } else {
+                            selected.remove(r.key);
+                          }
+                        });
+                      },
+                      title: Text(r.item.title),
+                      subtitle: r.item.description.isNotEmpty
+                          ? Text(r.item.description)
+                          : null,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: selected.isEmpty
+                        ? null
+                        : () {
+                            Navigator.of(sheetContext).pop();
+                            bloc.add(
+                              AttentionInboxEvent.applyActionToMany(
+                                action: action,
+                                itemKeys: selected.toList(growable: false),
+                              ),
+                            );
+                          },
+                    child: Text(label),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _openFilters(BuildContext context) async {
@@ -472,8 +503,6 @@ class _AttentionInboxBody extends StatelessWidget {
   }
 }
 
-enum _InboxMenuAction { clearSelection, markAllReviewed }
-
 String _labelForAction(AttentionResolutionAction action) {
   return switch (action) {
     AttentionResolutionAction.reviewed => 'Reviewed',
@@ -485,37 +514,31 @@ String _labelForAction(AttentionResolutionAction action) {
 
 // === Below are copied UI helpers from the legacy page, kept private ===
 
-class _BucketSelector extends StatelessWidget {
-  const _BucketSelector({
-    required this.viewConfig,
-    required this.actionCount,
-    required this.reviewCount,
-  });
-
-  final AttentionInboxViewConfig viewConfig;
-  final int actionCount;
-  final int reviewCount;
+class _EmptyInboxState extends StatelessWidget {
+  const _EmptyInboxState();
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<AttentionInboxBloc>();
-
-    return SegmentedButton<AttentionBucket>(
-      segments: [
-        ButtonSegment(
-          value: AttentionBucket.action,
-          label: Text('Action • $actionCount'),
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.notifications_outlined,
+              size: 40,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'All caught up.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        ButtonSegment(
-          value: AttentionBucket.review,
-          label: Text('Review • $reviewCount'),
-        ),
-      ],
-      selected: {viewConfig.bucket},
-      onSelectionChanged: (values) {
-        final bucket = values.first;
-        bloc.add(AttentionInboxEvent.bucketChanged(bucket: bucket));
-      },
+      ),
     );
   }
 }
@@ -549,6 +572,33 @@ class _AppliedFiltersChips extends StatelessWidget {
     final bloc = context.read<AttentionInboxBloc>();
 
     final chips = <Widget>[];
+
+    if (viewConfig.bucketFilter.length != AttentionBucket.values.length) {
+      final showAction = viewConfig.bucketFilter.contains(
+        AttentionBucket.action,
+      );
+      final showReview = viewConfig.bucketFilter.contains(
+        AttentionBucket.review,
+      );
+      final label = switch ((showAction, showReview)) {
+        (true, false) => 'Type: Action',
+        (false, true) => 'Type: Review',
+        _ => 'Type: Custom',
+      };
+
+      chips.add(
+        InputChip(
+          label: Text(label),
+          onDeleted: () {
+            bloc.add(
+              const AttentionInboxEvent.bucketFilterSet(
+                buckets: {AttentionBucket.action, AttentionBucket.review},
+              ),
+            );
+          },
+        ),
+      );
+    }
 
     final minSeverity = viewConfig.minSeverity;
     if (minSeverity != null) {
@@ -620,96 +670,31 @@ class _AppliedFiltersChips extends StatelessWidget {
   }
 }
 
-class _EmptyBucketState extends StatelessWidget {
-  const _EmptyBucketState({required this.bucket});
-
-  final AttentionBucket bucket;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (bucket) {
-      AttentionBucket.action => 'No action items right now.',
-      AttentionBucket.review => 'No review items right now.',
-    };
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.notifications_outlined,
-              size: 40,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GroupedList extends StatelessWidget {
-  const _GroupedList({
+class _GroupedEntityList extends StatelessWidget {
+  const _GroupedEntityList({
     required this.groups,
-    required this.selectionMode,
-    required this.enableSwipeActions,
-    required this.onTapItem,
-    required this.onToggleSelected,
-    required this.selectedKeys,
+    required this.onTapEntity,
+    required this.onShowReasons,
+    required this.onAction,
   });
 
   final List<AttentionInboxGroupVm> groups;
-  final bool selectionMode;
-  final bool enableSwipeActions;
-  final void Function(AttentionItem item) onTapItem;
-  final void Function(String key) onToggleSelected;
-  final Set<String> selectedKeys;
-
-  Widget _swipeBackground(
-    BuildContext context, {
-    required Color color,
-    required IconData icon,
-    required String label,
-    required Alignment alignment,
-    required EdgeInsets padding,
-  }) {
-    return Container(
-      color: color,
-      alignment: alignment,
-      padding: padding,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  final void Function(AttentionEntityType entityType, String entityId)
+  onTapEntity;
+  final void Function(AttentionInboxEntityVm entity) onShowReasons;
+  final void Function(
+    AttentionInboxEntityVm entity,
+    AttentionResolutionAction action,
+  )
+  onAction;
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<AttentionInboxBloc>();
-
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: groups.fold<int>(0, (acc, g) {
         final header = g.title.isEmpty ? 0 : 1;
-        return acc + header + g.items.length;
+        return acc + header + g.entities.length;
       }),
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
@@ -729,112 +714,17 @@ class _GroupedList extends StatelessWidget {
             cursor += 1;
           }
 
-          if (index < cursor + group.items.length) {
-            final vm = group.items[index - cursor];
-            final selected = selectedKeys.contains(vm.key);
-            final card = _AttentionInboxItemCard(
-              item: vm.item,
-              selectionMode: selectionMode,
-              selected: selected,
-              onTap: () {
-                if (selectionMode) {
-                  onToggleSelected(vm.key);
-                } else {
-                  onTapItem(vm.item);
-                }
-              },
-              onLongPress: () => onToggleSelected(vm.key),
-              onToggleSelected: () => onToggleSelected(vm.key),
-              onAction: (a) {
-                bloc.add(
-                  AttentionInboxEvent.applyActionToItem(
-                    itemKey: vm.key,
-                    action: a,
-                  ),
-                );
-                return Future<void>.value();
-              },
-            );
-
-            if (!enableSwipeActions) return card;
-
-            final enabledActions = vm.item.availableActions.isEmpty
-                ? AttentionResolutionAction.values
-                : vm.item.availableActions;
-
-            final startAction = vm.item.bucket == AttentionBucket.review
-                ? AttentionResolutionAction.reviewed
-                : AttentionResolutionAction.snoozed;
-            const endAction = AttentionResolutionAction.dismissed;
-
-            final allowStart = enabledActions.contains(startAction);
-            final allowEnd = enabledActions.contains(endAction);
-
-            final direction = allowStart && allowEnd
-                ? DismissDirection.horizontal
-                : allowStart
-                ? DismissDirection.startToEnd
-                : allowEnd
-                ? DismissDirection.endToStart
-                : DismissDirection.none;
-
-            if (direction == DismissDirection.none) return card;
-
-            final startLabel = startAction == AttentionResolutionAction.reviewed
-                ? 'Reviewed'
-                : 'Snooze';
-            final startIcon = startAction == AttentionResolutionAction.reviewed
-                ? Icons.done
-                : Icons.snooze;
-            final startColor = startAction == AttentionResolutionAction.reviewed
-                ? Colors.green
-                : Colors.orange;
-
-            return Dismissible(
-              key: ValueKey('attn_swipe_${vm.key}'),
-              direction: direction,
-              background: allowStart
-                  ? _swipeBackground(
-                      context,
-                      color: startColor,
-                      icon: startIcon,
-                      label: startLabel,
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: 16),
-                    )
-                  : null,
-              secondaryBackground: allowEnd
-                  ? _swipeBackground(
-                      context,
-                      color: Theme.of(context).colorScheme.error,
-                      icon: Icons.close,
-                      label: 'Dismiss',
-                      alignment: Alignment.centerRight,
-                      padding: const EdgeInsets.only(right: 16),
-                    )
-                  : null,
-              confirmDismiss: (d) async {
-                final action = switch (d) {
-                  DismissDirection.startToEnd => startAction,
-                  DismissDirection.endToStart => endAction,
-                  _ => null,
-                };
-
-                if (action == null) return false;
-
-                bloc.add(
-                  AttentionInboxEvent.applyActionToItem(
-                    itemKey: vm.key,
-                    action: action,
-                  ),
-                );
-                return true;
-              },
-              child: card,
+          if (index < cursor + group.entities.length) {
+            final entity = group.entities[index - cursor];
+            return _AttentionInboxEntityCard(
+              entity: entity,
+              onTap: () => onTapEntity(entity.entityType, entity.entityId),
+              onShowReasons: () => onShowReasons(entity),
+              onAction: (a) => onAction(entity, a),
             );
           }
 
-          cursor += group.items.length;
+          cursor += group.entities.length;
         }
 
         return const SizedBox.shrink();
@@ -843,198 +733,186 @@ class _GroupedList extends StatelessWidget {
   }
 }
 
-class _AttentionInboxItemCard extends StatelessWidget {
-  const _AttentionInboxItemCard({
-    required this.item,
-    required this.selectionMode,
-    required this.selected,
+enum _EntityMenuAction { open, showReasons, snooze, dismiss }
+
+class _AttentionInboxEntityCard extends StatelessWidget {
+  const _AttentionInboxEntityCard({
+    required this.entity,
     required this.onTap,
-    required this.onToggleSelected,
-    required this.onLongPress,
+    required this.onShowReasons,
     required this.onAction,
   });
 
-  final AttentionItem item;
-  final bool selectionMode;
-  final bool selected;
-  final VoidCallback? onTap;
-  final VoidCallback onToggleSelected;
-  final VoidCallback onLongPress;
-  final Future<void> Function(AttentionResolutionAction action) onAction;
+  final AttentionInboxEntityVm entity;
+  final VoidCallback onTap;
+  final VoidCallback onShowReasons;
+  final void Function(AttentionResolutionAction action) onAction;
+
+  String? _entityDisplayName(AttentionItem item) {
+    final metadata = item.metadata;
+    if (metadata == null) return null;
+
+    final explicit = metadata['entity_display_name'];
+    if (explicit is String && explicit.trim().isNotEmpty) {
+      return explicit.trim();
+    }
+
+    final key = switch (item.entityType) {
+      AttentionEntityType.task => 'task_name',
+      AttentionEntityType.project => 'project_name',
+      AttentionEntityType.value => 'value_name',
+      AttentionEntityType.journal => null,
+      AttentionEntityType.tracker => null,
+      AttentionEntityType.reviewSession => null,
+    };
+
+    if (key == null) return null;
+    final v = metadata[key];
+    if (v is String && v.trim().isNotEmpty) return v.trim();
+    return null;
+  }
+
+  (IconData, String)? _entityBadge(AttentionEntityType t) {
+    return switch (t) {
+      AttentionEntityType.task => (Icons.check_box_outlined, 'Task'),
+      AttentionEntityType.project => (Icons.folder_outlined, 'Project'),
+      AttentionEntityType.value => (Icons.flag_outlined, 'Value'),
+      AttentionEntityType.journal => null,
+      AttentionEntityType.tracker => null,
+      AttentionEntityType.reviewSession => null,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final enabledActions = item.availableActions.isEmpty
-        ? AttentionResolutionAction.values
-        : item.availableActions;
+    final headline = entity.headline.item;
+    final badge = _entityBadge(entity.entityType);
+    final entityName = _entityDisplayName(headline);
 
-    final tileLeading = selectionMode
-        ? Checkbox(
-            value: selected,
-            onChanged: (_) => onToggleSelected(),
-          )
-        : null;
+    final moreCount = entity.reasons.length - 1;
+    final showMore = moreCount > 0;
 
     return Card(
       margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onTap,
-        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SeverityIcon(severity: entity.severity),
+              const SizedBox(width: 10),
               Expanded(
-                child: AttentionItemTile(
-                  item: item,
-                  leading: tileLeading,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (badge != null && entityName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Row(
+                          children: [
+                            Icon(
+                              badge.$1,
+                              size: 14,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                '${badge.$2} • $entityName',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Text(
+                        badge?.$2 ?? 'Item',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            headline.title,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (showMore)
+                          TextButton(
+                            onPressed: onShowReasons,
+                            child: Text('+$moreCount more'),
+                          ),
+                      ],
+                    ),
+                    if (headline.description.isNotEmpty)
+                      Text(
+                        headline.description,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
                 ),
               ),
-              PopupMenuButton<AttentionResolutionAction>(
+              PopupMenuButton<_EntityMenuAction>(
                 tooltip: 'Actions',
-                onSelected: onAction,
+                onSelected: (a) {
+                  switch (a) {
+                    case _EntityMenuAction.open:
+                      onTap();
+                    case _EntityMenuAction.showReasons:
+                      onShowReasons();
+                    case _EntityMenuAction.snooze:
+                      onAction(AttentionResolutionAction.snoozed);
+                    case _EntityMenuAction.dismiss:
+                      onAction(AttentionResolutionAction.dismissed);
+                  }
+                },
                 itemBuilder: (context) {
-                  return [
-                    if (enabledActions.contains(
-                      AttentionResolutionAction.reviewed,
-                    ))
-                      const PopupMenuItem(
-                        value: AttentionResolutionAction.reviewed,
-                        child: Text('Reviewed'),
-                      ),
-                    if (enabledActions.contains(
-                      AttentionResolutionAction.skipped,
-                    ))
-                      const PopupMenuItem(
-                        value: AttentionResolutionAction.skipped,
-                        child: Text('Skipped'),
-                      ),
-                    if (enabledActions.contains(
-                      AttentionResolutionAction.snoozed,
-                    ))
-                      const PopupMenuItem(
-                        value: AttentionResolutionAction.snoozed,
-                        child: Text('Snooze 1 day'),
-                      ),
-                    if (enabledActions.contains(
-                      AttentionResolutionAction.dismissed,
-                    ))
-                      const PopupMenuItem(
-                        value: AttentionResolutionAction.dismissed,
-                        child: Text('Dismissed'),
-                      ),
+                  return const [
+                    PopupMenuItem(
+                      value: _EntityMenuAction.open,
+                      child: Text('Open'),
+                    ),
+                    PopupMenuItem(
+                      value: _EntityMenuAction.showReasons,
+                      child: Text('View reasons'),
+                    ),
+                    PopupMenuItem(
+                      value: _EntityMenuAction.snooze,
+                      child: Text('Snooze…'),
+                    ),
+                    PopupMenuItem(
+                      value: _EntityMenuAction.dismiss,
+                      child: Text('Dismiss…'),
+                    ),
                   ];
                 },
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectionBar extends StatelessWidget {
-  const _SelectionBar({required this.selectedCount});
-
-  final int selectedCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final bloc = context.read<AttentionInboxBloc>();
-
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isCompact = constraints.maxWidth < 520;
-
-            if (isCompact) {
-              return Row(
-                children: [
-                  Expanded(child: Text('$selectedCount selected')),
-                  TextButton(
-                    onPressed: () =>
-                        bloc.add(const AttentionInboxEvent.clearSelection()),
-                    child: const Text('Clear'),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton.icon(
-                    onPressed: () => bloc.add(
-                      const AttentionInboxEvent.applyActionToSelection(
-                        action: AttentionResolutionAction.reviewed,
-                      ),
-                    ),
-                    icon: const Icon(Icons.done),
-                    label: const Text('Reviewed'),
-                  ),
-                  const SizedBox(width: 8),
-                  PopupMenuButton<AttentionResolutionAction>(
-                    tooltip: 'Bulk actions',
-                    onSelected: (a) {
-                      bloc.add(
-                        AttentionInboxEvent.applyActionToSelection(action: a),
-                      );
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: AttentionResolutionAction.snoozed,
-                        child: Text('Snooze'),
-                      ),
-                      PopupMenuItem(
-                        value: AttentionResolutionAction.dismissed,
-                        child: Text('Dismiss'),
-                      ),
-                    ],
-                    child: const Icon(Icons.more_vert),
-                  ),
-                ],
-              );
-            }
-
-            return Row(
-              children: [
-                Expanded(child: Text('$selectedCount selected')),
-                TextButton(
-                  onPressed: () =>
-                      bloc.add(const AttentionInboxEvent.clearSelection()),
-                  child: const Text('Clear'),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: () => bloc.add(
-                    const AttentionInboxEvent.applyActionToSelection(
-                      action: AttentionResolutionAction.reviewed,
-                    ),
-                  ),
-                  icon: const Icon(Icons.done),
-                  label: const Text('Reviewed'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => bloc.add(
-                    const AttentionInboxEvent.applyActionToSelection(
-                      action: AttentionResolutionAction.snoozed,
-                    ),
-                  ),
-                  icon: const Icon(Icons.snooze),
-                  label: const Text('Snooze'),
-                ),
-                const SizedBox(width: 8),
-                OutlinedButton.icon(
-                  onPressed: () => bloc.add(
-                    const AttentionInboxEvent.applyActionToSelection(
-                      action: AttentionResolutionAction.dismissed,
-                    ),
-                  ),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Dismiss'),
-                ),
-              ],
-            );
-          },
         ),
       ),
     );
@@ -1080,54 +958,35 @@ class _FiltersSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<AttentionInboxGroupBy>(
-            value: config.groupBy,
-            decoration: const InputDecoration(labelText: 'Group by'),
-            items: const [
-              DropdownMenuItem(
-                value: AttentionInboxGroupBy.none,
-                child: Text('None'),
+          Text('Type', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilterChip(
+                label: const Text('Action'),
+                selected: config.bucketFilter.contains(AttentionBucket.action),
+                onSelected: (_) {
+                  bloc.add(
+                    const AttentionInboxEvent.bucketFilterToggled(
+                      bucket: AttentionBucket.action,
+                    ),
+                  );
+                },
               ),
-              DropdownMenuItem(
-                value: AttentionInboxGroupBy.severity,
-                child: Text('Severity'),
-              ),
-              DropdownMenuItem(
-                value: AttentionInboxGroupBy.entityType,
-                child: Text('Entity type'),
-              ),
-              DropdownMenuItem(
-                value: AttentionInboxGroupBy.rule,
-                child: Text('Rule'),
-              ),
-            ],
-            onChanged: (v) {
-              if (v == null) return;
-              bloc.add(AttentionInboxEvent.groupByChanged(groupBy: v));
-            },
-          ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<AttentionInboxSort>(
-            value: config.sort,
-            decoration: const InputDecoration(labelText: 'Sort'),
-            items: const [
-              DropdownMenuItem(
-                value: AttentionInboxSort.detectedAtDesc,
-                child: Text('Newest'),
-              ),
-              DropdownMenuItem(
-                value: AttentionInboxSort.severityDesc,
-                child: Text('Severity'),
-              ),
-              DropdownMenuItem(
-                value: AttentionInboxSort.titleAsc,
-                child: Text('Title (A–Z)'),
+              FilterChip(
+                label: const Text('Review'),
+                selected: config.bucketFilter.contains(AttentionBucket.review),
+                onSelected: (_) {
+                  bloc.add(
+                    const AttentionInboxEvent.bucketFilterToggled(
+                      bucket: AttentionBucket.review,
+                    ),
+                  );
+                },
               ),
             ],
-            onChanged: (v) {
-              if (v == null) return;
-              bloc.add(AttentionInboxEvent.sortChanged(sort: v));
-            },
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<AttentionSeverity?>(

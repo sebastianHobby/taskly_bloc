@@ -20,4 +20,8 @@ enum AppBarAction {
   /// This is used by screens that want an AppBar "+" action instead of a FAB.
   @JsonValue('create_value')
   createValue,
+
+  /// Open Journal tracker management.
+  @JsonValue('journal_manage_trackers')
+  journalManageTrackers,
 }

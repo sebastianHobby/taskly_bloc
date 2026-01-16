@@ -5,39 +5,96 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 
-/// Settings page for managing attention rules.
+enum AttentionRulesInitialSection {
+  problemDetection,
+  periodicReviews,
+  allocationAlerts,
+}
+
+/// Settings UI for managing attention rules.
 ///
-/// Allows users to view and toggle system attention rules.
-/// User-created rules are out of scope for v1.
+/// Use [AttentionRulesSettingsPage] for full-screen navigation, or
+/// [AttentionRulesSettingsView] with [embedded] for in-flow overlays.
 class AttentionRulesSettingsPage extends StatelessWidget {
-  const AttentionRulesSettingsPage({super.key});
+  const AttentionRulesSettingsPage({super.key, this.initialSection});
+
+  final AttentionRulesInitialSection? initialSection;
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AttentionRulesCubit>(
+    return Scaffold(
+      appBar: AppBar(title: const Text('Attention Rules')),
+      body: AttentionRulesSettingsView(initialSection: initialSection),
+    );
+  }
+}
+
+/// Renders the Attention Rules list.
+///
+/// When [embedded] is true, this widget provides its own header with a close
+/// button (intended for bottom sheets / dialogs).
+class AttentionRulesSettingsView extends StatelessWidget {
+  const AttentionRulesSettingsView({
+    super.key,
+    this.initialSection,
+    this.embedded = false,
+  });
+
+  final AttentionRulesInitialSection? initialSection;
+  final bool embedded;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = BlocProvider<AttentionRulesCubit>(
       create: (_) => getIt<AttentionRulesCubit>(),
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Attention Rules'),
-        ),
-        body: BlocListener<AttentionRulesCubit, AttentionRulesState>(
-          listenWhen: (prev, next) => next is AttentionRulesError,
-          listener: (context, state) {
-            if (state case AttentionRulesError(:final message)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(message)),
-              );
-            }
-          },
-          child: const _AttentionRulesBody(),
-        ),
+      child: BlocListener<AttentionRulesCubit, AttentionRulesState>(
+        listenWhen: (prev, next) => next is AttentionRulesError,
+        listener: (context, state) {
+          if (state case AttentionRulesError(:final message)) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message)),
+            );
+          }
+        },
+        child: _AttentionRulesBody(initialSection: initialSection),
+      ),
+    );
+
+    if (!embedded) return content;
+
+    return SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Attention Rules',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(child: content),
+        ],
       ),
     );
   }
 }
 
 class _AttentionRulesBody extends StatelessWidget {
-  const _AttentionRulesBody();
+  const _AttentionRulesBody({this.initialSection});
+
+  final AttentionRulesInitialSection? initialSection;
 
   @override
   Widget build(BuildContext context) {
@@ -50,32 +107,80 @@ class _AttentionRulesBody extends StatelessWidget {
           AttentionRulesError(:final message) => Center(
             child: Text(message),
           ),
-          AttentionRulesLoaded(:final rules) => _RulesList(rules: rules),
+          AttentionRulesLoaded(:final rules) => _RulesList(
+            rules: rules,
+            initialSection: initialSection,
+          ),
         };
       },
     );
   }
 }
 
-class _RulesList extends StatelessWidget {
-  const _RulesList({required this.rules});
+class _RulesList extends StatefulWidget {
+  const _RulesList({required this.rules, this.initialSection});
 
   final List<AttentionRule> rules;
+  final AttentionRulesInitialSection? initialSection;
+
+  @override
+  State<_RulesList> createState() => _RulesListState();
+}
+
+class _RulesListState extends State<_RulesList> {
+  final GlobalKey<State<StatefulWidget>> _problemDetectionKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _periodicReviewsKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _allocationAlertsKey = GlobalKey();
+  bool _didAutoScroll = false;
+
+  @override
+  void didUpdateWidget(covariant _RulesList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSection != widget.initialSection) {
+      _didAutoScroll = false;
+    }
+  }
+
+  void _maybeScrollToInitialSection() {
+    if (_didAutoScroll) return;
+    final section = widget.initialSection;
+    if (section == null) return;
+
+    final key = switch (section) {
+      AttentionRulesInitialSection.problemDetection => _problemDetectionKey,
+      AttentionRulesInitialSection.periodicReviews => _periodicReviewsKey,
+      AttentionRulesInitialSection.allocationAlerts => _allocationAlertsKey,
+    };
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = key.currentContext;
+      if (!mounted || ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        alignment: 0.05,
+      );
+      _didAutoScroll = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (rules.isEmpty) {
+    _maybeScrollToInitialSection();
+
+    if (widget.rules.isEmpty) {
       return const Center(
         child: Text('No attention rules configured'),
       );
     }
 
     // Group rules by bucket/evaluator.
-    final reviewRules = rules
+    final reviewRules = widget.rules
         .where((r) => r.bucket == AttentionBucket.review)
         .toList(growable: false);
 
-    final actionRules = rules
+    final actionRules = widget.rules
         .where((r) => r.bucket == AttentionBucket.action)
         .toList(growable: false);
 
@@ -91,7 +196,10 @@ class _RulesList extends StatelessWidget {
       child: ListView(
         children: [
           if (problemRules.isNotEmpty) ...[
-            _SectionHeader(title: 'Problem Detection'),
+            _SectionHeader(
+              key: _problemDetectionKey,
+              title: 'Problem Detection',
+            ),
             _SectionDescription(
               description:
                   'Detect tasks and projects that need attention due to being '
@@ -100,7 +208,7 @@ class _RulesList extends StatelessWidget {
             ...problemRules.map((rule) => _RuleTile(rule: rule)),
           ],
           if (reviewRules.isNotEmpty) ...[
-            _SectionHeader(title: 'Periodic Reviews'),
+            _SectionHeader(key: _periodicReviewsKey, title: 'Periodic Reviews'),
             _SectionDescription(
               description:
                   'Scheduled reminders to review your tasks, projects, and values.',
@@ -108,7 +216,10 @@ class _RulesList extends StatelessWidget {
             ...reviewRules.map((rule) => _RuleTile(rule: rule)),
           ],
           if (allocationRules.isNotEmpty) ...[
-            _SectionHeader(title: 'Allocation Alerts'),
+            _SectionHeader(
+              key: _allocationAlertsKey,
+              title: 'Allocation Alerts',
+            ),
             _SectionDescription(
               description:
                   "Warnings when tasks should be in your day allocation but aren't.",
@@ -123,7 +234,7 @@ class _RulesList extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, super.key});
 
   final String title;
 

@@ -20,6 +20,7 @@ class ScreenItemTileRegistry {
     required ScreenItem item,
     bool isInFocus = false,
     bool compactTiles = false,
+    ValueViewVariant valueVariant = ValueViewVariant.standard,
     void Function(String taskId, bool? value)? onTaskToggle,
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
@@ -58,6 +59,7 @@ class ScreenItemTileRegistry {
             () => Routing.toEntity(context, EntityType.value, value.id),
         compact: compactTiles,
         titlePrefix: titlePrefix,
+        variant: valueVariant,
       ),
       ScreenItemHeader(:final title) => Padding(
         padding: const EdgeInsets.only(bottom: 12),

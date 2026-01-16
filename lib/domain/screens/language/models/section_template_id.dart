@@ -15,10 +15,18 @@ abstract final class SectionTemplateId {
   static const entityHeader = 'entity_header';
 
   // My Day
+  static const myDayHeroV1 = 'my_day_hero_v1';
   static const myDayRankedTasksV1 = 'my_day_ranked_tasks_v1';
 
   // Values
   static const createValueCtaV1 = 'create_value_cta_v1';
+
+  // Journal
+  static const journalTodayComposerV1 = 'journal_today_composer_v1';
+  static const journalTodayEntriesV1 = 'journal_today_entries_v1';
+  static const journalHistoryTeaserV1 = 'journal_history_teaser_v1';
+  static const journalHistoryListV1 = 'journal_history_list_v1';
+  static const journalManageTrackersV1 = 'journal_manage_trackers_v1';
 
   // Former custom screens (now templated)
   static const settingsMenu = 'settings_menu';

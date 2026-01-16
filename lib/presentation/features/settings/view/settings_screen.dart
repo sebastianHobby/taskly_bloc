@@ -13,6 +13,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/settings_mainten
 import 'package:taskly_bloc/presentation/widgets/color_picker/color_picker_field.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
+import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 
 /// Settings screen for global app configuration.
 ///
@@ -30,6 +31,11 @@ class SettingsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Settings'),
+          actions: [
+            AttentionBellIconButton(
+              onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
+            ),
+          ],
         ),
         body: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
           builder: (context, state) {

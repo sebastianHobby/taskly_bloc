@@ -6,6 +6,7 @@ import 'package:taskly_bloc/presentation/app_shell/scaffold_with_nested_navigati
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/core/performance/performance_route_observer.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 
@@ -67,6 +68,31 @@ final router = GoRouter(
         // === ENTITY EDITOR ROUTES (NAV-01) ===
         // Create + edit are route-backed editor entry points.
         // They open the modal editor and then return (pop or my-day fallback).
+
+        // Journal entry editor (create + edit)
+        GoRoute(
+          path: '/journal/entry/new',
+          builder: (_, state) {
+            final csv = state.uri.queryParameters['trackerIds'] ?? '';
+            final ids = csv
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toSet();
+
+            return JournalEntryEditorRoutePage(
+              entryId: null,
+              preselectedTrackerIds: ids,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/journal/entry/:id/edit',
+          builder: (_, state) => JournalEntryEditorRoutePage(
+            entryId: state.pathParameters['id'],
+            preselectedTrackerIds: const <String>{},
+          ),
+        ),
 
         // Task (editor-only)
         GoRoute(

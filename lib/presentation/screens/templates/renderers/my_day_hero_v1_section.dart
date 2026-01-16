@@ -1,0 +1,187 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
+
+class MyDayHeroV1Section extends StatelessWidget {
+  const MyDayHeroV1Section({required this.data, super.key});
+
+  final MyDayHeroV1SectionResult data;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider<MyDayHeaderBloc>(
+      create: (_) => getIt<MyDayHeaderBloc>()..add(const MyDayHeaderStarted()),
+      child: BlocListener<MyDayHeaderBloc, MyDayHeaderState>(
+        listenWhen: (previous, current) {
+          return previous.navRequestId != current.navRequestId &&
+              current.nav == MyDayHeaderNav.openFocusSetupWizard;
+        },
+        listener: (context, state) {
+          Routing.toScreenKeyWithQuery(
+            context,
+            'focus_setup',
+            queryParameters: const {'step': 'select_focus_mode'},
+          );
+        },
+        child: _HeroCard(data: data),
+      ),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.data});
+
+  final MyDayHeroV1SectionResult data;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
+    final doneCount = data.doneCount;
+    final totalCount = data.totalCount;
+
+    final fraction = totalCount <= 0
+        ? 0.0
+        : (doneCount / totalCount).clamp(0.0, 1.0);
+
+    final showProgress = totalCount > 0;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+      child: Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        color: cs.surfaceContainerLow,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
+                builder: (context, state) {
+                  final focusMode = state.focusMode;
+                  final (icon, iconLabel) = _focusIcon(focusMode);
+
+                  return Semantics(
+                    container: true,
+                    button: true,
+                    label: 'Focus mode',
+                    value: '${focusMode.displayName}. ${focusMode.tagline}',
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        context.read<MyDayHeaderBloc>().add(
+                          const MyDayHeaderFocusModeBannerTapped(),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        child: Row(
+                          children: [
+                            Semantics(
+                              label: iconLabel,
+                              child: Icon(
+                                icon,
+                                size: 20,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    focusMode.displayName,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    focusMode.tagline,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: cs.onSurfaceVariant,
+                                      height: 1.15,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Change',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: cs.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (showProgress) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.wb_sunny,
+                      size: 16,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '$doneCount/$totalCount completed',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: cs.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: fraction,
+                    minHeight: 4,
+                    backgroundColor: cs.outlineVariant.withOpacity(0.35),
+                    color: cs.primary.withOpacity(0.70),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  (IconData, String) _focusIcon(FocusMode focusMode) {
+    return switch (focusMode) {
+      FocusMode.intentional => (Icons.gps_fixed, 'Intentional focus'),
+      FocusMode.sustainable => (Icons.balance, 'Sustainable focus'),
+      FocusMode.responsive => (Icons.bolt, 'Responsive focus'),
+      FocusMode.personalized => (Icons.tune, 'Personalized focus'),
+    };
+  }
+}

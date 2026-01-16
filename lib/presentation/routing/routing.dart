@@ -58,6 +58,13 @@ abstract final class Routing {
   static void toScreenKey(BuildContext context, String screenKey) =>
       GoRouter.of(context).go(screenPath(screenKey));
 
+  /// Push a screen onto the navigation stack.
+  ///
+  /// Use this for secondary screens that should return back to the current
+  /// screen (e.g. Journal History, Manage Trackers).
+  static void pushScreenKey(BuildContext context, String screenKey) =>
+      GoRouter.of(context).push(screenPath(screenKey));
+
   /// Navigate to screen by key with query parameters.
   ///
   /// Use this for deep links like `review_inbox?bucket=critical`.
@@ -71,6 +78,19 @@ abstract final class Routing {
       queryParameters: queryParameters.isEmpty ? null : queryParameters,
     );
     GoRouter.of(context).go(uri.toString());
+  }
+
+  /// Push a screen by key with query parameters.
+  static void pushScreenKeyWithQuery(
+    BuildContext context,
+    String screenKey, {
+    required Map<String, String> queryParameters,
+  }) {
+    final uri = Uri(
+      path: screenPath(screenKey),
+      queryParameters: queryParameters.isEmpty ? null : queryParameters,
+    );
+    GoRouter.of(context).push(uri.toString());
   }
 
   // === ENTITY NAVIGATION (typed) ===
@@ -135,6 +155,33 @@ abstract final class Routing {
 
   static void toValueEdit(BuildContext context, String valueId) =>
       GoRouter.of(context).push('/value/$valueId/edit');
+
+  // === JOURNAL ENTRY EDITOR ROUTES (Journal Today-first / USM) ===
+
+  static void toJournalEntryNew(
+    BuildContext context, {
+    Set<String> preselectedTrackerIds = const <String>{},
+  }) {
+    final trackerIds = preselectedTrackerIds
+        .where((id) => id.trim().isNotEmpty)
+        .toList();
+
+    final uri = Uri(
+      path: '/journal/entry/new',
+      queryParameters: trackerIds.isEmpty
+          ? null
+          : <String, String>{
+              'trackerIds': trackerIds.join(','),
+            },
+    );
+
+    GoRouter.of(context).push(uri.toString());
+  }
+
+  static void toJournalEntryEdit(BuildContext context, String entryId) {
+    if (entryId.trim().isEmpty) return;
+    GoRouter.of(context).push('/journal/entry/$entryId/edit');
+  }
 
   /// Get onTap callback for entity navigation.
   static VoidCallback onTapEntity(

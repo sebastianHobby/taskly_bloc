@@ -31,7 +31,6 @@ analyzer:
   exclude:
     - lib/l10n/gen/*
     - "**/*.g.dart"
-    - "**/*.freezed.dart"
 linter:
   rules:
     public_member_api_docs: false

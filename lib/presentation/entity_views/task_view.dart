@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/domain/domain.dart';
@@ -32,8 +33,11 @@ class TaskView extends StatelessWidget {
     this.isInFocus = false,
     this.variant = TaskViewVariant.list,
     this.titlePrefix,
+    this.statusBadge,
     this.trailing,
     this.accentColor,
+    this.agendaInProgressStyle = false,
+    this.endDate,
     super.key,
   });
 
@@ -57,11 +61,22 @@ class TaskView extends StatelessWidget {
   /// Optional widget shown inline before the task title.
   final Widget? titlePrefix;
 
+  /// Optional status badge shown to the right of the title.
+  final Widget? statusBadge;
+
   /// Optional trailing control.
   final Widget? trailing;
 
   /// Optional accent color used by [TaskViewVariant.agendaCard].
   final Color? accentColor;
+
+  /// Whether to render the agenda card with dashed outline + end marker.
+  ///
+  /// Intended for in-progress items in the Scheduled agenda.
+  final bool agendaInProgressStyle;
+
+  /// Optional end date for the in-progress end-day marker.
+  final DateTime? endDate;
 
   bool _isOverdue(DateTime? deadline) {
     if (deadline == null || task.completed) return false;
@@ -226,6 +241,15 @@ class TaskView extends StatelessWidget {
     final effectiveAccent = accentColor ?? (isInFocus ? scheme.primary : null);
     final outline = scheme.outlineVariant.withValues(alpha: 0.35);
 
+    final endDay = _endDayLabel(context);
+
+    final backgroundColor = isInFocus
+        ? Color.alphaBlend(
+            scheme.primary.withValues(alpha: 0.06),
+            scheme.surfaceContainerLow,
+          )
+        : scheme.surfaceContainerLow;
+
     return Material(
       key: Key('task-${task.id}'),
       color: Colors.transparent,
@@ -234,109 +258,287 @@ class TaskView extends StatelessWidget {
             ? onTap!(task)
             : Routing.toEntity(context, EntityType.task, task.id),
         borderRadius: BorderRadius.circular(16),
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 2),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-          decoration: BoxDecoration(
-            color: isInFocus
-                ? Color.alphaBlend(
-                    scheme.primary.withValues(alpha: 0.06),
-                    scheme.surfaceContainerLow,
-                  )
-                : scheme.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(16),
-            border: effectiveAccent != null
-                ? Border(
-                    left: BorderSide(color: effectiveAccent, width: 4),
-                    top: BorderSide(color: outline),
-                    right: BorderSide(color: outline),
-                    bottom: BorderSide(color: outline),
-                  )
-                : Border.all(color: outline),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: _TaskCheckbox(
-                  completed: task.completed,
-                  isOverdue: isOverdue,
-                  onChanged: (value) => onCheckboxChanged(task, value),
-                  taskName: task.name,
+        child: _AgendaCardContainer(
+          dashedOutline: agendaInProgressStyle,
+          accentColor: effectiveAccent,
+          outlineColor: outline,
+          backgroundColor: backgroundColor,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              agendaInProgressStyle ? 28 : 14,
+              14,
+              14,
+              14,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: _TaskCheckbox(
+                    completed: task.completed,
+                    isOverdue: isOverdue,
+                    onChanged: (value) => onCheckboxChanged(task, value),
+                    taskName: task.name,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (titlePrefix != null) ...[
-                          titlePrefix!,
-                          const SizedBox(width: 10),
-                        ],
-                        Expanded(
-                          child: Text(
-                            task.name,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              decoration: task.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: task.completed
-                                  ? scheme.onSurface.withValues(alpha: 0.5)
-                                  : scheme.onSurface,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (titlePrefix != null) ...[
+                            titlePrefix!,
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Text(
+                              task.name,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                decoration: task.completed
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                                color: task.completed
+                                    ? scheme.onSurface.withValues(alpha: 0.5)
+                                    : scheme.onSurface,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (trailing != null) ...[
-                          const SizedBox(width: 8),
-                          trailing!,
+                          if (statusBadge != null) ...[
+                            const SizedBox(width: 10),
+                            statusBadge!,
+                          ],
+                          if (trailing != null) ...[
+                            const SizedBox(width: 8),
+                            trailing!,
+                          ],
+                          const SizedBox(width: 10),
+                          _TaskTodayStatusMenuButton(
+                            taskId: task.id,
+                            isPinnedToMyDay: task.isPinned,
+                            isInMyDayAuto: isInFocus,
+                            compact: true,
+                          ),
                         ],
-                        const SizedBox(width: 10),
-                        _TaskTodayStatusMenuButton(
-                          taskId: task.id,
-                          isPinnedToMyDay: task.isPinned,
-                          isInMyDayAuto: isInFocus,
-                          compact: true,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    _MetaLine(
-                      primaryValue: effectivePrimaryValue,
-                      projectName: task.project?.name,
-                      projectId: task.projectId,
-                      startDate: task.startDate,
-                      deadlineDate: task.deadlineDate,
-                      isOverdue: isOverdue,
-                      isDueToday: isDueToday,
-                      isDueSoon: isDueSoon,
-                      formatDate: DateLabelFormatter.format,
-                      hasRepeat: task.repeatIcalRrule != null,
-                      secondaryValues: effectiveSecondaryValues,
-                      priority: task.priority,
-                      onTapValues: () {
-                        EditorLauncher.fromGetIt().openTaskEditor(
-                          context,
-                          taskId: task.id,
-                          openToValues: true,
-                        );
-                      },
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _MetaLine(
+                              primaryValue: effectivePrimaryValue,
+                              projectName: task.project?.name,
+                              projectId: task.projectId,
+                              startDate: task.startDate,
+                              deadlineDate: task.deadlineDate,
+                              isOverdue: isOverdue,
+                              isDueToday: isDueToday,
+                              isDueSoon: isDueSoon,
+                              showDates: !agendaInProgressStyle,
+                              formatDate: DateLabelFormatter.format,
+                              hasRepeat: task.repeatIcalRrule != null,
+                              secondaryValues: effectiveSecondaryValues,
+                              priority: task.priority,
+                              onTapValues: () {
+                                EditorLauncher.fromGetIt().openTaskEditor(
+                                  context,
+                                  taskId: task.id,
+                                  openToValues: true,
+                                );
+                              },
+                            ),
+                          ),
+                          if (agendaInProgressStyle && endDay != null) ...[
+                            const SizedBox(width: 12),
+                            _EndDayMarker(label: endDay),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  String? _endDayLabel(BuildContext context) {
+    final end = endDate;
+    if (end == null) return null;
+    final locale = Localizations.localeOf(context);
+    return DateFormat.E(locale.toLanguageTag()).format(end);
+  }
+}
+
+class _AgendaCardContainer extends StatelessWidget {
+  const _AgendaCardContainer({
+    required this.child,
+    required this.backgroundColor,
+    required this.outlineColor,
+    this.accentColor,
+    this.dashedOutline = false,
+  });
+
+  final Widget child;
+  final Color backgroundColor;
+  final Color outlineColor;
+  final Color? accentColor;
+  final bool dashedOutline;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(16);
+
+    if (!dashedOutline) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: radius,
+          border: accentColor != null
+              ? Border(
+                  left: BorderSide(color: accentColor!, width: 4),
+                  top: BorderSide(color: outlineColor),
+                  right: BorderSide(color: outlineColor),
+                  bottom: BorderSide(color: outlineColor),
+                )
+              : Border.all(color: outlineColor),
+        ),
+        child: child,
+      );
+    }
+
+    final dashColor =
+        Color.lerp(
+          accentColor ?? outlineColor,
+          outlineColor,
+          0.35,
+        )?.withValues(alpha: 0.85) ??
+        outlineColor;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 2),
+      child: ClipRRect(
+        borderRadius: radius,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: backgroundColor),
+          child: CustomPaint(
+            foregroundPainter: _DashedRoundedRectPainter(
+              color: dashColor,
+              strokeWidth: 1.2,
+              radius: 16,
+              dashLength: 6,
+              gapLength: 4,
+            ),
+            child: Stack(
+              children: [
+                if (accentColor != null)
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 4,
+                    child: ColoredBox(color: accentColor!),
+                  ),
+                child,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EndDayMarker extends StatelessWidget {
+  const _EndDayMarker({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.hourglass_bottom_rounded,
+          size: 16,
+          color: scheme.onSurfaceVariant.withValues(alpha: 0.85),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            fontWeight: FontWeight.w700,
+            fontSize: 10,
+            height: 1.1,
+            color: scheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DashedRoundedRectPainter extends CustomPainter {
+  const _DashedRoundedRectPainter({
+    required this.color,
+    required this.strokeWidth,
+    required this.radius,
+    required this.dashLength,
+    required this.gapLength,
+  });
+
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+  final double dashLength;
+  final double gapLength;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = color;
+
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+    final path = Path()..addRRect(rrect);
+
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        final next = distance + dashLength;
+        canvas.drawPath(
+          metric.extractPath(distance, next.clamp(0.0, metric.length)),
+          paint,
+        );
+        distance = next + gapLength;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _DashedRoundedRectPainter oldDelegate) {
+    return oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.radius != radius ||
+        oldDelegate.dashLength != dashLength ||
+        oldDelegate.gapLength != gapLength;
   }
 }
 
@@ -354,6 +556,7 @@ class _MetaLine extends StatelessWidget {
     this.isDueToday = false,
     this.isDueSoon = false,
     this.hasRepeat = false,
+    this.showDates = true,
     this.onTapValues,
   });
 
@@ -366,6 +569,7 @@ class _MetaLine extends StatelessWidget {
   final bool isDueToday;
   final bool isDueSoon;
   final bool hasRepeat;
+  final bool showDates;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
   final int? priority;
@@ -395,9 +599,7 @@ class _MetaLine extends StatelessWidget {
           value: pValue,
           variant: ValueChipVariant.solid,
           iconOnly: false,
-          onTap: () {
-            Routing.toEntity(context, EntityType.value, pValue.id);
-          },
+          onTap: null,
         ),
       );
     }
@@ -412,8 +614,8 @@ class _MetaLine extends StatelessWidget {
               child: ValueChip(
                 value: v,
                 variant: ValueChipVariant.outlined,
-                iconOnly: false,
-                onTap: onTapValues,
+                iconOnly: true,
+                onTap: null,
               ),
             ),
           ),
@@ -424,7 +626,7 @@ class _MetaLine extends StatelessWidget {
             message: allNames,
             child: _CountPill(
               label: '+${secondaryValues.length}',
-              onTap: onTapValues,
+              onTap: null,
             ),
           ),
         );
@@ -470,7 +672,9 @@ class _MetaLine extends StatelessWidget {
       leftChildren.add(const ProjectPill(projectName: 'Inbox'));
     }
 
-    if (leftChildren.isEmpty && startDate == null && deadlineDate == null) {
+    final hasAnyDates =
+        showDates && (startDate != null || deadlineDate != null);
+    if (leftChildren.isEmpty && !hasAnyDates) {
       return const SizedBox.shrink();
     }
 
@@ -478,38 +682,40 @@ class _MetaLine extends StatelessWidget {
       padding: const EdgeInsets.only(top: 6),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final showBothDates =
-              startDate != null &&
-              deadlineDate != null &&
-              constraints.maxWidth >= 420;
-
           final dateTokens = <Widget>[];
-          if (showBothDates && startDate != null) {
-            dateTokens.add(
-              DateChip.startDate(
-                context: context,
-                label: formatDate(context, startDate!),
-              ),
-            );
-          }
-          if (deadlineDate != null) {
-            dateTokens.add(
-              DateChip.deadline(
-                context: context,
-                label: formatDate(context, deadlineDate!),
-                isOverdue: isOverdue,
-                isDueToday: isDueToday,
-                isDueSoon: isDueSoon,
-              ),
-            );
-          } else if (!showBothDates && startDate != null) {
-            // If there's no deadline, we can still show start date.
-            dateTokens.add(
-              DateChip.startDate(
-                context: context,
-                label: formatDate(context, startDate!),
-              ),
-            );
+          if (showDates) {
+            final showBothDates =
+                startDate != null &&
+                deadlineDate != null &&
+                constraints.maxWidth >= 420;
+
+            if (showBothDates && startDate != null) {
+              dateTokens.add(
+                DateChip.startDate(
+                  context: context,
+                  label: formatDate(context, startDate!),
+                ),
+              );
+            }
+            if (deadlineDate != null) {
+              dateTokens.add(
+                DateChip.deadline(
+                  context: context,
+                  label: formatDate(context, deadlineDate!),
+                  isOverdue: isOverdue,
+                  isDueToday: isDueToday,
+                  isDueSoon: isDueSoon,
+                ),
+              );
+            } else if (!showBothDates && startDate != null) {
+              // If there's no deadline, we can still show start date.
+              dateTokens.add(
+                DateChip.startDate(
+                  context: context,
+                  label: formatDate(context, startDate!),
+                ),
+              );
+            }
           }
 
           return Row(

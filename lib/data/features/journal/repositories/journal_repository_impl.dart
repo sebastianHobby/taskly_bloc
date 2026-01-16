@@ -17,6 +17,7 @@ import 'package:taskly_bloc/domain/journal/model/tracker_state_entry.dart';
 import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
 import 'package:taskly_bloc/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/time/date_only.dart';
 
 class JournalRepositoryImpl
     with QueryBuilderMixin
@@ -414,6 +415,48 @@ class JournalRepositoryImpl
   }
 
   @override
+  Future<void> deleteTrackerAndData(String trackerId) async {
+    final trimmed = trackerId.trim();
+    if (trimmed.isEmpty) return;
+
+    final nowUtc = DateTime.now().toUtc();
+
+    await _database.transaction(() async {
+      // Soft delete the definition row (keeps it for sync/auditing).
+      await (_database.update(
+        _database.trackerDefinitions,
+      )..where((t) => t.id.equals(trimmed))).write(
+        TrackerDefinitionsCompanion(
+          isActive: const Value(false),
+          deletedAt: Value(nowUtc),
+          updatedAt: Value(nowUtc),
+        ),
+      );
+
+      // Purge local rows that would otherwise keep showing up in UI/analytics.
+      await (_database.delete(
+        _database.trackerPreferences,
+      )..where((p) => p.trackerId.equals(trimmed))).go();
+
+      await (_database.delete(
+        _database.trackerDefinitionChoices,
+      )..where((c) => c.trackerId.equals(trimmed))).go();
+
+      await (_database.delete(
+        _database.trackerEvents,
+      )..where((e) => e.trackerId.equals(trimmed))).go();
+
+      await (_database.delete(
+        _database.trackerStateDay,
+      )..where((s) => s.trackerId.equals(trimmed))).go();
+
+      await (_database.delete(
+        _database.trackerStateEntry,
+      )..where((s) => s.trackerId.equals(trimmed))).go();
+    });
+  }
+
+  @override
   Stream<List<TrackerEvent>> watchTrackerEvents({
     DateRange? range,
     String? anchorType,
@@ -454,8 +497,44 @@ class JournalRepositoryImpl
   Future<Map<DateTime, double>> getDailyMoodAverages({
     required DateRange range,
   }) async {
-    // Mood is now represented as tracker events (system trackers).
-    return <DateTime, double>{};
+    final moodTrackerId = await _getSystemTrackerId(systemKey: 'mood');
+    if (moodTrackerId == null) return <DateTime, double>{};
+
+    final events =
+        await (_database.select(_database.trackerEvents)
+              ..where((e) => e.trackerId.equals(moodTrackerId))
+              ..where((e) => e.anchorType.equals('entry'))
+              ..where(
+                (e) =>
+                    e.occurredAt.isBiggerOrEqualValue(range.start) &
+                    e.occurredAt.isSmallerOrEqualValue(range.end),
+              ))
+            .get();
+
+    final valuesByDay = <DateTime, List<double>>{};
+
+    for (final e in events) {
+      final decoded = _decodeTrackerValue(e.value);
+      final asNumber = switch (decoded) {
+        final int v => v.toDouble(),
+        final double v => v,
+        _ => null,
+      };
+      if (asNumber == null) continue;
+
+      final day = dateOnly(e.occurredAt.toUtc());
+      (valuesByDay[day] ??= <double>[]).add(asNumber);
+    }
+
+    final averages = <DateTime, double>{};
+    for (final entry in valuesByDay.entries) {
+      final values = entry.value;
+      if (values.isEmpty) continue;
+      final sum = values.fold<double>(0, (a, b) => a + b);
+      averages[entry.key] = sum / values.length;
+    }
+
+    return averages;
   }
 
   @override
@@ -463,8 +542,87 @@ class JournalRepositoryImpl
     required String trackerId,
     required DateRange range,
   }) async {
-    // Tracker values should be read from projections (tracker_state_day / tracker_state_entry).
-    return <DateTime, double>{};
+    final trimmed = trackerId.trim();
+    if (trimmed.isEmpty) return <DateTime, double>{};
+
+    final events =
+        await (_database.select(_database.trackerEvents)
+              ..where((e) => e.trackerId.equals(trimmed))
+              ..where((e) => e.anchorType.equals('entry'))
+              ..where(
+                (e) =>
+                    e.occurredAt.isBiggerOrEqualValue(range.start) &
+                    e.occurredAt.isSmallerOrEqualValue(range.end),
+              ))
+            .get();
+
+    // Aggregate by UTC day.
+    final boolValuesByDay = <DateTime, List<bool>>{};
+    final numValuesByDay = <DateTime, List<double>>{};
+
+    for (final e in events) {
+      final decoded = _decodeTrackerValue(e.value);
+      final day = dateOnly(e.occurredAt.toUtc());
+
+      if (decoded is bool) {
+        (boolValuesByDay[day] ??= <bool>[]).add(decoded);
+        continue;
+      }
+
+      final asNumber = switch (decoded) {
+        final int v => v.toDouble(),
+        final double v => v,
+        _ => null,
+      };
+      if (asNumber == null) continue;
+      (numValuesByDay[day] ??= <double>[]).add(asNumber);
+    }
+
+    final out = <DateTime, double>{};
+
+    // For boolean trackers, treat a day as 1 if any event is true.
+    for (final entry in boolValuesByDay.entries) {
+      final anyTrue = entry.value.any((v) => v);
+      out[entry.key] = anyTrue ? 1.0 : 0.0;
+    }
+
+    // For numeric trackers, average multiple events per day.
+    for (final entry in numValuesByDay.entries) {
+      final values = entry.value;
+      if (values.isEmpty) continue;
+      final sum = values.fold<double>(0, (a, b) => a + b);
+      out[entry.key] = sum / values.length;
+    }
+
+    return out;
+  }
+
+  Future<String?> _getSystemTrackerId({required String systemKey}) async {
+    final rows = await (_database.select(
+      _database.trackerDefinitions,
+    )..where((t) => t.systemKey.equals(systemKey))).get();
+
+    if (rows.isEmpty) return null;
+    return rows.first.id;
+  }
+
+  Object? _decodeTrackerValue(String? raw) {
+    if (raw == null) return null;
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) return null;
+
+    try {
+      return jsonDecode(trimmed);
+    } catch (_) {
+      // Best-effort fallback for legacy/plain values.
+      final asInt = int.tryParse(trimmed);
+      if (asInt != null) return asInt;
+      final asDouble = double.tryParse(trimmed);
+      if (asDouble != null) return asDouble;
+      if (trimmed.toLowerCase() == 'true') return true;
+      if (trimmed.toLowerCase() == 'false') return false;
+      return trimmed;
+    }
   }
 
   JournalEntry _mapToJournalEntry(JournalEntryEntity row) {

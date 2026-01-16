@@ -686,6 +686,9 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
     final statusBadge = _buildStatusBadge(context, item.tag);
     final accentColor = _tagAccentColor(Theme.of(context), item.tag);
+    final isExpandedInProgress =
+        !item.isCondensed && item.tag == AgendaDateTag.inProgress;
+    final endDate = item.task?.deadlineDate ?? item.project?.deadlineDate;
 
     if (item.isTask && item.task != null) {
       final isAllocated =
@@ -697,7 +700,9 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         onTap: widget.onTaskTap,
         isInFocus: isAllocated,
         accentColor: accentColor,
-        titlePrefix: statusBadge,
+        statusBadge: statusBadge,
+        agendaInProgressStyle: isExpandedInProgress,
+        endDate: endDate,
       );
     }
 
@@ -708,7 +713,9 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         taskCount: item.project!.taskCount,
         completedTaskCount: item.project!.completedTaskCount,
         accentColor: accentColor,
-        titlePrefix: statusBadge,
+        statusBadge: statusBadge,
+        agendaInProgressStyle: isExpandedInProgress,
+        endDate: endDate,
       );
     }
 
@@ -1250,14 +1257,21 @@ class _DayCard extends StatelessWidget {
         : null;
     final absolute = DateFormat('EEE, MMM d').format(date);
 
+    final renderableItems = items.where(
+      (i) =>
+          i.isCondensed ||
+          (i.isTask && i.task != null) ||
+          (i.isProject && i.project != null),
+    );
+
     final dueItems = sortItems(
-      items.where((i) => i.tag == AgendaDateTag.due),
+      renderableItems.where((i) => i.tag == AgendaDateTag.due),
     );
     final startsItems = sortItems(
-      items.where((i) => i.tag == AgendaDateTag.starts),
+      renderableItems.where((i) => i.tag == AgendaDateTag.starts),
     );
     final inProgressItems = sortItems(
-      items.where((i) => i.tag == AgendaDateTag.inProgress),
+      renderableItems.where((i) => i.tag == AgendaDateTag.inProgress),
     );
 
     Widget buildSection(String label, List<AgendaItem> sectionItems) {
