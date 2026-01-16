@@ -104,6 +104,7 @@ class ScreenSpecDataInterpreter {
           return _moduleInterpreterRegistry
               .watch(
                 index: index,
+                screenTemplate: spec.template,
                 module: moduleEntry.module,
               )
               // Defensive guard: even if a module stream throws, keep the

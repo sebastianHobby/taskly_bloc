@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
+import 'package:taskly_bloc/presentation/features/attention/model/attention_session_banner_vm.dart';
 
 @immutable
 sealed class ScreenSpecState {
@@ -18,9 +19,14 @@ final class ScreenSpecLoadingState extends ScreenSpecState {
 }
 
 final class ScreenSpecLoadedState extends ScreenSpecState {
-  const ScreenSpecLoadedState({required this.data});
+  const ScreenSpecLoadedState({
+    required this.data,
+    required this.attentionSessionBanner,
+  });
 
   final ScreenSpecData data;
+
+  final AttentionSessionBannerVm? attentionSessionBanner;
 }
 
 final class ScreenSpecErrorState extends ScreenSpecState {

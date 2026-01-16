@@ -4,6 +4,7 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_bloc/domain/core/editing/value/value_draft.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
@@ -112,6 +113,7 @@ class EditorLauncher {
   Future<void> openValueEditor(
     BuildContext context, {
     String? valueId,
+    ValueDraft? initialDraft,
     void Function(String valueId)? onSaved,
     bool? showDragHandle,
   }) {
@@ -126,6 +128,7 @@ class EditorLauncher {
         return ValueDetailSheetPage(
           valueId: valueId,
           valueRepository: _valueRepository,
+          initialDraft: valueId == null ? initialDraft : null,
           onSaved: onSaved,
         );
       },

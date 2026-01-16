@@ -19,6 +19,10 @@ enum TaskTileVariant {
 enum ProjectTileVariant {
   @JsonValue('list_tile')
   listTile,
+
+  /// Agenda-style tile/card.
+  @JsonValue('agenda')
+  agenda,
 }
 
 /// Value tile variant for list rendering.

@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
@@ -21,6 +22,7 @@ sealed class SectionVm with _$SectionVm {
   const factory SectionVm.taskListV2({
     required int index,
     required ListSectionParamsV2 params,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,
@@ -31,6 +33,7 @@ sealed class SectionVm with _$SectionVm {
   const factory SectionVm.valueListV2({
     required int index,
     required ListSectionParamsV2 params,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,
@@ -41,6 +44,7 @@ sealed class SectionVm with _$SectionVm {
   const factory SectionVm.interleavedListV2({
     required int index,
     required InterleavedListSectionParamsV2 params,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,
@@ -51,6 +55,7 @@ sealed class SectionVm with _$SectionVm {
   const factory SectionVm.hierarchyValueProjectTaskV2({
     required int index,
     required HierarchyValueProjectTaskSectionParamsV2 params,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,
@@ -61,6 +66,7 @@ sealed class SectionVm with _$SectionVm {
   const factory SectionVm.agendaV2({
     required int index,
     required AgendaSectionParamsV2 params,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,
@@ -100,6 +106,7 @@ sealed class SectionVm with _$SectionVm {
 
   const factory SectionVm.myDayRankedTasksV1({
     required int index,
+    required EntityStyleV1 entityStyle,
     String? title,
     SectionDataResult? data,
     DisplayConfig? displayConfig,

@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 
 part 'list_section_params_v2.freezed.dart';
 part 'list_section_params_v2.g.dart';
@@ -189,7 +189,7 @@ abstract class ListSectionParamsV2 with _$ListSectionParamsV2 {
   @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory ListSectionParamsV2({
     required DataConfig config,
-    required StylePackV2 pack,
+    EntityStyleOverrideV1? entityStyleOverride,
     @Default(ListSeparatorV2.divider) ListSeparatorV2 separator,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     SectionFilterSpecV2? filters,

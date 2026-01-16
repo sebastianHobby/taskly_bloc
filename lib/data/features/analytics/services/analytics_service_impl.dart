@@ -20,6 +20,7 @@ import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
 import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/services/analytics/correlation_calculator.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
@@ -210,6 +211,17 @@ class AnalyticsServiceImpl implements AnalyticsService {
   Future<CorrelationResult> calculateCorrelation({
     required CorrelationRequest request,
   }) async {
+    final defs = await _journalRepo.watchTrackerDefinitions().first;
+    final defById = {for (final d in defs) d.id: d};
+
+    TrackerDefinition? moodDefinition;
+    for (final d in defs) {
+      if (d.systemKey == 'mood') {
+        moodDefinition = d;
+        break;
+      }
+    }
+
     return request.when(
       moodVsTracker: (trackerId, range) async {
         final moodByDay = await _journalRepo.getDailyMoodAverages(range: range);
@@ -230,6 +242,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
           targetLabel: 'Mood',
           sourceDays: trackerDays,
           targetData: moodByDay,
+          sourceHigherIsBetter: defById[trackerId]?.higherIsBetter,
+          targetHigherIsBetter: moodDefinition?.higherIsBetter,
         );
       },
       moodVsEntity: (entityId, entityType, range) async {
@@ -250,6 +264,7 @@ class AnalyticsServiceImpl implements AnalyticsService {
           targetLabel: 'Mood',
           sourceDays: activityDays,
           targetData: moodByDay,
+          targetHigherIsBetter: moodDefinition?.higherIsBetter,
         );
       },
       trackerVsTracker: (trackerId1, trackerId2, range) async {
@@ -274,6 +289,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
           targetLabel: labels[trackerId2] ?? 'Tracker',
           sourceDays: sourceDays,
           targetData: series2,
+          sourceHigherIsBetter: defById[trackerId1]?.higherIsBetter,
+          targetHigherIsBetter: defById[trackerId2]?.higherIsBetter,
         );
       },
     );
@@ -288,6 +305,17 @@ class AnalyticsServiceImpl implements AnalyticsService {
     if (moodByDay.isEmpty) return const <CorrelationResult>[];
 
     final defs = await _journalRepo.watchTrackerDefinitions().first;
+
+    TrackerDefinition? moodDefinition;
+    for (final d in defs) {
+      if (d.systemKey == 'mood') {
+        moodDefinition = d;
+        break;
+      }
+    }
+
+    final defById = {for (final d in defs) d.id: d};
+
     final labels = {
       for (final d in defs)
         if (d.deletedAt == null && d.systemKey == null && d.isActive)
@@ -312,6 +340,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
         targetLabel: 'Mood',
         sourceDays: trackerDays,
         targetData: moodByDay,
+        sourceHigherIsBetter: defById[trackerId]?.higherIsBetter,
+        targetHigherIsBetter: moodDefinition?.higherIsBetter,
       );
 
       results.add(result);

@@ -18,6 +18,8 @@ class CorrelationCalculator {
     required String targetLabel,
     required List<DateTime> sourceDays,
     required Map<DateTime, double> targetData,
+    bool? sourceHigherIsBetter,
+    bool? targetHigherIsBetter,
   }) {
     final startTime = DateTime.now();
 
@@ -26,6 +28,8 @@ class CorrelationCalculator {
         sourceLabel: sourceLabel,
         targetLabel: targetLabel,
         reason: 'No data provided',
+        sourceHigherIsBetter: sourceHigherIsBetter,
+        targetHigherIsBetter: targetHigherIsBetter,
       );
     }
 
@@ -38,6 +42,8 @@ class CorrelationCalculator {
         sourceLabel: sourceLabel,
         targetLabel: targetLabel,
         reason: 'No overlapping data',
+        sourceHigherIsBetter: sourceHigherIsBetter,
+        targetHigherIsBetter: targetHigherIsBetter,
       );
     }
 
@@ -111,6 +117,8 @@ class CorrelationCalculator {
         targetLabel: targetLabel,
         reason: 'Need at least $minSampleSize data points (found ${x.length})',
         sampleSize: x.length,
+        sourceHigherIsBetter: sourceHigherIsBetter,
+        targetHigherIsBetter: targetHigherIsBetter,
       );
     }
 
@@ -149,6 +157,8 @@ class CorrelationCalculator {
       valueWithSource: valueWithSource,
       valueWithoutSource: valueWithoutSource,
       differencePercent: differencePercent,
+      sourceHigherIsBetter: sourceHigherIsBetter,
+      targetHigherIsBetter: targetHigherIsBetter,
       statisticalSignificance: significance,
       performanceMetrics: PerformanceMetrics(
         calculationTimeMs: calculationTime,
@@ -365,6 +375,8 @@ class CorrelationCalculator {
     required String targetLabel,
     required String reason,
     int sampleSize = 0,
+    bool? sourceHigherIsBetter,
+    bool? targetHigherIsBetter,
   }) {
     return CorrelationResult(
       sourceLabel: sourceLabel,
@@ -374,6 +386,8 @@ class CorrelationCalculator {
       strength: CorrelationStrength.negligible,
       insight:
           '⚠️ Insufficient data: $reason. Keep tracking to discover patterns.',
+      sourceHigherIsBetter: sourceHigherIsBetter,
+      targetHigherIsBetter: targetHigherIsBetter,
     );
   }
 

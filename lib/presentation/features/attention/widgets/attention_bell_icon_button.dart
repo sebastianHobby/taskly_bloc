@@ -49,43 +49,64 @@ class AttentionBellIconButton extends StatelessWidget {
 
         final countText = total > 99 ? '99+' : '$total';
 
-        return IconButton(
-          tooltip: 'Attention',
-          onPressed: onPressed,
-          icon: SizedBox(
-            width: 28,
-            height: 28,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                if (showBadge && severity != AttentionBellSeverity.none)
-                  Positioned.fill(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: haloColor,
-                            blurRadius: 10,
-                            spreadRadius: 1,
+        final semanticsValue = () {
+          if (state.isLoading) return 'Loading attention status.';
+          if (state.error != null) return 'Attention status unavailable.';
+          if (total == 0) return 'No items need attention.';
+
+          final severityText = switch (severity) {
+            AttentionBellSeverity.critical => 'critical',
+            AttentionBellSeverity.warning => 'warning',
+            AttentionBellSeverity.none => 'none',
+          };
+
+          return '$total items need attention. Highest severity: $severityText.';
+        }();
+
+        return Semantics(
+          button: true,
+          label: 'Attention',
+          value: semanticsValue,
+          child: IconButton(
+            tooltip: 'Attention',
+            onPressed: onPressed,
+            icon: ExcludeSemantics(
+              child: SizedBox(
+                width: 28,
+                height: 28,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    if (showBadge && severity != AttentionBellSeverity.none)
+                      Positioned.fill(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: haloColor,
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
+                    const Center(
+                      child: Icon(Icons.notifications_outlined, size: 24),
                     ),
-                  ),
-                const Center(
-                  child: Icon(Icons.notifications_outlined, size: 24),
+                    if (showBadge)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: _BellBadge(
+                          text: countText,
+                          color: badgeColor,
+                        ),
+                      ),
+                  ],
                 ),
-                if (showBadge)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: _BellBadge(
-                      text: countText,
-                      color: badgeColor,
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
         );

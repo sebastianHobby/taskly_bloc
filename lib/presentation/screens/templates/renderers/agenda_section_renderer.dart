@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
 import 'package:taskly_bloc/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
+import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 
 /// Renders the Scheduled agenda section as a day-cards feed.
 ///
@@ -23,7 +24,7 @@ class AgendaSectionRenderer extends StatefulWidget {
   const AgendaSectionRenderer({
     required this.params,
     required this.data,
-    this.showTagPills = false,
+    required this.entityStyle,
     this.onTaskToggle,
     this.onTaskTap,
     super.key,
@@ -31,7 +32,7 @@ class AgendaSectionRenderer extends StatefulWidget {
 
   final AgendaSectionParamsV2 params;
   final AgendaSectionResult data;
-  final bool showTagPills;
+  final EntityStyleV1 entityStyle;
   final void Function(String taskId, bool? value)? onTaskToggle;
   final void Function(Task task)? onTaskTap;
 
@@ -689,31 +690,40 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     final isExpandedInProgress =
         !item.isCondensed && item.tag == AgendaDateTag.inProgress;
     final endDate = item.task?.deadlineDate ?? item.project?.deadlineDate;
+    const tileBuilder = ScreenItemTileBuilder();
+    final showTagPills = widget.entityStyle.showAgendaTagPills;
 
     if (item.isTask && item.task != null) {
       final isAllocated =
           widget.data.enrichment?.isAllocatedByTaskId[item.task!.id] ?? false;
-      return TaskView(
-        task: item.task!,
-        variant: TaskViewVariant.agendaCard,
-        onCheckboxChanged: (t, val) => widget.onTaskToggle?.call(t.id, val),
-        onTap: widget.onTaskTap,
+
+      return tileBuilder.build(
+        context,
+        item: ScreenItem.task(item.task!),
+        entityStyle: widget.entityStyle,
         isInFocus: isAllocated,
+        onTaskToggle: widget.onTaskToggle,
+        onTap: widget.onTaskTap == null
+            ? null
+            : () => widget.onTaskTap!(item.task!),
         accentColor: accentColor,
-        statusBadge: statusBadge,
+        statusBadge: showTagPills ? statusBadge : null,
         agendaInProgressStyle: isExpandedInProgress,
         endDate: endDate,
       );
     }
 
     if (item.isProject && item.project != null) {
-      return ProjectView(
-        project: item.project!,
-        variant: ProjectViewVariant.agendaCard,
-        taskCount: item.project!.taskCount,
-        completedTaskCount: item.project!.completedTaskCount,
+      return tileBuilder.build(
+        context,
+        item: ScreenItem.project(item.project!),
+        entityStyle: widget.entityStyle,
+        projectStats: ProjectTileStats(
+          taskCount: item.project!.taskCount,
+          completedTaskCount: item.project!.completedTaskCount,
+        ),
         accentColor: accentColor,
-        statusBadge: statusBadge,
+        statusBadge: showTagPills ? statusBadge : null,
         agendaInProgressStyle: isExpandedInProgress,
         endDate: endDate,
       );

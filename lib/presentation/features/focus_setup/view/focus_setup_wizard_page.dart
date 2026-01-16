@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_bloc/domain/core/editing/value/value_draft.dart';
+import 'package:taskly_bloc/domain/core/model/value_priority.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/features/next_action/widgets/focus_mode_card.dart';
@@ -555,6 +558,18 @@ class _ValuesCtaStep extends StatefulWidget {
 class _ValuesCtaStepState extends State<_ValuesCtaStep> {
   final _controller = TextEditingController();
 
+  static const _palette = <String>[
+    '#6366F1',
+    '#0EA5E9',
+    '#10B981',
+    '#F59E0B',
+    '#EF4444',
+    '#8B5CF6',
+    '#14B8A6',
+    '#22C55E',
+    '#E11D48',
+  ];
+
   @override
   void dispose() {
     _controller.dispose();
@@ -563,7 +578,6 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<FocusSetupBloc>();
     final theme = Theme.of(context);
     final valuesCount = widget.state.valuesCount;
 
@@ -614,7 +628,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                     labelText: 'Quick add a value',
                     hintText: 'e.g. Health',
                   ),
-                  onSubmitted: (text) => _submitQuickAdd(bloc, text),
+                  onSubmitted: (text) => _submitQuickAdd(context, text),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -630,7 +644,7 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
                     ])
                       ActionChip(
                         label: Text(suggestion),
-                        onPressed: () => _submitQuickAdd(bloc, suggestion),
+                        onPressed: () => _submitQuickAdd(context, suggestion),
                       ),
                   ],
                 ),
@@ -651,11 +665,31 @@ class _ValuesCtaStepState extends State<_ValuesCtaStep> {
     );
   }
 
-  void _submitQuickAdd(FocusSetupBloc bloc, String raw) {
+  Future<void> _submitQuickAdd(BuildContext context, String raw) async {
     final name = raw.trim();
     if (name.isEmpty) return;
-    bloc.add(FocusSetupEvent.quickAddValueRequested(name));
+
+    final launcher = EditorLauncher.fromGetIt();
+    await launcher.openValueEditor(
+      context,
+      initialDraft: ValueDraft(
+        name: name,
+        color: _colorHexForName(name),
+        priority: ValuePriority.medium,
+        iconName: null,
+      ),
+      showDragHandle: true,
+    );
+
     _controller.clear();
+  }
+
+  String _colorHexForName(String name) {
+    final hash = name.toLowerCase().codeUnits.fold<int>(
+      0,
+      (a, b) => (a * 31 + b) & 0x7fffffff,
+    );
+    return _palette[hash % _palette.length];
   }
 }
 

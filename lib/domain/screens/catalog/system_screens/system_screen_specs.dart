@@ -8,11 +8,9 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_gate_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_inbox_section_params_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 /// Typed system screen specs for the hard-cutover system-screen path.
 abstract class SystemScreenSpecs {
@@ -34,12 +32,6 @@ abstract class SystemScreenSpecs {
     modules: SlottedModules(
       header: [
         const ScreenModuleSpec.myDayHeroV1(),
-        ScreenModuleSpec.attentionBannerV2(
-          params: AttentionBannerSectionParamsV2(
-            pack: StylePackV2.standard,
-            buckets: const ['action', 'review'],
-          ),
-        ),
       ],
       primary: [
         ScreenModuleSpec.myDayRankedTasksV1(title: 'Today'),
@@ -55,9 +47,7 @@ abstract class SystemScreenSpecs {
     modules: SlottedModules(
       primary: [
         ScreenModuleSpec.attentionInboxV1(
-          params: const AttentionInboxSectionParamsV1(
-            pack: StylePackV2.standard,
-          ),
+          params: const AttentionInboxSectionParamsV1(),
         ),
       ],
     ),
@@ -73,19 +63,10 @@ abstract class SystemScreenSpecs {
       fabOperations: [FabOperation.createTask],
     ),
     modules: SlottedModules(
-      header: [
-        ScreenModuleSpec.attentionBannerV2(
-          params: AttentionBannerSectionParamsV2(
-            pack: StylePackV2.standard,
-            buckets: const ['action', 'review'],
-          ),
-        ),
-      ],
       primary: [
         ScreenModuleSpec.agendaV2(
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            pack: StylePackV2.standard,
             layout: AgendaLayoutV2.dayCardsFeed,
             enrichment: EnrichmentPlanV2(
               items: [
@@ -113,15 +94,6 @@ abstract class SystemScreenSpecs {
       fabOperations: [FabOperation.createTask],
     ),
     modules: SlottedModules(
-      header: [
-        ScreenModuleSpec.attentionBannerV2(
-          params: AttentionBannerSectionParamsV2(
-            pack: StylePackV2.standard,
-            buckets: const ['action', 'review'],
-            entityTypes: const ['task', 'project'],
-          ),
-        ),
-      ],
       primary: [
         ScreenModuleSpec.hierarchyValueProjectTaskV2(
           params: HierarchyValueProjectTaskSectionParamsV2(
@@ -129,7 +101,6 @@ abstract class SystemScreenSpecs {
               DataConfig.task(query: TaskQuery.incomplete()),
               DataConfig.project(query: ProjectQuery.active()),
             ],
-            pack: StylePackV2.standard,
             pinnedValueHeaders: true,
             pinnedProjectHeaders: false,
             singleInboxGroupForNoProjectTasks: true,
@@ -162,7 +133,6 @@ abstract class SystemScreenSpecs {
         ScreenModuleSpec.valueListV2(
           params: ListSectionParamsV2(
             config: DataConfig.value(query: const ValueQuery()),
-            pack: StylePackV2.standard,
             separator: ListSeparatorV2.spaced8,
             enrichment: const EnrichmentPlanV2(
               items: [EnrichmentPlanItemV2.valueStats()],

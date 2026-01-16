@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 part 'agenda_section_params_v2.freezed.dart';
 part 'agenda_section_params_v2.g.dart';
@@ -26,7 +26,7 @@ abstract class AgendaSectionParamsV2 with _$AgendaSectionParamsV2 {
   @JsonSerializable(disallowUnrecognizedKeys: true)
   const factory AgendaSectionParamsV2({
     required AgendaDateFieldV2 dateField,
-    required StylePackV2 pack,
+    EntityStyleOverrideV1? entityStyleOverride,
     @Default(AgendaLayoutV2.dayCardsFeed) AgendaLayoutV2 layout,
     @Default(EnrichmentPlanV2()) EnrichmentPlanV2 enrichment,
     @NullableTaskQueryConverter() TaskQuery? additionalFilter,

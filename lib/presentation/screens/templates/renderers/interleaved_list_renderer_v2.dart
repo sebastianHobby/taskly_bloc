@@ -6,6 +6,7 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
@@ -13,7 +14,7 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/section_filter_bar_v2.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
@@ -29,9 +30,9 @@ class InterleavedListRendererV2 extends StatefulWidget {
     required this.items,
     required this.enrichment,
     required this.params,
+    required this.entityStyle,
     super.key,
     this.title,
-    this.compactTiles = false,
     this.onTaskToggle,
     this.onTaskPinnedChanged,
     this.persistenceKey,
@@ -43,8 +44,8 @@ class InterleavedListRendererV2 extends StatefulWidget {
   final List<ScreenItem> items;
   final EnrichmentResultV2? enrichment;
   final InterleavedListSectionParamsV2 params;
+  final EntityStyleV1 entityStyle;
   final String? title;
-  final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
   final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
@@ -554,7 +555,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
   @override
   Widget build(BuildContext context) {
-    const registry = ScreenItemTileRegistry();
+    const tileBuilder = ScreenItemTileBuilder();
     final items = widget.items;
 
     final filters = widget.params.filters;
@@ -651,14 +652,14 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             ),
             itemBuilder: (context, index) => _buildItem(
               context,
-              registry: registry,
+              tileBuilder: tileBuilder,
               item: filteredItems[index],
             ),
           ),
         ],
       ),
       InterleavedListRenderModeV2.hierarchyValueProjectTask => _buildHierarchy(
-        registry: registry,
+        tileBuilder: tileBuilder,
         headerSlivers: headerSlivers,
         pinnedProjectHeaders: widget.pinnedProjectHeaders,
         singleInboxGroupForNoProjectTasks:
@@ -811,7 +812,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
   Widget _buildItem(
     BuildContext context, {
-    required ScreenItemTileRegistry registry,
+    required ScreenItemTileBuilder tileBuilder,
     required ScreenItem item,
     Widget? titlePrefix,
     Widget? projectTrailing,
@@ -827,12 +828,12 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         ? widget.enrichment?.valueStatsByValueId[item.value.id]
         : null;
 
-    final base = registry.build(
+    final base = tileBuilder.build(
       context,
       item: item,
+      entityStyle: widget.entityStyle,
       isInFocus: isInFocus,
       onTaskToggle: widget.onTaskToggle,
-      compactTiles: widget.compactTiles,
       valueStats: valueStats,
       titlePrefix: prefix,
       projectTrailing: projectTrailing,
@@ -843,7 +844,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
   }
 
   SliverMainAxisGroup _buildHierarchy({
-    required ScreenItemTileRegistry registry,
+    required ScreenItemTileBuilder tileBuilder,
     required List<Widget> headerSlivers,
     required bool pinnedProjectHeaders,
     required bool singleInboxGroupForNoProjectTasks,
@@ -993,7 +994,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
           separatorBuilder: (_, __) => const Divider(height: 1),
           itemBuilder: (context, index) => _buildItem(
             context,
-            registry: registry,
+            tileBuilder: tileBuilder,
             item: inboxTasks[index],
           ),
         ),
@@ -1085,7 +1086,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
                 return _buildItem(
                   context,
-                  registry: registry,
+                  tileBuilder: tileBuilder,
                   item: projectItem,
                   projectTrailing: _CollapseChevron(
                     collapsed: collapsed,
@@ -1096,7 +1097,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
               }
               final tile = _buildItem(
                 context,
-                registry: registry,
+                tileBuilder: tileBuilder,
                 item: projectTasks[index - 1],
               );
               if (taskIndent <= 0) return tile;
@@ -1128,7 +1129,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
             separatorBuilder: (_, __) => const Divider(height: 1),
             itemBuilder: (context, index) => _buildItem(
               context,
-              registry: registry,
+              tileBuilder: tileBuilder,
               item: tasksNoProject[index],
             ),
           ),
@@ -1191,7 +1192,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                 itemBuilder: (context, index) {
                   final tile = _buildItem(
                     context,
-                    registry: registry,
+                    tileBuilder: tileBuilder,
                     item: projectTasks[index],
                   );
                   return Padding(
@@ -1218,7 +1219,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                     _entityViewMode != SectionEntityViewModeV2.tasks) {
                   return _buildItem(
                     context,
-                    registry: registry,
+                    tileBuilder: tileBuilder,
                     item: ScreenItem.project(project),
                     projectTrailing: _CollapseChevron(
                       collapsed: collapsed,
@@ -1243,7 +1244,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
 
               final tile = _buildItem(
                 context,
-                registry: registry,
+                tileBuilder: tileBuilder,
                 item: projectTasks[index - 1],
               );
               if (taskIndent <= 0) return tile;

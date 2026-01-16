@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 
 /// Typed ScreenSpecs for entity detail (RD) surfaces.
 ///
@@ -17,7 +16,6 @@ abstract class EntityDetailScreenSpecs {
   static ScreenSpec projectDetail({
     required Project project,
     required String tasksTitle,
-    StylePackV2 pack = StylePackV2.standard,
   }) {
     return ScreenSpec(
       id: 'project_${project.id}',
@@ -42,7 +40,6 @@ abstract class EntityDetailScreenSpecs {
               config: DataConfig.task(
                 query: TaskQuery.forProject(projectId: project.id),
               ),
-              pack: pack,
               separator: ListSeparatorV2.divider,
             ),
           ),
@@ -54,7 +51,6 @@ abstract class EntityDetailScreenSpecs {
   static ScreenSpec valueDetail({
     required Value value,
     required String projectsAndTasksTitle,
-    StylePackV2 pack = StylePackV2.standard,
   }) {
     return ScreenSpec(
       id: 'value_${value.id}',
@@ -79,7 +75,6 @@ abstract class EntityDetailScreenSpecs {
               sources: [
                 DataConfig.task(query: TaskQuery.forValue(valueId: value.id)),
               ],
-              pack: pack,
               pinnedValueHeaders: false,
               pinnedProjectHeaders: true,
               singleInboxGroupForNoProjectTasks: true,

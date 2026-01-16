@@ -20,6 +20,7 @@ class ValueForm extends StatefulWidget {
     required this.initialData,
     required this.onSubmit,
     required this.submitTooltip,
+    this.initialDraft,
     this.onChanged,
     this.onDelete,
     this.onClose,
@@ -30,6 +31,11 @@ class ValueForm extends StatefulWidget {
   final VoidCallback onSubmit;
   final String submitTooltip;
   final Value? initialData;
+
+  /// Optional initial values for the create flow.
+  ///
+  /// When [initialData] is null (creating), these values seed the form.
+  final ValueDraft? initialDraft;
   final ValueChanged<Map<String, dynamic>>? onChanged;
   final VoidCallback? onDelete;
 
@@ -54,14 +60,24 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
 
     final isCreating = widget.initialData == null;
 
+    final createDraft = widget.initialData == null
+        ? (widget.initialDraft ?? ValueDraft.empty())
+        : null;
+
     final initialValues = <String, dynamic>{
-      ValueFieldKeys.name.id: widget.initialData?.name.trim() ?? '',
+      ValueFieldKeys.name.id:
+          widget.initialData?.name.trim() ?? createDraft?.name.trim() ?? '',
       ValueFieldKeys.colour.id: ColorUtils.fromHex(
-        widget.initialData?.color ?? ValueForm._defaultColorHex,
+        widget.initialData?.color ??
+            createDraft?.color ??
+            ValueForm._defaultColorHex,
       ),
       ValueFieldKeys.priority.id:
-          widget.initialData?.priority ?? ValuePriority.medium,
-      ValueFieldKeys.iconName.id: widget.initialData?.iconName,
+          widget.initialData?.priority ??
+          createDraft?.priority ??
+          ValuePriority.medium,
+      ValueFieldKeys.iconName.id:
+          widget.initialData?.iconName ?? createDraft?.iconName,
     };
 
     return FormShell(

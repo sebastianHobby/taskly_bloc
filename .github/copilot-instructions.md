@@ -55,7 +55,7 @@ mobile platforms.
 
 ### Test execution timing (strict)
 
-* When implementing a change, do not run tests. Instead if change is significant reminder user to run the tests after implementation is complete or commit so pre git hook run tests.
+* When implementing a change, do not run tests. Instead if change is significant remind user to run the tests after implementation is complete or commit so pre git hook run tests.
 * Exceptions: only run tests earlier if the user explicitly asks, or if it is required to unblock progress.
 
 ### Analysis first (strict)
@@ -75,7 +75,6 @@ mobile platforms.
 * **Create plans in backlog:** persisted plans must be created under `doc/plans/backlog/`.
 * **Move to WIP when implementation starts:** before the first implementation step, move the entire plan folder from `doc/plans/backlog/<plan-name>/` to `doc/plans/wip/<plan-name>/`.
   * “Move” means the folder path changes and the old location no longer exists (do not copy).
-  * If using git operations is permitted by the user, prefer `git mv`; otherwise use a real filesystem/VS Code move.
 * **Keep plans up to date at phase boundaries:** at the end of each phase, immediately update that phase file with:
   * `Last updated at:` (UTC)
   * a short summary of what was done in the phase

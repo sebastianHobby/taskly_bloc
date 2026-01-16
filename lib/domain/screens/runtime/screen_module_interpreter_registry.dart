@@ -1,4 +1,6 @@
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
+import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
@@ -27,6 +29,7 @@ abstract interface class ScreenModuleInterpreterRegistry {
   /// section-level error VM where possible.
   Stream<SectionVm> watch({
     required int index,
+    required ScreenTemplateSpec screenTemplate,
     required ScreenModuleSpec module,
   });
 }
@@ -35,6 +38,7 @@ abstract interface class ScreenModuleInterpreterRegistry {
 final class DefaultScreenModuleInterpreterRegistry
     implements ScreenModuleInterpreterRegistry {
   DefaultScreenModuleInterpreterRegistry({
+    required EntityStyleResolver entityStyleResolver,
     required DataListSectionInterpreterV2 taskListInterpreter,
     required DataListSectionInterpreterV2 valueListInterpreter,
     required InterleavedListSectionInterpreterV2 interleavedListInterpreter,
@@ -54,7 +58,8 @@ final class DefaultScreenModuleInterpreterRegistry
     journalHistoryListV1Interpreter,
     required JournalManageTrackersModuleInterpreterV1
     journalManageTrackersV1Interpreter,
-  }) : _taskListInterpreter = taskListInterpreter,
+  }) : _entityStyleResolver = entityStyleResolver,
+       _taskListInterpreter = taskListInterpreter,
        _valueListInterpreter = valueListInterpreter,
        _interleavedListInterpreter = interleavedListInterpreter,
        _hierarchyValueProjectTaskInterpreter =
@@ -69,6 +74,8 @@ final class DefaultScreenModuleInterpreterRegistry
        _journalTodayEntriesV1Interpreter = journalTodayEntriesV1Interpreter,
        _journalHistoryListV1Interpreter = journalHistoryListV1Interpreter,
        _journalManageTrackersV1Interpreter = journalManageTrackersV1Interpreter;
+
+  final EntityStyleResolver _entityStyleResolver;
 
   final DataListSectionInterpreterV2 _taskListInterpreter;
   final DataListSectionInterpreterV2 _valueListInterpreter;
@@ -100,6 +107,7 @@ final class DefaultScreenModuleInterpreterRegistry
   @override
   Stream<SectionVm> watch({
     required int index,
+    required ScreenTemplateSpec screenTemplate,
     required ScreenModuleSpec module,
   }) {
     try {
@@ -108,18 +116,30 @@ final class DefaultScreenModuleInterpreterRegistry
             .watch(m.params)
             .map(
               (data) {
+                final entityStyle = _entityStyleResolver.resolve(
+                  template: screenTemplate,
+                  sectionTemplateId: SectionTemplateId.taskListV2,
+                  override: m.params.entityStyleOverride,
+                );
                 return SectionVm.taskListV2(
                   index: index,
                   params: m.params,
+                  entityStyle: entityStyle,
                   title: m.title,
                   data: _coerceSectionDataResult(data),
                 );
               },
             )
             .onErrorReturnWith((error, _) {
+              final entityStyle = _entityStyleResolver.resolve(
+                template: screenTemplate,
+                sectionTemplateId: SectionTemplateId.taskListV2,
+                override: m.params.entityStyleOverride,
+              );
               return SectionVm.taskListV2(
                 index: index,
                 params: m.params,
+                entityStyle: entityStyle,
                 title: m.title,
                 error: error.toString(),
               );
@@ -128,18 +148,30 @@ final class DefaultScreenModuleInterpreterRegistry
             .watch(m.params)
             .map(
               (data) {
+                final entityStyle = _entityStyleResolver.resolve(
+                  template: screenTemplate,
+                  sectionTemplateId: SectionTemplateId.valueListV2,
+                  override: m.params.entityStyleOverride,
+                );
                 return SectionVm.valueListV2(
                   index: index,
                   params: m.params,
+                  entityStyle: entityStyle,
                   title: m.title,
                   data: _coerceSectionDataResult(data),
                 );
               },
             )
             .onErrorReturnWith((error, _) {
+              final entityStyle = _entityStyleResolver.resolve(
+                template: screenTemplate,
+                sectionTemplateId: SectionTemplateId.valueListV2,
+                override: m.params.entityStyleOverride,
+              );
               return SectionVm.valueListV2(
                 index: index,
                 params: m.params,
+                entityStyle: entityStyle,
                 title: m.title,
                 error: error.toString(),
               );
@@ -148,18 +180,30 @@ final class DefaultScreenModuleInterpreterRegistry
             .watch(m.params)
             .map(
               (data) {
+                final entityStyle = _entityStyleResolver.resolve(
+                  template: screenTemplate,
+                  sectionTemplateId: SectionTemplateId.interleavedListV2,
+                  override: m.params.entityStyleOverride,
+                );
                 return SectionVm.interleavedListV2(
                   index: index,
                   params: m.params,
+                  entityStyle: entityStyle,
                   title: m.title,
                   data: _coerceSectionDataResult(data),
                 );
               },
             )
             .onErrorReturnWith((error, _) {
+              final entityStyle = _entityStyleResolver.resolve(
+                template: screenTemplate,
+                sectionTemplateId: SectionTemplateId.interleavedListV2,
+                override: m.params.entityStyleOverride,
+              );
               return SectionVm.interleavedListV2(
                 index: index,
                 params: m.params,
+                entityStyle: entityStyle,
                 title: m.title,
                 error: error.toString(),
               );
@@ -169,18 +213,32 @@ final class DefaultScreenModuleInterpreterRegistry
                 .watch(m.params)
                 .map(
                   (data) {
+                    final entityStyle = _entityStyleResolver.resolve(
+                      template: screenTemplate,
+                      sectionTemplateId:
+                          SectionTemplateId.hierarchyValueProjectTaskV2,
+                      override: m.params.entityStyleOverride,
+                    );
                     return SectionVm.hierarchyValueProjectTaskV2(
                       index: index,
                       params: m.params,
+                      entityStyle: entityStyle,
                       title: m.title,
                       data: _coerceSectionDataResult(data),
                     );
                   },
                 )
                 .onErrorReturnWith((error, _) {
+                  final entityStyle = _entityStyleResolver.resolve(
+                    template: screenTemplate,
+                    sectionTemplateId:
+                        SectionTemplateId.hierarchyValueProjectTaskV2,
+                    override: m.params.entityStyleOverride,
+                  );
                   return SectionVm.hierarchyValueProjectTaskV2(
                     index: index,
                     params: m.params,
+                    entityStyle: entityStyle,
                     title: m.title,
                     error: error.toString(),
                   );
@@ -189,18 +247,30 @@ final class DefaultScreenModuleInterpreterRegistry
             .watch(m.params)
             .map(
               (data) {
+                final entityStyle = _entityStyleResolver.resolve(
+                  template: screenTemplate,
+                  sectionTemplateId: SectionTemplateId.agendaV2,
+                  override: m.params.entityStyleOverride,
+                );
                 return SectionVm.agendaV2(
                   index: index,
                   params: m.params,
+                  entityStyle: entityStyle,
                   title: m.title,
                   data: _coerceSectionDataResult(data),
                 );
               },
             )
             .onErrorReturnWith((error, _) {
+              final entityStyle = _entityStyleResolver.resolve(
+                template: screenTemplate,
+                sectionTemplateId: SectionTemplateId.agendaV2,
+                override: m.params.entityStyleOverride,
+              );
               return SectionVm.agendaV2(
                 index: index,
                 params: m.params,
+                entityStyle: entityStyle,
                 title: m.title,
                 error: error.toString(),
               );
@@ -289,6 +359,10 @@ final class DefaultScreenModuleInterpreterRegistry
               (data) {
                 return SectionVm.myDayRankedTasksV1(
                   index: index,
+                  entityStyle: _entityStyleResolver.resolve(
+                    template: screenTemplate,
+                    sectionTemplateId: SectionTemplateId.myDayRankedTasksV1,
+                  ),
                   title: m.title,
                   data: _coerceSectionDataResult(data),
                 );
@@ -297,6 +371,10 @@ final class DefaultScreenModuleInterpreterRegistry
             .onErrorReturnWith((error, _) {
               return SectionVm.myDayRankedTasksV1(
                 index: index,
+                entityStyle: _entityStyleResolver.resolve(
+                  template: screenTemplate,
+                  sectionTemplateId: SectionTemplateId.myDayRankedTasksV1,
+                ),
                 title: m.title,
                 error: error.toString(),
               );

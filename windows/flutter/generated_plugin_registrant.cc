@@ -7,7 +7,6 @@
 #include "generated_plugin_registrant.h"
 
 #include <app_links/app_links_plugin_c_api.h>
-#include <emoji_picker_flutter/emoji_picker_flutter_plugin_c_api.h>
 #include <powersync_flutter_libs/powersync_flutter_libs_plugin.h>
 #include <share_plus/share_plus_windows_plugin_c_api.h>
 #include <sqlite3_flutter_libs/sqlite3_flutter_libs_plugin.h>
@@ -16,8 +15,6 @@
 void RegisterPlugins(flutter::PluginRegistry* registry) {
   AppLinksPluginCApiRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("AppLinksPluginCApi"));
-  EmojiPickerFlutterPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("EmojiPickerFlutterPluginCApi"));
   PowersyncFlutterLibsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("PowersyncFlutterLibsPlugin"));
   SharePlusWindowsPluginCApiRegisterWithRegistrar(

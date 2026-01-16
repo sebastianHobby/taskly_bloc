@@ -20,6 +20,8 @@ abstract class CorrelationResult with _$CorrelationResult {
     double? valueWithSource,
     double? valueWithoutSource,
     double? differencePercent,
+    bool? sourceHigherIsBetter,
+    bool? targetHigherIsBetter,
     StatisticalSignificance? statisticalSignificance,
     PerformanceMetrics? performanceMetrics,
   }) = _CorrelationResult;

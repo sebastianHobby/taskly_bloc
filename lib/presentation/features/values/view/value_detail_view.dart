@@ -17,12 +17,18 @@ class ValueDetailSheetPage extends StatelessWidget {
   const ValueDetailSheetPage({
     required this.valueRepository,
     this.valueId,
+    this.initialDraft,
     this.onSaved,
     super.key,
   });
 
   final ValueRepositoryContract valueRepository;
   final String? valueId;
+
+  /// Optional initial values for the create flow.
+  ///
+  /// Ignored when [valueId] is provided.
+  final ValueDraft? initialDraft;
 
   /// Optional callback when a value is saved (created or updated).
   /// Called with the value ID after successful save.
@@ -38,6 +44,7 @@ class ValueDetailSheetPage extends StatelessWidget {
       lazy: false,
       child: ValueDetailSheetView(
         valueId: valueId,
+        initialDraft: initialDraft,
         onSaved: onSaved,
       ),
     );
@@ -47,11 +54,17 @@ class ValueDetailSheetPage extends StatelessWidget {
 class ValueDetailSheetView extends StatefulWidget {
   const ValueDetailSheetView({
     this.valueId,
+    this.initialDraft,
     this.onSaved,
     super.key,
   });
 
   final String? valueId;
+
+  /// Optional initial values for the create flow.
+  ///
+  /// Ignored when [valueId] is provided.
+  final ValueDraft? initialDraft;
 
   /// Optional callback when a value is saved.
   final void Function(String valueId)? onSaved;
@@ -204,10 +217,11 @@ class _ValueDetailSheetViewState extends State<ValueDetailSheetView>
             // Initial state or error state where we can still show the form for creation
             if (widget.valueId == null) {
               _ensureFreshFormKeyFor(null);
-              _draft = ValueDraft.empty();
+              _draft = widget.initialDraft ?? ValueDraft.empty();
               return ValueForm(
                 formKey: _formKey,
                 initialData: null,
+                initialDraft: _draft,
                 onChanged: _syncDraftFromFormValues,
                 onSubmit: () => _onSubmit(null),
                 submitTooltip: context.l10n.actionCreate,
