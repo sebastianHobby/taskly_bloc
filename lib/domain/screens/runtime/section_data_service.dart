@@ -163,26 +163,26 @@ class SectionDataService {
   Stream<SectionDataResult> _watchDataSectionV2(ListSectionParamsV2 params) {
     final kind = _kindFor(params.config);
 
-    return _watchPrimaryEntities(params.config).switchMap(
-      (entities) => Stream.fromFuture(
-        _buildDataSectionResultV2(
-          kind: kind,
-          entities: entities,
-          enrichmentPlan: params.enrichment,
+    return _watchPrimaryEntities(params.config).switchMap((entities) {
+      final items = _toScreenItems(kind, entities);
+      final base = SectionDataResult.dataV2(items: items);
+
+      // Emit a fast, non-enriched update immediately so UI reflects changes
+      // (e.g. create/update) even if enrichment is slow.
+      if (params.enrichment.items.isEmpty) {
+        return Stream.value(base);
+      }
+
+      return Rx.concat([
+        Stream.value(base),
+        Stream.fromFuture(_computeEnrichmentV2(params.enrichment, items)).map(
+          (enrichment) => SectionDataResult.dataV2(
+            items: items,
+            enrichment: enrichment,
+          ),
         ),
-      ),
-    );
-  }
-
-  Future<SectionDataResult> _buildDataSectionResultV2({
-    required _PrimaryEntityKind kind,
-    required List<Object> entities,
-    required EnrichmentPlanV2 enrichmentPlan,
-  }) async {
-    final items = _toScreenItems(kind, entities);
-    final enrichment = await _computeEnrichmentV2(enrichmentPlan, items);
-
-    return SectionDataResult.dataV2(items: items, enrichment: enrichment);
+      ]);
+    });
   }
 
   // ===========================================================================

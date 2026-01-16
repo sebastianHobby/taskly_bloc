@@ -140,6 +140,10 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
     String? title,
   }) = ScreenModuleEntityHeader;
 
+  const factory ScreenModuleSpec.myDayHeroV1({
+    String? title,
+  }) = ScreenModuleMyDayHeroV1;
+
   const factory ScreenModuleSpec.myDayRankedTasksV1({
     String? title,
   }) = ScreenModuleMyDayRankedTasksV1;
@@ -148,4 +152,31 @@ sealed class ScreenModuleSpec with _$ScreenModuleSpec {
   const factory ScreenModuleSpec.createValueCtaV1({
     String? title,
   }) = ScreenModuleCreateValueCtaV1;
+
+  // === Journal (Today-first) ===
+
+  /// Journal Today hero/composer module.
+  const factory ScreenModuleSpec.journalTodayComposerV1({
+    String? title,
+  }) = ScreenModuleJournalTodayComposerV1;
+
+  /// Journal Today entries list module.
+  const factory ScreenModuleSpec.journalTodayEntriesV1({
+    String? title,
+  }) = ScreenModuleJournalTodayEntriesV1;
+
+  /// Journal history teaser / navigation CTA.
+  const factory ScreenModuleSpec.journalHistoryTeaserV1({
+    String? title,
+  }) = ScreenModuleJournalHistoryTeaserV1;
+
+  /// Journal history list module (used by journal_history screen).
+  const factory ScreenModuleSpec.journalHistoryListV1({
+    String? title,
+  }) = ScreenModuleJournalHistoryListV1;
+
+  /// Journal tracker management module (used by journal_manage_trackers).
+  const factory ScreenModuleSpec.journalManageTrackersV1({
+    String? title,
+  }) = ScreenModuleJournalManageTrackersV1;
 }

@@ -26,7 +26,7 @@ extension FocusModeX on FocusMode {
   /// Human-readable name for display.
   String get displayName => switch (this) {
     FocusMode.intentional => 'Intentional',
-    FocusMode.sustainable => 'Sustainable',
+    FocusMode.sustainable => 'Balanced',
     FocusMode.responsive => 'Responsive',
     FocusMode.personalized => 'Personalized',
   };
@@ -34,7 +34,7 @@ extension FocusModeX on FocusMode {
   /// Short tagline for the focus mode.
   String get tagline => switch (this) {
     FocusMode.intentional => 'Do what matters most today.',
-    FocusMode.sustainable => 'Make steady progress across what matters.',
+    FocusMode.sustainable => 'Stay steady, stay aligned.',
     FocusMode.responsive => 'Handle what’s time-sensitive first.',
     FocusMode.personalized => 'Run today your way.',
   };
@@ -48,8 +48,8 @@ extension FocusModeX on FocusMode {
       'Do what matters most, not what shouts loudest. Value-first prioritization '
           'with fewer urgent distractions.',
     FocusMode.sustainable =>
-      'Keep moving across what matters without over-optimizing one area. '
-          'Balance-first with deadline awareness.',
+      'A calibrated mix of importance and urgency. Keeps momentum across values '
+          'while staying realistic about deadlines.',
     FocusMode.responsive =>
       'Clear the time-sensitive stuff with confidence. Due-date-first '
           'prioritization to prevent slips.',
@@ -64,8 +64,8 @@ extension FocusModeX on FocusMode {
       'Deep work on primary values. Focuses on what matters most to you, '
           'filtering out urgency-driven distractions.',
     FocusMode.sustainable =>
-      'Balanced approach across all values. Boosts neglected areas to '
-          'maintain equilibrium and prevent burnout.',
+      'A calibrated approach that balances importance and urgency to keep '
+          'momentum across values, without overcommitting.',
     FocusMode.responsive =>
       'Urgency-first prioritization. Ensures time-sensitive tasks get '
           'attention regardless of their value alignment.',
@@ -77,7 +77,7 @@ extension FocusModeX on FocusMode {
   /// Icon name for the focus mode (Material icons).
   String get iconName => switch (this) {
     FocusMode.intentional => 'target', // 🎯
-    FocusMode.sustainable => 'eco', // 🌱
+    FocusMode.sustainable => 'tune', // 🎛️
     FocusMode.responsive => 'bolt', // ⚡
     FocusMode.personalized => 'tune', // 🎛️
   };

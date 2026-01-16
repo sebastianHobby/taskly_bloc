@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
-    as attention_repo_v2;
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
@@ -34,6 +32,7 @@ import 'package:taskly_bloc/presentation/screens/identity/section_persistence_ke
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/attention_app_bar_accessory.dart';
+import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -62,8 +61,6 @@ class ScreenTemplateWidget extends StatelessWidget {
       return BlocProvider(
         create: (_) => FocusSetupBloc(
           settingsRepository: getIt<SettingsRepositoryContract>(),
-          attentionRepository:
-              getIt<attention_repo_v2.AttentionRepositoryContract>(),
           valueRepository: getIt(),
         )..add(FocusSetupEvent.started(initialStep: parseInitialStep())),
         child: const FocusSetupWizardPage(),
@@ -78,11 +75,7 @@ class ScreenTemplateWidget extends StatelessWidget {
         title: 'Trackers',
         message: 'Tracker management is being rebuilt.',
       ),
-      statisticsDashboard: () => const Scaffold(
-        body: Center(
-          child: Text('Statistics dashboard not implemented yet.'),
-        ),
-      ),
+      statisticsDashboard: () => const _StatisticsDashboardPlaceholder(),
       journalHub: () => const JournalHubPage(),
       attentionRules: () => const _PlaceholderTemplate(
         title: 'Attention Rules',
@@ -90,6 +83,29 @@ class ScreenTemplateWidget extends StatelessWidget {
       ),
       focusSetupWizard: buildFocusSetupWizard,
       myDayFocusModeRequired: () => const MyDayFocusModeRequiredPage(),
+    );
+  }
+}
+
+class _StatisticsDashboardPlaceholder extends StatelessWidget {
+  const _StatisticsDashboardPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Statistics'),
+        actions: [
+          IconButton(
+            tooltip: 'Attention',
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
+          ),
+        ],
+      ),
+      body: const Center(
+        child: Text('Statistics dashboard not implemented yet.'),
+      ),
     );
   }
 }
@@ -460,6 +476,11 @@ class _EntityDetailScaffoldV1TemplateState
               icon: const Icon(Icons.edit_outlined),
               onPressed: () => _openEditor(context),
             ),
+          IconButton(
+            tooltip: 'Attention',
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
+          ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'delete') _confirmAndDelete(context);
@@ -707,27 +728,45 @@ class _StandardScaffoldV1Template extends StatelessWidget {
   }
 
   List<Widget> _buildAppBarActions(BuildContext context, ScreenSpec spec) {
-    return spec.chrome.appBarActions
-        .map((action) {
-          return switch (action) {
-            AppBarAction.settingsLink => IconButton(
-              icon: const Icon(Icons.tune),
-              onPressed: spec.chrome.settingsRoute != null
-                  ? () =>
-                        Routing.toScreenKey(context, spec.chrome.settingsRoute!)
-                  : null,
-            ),
-            AppBarAction.help => const SizedBox.shrink(),
-            AppBarAction.createValue => IconButton(
-              icon: const Icon(Icons.add),
-              tooltip: 'Create value',
-              onPressed: () async {
-                await EditorLauncher.fromGetIt().openValueEditor(context);
-              },
-            ),
-          };
-        })
-        .toList(growable: false);
+    final actions = <Widget>[
+      ...spec.chrome.appBarActions.map((action) {
+        return switch (action) {
+          AppBarAction.settingsLink => IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: spec.chrome.settingsRoute != null
+                ? () => Routing.toScreenKey(context, spec.chrome.settingsRoute!)
+                : null,
+          ),
+          AppBarAction.help => const SizedBox.shrink(),
+          AppBarAction.createValue => IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Create value',
+            onPressed: () async {
+              await EditorLauncher.fromGetIt().openValueEditor(context);
+            },
+          ),
+          AppBarAction.journalManageTrackers => IconButton(
+            icon: const Icon(Icons.tune),
+            tooltip: 'Manage trackers',
+            onPressed: () {
+              Routing.pushScreenKey(context, 'journal_manage_trackers');
+            },
+          ),
+        };
+      }),
+    ];
+
+    // Global entrypoint (bell → Attention inbox).
+    // Suppress on the inbox itself to avoid self-navigation.
+    if (spec.screenKey != 'review_inbox') {
+      actions.add(
+        AttentionBellIconButton(
+          onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
+        ),
+      );
+    }
+
+    return actions;
   }
 
   Widget? _buildFab(ScreenSpec spec) {

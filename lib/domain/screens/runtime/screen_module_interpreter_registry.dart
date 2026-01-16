@@ -8,6 +8,11 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_sect
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/interleaved_list_section_interpreter_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_history_list_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_manage_trackers_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_composer_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1_module_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -39,7 +44,16 @@ final class DefaultScreenModuleInterpreterRegistry
     required AttentionBannerSectionInterpreterV2 attentionBannerV2Interpreter,
     required AttentionInboxSectionInterpreterV1 attentionInboxInterpreter,
     required EntityHeaderSectionInterpreter entityHeaderInterpreter,
+    required MyDayHeroV1ModuleInterpreter myDayHeroV1Interpreter,
     required MyDayRankedTasksV1ModuleInterpreter myDayRankedTasksV1Interpreter,
+    required JournalTodayComposerModuleInterpreterV1
+    journalTodayComposerV1Interpreter,
+    required JournalTodayEntriesModuleInterpreterV1
+    journalTodayEntriesV1Interpreter,
+    required JournalHistoryListModuleInterpreterV1
+    journalHistoryListV1Interpreter,
+    required JournalManageTrackersModuleInterpreterV1
+    journalManageTrackersV1Interpreter,
   }) : _taskListInterpreter = taskListInterpreter,
        _valueListInterpreter = valueListInterpreter,
        _interleavedListInterpreter = interleavedListInterpreter,
@@ -49,7 +63,12 @@ final class DefaultScreenModuleInterpreterRegistry
        _attentionBannerV2Interpreter = attentionBannerV2Interpreter,
        _attentionInboxInterpreter = attentionInboxInterpreter,
        _entityHeaderInterpreter = entityHeaderInterpreter,
-       _myDayRankedTasksV1Interpreter = myDayRankedTasksV1Interpreter;
+       _myDayHeroV1Interpreter = myDayHeroV1Interpreter,
+       _myDayRankedTasksV1Interpreter = myDayRankedTasksV1Interpreter,
+       _journalTodayComposerV1Interpreter = journalTodayComposerV1Interpreter,
+       _journalTodayEntriesV1Interpreter = journalTodayEntriesV1Interpreter,
+       _journalHistoryListV1Interpreter = journalHistoryListV1Interpreter,
+       _journalManageTrackersV1Interpreter = journalManageTrackersV1Interpreter;
 
   final DataListSectionInterpreterV2 _taskListInterpreter;
   final DataListSectionInterpreterV2 _valueListInterpreter;
@@ -60,7 +79,15 @@ final class DefaultScreenModuleInterpreterRegistry
   final AttentionBannerSectionInterpreterV2 _attentionBannerV2Interpreter;
   final AttentionInboxSectionInterpreterV1 _attentionInboxInterpreter;
   final EntityHeaderSectionInterpreter _entityHeaderInterpreter;
+  final MyDayHeroV1ModuleInterpreter _myDayHeroV1Interpreter;
   final MyDayRankedTasksV1ModuleInterpreter _myDayRankedTasksV1Interpreter;
+  final JournalTodayComposerModuleInterpreterV1
+  _journalTodayComposerV1Interpreter;
+  final JournalTodayEntriesModuleInterpreterV1
+  _journalTodayEntriesV1Interpreter;
+  final JournalHistoryListModuleInterpreterV1 _journalHistoryListV1Interpreter;
+  final JournalManageTrackersModuleInterpreterV1
+  _journalManageTrackersV1Interpreter;
 
   SectionDataResult? _coerceSectionDataResult(Object? data) {
     if (data == null) return null;
@@ -238,6 +265,24 @@ final class DefaultScreenModuleInterpreterRegistry
                 error: error.toString(),
               );
             }),
+        myDayHeroV1: (m) => _myDayHeroV1Interpreter
+            .watch()
+            .map(
+              (data) {
+                return SectionVm.myDayHeroV1(
+                  index: index,
+                  title: m.title,
+                  data: _coerceSectionDataResult(data),
+                );
+              },
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.myDayHeroV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
         myDayRankedTasksV1: (m) => _myDayRankedTasksV1Interpreter
             .watch()
             .map(
@@ -263,6 +308,77 @@ final class DefaultScreenModuleInterpreterRegistry
             title: m.title,
           ),
         ),
+
+        journalTodayComposerV1: (m) => _journalTodayComposerV1Interpreter
+            .watch()
+            .map(
+              (data) => SectionVm.journalTodayComposerV1(
+                index: index,
+                title: m.title,
+                data: _coerceSectionDataResult(data),
+              ),
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.journalTodayComposerV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
+        journalTodayEntriesV1: (m) => _journalTodayEntriesV1Interpreter
+            .watch()
+            .map(
+              (data) => SectionVm.journalTodayEntriesV1(
+                index: index,
+                title: m.title,
+                data: _coerceSectionDataResult(data),
+              ),
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.journalTodayEntriesV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
+        journalHistoryTeaserV1: (m) => Stream.value(
+          SectionVm.journalHistoryTeaserV1(
+            index: index,
+            title: m.title,
+          ),
+        ),
+        journalHistoryListV1: (m) => _journalHistoryListV1Interpreter
+            .watch()
+            .map(
+              (data) => SectionVm.journalHistoryListV1(
+                index: index,
+                title: m.title,
+                data: _coerceSectionDataResult(data),
+              ),
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.journalHistoryListV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
+        journalManageTrackersV1: (m) => _journalManageTrackersV1Interpreter
+            .watch()
+            .map(
+              (data) => SectionVm.journalManageTrackersV1(
+                index: index,
+                title: m.title,
+                data: _coerceSectionDataResult(data),
+              ),
+            )
+            .onErrorReturnWith((error, _) {
+              return SectionVm.journalManageTrackersV1(
+                index: index,
+                title: m.title,
+                error: error.toString(),
+              );
+            }),
       );
     } catch (e) {
       return Stream.value(

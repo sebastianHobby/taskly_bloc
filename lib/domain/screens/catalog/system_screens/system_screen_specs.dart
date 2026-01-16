@@ -28,10 +28,12 @@ abstract class SystemScreenSpecs {
       template: ScreenTemplateSpec.myDayFocusModeRequired(),
     ),
     chrome: const ScreenChrome(
+      showHeaderAccessoryInAppBar: false,
       fabOperations: [FabOperation.createTask],
     ),
     modules: SlottedModules(
       header: [
+        const ScreenModuleSpec.myDayHeroV1(),
         ScreenModuleSpec.attentionBannerV2(
           params: AttentionBannerSectionParamsV2(
             pack: StylePackV2.standard,
@@ -67,9 +69,18 @@ abstract class SystemScreenSpecs {
     name: 'Scheduled',
     template: const ScreenTemplateSpec.standardScaffoldV1(),
     chrome: const ScreenChrome(
+      showHeaderAccessoryInAppBar: false,
       fabOperations: [FabOperation.createTask],
     ),
     modules: SlottedModules(
+      header: [
+        ScreenModuleSpec.attentionBannerV2(
+          params: AttentionBannerSectionParamsV2(
+            pack: StylePackV2.standard,
+            buckets: const ['action', 'review'],
+          ),
+        ),
+      ],
       primary: [
         ScreenModuleSpec.agendaV2(
           params: AgendaSectionParamsV2(
@@ -98,6 +109,7 @@ abstract class SystemScreenSpecs {
         "Your actionable backlog. Use filters to hide 'start later' items.",
     template: const ScreenTemplateSpec.standardScaffoldV1(),
     chrome: const ScreenChrome(
+      showHeaderAccessoryInAppBar: false,
       fabOperations: [FabOperation.createTask],
     ),
     modules: SlottedModules(
@@ -180,7 +192,43 @@ abstract class SystemScreenSpecs {
     id: 'journal',
     screenKey: 'journal',
     name: 'Journal',
-    template: const ScreenTemplateSpec.journalHub(),
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    chrome: const ScreenChrome(
+      appBarActions: [AppBarAction.journalManageTrackers],
+    ),
+    modules: const SlottedModules(
+      header: [
+        ScreenModuleSpec.journalTodayComposerV1(),
+        ScreenModuleSpec.journalHistoryTeaserV1(),
+      ],
+      primary: [
+        ScreenModuleSpec.journalTodayEntriesV1(),
+      ],
+    ),
+  );
+
+  static final journalHistory = ScreenSpec(
+    id: 'journal_history',
+    screenKey: 'journal_history',
+    name: 'Journal History',
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    modules: const SlottedModules(
+      primary: [
+        ScreenModuleSpec.journalHistoryListV1(),
+      ],
+    ),
+  );
+
+  static final journalManageTrackers = ScreenSpec(
+    id: 'journal_manage_trackers',
+    screenKey: 'journal_manage_trackers',
+    name: 'Manage Trackers',
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    modules: const SlottedModules(
+      primary: [
+        ScreenModuleSpec.journalManageTrackersV1(),
+      ],
+    ),
   );
 
   static final trackers = ScreenSpec(
@@ -251,6 +299,8 @@ abstract class SystemScreenSpecs {
     settings.screenKey: settings,
     statistics.screenKey: statistics,
     journal.screenKey: journal,
+    journalHistory.screenKey: journalHistory,
+    journalManageTrackers.screenKey: journalManageTrackers,
     trackers.screenKey: trackers,
     allocationSettings.screenKey: allocationSettings,
     focusSetup.screenKey: focusSetup,

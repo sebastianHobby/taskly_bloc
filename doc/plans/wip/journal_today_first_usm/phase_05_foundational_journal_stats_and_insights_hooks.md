@@ -1,7 +1,7 @@
 # Phase 05 — Foundational journal stats + “this may help / hurt” hooks
 
 Created at: 2026-01-15T12:30:44.4044895Z
-Last updated at: 2026-01-15T12:30:44.4044895Z
+Last updated at: 2026-01-15T23:28:39.6432613Z
 
 ## Goal
 
@@ -59,6 +59,7 @@ Use the outcome/factor classification (`isOutcome`) only to improve interpretati
 
 ## Completion
 
-Completed at: <UTC>
+Completed at: 2026-01-15T23:28:39.6432613Z
 Summary:
-- <fill when complete>
+- Implemented `JournalRepositoryImpl.getDailyMoodAverages` and `getTrackerValues` by aggregating tracker events by UTC day.
+- Replaced analytics stubs in `AnalyticsServiceImpl` with real mood/tracker trends, mood distribution/summary, and mood↔tracker correlations.

@@ -33,6 +33,14 @@ sealed class AttentionInboxEvent with _$AttentionInboxEvent {
     required AttentionBucket bucket,
   }) = AttentionInboxBucketChanged;
 
+  const factory AttentionInboxEvent.bucketFilterToggled({
+    required AttentionBucket bucket,
+  }) = AttentionInboxBucketFilterToggled;
+
+  const factory AttentionInboxEvent.bucketFilterSet({
+    required Set<AttentionBucket> buckets,
+  }) = AttentionInboxBucketFilterSet;
+
   const factory AttentionInboxEvent.groupByChanged({
     required AttentionInboxGroupBy groupBy,
   }) = AttentionInboxGroupByChanged;
@@ -69,6 +77,11 @@ sealed class AttentionInboxEvent with _$AttentionInboxEvent {
     required AttentionResolutionAction action,
   }) = AttentionInboxApplyActionToItem;
 
+  const factory AttentionInboxEvent.applyActionToMany({
+    required List<String> itemKeys,
+    required AttentionResolutionAction action,
+  }) = AttentionInboxApplyActionToMany;
+
   /// Applies the action to all visible (filtered) items in the current bucket.
   const factory AttentionInboxEvent.applyActionToVisible({
     required AttentionResolutionAction action,
@@ -101,6 +114,7 @@ enum AttentionInboxGroupBy {
 sealed class AttentionInboxViewConfig with _$AttentionInboxViewConfig {
   const factory AttentionInboxViewConfig({
     required AttentionBucket bucket,
+    required Set<AttentionBucket> bucketFilter,
     required AttentionInboxSort sort,
     required AttentionInboxGroupBy groupBy,
     required AttentionSeverity? minSeverity,
@@ -110,8 +124,12 @@ sealed class AttentionInboxViewConfig with _$AttentionInboxViewConfig {
 
   factory AttentionInboxViewConfig.defaults() => const AttentionInboxViewConfig(
     bucket: AttentionBucket.action,
+    bucketFilter: <AttentionBucket>{
+      AttentionBucket.action,
+      AttentionBucket.review,
+    },
     sort: AttentionInboxSort.detectedAtDesc,
-    groupBy: AttentionInboxGroupBy.none,
+    groupBy: AttentionInboxGroupBy.severity,
     minSeverity: null,
     entityTypeFilter: <AttentionEntityType>{},
     searchQuery: '',
@@ -145,17 +163,28 @@ sealed class AttentionInboxState with _$AttentionInboxState {
 sealed class AttentionInboxGroupVm with _$AttentionInboxGroupVm {
   const factory AttentionInboxGroupVm({
     required String title,
-    required List<AttentionInboxItemVm> items,
+    required List<AttentionInboxEntityVm> entities,
   }) = _AttentionInboxGroupVm;
 }
 
 @freezed
-sealed class AttentionInboxItemVm with _$AttentionInboxItemVm {
-  const factory AttentionInboxItemVm({
+sealed class AttentionInboxEntityVm with _$AttentionInboxEntityVm {
+  const factory AttentionInboxEntityVm({
+    required String entityKey,
+    required AttentionEntityType entityType,
+    required String entityId,
+    required AttentionSeverity severity,
+    required AttentionInboxReasonVm headline,
+    required List<AttentionInboxReasonVm> reasons,
+  }) = _AttentionInboxEntityVm;
+}
+
+@freezed
+sealed class AttentionInboxReasonVm with _$AttentionInboxReasonVm {
+  const factory AttentionInboxReasonVm({
     required String key,
     required AttentionItem item,
-    required bool selected,
-  }) = _AttentionInboxItemVm;
+  }) = _AttentionInboxReasonVm;
 }
 
 @freezed
@@ -187,6 +216,8 @@ class AttentionInboxBloc
     on<_AttentionInboxItemsUpdated>(_onItemsUpdated);
     on<_AttentionInboxWatchFailed>(_onWatchFailed);
     on<AttentionInboxBucketChanged>(_onBucketChanged);
+    on<AttentionInboxBucketFilterToggled>(_onBucketFilterToggled);
+    on<AttentionInboxBucketFilterSet>(_onBucketFilterSet);
     on<AttentionInboxGroupByChanged>(_onGroupByChanged);
     on<AttentionInboxSortChanged>(_onSortChanged);
     on<AttentionInboxMinSeverityChanged>(_onMinSeverityChanged);
@@ -196,6 +227,7 @@ class AttentionInboxBloc
     on<AttentionInboxClearSelection>(_onClearSelection);
     on<AttentionInboxApplyActionToSelection>(_onApplyActionToSelection);
     on<AttentionInboxApplyActionToItem>(_onApplyActionToItem);
+    on<AttentionInboxApplyActionToMany>(_onApplyActionToMany);
     on<AttentionInboxApplyActionToVisible>(_onApplyActionToVisible);
     on<AttentionInboxCommitPending>(_onCommitPending);
     on<AttentionInboxUndoRequested>(_onUndoRequested);
@@ -312,6 +344,30 @@ class AttentionInboxBloc
     emit(_buildLoadedState());
   }
 
+  void _onBucketFilterToggled(
+    AttentionInboxBucketFilterToggled event,
+    Emitter<AttentionInboxState> emit,
+  ) {
+    final next = {..._viewConfig.bucketFilter};
+    if (next.contains(event.bucket)) {
+      next.remove(event.bucket);
+    } else {
+      next.add(event.bucket);
+    }
+    _viewConfig = _viewConfig.copyWith(bucketFilter: next);
+    _selectedKeys.clear();
+    emit(_buildLoadedState());
+  }
+
+  void _onBucketFilterSet(
+    AttentionInboxBucketFilterSet event,
+    Emitter<AttentionInboxState> emit,
+  ) {
+    _viewConfig = _viewConfig.copyWith(bucketFilter: {...event.buckets});
+    _selectedKeys.clear();
+    emit(_buildLoadedState());
+  }
+
   void _onGroupByChanged(
     AttentionInboxGroupByChanged event,
     Emitter<AttentionInboxState> emit,
@@ -394,6 +450,14 @@ class AttentionInboxBloc
     await _applyAction(emit, action: event.action, keys: [event.itemKey]);
   }
 
+  Future<void> _onApplyActionToMany(
+    AttentionInboxApplyActionToMany event,
+    Emitter<AttentionInboxState> emit,
+  ) async {
+    final keys = event.itemKeys.toList(growable: false);
+    await _applyAction(emit, action: event.action, keys: keys);
+  }
+
   Future<void> _onApplyActionToVisible(
     AttentionInboxApplyActionToVisible event,
     Emitter<AttentionInboxState> emit,
@@ -450,7 +514,7 @@ class AttentionInboxBloc
       undoId: undoId,
       action: action,
       items: items,
-      keys: items.map(_itemKey).toSet(),
+      keys: items.map(_reasonKey).toSet(),
     );
 
     _pendingCommit = commit;
@@ -539,45 +603,21 @@ class AttentionInboxBloc
     bool clearUndo = false,
     String? errorMessage,
   }) {
-    int visibleCountFor(AttentionBucket bucket) {
+    List<AttentionItem> visibleFor(AttentionBucket bucket) {
       final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
       return items
-          .where((i) => !_hiddenKeys.contains(_itemKey(i)))
+          .where((i) => !_hiddenKeys.contains(_reasonKey(i)))
           .where(_matchesFilters)
-          .length;
+          .toList(growable: false);
     }
 
-    final actionVisibleCount = visibleCountFor(AttentionBucket.action);
-    final reviewVisibleCount = visibleCountFor(AttentionBucket.review);
+    final actionVisible = visibleFor(AttentionBucket.action);
+    final reviewVisible = visibleFor(AttentionBucket.review);
 
-    final currentBucketItems =
-        _itemsByBucket[_viewConfig.bucket] ?? const <AttentionItem>[];
+    final visible = <AttentionItem>[...actionVisible, ...reviewVisible];
 
-    final visible = currentBucketItems
-        .where((i) => !_hiddenKeys.contains(_itemKey(i)))
-        .where(_matchesFilters)
-        .toList(growable: false);
-
-    final sorted = [...visible]..sort(_compare);
-
-    final grouped = _group(sorted);
-
-    final vms = grouped
-        .map(
-          (g) => AttentionInboxGroupVm(
-            title: g.title,
-            items: g.items
-                .map(
-                  (i) => AttentionInboxItemVm(
-                    key: _itemKey(i),
-                    item: i,
-                    selected: _selectedKeys.contains(_itemKey(i)),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        )
-        .toList(growable: false);
+    final entities = _groupByEntity(visible);
+    final groups = _groupEntitiesBySeverity(entities);
 
     final existingUndo = state.maybeWhen(
       loaded:
@@ -598,10 +638,10 @@ class AttentionInboxBloc
 
     return AttentionInboxState.loaded(
       viewConfig: _viewConfig,
-      groups: vms,
+      groups: groups,
       totalVisibleCount: visible.length,
-      actionVisibleCount: actionVisibleCount,
-      reviewVisibleCount: reviewVisibleCount,
+      actionVisibleCount: actionVisible.length,
+      reviewVisibleCount: reviewVisible.length,
       selectedKeys: {..._selectedKeys},
       pendingUndo: resolvedUndo,
       errorMessage: errorMessage,
@@ -609,6 +649,11 @@ class AttentionInboxBloc
   }
 
   bool _matchesFilters(AttentionItem item) {
+    final buckets = _viewConfig.bucketFilter;
+    if (buckets.isNotEmpty && !buckets.contains(item.bucket)) {
+      return false;
+    }
+
     final minSeverity = _viewConfig.minSeverity;
     if (minSeverity != null &&
         _severityIndex(item.severity) < _severityIndex(minSeverity)) {
@@ -637,91 +682,141 @@ class AttentionInboxBloc
     };
   }
 
-  int _compare(AttentionItem a, AttentionItem b) {
-    return switch (_viewConfig.sort) {
-      AttentionInboxSort.detectedAtDesc => b.detectedAt.compareTo(a.detectedAt),
-      AttentionInboxSort.severityDesc => _severityIndex(
-        b.severity,
-      ).compareTo(_severityIndex(a.severity)),
-      AttentionInboxSort.titleAsc => a.title.toLowerCase().compareTo(
-        b.title.toLowerCase(),
-      ),
-    };
-  }
-
-  List<_Group> _group(List<AttentionItem> items) {
-    final groupBy = _viewConfig.groupBy;
-    if (groupBy == AttentionInboxGroupBy.none) {
-      return [
-        _Group(title: '', items: items),
-      ];
-    }
-
-    final Map<String, List<AttentionItem>> by = {};
-
-    String keyFor(AttentionItem i) {
-      return switch (groupBy) {
-        AttentionInboxGroupBy.severity => i.severity.name,
-        AttentionInboxGroupBy.entityType => i.entityType.name,
-        AttentionInboxGroupBy.rule => i.ruleKey,
-        AttentionInboxGroupBy.none => '',
-      };
-    }
-
+  List<AttentionInboxEntityVm> _groupByEntity(List<AttentionItem> items) {
+    final Map<String, List<AttentionItem>> byEntity = {};
     for (final i in items) {
-      (by[keyFor(i)] ??= []).add(i);
+      (byEntity[_entityKey(i)] ??= []).add(i);
     }
 
-    final keys = by.keys.toList()..sort();
+    final entities = <AttentionInboxEntityVm>[];
+    for (final entry in byEntity.entries) {
+      final reasons = [...entry.value]..sort(_compareReasons);
+      final reasonVms = reasons
+          .map((r) => AttentionInboxReasonVm(key: _reasonKey(r), item: r))
+          .toList(growable: false);
 
-    return [
-      for (final k in keys)
-        _Group(title: _titleForGroup(groupBy, k), items: by[k]!),
-    ];
+      final headline = reasonVms.first;
+      final severity = reasons
+          .map((r) => _severityIndex(r.severity))
+          .reduce((a, b) => a > b ? a : b);
+      final maxSeverity = switch (severity) {
+        2 => AttentionSeverity.critical,
+        1 => AttentionSeverity.warning,
+        _ => AttentionSeverity.info,
+      };
+
+      entities.add(
+        AttentionInboxEntityVm(
+          entityKey: entry.key,
+          entityType: headline.item.entityType,
+          entityId: headline.item.entityId,
+          severity: maxSeverity,
+          headline: headline,
+          reasons: reasonVms,
+        ),
+      );
+    }
+
+    entities.sort(_compareEntities);
+    return entities;
   }
 
-  String _titleForGroup(AttentionInboxGroupBy groupBy, String rawKey) {
-    return switch (groupBy) {
-      AttentionInboxGroupBy.severity => rawKey.toUpperCase(),
-      AttentionInboxGroupBy.entityType => rawKey,
-      AttentionInboxGroupBy.rule => rawKey,
-      AttentionInboxGroupBy.none => '',
-    };
+  int _compareReasons(AttentionItem a, AttentionItem b) {
+    final s = _severityIndex(b.severity).compareTo(_severityIndex(a.severity));
+    if (s != 0) return s;
+    final d = b.detectedAt.compareTo(a.detectedAt);
+    if (d != 0) return d;
+    return a.title.toLowerCase().compareTo(b.title.toLowerCase());
   }
 
-  String _itemKey(AttentionItem item) => '${item.ruleId}::${item.entityId}';
+  int _compareEntities(AttentionInboxEntityVm a, AttentionInboxEntityVm b) {
+    final s = _severityIndex(b.severity).compareTo(_severityIndex(a.severity));
+    if (s != 0) return s;
+
+    final d = b.headline.item.detectedAt.compareTo(a.headline.item.detectedAt);
+    if (d != 0) return d;
+
+    final ta = a.headline.item.title.toLowerCase();
+    final tb = b.headline.item.title.toLowerCase();
+    return ta.compareTo(tb);
+  }
+
+  List<AttentionInboxGroupVm> _groupEntitiesBySeverity(
+    List<AttentionInboxEntityVm> entities,
+  ) {
+    final critical = <AttentionInboxEntityVm>[];
+    final warning = <AttentionInboxEntityVm>[];
+    final info = <AttentionInboxEntityVm>[];
+
+    for (final e in entities) {
+      switch (e.severity) {
+        case AttentionSeverity.critical:
+          critical.add(e);
+        case AttentionSeverity.warning:
+          warning.add(e);
+        case AttentionSeverity.info:
+          info.add(e);
+      }
+    }
+
+    final groups = <AttentionInboxGroupVm>[];
+    if (critical.isNotEmpty) {
+      groups.add(AttentionInboxGroupVm(title: 'CRITICAL', entities: critical));
+    }
+    if (warning.isNotEmpty) {
+      groups.add(AttentionInboxGroupVm(title: 'WARNING', entities: warning));
+    }
+    if (info.isNotEmpty) {
+      groups.add(AttentionInboxGroupVm(title: 'INFO', entities: info));
+    }
+    return groups;
+  }
+
+  String _reasonKey(AttentionItem item) =>
+      '${item.ruleId}::${item.entityType.name}::${item.entityId}';
+
+  String _entityKey(AttentionItem item) =>
+      '${item.entityType.name}::${item.entityId}';
 
   Set<String> _currentAllKeys() {
     final all = <String>{};
     for (final bucket in AttentionBucket.values) {
       final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
       for (final item in items) {
-        all.add(_itemKey(item));
+        all.add(_reasonKey(item));
       }
     }
     return all;
   }
 
   Set<String> _currentVisibleKeys() {
-    final items = _itemsByBucket[_viewConfig.bucket] ?? const <AttentionItem>[];
-    return items
-        .where((i) => !_hiddenKeys.contains(_itemKey(i)))
-        .where(_matchesFilters)
-        .map(_itemKey)
-        .toSet();
+    final keys = <String>{};
+    for (final bucket in AttentionBucket.values) {
+      final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
+      for (final item in items) {
+        final k = _reasonKey(item);
+        if (_hiddenKeys.contains(k)) continue;
+        if (!_matchesFilters(item)) continue;
+        keys.add(k);
+      }
+    }
+    return keys;
   }
 
   List<AttentionItem> _itemsForKeys(List<String> keys) {
     final keySet = keys.toSet();
 
-    final items = _itemsByBucket[_viewConfig.bucket] ?? const <AttentionItem>[];
     final result = <AttentionItem>[];
-    for (final item in items) {
-      final k = _itemKey(item);
-      if (keySet.contains(k) && !_hiddenKeys.contains(k)) {
-        result.add(item);
+    for (final bucket in AttentionBucket.values) {
+      final items = _itemsByBucket[bucket] ?? const <AttentionItem>[];
+      for (final item in items) {
+        final k = _reasonKey(item);
+        if (keySet.contains(k) && !_hiddenKeys.contains(k)) {
+          result.add(item);
+        }
       }
     }
+
     return result;
   }
 
@@ -734,13 +829,6 @@ class AttentionInboxBloc
       (k) => !pendingKeys.contains(k) && !allKeys.contains(k),
     );
   }
-}
-
-class _Group {
-  const _Group({required this.title, required this.items});
-
-  final String title;
-  final List<AttentionItem> items;
 }
 
 class _PendingCommit {

@@ -140,8 +140,8 @@ class FocusModeCard extends StatelessWidget {
 
   IconData _getIconForFocusMode(FocusMode focusMode) {
     return switch (focusMode) {
-      FocusMode.intentional => Icons.center_focus_strong,
-      FocusMode.sustainable => Icons.eco,
+      FocusMode.intentional => Icons.gps_fixed,
+      FocusMode.sustainable => Icons.tune,
       FocusMode.responsive => Icons.bolt,
       FocusMode.personalized => Icons.tune,
     };

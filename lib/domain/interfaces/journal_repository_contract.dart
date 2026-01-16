@@ -71,6 +71,12 @@ abstract class JournalRepositoryContract {
 
   Future<void> appendTrackerEvent(TrackerEvent event);
 
+  /// Soft-delete a tracker definition and purge its local event/projection data.
+  ///
+  /// This keeps the definition row (with `deletedAt`) for sync/auditing while
+  /// removing local UI/analytics noise from associated events and projections.
+  Future<void> deleteTrackerAndData(String trackerId);
+
   /// Watch raw tracker events for building B1 Journal UIs.
   ///
   /// Prefer projections for heavy analytics, but the hub UI needs to reflect

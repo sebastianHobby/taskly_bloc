@@ -3,6 +3,8 @@ import 'package:taskly_bloc/presentation/features/journal/view/journal_history_p
 import 'package:taskly_bloc/presentation/features/journal/view/journal_today_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_trackers_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/add_log_sheet.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 
 class JournalHubPage extends StatefulWidget {
   const JournalHubPage({super.key});
@@ -32,6 +34,11 @@ class _JournalHubPageState extends State<JournalHubPage>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Journal'),
+        actions: [
+          AttentionBellIconButton(
+            onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

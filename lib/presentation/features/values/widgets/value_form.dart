@@ -61,6 +61,7 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
       ),
       ValueFieldKeys.priority.id:
           widget.initialData?.priority ?? ValuePriority.medium,
+      ValueFieldKeys.iconName.id: widget.initialData?.iconName,
     };
 
     return FormShell(
@@ -142,6 +143,13 @@ class _ValueFormState extends State<ValueForm> with FormDirtyStateMixin {
                       ],
                     );
                   },
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FormBuilderIconPicker(
+                  name: ValueFieldKeys.iconName.id,
                 ),
               ),
               const SizedBox(height: 12),

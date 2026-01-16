@@ -95,8 +95,8 @@ class _FocusModeIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final icon = switch (focusMode) {
-      FocusMode.intentional => Icons.center_focus_strong,
-      FocusMode.sustainable => Icons.eco,
+      FocusMode.intentional => Icons.gps_fixed,
+      FocusMode.sustainable => Icons.tune,
       FocusMode.responsive => Icons.bolt,
       FocusMode.personalized => Icons.tune,
     };

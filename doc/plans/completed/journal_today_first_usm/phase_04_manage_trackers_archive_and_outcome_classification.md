@@ -1,7 +1,7 @@
 # Phase 04 — Manage Trackers: archive/delete + outcome classification
 
 Created at: 2026-01-15T12:30:44.4044895Z
-Last updated at: 2026-01-15T12:30:44.4044895Z
+Last updated at: 2026-01-15T23:28:39.6432613Z
 
 ## Goal
 
@@ -61,6 +61,7 @@ Ship a Manage Trackers experience aligned to the locked decisions:
 
 ## Completion
 
-Completed at: <UTC>
+Completed at: 2026-01-15T23:28:39.6432613Z
 Summary:
-- <fill when complete>
+- Implemented Manage Trackers UI for USM (active/archived sections, pinned/quick-add toggles, outcome toggle, archive/unarchive).
+- Added delete-with-purge flow backed by `JournalRepositoryContract.deleteTrackerAndData`.

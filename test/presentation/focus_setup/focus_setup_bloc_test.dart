@@ -1,6 +1,5 @@
 ﻿import 'package:bloc_test/bloc_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
@@ -11,9 +10,6 @@ import 'package:test/test.dart';
 class _MockSettingsRepository extends Mock
     implements SettingsRepositoryContract {}
 
-class _MockAttentionRepository extends Mock
-    implements AttentionRepositoryContract {}
-
 class _MockValueRepository extends Mock implements ValueRepositoryContract {}
 
 void main() {
@@ -21,7 +17,6 @@ void main() {
     'allocationResetToDefaultPressed resets draft strategy fields to preset',
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
-      attentionRepository: _MockAttentionRepository(),
       valueRepository: _MockValueRepository(),
     ),
     seed: () => FocusSetupState(
@@ -84,7 +79,6 @@ void main() {
     'focusModeChanged to non-personalized clamps steps and applies preset drafts',
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
-      attentionRepository: _MockAttentionRepository(),
       valueRepository: _MockValueRepository(),
     ),
     seed: () => const FocusSetupState(
@@ -135,7 +129,6 @@ void main() {
     'focusModeChanged to personalized clears draft weightings',
     build: () => FocusSetupBloc(
       settingsRepository: _MockSettingsRepository(),
-      attentionRepository: _MockAttentionRepository(),
       valueRepository: _MockValueRepository(),
     ),
     seed: () => const FocusSetupState(

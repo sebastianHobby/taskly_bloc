@@ -11,14 +11,17 @@ import 'package:taskly_bloc/domain/analytics/model/mood_summary.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
+import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/analytics/model/stat_result.dart';
+import 'package:taskly_bloc/domain/analytics/model/stat_result.dart'
+    hide TrendDirection;
 import 'package:taskly_bloc/domain/analytics/model/task_stat_type.dart';
 import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
+import 'package:taskly_bloc/domain/services/analytics/correlation_calculator.dart';
 import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
 
 class AnalyticsServiceImpl implements AnalyticsService {
@@ -33,15 +36,15 @@ class AnalyticsServiceImpl implements AnalyticsService {
        _projectRepo = projectRepo,
        _valueRepo = valueRepo,
        _journalRepo = journalRepo,
-       _taskStatsCalculator = TaskStatsCalculator();
+       _taskStatsCalculator = TaskStatsCalculator(),
+       _correlationCalculator = CorrelationCalculator();
   final AnalyticsRepositoryContract _analyticsRepo;
   final TaskRepositoryContract _taskRepo;
   final ProjectRepositoryContract _projectRepo;
   final ValueRepositoryContract _valueRepo;
   final JournalRepositoryContract _journalRepo;
   final TaskStatsCalculator _taskStatsCalculator;
-  static const _journalAnalyticsStubMessage =
-      'Journal/tracker analytics are being rebuilt.';
+  final CorrelationCalculator _correlationCalculator;
 
   @override
   Future<StatResult> getTaskStat({
@@ -91,33 +94,101 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    // The journal system is mid-migration to an event-log tracker model.
-    // Read whatever the repository can provide, but keep rendering stable.
-    await _journalRepo.getDailyMoodAverages(range: range);
-    return TrendData(points: const [], granularity: granularity);
+    final daily = await _journalRepo.getDailyMoodAverages(range: range);
+    final points = _aggregateTrend(daily, granularity);
+    return _buildTrend(points: points, granularity: granularity);
   }
 
   @override
   Future<Map<int, int>> getMoodDistribution({
     required DateRange range,
   }) async {
-    // Stub while journal/tracker analytics are rebuilt.
-    await _journalRepo.getDailyMoodAverages(range: range);
-    return const {};
+    final moodTrackerId = await _getMoodTrackerId();
+    if (moodTrackerId == null) return const <int, int>{};
+
+    final events = await _journalRepo
+        .watchTrackerEvents(
+          range: range,
+          anchorType: 'entry',
+          trackerId: moodTrackerId,
+        )
+        .first;
+
+    final dist = <int, int>{};
+    for (final e in events) {
+      final value = e.value;
+      final rating = switch (value) {
+        final int v => v,
+        final double v => v.round(),
+        _ => null,
+      };
+      if (rating == null) continue;
+      dist[rating] = (dist[rating] ?? 0) + 1;
+    }
+
+    return dist;
   }
 
   @override
   Future<MoodSummary> getMoodSummary({
     required DateRange range,
   }) async {
-    // Stub while journal/tracker analytics are rebuilt.
-    await _journalRepo.getDailyMoodAverages(range: range);
-    return const MoodSummary(
-      average: 0,
-      totalEntries: 0,
-      min: 0,
-      max: 0,
-      distribution: {},
+    final moodTrackerId = await _getMoodTrackerId();
+    if (moodTrackerId == null) {
+      return const MoodSummary(
+        average: 0,
+        totalEntries: 0,
+        min: 0,
+        max: 0,
+        distribution: {},
+      );
+    }
+
+    final events = await _journalRepo
+        .watchTrackerEvents(
+          range: range,
+          anchorType: 'entry',
+          trackerId: moodTrackerId,
+        )
+        .first;
+
+    final values = <double>[];
+    final distribution = <int, int>{};
+
+    for (final e in events) {
+      final asDouble = switch (e.value) {
+        final int v => v.toDouble(),
+        final double v => v,
+        _ => null,
+      };
+      if (asDouble == null) continue;
+
+      values.add(asDouble);
+      distribution[asDouble.round()] =
+          (distribution[asDouble.round()] ?? 0) + 1;
+    }
+
+    if (values.isEmpty) {
+      return const MoodSummary(
+        average: 0,
+        totalEntries: 0,
+        min: 0,
+        max: 0,
+        distribution: {},
+      );
+    }
+
+    final sum = values.fold<double>(0, (a, b) => a + b);
+    final avg = sum / values.length;
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+
+    return MoodSummary(
+      average: avg,
+      totalEntries: values.length,
+      min: min.round(),
+      max: max.round(),
+      distribution: distribution,
     );
   }
 
@@ -127,43 +198,84 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     TrendGranularity granularity = TrendGranularity.daily,
   }) async {
-    // Stub while tracker event/projection reads are being finalized.
-    await _journalRepo.getTrackerValues(trackerId: trackerId, range: range);
-    return TrendData(points: const [], granularity: granularity);
+    final daily = await _journalRepo.getTrackerValues(
+      trackerId: trackerId,
+      range: range,
+    );
+    final points = _aggregateTrend(daily, granularity);
+    return _buildTrend(points: points, granularity: granularity);
   }
 
   @override
   Future<CorrelationResult> calculateCorrelation({
     required CorrelationRequest request,
   }) async {
-    // Stub while journal/tracker analytics are rebuilt.
     return request.when(
-      moodVsTracker: (trackerId, range) async => const CorrelationResult(
-        sourceLabel: 'Tracker',
-        targetLabel: 'Mood',
-        coefficient: 0,
-        strength: CorrelationStrength.negligible,
-        sampleSize: 0,
-        insight: _journalAnalyticsStubMessage,
-      ),
-      moodVsEntity: (entityId, entityType, range) async =>
-          const CorrelationResult(
-            sourceLabel: 'Entity',
-            targetLabel: 'Mood',
-            coefficient: 0,
-            strength: CorrelationStrength.negligible,
-            sampleSize: 0,
-            insight: _journalAnalyticsStubMessage,
-          ),
-      trackerVsTracker: (trackerId1, trackerId2, range) async =>
-          const CorrelationResult(
-            sourceLabel: 'Tracker',
-            targetLabel: 'Tracker',
-            coefficient: 0,
-            strength: CorrelationStrength.negligible,
-            sampleSize: 0,
-            insight: _journalAnalyticsStubMessage,
-          ),
+      moodVsTracker: (trackerId, range) async {
+        final moodByDay = await _journalRepo.getDailyMoodAverages(range: range);
+        final trackerByDay = await _journalRepo.getTrackerValues(
+          trackerId: trackerId,
+          range: range,
+        );
+
+        final trackerDays = trackerByDay.entries
+            .where((e) => e.value > 0)
+            .map((e) => e.key)
+            .toList(growable: false);
+
+        final labels = await _getTrackerLabels();
+
+        return _correlationCalculator.calculate(
+          sourceLabel: labels[trackerId] ?? 'Tracker',
+          targetLabel: 'Mood',
+          sourceDays: trackerDays,
+          targetData: moodByDay,
+        );
+      },
+      moodVsEntity: (entityId, entityType, range) async {
+        final moodByDay = await _journalRepo.getDailyMoodAverages(range: range);
+        final activityDays = await _getEntityActivityDays(
+          entityId: entityId,
+          entityType: entityType,
+          range: range,
+        );
+
+        final sourceLabel = await _getEntityLabel(
+          entityId: entityId,
+          entityType: entityType,
+        );
+
+        return _correlationCalculator.calculate(
+          sourceLabel: sourceLabel,
+          targetLabel: 'Mood',
+          sourceDays: activityDays,
+          targetData: moodByDay,
+        );
+      },
+      trackerVsTracker: (trackerId1, trackerId2, range) async {
+        final series1 = await _journalRepo.getTrackerValues(
+          trackerId: trackerId1,
+          range: range,
+        );
+        final series2 = await _journalRepo.getTrackerValues(
+          trackerId: trackerId2,
+          range: range,
+        );
+
+        final sourceDays = series1.entries
+            .where((e) => e.value > 0)
+            .map((e) => e.key)
+            .toList(growable: false);
+
+        final labels = await _getTrackerLabels();
+
+        return _correlationCalculator.calculate(
+          sourceLabel: labels[trackerId1] ?? 'Tracker',
+          targetLabel: labels[trackerId2] ?? 'Tracker',
+          sourceDays: sourceDays,
+          targetData: series2,
+        );
+      },
     );
   }
 
@@ -172,8 +284,206 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required DateRange range,
     int limit = 10,
   }) async {
-    // Stub while journal/tracker analytics are rebuilt.
-    return const [];
+    final moodByDay = await _journalRepo.getDailyMoodAverages(range: range);
+    if (moodByDay.isEmpty) return const <CorrelationResult>[];
+
+    final defs = await _journalRepo.watchTrackerDefinitions().first;
+    final labels = {
+      for (final d in defs)
+        if (d.deletedAt == null && d.systemKey == null && d.isActive)
+          d.id: d.name,
+    };
+
+    final results = <CorrelationResult>[];
+
+    for (final trackerId in labels.keys) {
+      final trackerByDay = await _journalRepo.getTrackerValues(
+        trackerId: trackerId,
+        range: range,
+      );
+
+      final trackerDays = trackerByDay.entries
+          .where((e) => e.value > 0)
+          .map((e) => e.key)
+          .toList(growable: false);
+
+      final result = _correlationCalculator.calculate(
+        sourceLabel: labels[trackerId] ?? 'Tracker',
+        targetLabel: 'Mood',
+        sourceDays: trackerDays,
+        targetData: moodByDay,
+      );
+
+      results.add(result);
+    }
+
+    results.sort(
+      (a, b) => b.coefficient.abs().compareTo(a.coefficient.abs()),
+    );
+
+    return results.take(limit).toList(growable: false);
+  }
+
+  // === Journal/Tracker Analytics Helpers ===
+
+  Future<String?> _getMoodTrackerId() async {
+    final defs = await _journalRepo.watchTrackerDefinitions().first;
+    for (final d in defs) {
+      if (d.systemKey == 'mood') return d.id;
+    }
+    return null;
+  }
+
+  Future<Map<String, String>> _getTrackerLabels() async {
+    final defs = await _journalRepo.watchTrackerDefinitions().first;
+    return {
+      for (final d in defs) d.id: d.name,
+    };
+  }
+
+  Future<String> _getEntityLabel({
+    required String entityId,
+    required EntityType entityType,
+  }) async {
+    return switch (entityType) {
+      EntityType.task => (await _taskRepo.getById(entityId))?.name ?? 'Task',
+      EntityType.project =>
+        (await _projectRepo.getById(entityId))?.name ?? 'Project',
+      EntityType.value => (await _valueRepo.getById(entityId))?.name ?? 'Value',
+    };
+  }
+
+  Future<List<DateTime>> _getEntityActivityDays({
+    required String entityId,
+    required EntityType entityType,
+    required DateRange range,
+  }) async {
+    final query = TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: [
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isTrue,
+          ),
+          TaskDatePredicate(
+            field: TaskDateField.completedAt,
+            operator: DateOperator.between,
+            startDate: range.start,
+            endDate: range.end,
+          ),
+          if (entityType == EntityType.project)
+            TaskProjectPredicate(
+              operator: ProjectOperator.matches,
+              projectId: entityId,
+            ),
+          if (entityType == EntityType.value)
+            TaskValuePredicate(
+              operator: ValueOperator.hasAll,
+              valueIds: [entityId],
+              includeInherited: true,
+            ),
+        ],
+      ),
+      occurrenceExpansion: OccurrenceExpansion(
+        rangeStart: range.start,
+        rangeEnd: range.end,
+      ),
+    );
+
+    final completions = await _taskRepo.getAll(query);
+
+    final days = <DateTime>{};
+    for (final task in completions) {
+      if (entityType == EntityType.task && task.id != entityId) continue;
+      final completedAt = task.occurrence?.completedAt;
+      if (completedAt == null || !range.contains(completedAt)) continue;
+      final utc = completedAt.toUtc();
+      days.add(DateTime.utc(utc.year, utc.month, utc.day));
+    }
+
+    final result = days.toList()..sort();
+    return result;
+  }
+
+  List<TrendPoint> _aggregateTrend(
+    Map<DateTime, double> daily,
+    TrendGranularity granularity,
+  ) {
+    if (daily.isEmpty) return const <TrendPoint>[];
+
+    final entries = daily.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    DateTime bucketKey(DateTime day) {
+      final utc = DateTime.utc(day.year, day.month, day.day);
+      return switch (granularity) {
+        TrendGranularity.daily => utc,
+        TrendGranularity.weekly => utc.subtract(
+          Duration(days: utc.weekday - 1),
+        ),
+        TrendGranularity.monthly => DateTime.utc(utc.year, utc.month, 1),
+      };
+    }
+
+    final valuesByBucket = <DateTime, List<double>>{};
+    for (final e in entries) {
+      (valuesByBucket[bucketKey(e.key)] ??= <double>[]).add(e.value);
+    }
+
+    final points = <TrendPoint>[];
+    for (final bucket
+        in valuesByBucket.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key))) {
+      final values = bucket.value;
+      if (values.isEmpty) continue;
+      final sum = values.fold<double>(0, (a, b) => a + b);
+      points.add(
+        TrendPoint(
+          date: bucket.key,
+          value: sum / values.length,
+          sampleCount: values.length,
+        ),
+      );
+    }
+    return points;
+  }
+
+  TrendData _buildTrend({
+    required List<TrendPoint> points,
+    required TrendGranularity granularity,
+  }) {
+    if (points.isEmpty) {
+      return TrendData(points: const [], granularity: granularity);
+    }
+
+    final values = points.map((p) => p.value).toList(growable: false);
+    final sum = values.fold<double>(0, (a, b) => a + b);
+    final avg = sum / values.length;
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+
+    TrendDirection overall;
+    if (values.length < 2) {
+      overall = TrendDirection.stable;
+    } else {
+      final delta = values.last - values.first;
+      if (delta > 0.1) {
+        overall = TrendDirection.up;
+      } else if (delta < -0.1) {
+        overall = TrendDirection.down;
+      } else {
+        overall = TrendDirection.stable;
+      }
+    }
+
+    return TrendData(
+      points: points,
+      granularity: granularity,
+      average: avg,
+      min: min,
+      max: max,
+      overallTrend: overall,
+    );
   }
 
   @override

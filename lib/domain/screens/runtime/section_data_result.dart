@@ -2,6 +2,10 @@
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -63,6 +67,14 @@ sealed class SectionDataResult with _$SectionDataResult {
     required int totalCount,
   }) = AttentionBannerV2SectionResult;
 
+  /// My Day hero (v1).
+  ///
+  /// Carries lightweight, My Day-specific header data (progress counts).
+  const factory SectionDataResult.myDayHeroV1({
+    required int doneCount,
+    required int totalCount,
+  }) = MyDayHeroV1SectionResult;
+
   /// Entity header for project detail screens.
   const factory SectionDataResult.entityHeaderProject({
     required Project project,
@@ -82,6 +94,29 @@ sealed class SectionDataResult with _$SectionDataResult {
     required String entityType,
     required String entityId,
   }) = EntityHeaderMissingSectionResult;
+
+  // === Journal (Today-first) ===
+
+  const factory SectionDataResult.journalTodayComposerV1({
+    required List<TrackerDefinition> pinnedTrackers,
+    required String? moodTrackerId,
+  }) = JournalTodayComposerV1SectionResult;
+
+  const factory SectionDataResult.journalTodayEntriesV1({
+    required List<JournalEntry> entries,
+    required Map<String, List<TrackerEvent>> eventsByEntryId,
+    required Map<String, TrackerDefinition> definitionById,
+    required String? moodTrackerId,
+  }) = JournalTodayEntriesV1SectionResult;
+
+  const factory SectionDataResult.journalHistoryListV1({
+    required List<JournalEntry> entries,
+  }) = JournalHistoryListV1SectionResult;
+
+  const factory SectionDataResult.journalManageTrackersV1({
+    required List<TrackerDefinition> visibleDefinitions,
+    required Map<String, TrackerPreference> preferenceByTrackerId,
+  }) = JournalManageTrackersV1SectionResult;
 
   const SectionDataResult._();
 

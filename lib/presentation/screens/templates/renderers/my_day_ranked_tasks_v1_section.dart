@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ranked_tasks_v1_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -136,104 +133,6 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
     );
 
     return ranked;
-  }
-
-  List<Widget> _buildModeChips(FocusMode mode) {
-    final theme = Theme.of(context);
-
-    List<String> labels;
-    switch (mode) {
-      case FocusMode.intentional:
-        labels = const ['Intentional', 'Values-led', 'Focused'];
-      case FocusMode.sustainable:
-        labels = const ['Steady progress', 'Deadline-aware', 'Realistic'];
-      case FocusMode.responsive:
-        labels = const ['Responsive', 'Deadline-led', 'Fast'];
-      case FocusMode.personalized:
-        labels = const ['Personalized', 'Custom mix', 'Adjustable'];
-    }
-
-    return labels
-        .take(3)
-        .map(
-          (label) => Chip(
-            label: Text(label),
-            visualDensity: VisualDensity.compact,
-            labelStyle: theme.textTheme.labelMedium,
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  Widget _buildFocusHeaderCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return BlocBuilder<MyDayHeaderBloc, MyDayHeaderState>(
-      builder: (context, state) {
-        final focusMode = state.focusMode;
-
-        return Semantics(
-          container: true,
-          child: Card(
-            elevation: 0,
-            color: cs.surfaceContainerLow,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              focusMode.displayName,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              focusMode.tagline,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Semantics(
-                        button: true,
-                        label: 'Change focus mode',
-                        child: TextButton(
-                          onPressed: () {
-                            context.read<MyDayHeaderBloc>().add(
-                              const MyDayHeaderFocusModeBannerTapped(),
-                            );
-                          },
-                          child: const Text('Change'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: _buildModeChips(focusMode),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Widget _buildMixRow(BuildContext context, MyDayMixVm mix) {
@@ -405,132 +304,112 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
   Widget build(BuildContext context) {
     final ranked = _rankedTasks();
 
-    return BlocProvider<MyDayHeaderBloc>(
-      create: (_) => getIt<MyDayHeaderBloc>()..add(const MyDayHeaderStarted()),
-      child: BlocListener<MyDayHeaderBloc, MyDayHeaderState>(
-        listenWhen: (previous, current) {
-          return previous.navRequestId != current.navRequestId &&
-              current.nav == MyDayHeaderNav.openFocusSetupWizard;
-        },
-        listener: (context, state) {
-          Routing.toScreenKeyWithQuery(
-            context,
-            'focus_setup',
-            queryParameters: const {'step': 'select_focus_mode'},
-          );
-        },
-        child: BlocProvider.value(
-          value: _bloc,
-          child: SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                if (index == 0) {
-                  return _buildFocusHeaderCard(context);
-                }
+    return BlocProvider.value(
+      value: _bloc,
+      child: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 10, bottom: 8),
+                child:
+                    BlocBuilder<
+                      MyDayRankedTasksV1Bloc,
+                      MyDayRankedTasksV1State
+                    >(
+                      builder: (context, state) {
+                        return _buildMixRow(context, state.mix);
+                      },
+                    ),
+              );
+            }
 
-                if (index == 1) {
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 10, bottom: 8),
-                    child:
-                        BlocBuilder<
-                          MyDayRankedTasksV1Bloc,
-                          MyDayRankedTasksV1State
-                        >(
-                          builder: (context, state) {
-                            return _buildMixRow(context, state.mix);
-                          },
+            if (ranked.isEmpty && index == 1) {
+              return EmptyStateWidget.noTasks(
+                title: "You're all set for today",
+                description: 'Add a task to shape your day.',
+                actionLabel: 'Add a task',
+                onAction: () => Routing.toTaskNew(context),
+              );
+            }
+
+            final taskIndex = index - 1;
+            if (taskIndex < 0 || taskIndex >= ranked.length) {
+              return const SizedBox.shrink();
+            }
+
+            final rankedTask = ranked[taskIndex];
+            final task = rankedTask.task;
+
+            final isExpanded = _expandedTaskId == task.id;
+            final rankLabel = rankedTask.rank != null
+                ? '${rankedTask.rank}'
+                : '${taskIndex + 1}';
+
+            final titlePrefix = SizedBox(
+              width: 28,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  rankLabel,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TaskView(
+                  task: task,
+                  compact: true,
+                  isInFocus: true,
+                  titlePrefix: titlePrefix,
+                  onCheckboxChanged: (t, val) {
+                    widget.onTaskCheckboxChanged?.call(t, val);
+                  },
+                  onTap: (_) {
+                    setState(() {
+                      _expandedTaskId = _expandedTaskId == task.id
+                          ? null
+                          : task.id;
+                    });
+                  },
+                ),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox.shrink(),
+                  secondChild: Padding(
+                    padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (task.description != null &&
+                            task.description!.trim().isNotEmpty) ...[
+                          Text(
+                            task.description!,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        ValuesFooter(
+                          primaryValue: task.primaryValue,
+                          secondaryValues: task.secondaryValues,
                         ),
-                  );
-                }
-
-                if (ranked.isEmpty && index == 2) {
-                  return EmptyStateWidget.noTasks(
-                    title: "You're all set for today",
-                    description: 'Add a task to shape your day.',
-                    actionLabel: 'Add a task',
-                    onAction: () => Routing.toTaskNew(context),
-                  );
-                }
-
-                final taskIndex = index - 2;
-                if (taskIndex < 0 || taskIndex >= ranked.length) {
-                  return const SizedBox.shrink();
-                }
-
-                final rankedTask = ranked[taskIndex];
-                final task = rankedTask.task;
-
-                final isExpanded = _expandedTaskId == task.id;
-                final rankLabel = rankedTask.rank != null
-                    ? '${rankedTask.rank}'
-                    : '${taskIndex + 1}';
-
-                final titlePrefix = SizedBox(
-                  width: 28,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      rankLabel,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      ],
                     ),
                   ),
-                );
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TaskView(
-                      task: task,
-                      compact: true,
-                      isInFocus: true,
-                      titlePrefix: titlePrefix,
-                      onCheckboxChanged: (t, val) {
-                        widget.onTaskCheckboxChanged?.call(t, val);
-                      },
-                      onTap: (_) {
-                        setState(() {
-                          _expandedTaskId = _expandedTaskId == task.id
-                              ? null
-                              : task.id;
-                        });
-                      },
-                    ),
-                    AnimatedCrossFade(
-                      firstChild: const SizedBox.shrink(),
-                      secondChild: Padding(
-                        padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (task.description != null &&
-                                task.description!.trim().isNotEmpty) ...[
-                              Text(
-                                task.description!,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                              const SizedBox(height: 10),
-                            ],
-                            ValuesFooter(
-                              primaryValue: task.primaryValue,
-                              secondaryValues: task.secondaryValues,
-                            ),
-                          ],
-                        ),
-                      ),
-                      crossFadeState: isExpanded
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 180),
-                    ),
-                  ],
-                );
-              },
-              childCount: 2 + (ranked.isEmpty ? 1 : ranked.length),
-            ),
-          ),
+                  crossFadeState: isExpanded
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 180),
+                ),
+              ],
+            );
+          },
+          childCount: 1 + (ranked.isEmpty ? 1 : ranked.length),
         ),
       ),
     );

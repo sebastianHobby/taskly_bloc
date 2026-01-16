@@ -1,7 +1,7 @@
 # Phase 03 — Full-screen entry editor + Today logging loop
 
 Created at: 2026-01-15T12:30:44.4044895Z
-Last updated at: 2026-01-15T12:30:44.4044895Z
+Last updated at: 2026-01-15T23:28:39.6432613Z
 
 ## Goal
 
@@ -57,6 +57,8 @@ Implement the core habit loop for UX-001C with the locked decisions:
 
 ## Completion
 
-Completed at: <UTC>
+Completed at: 2026-01-15T23:28:39.6432613Z
 Summary:
-- <fill when complete>
+- Added a route-backed full-screen Journal entry editor (create + edit) with mood-required enforcement.
+- Wired Today composer and entry taps (Today + History) to open the editor route via `Routing`.
+- Added `JournalEntryEditorCubit` for presentation-layer save orchestration.

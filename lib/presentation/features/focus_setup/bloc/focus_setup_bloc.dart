@@ -4,10 +4,8 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
 import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
 import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
@@ -20,7 +18,6 @@ const _maxNeglectLookbackDays = 60;
 enum FocusSetupWizardStep {
   selectFocusMode,
   allocationStrategy,
-  reviewSchedule,
   valuesCta,
   finalize,
 }
@@ -69,36 +66,17 @@ sealed class FocusSetupEvent with _$FocusSetupEvent {
   const factory FocusSetupEvent.allocationResetToDefaultPressed() =
       FocusSetupAllocationResetToDefaultPressed;
 
-  const factory FocusSetupEvent.reviewRuleEnabledChanged({
-    required String ruleId,
-    required bool enabled,
-  }) = FocusSetupReviewRuleEnabledChanged;
-
-  const factory FocusSetupEvent.reviewRuleFrequencyDaysChanged({
-    required String ruleId,
-    required int frequencyDays,
-  }) = FocusSetupReviewRuleFrequencyDaysChanged;
-
   const factory FocusSetupEvent.finalizePressed() = FocusSetupFinalizePressed;
 
   const factory FocusSetupEvent.allocationStreamUpdated(
     AllocationConfig allocationConfig,
   ) = FocusSetupAllocationStreamUpdated;
 
-  const factory FocusSetupEvent.reviewRulesStreamUpdated(
-    List<AttentionRule> rules,
-  ) = FocusSetupReviewRulesStreamUpdated;
-
   const factory FocusSetupEvent.valuesStreamUpdated(int valuesCount) =
       FocusSetupValuesStreamUpdated;
 
   const factory FocusSetupEvent.quickAddValueRequested(String name) =
       FocusSetupQuickAddValueRequested;
-
-  const factory FocusSetupEvent.lastResolvedUpdated({
-    required String ruleId,
-    required DateTime? lastResolvedAt,
-  }) = FocusSetupLastResolvedUpdated;
 
   const factory FocusSetupEvent.saveFailed(String message) =
       FocusSetupSaveFailed;
@@ -131,16 +109,6 @@ sealed class FocusSetupState with _$FocusSetupState {
     double? draftTaskFlagBoost,
     int? draftRecencyPenaltyPercent,
     double? draftOverdueEmergencyMultiplier,
-
-    /// Review-session rules only.
-    @Default(<AttentionRule>[]) List<AttentionRule> reviewSessionRules,
-
-    /// Draft edits per rule.
-    @Default(<String, bool>{}) Map<String, bool> draftRuleEnabled,
-    @Default(<String, int>{}) Map<String, int> draftRuleFrequencyDays,
-
-    /// Latest completion timestamp per rule (read-only).
-    @Default(<String, DateTime?>{}) Map<String, DateTime?> lastResolvedAt,
 
     @Default(false) bool saveSucceeded,
   }) = _FocusSetupState;
@@ -188,7 +156,6 @@ sealed class FocusSetupState with _$FocusSetupState {
       return const [
         FocusSetupWizardStep.selectFocusMode,
         FocusSetupWizardStep.allocationStrategy,
-        FocusSetupWizardStep.reviewSchedule,
         FocusSetupWizardStep.valuesCta,
         FocusSetupWizardStep.finalize,
       ];
@@ -196,7 +163,6 @@ sealed class FocusSetupState with _$FocusSetupState {
 
     return const [
       FocusSetupWizardStep.selectFocusMode,
-      FocusSetupWizardStep.reviewSchedule,
       FocusSetupWizardStep.valuesCta,
       FocusSetupWizardStep.finalize,
     ];
@@ -307,10 +273,8 @@ sealed class FocusSetupState with _$FocusSetupState {
 class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
   FocusSetupBloc({
     required SettingsRepositoryContract settingsRepository,
-    required AttentionRepositoryContract attentionRepository,
     required ValueRepositoryContract valueRepository,
   }) : _settingsRepository = settingsRepository,
-       _attentionRepository = attentionRepository,
        _valueRepository = valueRepository,
        super(const FocusSetupState()) {
     on<FocusSetupStarted>(_onStarted, transformer: droppable());
@@ -318,16 +282,8 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       _onAllocationStreamUpdated,
       transformer: sequential(),
     );
-    on<FocusSetupReviewRulesStreamUpdated>(
-      _onReviewRulesStreamUpdated,
-      transformer: sequential(),
-    );
     on<FocusSetupValuesStreamUpdated>(
       _onValuesStreamUpdated,
-      transformer: sequential(),
-    );
-    on<FocusSetupLastResolvedUpdated>(
-      _onLastResolvedUpdated,
       transformer: sequential(),
     );
 
@@ -377,15 +333,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       transformer: droppable(),
     );
 
-    on<FocusSetupReviewRuleEnabledChanged>(
-      _onReviewRuleEnabledChanged,
-      transformer: droppable(),
-    );
-    on<FocusSetupReviewRuleFrequencyDaysChanged>(
-      _onReviewRuleFrequencyDaysChanged,
-      transformer: droppable(),
-    );
-
     on<FocusSetupQuickAddValueRequested>(
       _onQuickAddValueRequested,
       transformer: droppable(),
@@ -397,25 +344,17 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
   }
 
   final SettingsRepositoryContract _settingsRepository;
-  final AttentionRepositoryContract _attentionRepository;
   final ValueRepositoryContract _valueRepository;
 
   StreamSubscription<AllocationConfig>? _allocationSub;
-  StreamSubscription<List<AttentionRule>>? _rulesSub;
   StreamSubscription<dynamic>? _valuesSub;
-  final Map<String, StreamSubscription<dynamic>> _resolutionSubs = {};
 
   FocusSetupWizardStep? _pendingInitialStep;
 
   @override
   Future<void> close() async {
     await _allocationSub?.cancel();
-    await _rulesSub?.cancel();
     await _valuesSub?.cancel();
-    for (final sub in _resolutionSubs.values) {
-      await sub.cancel();
-    }
-    _resolutionSubs.clear();
     return super.close();
   }
 
@@ -441,17 +380,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
           },
         );
 
-    await _rulesSub?.cancel();
-    _rulesSub = _attentionRepository.watchAllRules().listen(
-      (rules) => add(FocusSetupEvent.reviewRulesStreamUpdated(rules)),
-      onError: (Object e, StackTrace st) {
-        talker.handle(e, st, '[FocusSetupBloc] attention rules stream error');
-        add(
-          const FocusSetupEvent.saveFailed('Failed to load attention rules'),
-        );
-      },
-    );
-
     await _valuesSub?.cancel();
     _valuesSub = _valueRepository.watchAll().listen(
       (values) => add(FocusSetupEvent.valuesStreamUpdated(values.length)),
@@ -469,44 +397,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     final next = _applyPendingInitialStepIfPossible(
       state.copyWith(
         persistedAllocationConfig: event.allocationConfig,
-        isLoading: false,
-      ),
-    );
-    emit(next);
-  }
-
-  void _onReviewRulesStreamUpdated(
-    FocusSetupReviewRulesStreamUpdated event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    final reviewSessionRules = event.rules
-        .where((r) => r.bucket == AttentionBucket.review)
-        .where((r) => r.evaluator == 'review_session_due_v1')
-        .where((r) => r.evaluatorParams.containsKey('frequencyDays'))
-        .toList(growable: false);
-
-    // Ensure draft maps contain entries for known rules.
-    final enabledDraft = Map<String, bool>.from(state.draftRuleEnabled);
-    final freqDraft = Map<String, int>.from(state.draftRuleFrequencyDays);
-
-    for (final rule in reviewSessionRules) {
-      enabledDraft.putIfAbsent(rule.id, () => rule.active);
-      final freq = rule.evaluatorParams['frequencyDays'];
-      if (freq is int) {
-        freqDraft.putIfAbsent(rule.id, () => freq);
-      } else if (freq is num) {
-        freqDraft.putIfAbsent(rule.id, freq.round);
-      }
-    }
-
-    // Subscribe to last-resolution updates for each visible rule.
-    _refreshResolutionSubscriptions(reviewSessionRules);
-
-    final next = _applyPendingInitialStepIfPossible(
-      state.copyWith(
-        reviewSessionRules: reviewSessionRules,
-        draftRuleEnabled: enabledDraft,
-        draftRuleFrequencyDays: freqDraft,
         isLoading: false,
       ),
     );
@@ -575,51 +465,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     return palette[hash % palette.length];
   }
 
-  void _refreshResolutionSubscriptions(List<AttentionRule> rules) {
-    final wanted = rules.map((r) => r.id).toSet();
-
-    // Cancel any no-longer-needed subscriptions.
-    final toRemove = _resolutionSubs.keys
-        .where((id) => !wanted.contains(id))
-        .toList();
-    for (final id in toRemove) {
-      unawaited(_resolutionSubs.remove(id)?.cancel());
-    }
-
-    // Add missing subscriptions.
-    for (final rule in rules) {
-      if (_resolutionSubs.containsKey(rule.id)) continue;
-
-      _resolutionSubs[rule.id] = _attentionRepository
-          .watchResolutionsForRule(rule.id)
-          .listen(
-            (resolutions) {
-              final last = resolutions.isNotEmpty
-                  ? resolutions.first.resolvedAt
-                  : null;
-              add(
-                FocusSetupEvent.lastResolvedUpdated(
-                  ruleId: rule.id,
-                  lastResolvedAt: last,
-                ),
-              );
-            },
-            onError: (Object e, StackTrace st) {
-              talker.handle(e, st, '[FocusSetupBloc] resolution stream error');
-            },
-          );
-    }
-  }
-
-  void _onLastResolvedUpdated(
-    FocusSetupLastResolvedUpdated event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    final updated = Map<String, DateTime?>.from(state.lastResolvedAt);
-    updated[event.ruleId] = event.lastResolvedAt;
-    emit(state.copyWith(lastResolvedAt: updated));
-  }
-
   void _onBackPressed(
     FocusSetupBackPressed event,
     Emitter<FocusSetupState> emit,
@@ -641,21 +486,11 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     Emitter<FocusSetupState> emit,
   ) {
     final nextFocusMode = event.focusMode;
-
-    final nextSteps = nextFocusMode == FocusMode.personalized
-        ? const [
-            FocusSetupWizardStep.selectFocusMode,
-            FocusSetupWizardStep.allocationStrategy,
-            FocusSetupWizardStep.reviewSchedule,
-            FocusSetupWizardStep.finalize,
-          ]
-        : const [
-            FocusSetupWizardStep.selectFocusMode,
-            FocusSetupWizardStep.reviewSchedule,
-            FocusSetupWizardStep.finalize,
-          ];
-    final nextMaxIndex = nextSteps.length - 1;
-    final clampedStepIndex = state.stepIndex.clamp(0, nextMaxIndex);
+    final nextStateForSteps = state.copyWith(draftFocusMode: nextFocusMode);
+    final clampedStepIndex = state.stepIndex.clamp(
+      0,
+      nextStateForSteps.maxStepIndex,
+    );
 
     // Non-personalized modes always use their default weightings.
     // Personalized keeps the user's existing settings until they adjust.
@@ -806,24 +641,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     );
   }
 
-  void _onReviewRuleEnabledChanged(
-    FocusSetupReviewRuleEnabledChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    final updated = Map<String, bool>.from(state.draftRuleEnabled);
-    updated[event.ruleId] = event.enabled;
-    emit(state.copyWith(draftRuleEnabled: updated));
-  }
-
-  void _onReviewRuleFrequencyDaysChanged(
-    FocusSetupReviewRuleFrequencyDaysChanged event,
-    Emitter<FocusSetupState> emit,
-  ) {
-    final updated = Map<String, int>.from(state.draftRuleFrequencyDays);
-    updated[event.ruleId] = event.frequencyDays;
-    emit(state.copyWith(draftRuleFrequencyDays: updated));
-  }
-
   Future<void> _onFinalizePressed(
     FocusSetupFinalizePressed event,
     Emitter<FocusSetupState> emit,
@@ -863,26 +680,6 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
       );
 
       await _settingsRepository.save(SettingsKey.allocation, updatedConfig);
-
-      for (final rule in state.reviewSessionRules) {
-        final enabled = state.draftRuleEnabled[rule.id] ?? rule.active;
-        final freqDays =
-            state.draftRuleFrequencyDays[rule.id] ??
-            (rule.evaluatorParams['frequencyDays'] as int? ?? 30);
-
-        if (enabled != rule.active) {
-          await _attentionRepository.updateRuleActive(rule.id, enabled);
-        }
-
-        final existingFreq = rule.evaluatorParams['frequencyDays'];
-        final needsFreqUpdate =
-            existingFreq is! int || existingFreq != freqDays;
-        if (needsFreqUpdate) {
-          final params = Map<String, dynamic>.from(rule.evaluatorParams);
-          params['frequencyDays'] = freqDays;
-          await _attentionRepository.updateRuleEvaluatorParams(rule.id, params);
-        }
-      }
 
       add(const FocusSetupEvent.saveSucceeded());
     } catch (e, st) {

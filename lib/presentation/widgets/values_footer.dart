@@ -34,12 +34,14 @@ class ValuesFooter extends StatelessWidget {
           ValueChip(
             value: primary,
             variant: ValueChipVariant.solid,
+            iconOnly: false,
             // You might add rank here if available in context, or keep generic
           ),
         ...secondaryValues.map(
           (value) => ValueChip(
             value: value,
             variant: ValueChipVariant.outlined,
+            iconOnly: true,
           ),
         ),
       ],

@@ -47,7 +47,6 @@ sealed class GlobalSettingsEvent with _$GlobalSettingsEvent {
       GlobalSettingsOnboardingCompleted;
 
   /// Internal: Stream emitted new settings.
-  @internal
   const factory GlobalSettingsEvent.streamUpdated(GlobalSettings settings) =
       GlobalSettingsStreamUpdated;
 }

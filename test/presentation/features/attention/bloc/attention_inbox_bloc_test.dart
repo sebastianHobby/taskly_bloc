@@ -210,7 +210,15 @@ void main() {
 
       loaded = await _nextLoaded(bloc);
       expect(loaded.totalVisibleCount, 1);
-      expect(loaded.groups.single.items.single.item.id, 'a2');
+      expect(
+        loaded.groups
+            .expand((g) => g.entities)
+            .expand((e) => e.reasons)
+            .single
+            .item
+            .id,
+        'a2',
+      );
 
       bloc.add(
         const AttentionInboxEvent.entityTypeToggled(
@@ -263,7 +271,7 @@ void main() {
 
       bloc.add(
         AttentionInboxEvent.applyActionToItem(
-          itemKey: loaded.groups.single.items.single.key,
+          itemKey: loaded.groups.single.entities.single.reasons.single.key,
           action: AttentionResolutionAction.reviewed,
         ),
       );
@@ -324,11 +332,13 @@ void main() {
       var loaded = await _nextLoaded(bloc);
       expect(loaded.totalVisibleCount, 2);
 
-      final dismissableKey = loaded.groups.single.items
-          .firstWhere((i) => i.item.id == 'a1')
-          .key;
-      final notDismissableKey = loaded.groups.single.items
-          .firstWhere((i) => i.item.id == 'a2')
+      final reasons = loaded.groups
+          .expand((g) => g.entities)
+          .expand((e) => e.reasons);
+
+      final dismissableKey = reasons.firstWhere((r) => r.item.id == 'a1').key;
+      final notDismissableKey = reasons
+          .firstWhere((r) => r.item.id == 'a2')
           .key;
 
       bloc.add(AttentionInboxEvent.toggleSelected(itemKey: dismissableKey));
@@ -500,7 +510,11 @@ void main() {
       final titles = loaded.groups.map((g) => g.title).toList();
       expect(titles, ['CRITICAL', 'INFO', 'WARNING']);
       expect(
-        loaded.groups.expand((g) => g.items).map((i) => i.item.id).toSet(),
+        loaded.groups
+            .expand((g) => g.entities)
+            .expand((e) => e.reasons)
+            .map((r) => r.item.id)
+            .toSet(),
         {'a', 'b', 'c'},
       );
     });
@@ -554,8 +568,8 @@ void main() {
       );
       loaded = await _nextLoaded(bloc);
 
-      final ordered = loaded.groups.single.items
-          .map((i) => i.item.title)
+      final ordered = loaded.groups.single.entities
+          .map((e) => e.headline.item.title)
           .toList();
       expect(ordered, ['Alpha', 'bravo']);
     });
