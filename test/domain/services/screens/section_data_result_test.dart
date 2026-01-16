@@ -1,8 +1,10 @@
 ﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 
 import '../../../fixtures/test_data.dart';
 
@@ -103,10 +105,11 @@ void main() {
               formattedHeader: 'Wed, Jan 1',
               items: [
                 AgendaItem(
-                  entityType: 'task',
+                  entityType: EntityType.task,
                   entityId: 't1',
                   name: 'Task 1',
                   tag: AgendaDateTag.due,
+                  tileCapabilities: const EntityTileCapabilities(),
                   task: TestData.task(id: 't1'),
                 ),
               ],
@@ -134,10 +137,11 @@ void main() {
                 formattedHeader: 'Wed, Jan 1',
                 items: [
                   AgendaItem(
-                    entityType: 'task',
+                    entityType: EntityType.task,
                     entityId: 't1',
                     name: 'Task 1',
                     tag: AgendaDateTag.due,
+                    tileCapabilities: const EntityTileCapabilities(),
                     task: TestData.task(id: 't1'),
                   ),
                 ],
@@ -148,17 +152,19 @@ void main() {
                 formattedHeader: 'Thu, Jan 2',
                 items: [
                   AgendaItem(
-                    entityType: 'task',
+                    entityType: EntityType.task,
                     entityId: 't2',
                     name: 'Task 2',
                     tag: AgendaDateTag.due,
+                    tileCapabilities: const EntityTileCapabilities(),
                     task: TestData.task(id: 't2'),
                   ),
                   AgendaItem(
-                    entityType: 'task',
+                    entityType: EntityType.task,
                     entityId: 't3',
                     name: 'Task 3',
                     tag: AgendaDateTag.due,
+                    tileCapabilities: const EntityTileCapabilities(),
                     task: TestData.task(id: 't3'),
                   ),
                 ],

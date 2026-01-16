@@ -12,6 +12,11 @@ Implement the confirmed copy change and ensure tag-pill presentation is calm and
 
 ## Non-goals
 - No row density / meta layout redesign yet.
+- No tile action/mutation wiring changes.
+
+Guardrail (USM alignment):
+- Do not add any per-page SnackBars or widget-layer mutations while doing this copy/style pass.
+- Actions/mutations are owned by the global tile actions system.
 
 ## Acceptance criteria
 - Scheduled shows “Ongoing” (not “In progress”) wherever the agenda tag pill appears.

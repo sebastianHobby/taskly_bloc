@@ -135,7 +135,7 @@ class _EntityDetailScaffoldV1TemplateState
 
   String? get _projectTasksFilterStorageKey {
     final entity = _entityFromHeader(widget.data.sections.header);
-    if (entity.entityType != 'project') return null;
+    if (entity.entityType != EntityType.project) return null;
     final entityId = entity.entityId;
     if (entityId == null || entityId.isEmpty) return null;
     return '${widget.data.spec.screenKey}:$entityId:projectTasksFilter';
@@ -181,7 +181,7 @@ class _EntityDetailScaffoldV1TemplateState
     );
   }
 
-  ({String? entityType, String? entityId, String? entityName})
+  ({EntityType? entityType, String? entityId, String? entityName})
   _entityFromHeader(
     List<SectionVm> header,
   ) {
@@ -192,13 +192,13 @@ class _EntityDetailScaffoldV1TemplateState
           continue;
         case EntityHeaderProjectSectionResult(:final project):
           return (
-            entityType: 'project',
+            entityType: EntityType.project,
             entityId: project.id,
             entityName: project.name,
           );
         case EntityHeaderValueSectionResult(:final value):
           return (
-            entityType: 'value',
+            entityType: EntityType.value,
             entityId: value.id,
             entityName: value.name,
           );
@@ -218,11 +218,11 @@ class _EntityDetailScaffoldV1TemplateState
     if (entityType == null || entityId == null) return;
 
     switch (entityType) {
-      case 'project':
+      case EntityType.project:
         await launcher.openProjectEditor(context, projectId: entityId);
-      case 'value':
+      case EntityType.value:
         await launcher.openValueEditor(context, valueId: entityId);
-      default:
+      case EntityType.task:
         return;
     }
   }
@@ -236,11 +236,11 @@ class _EntityDetailScaffoldV1TemplateState
     if (entityType == null || entityId == null) return;
 
     final (title, description) = switch (entityType) {
-      'project' => (
+      EntityType.project => (
         l10n.deleteProjectAction,
         l10n.deleteProjectCascadeDescription,
       ),
-      'value' => (
+      EntityType.value => (
         l10n.deleteValue,
         l10n.deleteValueCascadeDescription,
       ),
@@ -284,7 +284,7 @@ class _EntityDetailScaffoldV1TemplateState
         ? entityName
         : spec.name;
 
-    final hasProjectTaskFilter = entityType == 'project';
+    final hasProjectTaskFilter = entityType == EntityType.project;
 
     final headerSections = widget.data.sections.header;
     final primarySections = widget.data.sections.primary;
@@ -338,7 +338,7 @@ class _EntityDetailScaffoldV1TemplateState
           onTaskDelete: (task) {
             actionsBloc.add(
               ScreenActionsDeleteEntity(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: task.id,
               ),
             );
@@ -346,7 +346,7 @@ class _EntityDetailScaffoldV1TemplateState
           onProjectDelete: (project) {
             actionsBloc.add(
               ScreenActionsDeleteEntity(
-                entityType: 'project',
+                entityType: EntityType.project,
                 entityId: project.id,
               ),
             );
@@ -384,8 +384,11 @@ class _EntityDetailScaffoldV1TemplateState
 
               launcher.openTaskEditor(
                 context,
-                defaultProjectId: entityType == 'project' ? entityId : null,
-                defaultValueIds: entityType == 'value' && entityId != null
+                defaultProjectId: entityType == EntityType.project
+                    ? entityId
+                    : null,
+                defaultValueIds:
+                    entityType == EntityType.value && entityId != null
                     ? [entityId]
                     : null,
               );
@@ -429,7 +432,7 @@ class _EntityDetailScaffoldV1TemplateState
             onTaskDelete: (task) {
               actionsBloc.add(
                 ScreenActionsDeleteEntity(
-                  entityType: 'task',
+                  entityType: EntityType.task,
                   entityId: task.id,
                 ),
               );
@@ -437,7 +440,7 @@ class _EntityDetailScaffoldV1TemplateState
             onProjectDelete: (project) {
               actionsBloc.add(
                 ScreenActionsDeleteEntity(
-                  entityType: 'project',
+                  entityType: EntityType.project,
                   entityId: project.id,
                 ),
               );
@@ -450,7 +453,7 @@ class _EntityDetailScaffoldV1TemplateState
     slivers.add(const SliverPadding(padding: EdgeInsets.only(bottom: 80)));
 
     final fab = switch (entityType) {
-      'project' =>
+      EntityType.project =>
         entityId == null
             ? null
             : AddTaskFab(
@@ -459,7 +462,7 @@ class _EntityDetailScaffoldV1TemplateState
                 valueRepository: getIt(),
                 defaultProjectId: entityId,
               ),
-      'value' =>
+      EntityType.value =>
         entityId == null
             ? null
             : AddTaskFab(
@@ -478,7 +481,8 @@ class _EntityDetailScaffoldV1TemplateState
         backgroundColor: theme.scaffoldBackgroundColor,
         elevation: 0,
         actions: [
-          if (entityType == 'project' || entityType == 'value')
+          if (entityType == EntityType.project ||
+              entityType == EntityType.value)
             IconButton(
               tooltip: l10n.editLabel,
               icon: const Icon(Icons.edit_outlined),

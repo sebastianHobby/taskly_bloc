@@ -4,12 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/domain/queries/project_predicate.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -694,10 +696,11 @@ class AgendaSectionDataService {
 
     if (task != null) {
       return AgendaItem(
-        entityType: 'task',
+        entityType: EntityType.task,
         entityId: task.id,
         name: task.name,
         tag: tag,
+        tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
         task: task,
         isCondensed: isCondensed,
         isAfterCompletionRepeat: isAfterCompletionRepeat,
@@ -705,10 +708,11 @@ class AgendaSectionDataService {
     }
 
     return AgendaItem(
-      entityType: 'project',
+      entityType: EntityType.project,
       entityId: project!.id,
       name: project.name,
       tag: tag,
+      tileCapabilities: EntityTileCapabilitiesResolver.forProject(project),
       project: project,
       isCondensed: isCondensed,
       isAfterCompletionRepeat: isAfterCompletionRepeat,

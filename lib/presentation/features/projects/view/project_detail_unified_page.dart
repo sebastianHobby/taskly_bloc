@@ -13,11 +13,9 @@ import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
@@ -163,11 +161,6 @@ class _ProjectScreenWithData extends StatelessWidget {
               attentionBellCubit: getIt<AttentionBellCubit>(),
               attentionBannerSessionCubit: getIt<AttentionBannerSessionCubit>(),
             )..add(ScreenSpecLoadEvent(spec: spec)),
-          ),
-          BlocProvider<ScreenActionsBloc>(
-            create: (_) => ScreenActionsBloc(
-              entityActionService: getIt<EntityActionService>(),
-            ),
           ),
         ],
         child: BlocListener<ScreenSpecBloc, ScreenSpecState>(

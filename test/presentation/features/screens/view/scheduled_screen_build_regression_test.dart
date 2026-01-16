@@ -7,6 +7,7 @@ library;
 import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
@@ -16,6 +17,7 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
@@ -88,10 +90,11 @@ void main() {
               formattedHeader: 'Today',
               items: [
                 AgendaItem(
-                  entityType: 'task',
+                  entityType: EntityType.task,
                   entityId: task.id,
                   name: task.name,
                   tag: AgendaDateTag.due,
+                  tileCapabilities: const EntityTileCapabilities(),
                   task: task,
                 ),
               ],

@@ -17,8 +17,15 @@ This plan implements the persisted Scheduled decisions in:
 - UI/UX changes must follow the Unified Screen Model (USM) patterns.
 - Per repo workflow: do not implement UI/UX changes without explicit user approval; this plan includes decision gates for remaining open questions.
 
-## Dependencies
-- If you choose to enforce USM mutation funnel globally, coordinate with:
-  - `doc/plans/backlog/usm_full_tile_system_global_actions/`
+## Alignment constraint (USM tile actions)
+Scheduled agenda tiles must not introduce screen/page-local mutation wiring.
 
-(These plans can be executed independently for purely visual changes, but any tile-action refactor should land before or alongside UI work to avoid rework.)
+- Tiles/widgets are dumb: no widget-layer DI mutation calls.
+- Mutations flow via `TileIntent` → `ScreenActionsBloc`.
+- Mutation failures are surfaced by the authenticated app shell listener (no per-page SnackBars).
+
+## Dependencies
+- Global tile actions + shell failure policy (canonical):
+  - `doc/plans/wip/usm_global_tile_actions_and_shell_failures/`
+
+(These plans can be executed independently for purely visual changes, but any work that touches tile actions/mutations should land after or alongside the global tile-actions work to avoid rework.)

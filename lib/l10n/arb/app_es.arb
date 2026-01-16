@@ -380,6 +380,26 @@
     "@labelDeletedSuccessfully": {
         "description": "Mensaje mostrado después de eliminar una etiqueta"
     },
+    "snackCompletionFailed": "No se pudo actualizar el estado.",
+    "@snackCompletionFailed": {
+        "description": "Mensaje mostrado cuando falla una actualización de completado"
+    },
+    "snackPinFailed": "No se pudo actualizar el fijado.",
+    "@snackPinFailed": {
+        "description": "Mensaje mostrado cuando falla una actualización de fijado"
+    },
+    "snackDeleteFailed": "No se pudo eliminar.",
+    "@snackDeleteFailed": {
+        "description": "Mensaje mostrado cuando falla una eliminación"
+    },
+    "snackMoveFailed": "No se pudo mover.",
+    "@snackMoveFailed": {
+        "description": "Mensaje mostrado cuando falla un movimiento"
+    },
+    "snackInvalidOccurrence": "No se pudo actualizar ese elemento recurrente.",
+    "@snackInvalidOccurrence": {
+        "description": "Mensaje mostrado cuando faltan datos requeridos para ocurrencias recurrentes"
+    },
     "actionCreate": "Crear",
     "@actionCreate": {
         "description": "Etiqueta/tooltip genérico para la acción de crear"

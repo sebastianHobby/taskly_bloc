@@ -1,4 +1,5 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
@@ -44,11 +45,13 @@ class EntityActionService {
   Future<void> completeTask(
     String taskId, {
     DateTime? occurrenceDate,
+    DateTime? originalOccurrenceDate,
   }) async {
     talker.serviceLog('EntityActionService', 'completeTask: $taskId');
     await _taskRepository.completeOccurrence(
       taskId: taskId,
       occurrenceDate: occurrenceDate,
+      originalOccurrenceDate: originalOccurrenceDate,
     );
   }
 
@@ -113,11 +116,13 @@ class EntityActionService {
   Future<void> completeProject(
     String projectId, {
     DateTime? occurrenceDate,
+    DateTime? originalOccurrenceDate,
   }) async {
     talker.serviceLog('EntityActionService', 'completeProject: $projectId');
     await _projectRepository.completeOccurrence(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
+      originalOccurrenceDate: originalOccurrenceDate,
     );
   }
 
@@ -171,7 +176,7 @@ class EntityActionService {
   /// actions without knowing the entity type at compile time.
   Future<void> performAction({
     required String entityId,
-    required String entityType,
+    required EntityType entityType,
     required EntityActionType action,
     Map<String, dynamic>? params,
   }) async {
@@ -181,14 +186,12 @@ class EntityActionService {
     );
 
     switch (entityType) {
-      case 'task':
+      case EntityType.task:
         await _performTaskAction(entityId, action, params);
-      case 'project':
+      case EntityType.project:
         await _performProjectAction(entityId, action);
-      case 'value':
+      case EntityType.value:
         await _performValueAction(entityId, action);
-      default:
-        throw ArgumentError('Unknown entity type: $entityType');
     }
   }
 

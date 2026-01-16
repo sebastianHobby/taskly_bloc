@@ -6,12 +6,28 @@ final class ScreenActionsIdleState extends ScreenActionsState {
   const ScreenActionsIdleState();
 }
 
+enum ScreenActionsFailureKind {
+  completionFailed,
+  pinFailed,
+  deleteFailed,
+  moveFailed,
+  invalidOccurrenceData,
+}
+
 final class ScreenActionsFailureState extends ScreenActionsState {
   const ScreenActionsFailureState({
-    required this.message,
+    required this.failureKind,
+    required this.fallbackMessage,
+    this.entityType,
+    this.entityId,
     this.error,
   });
 
-  final String message;
+  final ScreenActionsFailureKind failureKind;
+  final String fallbackMessage;
+
+  /// Optional entity context for dedupe keying.
+  final String? entityType;
+  final String? entityId;
   final Object? error;
 }

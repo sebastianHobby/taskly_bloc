@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+
 import '../../../../helpers/test_imports.dart';
 
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
@@ -26,10 +29,11 @@ void main() {
             formattedHeader: 'Wed, Jan 1',
             items: [
               AgendaItem(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: 't1',
                 name: 'Task 1',
                 tag: AgendaDateTag.due,
+                tileCapabilities: const EntityTileCapabilities(),
                 task: TestData.task(id: 't1', name: 'Task 1'),
               ),
             ],

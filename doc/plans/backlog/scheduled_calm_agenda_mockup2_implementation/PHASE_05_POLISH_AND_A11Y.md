@@ -11,6 +11,10 @@ Finalize Scheduled’s calm presentation with small polish passes, ensure access
 - Ensure text scaling doesn’t overflow badly.
 - Validate that any new style parameters have reasonable defaults and are documented.
 
+USM global failure surfacing consistency
+- Ensure Scheduled does not introduce local SnackBars for action failures.
+- Action failures must be surfaced by the authenticated app shell listener.
+
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.
 - In this last phase: fix **any** `flutter analyze` error or warning (regardless of whether it is related to the plan).

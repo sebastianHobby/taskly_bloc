@@ -14,8 +14,13 @@ Lock the remaining UI open questions into implementable choices, and express “
 - UI-Q001 Row density choice (A/B/C)
 - UI-Q002 Priority encoding approach (or none)
 - UI-Q003 Ongoing rows: show/hide date chip behavior
-- UI-Q004 Row actions visibility policy (always visible vs progressive disclosure)
+- UI-Q004 Row actions rendering policy (inline vs overflow vs progressive disclosure)
 - UI-Q005 Grouping structure (keep blocks vs continuous feed)
+
+Notes for UI-Q004 (must align with USM global tile actions):
+- The existence and availability of actions is driven by domain-sourced capabilities (not screen-specific widget logic).
+- The decision here is only how enabled capabilities are presented (e.g. overflow-only vs inline affordances) and how calm the defaults feel.
+- Any “hide/disable” needs must be expressed as a module-level capability override (applied in domain interpreters), not as a renderer fork.
 
 2) Identify which knobs can be expressed in spec (preferred)
 - Use `AgendaSectionParamsV2.entityStyleOverride` and `EntityStyleV1` as the first-line mechanism.
@@ -23,12 +28,17 @@ Lock the remaining UI open questions into implementable choices, and express “
   - `EntityStyleV1` (if it is a cross-template tile style concern)
   - `AgendaSectionParamsV2` (if it is agenda-only)
 
+3) Identify if any capability overrides are needed (only if required)
+- If Scheduled needs a calmer action surface (e.g. hide pin/delete by default until UX is validated), express that as a module-level `EntityTileCapabilitiesOverride` (domain) per the global tile actions plan.
+- Prefer style knobs over capability overrides unless the action must truly be unavailable.
+
 3) Update the decision doc if any new contract is introduced
 - Only if we introduce new style parameters or change layering responsibilities.
 
 ## Deliverables
 - A small, explicit “approved configuration” list (choices for Q001–Q005)
 - A mapping table: (approved choice) → (spec knob / code location)
+- If UI-Q004 requires it: a mapping of (section/module) → (capability override)
 
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.

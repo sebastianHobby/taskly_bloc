@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
@@ -20,6 +21,11 @@ import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_ser
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
 import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
+import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 
 /// Root application widget with auth-gated UI.
 ///
@@ -150,6 +156,9 @@ class _UnauthenticatedApp extends StatelessWidget {
 class _AuthenticatedApp extends StatelessWidget {
   const _AuthenticatedApp();
 
+  static final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -167,35 +176,146 @@ class _AuthenticatedApp extends StatelessWidget {
             projectRepository: getIt<ProjectRepositoryContract>(),
           ),
         ),
-      ],
-      child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
-        builder: (context, state) {
-          final settings = state.settings;
 
-          return MaterialApp.router(
-            theme: AppTheme.lightTheme(seedColor: state.seedColor),
-            darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
-            themeMode: state.flutterThemeMode,
-            locale: settings.localeCode == null
-                ? null
-                : Locale(settings.localeCode!),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            routerConfig: router,
-            debugShowCheckedModeBanner: false,
-            builder: (context, child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(
-                  textScaler: TextScaler.linear(settings.textScaleFactor),
-                ),
-                child: _NotificationsBootstrapper(child: child!),
-              );
-            },
-          );
-        },
+        Provider<TileIntentDispatcher>(
+          create: (_) => DefaultTileIntentDispatcher(
+            projectRepository: getIt<ProjectRepositoryContract>(),
+            editorLauncher: EditorLauncher.fromGetIt(),
+          ),
+        ),
+      ],
+      child: BlocProvider<ScreenActionsBloc>(
+        create: (_) => ScreenActionsBloc(
+          entityActionService: getIt<EntityActionService>(),
+        ),
+        child: BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
+          builder: (context, state) {
+            final settings = state.settings;
+
+            return MaterialApp.router(
+              scaffoldMessengerKey: _scaffoldMessengerKey,
+              theme: AppTheme.lightTheme(seedColor: state.seedColor),
+              darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
+              themeMode: state.flutterThemeMode,
+              locale: settings.localeCode == null
+                  ? null
+                  : Locale(settings.localeCode!),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              routerConfig: router,
+              debugShowCheckedModeBanner: false,
+              builder: (context, child) {
+                return _ScreenActionsFailureSnackBarListener(
+                  scaffoldMessengerKey: _scaffoldMessengerKey,
+                  child: MediaQuery(
+                    data: MediaQuery.of(context).copyWith(
+                      textScaler: TextScaler.linear(settings.textScaleFactor),
+                    ),
+                    child: _NotificationsBootstrapper(child: child!),
+                  ),
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
+}
+
+class _ScreenActionsFailureSnackBarListener extends StatefulWidget {
+  const _ScreenActionsFailureSnackBarListener({
+    required this.scaffoldMessengerKey,
+    required this.child,
+  });
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey;
+  final Widget child;
+
+  @override
+  State<_ScreenActionsFailureSnackBarListener> createState() =>
+      _ScreenActionsFailureSnackBarListenerState();
+}
+
+class _ScreenActionsFailureSnackBarListenerState
+    extends State<_ScreenActionsFailureSnackBarListener> {
+  final Map<_FailureDedupeKey, DateTime> _lastShownAt = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<ScreenActionsBloc, ScreenActionsState>(
+      listenWhen: (previous, current) => current is ScreenActionsFailureState,
+      listener: (context, state) {
+        if (state is! ScreenActionsFailureState) return;
+
+        final dedupeKey = _FailureDedupeKey(
+          kind: state.failureKind,
+          entityType: state.entityType,
+          entityId: state.entityId,
+        );
+
+        final now = DateTime.now();
+        final lastAt = _lastShownAt[dedupeKey];
+        if (lastAt != null && now.difference(lastAt).inMilliseconds < 2000) {
+          return;
+        }
+        _lastShownAt[dedupeKey] = now;
+
+        final messenger = widget.scaffoldMessengerKey.currentState;
+        if (messenger == null) return;
+
+        final l10n = context.l10n;
+        final baseMessage = _messageForFailureKind(l10n, state.failureKind);
+
+        final message = state.error == null
+            ? baseMessage
+            : friendlyErrorMessageForUi(state.error!, l10n);
+
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+      },
+      child: widget.child,
+    );
+  }
+
+  String _messageForFailureKind(
+    AppLocalizations l10n,
+    ScreenActionsFailureKind kind,
+  ) {
+    return switch (kind) {
+      ScreenActionsFailureKind.completionFailed => l10n.snackCompletionFailed,
+      ScreenActionsFailureKind.pinFailed => l10n.snackPinFailed,
+      ScreenActionsFailureKind.deleteFailed => l10n.snackDeleteFailed,
+      ScreenActionsFailureKind.moveFailed => l10n.snackMoveFailed,
+      ScreenActionsFailureKind.invalidOccurrenceData =>
+        l10n.snackInvalidOccurrence,
+    };
+  }
+}
+
+@immutable
+class _FailureDedupeKey {
+  const _FailureDedupeKey({
+    required this.kind,
+    required this.entityType,
+    required this.entityId,
+  });
+
+  final ScreenActionsFailureKind kind;
+  final String? entityType;
+  final String? entityId;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _FailureDedupeKey &&
+        other.kind == kind &&
+        other.entityType == entityType &&
+        other.entityId == entityId;
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, entityType, entityId);
 }
 
 class _NotificationsBootstrapper extends StatefulWidget {
