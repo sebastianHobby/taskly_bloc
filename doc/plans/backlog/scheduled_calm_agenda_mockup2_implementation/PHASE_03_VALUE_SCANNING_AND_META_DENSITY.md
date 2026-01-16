@@ -19,6 +19,10 @@ Prefer small reusable primitives and config-driven behavior:
 - If changes are agenda-only: add fields to `AgendaSectionParamsV2` and plumb through the section VM.
 - Avoid screen-specific forks of `TaskView`/`ProjectView` that would create long-term divergence.
 
+USM tile actions alignment (important):
+- If any meta tokens become interactive (e.g. align values, move-to-project), interaction must route through `TileIntent` + dispatcher and be gated by domain-sourced capabilities.
+- Do not add widget-local mutation logic or per-page SnackBars.
+
 ## Candidate work items (depends on approvals)
 - Primary value: icon-only, filled style, consistent placement.
 - Secondary values: cap count (e.g. 2) and summarize remainder as `+N`.

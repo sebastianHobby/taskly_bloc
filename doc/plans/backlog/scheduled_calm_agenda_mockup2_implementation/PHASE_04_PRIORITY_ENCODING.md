@@ -21,6 +21,10 @@ Implement subtle priority encoding (or explicitly choose none) without reintrodu
 - Priority is discoverable but not visually dominant.
 - The chosen encoding is consistent across task + project tiles (unless intentionally different).
 
+USM tile actions alignment (guardrail)
+- Keep priority encoding visual-only.
+- If any interaction is introduced (menus, tooltips that trigger actions), route it through `TileIntent` and gate it via capabilities.
+
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.
 - Ensure any `flutter analyze` errors/warnings caused by this phase’s changes are fixed by the end of the phase.

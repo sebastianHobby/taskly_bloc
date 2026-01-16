@@ -392,6 +392,26 @@
     "@labelDeletedSuccessfully": {
         "description": "Snackbar message shown after deleting a label"
     },
+    "snackCompletionFailed": "Couldn't update completion.",
+    "@snackCompletionFailed": {
+        "description": "Snackbar message shown when a completion mutation fails"
+    },
+    "snackPinFailed": "Couldn't update pin.",
+    "@snackPinFailed": {
+        "description": "Snackbar message shown when a pin mutation fails"
+    },
+    "snackDeleteFailed": "Couldn't delete.",
+    "@snackDeleteFailed": {
+        "description": "Snackbar message shown when a delete mutation fails"
+    },
+    "snackMoveFailed": "Couldn't move.",
+    "@snackMoveFailed": {
+        "description": "Snackbar message shown when a move mutation fails"
+    },
+    "snackInvalidOccurrence": "Couldn't update that recurring item.",
+    "@snackInvalidOccurrence": {
+        "description": "Snackbar message shown when required recurrence occurrence data is missing"
+    },
     "actionCreate": "Create",
     "@actionCreate": {
         "description": "Generic tooltip/label for a create action"

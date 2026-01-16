@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 
 /// Types of date tags for agenda items.
 enum AgendaDateTag {
@@ -39,14 +41,15 @@ class AgendaItem {
     required this.entityId,
     required this.name,
     required this.tag,
+    required this.tileCapabilities,
     this.task,
     this.project,
     this.isCondensed = false,
     this.isAfterCompletionRepeat = false,
   });
 
-  /// Type of entity: 'task' or 'project'.
-  final String entityType;
+  /// Type of entity.
+  final EntityType entityType;
 
   /// Entity ID.
   final String entityId;
@@ -56,6 +59,9 @@ class AgendaItem {
 
   /// Date tag for this occurrence.
   final AgendaDateTag tag;
+
+  /// Domain-sourced tile capability policy for this item.
+  final EntityTileCapabilities tileCapabilities;
 
   /// The task entity (if entityType == 'task').
   final Task? task;
@@ -76,10 +82,10 @@ class AgendaItem {
   final bool isAfterCompletionRepeat;
 
   /// Convenience getter to check if this is a task.
-  bool get isTask => entityType == 'task';
+  bool get isTask => entityType == EntityType.task;
 
   /// Convenience getter to check if this is a project.
-  bool get isProject => entityType == 'project';
+  bool get isProject => entityType == EntityType.project;
 
   @override
   bool operator ==(Object other) {

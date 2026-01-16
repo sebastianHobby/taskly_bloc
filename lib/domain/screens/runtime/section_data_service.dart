@@ -11,6 +11,7 @@ import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/hierarchy_value_project_task_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
@@ -136,11 +137,35 @@ class SectionDataService {
   ) {
     return switch (kind) {
       _PrimaryEntityKind.task =>
-        entities.cast<Task>().map<ScreenItem>(ScreenItem.task).toList(),
+        entities
+            .cast<Task>()
+            .map<ScreenItem>(
+              (t) => ScreenItem.task(
+                t,
+                tileCapabilities: EntityTileCapabilitiesResolver.forTask(t),
+              ),
+            )
+            .toList(),
       _PrimaryEntityKind.project =>
-        entities.cast<Project>().map<ScreenItem>(ScreenItem.project).toList(),
+        entities
+            .cast<Project>()
+            .map<ScreenItem>(
+              (p) => ScreenItem.project(
+                p,
+                tileCapabilities: EntityTileCapabilitiesResolver.forProject(p),
+              ),
+            )
+            .toList(),
       _PrimaryEntityKind.value =>
-        entities.cast<Value>().map<ScreenItem>(ScreenItem.value).toList(),
+        entities
+            .cast<Value>()
+            .map<ScreenItem>(
+              (v) => ScreenItem.value(
+                v,
+                tileCapabilities: EntityTileCapabilitiesResolver.forValue(v),
+              ),
+            )
+            .toList(),
       _PrimaryEntityKind.journal => const <ScreenItem>[],
     };
   }

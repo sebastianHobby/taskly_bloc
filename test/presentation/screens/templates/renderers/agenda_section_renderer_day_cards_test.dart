@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
@@ -53,20 +55,22 @@ void main() {
           groupFor(
             lastDayThisMonth,
             AgendaItem(
-              entityType: 'task',
+              entityType: EntityType.task,
               entityId: inRangeTask.id,
               name: inRangeTask.name,
               tag: AgendaDateTag.due,
+              tileCapabilities: const EntityTileCapabilities(),
               task: inRangeTask,
             ),
           ),
           groupFor(
             nextMonthStart,
             AgendaItem(
-              entityType: 'task',
+              entityType: EntityType.task,
               entityId: outOfRangeTask.id,
               name: outOfRangeTask.name,
               tag: AgendaDateTag.due,
+              tileCapabilities: const EntityTileCapabilities(),
               task: outOfRangeTask,
             ),
           ),
@@ -133,30 +137,33 @@ void main() {
             groupFor(
               today,
               AgendaItem(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: todayTask.id,
                 name: todayTask.name,
                 tag: AgendaDateTag.due,
+                tileCapabilities: const EntityTileCapabilities(),
                 task: todayTask,
               ),
             ),
             groupFor(
               day7,
               AgendaItem(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: day7Task.id,
                 name: day7Task.name,
                 tag: AgendaDateTag.due,
+                tileCapabilities: const EntityTileCapabilities(),
                 task: day7Task,
               ),
             ),
             groupFor(
               day8,
               AgendaItem(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: day8Task.id,
                 name: day8Task.name,
                 tag: AgendaDateTag.due,
+                tileCapabilities: const EntityTileCapabilities(),
                 task: day8Task,
               ),
             ),
@@ -222,10 +229,11 @@ void main() {
             groupFor(
               today,
               AgendaItem(
-                entityType: 'task',
+                entityType: EntityType.task,
                 entityId: task.id,
                 name: task.name,
                 tag: AgendaDateTag.inProgress,
+                tileCapabilities: const EntityTileCapabilities(),
                 task: task,
               ),
             ),
