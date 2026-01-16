@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_tile_capabilities_resolver.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
@@ -33,8 +32,6 @@ class InterleavedListRendererV2 extends StatefulWidget {
     required this.entityStyle,
     super.key,
     this.title,
-    this.onTaskToggle,
-    this.onTaskPinnedChanged,
     this.persistenceKey,
     this.renderMode = InterleavedListRenderModeV2.flat,
     this.pinnedProjectHeaders = false,
@@ -46,8 +43,6 @@ class InterleavedListRendererV2 extends StatefulWidget {
   final InterleavedListSectionParamsV2 params;
   final EntityStyleV1 entityStyle;
   final String? title;
-  final void Function(String, bool?)? onTaskToggle;
-  final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
 
   final InterleavedListRenderModeV2 renderMode;
@@ -833,7 +828,6 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
       item: item,
       entityStyle: widget.entityStyle,
       isInFocus: isInFocus,
-      onTaskToggle: widget.onTaskToggle,
       valueStats: valueStats,
       titlePrefix: prefix,
       projectTrailing: projectTrailing,
@@ -1220,7 +1214,11 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
                   return _buildItem(
                     context,
                     tileBuilder: tileBuilder,
-                    item: ScreenItem.project(project),
+                    item: ScreenItem.project(
+                      project,
+                      tileCapabilities:
+                          EntityTileCapabilitiesResolver.forProject(project),
+                    ),
                     projectTrailing: _CollapseChevron(
                       collapsed: collapsed,
                       onPressed: () => _toggleProjectCollapsed(orphanProjectId),

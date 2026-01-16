@@ -171,7 +171,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Task update failed',
-          entityType: EntityType.task.name,
+          entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
         ),
@@ -205,7 +205,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.completionFailed,
           fallbackMessage: 'Project update failed',
-          entityType: EntityType.project.name,
+          entityType: EntityType.project,
           entityId: event.projectId,
           error: e,
         ),
@@ -232,7 +232,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.pinFailed,
           fallbackMessage: 'Task pin failed',
-          entityType: EntityType.task.name,
+          entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
         ),
@@ -259,7 +259,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.pinFailed,
           fallbackMessage: 'Project pin failed',
-          entityType: EntityType.project.name,
+          entityType: EntityType.project,
           entityId: event.projectId,
           error: e,
         ),
@@ -286,7 +286,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.deleteFailed,
           fallbackMessage: 'Delete failed',
-          entityType: event.entityType.name,
+          entityType: event.entityType,
           entityId: event.entityId,
           error: e,
         ),
@@ -312,7 +312,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
         ScreenActionsFailureState(
           failureKind: ScreenActionsFailureKind.moveFailed,
           fallbackMessage: 'Move failed',
-          entityType: EntityType.task.name,
+          entityType: EntityType.task,
           entityId: event.taskId,
           error: e,
         ),
@@ -330,7 +330,7 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
       ScreenActionsFailureState(
         failureKind: event.failureKind,
         fallbackMessage: event.fallbackMessage,
-        entityType: event.entityType?.name,
+        entityType: event.entityType,
         entityId: event.entityId,
         error: event.error,
       ),

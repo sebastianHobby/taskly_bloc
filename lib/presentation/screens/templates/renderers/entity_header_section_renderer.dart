@@ -1,17 +1,20 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/widgets/entity_header.dart';
 
 class EntityHeaderSectionRenderer extends StatelessWidget {
   const EntityHeaderSectionRenderer({
     required this.data,
     super.key,
-    this.onProjectCheckboxChanged,
     this.onTap,
   });
 
   final SectionDataResult data;
-  final void Function(bool? value)? onProjectCheckboxChanged;
   final VoidCallback? onTap;
 
   @override
@@ -27,7 +30,19 @@ class EntityHeaderSectionRenderer extends StatelessWidget {
           showCheckbox: showCheckbox,
           showMetadata: showMetadata,
           onTap: onTap,
-          onCheckboxChanged: onProjectCheckboxChanged,
+          onCheckboxChanged: showCheckbox
+              ? (value) {
+                  context.read<TileIntentDispatcher>().dispatch(
+                    context,
+                    TileIntentSetCompletion(
+                      entityType: EntityType.project,
+                      entityId: project.id,
+                      completed: value ?? false,
+                      scope: CompletionScope.entity,
+                    ),
+                  );
+                }
+              : null,
         ),
       EntityHeaderValueSectionResult(
         :final value,

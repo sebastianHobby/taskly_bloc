@@ -11,8 +11,6 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
     required this.params,
     required this.entityStyle,
     this.title,
-    this.onTaskToggle,
-    this.onTaskPinnedChanged,
     super.key,
     this.persistenceKey,
   });
@@ -21,8 +19,6 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
   final HierarchyValueProjectTaskSectionParamsV2 params;
   final EntityStyleV1 entityStyle;
   final String? title;
-  final void Function(String, bool?)? onTaskToggle;
-  final Future<void> Function(String taskId, bool pinned)? onTaskPinnedChanged;
   final String? persistenceKey;
 
   InterleavedListSectionParamsV2 _toInterleavedParams() {
@@ -43,8 +39,6 @@ class HierarchyValueProjectTaskRendererV2 extends StatelessWidget {
       entityStyle: entityStyle,
       title: title,
       persistenceKey: persistenceKey,
-      onTaskToggle: onTaskToggle,
-      onTaskPinnedChanged: onTaskPinnedChanged,
       renderMode: InterleavedListRenderModeV2.hierarchyValueProjectTask,
       pinnedProjectHeaders: params.pinnedProjectHeaders,
       singleInboxGroupForNoProjectTasks:

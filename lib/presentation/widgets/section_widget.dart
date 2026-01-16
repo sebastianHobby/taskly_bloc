@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
@@ -21,12 +19,6 @@ class SectionWidget extends StatelessWidget {
     this.focusMode,
     this.onEntityTap,
     this.onEntityHeaderTap,
-    this.onTaskComplete,
-    this.onTaskCheckboxChanged,
-    this.onTaskPinnedChanged,
-    this.onProjectCheckboxChanged,
-    this.onTaskDelete,
-    this.onProjectDelete,
   });
 
   /// The section data to render
@@ -53,24 +45,6 @@ class SectionWidget extends StatelessWidget {
   /// the header while list items still navigate to their routes.
   final VoidCallback? onEntityHeaderTap;
 
-  /// Callback when a task is completed.
-  final void Function(Task task)? onTaskComplete;
-
-  /// Callback when a task checkbox is changed
-  final void Function(Task task, bool? value)? onTaskCheckboxChanged;
-
-  /// Callback when a task is pinned/unpinned for allocation (My Day).
-  final Future<void> Function(Task task, bool pinned)? onTaskPinnedChanged;
-
-  /// Callback when a project checkbox is changed
-  final void Function(Project project, bool? value)? onProjectCheckboxChanged;
-
-  /// Callback when a task is deleted
-  final void Function(Task task)? onTaskDelete;
-
-  /// Callback when a project is deleted
-  final void Function(Project project)? onProjectDelete;
-
   @override
   Widget build(BuildContext context) {
     final registry = context.read<SectionRendererRegistry>();
@@ -82,12 +56,6 @@ class SectionWidget extends StatelessWidget {
       focusMode: focusMode,
       onEntityTap: onEntityTap,
       onEntityHeaderTap: onEntityHeaderTap,
-      onTaskComplete: onTaskComplete,
-      onTaskCheckboxChanged: onTaskCheckboxChanged,
-      onTaskPinnedChanged: onTaskPinnedChanged,
-      onProjectCheckboxChanged: onProjectCheckboxChanged,
-      onTaskDelete: onTaskDelete,
-      onProjectDelete: onProjectDelete,
     );
   }
 }

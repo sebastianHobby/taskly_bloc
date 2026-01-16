@@ -1,7 +1,7 @@
 # Plan Phase 02 — Domain-first Capabilities + Typed Intent Surface
 
 Created at: 2026-01-16T00:00:00Z
-Last updated at: 2026-01-16T04:36:01.7618276Z
+Last updated at: 2026-01-16T05:52:12.9402093Z
 
 ## Goal
 Introduce a canonical, typed “Tile Action Surface” contract and add a domain-sourced capability model so tiles can be rendered consistently across templates without widget-layer DI or per-screen forks.
@@ -115,6 +115,12 @@ Migration approach (locked): "optional-first → required later"
 - When the phase is complete, update this file immediately (same day) with summary + completion date (UTC).
 
 ## Completion checklist
-- [ ] Tile action surface types exist and are used consistently
-- [ ] USM section VMs carry a domain-sourced capability policy (not hardcoded in widgets)
-- [ ] Capability model supports occurrence-aware completion scope
+- [x] Tile action surface types exist and are used consistently (`TileIntent`, `TileIntentDispatcher`)
+- [x] Domain-sourced capability policy exists (`EntityTileCapabilities`, resolver, overrides)
+- [x] Capability model supports occurrence-aware completion scope (`CompletionScope` + occurrence dates)
+
+Completed at: 2026-01-16T05:52:12.9402093Z
+
+Summary:
+- Verified capability types live in domain and are attached to renderable item models (e.g. `ScreenItem.*`, `AgendaItem`).
+- Verified presentation owns intents + dispatcher and routes mutations through `ScreenActionsBloc`.

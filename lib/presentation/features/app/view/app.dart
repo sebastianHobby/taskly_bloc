@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
@@ -303,7 +304,7 @@ class _FailureDedupeKey {
   });
 
   final ScreenActionsFailureKind kind;
-  final String? entityType;
+  final EntityType? entityType;
   final String? entityId;
 
   @override

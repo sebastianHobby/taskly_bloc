@@ -8,12 +8,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 
 import '../fixtures/test_data.dart';
 import '../helpers/test_helpers.dart';
@@ -33,7 +38,6 @@ void main() {
       await _pumpTaskListTile(
         tester,
         task: task,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the checkbox
@@ -57,7 +61,6 @@ void main() {
       await _pumpTaskListTile(
         tester,
         task: task,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the checkbox
@@ -70,7 +73,7 @@ void main() {
     });
 
     testWidgetsSafe(
-      'calls onCheckboxChanged with true when tapped on incomplete task',
+      'dispatches completion intent with true when tapped on incomplete task',
       (
         tester,
       ) async {
@@ -80,31 +83,28 @@ void main() {
           completed: false,
         );
 
-        Task? callbackTask;
-        bool? callbackValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpTaskListTile(
           tester,
           task: task,
-          onCheckboxChanged: (t, v) {
-            callbackTask = t;
-            callbackValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         // Tap the checkbox
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        // Verify callback was called with correct values
-        expect(callbackTask, isNotNull);
-        expect(callbackTask!.id, equals('task-1'));
-        expect(callbackValue, isTrue);
+        final intent = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intent.length, 1);
+        expect(intent.single.entityType, EntityType.task);
+        expect(intent.single.entityId, 'task-1');
+        expect(intent.single.completed, isTrue);
       },
     );
 
     testWidgetsSafe(
-      'calls onCheckboxChanged with false when tapped on completed task',
+      'dispatches completion intent with false when tapped on completed task',
       (
         tester,
       ) async {
@@ -114,26 +114,23 @@ void main() {
           completed: true,
         );
 
-        Task? callbackTask;
-        bool? callbackValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpTaskListTile(
           tester,
           task: task,
-          onCheckboxChanged: (t, v) {
-            callbackTask = t;
-            callbackValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         // Tap the checkbox
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        // Verify callback was called with correct values
-        expect(callbackTask, isNotNull);
-        expect(callbackTask!.id, equals('task-1'));
-        expect(callbackValue, isFalse);
+        final intent = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intent.length, 1);
+        expect(intent.single.entityType, EntityType.task);
+        expect(intent.single.entityId, 'task-1');
+        expect(intent.single.completed, isFalse);
       },
     );
 
@@ -149,7 +146,6 @@ void main() {
       await _pumpTaskListTile(
         tester,
         task: task,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the task name text widget
@@ -173,7 +169,6 @@ void main() {
       await _pumpTaskListTile(
         tester,
         task: task,
-        onCheckboxChanged: (_, __) {},
       );
 
       // Find the task name text widget
@@ -197,14 +192,12 @@ void main() {
         completed: false,
       );
 
-      var tapCount = 0;
+      final dispatcher = _CapturingTileIntentDispatcher();
 
       await _pumpTaskListTile(
         tester,
         task: task,
-        onCheckboxChanged: (_, __) {
-          tapCount++;
-        },
+        dispatcher: dispatcher,
       );
 
       // Rapidly tap the checkbox multiple times
@@ -216,12 +209,15 @@ void main() {
       await tester.tap(checkbox);
       await tester.pumpForStream();
 
-      // All taps should have triggered callbacks
-      expect(tapCount, equals(3));
+      // All taps should dispatch intents.
+      expect(
+        dispatcher.intents.whereType<TileIntentSetCompletion>(),
+        hasLength(3),
+      );
     });
 
     testWidgetsSafe(
-      'checkbox callback receives correct task for repeating task',
+      'dispatches completion intent for repeating task',
       (
         tester,
       ) async {
@@ -232,27 +228,25 @@ void main() {
           repeatIcalRrule: 'FREQ=DAILY;COUNT=5',
         );
 
-        Task? callbackTask;
-        bool? callbackValue;
+        final dispatcher = _CapturingTileIntentDispatcher();
 
         await _pumpTaskListTile(
           tester,
           task: task,
-          onCheckboxChanged: (t, v) {
-            callbackTask = t;
-            callbackValue = v;
-          },
+          dispatcher: dispatcher,
         );
 
         // Tap the checkbox
         await tester.tap(find.byType(Checkbox));
         await tester.pumpForStream();
 
-        // Verify callback received the repeating task
-        expect(callbackTask, isNotNull);
-        expect(callbackTask!.id, equals('repeating-task'));
-        expect(callbackTask!.repeatIcalRrule, equals('FREQ=DAILY;COUNT=5'));
-        expect(callbackValue, isTrue);
+        expect(task.repeatIcalRrule, equals('FREQ=DAILY;COUNT=5'));
+
+        final intents = dispatcher.intents.whereType<TileIntentSetCompletion>();
+        expect(intents.length, 1);
+        expect(intents.single.entityType, EntityType.task);
+        expect(intents.single.entityId, equals('repeating-task'));
+        expect(intents.single.completed, isTrue);
       },
     );
   });
@@ -386,7 +380,6 @@ void main() {
         await _pumpTaskListTile(
           tester,
           task: task,
-          onCheckboxChanged: (_, __) {},
         );
 
         // Check that semantic label contains task completion info
@@ -411,7 +404,6 @@ void main() {
         await _pumpTaskListTile(
           tester,
           task: task,
-          onCheckboxChanged: (_, __) {},
         );
 
         // Check that semantic label contains task incomplete info
@@ -432,19 +424,28 @@ void main() {
 Future<void> _pumpTaskListTile(
   WidgetTester tester, {
   required Task task,
-  required void Function(Task, bool?) onCheckboxChanged,
   void Function(Task)? onTap,
+  _CapturingTileIntentDispatcher? dispatcher,
 }) async {
+  final effectiveDispatcher = dispatcher ?? _CapturingTileIntentDispatcher();
+
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.lightTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: TaskView(
-          task: task,
-          onCheckboxChanged: onCheckboxChanged,
-          onTap: onTap,
+    Provider<TileIntentDispatcher>.value(
+      value: effectiveDispatcher,
+      child: MaterialApp(
+        theme: AppTheme.lightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: TaskView(
+            task: task,
+            tileCapabilities: const EntityTileCapabilities(
+              canToggleCompletion: true,
+              canOpenEditor: true,
+              canOpenDetails: true,
+            ),
+            onTap: onTap,
+          ),
         ),
       ),
     ),
@@ -457,16 +458,40 @@ Future<void> _pumpProjectListTile(
   WidgetTester tester, {
   required Project project,
   void Function(Project)? onTap,
+  _CapturingTileIntentDispatcher? dispatcher,
 }) async {
+  final effectiveDispatcher = dispatcher ?? _CapturingTileIntentDispatcher();
+
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.lightTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: ProjectView(project: project, onTap: onTap),
+    Provider<TileIntentDispatcher>.value(
+      value: effectiveDispatcher,
+      child: MaterialApp(
+        theme: AppTheme.lightTheme(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ProjectView(
+            project: project,
+            tileCapabilities: const EntityTileCapabilities(
+              canToggleCompletion: true,
+              canOpenEditor: true,
+              canOpenDetails: true,
+            ),
+            onTap: onTap,
+          ),
+        ),
       ),
     ),
   );
   await tester.pumpForStream();
+}
+
+final class _CapturingTileIntentDispatcher implements TileIntentDispatcher {
+  final List<TileIntent> intents = [];
+
+  @override
+  Future<void> dispatch(BuildContext context, TileIntent intent) {
+    intents.add(intent);
+    return Future<void>.value();
+  }
 }

@@ -4,6 +4,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
@@ -46,7 +47,6 @@ class ScreenItemTileBuilder {
     required ScreenItem item,
     required EntityStyleV1 entityStyle,
     bool isInFocus = false,
-    void Function(String taskId, bool? value)? onTaskToggle,
     VoidCallback? onTap,
     ProjectTileStats? projectStats,
     domain.ValueStats? valueStats,
@@ -60,12 +60,12 @@ class ScreenItemTileBuilder {
     DateTime? endDate,
   }) {
     return switch (item) {
-      ScreenItemTask(:final task) => TaskView(
+      ScreenItemTask(:final task, :final tileCapabilities) => TaskView(
         task: task,
+        tileCapabilities: tileCapabilities ?? const EntityTileCapabilities(),
         isInFocus: isInFocus,
         compact: _isCompact(entityStyle),
         variant: _taskVariant(entityStyle),
-        onCheckboxChanged: (t, val) => onTaskToggle?.call(t.id, val),
         onTap: onTap == null ? null : (_) => onTap(),
         titlePrefix: titlePrefix,
         statusBadge: statusBadge,
@@ -74,8 +74,9 @@ class ScreenItemTileBuilder {
         agendaInProgressStyle: agendaInProgressStyle,
         endDate: endDate,
       ),
-      ScreenItemProject(:final project) => ProjectView(
+      ScreenItemProject(:final project, :final tileCapabilities) => ProjectView(
         project: project,
+        tileCapabilities: tileCapabilities ?? const EntityTileCapabilities(),
         compact: _isCompact(entityStyle),
         variant: _projectVariant(entityStyle),
         taskCount: projectStats?.taskCount ?? project.taskCount,

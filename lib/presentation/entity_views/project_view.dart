@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:provider/provider.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
-import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
+import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
 
@@ -24,6 +27,7 @@ enum ProjectViewVariant {
 class ProjectView extends StatelessWidget {
   const ProjectView({
     required this.project,
+    required this.tileCapabilities,
     this.onTap,
     this.compact = false,
     this.isInMyDayAuto = false,
@@ -41,6 +45,9 @@ class ProjectView extends StatelessWidget {
   });
 
   final Project project;
+
+  /// Domain-sourced capability policy for this tile.
+  final EntityTileCapabilities tileCapabilities;
 
   /// Whether to use a compact (2-row) layout.
   final bool compact;
@@ -141,6 +148,13 @@ class ProjectView extends StatelessWidget {
     final isDueToday = _isDueToday(project.deadlineDate);
     final isDueSoon = _isDueSoon(project.deadlineDate);
 
+    final resolvedOnTap =
+        onTap ??
+        (tileCapabilities.canOpenDetails
+            ? (Project project) =>
+                  Routing.toEntity(context, EntityType.project, project.id)
+            : null);
+
     return Container(
       key: Key('project-${project.id}'),
       decoration: BoxDecoration(
@@ -155,9 +169,7 @@ class ProjectView extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: () => onTap != null
-            ? onTap!(project)
-            : Routing.toEntity(context, EntityType.project, project.id),
+        onTap: resolvedOnTap == null ? null : () => resolvedOnTap(project),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: 16,
@@ -211,8 +223,10 @@ class ProjectView extends StatelessWidget {
                         const SizedBox(width: 10),
                         _ProjectTodayStatusMenuButton(
                           projectId: project.id,
+                          projectName: project.name,
                           isPinnedToMyDay: project.isPinned,
                           isInMyDayAuto: isInMyDayAuto,
+                          tileCapabilities: tileCapabilities,
                         ),
                       ],
                     ),
@@ -229,10 +243,17 @@ class ProjectView extends StatelessWidget {
                       secondaryValues: project.secondaryValues,
                       priority: project.priority,
                       onTapValues: () {
-                        EditorLauncher.fromGetIt().openProjectEditor(
-                          context,
-                          projectId: project.id,
-                          openToValues: true,
+                        if (!tileCapabilities.canAlignValues) return;
+                        final dispatcher = context.read<TileIntentDispatcher>();
+                        unawaited(
+                          dispatcher.dispatch(
+                            context,
+                            TileIntentOpenEditor(
+                              entityType: EntityType.project,
+                              entityId: project.id,
+                              openToValues: true,
+                            ),
+                          ),
                         );
                       },
                     ),
@@ -293,13 +314,18 @@ class ProjectView extends StatelessWidget {
 
     final endDay = _endDayLabel(context);
 
+    final resolvedOnTap =
+        onTap ??
+        (tileCapabilities.canOpenDetails
+            ? (Project project) =>
+                  Routing.toEntity(context, EntityType.project, project.id)
+            : null);
+
     return Material(
       key: Key('project-${project.id}'),
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onTap != null
-            ? onTap!(project)
-            : Routing.toEntity(context, EntityType.project, project.id),
+        onTap: resolvedOnTap == null ? null : () => resolvedOnTap(project),
         borderRadius: BorderRadius.circular(16),
         child: _AgendaCardContainer(
           dashedOutline: agendaInProgressStyle,
@@ -363,8 +389,10 @@ class ProjectView extends StatelessWidget {
                           const SizedBox(width: 10),
                           _ProjectTodayStatusMenuButton(
                             projectId: project.id,
+                            projectName: project.name,
                             isPinnedToMyDay: project.isPinned,
                             isInMyDayAuto: isInMyDayAuto,
+                            tileCapabilities: tileCapabilities,
                           ),
                         ],
                       ),
@@ -386,10 +414,18 @@ class ProjectView extends StatelessWidget {
                               secondaryValues: project.secondaryValues,
                               priority: project.priority,
                               onTapValues: () {
-                                EditorLauncher.fromGetIt().openProjectEditor(
-                                  context,
-                                  projectId: project.id,
-                                  openToValues: true,
+                                if (!tileCapabilities.canAlignValues) return;
+                                final dispatcher = context
+                                    .read<TileIntentDispatcher>();
+                                unawaited(
+                                  dispatcher.dispatch(
+                                    context,
+                                    TileIntentOpenEditor(
+                                      entityType: EntityType.project,
+                                      entityId: project.id,
+                                      openToValues: true,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -867,25 +903,17 @@ enum _ProjectOverflowAction {
 class _ProjectTodayStatusMenuButton extends StatelessWidget {
   const _ProjectTodayStatusMenuButton({
     required this.projectId,
+    required this.projectName,
     required this.isPinnedToMyDay,
     required this.isInMyDayAuto,
+    required this.tileCapabilities,
   });
 
   final String projectId;
+  final String projectName;
   final bool isPinnedToMyDay;
   final bool isInMyDayAuto;
-
-  void _showSnackBar(ScaffoldMessengerState? messenger, String message) {
-    if (messenger == null) return;
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-        ),
-      );
-  }
+  final EntityTileCapabilities tileCapabilities;
 
   @override
   Widget build(BuildContext context) {
@@ -915,6 +943,18 @@ class _ProjectTodayStatusMenuButton extends StatelessWidget {
             ),
           );
 
+    final availableActions = <_ProjectOverflowAction>[
+      if (tileCapabilities.canTogglePinned)
+        _ProjectOverflowAction.togglePinnedToMyDay,
+      if (tileCapabilities.canOpenEditor) _ProjectOverflowAction.edit,
+      if (tileCapabilities.canAlignValues) _ProjectOverflowAction.alignValues,
+      if (tileCapabilities.canDelete) _ProjectOverflowAction.delete,
+    ];
+
+    if (availableActions.isEmpty) {
+      return statusWidget ?? const SizedBox.shrink();
+    }
+
     return PopupMenuButton<_ProjectOverflowAction>(
       tooltip: 'More',
       child: Padding(
@@ -935,60 +975,96 @@ class _ProjectTodayStatusMenuButton extends StatelessWidget {
         ),
       ),
       onSelected: (action) async {
+        final dispatcher = context.read<TileIntentDispatcher>();
         switch (action) {
           case _ProjectOverflowAction.togglePinnedToMyDay:
-            final messenger = ScaffoldMessenger.maybeOf(context);
-            try {
-              final service = getIt<EntityActionService>();
-              if (isPinnedToMyDay) {
-                await service.unpinProject(projectId);
-                _showSnackBar(messenger, 'Unpinned (may still stay in My Day)');
-              } else {
-                await service.pinProject(projectId);
-                _showSnackBar(messenger, 'Pinned to My Day');
-              }
-            } catch (_) {
-              _showSnackBar(messenger, 'Could not update My Day pin');
-            }
-          case _ProjectOverflowAction.edit:
-            await EditorLauncher.fromGetIt().openProjectEditor(
+            return dispatcher.dispatch(
               context,
-              projectId: projectId,
+              TileIntentSetPinned(
+                entityType: EntityType.project,
+                entityId: projectId,
+                isPinned: !isPinnedToMyDay,
+              ),
+            );
+          case _ProjectOverflowAction.edit:
+            return dispatcher.dispatch(
+              context,
+              TileIntentOpenEditor(
+                entityType: EntityType.project,
+                entityId: projectId,
+              ),
             );
           case _ProjectOverflowAction.alignValues:
-            await EditorLauncher.fromGetIt().openProjectEditor(
+            return dispatcher.dispatch(
               context,
-              projectId: projectId,
-              openToValues: true,
+              TileIntentOpenEditor(
+                entityType: EntityType.project,
+                entityId: projectId,
+                openToValues: true,
+              ),
             );
           case _ProjectOverflowAction.delete:
-            await getIt<EntityActionService>().deleteProject(projectId);
+            return dispatcher.dispatch(
+              context,
+              TileIntentRequestDelete(
+                entityType: EntityType.project,
+                entityId: projectId,
+                entityName: projectName,
+              ),
+            );
         }
       },
       itemBuilder: (context) {
         final pinLabel = isPinnedToMyDay
             ? 'Unpin from My Day'
             : 'Pin to My Day';
-        return [
-          PopupMenuItem(
-            value: _ProjectOverflowAction.togglePinnedToMyDay,
-            child: Text(pinLabel),
-          ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: _ProjectOverflowAction.edit,
-            child: Text('Edit'),
-          ),
-          const PopupMenuItem(
-            value: _ProjectOverflowAction.alignValues,
-            child: Text('Align values…'),
-          ),
-          const PopupMenuDivider(),
-          const PopupMenuItem(
-            value: _ProjectOverflowAction.delete,
-            child: Text('Delete'),
-          ),
-        ];
+
+        final items = <PopupMenuEntry<_ProjectOverflowAction>>[];
+
+        if (tileCapabilities.canTogglePinned) {
+          items.add(
+            PopupMenuItem(
+              value: _ProjectOverflowAction.togglePinnedToMyDay,
+              child: Text(pinLabel),
+            ),
+          );
+        }
+
+        final hasEditGroup =
+            tileCapabilities.canOpenEditor || tileCapabilities.canAlignValues;
+        if (items.isNotEmpty && hasEditGroup) {
+          items.add(const PopupMenuDivider());
+        }
+
+        if (tileCapabilities.canOpenEditor) {
+          items.add(
+            const PopupMenuItem(
+              value: _ProjectOverflowAction.edit,
+              child: Text('Edit'),
+            ),
+          );
+        }
+
+        if (tileCapabilities.canAlignValues) {
+          items.add(
+            const PopupMenuItem(
+              value: _ProjectOverflowAction.alignValues,
+              child: Text('Align values…'),
+            ),
+          );
+        }
+
+        if (tileCapabilities.canDelete) {
+          if (items.isNotEmpty) items.add(const PopupMenuDivider());
+          items.add(
+            const PopupMenuItem(
+              value: _ProjectOverflowAction.delete,
+              child: Text('Delete'),
+            ),
+          );
+        }
+
+        return items;
       },
     );
   }

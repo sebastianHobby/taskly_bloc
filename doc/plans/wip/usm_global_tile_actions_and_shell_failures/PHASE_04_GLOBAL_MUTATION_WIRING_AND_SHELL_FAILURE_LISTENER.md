@@ -1,7 +1,7 @@
 # Plan Phase 04 — Global Mutation Wiring (Tiles → ScreenActionsBloc) + Shell Failure Listener
 
 Created at: 2026-01-16T00:00:00Z
-Last updated at: 2026-01-16T04:36:01.7618276Z
+Last updated at: 2026-01-16T05:52:12.9402093Z
 
 ## Goal
 1) Ensure all tile-originated mutations flow through `ScreenActionsBloc`.
@@ -119,8 +119,15 @@ Lock (3A):
 - When the phase is complete, update this file immediately (same day) with summary + completion date (UTC).
 
 ## Completion checklist
-- [ ] USM renderers consistently pass tile action surface (capabilities + dispatcher)
-- [ ] Tile-originated mutations flow through `ScreenActionsBloc`
-- [ ] Completion supports occurrence + `originalOccurrenceDate` end-to-end
-- [ ] Authenticated app provides one `ScreenActionsBloc` and one failure listener
-- [ ] No duplicated SnackBars for action failures
+- [x] USM renderers consistently use the shared tile builder + dispatcher provisioned at app shell
+- [x] Tile-originated mutations flow through `ScreenActionsBloc` (via dispatcher)
+- [x] Completion supports occurrence + `originalOccurrenceDate` end-to-end
+- [x] Authenticated app provides one `ScreenActionsBloc` and one failure listener
+- [x] No duplicated SnackBars for action failures (shell-only)
+
+Completed at: 2026-01-16T05:52:12.9402093Z
+
+Summary:
+- Confirmed global `ScreenActionsBloc` is provided at `_AuthenticatedApp`.
+- Confirmed a single SnackBar listener surfaces failures with 2000ms dedupe.
+- Standardized failure context typing so dedupe key uses `EntityType`.

@@ -1,7 +1,7 @@
 # Plan Phase 03 — Make Entity Views Dumb + Plumb Action Surface Through Tile Builder
 
 Created at: 2026-01-16T00:00:00Z
-Last updated at: 2026-01-16T04:36:01.7618276Z
+Last updated at: 2026-01-16T05:52:12.9402093Z
 
 ## Goal
 Refactor entity tiles (`TaskView`, `ProjectView`, and any similar tile widgets) so they:
@@ -72,7 +72,13 @@ Lock (Q006C): remove the `onTaskToggle` callback path entirely (no transitional 
 - When the phase is complete, update this file immediately (same day) with summary + completion date (UTC).
 
 ## Completion checklist
-- [ ] No `getIt<EntityActionService>()` calls remain inside entity view widgets
-- [ ] Entity views only emit intents via dispatcher/action surface
-- [ ] No `ScaffoldMessenger.showSnackBar` calls remain inside entity tiles for mutations
-- [ ] All callers compile after signature changes
+- [x] No `getIt<EntityActionService>()` calls remain inside entity view widgets
+- [x] Entity views emit intents via `TileIntentDispatcher` and respect `EntityTileCapabilities`
+- [x] No mutation SnackBars are shown from entity tiles (global listener owns failures)
+- [x] Renderers/tile builder path compiles with action surface plumbing
+
+Completed at: 2026-01-16T05:52:12.9402093Z
+
+Summary:
+- Verified `TaskView`/`ProjectView` route all actions through typed intents + dispatcher.
+- Verified `ScreenItemTileBuilder` centralizes tile construction for USM renderers.

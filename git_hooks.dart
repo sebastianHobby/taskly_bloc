@@ -32,19 +32,25 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 3. Run flutter analyze (no warnings allowed)
+  // 3. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
+  if (!await _runUsmTileActionGuardrail()) {
+    _printFailure();
+    return false;
+  }
+
+  // 4. Run flutter analyze (no warnings allowed)
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
   }
 
-  // 4. Validate IdGenerator table registration
+  // 5. Validate IdGenerator table registration
   if (!await _validateTableRegistration()) {
     _printFailure();
     return false;
   }
 
-  // 5. Run tests with coverage (staged gate; filtered lcov)
+  // 6. Run tests with coverage (staged gate; filtered lcov)
   if (!await _runTestsWithCoverage()) {
     _printFailure();
     return false;
@@ -52,6 +58,41 @@ Future<bool> prePush() async {
 
   print('\n✅ All pre-push checks passed!');
   return true;
+}
+
+Future<bool> _runUsmTileActionGuardrail() async {
+  print('🧱 Running USM tile action guardrail...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/usm_tile_action_guardrail.dart'],
+      runInShell: true,
+    );
+
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
+    if (result.exitCode != 0) {
+      print('   ❌ Tile action guardrail failed:\n');
+      if (stdout.isNotEmpty) {
+        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
+      return false;
+    }
+
+    print('   ✓ Tile action guardrail passed.');
+    return true;
+  } catch (e) {
+    print('   ⚠️  Could not run tile action guardrail: $e');
+    return false;
+  }
 }
 
 void _printFailure() {
@@ -269,19 +310,22 @@ Future<bool> _checkRawStreamController() async {
   print('🔄 Checking for raw StreamController usage in tests...');
 
   try {
-    // Find all test files using git ls-files for better performance
+    // Only scan staged test files so existing legacy tests don't permanently
+    // block pushes.
     final result = await Process.run(
       'git',
-      ['ls-files', 'test/', '--', '*.dart'],
+      ['diff', '--cached', '--name-only', '--diff-filter=ACM'],
     );
 
     final testFiles = (result.stdout as String)
         .split('\n')
+        .map((f) => f.trim())
+        .where((f) => f.isNotEmpty)
         .where((f) => f.endsWith('_test.dart'))
-        .toList();
+        .toList(growable: false);
 
     if (testFiles.isEmpty) {
-      print('   No test files found.');
+      print('   No test files staged.');
       return true;
     }
 

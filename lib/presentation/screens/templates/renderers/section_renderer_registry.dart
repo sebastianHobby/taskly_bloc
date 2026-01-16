@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -38,13 +36,6 @@ abstract interface class SectionRendererRegistry {
     required FocusMode? focusMode,
     required void Function(dynamic entity)? onEntityTap,
     required VoidCallback? onEntityHeaderTap,
-    required void Function(Task task)? onTaskComplete,
-    required void Function(Task task, bool? value)? onTaskCheckboxChanged,
-    required Future<void> Function(Task task, bool pinned)? onTaskPinnedChanged,
-    required void Function(Project project, bool? value)?
-    onProjectCheckboxChanged,
-    required void Function(Task task)? onTaskDelete,
-    required void Function(Project project)? onProjectDelete,
   });
 }
 
@@ -61,13 +52,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
     required FocusMode? focusMode,
     required void Function(dynamic entity)? onEntityTap,
     required VoidCallback? onEntityHeaderTap,
-    required void Function(Task task)? onTaskComplete,
-    required void Function(Task task, bool? value)? onTaskCheckboxChanged,
-    required Future<void> Function(Task task, bool pinned)? onTaskPinnedChanged,
-    required void Function(Project project, bool? value)?
-    onProjectCheckboxChanged,
-    required void Function(Task task)? onTaskDelete,
-    required void Function(Project project)? onProjectDelete,
   }) {
     if (section.templateId == SectionTemplateId.statisticsDashboard) {
       return const SliverPadding(
@@ -104,10 +88,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             params: s.params,
             entityStyle: s.entityStyle,
             title: s.title,
-            onTaskToggle: (taskId, val) {
-              final task = d.allTasks.firstWhere((t) => t.id == taskId);
-              onTaskCheckboxChanged?.call(task, val);
-            },
           );
         }
 
@@ -137,16 +117,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             entityStyle: s.entityStyle,
             title: s.title,
             persistenceKey: persistenceKey,
-            onTaskToggle: (taskId, val) {
-              final task = d.allTasks.firstWhere((t) => t.id == taskId);
-              onTaskCheckboxChanged?.call(task, val);
-            },
-            onTaskPinnedChanged: onTaskPinnedChanged == null
-                ? null
-                : (taskId, pinned) async {
-                    final task = d.allTasks.firstWhere((t) => t.id == taskId);
-                    await onTaskPinnedChanged.call(task, pinned);
-                  },
           );
         }
 
@@ -160,16 +130,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             entityStyle: s.entityStyle,
             title: s.title,
             persistenceKey: persistenceKey,
-            onTaskToggle: (taskId, val) {
-              final task = d.allTasks.firstWhere((t) => t.id == taskId);
-              onTaskCheckboxChanged?.call(task, val);
-            },
-            onTaskPinnedChanged: onTaskPinnedChanged == null
-                ? null
-                : (taskId, pinned) async {
-                    final task = d.allTasks.firstWhere((t) => t.id == taskId);
-                    await onTaskPinnedChanged.call(task, pinned);
-                  },
           );
         }
 
@@ -183,15 +143,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
               params: s.params,
               data: d,
               entityStyle: s.entityStyle,
-              onTaskToggle: (taskId, val) {
-                final task = d.agendaData.groups
-                    .expand((g) => g.items)
-                    .where((item) => item.isTask && item.task?.id == taskId)
-                    .map((item) => item.task)
-                    .whereType<Task>()
-                    .first;
-                onTaskCheckboxChanged?.call(task, val);
-              },
               onTaskTap: (task) => onEntityTap?.call(task),
             ),
           );
@@ -227,11 +178,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             child: EntityHeaderSectionRenderer(
               data: result!,
               onTap: onEntityHeaderTap,
-              onProjectCheckboxChanged: (val) {
-                if (result is EntityHeaderProjectSectionResult) {
-                  onProjectCheckboxChanged?.call(result.project, val);
-                }
-              },
             ),
           );
         }
@@ -245,7 +191,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             title: s.title,
             enrichment: d.enrichment,
             entityStyle: s.entityStyle,
-            onTaskCheckboxChanged: onTaskCheckboxChanged,
           );
         }
 

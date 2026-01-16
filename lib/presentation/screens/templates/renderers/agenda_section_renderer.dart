@@ -25,7 +25,6 @@ class AgendaSectionRenderer extends StatefulWidget {
     required this.params,
     required this.data,
     required this.entityStyle,
-    this.onTaskToggle,
     this.onTaskTap,
     super.key,
   });
@@ -33,7 +32,6 @@ class AgendaSectionRenderer extends StatefulWidget {
   final AgendaSectionParamsV2 params;
   final AgendaSectionResult data;
   final EntityStyleV1 entityStyle;
-  final void Function(String taskId, bool? value)? onTaskToggle;
   final void Function(Task task)? onTaskTap;
 
   @override
@@ -699,10 +697,12 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
       return tileBuilder.build(
         context,
-        item: ScreenItem.task(item.task!),
+        item: ScreenItem.task(
+          item.task!,
+          tileCapabilities: item.tileCapabilities,
+        ),
         entityStyle: widget.entityStyle,
         isInFocus: isAllocated,
-        onTaskToggle: widget.onTaskToggle,
         onTap: widget.onTaskTap == null
             ? null
             : () => widget.onTaskTap!(item.task!),
@@ -716,7 +716,10 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     if (item.isProject && item.project != null) {
       return tileBuilder.build(
         context,
-        item: ScreenItem.project(item.project!),
+        item: ScreenItem.project(
+          item.project!,
+          tileCapabilities: item.tileCapabilities,
+        ),
         entityStyle: widget.entityStyle,
         projectStats: ProjectTileStats(
           taskCount: item.project!.taskCount,
