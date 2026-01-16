@@ -6,7 +6,6 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/query_filter.dart';
 import 'package:taskly_bloc/domain/queries/task_predicate.dart';
@@ -456,7 +455,6 @@ void main() {
           templateId: SectionTemplateId.taskListV2,
           params: ListSectionParamsV2(
             config: DataConfig.task(query: TaskQuery.incomplete()),
-            pack: StylePackV2.standard,
           ).toJson(),
         );
 
@@ -474,7 +472,6 @@ void main() {
           templateId: SectionTemplateId.valueListV2,
           params: ListSectionParamsV2(
             config: DataConfig.project(query: ProjectQuery.all()),
-            pack: StylePackV2.standard,
           ).toJson(),
         );
 
@@ -496,7 +493,6 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            pack: StylePackV2.standard,
           ).toJson(),
         );
 
@@ -518,7 +514,6 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.startDate,
-            pack: StylePackV2.standard,
           ).toJson(),
         );
 
@@ -540,7 +535,6 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            pack: StylePackV2.standard,
           ).toJson(),
         );
 
@@ -573,7 +567,6 @@ void main() {
           templateId: SectionTemplateId.agendaV2,
           params: AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            pack: StylePackV2.standard,
             additionalFilter: additionalQuery,
           ).toJson(),
         );

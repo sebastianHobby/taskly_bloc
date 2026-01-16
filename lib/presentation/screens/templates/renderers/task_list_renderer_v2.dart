@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -10,28 +11,30 @@ class TaskListRendererV2 extends StatelessWidget {
   const TaskListRendererV2({
     required this.data,
     required this.params,
+    required this.entityStyle,
     super.key,
     this.title,
-    this.compactTiles = false,
     this.onTaskToggle,
   });
 
   final DataV2SectionResult data;
   final ListSectionParamsV2 params;
+  final EntityStyleV1 entityStyle;
   final String? title;
-  final bool compactTiles;
   final void Function(String, bool?)? onTaskToggle;
 
   @override
   Widget build(BuildContext context) {
-    const registry = ScreenItemTileRegistry();
+    const tileBuilder = ScreenItemTileBuilder();
     final tasks = data.items.whereType<ScreenItemTask>().toList(
       growable: false,
     );
 
-    final showAgendaTagPills = params.enrichment.items.any(
-      (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
-    );
+    final showAgendaTagPills =
+        entityStyle.showAgendaTagPills &&
+        params.enrichment.items.any(
+          (i) => i.maybeWhen(agendaTags: (_) => true, orElse: () => false),
+        );
 
     if (tasks.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -59,11 +62,11 @@ class TaskListRendererV2 extends StatelessWidget {
           showAgendaTagPills: showAgendaTagPills,
         );
 
-        return registry.build(
+        return tileBuilder.build(
           context,
           item: item,
+          entityStyle: entityStyle,
           onTaskToggle: onTaskToggle,
-          compactTiles: compactTiles,
           titlePrefix: prefix,
         );
       },

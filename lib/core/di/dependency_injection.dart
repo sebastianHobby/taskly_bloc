@@ -65,6 +65,7 @@ import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.
 import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
@@ -86,6 +87,7 @@ import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_entry_editor_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
@@ -361,6 +363,9 @@ Future<void> setupDependencies() async {
         engine: getIt<attention_engine_v2.AttentionEngineContract>(),
       ),
     )
+    ..registerLazySingleton<AttentionBannerSessionCubit>(
+      AttentionBannerSessionCubit.new,
+    )
     ..registerFactory<AttentionRulesCubit>(
       () => AttentionRulesCubit(
         repository: getIt<attention_repo_v2.AttentionRepositoryContract>(),
@@ -499,8 +504,12 @@ Future<void> setupDependencies() async {
         repository: getIt<JournalRepositoryContract>(),
       ),
     )
+    ..registerLazySingleton<EntityStyleResolver>(
+      () => const EntityStyleResolver(),
+    )
     ..registerLazySingleton<ScreenModuleInterpreterRegistry>(
       () => DefaultScreenModuleInterpreterRegistry(
+        entityStyleResolver: getIt<EntityStyleResolver>(),
         taskListInterpreter: getIt<DataListSectionInterpreterV2>(
           instanceName: SectionTemplateId.taskListV2,
         ),

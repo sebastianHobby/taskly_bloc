@@ -72,6 +72,29 @@ architecture change and document the rationale.
 - **Stable identity**: shipped `screenKey` values are stable; changes must
   include routing and preference-migration consideration.
 
+### 1.2 Entity style resolution (tile consistency)
+
+Unified screens frequently render tasks/projects/values through list-like
+modules (lists, interleaved lists, hierarchy lists, agenda). To prevent UI
+drift across screens, entity tile styling is resolved in the domain layer.
+
+- **`EntityStyleV1`**: a typed styling contract (density + tile variants + small
+  toggles) that describes how entity tiles should be rendered.
+- **Resolution key**: `(ScreenTemplateSpec, SectionTemplateId)` (template +
+  module type), so reusing a module yields consistent styling.
+- **Overrides**: rare, explicit `EntityStyleOverrideV1` values may be applied on
+  top of module defaults.
+
+Resolution precedence:
+
+1) `EntityStyleOverrideV1` (explicit override)
+2) `(template, module)` default
+3) global default
+
+**Normative rule (enforcement):** presentation renderers must not instantiate
+entity widgets (e.g. `TaskView`, `ProjectView`) directly. Renderers must build
+tiles via a central tile builder that requires the resolved `EntityStyleV1`.
+
 ---
 
 ## 2) Where Things Live (Folder Map)
@@ -529,20 +552,24 @@ entity read/composite (RD) surfaces that still render sections via modules.
 - Prefer *parameterized* templates (`*_list_v2`, `agenda_v2`, `allocation`) for screens where the primary purpose is "show data in a consistent, configurable way".
 - Prefer *no-params* templates for screens that are effectively standalone "apps within the app" (settings dashboards, management screens). If these start needing configurable variation, promote them to typed params/modules instead of encoding flags into unrelated configs.
 
-### 6.5 Styles (`StylePackV2`) and module-specific variants
+### 6.5 Entity Style (`EntityStyleV1`) and tile variants
 
-For most list-like modules, styling is driven by `StylePackV2` (spacing,
-typography, density).
+For list-like modules that render entity tiles (tasks/projects/values), styling
+is driven by a domain-resolved `EntityStyleV1`.
 
-Some modules have module-specific UI knobs (e.g. allocation’s `taskTileVariant`).
-Keep these narrowly scoped and prefer extending `StylePackV2` when a choice is
-broadly applicable.
+Key rules:
 
-**Implementation note (UI architecture)**
-- Screen renderers should map these variants onto the canonical, entity-level UI entrypoints:
-  - `TaskView`: [lib/presentation/entity_views/task_view.dart](../../lib/presentation/entity_views/task_view.dart)
-  - `ProjectView`: [lib/presentation/entity_views/project_view.dart](../../lib/presentation/entity_views/project_view.dart)
-  - `ValueView`: [lib/presentation/entity_views/value_view.dart](../../lib/presentation/entity_views/value_view.dart)
+- The domain layer resolves an `EntityStyleV1` per section using
+  `(ScreenTemplateSpec, SectionTemplateId)` via `EntityStyleResolver`.
+- Section params may provide a rare, explicit `EntityStyleOverrideV1`.
+- Presentation renderers must not infer styling ad-hoc.
+
+**Normative enforcement (presentation)**
+
+- Renderers must not directly instantiate entity view widgets
+  (`TaskView`/`ProjectView`/`ValueView`).
+- Renderers must use the centralized builder:
+  - `ScreenItemTileBuilder`: [lib/presentation/screens/tiles/screen_item_tile_builder.dart](../../lib/presentation/screens/tiles/screen_item_tile_builder.dart)
 - Field-level rendering policies (like date labeling) should not be duplicated per-tile; use the field catalog:
   - `DateLabelFormatter`: [lib/presentation/field_catalog/formatters/date_label_formatter.dart](../../lib/presentation/field_catalog/formatters/date_label_formatter.dart)
 
@@ -551,7 +578,8 @@ broadly applicable.
 - Attention/review tiles: [lib/domain/screens/templates/params/attention_tile_variants.dart](../../lib/domain/screens/templates/params/attention_tile_variants.dart)
 
 **Common style inputs**
-- `StylePackV2`: present on most V2 params models
+- `EntityStyleV1`: resolved at runtime and carried on `SectionVm`
+- `EntityStyleOverrideV1`: optional override in relevant params models
 - Allocation modules: `taskTileVariant`
 - Summary/alerts modules: summary tile variants (attention/review)
 
@@ -569,8 +597,8 @@ there is (or will be) a concrete renderer implementation for it.
 
 Guidance:
 
-- Prefer extending `StylePackV2` for broadly-applicable spacing/typography
-  decisions.
+- Prefer adding a new field to `EntityStyleV1` (and updating resolver defaults)
+  when a style decision should be consistent across screens/modules.
 - Use a variant when the change is a cohesive, named UI mode for a specific
   entity tile type (task/project/value/attention/review).
 - Avoid “mega variants” that implicitly change multiple unrelated UI
@@ -701,7 +729,7 @@ flag/config system.
 |---|---|---|
 | Add a new type of section UI that can be reused across multiple screens | **New section module** (`ScreenModuleSpec` + interpreter + renderer) | Keeps UI composition declarative; reuse stays cheap and consistent |
 | Build a standalone feature UI with its own layout and navigation | **Full-screen template** (`ScreenTemplateSpec`) | Avoids nested scaffolds and one-off per-screen widget trees |
-| Make a small, localized visual tweak (spacing/density/typography) | **`StylePackV2`** | Centralizes system-wide style knobs |
+| Make a small, localized visual tweak (density / tile variant) | **`EntityStyleV1`** (resolver default) or **`EntityStyleOverrideV1`** | Keeps tile modes consistent across screens |
 | Offer a small set of named presentation modes for a tile type | **Variant enum** (e.g. `TaskTileVariant`) | Ensures modes are explicit, testable, and renderer-driven |
 | Add computed metadata used by multiple renderers (and it can be optional) | **Enrichment** (`EnrichmentPlanV2`) | Compute is opt-in; avoids bloating base models |
 | Add a local “show/hide” control that should not affect the underlying query | **Presentation-only filters** | Keeps domain queries stable; avoids persistence and extra data fetch logic |
@@ -735,8 +763,8 @@ import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 final screen = ScreenSpec(
@@ -752,7 +780,6 @@ final screen = ScreenSpec(
     header: [
       ScreenModuleSpec.attentionBannerV2(
         params: AttentionBannerSectionParamsV2(
-          pack: StylePackV2.standard,
           buckets: const ['action', 'review'],
           entityTypes: const ['task'],
         ),
@@ -762,7 +789,10 @@ final screen = ScreenSpec(
       ScreenModuleSpec.taskListV2(
         params: ListSectionParamsV2(
           config: DataConfig.task(query: TaskQuery.inbox()),
-          pack: StylePackV2.standard,
+          // Optional, rare override (most screens rely on resolver defaults).
+          entityStyleOverride: const EntityStyleOverrideV1(
+            density: EntityDensityV1.compact,
+          ),
           separator: ListSeparatorV2.divider,
         ),
       ),

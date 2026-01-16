@@ -8,8 +8,12 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
 import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
+import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
+import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
+import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
@@ -26,6 +30,8 @@ import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/entity_header_section_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/hierarchy_value_project_task_section_interpreter_v2.dart';
@@ -46,6 +52,13 @@ class _MockInterleavedListSectionInterpreterV2 extends Mock
 
 class _MockHierarchyValueProjectTaskSectionInterpreterV2 extends Mock
     implements HierarchyValueProjectTaskSectionInterpreterV2 {}
+
+class _NoopAttentionEngine implements AttentionEngineContract {
+  @override
+  Stream<List<AttentionItem>> watch(AttentionQuery query) {
+    return const Stream<List<AttentionItem>>.empty();
+  }
+}
 
 class _MockEntityHeaderSectionInterpreter extends Mock
     implements EntityHeaderSectionInterpreter {}
@@ -134,6 +147,7 @@ void main() {
         const journalRepository = StubJournalRepository();
 
         final moduleRegistry = DefaultScreenModuleInterpreterRegistry(
+          entityStyleResolver: const EntityStyleResolver(),
           taskListInterpreter: _MockDataListSectionInterpreterV2(),
           valueListInterpreter: _MockDataListSectionInterpreterV2(),
           interleavedListInterpreter:
@@ -178,7 +192,13 @@ void main() {
           moduleInterpreterRegistry: moduleRegistry,
         );
 
-        final bloc = ScreenSpecBloc(interpreter: specInterpreter);
+        final bloc = ScreenSpecBloc(
+          interpreter: specInterpreter,
+          attentionBellCubit: AttentionBellCubit(
+            engine: _NoopAttentionEngine(),
+          ),
+          attentionBannerSessionCubit: AttentionBannerSessionCubit(),
+        );
 
         try {
           bloc.add(ScreenSpecLoadEvent(spec: SystemScreenSpecs.scheduled));

@@ -3,20 +3,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/domain/core/model/task.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ranked_tasks_v1_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
-import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 
 class MyDayRankedTasksV1Section extends StatefulWidget {
   const MyDayRankedTasksV1Section({
     required this.data,
     required this.title,
     required this.enrichment,
+    required this.entityStyle,
     required this.onTaskCheckboxChanged,
     super.key,
   });
@@ -24,6 +26,7 @@ class MyDayRankedTasksV1Section extends StatefulWidget {
   final List<ScreenItem> data;
   final String? title;
   final EnrichmentResultV2? enrichment;
+  final EntityStyleV1 entityStyle;
   final void Function(Task task, bool? value)? onTaskCheckboxChanged;
 
   @override
@@ -363,15 +366,17 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                TaskView(
-                  task: task,
-                  compact: true,
+                const ScreenItemTileBuilder().build(
+                  context,
+                  item: ScreenItem.task(task),
+                  entityStyle: widget.entityStyle,
                   isInFocus: true,
                   titlePrefix: titlePrefix,
-                  onCheckboxChanged: (t, val) {
-                    widget.onTaskCheckboxChanged?.call(t, val);
+                  onTaskToggle: (taskId, val) {
+                    if (taskId != task.id) return;
+                    widget.onTaskCheckboxChanged?.call(task, val);
                   },
-                  onTap: (_) {
+                  onTap: () {
                     setState(() {
                       _expandedTaskId = _expandedTaskId == task.id
                           ? null

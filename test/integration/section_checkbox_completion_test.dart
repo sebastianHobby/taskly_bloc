@@ -16,8 +16,8 @@ import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../fixtures/test_data.dart';
@@ -246,9 +246,9 @@ SectionVm _createTaskSection({
   return SectionVm.taskListV2(
     index: 0,
     title: title,
+    entityStyle: const EntityStyleV1(),
     params: ListSectionParamsV2(
       config: DataConfig.task(query: TaskQuery()),
-      pack: StylePackV2.standard,
     ),
     data: SectionDataResult.dataV2(
       items: tasks.map(ScreenItem.task).toList(),

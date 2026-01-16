@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/presentation/entity_views/value_view.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/value_needs_attention_badge.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
@@ -12,17 +12,17 @@ class ValueListRendererV2 extends StatelessWidget {
   const ValueListRendererV2({
     required this.data,
     required this.params,
+    required this.entityStyle,
     super.key,
     this.title,
-    this.compactTiles = false,
     this.persistenceKey,
     this.enableSegmentedTabs = false,
   });
 
   final DataV2SectionResult data;
   final ListSectionParamsV2 params;
+  final EntityStyleV1 entityStyle;
   final String? title;
-  final bool compactTiles;
 
   /// Stable key for persisting presentation-only state (PageStorage).
   final String? persistenceKey;
@@ -38,14 +38,14 @@ class ValueListRendererV2 extends StatelessWidget {
       return _PlainValueList(
         data: data,
         title: title,
-        compactTiles: compactTiles,
+        entityStyle: entityStyle,
       );
     }
 
     return _SegmentedValueList(
       data: data,
       title: title,
-      compactTiles: compactTiles,
+      entityStyle: entityStyle,
       persistenceKey: persistenceKey,
     );
   }
@@ -55,16 +55,16 @@ class _PlainValueList extends StatelessWidget {
   const _PlainValueList({
     required this.data,
     required this.title,
-    required this.compactTiles,
+    required this.entityStyle,
   });
 
   final DataV2SectionResult data;
   final String? title;
-  final bool compactTiles;
+  final EntityStyleV1 entityStyle;
 
   @override
   Widget build(BuildContext context) {
-    const registry = ScreenItemTileRegistry();
+    const tileBuilder = ScreenItemTileBuilder();
     final values = data.items.whereType<ScreenItemValue>().toList(
       growable: false,
     );
@@ -85,11 +85,11 @@ class _PlainValueList extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = values[index];
         final stats = data.enrichment?.valueStatsByValueId[item.value.id];
-        return registry.build(
+        return tileBuilder.build(
           context,
           item: item,
+          entityStyle: entityStyle,
           valueStats: stats,
-          compactTiles: compactTiles,
           titlePrefix: stats?.needsAttention ?? false
               ? ValueNeedsAttentionBadge(value: item.value, stats: stats!)
               : null,
@@ -109,13 +109,13 @@ class _SegmentedValueList extends StatefulWidget {
   const _SegmentedValueList({
     required this.data,
     required this.title,
-    required this.compactTiles,
+    required this.entityStyle,
     required this.persistenceKey,
   });
 
   final DataV2SectionResult data;
   final String? title;
-  final bool compactTiles;
+  final EntityStyleV1 entityStyle;
   final String? persistenceKey;
 
   @override
@@ -181,7 +181,7 @@ class _SegmentedValueListState extends State<_SegmentedValueList> {
 
   @override
   Widget build(BuildContext context) {
-    const registry = ScreenItemTileRegistry();
+    const tileBuilder = ScreenItemTileBuilder();
     final values = widget.data.items.whereType<ScreenItemValue>().toList();
 
     if (values.isEmpty) {
@@ -246,12 +246,11 @@ class _SegmentedValueListState extends State<_SegmentedValueList> {
             final item = values[index];
             final stats =
                 widget.data.enrichment?.valueStatsByValueId[item.value.id];
-            return registry.build(
+            return tileBuilder.build(
               context,
               item: item,
               valueStats: stats,
-              compactTiles: widget.compactTiles,
-              valueVariant: ValueViewVariant.myValuesCardV1,
+              entityStyle: widget.entityStyle,
               titlePrefix: stats?.needsAttention ?? false
                   ? ValueNeedsAttentionBadge(value: item.value, stats: stats!)
                   : null,

@@ -21,7 +21,6 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 
@@ -405,7 +404,6 @@ void main() {
       final result = await service.fetchInterleavedListV2(
         InterleavedListSectionParamsV2(
           sources: const [],
-          pack: StylePackV2.standard,
         ),
       );
 
@@ -443,7 +441,6 @@ void main() {
         final result = await service.fetchDataListV2(
           ListSectionParamsV2(
             config: DataConfig.journal(query: JournalQuery.all()),
-            pack: StylePackV2.standard,
           ),
         );
 
@@ -488,7 +485,6 @@ void main() {
         final result = await service.fetchDataListV2(
           ListSectionParamsV2(
             config: const DataConfig.allocationSnapshotTasksToday(),
-            pack: StylePackV2.standard,
           ),
         );
 

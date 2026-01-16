@@ -17,6 +17,8 @@ import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 
 /// Unified value detail page using the screen model.
 ///
@@ -128,6 +130,8 @@ class _ValueScreenWithData extends StatelessWidget {
           BlocProvider<ScreenSpecBloc>(
             create: (_) => ScreenSpecBloc(
               interpreter: getIt<ScreenSpecDataInterpreter>(),
+              attentionBellCubit: getIt<AttentionBellCubit>(),
+              attentionBannerSessionCubit: getIt<AttentionBannerSessionCubit>(),
             )..add(ScreenSpecLoadEvent(spec: spec)),
           ),
           BlocProvider<ScreenActionsBloc>(
@@ -151,9 +155,14 @@ class _ValueScreenWithData extends StatelessWidget {
               return switch (state) {
                 ScreenSpecInitialState() ||
                 ScreenSpecLoadingState() => const LoadingStateWidget(),
-                ScreenSpecLoadedState(:final data) => ScreenTemplateWidget(
-                  data: data,
-                ),
+                ScreenSpecLoadedState(
+                  :final data,
+                  :final attentionSessionBanner,
+                ) =>
+                  ScreenTemplateWidget(
+                    data: data,
+                    attentionSessionBanner: attentionSessionBanner,
+                  ),
                 ScreenSpecErrorState(:final message) => ErrorStateWidget(
                   message: message,
                   onRetry: () => Navigator.of(context).pop(),

@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
-import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_registry.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 
 import '../../../helpers/pump_app.dart';
 
@@ -26,12 +27,13 @@ void main() {
           GoRoute(
             path: '/list',
             builder: (context, state) {
-              const registry = ScreenItemTileRegistry();
+              const tileBuilder = ScreenItemTileBuilder();
               return Scaffold(
                 body: Center(
-                  child: registry.build(
+                  child: tileBuilder.build(
                     context,
                     item: ScreenItem.value(value),
+                    entityStyle: const EntityStyleV1(),
                   ),
                 ),
               );

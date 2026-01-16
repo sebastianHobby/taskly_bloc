@@ -55,25 +55,6 @@ android {
         }
     }
 
-    flavorDimensions += "default"
-    productFlavors {
-        create("production") {
-            dimension = "default"
-            applicationIdSuffix = ""
-            manifestPlaceholders["appName"] = "Taskly Bloc"
-        }
-        create("staging") {
-            dimension = "default"
-            applicationIdSuffix = ".stg"
-            manifestPlaceholders["appName"] = "[STG] Taskly Bloc"
-        }
-        create("development") {
-            dimension = "default"
-            applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "[DEV] Taskly Bloc"
-        }
-    }
-
     buildTypes {
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")

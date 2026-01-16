@@ -8,6 +8,8 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
@@ -35,6 +37,8 @@ class UnifiedScreenPageFromSpec extends StatelessWidget {
           BlocProvider(
             create: (_) => ScreenSpecBloc(
               interpreter: getIt<ScreenSpecDataInterpreter>(),
+              attentionBellCubit: getIt<AttentionBellCubit>(),
+              attentionBannerSessionCubit: getIt<AttentionBannerSessionCubit>(),
             )..add(ScreenSpecLoadEvent(spec: spec)),
           ),
           BlocProvider(
@@ -74,9 +78,11 @@ class _UnifiedScreenSpecBody extends StatelessWidget {
             ScreenSpecLoadingState() => const Center(
               child: CircularProgressIndicator(),
             ),
-            ScreenSpecLoadedState(:final data) => ScreenTemplateWidget(
-              data: data,
-            ),
+            ScreenSpecLoadedState(:final data, :final attentionSessionBanner) =>
+              ScreenTemplateWidget(
+                data: data,
+                attentionSessionBanner: attentionSessionBanner,
+              ),
             ScreenSpecErrorState(:final message) => Center(
               child: Text(message),
             ),

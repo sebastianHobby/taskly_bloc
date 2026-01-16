@@ -6,8 +6,6 @@ import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_banner_section_renderer_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/attention_inbox_section_renderer_v1.dart';
@@ -104,8 +102,8 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
           return TaskListRendererV2(
             data: d,
             params: s.params,
+            entityStyle: s.entityStyle,
             title: s.title,
-            compactTiles: s.params.pack == StylePackV2.compact,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
@@ -120,8 +118,8 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
           return ValueListRendererV2(
             data: d,
             params: s.params,
+            entityStyle: s.entityStyle,
             title: s.title,
-            compactTiles: s.params.pack == StylePackV2.compact,
             persistenceKey: persistenceKey,
             enableSegmentedTabs:
                 persistenceKey != null && persistenceKey.startsWith('values:'),
@@ -136,9 +134,9 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             items: d.items,
             enrichment: d.enrichment,
             params: s.params,
+            entityStyle: s.entityStyle,
             title: s.title,
             persistenceKey: persistenceKey,
-            compactTiles: s.params.pack == StylePackV2.compact,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
@@ -159,9 +157,9 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
           return HierarchyValueProjectTaskRendererV2(
             data: d,
             params: s.params,
+            entityStyle: s.entityStyle,
             title: s.title,
             persistenceKey: persistenceKey,
-            compactTiles: s.params.pack == StylePackV2.compact,
             onTaskToggle: (taskId, val) {
               final task = d.allTasks.firstWhere((t) => t.id == taskId);
               onTaskCheckboxChanged?.call(task, val);
@@ -184,12 +182,7 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             child: AgendaSectionRenderer(
               params: s.params,
               data: d,
-              showTagPills: s.params.enrichment.items.any(
-                (i) => i.maybeMap(
-                  agendaTags: (_) => true,
-                  orElse: () => false,
-                ),
-              ),
+              entityStyle: s.entityStyle,
               onTaskToggle: (taskId, val) {
                 final task = d.agendaData.groups
                     .expand((g) => g.items)
@@ -251,6 +244,7 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             data: d.items,
             title: s.title,
             enrichment: d.enrichment,
+            entityStyle: s.entityStyle,
             onTaskCheckboxChanged: onTaskCheckboxChanged,
           );
         }

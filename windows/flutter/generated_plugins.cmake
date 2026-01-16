@@ -4,7 +4,6 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
-  emoji_picker_flutter
   powersync_flutter_libs
   share_plus
   sqlite3_flutter_libs

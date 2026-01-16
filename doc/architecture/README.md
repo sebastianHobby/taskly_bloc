@@ -175,9 +175,33 @@ Integration highlights:
 For the deeper dive see:
 - [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
 
+### 2.5 Journal + Statistics (entries + trackers -> trends/correlations)
+
+The journal system captures daily qualitative + quantitative signals via:
+
+- **Journal entries** (text + timestamps)
+- **Tracker events** (e.g. mood/exercise/meds) attached to entries/days
+- **Tracker definitions + preferences** (configuration, pinning, quick add)
+
+The statistics/analytics layer consumes journal + core domain data to produce:
+
+- mood trends and distributions
+- tracker value series and correlations (factors ↔ outcomes)
+- cached snapshots/insights where appropriate
+
+Integration highlights:
+
+- Journal unified screen modules interpret repository streams into section VMs.
+- Analytics services query journal repositories for mood/tracker series and
+  persist cached results through the analytics repository.
+
+For the deeper dive see:
+- [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
+
 ## 3) Architecture Docs Index (This Folder)
 
 - Unified screens: [UNIFIED_SCREEN_MODEL_ARCHITECTURE.md](UNIFIED_SCREEN_MODEL_ARCHITECTURE.md)
+- Journal + statistics: [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
 - Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
 - Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
 - Allocation: [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)

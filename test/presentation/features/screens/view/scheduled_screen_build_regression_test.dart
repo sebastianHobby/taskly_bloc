@@ -17,7 +17,7 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 import '../../../../helpers/test_imports.dart';
@@ -47,7 +47,6 @@ void main() {
           ScreenModuleSpec.agendaV2(
             params: const AgendaSectionParamsV2(
               dateField: AgendaDateFieldV2.deadlineDate,
-              pack: StylePackV2.standard,
               layout: AgendaLayoutV2.dayCardsFeed,
             ),
           ),
@@ -104,10 +103,10 @@ void main() {
           index: 0,
           params: const AgendaSectionParamsV2(
             dateField: AgendaDateFieldV2.deadlineDate,
-            pack: StylePackV2.standard,
             layout: AgendaLayoutV2.dayCardsFeed,
           ),
           data: SectionDataResult.agenda(agendaData: agendaData),
+          entityStyle: const EntityStyleV1(),
         );
 
         final data = ScreenSpecData(

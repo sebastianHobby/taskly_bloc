@@ -16,6 +16,19 @@
       ]
     },
     {
+      "name": "taskly_bloc (dev - android)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "deviceId": "emulator-5554",
+      "toolArgs": [
+        "-v"
+      ],
+      "args": [
+        "--dart-define-from-file=dart_defines.json"
+      ]
+    },
+    {
       "name": "taskly_bloc (dev - chrome)",
       "request": "launch",
       "type": "dart",

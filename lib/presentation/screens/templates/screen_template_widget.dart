@@ -33,6 +33,9 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required
 import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/attention_app_bar_accessory.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/model/attention_session_banner_vm.dart';
+import 'package:taskly_bloc/presentation/features/attention/widgets/attention_session_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
@@ -42,10 +45,12 @@ import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 class ScreenTemplateWidget extends StatelessWidget {
   const ScreenTemplateWidget({
     required this.data,
+    required this.attentionSessionBanner,
     super.key,
   });
 
   final ScreenSpecData data;
+  final AttentionSessionBannerVm? attentionSessionBanner;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +73,10 @@ class ScreenTemplateWidget extends StatelessWidget {
     }
 
     return data.template.when(
-      standardScaffoldV1: () => _StandardScaffoldV1Template(data: data),
+      standardScaffoldV1: () => _StandardScaffoldV1Template(
+        data: data,
+        attentionSessionBanner: attentionSessionBanner,
+      ),
       entityDetailScaffoldV1: () => _EntityDetailScaffoldV1Template(data: data),
       settingsMenu: () => const SettingsScreen(),
       trackerManagement: () => const _PlaceholderTemplate(
@@ -619,9 +627,13 @@ class _PlaceholderTemplate extends StatelessWidget {
 }
 
 class _StandardScaffoldV1Template extends StatelessWidget {
-  const _StandardScaffoldV1Template({required this.data});
+  const _StandardScaffoldV1Template({
+    required this.data,
+    required this.attentionSessionBanner,
+  });
 
   final ScreenSpecData data;
+  final AttentionSessionBannerVm? attentionSessionBanner;
 
   @override
   Widget build(BuildContext context) {
@@ -658,6 +670,18 @@ class _StandardScaffoldV1Template extends StatelessWidget {
     final fab = _buildFab(spec);
 
     final slivers = <Widget>[
+      if (attentionSessionBanner != null)
+        SliverToBoxAdapter(
+          child: AttentionSessionBanner(
+            vm: attentionSessionBanner!,
+            onReview: () => Routing.toScreenKey(context, 'review_inbox'),
+            onDismiss: () {
+              getIt<AttentionBannerSessionCubit>().dismissForScreenKey(
+                spec.screenKey,
+              );
+            },
+          ),
+        ),
       ...headerSections
           .where((s) => !(showAttentionInAppBar && s == attentionHeader))
           .map((s) => _ModuleSliver(section: s, screenKey: spec.screenKey)),

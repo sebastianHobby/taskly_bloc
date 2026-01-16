@@ -14,7 +14,6 @@ dependencies:
   drift: ^2.20.3
   drift_flutter: ^0.2.8
   drift_sqlite_async: ^0.2.6
-  emoji_picker_flutter: ^4.4.0
   fl_chart: ^1.1.1
   flex_color_picker: ^3.6.0
   flutter:
@@ -62,8 +61,3 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
-
-  fonts:
-    - family: NotoColorEmoji
-      fonts:
-        - asset: assets/fonts/NotoColorEmoji.ttf

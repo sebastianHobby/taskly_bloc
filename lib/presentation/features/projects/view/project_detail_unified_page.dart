@@ -11,7 +11,6 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/style_pack_v2.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
@@ -23,6 +22,8 @@ import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 
 /// Unified project detail page using the screen model.
 ///
@@ -141,7 +142,6 @@ class _ProjectScreenWithData extends StatelessWidget {
               config: DataConfig.task(
                 query: TaskQuery.forProject(projectId: project.id),
               ),
-              pack: StylePackV2.standard,
               separator: ListSeparatorV2.divider,
             ),
           ),
@@ -160,6 +160,8 @@ class _ProjectScreenWithData extends StatelessWidget {
           BlocProvider<ScreenSpecBloc>(
             create: (_) => ScreenSpecBloc(
               interpreter: getIt<ScreenSpecDataInterpreter>(),
+              attentionBellCubit: getIt<AttentionBellCubit>(),
+              attentionBannerSessionCubit: getIt<AttentionBannerSessionCubit>(),
             )..add(ScreenSpecLoadEvent(spec: spec)),
           ),
           BlocProvider<ScreenActionsBloc>(
@@ -183,9 +185,14 @@ class _ProjectScreenWithData extends StatelessWidget {
               return switch (state) {
                 ScreenSpecInitialState() ||
                 ScreenSpecLoadingState() => const LoadingStateWidget(),
-                ScreenSpecLoadedState(:final data) => ScreenTemplateWidget(
-                  data: data,
-                ),
+                ScreenSpecLoadedState(
+                  :final data,
+                  :final attentionSessionBanner,
+                ) =>
+                  ScreenTemplateWidget(
+                    data: data,
+                    attentionSessionBanner: attentionSessionBanner,
+                  ),
                 ScreenSpecErrorState(:final message) => ErrorStateWidget(
                   message: message,
                   onRetry: () => Navigator.of(context).pop(),
