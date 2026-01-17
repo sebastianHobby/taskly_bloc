@@ -1,69 +1,29 @@
 /// Dependency injection configuration using GetIt.
 library;
 
-import 'package:drift/drift.dart';
-import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:get_it/get_it.dart';
-import 'package:powersync/powersync.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
-import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart';
-import 'package:taskly_bloc/data/repositories/auth_repository.dart';
-import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/settings_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/data/infrastructure/supabase/supabase.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
-import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
-import 'package:taskly_bloc/data/features/journal/repositories/journal_repository_impl.dart';
+import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
+import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
+import 'package:taskly_data/taskly_data.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
-import 'package:taskly_bloc/data/features/notifications/repositories/pending_notifications_repository_impl.dart';
-import 'package:taskly_bloc/data/features/notifications/services/logging_notification_presenter.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
-import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
-import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
-import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
-import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_grouper.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/trigger_evaluator.dart';
-import 'package:taskly_bloc/domain/services/analytics/task_stats_calculator.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart'
-    as attention_engine_v2;
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart'
-    as attention_repo_v2;
-import 'package:taskly_bloc/domain/attention/engine/cached_attention_engine.dart';
-import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart'
-    as attention_engine_v2_impl;
-import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart'
-    as attention_repo_v2_impl;
-import 'package:taskly_bloc/domain/services/notifications/pending_notifications_processor.dart';
-import 'package:taskly_bloc/domain/services/notifications/notification_presenter.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.dart';
-import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
-import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
+import 'package:taskly_domain/attention.dart'
+    as attention_engine_v2
+    show AttentionEngineContract;
+import 'package:taskly_domain/attention.dart'
+    as attention_repo_v2
+    show AttentionRepositoryContract;
+import 'package:taskly_domain/attention.dart'
+    as attention_engine_v2_impl
+    show AttentionEngine;
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
@@ -103,62 +63,12 @@ final GetIt getIt = GetIt.instance;
 
 // Register all the classes you want to inject
 Future<void> setupDependencies() async {
-  // Load supabase and powersync before registering dependencies
-  await loadSupabase();
+  final dataStack = await TasklyDataStack.initialize();
 
-  // Track if this is first auth callback (from openDatabase itself when already logged in)
-  // vs later callbacks from auth state changes
-  var initialSetupComplete = false;
-
-  final PowerSyncDatabase syncDb = await openDatabase(
-    onAuthenticated: () async {
-      // This callback runs:
-      // 1. Immediately after openDatabase if user is already logged in
-      // 2. On each signedIn event
-      //
-      // On first call (from openDatabase), DI setup isn't complete yet.
-      // On subsequent calls, we can run maintenance.
-      if (!initialSetupComplete) {
-        // First call - DI not ready, skip (we'll run maintenance below)
-        return;
-      }
-      // Run post-auth maintenance (seeding, cleanup)
-      await runPostAuthMaintenance(
-        driftDb: getIt<AppDatabase>(),
-        idGenerator: getIt<IdGenerator>(),
-      );
-    },
-  );
-
-  // db variable is set by the openDatabase function. Someday improve this
-  // so it's not a global variable ...
-
-  // Create and register the Drift AppDatabase backed by the PowerSync DB
-  final appDatabase = AppDatabase(
-    DatabaseConnection(SqliteAsyncDriftConnection(syncDb)),
-  );
+  // Bind taskly_data implementations to taskly_domain contracts.
+  registerTasklyData(getIt, dataStack);
 
   getIt
-    ..registerSingleton<PowerSyncDatabase>(syncDb)
-    ..registerSingleton<AppDatabase>(appDatabase)
-    ..registerLazySingleton<SupabaseClient>(
-      () => Supabase.instance.client,
-    )
-    ..registerLazySingleton<AuthRepositoryContract>(
-      () => AuthRepository(client: getIt<SupabaseClient>()),
-    )
-    // IdGenerator - uses lazy userId getter from session
-    // The userId is only evaluated when actually generating IDs,
-    // allowing repositories to be constructed before authentication
-    ..registerLazySingleton<IdGenerator>(
-      () => IdGenerator(() {
-        final userId = getUserId();
-        if (userId == null) {
-          throw StateError('IdGenerator requires authenticated user');
-        }
-        return userId;
-      }),
-    )
     // Register occurrence stream expander for reading occurrences
     ..registerLazySingleton<OccurrenceStreamExpanderContract>(
       OccurrenceStreamExpander.new,
@@ -169,31 +79,6 @@ Future<void> setupDependencies() async {
         driftDb: getIt<AppDatabase>(),
         idGenerator: getIt<IdGenerator>(),
       ),
-    )
-    ..registerLazySingleton<ProjectRepositoryContract>(
-      () => ProjectRepository(
-        driftDb: getIt<AppDatabase>(),
-        occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
-        occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
-        idGenerator: getIt<IdGenerator>(),
-      ),
-    )
-    ..registerLazySingleton<TaskRepositoryContract>(
-      () => TaskRepository(
-        driftDb: getIt<AppDatabase>(),
-        occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
-        occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
-        idGenerator: getIt<IdGenerator>(),
-      ),
-    )
-    ..registerLazySingleton<ValueRepositoryContract>(
-      () => ValueRepository(
-        driftDb: getIt<AppDatabase>(),
-        idGenerator: getIt<IdGenerator>(),
-      ),
-    )
-    ..registerLazySingleton<SettingsRepositoryContract>(
-      () => SettingsRepository(driftDb: getIt<AppDatabase>()),
     )
     ..registerLazySingleton<HomeDayKeyService>(
       () => HomeDayKeyService(
@@ -221,9 +106,6 @@ Future<void> setupDependencies() async {
       () => AttentionTemporalInvalidationService(
         temporalTriggerService: getIt<TemporalTriggerService>(),
       ),
-    )
-    ..registerLazySingleton<AllocationSnapshotRepositoryContract>(
-      () => AllocationSnapshotRepository(db: getIt<AppDatabase>()),
     )
     // Screens - system screens come from code; user preferences come from DB.
     ..registerLazySingleton<ScreenCatalogRepositoryContract>(
@@ -279,39 +161,12 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    // Analytics
-    ..registerLazySingleton<AnalyticsRepositoryContract>(
-      () => AnalyticsRepositoryImpl(
-        getIt<AppDatabase>(),
-        getIt<IdGenerator>(),
-      ),
-    )
-    ..registerLazySingleton<AnalyticsService>(
-      () => AnalyticsServiceImpl(
-        taskRepo: getIt<TaskRepositoryContract>(),
-        projectRepo: getIt<ProjectRepositoryContract>(),
-        valueRepo: getIt<ValueRepositoryContract>(),
-        journalRepo: getIt<JournalRepositoryContract>(),
-        analyticsRepo: getIt<AnalyticsRepositoryContract>(),
-      ),
-    )
-    // Journal
-    ..registerLazySingleton<JournalRepositoryContract>(
-      () => JournalRepositoryImpl(
-        getIt<AppDatabase>(),
-        getIt<IdGenerator>(),
-      ),
-    )
+    // Analytics + Journal bindings are owned by taskly_data module.
     ..registerLazySingleton<ScreenQueryBuilder>(ScreenQueryBuilder.new)
     ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
     ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
     ..registerLazySingleton<TaskStatsCalculator>(TaskStatsCalculator.new)
-    // Attention system (v2 bounded context)
-    ..registerLazySingleton<attention_repo_v2.AttentionRepositoryContract>(
-      () => attention_repo_v2_impl.AttentionRepositoryV2(
-        db: getIt<AppDatabase>(),
-      ),
-    )
+    // Attention repository binding is owned by taskly_data module.
     ..registerLazySingleton<attention_engine_v2_impl.AttentionEngine>(
       () => attention_engine_v2_impl.AttentionEngine(
         attentionRepository:
@@ -348,7 +203,7 @@ Future<void> setupDependencies() async {
       ),
     )
     ..registerLazySingleton<LocalDataMaintenanceService>(
-      () => LocalDataMaintenanceService(database: getIt<PowerSyncDatabase>()),
+      () => dataStack.localDataMaintenanceService,
     )
     // Presentation BLoCs/Cubits
     ..registerFactory<AttentionInboxBloc>(
@@ -555,30 +410,5 @@ Future<void> setupDependencies() async {
         valueRepository: getIt<ValueRepositoryContract>(),
         moduleInterpreterRegistry: getIt<ScreenModuleInterpreterRegistry>(),
       ),
-    )
-    // Notifications (server-enqueued + PowerSync synced)
-    ..registerLazySingleton<NotificationPresenter>(
-      () => LoggingNotificationPresenter().call,
-    )
-    ..registerLazySingleton<PendingNotificationsRepositoryContract>(
-      () => PendingNotificationsRepositoryImpl(getIt<AppDatabase>()),
-    )
-    ..registerSingleton<PendingNotificationsProcessor>(
-      PendingNotificationsProcessor(
-        repository: getIt<PendingNotificationsRepositoryContract>(),
-        presenter: getIt<NotificationPresenter>(),
-      ),
     );
-
-  // Mark DI setup as complete for future auth callbacks
-  initialSetupComplete = true;
-
-  // Run post-auth maintenance if user was already logged in during openDatabase
-  // (The callback above would have skipped because initialSetupComplete was false)
-  if (isLoggedIn()) {
-    await runPostAuthMaintenance(
-      driftDb: getIt<AppDatabase>(),
-      idGenerator: getIt<IdGenerator>(),
-    );
-  }
 }

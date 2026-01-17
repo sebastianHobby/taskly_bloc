@@ -1,12 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 
 import '../../helpers/fallback_values.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 

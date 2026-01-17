@@ -7,7 +7,6 @@ library;
 import 'package:intl/intl.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_chrome.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
@@ -24,6 +23,7 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 
 import '../../../../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
 

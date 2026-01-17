@@ -12,7 +12,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:drift/drift.dart' hide isNotNull;
+import 'package:drift/drift.dart' as drift_pkg hide isNotNull, isNull;
 import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -22,6 +22,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:test/test.dart' show Tags;
 import 'package:taskly_bloc/app/di/dependency_injection.dart'
     show getIt, setupDependencies;
+import 'package:taskly_domain/contracts.dart'
+    show
+        ProjectRepositoryContract,
+        SettingsRepositoryContract,
+        TaskRepositoryContract,
+        ValueRepositoryContract;
+import 'package:taskly_domain/preferences.dart' show SettingsKey;
+import 'package:taskly_domain/settings.dart' show GlobalSettings;
 import 'package:taskly_bloc/app/env/env.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
@@ -32,12 +40,6 @@ import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 import 'package:uuid/uuid.dart';
 
 import 'e2e_test_helpers.dart';
@@ -78,7 +80,7 @@ void main() {
   String? authPassword;
 
   setUpAll(() async {
-    initializeTalkerForTest();
+    initializeLoggingForTest();
 
     if (!_canRunAgainstLocalStack) {
       return;
@@ -291,26 +293,21 @@ void main() {
           id: task!.id,
         );
 
-        // Join tables should exist too.
-        final projectValueUrgentId = getIt<IdGenerator>().projectValueId(
-          projectId: project.id,
-          valueId: urgent.id,
+        final serverProject = await _waitForServerRowExists(
+          client: client,
+          table: 'projects',
+          id: project.id,
         );
-        final taskValueUrgentId = getIt<IdGenerator>().taskValueId(
-          taskId: task.id,
-          valueId: urgent.id,
-        );
+        expect(serverProject['primary_value_id'], health.id);
+        expect(serverProject['secondary_value_id'], urgent.id);
 
-        await _waitForServerRowExists(
+        final serverTask = await _waitForServerRowExists(
           client: client,
-          table: 'project_values',
-          id: projectValueUrgentId,
+          table: 'tasks',
+          id: task.id,
         );
-        await _waitForServerRowExists(
-          client: client,
-          table: 'task_values',
-          id: taskValueUrgentId,
-        );
+        expect(serverTask['override_primary_value_id'], urgent.id);
+        expect(serverTask['override_secondary_value_id'], isNull);
 
         // Update a value and the task.
         await valueRepo.update(
@@ -372,9 +369,8 @@ void main() {
     );
 
     testWidgetsE2E(
-      'constraints: invalid join upload is discarded and does not block later uploads',
+      'constraints: invalid value FK update is discarded and does not block later uploads',
       (tester) async {
-        final idGenerator = getIt<IdGenerator>();
         final taskRepo = getIt<TaskRepositoryContract>();
         final valueRepo = getIt<ValueRepositoryContract>();
 
@@ -383,52 +379,54 @@ void main() {
         final task = await _selectTaskByName(driftDb, 'Constraint Task');
         expect(task, isNotNull);
 
-        // First create an invalid task_value (FK should fail server-side).
-        final invalidValueId =
-            'value-does-not-exist-${DateTime.now().millisecondsSinceEpoch}';
-        final invalidJoinId = idGenerator.taskValueId(
-          taskId: task!.id,
-          valueId: invalidValueId,
+        await _waitForServerRowExists(
+          client: client,
+          table: 'tasks',
+          id: task!.id,
         );
 
-        await valueRepo.addValueToTask(
-          taskId: task.id,
-          valueId: invalidValueId,
+        // First attempt to reference an invalid value id (FK should fail server-side).
+        final invalidValueId =
+            'value-does-not-exist-${DateTime.now().millisecondsSinceEpoch}';
+
+        await taskRepo.update(
+          id: task.id,
+          name: 'Constraint Task',
+          completed: false,
+          valueIds: [invalidValueId],
         );
 
         // Ensure we observed an upload attempt after the invalid change.
         await _waitForUploadCycle(syncDb);
 
-        // The invalid join should not exist on the server.
-        await _waitForServerRowMissing(
+        // The invalid FK update should not be applied on the server.
+        final serverTaskAfterInvalid = await _waitForServerRowExists(
           client: client,
-          table: 'task_values',
-          id: invalidJoinId,
+          table: 'tasks',
+          id: task.id,
         );
+        expect(serverTaskAfterInvalid['override_primary_value_id'], isNull);
 
         // Now create a valid value + join, which must still upload successfully.
         await valueRepo.create(name: 'Valid Value', color: '#123456');
         final valid = await _selectValueByName(driftDb, 'Valid Value');
         expect(valid, isNotNull);
 
-        final validJoinId = idGenerator.taskValueId(
-          taskId: task.id,
-          valueId: valid!.id,
+        await taskRepo.update(
+          id: task.id,
+          name: 'Constraint Task',
+          completed: false,
+          valueIds: [valid!.id],
         );
 
-        await valueRepo.addValueToTask(taskId: task.id, valueId: valid.id);
-        await _waitForServerRowExists(
+        final serverTaskAfterValid = await _waitForServerRowExists(
           client: client,
-          table: 'task_values',
-          id: validJoinId,
+          table: 'tasks',
+          id: task.id,
         );
+        expect(serverTaskAfterValid['override_primary_value_id'], valid.id);
 
         // Cleanup best-effort.
-        await valueRepo.removeValueFromTask(
-          taskId: task.id,
-          valueId: invalidValueId,
-        );
-        await valueRepo.removeValueFromTask(taskId: task.id, valueId: valid.id);
         await taskRepo.delete(task.id);
         await valueRepo.delete(valid.id);
       },
@@ -436,9 +434,8 @@ void main() {
     );
 
     testWidgetsE2E(
-      'joins: task valueIds update rewrites task_values on server',
+      'slots: task valueIds update rewrites override value columns on server',
       (tester) async {
-        final idGenerator = getIt<IdGenerator>();
         final valueRepo = getIt<ValueRepositoryContract>();
         final projectRepo = getIt<ProjectRepositoryContract>();
         final taskRepo = getIt<TaskRepositoryContract>();
@@ -456,6 +453,8 @@ void main() {
         final valueB = await _selectValueByName(driftDb, valueBName);
         expect(valueA, isNotNull);
         expect(valueB, isNotNull);
+
+        final valueBId = valueB!.id;
 
         await projectRepo.create(name: projectName);
         final project = await _selectProjectByName(driftDb, projectName);
@@ -475,52 +474,39 @@ void main() {
           id: task!.id,
         );
 
-        final joinAId = idGenerator.taskValueId(
-          taskId: task.id,
-          valueId: valueA.id,
-        );
-        final joinBId = idGenerator.taskValueId(
-          taskId: task.id,
-          valueId: valueB!.id,
-        );
-
-        await _waitForServerRowExists(
+        final serverTaskA = await _waitForServerRowExists(
           client: client,
-          table: 'task_values',
-          id: joinAId,
+          table: 'tasks',
+          id: task.id,
         );
+        expect(serverTaskA['override_primary_value_id'], valueA.id);
 
         await taskRepo.update(
           id: task.id,
           name: taskName,
           completed: false,
           projectId: project.id,
-          valueIds: [valueB.id],
+          valueIds: [valueBId],
         );
 
-        await _waitForServerRowExists(
+        final serverTaskB = await _waitForServerRowExists(
           client: client,
-          table: 'task_values',
-          id: joinBId,
+          table: 'tasks',
+          id: task.id,
         );
-        await _waitForServerRowMissing(
-          client: client,
-          table: 'task_values',
-          id: joinAId,
-        );
+        expect(serverTaskB['override_primary_value_id'], valueBId);
 
         await taskRepo.delete(task.id);
         await projectRepo.delete(project.id);
         await valueRepo.delete(valueA.id);
-        await valueRepo.delete(valueB.id);
+        await valueRepo.delete(valueBId);
       },
       skip: !_canRunAgainstLocalStack,
     );
 
     testWidgetsE2E(
-      'joins: project valueIds update rewrites project_values on server',
+      'slots: project valueIds update rewrites primary/secondary value columns on server',
       (tester) async {
-        final idGenerator = getIt<IdGenerator>();
         final valueRepo = getIt<ValueRepositoryContract>();
         final projectRepo = getIt<ProjectRepositoryContract>();
 
@@ -537,6 +523,8 @@ void main() {
         expect(valueA, isNotNull);
         expect(valueB, isNotNull);
 
+        final valueBId = valueB!.id;
+
         await projectRepo.create(name: projectName, valueIds: [valueA!.id]);
         final project = await _selectProjectByName(driftDb, projectName);
         expect(project, isNotNull);
@@ -547,42 +535,30 @@ void main() {
           id: project!.id,
         );
 
-        final joinAId = idGenerator.projectValueId(
-          projectId: project.id,
-          valueId: valueA.id,
-        );
-        final joinBId = idGenerator.projectValueId(
-          projectId: project.id,
-          valueId: valueB!.id,
-        );
-
-        await _waitForServerRowExists(
+        final serverProjectA = await _waitForServerRowExists(
           client: client,
-          table: 'project_values',
-          id: joinAId,
+          table: 'projects',
+          id: project.id,
         );
+        expect(serverProjectA['primary_value_id'], valueA.id);
 
         await projectRepo.update(
           id: project.id,
           name: projectName,
           completed: false,
-          valueIds: [valueB.id],
+          valueIds: [valueBId],
         );
 
-        await _waitForServerRowExists(
+        final serverProjectB = await _waitForServerRowExists(
           client: client,
-          table: 'project_values',
-          id: joinBId,
+          table: 'projects',
+          id: project.id,
         );
-        await _waitForServerRowMissing(
-          client: client,
-          table: 'project_values',
-          id: joinAId,
-        );
+        expect(serverProjectB['primary_value_id'], valueBId);
 
         await projectRepo.delete(project.id);
         await valueRepo.delete(valueA.id);
-        await valueRepo.delete(valueB.id);
+        await valueRepo.delete(valueBId);
       },
       skip: !_canRunAgainstLocalStack,
     );
@@ -590,7 +566,6 @@ void main() {
     testWidgetsE2E(
       'server-first: PostgREST task/value edits download into Drift (incl join change)',
       (tester) async {
-        final idGenerator = getIt<IdGenerator>();
         final valueRepo = getIt<ValueRepositoryContract>();
         final taskRepo = getIt<TaskRepositoryContract>();
 
@@ -606,6 +581,8 @@ void main() {
         final valueB = await _selectValueByName(driftDb, valueBName);
         expect(valueA, isNotNull);
         expect(valueB, isNotNull);
+
+        final valueBId = valueB!.id;
 
         await taskRepo.create(
           name: taskName,
@@ -643,53 +620,29 @@ void main() {
           debugLabel: 'Drift to reflect server-first task/value updates',
         );
 
-        // Server-first: change task_values join from A -> B.
-        final joinAId = idGenerator.taskValueId(
-          taskId: task.id,
-          valueId: valueA.id,
-        );
-        final joinBId = idGenerator.taskValueId(
-          taskId: task.id,
-          valueId: valueB!.id,
-        );
-
-        await _waitForServerRowExists(
-          client: client,
-          table: 'task_values',
-          id: joinAId,
-        );
-
-        await client.rest.from('task_values').delete().eq('id', joinAId);
-        await client.rest.from('task_values').upsert({
-          'id': joinBId,
-          'task_id': task.id,
-          'value_id': valueB.id,
-          'is_primary': true,
-          'user_id': userId,
-        });
+        // Server-first: change override primary value from A -> B.
+        await client.rest
+            .from('tasks')
+            .update({
+              'override_primary_value_id': valueBId,
+              'override_secondary_value_id': null,
+            })
+            .eq('id', task.id);
 
         await _waitFor(
           () async {
-            final localJoinA = await _selectTaskValueJoin(
-              driftDb,
-              taskId: task.id,
-              valueId: valueA.id,
-            );
-            final localJoinB = await _selectTaskValueJoin(
-              driftDb,
-              taskId: task.id,
-              valueId: valueB.id,
-            );
-            return localJoinA == null && localJoinB != null;
+            final localTask = await _selectTaskById(driftDb, task.id);
+            return localTask?.overridePrimaryValueId == valueBId &&
+                localTask?.overrideSecondaryValueId == null;
           },
           timeout: const Duration(seconds: 60),
-          debugLabel: 'Drift to reflect server-first join change',
+          debugLabel: 'Drift to reflect server-first override value change',
         );
 
         // Cleanup.
         await taskRepo.delete(task.id);
         await valueRepo.delete(valueA.id);
-        await valueRepo.delete(valueB.id);
+        await valueRepo.delete(valueBId);
       },
       skip: !_canRunAgainstLocalStack,
     );
@@ -799,7 +752,7 @@ void main() {
                 id: badId,
                 name: 'RLS Bad $suffix',
                 color: '#ABCDEF',
-                userId: const Value('someone-else'),
+                userId: const drift_pkg.Value('someone-else'),
               ),
             );
 
@@ -857,11 +810,12 @@ void main() {
                 .like('name', '$prefix%');
             if (tasks.length != taskCount) return false;
 
-            final joins = await client.rest
-                .from('task_values')
+            final tasksWithOverride = await client.rest
+                .from('tasks')
                 .select('id')
-                .eq('value_id', value.id);
-            return joins.length >= taskCount;
+                .like('name', '$prefix%')
+                .eq('override_primary_value_id', value.id);
+            return tasksWithOverride.length >= taskCount;
           },
           timeout: const Duration(seconds: 120),
           debugLabel: 'server to contain $taskCount batch tasks and joins',
@@ -871,135 +825,8 @@ void main() {
     );
 
     testWidgetsE2E(
-      'two-client: 23505 conflict on deterministic table is handled and converges',
-      (tester) async {
-        if (userId == null) {
-          fail('Missing userId from setUpAll');
-        }
-
-        final deviceA = await _TestDevice.create(
-          name: 'A_23505',
-          userId: userId!,
-        );
-        addTearDown(deviceA.dispose);
-
-        final deviceB = await _TestDevice.create(
-          name: 'B_23505',
-          userId: userId!,
-        );
-        addTearDown(deviceB.dispose);
-
-        await _waitForPowerSyncConnected(deviceA.syncDb);
-        await _waitForPowerSyncConnected(deviceB.syncDb);
-
-        final suffix = DateTime.now().millisecondsSinceEpoch;
-
-        // Create shared domain rows (task is v4, value is v5) on A.
-        await deviceA.valueRepo.create(
-          name: 'ConflictValue-$suffix',
-          color: '#0C0C0C',
-        );
-        final value = await _waitForLocalValueByName(
-          deviceA.driftDb,
-          'ConflictValue-$suffix',
-        );
-
-        await deviceA.taskRepo.create(name: 'ConflictTask-$suffix');
-        final task = await _selectTaskByName(
-          deviceA.driftDb,
-          'ConflictTask-$suffix',
-        );
-        expect(task, isNotNull);
-
-        await _waitForServerRowExists(
-          client: client,
-          table: 'values',
-          id: value.id,
-        );
-        await _waitForServerRowExists(
-          client: client,
-          table: 'tasks',
-          id: task!.id,
-        );
-
-        // Wait for B to download them.
-        await _waitFor(
-          () async =>
-              (await _selectValueById(deviceB.driftDb, value.id)) != null &&
-              (await _selectTaskById(deviceB.driftDb, task.id)) != null,
-          timeout: const Duration(seconds: 60),
-          debugLabel: 'Device B to download seed task/value',
-        );
-
-        // A creates the correct deterministic join via repository.
-        await deviceA.valueRepo.addValueToTask(
-          taskId: task.id,
-          valueId: value.id,
-        );
-        final deterministicJoinId = IdGenerator.withUserId(userId!).taskValueId(
-          taskId: task.id,
-          valueId: value.id,
-        );
-
-        await _waitForServerRowExists(
-          client: client,
-          table: 'task_values',
-          id: deterministicJoinId,
-        );
-
-        // B attempts to create the same natural key with a DIFFERENT id.
-        // This should trigger a 23505 on server (unique(task_id,value_id)).
-        final conflictingJoinId = const Uuid().v4();
-        await deviceB.driftDb
-            .into(deviceB.driftDb.taskValuesTable)
-            .insert(
-              TaskValuesTableCompanion.insert(
-                id: conflictingJoinId,
-                taskId: task.id,
-                valueId: value.id,
-                isPrimary: const Value(true),
-                userId: Value(userId),
-              ),
-            );
-
-        await _waitForUploadCycle(
-          deviceB.syncDb,
-          timeout: const Duration(seconds: 30),
-        );
-
-        // Server should still have only the deterministic join row.
-        await _waitForServerRowMissing(
-          client: client,
-          table: 'task_values',
-          id: conflictingJoinId,
-        );
-        await _waitForServerRowExists(
-          client: client,
-          table: 'task_values',
-          id: deterministicJoinId,
-        );
-
-        // And B should converge by downloading the deterministic join.
-        await _waitFor(
-          () async {
-            final localJoin = await _selectTaskValueJoin(
-              deviceB.driftDb,
-              taskId: task.id,
-              valueId: value.id,
-            );
-            return localJoin != null;
-          },
-          timeout: const Duration(seconds: 60),
-          debugLabel: 'Device B to converge on deterministic join',
-        );
-      },
-      skip: !_canRunAgainstLocalStack,
-    );
-
-    testWidgetsE2E(
       'server-first: PostgREST project edits download into Drift (incl join change)',
       (tester) async {
-        final idGenerator = getIt<IdGenerator>();
         final valueRepo = getIt<ValueRepositoryContract>();
         final projectRepo = getIt<ProjectRepositoryContract>();
 
@@ -1056,52 +883,32 @@ void main() {
           debugLabel: 'Drift to reflect server-first project updates',
         );
 
-        // Server-first: swap project_values join from A -> B.
-        final joinAId = idGenerator.projectValueId(
-          projectId: project.id,
-          valueId: valueA.id,
-        );
-        final joinBId = idGenerator.projectValueId(
-          projectId: project.id,
-          valueId: valueB!.id,
-        );
-
-        await _waitForServerRowExists(
-          client: client,
-          table: 'project_values',
-          id: joinAId,
-        );
-
-        await client.rest.from('project_values').delete().eq('id', joinAId);
-        await client.rest.from('project_values').upsert({
-          'id': joinBId,
-          'project_id': project.id,
-          'value_id': valueB.id,
-          'is_primary': true,
-          'user_id': userId,
-        });
+        // Server-first: change project primary value from A -> B.
+        final valueBId = valueB!.id;
+        await client.rest
+            .from('projects')
+            .update({
+              'primary_value_id': valueBId,
+              'secondary_value_id': null,
+            })
+            .eq('id', project.id);
 
         await _waitFor(
           () async {
-            final localJoinA = await _selectProjectValueJoin(
+            final localProject = await _selectProjectByName(
               driftDb,
-              projectId: project.id,
-              valueId: valueA.id,
+              '$projectName-updated',
             );
-            final localJoinB = await _selectProjectValueJoin(
-              driftDb,
-              projectId: project.id,
-              valueId: valueB.id,
-            );
-            return localJoinA == null && localJoinB != null;
+            return localProject?.primaryValueId == valueBId &&
+                localProject?.secondaryValueId == null;
           },
           timeout: const Duration(seconds: 60),
-          debugLabel: 'Drift to reflect server-first project join change',
+          debugLabel: 'Drift to reflect server-first project value change',
         );
 
         await projectRepo.delete(project.id);
         await valueRepo.delete(valueA.id);
-        await valueRepo.delete(valueB.id);
+        await valueRepo.delete(valueBId);
       },
       skip: !_canRunAgainstLocalStack,
     );
@@ -1130,7 +937,7 @@ void main() {
                 id: queuedId,
                 name: queuedName,
                 color: '#555555',
-                userId: Value(userId),
+                userId: drift_pkg.Value(userId),
               ),
             );
 
@@ -1175,15 +982,6 @@ void main() {
         final projectId = const Uuid().v4();
         final taskId = const Uuid().v4();
 
-        final projectValueId = idGen.projectValueId(
-          projectId: projectId,
-          valueId: valueAId,
-        );
-        final taskValueId = idGen.taskValueId(
-          taskId: taskId,
-          valueId: valueAId,
-        );
-
         await driftDb.transaction(() async {
           await driftDb
               .into(driftDb.valueTable)
@@ -1192,7 +990,7 @@ void main() {
                   id: valueAId,
                   name: 'BatchValueA-$suffix',
                   color: '#0A0A0A',
-                  userId: Value(userId),
+                  userId: drift_pkg.Value(userId),
                 ),
               );
           await driftDb
@@ -1202,7 +1000,7 @@ void main() {
                   id: valueBId,
                   name: 'BatchValueB-$suffix',
                   color: '#0B0B0B',
-                  userId: Value(userId),
+                  userId: drift_pkg.Value(userId),
                 ),
               );
 
@@ -1212,10 +1010,12 @@ void main() {
                 ProjectTableCompanion.insert(
                   name: 'BatchProject-$suffix',
                   completed: false,
-                  id: Value(projectId),
-                  userId: Value(userId),
-                  priority: const Value(4),
-                  isPinned: const Value(false),
+                  id: drift_pkg.Value(projectId),
+                  userId: drift_pkg.Value(userId),
+                  priority: const drift_pkg.Value(4),
+                  isPinned: const drift_pkg.Value(false),
+                  primaryValueId: drift_pkg.Value(valueAId),
+                  secondaryValueId: const drift_pkg.Value(null),
                 ),
               );
 
@@ -1224,33 +1024,12 @@ void main() {
               .insert(
                 TaskTableCompanion.insert(
                   name: 'BatchTask-$suffix',
-                  id: Value(taskId),
-                  completed: const Value(false),
-                  projectId: Value(projectId),
-                  userId: Value(userId),
-                ),
-              );
-
-          await driftDb
-              .into(driftDb.projectValuesTable)
-              .insert(
-                ProjectValuesTableCompanion.insert(
-                  id: projectValueId,
-                  projectId: projectId,
-                  valueId: valueAId,
-                  userId: Value(userId),
-                  isPrimary: const Value(true),
-                ),
-              );
-          await driftDb
-              .into(driftDb.taskValuesTable)
-              .insert(
-                TaskValuesTableCompanion.insert(
-                  id: taskValueId,
-                  taskId: taskId,
-                  valueId: valueAId,
-                  userId: Value(userId),
-                  isPrimary: const Value(true),
+                  id: drift_pkg.Value(taskId),
+                  completed: const drift_pkg.Value(false),
+                  projectId: drift_pkg.Value(projectId),
+                  userId: drift_pkg.Value(userId),
+                  overridePrimaryValueId: drift_pkg.Value(valueAId),
+                  overrideSecondaryValueId: const drift_pkg.Value(null),
                 ),
               );
 
@@ -1259,8 +1038,8 @@ void main() {
             driftDb.taskTable,
           )..where((t) => t.id.equals(taskId))).write(
             TaskTableCompanion(
-              name: Value('BatchTask-$suffix-updated'),
-              completed: const Value(true),
+              name: drift_pkg.Value('BatchTask-$suffix-updated'),
+              completed: const drift_pkg.Value(true),
             ),
           );
 
@@ -1288,16 +1067,21 @@ void main() {
         expect(serverTask['name'], 'BatchTask-$suffix-updated');
         expect(serverTask['completed'], anyOf(true, 1));
 
-        await _waitForServerRowExists(
+        final serverProject = await _waitForServerRowExists(
           client: client,
-          table: 'project_values',
-          id: projectValueId,
+          table: 'projects',
+          id: projectId,
         );
-        await _waitForServerRowExists(
+        expect(serverProject['primary_value_id'], valueAId);
+        expect(serverProject['secondary_value_id'], isNull);
+
+        final serverTaskValues = await _waitForServerRowExists(
           client: client,
-          table: 'task_values',
-          id: taskValueId,
+          table: 'tasks',
+          id: taskId,
         );
+        expect(serverTaskValues['override_primary_value_id'], valueAId);
+        expect(serverTaskValues['override_secondary_value_id'], isNull);
       },
       skip: !_canRunAgainstLocalStack,
     );
@@ -1322,7 +1106,7 @@ void main() {
                 id: valueId,
                 name: 'Transient-$suffix',
                 color: '#777777',
-                userId: Value(userId),
+                userId: drift_pkg.Value(userId),
               ),
             );
 
@@ -1384,7 +1168,7 @@ class _TestDevice {
 
     final syncDb = await openDatabase(pathOverride: dbPath);
     final driftDb = AppDatabase(
-      DatabaseConnection(SqliteAsyncDriftConnection(syncDb)),
+      drift_pkg.DatabaseConnection(SqliteAsyncDriftConnection(syncDb)),
     );
 
     final idGenerator = IdGenerator(() => userId);
@@ -1488,7 +1272,7 @@ Future<void> _waitForPowerSyncConnected(
 
 Future<UserProfileTableData?> _selectLatestProfile(AppDatabase db) {
   final query = db.select(db.userProfileTable)
-    ..orderBy([(row) => OrderingTerm.desc(row.updatedAt)])
+    ..orderBy([(row) => drift_pkg.OrderingTerm.desc(row.updatedAt)])
     ..limit(1);
   return query.getSingleOrNull();
 }
@@ -1524,30 +1308,6 @@ Future<TaskTableData?> _selectTaskByName(AppDatabase db, String name) {
 Future<TaskTableData?> _selectTaskById(AppDatabase db, String id) {
   final query = db.select(db.taskTable)
     ..where((row) => row.id.equals(id))
-    ..limit(1);
-  return query.getSingleOrNull();
-}
-
-Future<TaskValuesTableData?> _selectTaskValueJoin(
-  AppDatabase db, {
-  required String taskId,
-  required String valueId,
-}) {
-  final query = db.select(db.taskValuesTable)
-    ..where((row) => row.taskId.equals(taskId) & row.valueId.equals(valueId))
-    ..limit(1);
-  return query.getSingleOrNull();
-}
-
-Future<ProjectValuesTableData?> _selectProjectValueJoin(
-  AppDatabase db, {
-  required String projectId,
-  required String valueId,
-}) {
-  final query = db.select(db.projectValuesTable)
-    ..where(
-      (row) => row.projectId.equals(projectId) & row.valueId.equals(valueId),
-    )
     ..limit(1);
   return query.getSingleOrNull();
 }

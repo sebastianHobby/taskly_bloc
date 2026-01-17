@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
@@ -11,6 +10,7 @@ import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_sect
 
 import '../../../../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);

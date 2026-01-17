@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
 
 sealed class JournalTrackersState {
   const JournalTrackersState();

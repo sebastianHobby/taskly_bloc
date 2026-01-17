@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ranked_tasks_v1_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
@@ -392,8 +390,8 @@ class _MyDayRankedTasksV1SectionState extends State<MyDayRankedTasksV1Section> {
                           const SizedBox(height: 10),
                         ],
                         ValuesFooter(
-                          primaryValue: task.primaryValue,
-                          secondaryValues: task.secondaryValues,
+                          primaryValue: task.effectivePrimaryValue,
+                          secondaryValues: task.effectiveSecondaryValues,
                         ),
                       ],
                     ),

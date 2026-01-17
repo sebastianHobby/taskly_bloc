@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
+import 'package:taskly_domain/domain/allocation/model/allocation_config.dart';
+import 'package:taskly_domain/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_domain/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_domain/domain/preferences/model/settings_key.dart';
 
 sealed class MyDayHeaderEvent {
   const MyDayHeaderEvent();

@@ -6,10 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
@@ -22,6 +18,7 @@ import '../../../../helpers/pump_app.dart';
 import '../../../../helpers/test_imports.dart';
 import '../../../../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
 

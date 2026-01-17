@@ -12,8 +12,6 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
@@ -23,8 +21,9 @@ import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.da
 import '../fixtures/test_data.dart';
 import '../helpers/test_helpers.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
-  setUpAll(initializeTalkerForTest);
+  setUpAll(initializeLoggingForTest);
   group('Task checkbox completion', () {
     testWidgetsSafe('renders checkbox unchecked for incomplete task', (
       tester,

@@ -1,10 +1,7 @@
 import '../../../helpers/test_imports.dart';
 
-import 'package:taskly_bloc/domain/allocation/engine/allocation_strategy.dart';
-import 'package:taskly_bloc/domain/allocation/engine/urgency_weighted_allocator.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_result.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('UrgencyWeightedAllocator', () {
     Value value(String id) => TestData.value(id: id, name: id);

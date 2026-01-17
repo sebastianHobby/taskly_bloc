@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
+import 'package:taskly_domain/domain/core/model/task.dart';
 
 /// Card highlighting the recommended next task for a project.
 ///

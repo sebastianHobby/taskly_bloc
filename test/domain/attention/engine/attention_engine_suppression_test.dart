@@ -4,24 +4,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
-import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule_runtime_state.dart';
-import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 import '../../../helpers/test_db.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class _MockProjectRepository extends Mock

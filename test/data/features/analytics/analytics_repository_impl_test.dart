@@ -5,10 +5,8 @@ import 'package:drift/drift.dart' show InsertMode, Value;
 import 'package:taskly_bloc/data/features/analytics/repositories/analytics_repository_impl.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
-import 'package:taskly_bloc/domain/analytics/model/analytics_snapshot.dart';
-import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
+
+import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
 void main() {
   setUpAll(setUpAllTestEnvironment);

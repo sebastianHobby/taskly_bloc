@@ -15,14 +15,11 @@ bucket_definitions:
       # Values
       - SELECT * FROM values WHERE user_id = bucket.user_id
 
-      # Project-Value associations
-      - SELECT * FROM project_values WHERE user_id = bucket.user_id
-
-      # Task-Value associations
-      - SELECT * FROM task_values WHERE user_id = bucket.user_id
-
       # User settings
       - SELECT * FROM user_profiles WHERE user_id = bucket.user_id
+
+      # Screen Definitions
+      - SELECT * FROM screen_definitions WHERE user_id = bucket.user_id
 
       # Screen Preferences (per-user navigation ordering/visibility)
       - SELECT * FROM screen_preferences WHERE user_id = bucket.user_id

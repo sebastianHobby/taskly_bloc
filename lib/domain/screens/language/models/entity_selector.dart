@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/queries/project_predicate.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
+import 'package:taskly_domain/domain/queries/project_predicate.dart';
+import 'package:taskly_domain/domain/queries/query_filter.dart';
+import 'package:taskly_domain/domain/queries/task_predicate.dart';
 
 part 'entity_selector.freezed.dart';
 part 'entity_selector.g.dart';

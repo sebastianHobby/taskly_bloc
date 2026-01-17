@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
 
 import '../../helpers/base_repository_helpers.dart';
 import '../../mocks/fake_id_generator.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('ValueRepository (repository)', () {
     late RepositoryTestContext ctx;

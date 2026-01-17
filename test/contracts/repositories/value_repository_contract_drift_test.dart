@@ -8,8 +8,8 @@ import '../../helpers/base_repository_helpers.dart';
 import '../../mocks/fake_id_generator.dart';
 
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('ValueRepositoryContract (Drift ValueRepository)', () {
     late RepositoryTestContext ctx;

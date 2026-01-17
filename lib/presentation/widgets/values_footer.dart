@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
 
 /// A shared footer widget to display Primary and Secondary values for tasks and projects.

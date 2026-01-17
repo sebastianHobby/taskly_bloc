@@ -1,20 +1,12 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
 
 import '../../../helpers/fallback_values.dart';
 import '../../../mocks/feature_mocks.dart';
 import '../../../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockAllocationSnapshotRepositoryContract extends Mock
     implements AllocationSnapshotRepositoryContract {}
 
@@ -44,7 +36,7 @@ void main() {
       name: id,
       completed: false,
       values: [v],
-      primaryValueId: v.id,
+      overridePrimaryValueId: v.id,
     );
   }
 

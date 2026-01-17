@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
+import 'package:taskly_domain/domain/journal/model/mood_rating.dart';
 
 /// FormBuilder field for mood selection with validation support.
 ///

@@ -35,7 +35,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
 /// ```
 AppDatabase createTestDb() {
   // Initialize talker for tests - required by repositories that use logging
-  initializeTalkerForTest();
+  initializeLoggingForTest();
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   return AppDatabase(
     NativeDatabase.memory(

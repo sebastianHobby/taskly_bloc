@@ -1,9 +1,9 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_orchestrator.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_domain/domain/allocation/engine/allocation_orchestrator.dart';
 
 /// Actions that can be performed on entities.
 enum EntityActionType {

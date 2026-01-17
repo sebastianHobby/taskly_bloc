@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
+import 'package:taskly_domain/domain/attention/contracts/attention_repository_contract.dart';
+import 'package:taskly_domain/domain/attention/model/attention_rule.dart';
 
 sealed class AttentionRulesState {
   const AttentionRulesState();

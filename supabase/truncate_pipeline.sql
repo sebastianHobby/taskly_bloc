@@ -8,8 +8,6 @@
 DO $$
 DECLARE
   names text[] := ARRAY[
-    'task_values',
-    'project_values',
     'tasks',
     'projects',
     'values',

@@ -10,16 +10,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:taskly_bloc/app/di/dependency_injection.dart'
-    show getIt;
+import 'package:taskly_bloc/app/di/dependency_injection.dart' show getIt;
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/app/app.dart';
 
 import 'e2e_test_helpers.dart';
 import '../mocks/fake_repositories.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _FakeAuthRepository implements AuthRepositoryContract {
   @override
   Stream<AuthState> watchAuthState() => const Stream<AuthState>.empty();
@@ -66,7 +64,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    initializeTalkerForTest();
+    initializeLoggingForTest();
 
     // The real app expects GetIt to be initialized by bootstrap code.
     // In widget tests we register minimal fakes so `App` can build.

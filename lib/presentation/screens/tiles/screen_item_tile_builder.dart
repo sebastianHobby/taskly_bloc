@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;

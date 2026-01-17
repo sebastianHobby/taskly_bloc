@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -16,6 +13,7 @@ import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 
 import '../../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 Widget _wrapSliver(Widget sliver) {
   return RepositoryProvider<SectionRendererRegistry>(
     create: (_) => const DefaultSectionRendererRegistry(),

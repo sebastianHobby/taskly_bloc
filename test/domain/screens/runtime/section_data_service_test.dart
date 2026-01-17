@@ -1,30 +1,14 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_project_history_window.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_service.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
-import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 
 import '../../../helpers/test_imports.dart';
+
+import 'package:taskly_domain/taskly_domain.dart';
 
 class _FakeSettingsRepository implements SettingsRepositoryContract {
   _FakeSettingsRepository({required GlobalSettings initialSettings})
@@ -307,18 +291,6 @@ class _FakeValueRepository implements ValueRepositoryContract {
 
   @override
   Future<void> delete(String id) => throw UnimplementedError();
-
-  @override
-  Future<void> addValueToTask({
-    required String taskId,
-    required String valueId,
-  }) => throw UnimplementedError();
-
-  @override
-  Future<void> removeValueFromTask({
-    required String taskId,
-    required String valueId,
-  }) => throw UnimplementedError();
 }
 
 class _FakeAllocationSnapshotRepository

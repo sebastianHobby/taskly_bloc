@@ -1,18 +1,6 @@
-class RepositoryException implements Exception {
-  RepositoryException(this.message, [this.cause, this.stackTrace]);
-  final String message;
-  final Object? cause;
-  final StackTrace? stackTrace;
+/// Backwards-compatible shim.
+///
+/// Prefer importing from `package:taskly_data/data/repositories/repository_exceptions.dart`.
+library;
 
-  @override
-  String toString() =>
-      'RepositoryException: $message${cause != null ? ' (cause: $cause)' : ''}';
-}
-
-class RepositoryNotFoundException extends RepositoryException {
-  RepositoryNotFoundException(super.message, [super.cause, super.stackTrace]);
-}
-
-class RepositoryValidationException extends RepositoryException {
-  RepositoryValidationException(super.message, [super.cause, super.stackTrace]);
-}
+export 'package:taskly_data/data/repositories/repository_exceptions.dart';

@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
-import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockTemporalTriggerService extends Mock
     implements TemporalTriggerService {}
 

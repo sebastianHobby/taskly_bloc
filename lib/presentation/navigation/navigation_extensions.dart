@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/core/model/value.dart';
 
 /// Extension methods for navigation on entity models
 extension TaskNavigation on Task {

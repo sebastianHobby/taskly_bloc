@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_domain/domain/domain.dart';
 
 /// A multi-select picker for selecting one or more Values.
 ///

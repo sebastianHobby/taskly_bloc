@@ -6,7 +6,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
+import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
@@ -155,7 +155,7 @@ class SettingsScreen extends StatelessWidget {
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => TalkerScreen(talker: talker.raw),
+            builder: (_) => TalkerScreen(talker: talkerRaw),
           ),
         );
       },

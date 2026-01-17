@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
@@ -7,10 +7,6 @@ import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
-import 'package:taskly_bloc/domain/attention/engine/attention_engine.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
-import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
@@ -27,10 +23,6 @@ import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_
 import 'package:taskly_bloc/domain/screens/templates/interpreters/journal_today_entries_module_interpreter_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_hero_v1_module_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
-import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
-import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
-import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
@@ -43,6 +35,7 @@ import '../mocks/fake_id_generator.dart';
 import '../mocks/feature_mocks.dart';
 import '../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _NoopAttentionEngine implements AttentionEngineContract {
   @override
   Stream<List<AttentionItem>> watch(AttentionQuery query) {

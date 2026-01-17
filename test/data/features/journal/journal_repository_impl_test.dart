@@ -4,14 +4,8 @@ import '../../../helpers/test_db.dart';
 import 'package:taskly_bloc/data/features/journal/repositories/journal_repository_impl.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition_choice.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);

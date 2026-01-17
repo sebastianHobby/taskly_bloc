@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_domain/domain/domain.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 
 /// Compact, dot-based summary for a list of values.

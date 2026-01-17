@@ -1,6 +1,5 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/analytics/model/trend_data.dart';
 import 'package:taskly_bloc/presentation/routing/page_key.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
@@ -9,12 +8,12 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/analytics/model/correlation_request.dart';
 
 import '../fixtures/test_data.dart';
 
+import 'package:taskly_domain/analytics.dart' as domain_analytics;
+import 'package:taskly_domain/core.dart' as domain_core;
+import 'package:taskly_domain/queries.dart' as domain_queries;
 bool _fallbackValuesRegistered = false;
 
 /// Fake implementations for mocktail's any() matcher.
@@ -46,7 +45,7 @@ void registerAllFallbackValues() {
   _fallbackValuesRegistered = true;
 
   // Initialize talker for tests (safe to call multiple times)
-  initializeTalkerForTest();
+  initializeLoggingForTest();
 
   // === Fake Types ===
   registerFallbackValue(FakeTaskQuery());
@@ -66,8 +65,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(TestData.task());
   registerFallbackValue(TestData.project());
   registerFallbackValue(TestData.value());
-  registerFallbackValue(ValuePriority.medium);
-  registerFallbackValue(TaskQuery.all());
+  registerFallbackValue(domain_core.ValuePriority.medium);
+  registerFallbackValue(domain_queries.TaskQuery.all());
   registerFallbackValue(PageKey.taskOverview);
 
   // === Screens & Views ===
@@ -79,9 +78,9 @@ void registerAllFallbackValues() {
   registerFallbackValue(TestData.correlation());
   registerFallbackValue(TestData.insight());
   registerFallbackValue(TestData.dateRange());
-  registerFallbackValue(TrendGranularity.daily);
+  registerFallbackValue(domain_analytics.TrendGranularity.daily);
   registerFallbackValue(
-    CorrelationRequest.moodVsTracker(
+    domain_analytics.CorrelationRequest.moodVsTracker(
       trackerId: 'tracker-1',
       range: TestData.dateRange(),
     ),

@@ -1,8 +1,8 @@
 import '../../helpers/test_imports.dart';
 
 import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
-import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);

@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/entity_selector.dart';
@@ -6,14 +6,10 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/project_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
-import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart'
-    as sp;
+import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
+import 'package:taskly_domain/preferences.dart' as sp;
+import 'package:taskly_domain/queries.dart';
 
 void main() {
   late ScreenQueryBuilder queryBuilder;

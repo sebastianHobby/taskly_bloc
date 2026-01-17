@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 
 part 'screen_item.freezed.dart';

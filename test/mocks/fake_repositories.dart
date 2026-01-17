@@ -1,15 +1,6 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
 
 /// Shared fake implementations for integration tests.
 ///
@@ -17,6 +8,8 @@ import 'package:taskly_bloc/domain/queries/value_query.dart';
 /// than full repositories, making integration tests faster and more maintainable.
 
 /// Minimal in-memory fake repository for task operations.
+import 'package:taskly_domain/taskly_domain.dart';
+
 class FakeTaskRepository implements TaskRepositoryContract {
   FakeTaskRepository();
 
@@ -596,8 +589,8 @@ class FakeValueRepository implements ValueRepositoryContract {
       iconName: iconName,
       priority: priority,
     );
+
     _last = [..._last, newValue];
-    _controller.add(_last);
   }
 
   @override
@@ -613,9 +606,7 @@ class FakeValueRepository implements ValueRepositoryContract {
 
     final old = _last[idx];
     final updated = [..._last];
-    updated[idx] = Value(
-      id: old.id,
-      createdAt: old.createdAt,
+    updated[idx] = old.copyWith(
       updatedAt: DateTime.now(),
       name: name,
       color: color,
@@ -624,26 +615,12 @@ class FakeValueRepository implements ValueRepositoryContract {
     );
 
     _last = updated;
-    _controller.add(_last);
   }
 
   @override
   Future<void> delete(String id) async {
     _last = _last.where((v) => v.id != id).toList();
-    _controller.add(_last);
   }
-
-  @override
-  Future<void> addValueToTask({
-    required String taskId,
-    required String valueId,
-  }) async {}
-
-  @override
-  Future<void> removeValueFromTask({
-    required String taskId,
-    required String valueId,
-  }) async {}
 
   @override
   Future<List<Value>> getValuesByIds(List<String> ids) async =>

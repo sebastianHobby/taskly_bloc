@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/projects/query/project_task_counts.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('ProjectTaskCounts', () {
     group('constructor', () {

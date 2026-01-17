@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('dateOnly', () {
     test('converts local datetime to UTC midnight', () {

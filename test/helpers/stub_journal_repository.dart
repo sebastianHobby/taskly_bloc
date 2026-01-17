@@ -1,16 +1,7 @@
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition_choice.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_state_day.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_state_entry.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
 
 /// Simple no-op implementation for tests that need a [JournalRepositoryContract]
 /// instance but don't exercise journal behavior.
+import 'package:taskly_domain/taskly_domain.dart';
 class StubJournalRepository implements JournalRepositoryContract {
   const StubJournalRepository();
 

@@ -1,12 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart';
-import 'package:taskly_bloc/domain/queries/value_match_mode.dart';
-import 'package:taskly_bloc/domain/queries/occurrence_expansion.dart';
-import 'package:taskly_bloc/domain/queries/project_predicate.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show BoolOperator, DateOperator, ValueOperator;
+import 'package:taskly_domain/taskly_domain.dart';
 
 import '../../helpers/fallback_values.dart';
 

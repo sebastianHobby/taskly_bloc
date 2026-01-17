@@ -1,20 +1,7 @@
 import '../../../helpers/test_imports.dart';
 
-import 'package:taskly_bloc/domain/allocation/contracts/allocation_snapshot_repository_contract.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_project_history_window.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
-import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _FakeAllocationSnapshotRepository
     implements AllocationSnapshotRepositoryContract {
   int deleteAllCalls = 0;
@@ -144,22 +131,6 @@ class _FakeValueRepository implements ValueRepositoryContract {
     required String color,
     String? iconName,
     ValuePriority? priority,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> addValueToTask({
-    required String taskId,
-    required String valueId,
-  }) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<void> removeValueFromTask({
-    required String taskId,
-    required String valueId,
   }) {
     throw UnimplementedError();
   }
@@ -370,7 +341,9 @@ class _FakeTaskRepository implements TaskRepositoryContract {
       isPinned: false,
       project: null,
       values: const [],
-      primaryValueId: valueIds?.isNotEmpty ?? false ? valueIds!.first : null,
+      overridePrimaryValueId: valueIds?.isNotEmpty ?? false
+          ? valueIds!.first
+          : null,
       occurrence: null,
     );
     _tasks.add(task);
@@ -387,15 +360,22 @@ class _FakeTaskRepository implements TaskRepositoryContract {
   Future<List<Task>> getAll([TaskQuery? query]) async => List<Task>.of(_tasks);
 
   @override
-  Future<void> setPinned({required String id, required bool isPinned}) async {
-    pinnedIds.add(id);
-
-    for (var i = 0; i < _tasks.length; i++) {
-      final t = _tasks[i];
-      if (t.id != id) continue;
-      _tasks[i] = t.copyWith(isPinned: isPinned);
-      break;
+  Future<Task?> getById(String id) async {
+    try {
+      return _tasks.firstWhere((t) => t.id == id);
+    } catch (_) {
+      return null;
     }
+  }
+
+  @override
+  Future<List<Task>> getByIds(Iterable<String> ids) async {
+    final idList = ids.toList(growable: false);
+    final byId = <String, Task>{for (final t in _tasks) t.id: t};
+    return [
+      for (final id in idList)
+        if (byId[id] != null) byId[id]!,
+    ];
   }
 
   @override
@@ -405,16 +385,6 @@ class _FakeTaskRepository implements TaskRepositoryContract {
 
   @override
   Stream<int> watchAllCount([TaskQuery? query]) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<Task?> getById(String id) {
-    throw UnimplementedError();
-  }
-
-  @override
-  Future<List<Task>> getByIds(Iterable<String> ids) {
     throw UnimplementedError();
   }
 
@@ -444,7 +414,39 @@ class _FakeTaskRepository implements TaskRepositoryContract {
     List<String>? valueIds,
     bool? isPinned,
   }) {
-    throw UnimplementedError();
+    final idx = _tasks.indexWhere((t) => t.id == id);
+    if (idx == -1) return Future.value();
+
+    final old = _tasks[idx];
+    _tasks[idx] = old.copyWith(
+      updatedAt: DateTime.utc(2026, 1, 1),
+      name: name,
+      completed: completed,
+      description: description,
+      startDate: startDate,
+      deadlineDate: deadlineDate,
+      projectId: projectId,
+      priority: priority,
+      repeatIcalRrule: repeatIcalRrule,
+      repeatFromCompletion: repeatFromCompletion ?? old.repeatFromCompletion,
+      seriesEnded: seriesEnded ?? old.seriesEnded,
+      isPinned: isPinned ?? old.isPinned,
+        overridePrimaryValueId: valueIds == null
+          ? old.overridePrimaryValueId
+          : (valueIds.isNotEmpty ? valueIds[0] : null),
+      overrideSecondaryValueId: valueIds == null
+          ? old.overrideSecondaryValueId
+          : (valueIds.length > 1 ? valueIds[1] : null),
+    );
+    return Future.value();
+  }
+
+  @override
+  Future<void> setPinned({required String id, required bool isPinned}) async {
+    pinnedIds.add(id);
+    final idx = _tasks.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+    _tasks[idx] = _tasks[idx].copyWith(isPinned: isPinned);
   }
 
   @override

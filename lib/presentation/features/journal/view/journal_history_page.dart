@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
+import 'package:taskly_domain/domain/time/date_only.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_history_bloc.dart';
 
 class JournalHistoryPage extends StatelessWidget {

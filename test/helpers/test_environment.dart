@@ -22,7 +22,7 @@ void setUpAllTestEnvironment() {
   // Initializing the binding is safe and avoids surprises.
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  initializeTalkerForTest();
+  initializeLoggingForTest();
   registerAllFallbackValues();
 }
 
@@ -31,5 +31,5 @@ void setUpAllTestEnvironment() {
 /// Keep this small: per-test work should focus on isolation, not heavy global
 /// initialization.
 void setUpTestEnvironment() {
-  initializeTalkerForTest();
+  initializeLoggingForTest();
 }

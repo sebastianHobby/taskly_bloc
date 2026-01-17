@@ -1,12 +1,12 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_event.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
+import 'package:taskly_domain/domain/analytics/model/date_range.dart';
+import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
+import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_event.dart';
+import 'package:taskly_domain/domain/queries/journal_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_domain/domain/time/date_only.dart';
 
 final class JournalTodayEntriesModuleInterpreterV1 {
   JournalTodayEntriesModuleInterpreterV1({

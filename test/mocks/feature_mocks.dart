@@ -1,8 +1,4 @@
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/analytics_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 /// Mock implementations for feature-level repositories and services.
 ///
@@ -11,6 +7,7 @@ import 'package:taskly_bloc/domain/services/analytics/analytics_service.dart';
 
 // === Analytics Feature ===
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockAnalyticsRepositoryContract extends Mock
     implements AnalyticsRepositoryContract {}
 

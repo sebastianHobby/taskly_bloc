@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
@@ -862,6 +862,7 @@ class _MetaLine extends StatelessWidget {
     required this.formatDate,
     required this.secondaryValues,
     required this.priority,
+    // ignore: unused_element_parameter
     this.layout = _MetaLineLayout.singleWrap,
     this.primaryValue,
     this.startDate,

@@ -1,24 +1,17 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_snapshot.dart';
-import 'package:taskly_bloc/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/settings/model/project_health_review_settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_day_stats_service.dart';
 
 import '../../../helpers/test_db.dart';
 import '../../../mocks/fake_id_generator.dart';
 import '../../../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('AllocationDayStatsService', () {
     test('computes allocated vs completed counts and repeat metric', () async {

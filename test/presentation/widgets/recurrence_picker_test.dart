@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../helpers/test_imports.dart';
 
-import 'package:taskly_bloc/core/logging/talker_service.dart'
-    show initializeTalkerForTest;
+import 'package:taskly_core/logging.dart' show initializeLoggingForTest;
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(() {
     setUpTestEnvironment();
-    initializeTalkerForTest();
+    initializeLoggingForTest();
   });
 
   group('RecurrencePicker', () {

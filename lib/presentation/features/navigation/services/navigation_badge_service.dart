@@ -1,14 +1,14 @@
-﻿import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/badge_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_domain/domain/queries/project_query.dart';
+import 'package:taskly_domain/domain/queries/query_filter.dart';
+import 'package:taskly_domain/domain/queries/task_predicate.dart';
+import 'package:taskly_domain/domain/queries/task_query.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///

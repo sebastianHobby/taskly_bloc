@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 
 import '../../../helpers/pump_app.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   testWidgets(
     'tapping a ScreenItemValue tile navigates to /value/:id by default',

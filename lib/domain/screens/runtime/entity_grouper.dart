@@ -1,4 +1,4 @@
-﻿import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_domain/domain/domain.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
 
 /// Groups entities by various dimensions for display in screens

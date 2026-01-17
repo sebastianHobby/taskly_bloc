@@ -24,7 +24,7 @@ void main() {
     late MockScreenSpecDataInterpreter interpreter;
 
     setUp(() async {
-      initializeTalkerForTest();
+      initializeLoggingForTest();
       await getIt.reset();
 
       interpreter = MockScreenSpecDataInterpreter();

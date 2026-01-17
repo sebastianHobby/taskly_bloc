@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 
 class JournalTrackersPage extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/shared/utils/date_display_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/date_chip.dart';

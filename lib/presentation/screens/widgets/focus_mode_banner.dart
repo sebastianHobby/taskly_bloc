@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
+import 'package:flutter/material.dart';
+import 'package:taskly_domain/domain/allocation/model/focus_mode.dart';
 
 /// Banner showing the currently selected focus mode.
 ///
