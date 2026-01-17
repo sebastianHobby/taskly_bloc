@@ -20,6 +20,8 @@
 ### 2026-01-17
 
 - **Routing**: Explicit MVP shell routes exist for `/my-day`, `/anytime`, `/scheduled`, and `/inbox` (no `/:segment` catch-all route).
+- **USM strangler (My Day first)**: `/my-day` can now run as a non-USM MVP screen behind `ENABLE_MVP_MY_DAY=true` (with a safe fallback to the existing USM `ScreenSpec` when disabled).
+  - MVP screen reuses `MyDayGateBloc` prerequisites gating and renders the existing My Day hero + ranked tasks UI.
 - **Editor host (DEC-025A/DEC-028A/DEC-059A)**: Route-backed editors now use a centralized host behavior:
   - in-app origin (back-stack) → open editor as modal (sheet/panel/dialog)
   - direct deep link (no back-stack) → render editor full-page

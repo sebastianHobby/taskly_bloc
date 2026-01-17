@@ -13,6 +13,18 @@ import 'package:taskly_core/logging.dart';
 class Env {
   static bool _initialized = false;
 
+  static bool _boolFromString(String? raw, {required bool defaultValue}) {
+    final value = raw?.trim().toLowerCase();
+    if (value == null || value.isEmpty) return defaultValue;
+    if (value == 'true' || value == '1' || value == 'yes' || value == 'y') {
+      return true;
+    }
+    if (value == 'false' || value == '0' || value == 'no' || value == 'n') {
+      return false;
+    }
+    return defaultValue;
+  }
+
   /// Initialize environment variables.
   ///
   /// In debug mode on non-web platforms, loads .env file from filesystem.
@@ -90,6 +102,24 @@ class Env {
     return const String.fromEnvironment('DEV_PASSWORD');
   }
 
+  /// Enables the MVP (non-USM) My Day route.
+  ///
+  /// Set via `.env` in debug (`ENABLE_MVP_MY_DAY=true`) or via
+  /// `--dart-define=ENABLE_MVP_MY_DAY=true`.
+  static bool get enableMvpMyDay {
+    const key = 'ENABLE_MVP_MY_DAY';
+
+    if (kDebugMode && dotenv.isInitialized) {
+      final v = dotenv.maybeGet(key);
+      return _boolFromString(v, defaultValue: false);
+    }
+
+    return _boolFromString(
+      const String.fromEnvironment(key),
+      defaultValue: false,
+    );
+  }
+
   /// Logs a short summary of environment configuration sources.
   ///
   /// This helps debug issues where web builds accidentally run with empty
@@ -120,6 +150,8 @@ class Env {
     talker.debug(
       '[env] DEV_PASSWORD source=${devPass.source}, empty=${devPass.value.trim().isEmpty}, value=${_maskSecret(devPass.value)}',
     );
+
+    talker.debug('[env] ENABLE_MVP_MY_DAY value=$enableMvpMyDay');
   }
 
   static ({String value, String source}) _supabaseUrlWithSource() {

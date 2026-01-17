@@ -12,295 +12,330 @@ class MyDayFocusModeRequiredPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    MyDayGateBloc? existing;
+    try {
+      existing = context.read<MyDayGateBloc>();
+    } catch (_) {
+      existing = null;
+    }
+
+    if (existing != null) {
+      return const _MyDayFocusModeRequiredView();
+    }
+
     final theme = Theme.of(context);
     final now = DateTime.now();
     final dateLabel = DateFormat('EEEE, MMM d').format(now).toUpperCase();
 
     return BlocProvider<MyDayGateBloc>(
       create: (_) => getIt<MyDayGateBloc>(),
-      child: BlocBuilder<MyDayGateBloc, MyDayGateState>(
-        builder: (context, state) {
-          return switch (state) {
-            MyDayGateLoading() => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            MyDayGateError(:final message) => Center(child: Text(message)),
-            MyDayGateLoaded(
-              :final needsFocusModeSetup,
-              :final needsValuesSetup,
-              :final ctaIcon,
-              :final descriptionText,
-            ) =>
-              Scaffold(
-                backgroundColor: theme.scaffoldBackgroundColor,
-                body: SafeArea(
-                  bottom: false,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final heroHeight = (constraints.maxHeight * 0.55).clamp(
-                        360.0,
-                        520.0,
-                      );
+      child: _MyDayFocusModeRequiredView(theme: theme, dateLabel: dateLabel),
+    );
+  }
+}
 
-                      return SingleChildScrollView(
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 520),
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: heroHeight,
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      // No tree image: gradient-only hero background.
-                                      DecoratedBox(
+class _MyDayFocusModeRequiredView extends StatelessWidget {
+  const _MyDayFocusModeRequiredView({this.theme, this.dateLabel});
+
+  final ThemeData? theme;
+  final String? dateLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = this.theme ?? Theme.of(context);
+    final dateLabel =
+        this.dateLabel ??
+        DateFormat('EEEE, MMM d').format(DateTime.now()).toUpperCase();
+
+    return BlocBuilder<MyDayGateBloc, MyDayGateState>(
+      builder: (context, state) {
+        return switch (state) {
+          MyDayGateLoading() => const Center(
+            child: CircularProgressIndicator(),
+          ),
+          MyDayGateError(:final message) => Center(child: Text(message)),
+          MyDayGateLoaded(
+            :final needsFocusModeSetup,
+            :final needsValuesSetup,
+            :final ctaIcon,
+            :final descriptionText,
+          ) =>
+            Scaffold(
+              backgroundColor: theme.scaffoldBackgroundColor,
+              body: SafeArea(
+                bottom: false,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final heroHeight = (constraints.maxHeight * 0.55).clamp(
+                      360.0,
+                      520.0,
+                    );
+
+                    return SingleChildScrollView(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: heroHeight,
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // No tree image: gradient-only hero background.
+                                    DecoratedBox(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            theme.colorScheme.primary
+                                                .withOpacity(0.22),
+                                            theme.scaffoldBackgroundColor,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Container(
+                                        height: heroHeight * 0.55,
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
                                             colors: [
-                                              theme.colorScheme.primary
-                                                  .withOpacity(0.22),
+                                              Colors.transparent,
                                               theme.scaffoldBackgroundColor,
                                             ],
                                           ),
                                         ),
                                       ),
-                                      Align(
-                                        alignment: Alignment.bottomCenter,
-                                        child: Container(
-                                          height: heroHeight * 0.55,
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              begin: Alignment.topCenter,
-                                              end: Alignment.bottomCenter,
-                                              colors: [
-                                                Colors.transparent,
-                                                theme.scaffoldBackgroundColor,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(
+                                        20,
+                                        12,
+                                        20,
+                                        0,
+                                      ),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  dateLabel,
+                                                  style: theme
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withOpacity(0.7),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        letterSpacing: 1.2,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  'My Day',
+                                                  style: theme
+                                                      .textTheme
+                                                      .displaySmall
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                      ),
+                                                ),
                                               ],
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.fromLTRB(
-                                          20,
-                                          12,
-                                          20,
-                                          0,
-                                        ),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    dateLabel,
-                                                    style: theme
-                                                        .textTheme
-                                                        .labelSmall
-                                                        ?.copyWith(
-                                                          color: theme
-                                                              .colorScheme
-                                                              .onSurface
-                                                              .withOpacity(0.7),
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          letterSpacing: 1.2,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(height: 6),
-                                                  Text(
-                                                    'My Day',
-                                                    style: theme
-                                                        .textTheme
-                                                        .displaySmall
-                                                        ?.copyWith(
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                        ),
-                                                  ),
-                                                ],
+                                          const SizedBox(width: 12),
+                                          Container(
+                                            height: 44,
+                                            width: 44,
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: theme.colorScheme.surface
+                                                  .withOpacity(0.55),
+                                              border: Border.all(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.12),
                                               ),
                                             ),
-                                            const SizedBox(width: 12),
-                                            Container(
-                                              height: 44,
-                                              width: 44,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                color: theme.colorScheme.surface
-                                                    .withOpacity(0.55),
-                                                border: Border.all(
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.12),
-                                                ),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Icon(
-                                                Icons.person,
-                                                color:
-                                                    theme.colorScheme.onSurface,
-                                              ),
+                                            alignment: Alignment.center,
+                                            child: Icon(
+                                              Icons.person,
+                                              color:
+                                                  theme.colorScheme.onSurface,
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.fromLTRB(
-                                    20,
-                                    0,
-                                    20,
-                                    96,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 6,
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  20,
+                                  0,
+                                  20,
+                                  96,
+                                ),
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.10),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
                                         ),
-                                        decoration: BoxDecoration(
+                                        border: Border.all(
                                           color: theme.colorScheme.primary
-                                              .withOpacity(0.10),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
-                                          border: Border.all(
-                                            color: theme.colorScheme.primary
-                                                .withOpacity(0.25),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'WELCOME TO TASKLY',
-                                          style: theme.textTheme.labelSmall
-                                              ?.copyWith(
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 2.2,
-                                              ),
+                                              .withOpacity(0.25),
                                         ),
                                       ),
-                                      const SizedBox(height: 18),
-                                      Text.rich(
-                                        TextSpan(
-                                          children: [
-                                            const TextSpan(
-                                              text: 'Plan Your Life Around\n',
-                                            ),
-                                            TextSpan(
-                                              // No underline: plain primary emphasis.
-                                              text: 'What Matters',
-                                              style: TextStyle(
-                                                color:
-                                                    theme.colorScheme.primary,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.headlineMedium
+                                      child: Text(
+                                        'WELCOME TO TASKLY',
+                                        style: theme.textTheme.labelSmall
                                             ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.w800,
+                                              letterSpacing: 2.2,
+                                            ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 18),
+                                    Text.rich(
+                                      TextSpan(
+                                        children: [
+                                          const TextSpan(
+                                            text: 'Plan Your Life Around\n',
+                                          ),
+                                          TextSpan(
+                                            // No underline: plain primary emphasis.
+                                            text: 'What Matters',
+                                            style: TextStyle(
+                                              color: theme.colorScheme.primary,
                                               fontWeight: FontWeight.bold,
-                                              height: 1.1,
                                             ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 14),
-                                      Text(
-                                        descriptionText,
-                                        textAlign: TextAlign.center,
-                                        style: theme.textTheme.bodyLarge
-                                            ?.copyWith(
-                                              color: theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                              height: 1.45,
-                                            ),
-                                      ),
-                                      const SizedBox(height: 22),
-                                      _MyDaySetupStepCard(
-                                        stepNumber: 1,
-                                        title: 'Choose your focus mode',
-                                        subtitle:
-                                            'So Taskly can shape Today around your preferences.',
-                                        icon: Icons.tune,
-                                        isComplete: !needsFocusModeSetup,
-                                        ctaLabel: needsFocusModeSetup
-                                            ? 'Start focus setup'
-                                            : 'Change focus mode',
-                                        onPressed: () {
-                                          context.push(
-                                            Routing.screenPath('focus_setup'),
-                                          );
-                                        },
-                                      ),
-                                      const SizedBox(height: 12),
-                                      _MyDaySetupStepCard(
-                                        stepNumber: 2,
-                                        title: 'Add your first value',
-                                        subtitle:
-                                            'Values help Taskly prioritize what matters most.',
-                                        icon: Icons.favorite_outline,
-                                        isComplete: !needsValuesSetup,
-                                        ctaLabel: needsValuesSetup
-                                            ? 'Add values'
-                                            : 'Manage values',
-                                        onPressed: () => Routing.toValueNew(
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.headlineMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.1,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 14),
+                                    Text(
+                                      descriptionText,
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.bodyLarge
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            height: 1.45,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 22),
+                                    _MyDaySetupStepCard(
+                                      stepNumber: 1,
+                                      title: 'Choose your focus mode',
+                                      subtitle:
+                                          'So Taskly can shape Today around your preferences.',
+                                      icon: Icons.tune,
+                                      isComplete: !needsFocusModeSetup,
+                                      ctaLabel: needsFocusModeSetup
+                                          ? 'Start focus setup'
+                                          : 'Change focus mode',
+                                      onPressed: () {
+                                        context.push(
+                                          Routing.screenPath('focus_setup'),
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    _MyDaySetupStepCard(
+                                      stepNumber: 2,
+                                      title: 'Add your first value',
+                                      subtitle:
+                                          'Values help Taskly prioritize what matters most.',
+                                      icon: Icons.favorite_outline,
+                                      isComplete: !needsValuesSetup,
+                                      ctaLabel: needsValuesSetup
+                                          ? 'Add values'
+                                          : 'Manage values',
+                                      onPressed: () {
+                                        if (needsValuesSetup) {
+                                          Routing.toValueNew(context);
+                                          return;
+                                        }
+
+                                        Routing.toScreenKeyWithQuery(
                                           context,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: FilledButton.icon(
-                                          onPressed:
-                                              (!needsFocusModeSetup &&
-                                                  !needsValuesSetup)
-                                              ? () => context.go(
-                                                  Routing.screenPath(
-                                                    'my_day',
-                                                  ),
-                                                )
-                                              : null,
-                                          icon: Icon(
+                                          'manage_values',
+                                          queryParameters: const {
+                                            'source': 'my_day_gate',
+                                          },
+                                        );
+                                      },
+                                    ),
+                                    const SizedBox(height: 18),
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: FilledButton.icon(
+                                        onPressed:
                                             (!needsFocusModeSetup &&
-                                                    !needsValuesSetup)
-                                                ? Icons.arrow_forward
-                                                : ctaIcon,
-                                          ),
-                                          label: const Text(
-                                            'Continue to My Day',
-                                          ),
+                                                !needsValuesSetup)
+                                            ? () => context.go(
+                                                Routing.screenPath('my_day'),
+                                              )
+                                            : null,
+                                        icon: Icon(
+                                          (!needsFocusModeSetup &&
+                                                  !needsValuesSetup)
+                                              ? Icons.arrow_forward
+                                              : ctaIcon,
+                                        ),
+                                        label: const Text(
+                                          'Continue to My Day',
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
-          };
-        },
-      ),
+            ),
+        };
+      },
     );
   }
 }

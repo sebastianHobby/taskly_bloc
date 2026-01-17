@@ -32,8 +32,8 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 3. Block external deep imports into taskly_domain internals (lib/src)
-  if (!await _checkNoTasklyDomainSrcDeepImports()) {
+  // 3. Block deep imports into local package internals (lib/src)
+  if (!await _checkNoLocalPackageSrcDeepImports()) {
     _printFailure();
     return false;
   }
@@ -66,13 +66,13 @@ Future<bool> prePush() async {
   return true;
 }
 
-Future<bool> _checkNoTasklyDomainSrcDeepImports() async {
-  print('🛡️  Checking for taskly_domain src deep imports...');
+Future<bool> _checkNoLocalPackageSrcDeepImports() async {
+  print('🛡️  Checking for local package src deep imports...');
 
   try {
     final result = await Process.run(
       'dart',
-      ['run', 'tool/no_taskly_domain_src_imports.dart'],
+      ['run', 'tool/no_local_package_src_deep_imports.dart'],
       runInShell: true,
     );
 
@@ -80,7 +80,7 @@ Future<bool> _checkNoTasklyDomainSrcDeepImports() async {
     final stderr = (result.stderr as String).trim();
 
     if (result.exitCode != 0) {
-      print('   ❌ taskly_domain deep-import check failed:\n');
+      print('   ❌ Deep-import check failed:\n');
       if (stdout.isNotEmpty) {
         final indented = stdout.split('\n').map((l) => '   $l').join('\n');
         print(indented);
@@ -93,7 +93,7 @@ Future<bool> _checkNoTasklyDomainSrcDeepImports() async {
       return false;
     }
 
-    print('   ✓ No taskly_domain src deep imports found.');
+    print('   ✓ No local package src deep imports found.');
     return true;
   } catch (e) {
     print('   ⚠️  Could not run deep-import check: $e');
