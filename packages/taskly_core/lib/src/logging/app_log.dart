@@ -31,6 +31,17 @@ abstract final class AppLog {
     talker.trace(text);
   }
 
+  /// Logs routine, high-volume diagnostics with structured fields.
+  ///
+  /// Prefer [routineThrottledStructured] when the call site can be noisy.
+  static void routineStructured(
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    talker.trace(_format(category, _withFields(message, fields)));
+  }
+
   /// Logs a user/dev-relevant milestone.
   static void info(String category, String message) {
     talker.info(_format(category, message));
@@ -41,9 +52,31 @@ abstract final class AppLog {
     talker.warning(_format(category, message));
   }
 
+  /// Logs a recoverable issue with structured fields.
+  ///
+  /// This is a lightweight step toward standardized structured logging.
+  /// Fields are appended in a stable `key=value` schema so logs remain readable
+  /// in plain text sinks.
+  static void warnStructured(
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    talker.warning(_format(category, _withFields(message, fields)));
+  }
+
   /// Logs an error without a stack trace.
   static void error(String category, String message) {
     talker.error(_format(category, message));
+  }
+
+  /// Logs an error with structured fields.
+  static void errorStructured(
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    talker.error(_format(category, _withFields(message, fields)));
   }
 
   /// Logs an exception/error with stack trace.
@@ -69,6 +102,18 @@ abstract final class AppLog {
     routine(category, message, error: error, stackTrace: stackTrace);
   }
 
+  /// Emits a structured routine log at most once per [interval] for a [key].
+  static void routineThrottledStructured(
+    String key,
+    Duration interval,
+    String category,
+    String message, {
+    required Map<String, Object?> fields,
+  }) {
+    if (!_shouldEmit(key, interval)) return;
+    routineStructured(category, message, fields: fields);
+  }
+
   static bool _shouldEmit(String key, Duration interval) {
     final now = DateTime.now();
     final last = _lastLogAt[key];
@@ -80,6 +125,15 @@ abstract final class AppLog {
   static String _format(String category, String message) {
     final route = appRouteObserver.currentRouteSummary;
     return '[$category] $message (route: $route)';
+  }
+
+  static String _withFields(String message, Map<String, Object?> fields) {
+    if (fields.isEmpty) return message;
+
+    final encoded = fields.entries
+        .map((e) => '${e.key}=${e.value ?? ''}')
+        .join(' ');
+    return '$message | $encoded';
   }
 
   /// Masks an email address for logs.

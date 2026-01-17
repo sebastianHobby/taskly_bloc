@@ -28,6 +28,7 @@
 /// - Provides consistent test data
 /// - Single place to update when models change
 /// - Makes test intent clear through named parameters
+library;
 
 import 'package:taskly_domain/queries.dart' as predicates;
 import 'package:taskly_domain/task_rules.dart' show RelativeComparison;

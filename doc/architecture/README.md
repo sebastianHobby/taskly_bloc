@@ -77,10 +77,16 @@ promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
 This section is intentionally high-level and focuses on *integration points*.
 
-### 2.1 Unified Screen Model (primary UI composition mechanism)
+### 2.1 Unified Screen Model (legacy UI composition mechanism; being removed)
 
-Most screens are assembled from typed, declarative screen specs composed of
-screen templates and typed modules.
+Most screens are currently assembled from typed, declarative screen specs
+composed of screen templates and typed modules.
+
+Migration note (Package D / USM strangler): the app is moving to explicit
+hand-authored Flutter screens for MVP routes. As a first step, routing entry
+points are being converted from a convention-based catch-all (`/:segment`) to
+explicit screen routes (e.g. `/my-day`, `/anytime`, `/scheduled`) so USM can be
+disabled incrementally without breaking navigation.
 
 Key idea:
 

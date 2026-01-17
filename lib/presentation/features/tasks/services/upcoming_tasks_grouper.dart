@@ -1,5 +1,4 @@
-import 'package:taskly_domain/domain/core/model/project.dart';
-import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/core.dart';
 
 /// Represents a task with its associated date and the type of that date.
 class TaskDateEntry {

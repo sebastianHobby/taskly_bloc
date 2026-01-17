@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_event.dart';
+import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 
 final class JournalTodayEntriesSectionRendererV1 extends StatelessWidget {

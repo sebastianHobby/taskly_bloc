@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/analytics/model/correlation_result.dart';
+import 'package:taskly_domain/analytics.dart';
 
 class CorrelationCard extends StatelessWidget {
   const CorrelationCard({

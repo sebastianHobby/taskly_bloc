@@ -1,11 +1,12 @@
 import '../../../helpers/test_imports.dart';
 import '../../../helpers/test_db.dart';
 
-import 'package:taskly_bloc/data/features/journal/repositories/journal_repository_impl.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/repositories.dart';
+import 'package:taskly_data/id.dart';
+import 'package:taskly_data/db.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);

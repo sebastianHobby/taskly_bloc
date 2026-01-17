@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_domain/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
-import 'package:taskly_domain/domain/core/model/project.dart';
-import 'package:taskly_domain/domain/core/model/task.dart';
-import 'package:taskly_domain/domain/core/model/value.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
@@ -27,7 +25,8 @@ import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_f
 import 'package:taskly_bloc/presentation/features/tasks/widgets/task_add_fab.dart';
 import 'package:taskly_bloc/presentation/features/values/widgets/add_value_fab.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 import 'package:taskly_bloc/presentation/screens/identity/section_persistence_key.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_focus_mode_required_page.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/task_status_filter_bar.dart';
@@ -37,9 +36,9 @@ import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banne
 import 'package:taskly_bloc/presentation/features/attention/model/attention_session_banner_vm.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_session_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
-import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
 import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
+import 'package:taskly_core/logging.dart';
 
 /// Switchboard for rendering a typed [ScreenTemplateSpec].
 class ScreenTemplateWidget extends StatelessWidget {
@@ -227,48 +226,33 @@ class _EntityDetailScaffoldV1TemplateState
     }
   }
 
-  Future<void> _confirmAndDelete(BuildContext context) async {
-    final l10n = context.l10n;
-    final actionsBloc = context.read<ScreenActionsBloc>();
-
+  Future<void> _deleteEntityFromOverflow(BuildContext context) async {
+    final dispatcher = context.read<TileIntentDispatcher>();
     final (entityType: entityType, entityId: entityId, entityName: entityName) =
         _entityFromHeader(widget.data.sections.header);
-    if (entityType == null || entityId == null) return;
 
-    final (title, description) = switch (entityType) {
-      EntityType.project => (
-        l10n.deleteProjectAction,
-        l10n.deleteProjectCascadeDescription,
-      ),
-      EntityType.value => (
-        l10n.deleteValue,
-        l10n.deleteValueCascadeDescription,
-      ),
-      _ => (l10n.deleteLabel, ''),
-    };
+    if (entityType == null || entityId == null || entityName == null) return;
 
-    final confirmed = await showDeleteConfirmationDialog(
-      context: context,
-      title: title,
-      itemName: entityName ?? '',
-      description: description,
+    final actions = TileOverflowActionCatalog.forEntityDetail(
+      entityType: entityType,
+      entityId: entityId,
+      entityName: entityName,
+    );
+    final action = actions.first;
+
+    AppLog.routineThrottledStructured(
+      'entity_detail_overflow.${entityType.name}.delete.$entityId',
+      const Duration(seconds: 2),
+      'tile_overflow',
+      'selected',
+      fields: {
+        'entityType': entityType.name,
+        'entityId': entityId,
+        'action': action.id.name,
+      },
     );
 
-    if (!confirmed || !context.mounted) return;
-
-    final completer = Completer<void>();
-    actionsBloc.add(
-      ScreenActionsDeleteEntity(
-        entityType: entityType,
-        entityId: entityId,
-        completer: completer,
-      ),
-    );
-    await completer.future;
-
-    if (context.mounted) {
-      Navigator.of(context).pop();
-    }
+    await dispatcher.dispatch(context, action.intent);
   }
 
   @override
@@ -428,31 +412,36 @@ class _EntityDetailScaffoldV1TemplateState
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
           ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'delete') _confirmAndDelete(context);
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem<String>(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.delete,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.deleteLabel,
-                      style: TextStyle(
+          if ((entityType == EntityType.project ||
+                  entityType == EntityType.value) &&
+              entityId != null)
+            PopupMenuButton<TileOverflowActionId>(
+              onSelected: (value) {
+                if (value == TileOverflowActionId.delete) {
+                  _deleteEntityFromOverflow(context);
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem<TileOverflowActionId>(
+                  value: TileOverflowActionId.delete,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete,
                         color: Theme.of(context).colorScheme.error,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.deleteLabel,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
       body: CustomScrollView(

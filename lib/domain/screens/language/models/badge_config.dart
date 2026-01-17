@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_domain/domain/queries/project_query.dart';
-import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/queries.dart';
 
 part 'badge_config.freezed.dart';
 part 'badge_config.g.dart';

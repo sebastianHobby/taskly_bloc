@@ -8,22 +8,34 @@
 /// - `taskly_domain` contracts
 library;
 
-export 'data/id/id_generator.dart';
-export 'data/infrastructure/drift/drift_database.dart';
-export 'data/infrastructure/powersync/api_connector.dart';
-export 'data/infrastructure/supabase/supabase.dart';
+export 'src/id/id_generator.dart';
+export 'src/infrastructure/drift/drift_database.dart';
+export 'src/infrastructure/powersync/api_connector.dart';
+export 'src/infrastructure/powersync/schema.dart';
+export 'src/infrastructure/powersync/upload_data_normalizer.dart';
+export 'src/infrastructure/supabase/supabase.dart';
 
-export 'data/repositories/auth_repository.dart';
-export 'data/repositories/project_repository.dart';
-export 'data/repositories/settings_repository.dart';
-export 'data/repositories/task_repository.dart';
-export 'data/repositories/value_repository.dart';
+export 'src/infrastructure/drift/converters/date_only_string_converter.dart';
+export 'src/infrastructure/drift/converters/json_converters.dart';
 
-export 'data/attention/repositories/attention_repository_v2.dart';
-export 'data/allocation/repositories/allocation_snapshot_repository.dart';
+export 'src/mappers/drift_to_domain.dart';
 
-export 'data/features/analytics/repositories/analytics_repository_impl.dart';
-export 'data/features/journal/repositories/journal_repository_impl.dart';
-export 'data/features/notifications/repositories/pending_notifications_repository_impl.dart';
+export 'src/repositories/auth_repository.dart';
+export 'src/repositories/project_repository.dart';
+export 'src/repositories/settings_repository.dart';
+export 'src/repositories/task_repository.dart';
+export 'src/repositories/value_repository.dart';
+export 'src/repositories/query_stream_cache.dart';
+export 'src/repositories/repository_helpers.dart';
 
-export 'data/repositories/repository_exceptions.dart';
+export 'src/attention/repositories/attention_repository_v2.dart';
+export 'src/allocation/repositories/allocation_snapshot_repository.dart';
+
+export 'src/features/analytics/repositories/analytics_repository_impl.dart';
+export 'src/features/analytics/services/analytics_service_impl.dart';
+export 'src/features/journal/repositories/journal_repository_impl.dart';
+export 'src/features/journal/maintenance/journal_tracker_seeder.dart';
+export 'src/features/notifications/repositories/pending_notifications_repository_impl.dart';
+export 'src/features/notifications/services/logging_notification_presenter.dart';
+
+export 'src/repositories/repository_exceptions.dart';

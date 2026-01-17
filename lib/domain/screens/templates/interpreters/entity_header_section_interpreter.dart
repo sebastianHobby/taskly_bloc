@@ -1,11 +1,9 @@
 import 'dart:async';
 
-import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
-import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter.dart';
 import 'package:rxdart/rxdart.dart';

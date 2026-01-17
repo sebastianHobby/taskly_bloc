@@ -19,12 +19,14 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:test/test.dart' show Tags;
 import 'package:taskly_bloc/app/di/dependency_injection.dart'
-  show getIt, setupDependencies;
+    show getIt, setupDependencies;
+import 'package:taskly_domain/contracts.dart' show SettingsRepositoryContract;
 import 'package:taskly_domain/preferences.dart' show SettingsKey;
+import 'package:taskly_domain/settings.dart' show GlobalSettings;
 import 'package:taskly_bloc/app/env/env.dart';
-import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart'
+import 'package:taskly_data/sync.dart'
     show getDatabasePath;
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/db.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 import 'e2e_test_helpers.dart';

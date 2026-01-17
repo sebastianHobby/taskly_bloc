@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 

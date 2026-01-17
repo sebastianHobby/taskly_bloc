@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 
 /// Horizontal selector for choosing a focus mode.

@@ -2,11 +2,11 @@
 library;
 
 import 'package:get_it/get_it.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
 import 'package:taskly_bloc/data/services/occurrence_stream_expander.dart';
 import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
-import 'package:taskly_data/taskly_data.dart';
+import 'package:taskly_data/data_stack.dart';
+import 'package:taskly_data/db.dart';
+import 'package:taskly_data/id.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
@@ -56,6 +56,8 @@ import 'package:taskly_bloc/presentation/features/journal/bloc/journal_today_blo
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 
+import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
+
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_gate_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_header_bloc.dart';
 
@@ -65,8 +67,14 @@ final GetIt getIt = GetIt.instance;
 Future<void> setupDependencies() async {
   final dataStack = await TasklyDataStack.initialize();
 
-  // Bind taskly_data implementations to taskly_domain contracts.
-  registerTasklyData(getIt, dataStack);
+  // Core stack handles.
+  getIt
+    ..registerSingleton<AppDatabase>(dataStack.driftDb)
+    ..registerSingleton<IdGenerator>(dataStack.idGenerator)
+    ..registerSingleton<AuthRepositoryContract>(dataStack.authRepository)
+    ..registerSingleton<LocalDataMaintenanceService>(
+      dataStack.localDataMaintenanceService,
+    );
 
   getIt
     // Register occurrence stream expander for reading occurrences
@@ -79,6 +87,50 @@ Future<void> setupDependencies() async {
         driftDb: getIt<AppDatabase>(),
         idGenerator: getIt<IdGenerator>(),
       ),
+    )
+
+    // Bind taskly_data implementations to taskly_domain contracts.
+    ..registerSingleton<TasklyDataBindings>(
+      dataStack.createBindings(
+        occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
+        occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
+      ),
+    )
+    ..registerSingleton<ProjectRepositoryContract>(
+      getIt<TasklyDataBindings>().projectRepository,
+    )
+    ..registerSingleton<TaskRepositoryContract>(
+      getIt<TasklyDataBindings>().taskRepository,
+    )
+    ..registerSingleton<ValueRepositoryContract>(
+      getIt<TasklyDataBindings>().valueRepository,
+    )
+    ..registerSingleton<SettingsRepositoryContract>(
+      getIt<TasklyDataBindings>().settingsRepository,
+    )
+    ..registerSingleton<AllocationSnapshotRepositoryContract>(
+      getIt<TasklyDataBindings>().allocationSnapshotRepository,
+    )
+    ..registerSingleton<attention_repo_v2.AttentionRepositoryContract>(
+      getIt<TasklyDataBindings>().attentionRepository,
+    )
+    ..registerSingleton<AnalyticsRepositoryContract>(
+      getIt<TasklyDataBindings>().analyticsRepository,
+    )
+    ..registerSingleton<JournalRepositoryContract>(
+      getIt<TasklyDataBindings>().journalRepository,
+    )
+    ..registerSingleton<AnalyticsService>(
+      getIt<TasklyDataBindings>().analyticsService,
+    )
+    ..registerSingleton<NotificationPresenter>(
+      getIt<TasklyDataBindings>().notificationPresenter,
+    )
+    ..registerSingleton<PendingNotificationsRepositoryContract>(
+      getIt<TasklyDataBindings>().pendingNotificationsRepository,
+    )
+    ..registerSingleton<PendingNotificationsProcessor>(
+      getIt<TasklyDataBindings>().pendingNotificationsProcessor,
     )
     ..registerLazySingleton<HomeDayKeyService>(
       () => HomeDayKeyService(
@@ -161,7 +213,6 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
-    // Analytics + Journal bindings are owned by taskly_data module.
     ..registerLazySingleton<ScreenQueryBuilder>(ScreenQueryBuilder.new)
     ..registerLazySingleton<EntityGrouper>(EntityGrouper.new)
     ..registerLazySingleton<TriggerEvaluator>(TriggerEvaluator.new)
@@ -202,8 +253,16 @@ Future<void> setupDependencies() async {
             getIt<AllocationSnapshotRepositoryContract>(),
       ),
     )
-    ..registerLazySingleton<LocalDataMaintenanceService>(
-      () => dataStack.localDataMaintenanceService,
+    ..registerLazySingleton<AuthenticatedAppServicesCoordinator>(
+      () => AuthenticatedAppServicesCoordinator(
+        homeDayKeyService: getIt<HomeDayKeyService>(),
+        appLifecycleService: getIt<AppLifecycleService>(),
+        temporalTriggerService: getIt<TemporalTriggerService>(),
+        attentionTemporalInvalidationService:
+            getIt<AttentionTemporalInvalidationService>(),
+        attentionPrewarmService: getIt<AttentionPrewarmService>(),
+        allocationSnapshotCoordinator: getIt<AllocationSnapshotCoordinator>(),
+      ),
     )
     // Presentation BLoCs/Cubits
     ..registerFactory<AttentionInboxBloc>(

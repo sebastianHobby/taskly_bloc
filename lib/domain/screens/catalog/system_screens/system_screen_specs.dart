@@ -1,6 +1,4 @@
-import 'package:taskly_domain/domain/queries/project_query.dart';
-import 'package:taskly_domain/domain/queries/task_query.dart';
-import 'package:taskly_domain/domain/queries/value_query.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
@@ -79,6 +77,17 @@ abstract class SystemScreenSpecs {
           ),
         ),
       ],
+    ),
+  );
+
+  static final inbox = ScreenSpec(
+    id: 'inbox',
+    screenKey: 'inbox',
+    name: 'Inbox',
+    template: const ScreenTemplateSpec.standardScaffoldV1(),
+    chrome: const ScreenChrome(
+      showHeaderAccessoryInAppBar: false,
+      fabOperations: [FabOperation.createTask],
     ),
   );
 
@@ -232,6 +241,7 @@ abstract class SystemScreenSpecs {
   /// Canonical system screens shown in the main navigation UI.
   static List<ScreenSpec> get navigationScreens => [
     myDay,
+    inbox,
     scheduled,
     someday,
     journal,
@@ -246,8 +256,9 @@ abstract class SystemScreenSpecs {
 
   static const Map<String, int> _defaultSortOrders = {
     'my_day': 0,
-    'scheduled': 1,
-    'someday': 2,
+    'inbox': 1,
+    'scheduled': 2,
+    'someday': 3,
     'journal': 4,
     'values': 5,
     'statistics': 7,
@@ -263,6 +274,7 @@ abstract class SystemScreenSpecs {
 
   static final _byKey = <String, ScreenSpec>{
     myDay.screenKey: myDay,
+    inbox.screenKey: inbox,
     scheduled.screenKey: scheduled,
     someday.screenKey: someday,
     values.screenKey: values,

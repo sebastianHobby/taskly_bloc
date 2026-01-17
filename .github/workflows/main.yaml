@@ -166,6 +166,9 @@ jobs:
       
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
+
+      - name: Block deep imports into taskly_domain/src
+        run: dart run tool/no_taskly_domain_src_imports.dart
       
       - name: Run flutter analyze
         run: flutter analyze --fatal-warnings --no-fatal-infos

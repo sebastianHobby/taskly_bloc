@@ -1,8 +1,6 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_data/repositories.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../helpers/base_repository_helpers.dart';
@@ -10,6 +8,7 @@ import '../mocks/fake_id_generator.dart';
 import '../mocks/repository_mocks.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   group('TaskDetailBloc (integration)', () {
     late RepositoryTestContext ctx;

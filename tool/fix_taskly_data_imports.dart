@@ -4,7 +4,10 @@ Future<void> main() async {
   final workspaceRoot = Directory.current;
 
   final replacements = <String, String>{
-    'package:taskly_bloc/data/': 'package:taskly_data/data/',
+    // taskly_data now uses a curated public API and hides implementation under lib/src.
+    // This replacement is intentionally broad; follow up by choosing the correct
+    // public entrypoint (e.g. taskly_data.dart, data_stack.dart, db.dart, sync.dart).
+    'package:taskly_bloc/data/': 'package:taskly_data/',
     // Note: taskly_core now uses curated top-level entrypoints (env.dart, logging.dart).
     // This replacement is intentionally coarse; follow up by choosing the correct entrypoint.
     'package:taskly_bloc/core/': 'package:taskly_core/',

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_data/id.dart';
 
 void main() {
   group('IdGenerator', () {

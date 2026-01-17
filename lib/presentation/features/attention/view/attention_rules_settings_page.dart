@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/attention/model/attention_rule.dart';
+import 'package:taskly_domain/attention.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_rules_cubit.dart';

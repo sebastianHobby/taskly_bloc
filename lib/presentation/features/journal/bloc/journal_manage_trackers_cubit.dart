@@ -1,8 +1,6 @@
 import 'package:bloc/bloc.dart';
-import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition_choice.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/journal.dart';
 
 sealed class JournalManageTrackersStatus {
   const JournalManageTrackersStatus();

@@ -1,6 +1,6 @@
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/daos/screen_preferences_dao.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
+import 'package:taskly_data/db.dart'
     as db;
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';

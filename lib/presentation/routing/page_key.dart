@@ -1,1 +1,1 @@
-export 'package:taskly_domain/domain/preferences/model/page_key.dart';
+export 'package:taskly_domain/preferences.dart' show PageKey;

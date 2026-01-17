@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition_choice.dart';
+import 'package:taskly_domain/journal.dart';
 
 enum TrackerEditorSegment { yesNo, rating, number, choice }
 

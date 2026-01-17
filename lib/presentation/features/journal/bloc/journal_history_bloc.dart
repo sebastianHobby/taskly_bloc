@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
-import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
-import 'package:taskly_domain/domain/queries/journal_query.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/queries.dart';
 
 sealed class JournalHistoryState {
   const JournalHistoryState();

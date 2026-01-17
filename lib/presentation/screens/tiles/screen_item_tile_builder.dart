@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/screen_item_tile_variants.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/entity_views/project_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/task_view.dart';
 import 'package:taskly_bloc/presentation/entity_views/value_view.dart';

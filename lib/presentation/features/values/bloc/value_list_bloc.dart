@@ -3,10 +3,9 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
-import 'package:taskly_domain/domain/domain.dart';
-import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_domain/domain/preferences/model/settings_key.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/preferences.dart';
 
 part 'value_list_bloc.freezed.dart';
 

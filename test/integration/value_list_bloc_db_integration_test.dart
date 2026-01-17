@@ -1,5 +1,5 @@
 import '../helpers/test_imports.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_data/repositories.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 
 import '../helpers/base_repository_helpers.dart';

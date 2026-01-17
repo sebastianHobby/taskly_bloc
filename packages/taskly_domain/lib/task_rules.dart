@@ -5,4 +5,4 @@
 /// collisions with query predicate types.
 library;
 
-export 'domain/filtering/task_rules.dart';
+export 'src/filtering/task_rules.dart';

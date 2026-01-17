@@ -1,1 +1,1 @@
-export 'package:taskly_domain/domain/settings/model/app_theme_mode.dart';
+export 'package:taskly_domain/settings.dart' show AppThemeMode;

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition_choice.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_domain/journal.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/journal_manage_trackers_cubit.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/tracker_editor_sheet.dart';
 

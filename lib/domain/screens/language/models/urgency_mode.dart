@@ -1,5 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_domain/domain/priority/model/allocation_preference.dart';
+import 'package:taskly_domain/allocation.dart';
 
 /// Three-mode urgency handling for Focus screens (DR-015).
 ///

@@ -3,14 +3,8 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_domain/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_domain/domain/attention/contracts/attention_repository_contract.dart'
-    as attention_repo_v2;
-import 'package:taskly_domain/domain/attention/model/attention_item.dart';
-import 'package:taskly_domain/domain/attention/model/attention_resolution.dart';
-import 'package:taskly_domain/domain/attention/model/attention_rule.dart';
-import 'package:taskly_domain/domain/attention/query/attention_query.dart';
+import 'package:taskly_data/id.dart';
+import 'package:taskly_domain/attention.dart';
 import 'package:uuid/uuid.dart';
 
 part 'attention_inbox_bloc.freezed.dart';
@@ -200,7 +194,7 @@ class AttentionInboxBloc
     extends Bloc<AttentionInboxEvent, AttentionInboxState> {
   AttentionInboxBloc({
     required AttentionEngineContract engine,
-    required attention_repo_v2.AttentionRepositoryContract repository,
+    required AttentionRepositoryContract repository,
     required IdGenerator idGenerator,
     Duration undoWindow = const Duration(seconds: 5),
   }) : _engine = engine,
@@ -236,7 +230,7 @@ class AttentionInboxBloc
   }
 
   final AttentionEngineContract _engine;
-  final attention_repo_v2.AttentionRepositoryContract _repository;
+  final AttentionRepositoryContract _repository;
   final IdGenerator _idGenerator;
   final Duration _undoWindow;
 

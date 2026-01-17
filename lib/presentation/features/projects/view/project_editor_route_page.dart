@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
+import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 
 /// Route-backed entry point for the project editor.
 ///
@@ -11,7 +13,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 ///
 /// This page opens the project editor modal and then returns to the previous
 /// route when the modal is dismissed.
-class ProjectEditorRoutePage extends StatefulWidget {
+class ProjectEditorRoutePage extends StatelessWidget {
   const ProjectEditorRoutePage({
     required this.projectId,
     super.key,
@@ -20,46 +22,36 @@ class ProjectEditorRoutePage extends StatefulWidget {
   final String? projectId;
 
   @override
-  State<ProjectEditorRoutePage> createState() => _ProjectEditorRoutePageState();
+  Widget build(BuildContext context) {
+    return EditorHostPage(
+      openModal: (context) => EditorLauncher.fromGetIt().openProjectEditor(
+        context,
+        projectId: projectId,
+        showDragHandle: true,
+      ),
+      fullPageBuilder: (_) => _ProjectEditorFullPage(projectId: projectId),
+    );
+  }
 }
 
-class _ProjectEditorRoutePageState extends State<ProjectEditorRoutePage> {
-  var _opened = false;
+class _ProjectEditorFullPage extends StatelessWidget {
+  const _ProjectEditorFullPage({required this.projectId});
 
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _openEditor();
-    });
-  }
-
-  Future<void> _openEditor() async {
-    if (_opened) return;
-    _opened = true;
-
-    final launcher = EditorLauncher.fromGetIt();
-    await launcher.openProjectEditor(
-      context,
-      projectId: widget.projectId,
-      showDragHandle: true,
-    );
-
-    if (!mounted) return;
-
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop();
-    } else {
-      router.go(Routing.screenPath('my_day'));
-    }
-  }
+  final String? projectId;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    final projectRepository = getIt<ProjectRepositoryContract>();
+    final valueRepository = getIt<ValueRepositoryContract>();
+
+    return Scaffold(
+      body: SafeArea(
+        child: ProjectEditSheetPage(
+          projectId: projectId,
+          projectRepository: projectRepository,
+          valueRepository: valueRepository,
+        ),
+      ),
     );
   }
 }

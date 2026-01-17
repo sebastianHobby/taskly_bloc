@@ -37,12 +37,10 @@ if ($ResetDb) {
     "coalesce(to_regclass('public.values')::text,'') || '|' || " +
     "coalesce(to_regclass('public.projects')::text,'') || '|' || " +
     "coalesce(to_regclass('public.tasks')::text,'') || '|' || " +
-    "coalesce(to_regclass('public.task_values')::text,'') || '|' || " +
-    "coalesce(to_regclass('public.project_values')::text,'') || '|' || " +
     "coalesce(to_regclass('public.user_profiles')::text,'');"
 
     $tablesLine = (docker exec $dbContainer psql -U postgres -d postgres -Atc $existsSql)
-    if ($tablesLine -eq '|||||') {
+    if ($tablesLine -eq '|||') {
         throw (
             "Local Supabase schema is missing the app tables required for E2E tests. " +
             "Ensure prod schema has been pulled into supabase/migrations (see doc/architecture/LOCAL_SUPABASE_POWERSYNC_E2E.md), " +

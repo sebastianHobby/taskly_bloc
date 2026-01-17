@@ -1,17 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
-import 'package:taskly_domain/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/settings_repository_contract.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/presentation/features/app/view/splash_screen.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/auth/view/sign_in_view.dart';
@@ -21,7 +20,7 @@ import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_
 import 'package:taskly_bloc/presentation/features/tasks/services/today_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/routing/router.dart';
-import 'package:taskly_domain/domain/services/notifications/pending_notifications_processor.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
@@ -66,15 +65,37 @@ class App extends StatelessWidget {
             rethrow;
           }
         },
-        child: BlocBuilder<AuthBloc, AppAuthState>(
-          builder: (context, authState) {
-            return switch (authState.status) {
-              AuthStatus.initial ||
-              AuthStatus.loading => const _ThemedApp(child: SplashScreen()),
-              AuthStatus.authenticated => const _AuthenticatedApp(),
-              AuthStatus.unauthenticated => const _UnauthenticatedApp(),
-            };
+        child: BlocListener<AuthBloc, AppAuthState>(
+          listenWhen: (previous, current) {
+            final becameAuthenticated =
+                previous.status != AuthStatus.authenticated &&
+                current.status == AuthStatus.authenticated;
+
+            final leftAuthenticated =
+                previous.status == AuthStatus.authenticated &&
+                current.status != AuthStatus.authenticated;
+
+            return becameAuthenticated || leftAuthenticated;
           },
+          listener: (context, state) {
+            final coordinator = getIt<AuthenticatedAppServicesCoordinator>();
+
+            if (state.status == AuthStatus.authenticated) {
+              unawaited(coordinator.start());
+            } else {
+              unawaited(coordinator.stop());
+            }
+          },
+          child: BlocBuilder<AuthBloc, AppAuthState>(
+            builder: (context, authState) {
+              return switch (authState.status) {
+                AuthStatus.initial ||
+                AuthStatus.loading => const _ThemedApp(child: SplashScreen()),
+                AuthStatus.authenticated => const _AuthenticatedApp(),
+                AuthStatus.unauthenticated => const _UnauthenticatedApp(),
+              };
+            },
+          ),
         ),
       ),
     );

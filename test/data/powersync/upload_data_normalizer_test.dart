@@ -1,5 +1,5 @@
-﻿import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/infrastructure/powersync/upload_data_normalizer.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_data/sync.dart';
 
 void main() {
   group('normalizeUploadData', () {

@@ -14,10 +14,11 @@ import '../fixtures/test_data.dart';
 import 'package:taskly_domain/analytics.dart' as domain_analytics;
 import 'package:taskly_domain/core.dart' as domain_core;
 import 'package:taskly_domain/queries.dart' as domain_queries;
+
 bool _fallbackValuesRegistered = false;
 
 /// Fake implementations for mocktail's any() matcher.
-class FakeTaskQuery extends Fake implements TaskQuery {}
+class FakeTaskQuery extends Fake implements domain_queries.TaskQuery {}
 
 class FakeEntitySelector extends Fake implements EntitySelector {}
 
@@ -55,7 +56,7 @@ void registerAllFallbackValues() {
     SectionRef(
       templateId: SectionTemplateId.taskListV2,
       params: ListSectionParamsV2(
-        config: DataConfig.task(query: TaskQuery.all()),
+        config: DataConfig.task(query: domain_queries.TaskQuery.all()),
       ).toJson(),
       overrides: const SectionOverrides(title: 'Fallback Section'),
     ),

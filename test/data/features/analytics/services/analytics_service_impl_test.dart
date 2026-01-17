@@ -1,12 +1,13 @@
 import '../../../../helpers/test_imports.dart';
 
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/features/analytics/services/analytics_service_impl.dart';
+import 'package:taskly_data/repositories.dart';
 
 import '../../../../mocks/feature_mocks.dart';
 import '../../../../mocks/repository_mocks.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   group('AnalyticsServiceImpl', () {
     testSafe(

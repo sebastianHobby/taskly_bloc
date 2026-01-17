@@ -162,8 +162,9 @@ int _findImportInsertionIndex(List<String> lines) {
     if (line.startsWith('export ')) continue;
     if (line.startsWith('library')) continue;
     if (line.startsWith('part ')) continue;
-    if (line.startsWith('//') || line.startsWith('/*') || line.isEmpty)
+    if (line.startsWith('//') || line.startsWith('/*') || line.isEmpty) {
       continue;
+    }
 
     // Insert right before the first non-directive/non-comment code line.
     return i;

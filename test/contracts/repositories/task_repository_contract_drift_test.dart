@@ -8,7 +8,7 @@ import '../../helpers/base_repository_helpers.dart';
 import '../../mocks/fake_id_generator.dart';
 import '../../mocks/repository_mocks.dart';
 
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_data/repositories.dart';
 
 void main() {
   group('TaskRepositoryContract (Drift TaskRepository)', () {

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
-import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_bloc.dart';
@@ -157,12 +157,30 @@ final class DefaultTileIntentDispatcher implements TileIntentDispatcher {
     if (!confirmed || !context.mounted) return;
 
     final bloc = context.read<ScreenActionsBloc>();
+
+    if (!intent.popOnSuccess) {
+      bloc.add(
+        ScreenActionsDeleteEntity(
+          entityType: intent.entityType,
+          entityId: intent.entityId,
+        ),
+      );
+      return;
+    }
+
+    final completer = Completer<void>();
     bloc.add(
       ScreenActionsDeleteEntity(
         entityType: intent.entityType,
         entityId: intent.entityId,
+        completer: completer,
       ),
     );
+
+    await completer.future;
+    if (context.mounted) {
+      await Navigator.of(context).maybePop();
+    }
   }
 
   Future<void> _openEditor(BuildContext context, TileIntentOpenEditor intent) {

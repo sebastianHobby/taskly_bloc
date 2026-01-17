@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/db.dart';
 
 /// Creates a fresh in-memory AppDatabase for tests.
 ///
