@@ -9,6 +9,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/interleaved_list_sec
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
@@ -628,7 +629,15 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
         onDisableFocusOnly: disablingFocusOnlyWouldHelp
             ? () => setState(() => _focusOnly = false)
             : null,
-        onAddTask: hasActiveFilters ? null : () => Routing.toTaskNew(context),
+        onAddTask: hasActiveFilters
+            ? null
+            : () => EditorLauncher.fromGetIt().openTaskEditor(
+                context,
+                taskId: null,
+                defaultProjectId: null,
+                defaultValueIds: null,
+                showDragHandle: true,
+              ),
       );
     }
 

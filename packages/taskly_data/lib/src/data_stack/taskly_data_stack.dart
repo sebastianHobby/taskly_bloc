@@ -100,6 +100,12 @@ final class TasklyDataStack {
   /// Local maintenance service implementation.
   final LocalDataMaintenanceService localDataMaintenanceService;
 
+  SupabaseConnector? _connector;
+  String? _sessionUserId;
+  bool _sessionStarted = false;
+
+  bool get isSessionStarted => _sessionStarted;
+
   /// Initialize the full day-1 data stack.
   ///
   /// The stack is safe to initialize before authentication.
@@ -107,31 +113,13 @@ final class TasklyDataStack {
   /// runs (seeders/cleanup).
   static Future<TasklyDataStack> initialize({
     String? powersyncPathOverride,
-    Future<void> Function()? onAuthenticated,
   }) async {
     await loadSupabase();
 
     late AppDatabase driftDb;
     late IdGenerator idGenerator;
 
-    var isFullyInitialized = false;
-    var authCallbackFiredBeforeInit = false;
-
-    final syncDb = await openDatabase(
-      pathOverride: powersyncPathOverride,
-      onAuthenticated: () async {
-        if (!isFullyInitialized) {
-          authCallbackFiredBeforeInit = true;
-          return;
-        }
-
-        await runPostAuthMaintenance(
-          driftDb: driftDb,
-          idGenerator: idGenerator,
-        );
-        await onAuthenticated?.call();
-      },
-    );
+    final syncDb = await openDatabase(pathOverride: powersyncPathOverride);
 
     driftDb = AppDatabase(
       DatabaseConnection(SqliteAsyncDriftConnection(syncDb)),
@@ -158,17 +146,59 @@ final class TasklyDataStack {
       ),
     );
 
-    isFullyInitialized = true;
+    return stack;
+  }
 
-    // If openDatabase already authenticated and fired the callback, we skipped it
-    // until Drift + IdGenerator were ready.
-    if (authCallbackFiredBeforeInit || isLoggedIn()) {
-      talker.debug('[data_stack] Running deferred post-auth maintenance');
-      await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
-      await onAuthenticated?.call();
+  /// Starts the authenticated sync session.
+  ///
+  /// This connects PowerSync and runs post-auth maintenance (seeders/cleanup).
+  ///
+  /// Idempotent for the same user.
+  Future<void> startSession() async {
+    final userId = getUserId();
+    if (userId == null) {
+      talker.info('[data_stack] startSession skipped (no authenticated user)');
+      return;
     }
 
-    return stack;
+    if (_sessionStarted && _sessionUserId == userId) return;
+
+    // If the user changed without an explicit stop, avoid cross-user leakage.
+    if (_sessionStarted && _sessionUserId != null && _sessionUserId != userId) {
+      await stopSession(reason: 'user switch', clearLocalData: true);
+    }
+
+    talker.info('[data_stack] Starting session (userId=$userId)');
+    _connector = SupabaseConnector(syncDb);
+    await syncDb.connect(connector: _connector!);
+
+    await runPostAuthMaintenance(driftDb: driftDb, idGenerator: idGenerator);
+
+    _sessionUserId = userId;
+    _sessionStarted = true;
+  }
+
+  /// Stops the authenticated sync session.
+  ///
+  /// When [clearLocalData] is true, local user-scoped tables are cleared.
+  Future<void> stopSession({
+    required String reason,
+    required bool clearLocalData,
+  }) async {
+    talker.info('[data_stack] Stopping session ($reason)');
+
+    _connector = null;
+    _sessionUserId = null;
+    _sessionStarted = false;
+
+    if (clearLocalData) {
+      await localDataMaintenanceService.clearLocalData();
+      return;
+    }
+
+    try {
+      await syncDb.disconnect();
+    } catch (_) {}
   }
 
   /// Best-effort cleanup.

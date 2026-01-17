@@ -20,13 +20,26 @@
 ### 2026-01-17
 
 - **Routing**: Explicit MVP shell routes exist for `/my-day`, `/anytime`, `/scheduled`, and `/inbox` (no `/:segment` catch-all route).
-- **USM strangler (My Day first)**: `/my-day` can now run as a non-USM MVP screen behind `ENABLE_MVP_MY_DAY=true` (with a safe fallback to the existing USM `ScreenSpec` when disabled).
+- **USM strangler (My Day first)**: `/my-day` now runs as a non-USM MVP screen (no USM fallback).
   - MVP screen reuses `MyDayGateBloc` prerequisites gating and renders the existing My Day hero + ranked tasks UI.
+- **USM strangler (Scheduled)**: `/scheduled` now runs as a non-USM MVP screen (no USM fallback).
+  - Scoped routes are implemented: `/project/:id/scheduled` and `/value/:id/scheduled`.
+  - Scoped routes keep the Scheduled nav destination highlighted.
+  - Data source: uses the existing `AgendaSectionDataService.watchAgendaData(...)` stream with an optional scope.
+    - Scope filtering is applied at the query level before occurrence expansion (matches DEC-254B intent).
+    - Value scope includes only tasks/projects directly tagged with the value (no inherited inclusion via project values).
+  - Feed mapping uses the shared flat row model (`ListRowUiModel`) and `RowKey.v1(...)` with bucket/date/tag disambiguators.
 - **Editor host (DEC-025A/DEC-028A/DEC-059A)**: Route-backed editors now use a centralized host behavior:
   - in-app origin (back-stack) → open editor as modal (sheet/panel/dialog)
   - direct deep link (no back-stack) → render editor full-page
 - **State management policy (presentation)**: for new work, prefer full `Bloc` (events + states) over `Cubit`. Existing Cubits may remain temporarily, but do not introduce new Cubits.
 - **Notes**: Most shell routes still render USM-backed system screens via `ScreenSpec` for now. `/anytime` is now an explicit Flutter screen and no longer uses USM.
+- **Inbox (MVP feed)**: `/inbox` now renders a real “no project” tasks feed using the shared flat row model (`ListRowUiModel`) with stable `rowKey`s, backed by a feed BLoC.
+- **Create-task consistency**: “Create task” CTAs in MVP feeds now open the in-shell modal editor (via `EditorLauncher`) instead of pushing a `/task/new` route.
+
+Implementation follow-ups to keep in mind:
+- **Scheduled scope header** (DEC-192A): scoped Scheduled routes should render a single `ScopeHeaderRow(scope)` for orientation and suppress any duplicate header.
+- **Scheduled range query contract** (DEC-253A): `watchScheduledOccurrences(...)` is still the target domain API; current MVP Scheduled is implemented via `AgendaSectionDataService.watchAgendaData(...)` as an interim.
 
 ## Decisions locked in
 
@@ -63,6 +76,12 @@
   - Phase 2 (post-auth): app-controlled `startSession()`/`stopSession()` (or equivalent) that connects/disconnects sync and runs post-auth maintenance; session starts after sign-in and stops on sign-out/user switch.
   - Readiness gating remains owned by the app (`AppLifecycleBloc`), while `taskly_data` owns sync/DB internals behind `TasklyDataStack`.
 
+- Migration precondition (global, destructive reset): assume all user data has been deleted; for the migration, perform a hard reset (drop/clear user-scoped tables and rebuild schema fresh) (DEC-223A).
+  - Out of scope for this outline’s implementation steps: the developer must confirm they have executed the destructive reset before considering the migration “complete”.
+
+- Sync/replication contract for new recurrence fields: add new recurrence columns/constraints to the canonical Supabase schema and include them in PowerSync replication + sync rules from day 1 (DEC-224A).
+  - Reminder: developer must update Supabase schema + PowerSync sync rules and confirm it’s done before implementing code that depends on these fields.
+
 - Scheduled repeating occurrence action model: full recurrence editing model (DEC-203C).
   - Provide explicit “edit this occurrence” vs “edit series” flows (occurrence-aware editor mode), not just entity-only actions.
   - Occurrence-specific mutations (skip/reschedule) are supported via recurrence exceptions and are keyed by occurrence identity (aligned with `AgendaOccurrenceRef`).
@@ -70,6 +89,89 @@
 - Recurrence anchor-date semantics: strict anchors (DEC-204A).
   - Fixed-date mode (`repeatFromCompletion=false`): anchor/DTSTART is the entity `startDate` (required when RRULE is set).
   - From-completion mode (`repeatFromCompletion=true`): anchor is derived from completion history; if no completion exists yet, fall back to `startDate`.
+
+- RRULE feature constraints (MVP): date-only RRULEs only; disallow time-of-day rules and any “multiple instances in one day” recurrence patterns (DEC-217A).
+- `seriesEnded` cutoff semantics: when `seriesEnded=true`, generate occurrences up to and including today (home-day), but none after today (DEC-218B).
+- Completion vs exception identity binding: completion records bind to the original RRULE occurrence identity (original date), while reschedules only change the displayed occurrence date; `originalOccurrenceDate` remains canonical for identity and on-time reporting (DEC-219A).
+
+- `completedHomeDayKey` persistence (per DEC-214A): add a persisted `completed_home_day_key` column on completion history tables (tasks + projects), computed at write-time using the then-current home offset (DEC-220A).
+- Completion history uniqueness key (repeating): enforce uniqueness on `(entityId, originalOccurrenceDate)` for repeating, and `(entityId, null)` for non-repeating (DEC-221A).
+- Invalid recurrence data behavior (MVP): fail-soft in occurrence expansion — log structured warnings, drop only invalid occurrences/exceptions, and still render the rest of the feed (DEC-222A).
+
+- Recurrence tables shape: unify task/project recurrence storage into a single `completion_history` table and a single `recurrence_exceptions` table keyed by `(entity_type, entity_id, ...)` (DEC-230A).
+- Series/occurrence write operations (post-USM): domain defines use-cases (`EditSeries`, `EditOccurrence`, `SkipOccurrence`, `RescheduleOccurrence`) and data implements them via repositories/write helpers; presentation only dispatches intents (DEC-231A).
+- Canonical occurrence identity serialization: use structured query params only (`localDay`, `tag`, `instanceKey`, plus entity type/id), no opaque blobs; parsing/validation is centralized (DEC-232A).
+
+- Polymorphic referential integrity for `(entity_type, entity_id)`: no DB-level FK; enforce entity existence in the repository layer (DEC-233A).
+- Canonical encoding for `entity_type`: store as TEXT enum values (`task`, `project`) in DB and expose in domain identity types (DEC-234A).
+- Unified recurrence repository API: introduce a single `RecurrenceRepository` whose methods take a typed `EntityRef`/`ActionSubject` and return unified completion/exception DTOs (DEC-235A).
+
+- Non-repeating completion uniqueness: enforce “one completion per non-repeating entity” via a partial unique index on `(entity_type, entity_id)` where `occurrence_date IS NULL` (DEC-236A).
+- Completion row invariants: repeating completions require `original_occurrence_date` and `occurrence_date` (equal unless rescheduled); non-repeating completions have both as `NULL` (DEC-237A).
+- Exception row invariants: enforce DB CHECK constraints — `skip` implies `new_date IS NULL`; `reschedule` implies `new_date IS NOT NULL` (`new_deadline` optional) (DEC-238A).
+
+- `instanceKey` policy (MVP): omit `instanceKey` entirely; `AgendaOccurrenceRef` identity is `(entity_type, entity_id, localDay, tag)` only (DEC-239A).
+- Domain identity type for recurrence APIs: introduce `EntityRef { entityType, entityId }` and use it across recurrence repository, action subjects, and occurrence refs (DEC-240A).
+- Unified recurrence table indexing: add indexes optimized for range queries including `(entity_type, entity_id, original_occurrence_date)` and `(entity_type, original_occurrence_date)`, plus the partial unique index from DEC-236A (DEC-241A).
+
+- Occurrence window boundaries: treat date-only windows as inclusive on both ends (`localDay >= startDay && localDay <= endDay`) (DEC-242A).
+- Scheduled tag derivation with reschedules: derive Starts/Ongoing/Due tag from the displayed occurrence date/deadline after applying exceptions (DEC-243A).
+- Completion semantics for occurrence feeds: occurrence-level completion (from completion history) must not automatically flip the base entity’s `completed` flag (DEC-244A).
+
+- Scheduled “Ongoing” semantics (date-only): tag partition is `Starts` on `localDay == startDate`, `Due` on `localDay == deadlineDate`, and `Ongoing` on days strictly between (`startDate < localDay < deadlineDate`) (DEC-245A).
+- Recurring deadline derivation: store only the base deadline offset and compute `occurrenceDeadline = occurrenceDate + offset`; only persist per-occurrence deadlines when overridden by an exception (DEC-246A).
+- Series edits vs history: editing series RRULE/startDate does not rewrite completion/exception history; past history remains keyed to original occurrence dates already recorded (DEC-247A).
+
+- Scheduled inclusion for partially-dated entities (MVP): include only items with at least one date — `deadlineDate` shows “Due” on that day; `startDate` shows “Starts” on that day; both use the Starts/Ongoing/Due partition rules; undated items never appear in Scheduled (DEC-248A).
+- Multi-day spans in Scheduled: items spanning multiple days appear on every day in the range, tagged by Starts/Ongoing/Due per day (DEC-249A).
+
+- Scheduled range query contract: domain exposes `watchScheduledOccurrences(rangeStartDay, rangeEndDay, scope?)` returning flat occurrence-aware items already tagged and keyed; presentation only renders/sorts (DEC-253A).
+- Scheduled scope filtering vs expansion: apply scope filters before expansion (filter base entities then expand) (DEC-254B).
+- “Skip occurrence” semantics: skip creates a `recurrence_exception(skip)` and does not create a completion record; skipped occurrences never appear (DEC-255A).
+
+- “Reschedule occurrence” write semantics: store a `recurrence_exception(reschedule)` with `original_date` (RRULE date) + `new_date` (+ optional `new_deadline`); do not mutate base `startDate/deadlineDate` (DEC-256A).
+- “Complete occurrence” write semantics (repeating): create a completion history row keyed by `original_occurrence_date` (and set `occurrence_date` to displayed date if rescheduled); do not flip base `completed` (DEC-257A).
+- Notes attachment: completion notes live only on completion history rows; exception rows carry only date/deadline changes (DEC-258A).
+
+- Unskip semantics: unskip deletes the matching `recurrence_exception(skip)` row (DEC-259A).
+- Idempotency for occurrence writes: use deterministic IDs for completion/exception rows derived from `(entity_type, entity_id, original_date, kind)` (e.g., UUIDv5) so repeated writes are idempotent (DEC-260A).
+- Authorization/ownership for recurrence rows (Supabase RLS): include `user_id` on recurrence tables and enforce user ownership via RLS policies; inserts/updates require auth and reads are filtered by user (DEC-261A).
+
+- Deterministic ID construction (recurrence writes): implement deterministic IDs as UUIDv5 (or equivalent stable hash->UUID) with an explicit namespace per table+row-kind. Inputs are the canonical identity fields `(entity_type, entity_id, original_occurrence_date, kind)` so the same logical write yields the same ID across devices/sessions (DEC-262A).
+- Deterministic ID conflict policy (PowerSync-friendly): treat deterministic IDs as “same logical event”. On conflicts, do not overwrite existing rows via collision; use view-safe local write patterns (`insertOrIgnore` for append-only rows, update-then-insert where edits are intended). If a conflict is detected where the existing row differs materially from the attempted payload, log/emit a `SyncAnomaly` for diagnosis (DEC-263A).
+- `user_id` write ownership (Supabase): `user_id` is server-owned/derived from the authenticated Supabase JWT. The client must not set/override `user_id` in write payloads; RLS enforces ownership and replication returns `user_id` on reads (DEC-264A).
+
+- Completion notes editability: allow editing `notes` on an existing completion history row (same deterministic ID). Use view-safe local write patterns (update-then-insert where needed) (DEC-265A).
+- “Uncomplete occurrence” semantics: undo completion deletes the matching completion row for `(entity_type, entity_id, original_occurrence_date)` and recurrence anchoring recomputes from remaining history (DEC-266A).
+- Upload/write method for deterministic append-only rows: treat completion/exception writes as insert-with-duplicate-ok (idempotent insert). Do not overwrite existing rows via upsert; if an insert conflicts but payload differs materially, emit/log a `SyncAnomaly` (DEC-267A).
+
+- Supabase `user_id` enforcement for recurrence rows: add a DB default `user_id = auth.uid()` on insert and prevent updates/overrides (enforced via constraints/trigger) so ownership is always server-derived (DEC-268A).
+- PostgREST surface for recurrence writes: keep direct table endpoints; recurrence writes are insert-or-ignore semantics (no overwrite upsert) and undo/unskip use deletes (DEC-269A).
+- Deterministic ID duplicate conflict handling: treat “duplicate ID with different payload” as a sync anomaly (log + emit `SyncAnomaly` for debug surfacing) and do not overwrite (DEC-270A).
+
+- Editing a reschedule exception: model as “replace exception” — delete the prior `recurrence_exception(reschedule)` row for that `(entity_type, entity_id, original_occurrence_date)` and insert a new row (new deterministic ID) for the new `new_date/new_deadline` (DEC-271A).
+- Unreschedule semantics: unreschedule deletes the matching `recurrence_exception(reschedule)` row for that `original_occurrence_date` (DEC-272A).
+- Exception uniqueness invariant: enforce at most one exception per `(entity_type, entity_id, original_occurrence_date)` so skip vs reschedule are mutually exclusive (DEC-273A).
+
+- DB enforcement for exception uniqueness: add a unique index on `(user_id, entity_type, entity_id, original_occurrence_date)` in Supabase and mirror the constraint in the local Drift schema (DEC-274A).
+- No-op reschedule semantics: if `new_date == original_occurrence_date`, treat as unreschedule (delete reschedule row if present; otherwise no-op) (DEC-275A).
+- Completion vs exception collision rule: completion wins. Reject/ignore skip/reschedule writes if a completion exists for the same `(entity_type, entity_id, original_occurrence_date)` and emit/log a `SyncAnomaly` for diagnostics (DEC-276A).
+
+- Exceptions for non-repeating entities: disallow. `recurrence_exceptions` rows require a non-null `original_occurrence_date` and only apply to RRULE series (DEC-277A).
+- Skipped occurrence rendering: do not render skipped rows; skip removes the occurrence from Scheduled entirely (DEC-278A).
+- Deterministic ID inputs for reschedule rows: include `new_date` (and kind) in the deterministic ID input so each distinct reschedule payload has a distinct row ID (DEC-279A).
+
+- Local enforcement of “unique exception per original date”: enforce in the write helper (read existing exception for `(entity_type, entity_id, original_date)` then delete/ignore per policy); do not rely on local unique indexes (DEC-280A).
+- DB-level enforcement of “completion wins”: enforce in the repository/write helper only; DB remains permissive (no triggers) (DEC-281A).
+- Delete policy for completion history rows (undo/uncomplete): hard delete is allowed for the same user; no soft-delete/audit in MVP (DEC-282A).
+
+- Recurrence tables primary key strategy (PowerSync constraint): keep an `id` column as the primary key (UUID in Supabase). PowerSync requires an `id` column on replicated tables; locally it is represented as TEXT (UUID string) (DEC-283A).
+- Completion row mutability: only `notes` is editable after write; all other completion fields are immutable once written (DEC-284A).
+- Deterministic ID helper ownership: `taskly_domain` defines the canonical deterministic key string format; `taskly_data` implements UUID generation (DEC-285A).
+
+- `id` type and local representation: Supabase uses `id uuid primary key default gen_random_uuid()`; PowerSync/SQLite uses `id TEXT` (UUID string) with Drift converters (DEC-286A).
+- Supabase+PowerSync “done gate” granularity for recurrence tables: extend the pre-implementation gate (DEC-229A) to explicitly include migrations for new tables/indexes/RLS plus PowerSync sync rules including the new tables/columns (DEC-287A).
+- RLS policy shape for recurrence tables: `SELECT` where `user_id = auth.uid()`; `INSERT` allowed for own rows (with `user_id` defaulted/validated); `UPDATE` denied except `notes` updates on completion rows; `DELETE` allowed for own rows (DEC-288A).
 
 - Occurrence editing route shape: keep existing entity editor routes and pass occurrence context via query params (DEC-205A).
   - Example: `/task/:id/edit?mode=occurrence&occ=<encoded-occurrence-ref>` and `/task/:id/edit?mode=series`.
@@ -105,6 +207,20 @@
 - Entity identity: domain defines opaque typed ID value types (`TaskId`/`ProjectId`/`ValueId`); presentation uses typed IDs (no raw strings in UI) (DEC-051A).
 - Route param decoding: central `RouteCodec` validates UUID v4/v5 and routes invalid params to NotFound with structured logs; until typed IDs exist end-to-end, `RouteCodec` will pass validated `String` IDs and a follow-up work item will promote this to typed IDs (DEC-052A).
 - Time source: domain exposes a `Clock` contract; all “now/today/day-boundary” logic uses it for determinism and tests (DEC-053A).
+
+- Home day boundary timezone model: use a fixed “home timezone offset minutes” setting (stable across travel) and do not model DST transitions (DEC-211A).
+- Canonical meaning of `localDay`: `localDay` is the home-day key encoded as a `YYYY-MM-DD` date-only value (UTC-midnight `DateTime`), derived from the home offset via `HomeDayKeyService` and encoded via `encodeDateOnly` (DEC-212A).
+- Changing `homeTimeZoneOffsetMinutes`: changes apply immediately to “today”/future day-boundary triggers and grouping; persisted date-only fields and historical records are not retroactively reinterpreted (DEC-213A).
+
+- Date-only storage type contract: store date-only fields as `YYYY-MM-DD` (Postgres `date` / SQLite TEXT) and treat them as keys, not instants (DEC-226A).
+
+- Drift/SQLite representation for date-only recurrence columns: store as SQLite TEXT (`YYYY-MM-DD`) and use the existing date-only converter pattern rather than `dateTime()` columns (DEC-227A).
+- Supabase schema for recurrence date-only + constraints: use Postgres `date` columns for occurrence keys and add unique indexes on `(entity_id, original_occurrence_date)` (DEC-228A).
+- Pre-implementation “done gate” checks: before implementing schema-dependent recurrence work, confirm (1) destructive reset was executed per DEC-223A and (2) Supabase + PowerSync sync rules were updated per DEC-224A (DEC-229A).
+
+- Completion timestamp → home-day semantics: persist both `completedAtUtc` (instant) and a derived `completedHomeDayKey` (`YYYY-MM-DD`, computed using the then-current home offset). Use `completedHomeDayKey` for recurrence anchoring (DEC-214A).
+- Occurrence date storage contract (exceptions + completion history): treat occurrence dates as date-only keys (UTC-midnight `DateTime` encoded as `YYYY-MM-DD`) for `occurrenceDate`, `originalOccurrenceDate`, `originalDate`, `newDate`, etc (DEC-215A).
+- UI “today” contract: introduce a small presentation-facing Today provider backed by domain `Clock` + home-day key semantics so widgets don’t call `DateTime.now()` for day identity (DEC-216C).
 
 - Screen composition post-USM: allow a static code-level “screen template” per screen to wire sections together (still explicit code; not data-driven) (DEC-054B).
 - Pagination convention: repositories expose “current window” streams; BLoC owns paging intents; widgets only provide scroll signals (no repo calls) (DEC-055A).
@@ -414,8 +530,8 @@ Progress:
   - Added router-level NotFound handling and UUID route param validation.
 - Completed (2026-01-17): Inbox explicit screen
   - Added `/inbox` as a first-class route and main navigation destination.
-  - Implemented `InboxBloc` subscribing to `TaskQuery.inbox()` and rendering via `TaskView`.
-  - Added a “Create task” FAB that opens the new-task draft editor (no deep-linkable create route per DEC-172A/DEC-188A).
+  - Implemented `InboxFeedBloc` subscribing to `TaskQuery.inbox()` and mapping to a flat `ListRowUiModel` row list with stable `rowKey`s.
+  - Inbox UI renders rows via the shared row renderers (task rows) and uses the in-shell modal new-task editor for “Create task”.
 - In progress: Replace MVP screens with explicit Flutter screens (BLoCs + widgets), removing remaining USM rendering from the MVP user experience.
 
 Presentation design decisions (confirmed):

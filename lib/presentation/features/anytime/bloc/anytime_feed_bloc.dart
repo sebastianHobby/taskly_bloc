@@ -9,6 +9,8 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
 
+import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
+
 sealed class AnytimeFeedEvent {
   const AnytimeFeedEvent();
 }
@@ -53,10 +55,12 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     required AllocationSnapshotRepositoryContract allocationSnapshotRepository,
     required HomeDayKeyService dayKeyService,
     required TemporalTriggerService temporalTriggerService,
+    AnytimeScope? scope,
   }) : _taskRepository = taskRepository,
        _allocationSnapshotRepository = allocationSnapshotRepository,
        _dayKeyService = dayKeyService,
        _temporalTriggerService = temporalTriggerService,
+       _scope = scope,
        super(const AnytimeFeedLoading()) {
     on<AnytimeFeedStarted>(_onStarted);
     on<AnytimeFeedRetryRequested>(_onRetryRequested);
@@ -69,6 +73,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final AllocationSnapshotRepositoryContract _allocationSnapshotRepository;
   final HomeDayKeyService _dayKeyService;
   final TemporalTriggerService _temporalTriggerService;
+  final AnytimeScope? _scope;
 
   StreamSubscription<List<Task>>? _tasksSub;
   StreamSubscription<List<AllocationSnapshotTaskRef>>? _allocatedSub;
@@ -107,8 +112,10 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     await _allocatedSub?.cancel();
     await _triggersSub?.cancel();
 
+    final query = _scopeQuery(TaskQuery.incomplete(), _scope);
+
     _tasksSub = _taskRepository
-        .watchAll(TaskQuery.incomplete())
+        .watchAll(query)
         .listen(
           (tasks) {
             _latestTasks = tasks;
@@ -126,6 +133,26 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     });
 
     _setDayKeyAndResubscribeAllocated(emit);
+  }
+
+  TaskQuery _scopeQuery(TaskQuery base, AnytimeScope? scope) {
+    if (scope == null) return base;
+
+    return switch (scope) {
+      AnytimeProjectScope(:final projectId) => base.withAdditionalPredicates([
+        TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: projectId,
+        ),
+      ]),
+      AnytimeValueScope(:final valueId) => base.withAdditionalPredicates([
+        TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: [valueId],
+          includeInherited: true,
+        ),
+      ]),
+    };
   }
 
   void _setDayKeyAndResubscribeAllocated(Emitter<AnytimeFeedState> emit) {
@@ -170,6 +197,15 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   List<ListRowUiModel> _mapToRows(List<Task> tasks) {
     if (tasks.isEmpty) return const <ListRowUiModel>[];
 
+    final scopedValueId = switch (_scope) {
+      AnytimeValueScope(:final valueId) => valueId,
+      _ => null,
+    };
+    final scopedProjectId = switch (_scope) {
+      AnytimeProjectScope(:final projectId) => projectId,
+      _ => null,
+    };
+
     final groups = <String, _ValueGroup>{};
 
     for (final task in tasks) {
@@ -194,47 +230,69 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
 
     for (final group in sortedGroups) {
       final valueTitle = group.value?.name ?? 'No Value Assigned';
-      rows.add(
-        ValueHeaderRowUiModel(
-          rowKey: RowKey.v1(
-            screen: 'anytime',
-            rowType: 'group_header',
-            params: <String, String>{
-              'kind': 'value',
-              'valueId': group.valueId ?? 'none',
-            },
+
+      final includeValueHeader =
+          !(scopedValueId != null && group.valueId == scopedValueId);
+
+      final projectHeaderDepth = includeValueHeader ? 1 : 0;
+
+      if (includeValueHeader) {
+        rows.add(
+          ValueHeaderRowUiModel(
+            rowKey: RowKey.v1(
+              screen: 'anytime',
+              rowType: 'group_header',
+              params: <String, String>{
+                'kind': 'value',
+                'valueId': group.valueId ?? 'none',
+              },
+            ),
+            depth: 0,
+            title: valueTitle,
+            valueId: group.valueId,
+            priority: group.value?.priority,
+            isTappableToScope: false,
           ),
-          depth: 0,
-          title: valueTitle,
-          valueId: group.valueId,
-          priority: group.value?.priority,
-          isTappableToScope: false,
-        ),
-      );
+        );
+      }
 
       final projectGroups = group.projectGroups.toList(growable: false)
         ..sort(_compareProjectGroups);
 
       for (final pg in projectGroups) {
-        rows.add(
-          ProjectHeaderRowUiModel(
-            rowKey: RowKey.v1(
-              screen: 'anytime',
-              rowType: 'group_header',
-              params: <String, String>{
-                'kind': 'project',
-                'valueId': group.valueId ?? 'none',
-                'project': pg.isInbox ? 'inbox' : (pg.projectId ?? 'unknown'),
-              },
-            ),
-            depth: 1,
-            title: pg.title,
-            projectId: pg.projectId,
-            isInbox: pg.isInbox,
-          ),
-        );
+        final includeProjectHeader = !(switch (pg.projectRef) {
+          ProjectProjectGroupingRef(:final projectId) =>
+            scopedProjectId != null && projectId == scopedProjectId,
+          InboxProjectGroupingRef() => false,
+        });
 
-        for (final task in pg.tasks) {
+        final taskDepth = includeProjectHeader
+            ? projectHeaderDepth + 1
+            : projectHeaderDepth;
+
+        if (includeProjectHeader) {
+          rows.add(
+            ProjectHeaderRowUiModel(
+              rowKey: RowKey.v1(
+                screen: 'anytime',
+                rowType: 'group_header',
+                params: <String, String>{
+                  'kind': 'project',
+                  'valueId': group.valueId ?? 'none',
+                  'project': pg.projectRef.stableKey,
+                },
+              ),
+              depth: projectHeaderDepth,
+              title: pg.title,
+              projectRef: pg.projectRef,
+            ),
+          );
+        }
+
+        final sortedTasks = pg.tasks.toList(growable: false)
+          ..sort(_compareTasks);
+
+        for (final task in sortedTasks) {
           rows.add(
             TaskRowUiModel(
               rowKey: RowKey.v1(
@@ -242,7 +300,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
                 rowType: 'task',
                 params: <String, String>{'id': task.id},
               ),
-              depth: 2,
+              depth: taskDepth,
               task: task,
             ),
           );
@@ -280,12 +338,45 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   }
 
   int _compareProjectGroups(_ProjectGroup a, _ProjectGroup b) {
-    if (a.isInbox != b.isInbox) return a.isInbox ? -1 : 1;
+    if (a.projectRef.isInbox != b.projectRef.isInbox) {
+      return a.projectRef.isInbox ? -1 : 1;
+    }
 
     final byName = a.title.toLowerCase().compareTo(b.title.toLowerCase());
     if (byName != 0) return byName;
 
-    return (a.projectId ?? '').compareTo(b.projectId ?? '');
+    return (a.projectRef.projectId ?? '').compareTo(
+      b.projectRef.projectId ?? '',
+    );
+  }
+
+  int _compareTasks(Task a, Task b) {
+    if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+
+    final ad = a.deadlineDate;
+    final bd = b.deadlineDate;
+    if (ad == null && bd != null) return 1;
+    if (ad != null && bd == null) return -1;
+    if (ad != null && bd != null) {
+      final byDeadline = ad.compareTo(bd);
+      if (byDeadline != 0) return byDeadline;
+    }
+
+    final ap = a.priority;
+    final bp = b.priority;
+    if (ap == null && bp != null) return 1;
+    if (ap != null && bp == null) return -1;
+    if (ap != null && bp != null) {
+      final byPriority = ap.compareTo(bp);
+      if (byPriority != 0) return byPriority;
+    }
+
+    final an = a.name.trim().toLowerCase();
+    final bn = b.name.trim().toLowerCase();
+    final byName = an.compareTo(bn);
+    if (byName != 0) return byName;
+
+    return a.id.compareTo(b.id);
   }
 
   @override
@@ -309,15 +400,14 @@ class _ValueGroup {
   Iterable<_ProjectGroup> get projectGroups => _projectGroupsByKey.values;
 
   void addTask(Task task) {
-    final isInbox = task.projectId == null || task.projectId!.trim().isEmpty;
-    final key = isInbox ? '__inbox__' : task.projectId!;
+    final projectRef = ProjectGroupingRef.fromProjectId(task.projectId);
+    final key = projectRef.stableKey;
 
     final group = _projectGroupsByKey.putIfAbsent(
       key,
       () => _ProjectGroup(
-        isInbox: isInbox,
-        projectId: isInbox ? null : task.projectId,
-        title: isInbox ? 'Inbox' : (task.project?.name ?? 'Project'),
+        projectRef: projectRef,
+        title: projectRef.isInbox ? 'Inbox' : (task.project?.name ?? 'Project'),
       ),
     );
 
@@ -327,13 +417,11 @@ class _ValueGroup {
 
 class _ProjectGroup {
   _ProjectGroup({
-    required this.isInbox,
-    required this.projectId,
+    required this.projectRef,
     required this.title,
   });
 
-  final bool isInbox;
-  final String? projectId;
+  final ProjectGroupingRef projectRef;
   final String title;
 
   final List<Task> tasks = <Task>[];

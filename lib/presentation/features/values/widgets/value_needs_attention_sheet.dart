@@ -3,7 +3,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/language/models/value_stats.dart'
     as domain;
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 
 class ValueNeedsAttentionSheet extends StatelessWidget {
   const ValueNeedsAttentionSheet({
@@ -95,7 +95,13 @@ class ValueNeedsAttentionSheet extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: () {
                       Navigator.of(context).pop();
-                      Routing.toTaskNew(context, defaultValueId: value.id);
+                      EditorLauncher.fromGetIt().openTaskEditor(
+                        context,
+                        taskId: null,
+                        defaultProjectId: null,
+                        defaultValueIds: [value.id],
+                        showDragHandle: true,
+                      );
                     },
                     icon: const Icon(Icons.add_task),
                     label: Text(l10n.pickSmallWinCta),

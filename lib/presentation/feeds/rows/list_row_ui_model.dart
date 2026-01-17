@@ -1,5 +1,7 @@
 import 'package:taskly_domain/core.dart';
 
+import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
+
 /// Shared flat list row UI models for feed screens (Anytime/Scheduled/My Day).
 ///
 /// The hierarchy is expressed via [depth] and by deterministic ordering of
@@ -34,13 +36,11 @@ final class ProjectHeaderRowUiModel extends ListRowUiModel {
     required super.rowKey,
     required super.depth,
     required this.title,
-    required this.projectId,
-    required this.isInbox,
+    required this.projectRef,
   });
 
   final String title;
-  final String? projectId;
-  final bool isInbox;
+  final ProjectGroupingRef projectRef;
 }
 
 final class TaskRowUiModel extends ListRowUiModel {
@@ -51,4 +51,50 @@ final class TaskRowUiModel extends ListRowUiModel {
   });
 
   final Task task;
+}
+
+/// Scheduled-only: high-level bucket header (Today/This Week/Next Week/Later).
+final class BucketHeaderRowUiModel extends ListRowUiModel {
+  const BucketHeaderRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.title,
+  });
+
+  final String title;
+}
+
+/// Scheduled-only: per-day header (e.g. "Mon, Jan 15").
+final class DateHeaderRowUiModel extends ListRowUiModel {
+  const DateHeaderRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.date,
+    required this.title,
+  });
+
+  final DateTime date;
+  final String title;
+}
+
+/// Scheduled-only: empty-day placeholder row.
+final class EmptyDayRowUiModel extends ListRowUiModel {
+  const EmptyDayRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.date,
+  });
+
+  final DateTime date;
+}
+
+/// Scheduled-only: a scheduled agenda item row (task or project).
+final class AgendaEntityRowUiModel extends ListRowUiModel {
+  const AgendaEntityRowUiModel({
+    required super.rowKey,
+    required super.depth,
+    required this.item,
+  });
+
+  final AgendaItem item;
 }

@@ -69,6 +69,7 @@ Future<void> setupDependencies() async {
 
   // Core stack handles.
   getIt
+    ..registerSingleton<TasklyDataStack>(dataStack)
     ..registerSingleton<AppDatabase>(dataStack.driftDb)
     ..registerSingleton<IdGenerator>(dataStack.idGenerator)
     ..registerSingleton<AuthRepositoryContract>(dataStack.authRepository)
@@ -88,7 +89,6 @@ Future<void> setupDependencies() async {
         idGenerator: getIt<IdGenerator>(),
       ),
     )
-
     // Bind taskly_data implementations to taskly_domain contracts.
     ..registerSingleton<TasklyDataBindings>(
       dataStack.createBindings(
@@ -255,6 +255,7 @@ Future<void> setupDependencies() async {
     )
     ..registerLazySingleton<AuthenticatedAppServicesCoordinator>(
       () => AuthenticatedAppServicesCoordinator(
+        dataStack: getIt<TasklyDataStack>(),
         homeDayKeyService: getIt<HomeDayKeyService>(),
         appLifecycleService: getIt<AppLifecycleService>(),
         temporalTriggerService: getIt<TemporalTriggerService>(),

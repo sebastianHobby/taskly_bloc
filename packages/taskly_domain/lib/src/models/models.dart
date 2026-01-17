@@ -4,6 +4,7 @@ library;
 export 'package:taskly_domain/src/core/model/entity_operation.dart';
 export 'package:taskly_domain/src/core/model/occurrence_data.dart';
 export 'package:taskly_domain/src/core/model/project.dart';
+export 'package:taskly_domain/src/core/model/project_grouping_ref.dart';
 export 'package:taskly_domain/src/core/model/task.dart';
 export 'package:taskly_domain/src/core/model/value.dart';
 export 'package:taskly_domain/src/core/model/value_priority.dart';

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/domain/screens/runtime/agenda_scope.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
@@ -44,6 +45,7 @@ class AgendaSectionDataService {
     required DateTime focusDate,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    AgendaScope? scope,
     int? nearTermDaysOverride,
   }) {
     final watchStartTime = kDebugMode ? DateTime.now() : null;
@@ -67,7 +69,20 @@ class AgendaSectionDataService {
     );
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
 
-    final overdueTasksStream = taskRepository.watchAll(TaskQuery.overdue()).map(
+    final overdueTasksQuery = _buildOverdueTasksQuery(today, scope);
+    final overdueProjectsQuery = _buildOverdueProjectsQuery(today, scope);
+    final scheduledTasksQuery = _buildScheduledTasksQuery(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      scope: scope,
+    );
+    final scheduledProjectsQuery = _buildScheduledProjectsQuery(
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      scope: scope,
+    );
+
+    final overdueTasksStream = taskRepository.watchAll(overdueTasksQuery).map(
       (tasks) {
         if (kDebugMode) {
           developer.log(
@@ -79,23 +94,7 @@ class AgendaSectionDataService {
       },
     );
     final overdueProjectsStream = projectRepository
-        .watchAll(
-          ProjectQuery(
-            filter: QueryFilter<ProjectPredicate>(
-              shared: [
-                ProjectDatePredicate(
-                  field: ProjectDateField.deadlineDate,
-                  operator: DateOperator.before,
-                  date: dateOnly(today),
-                ),
-                const ProjectBoolPredicate(
-                  field: ProjectBoolField.completed,
-                  operator: BoolOperator.isFalse,
-                ),
-              ],
-            ),
-          ),
-        )
+        .watchAll(overdueProjectsQuery)
         .map((projects) {
           if (kDebugMode) {
             developer.log(
@@ -111,7 +110,7 @@ class AgendaSectionDataService {
     // with getAgendaData() and ensures deadline-only tasks appear.
     final scheduledTasksStream = taskRepository
         .watchAll(
-          TaskQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
+          scheduledTasksQuery,
         )
         .map((tasks) {
           final repeatingCount = tasks.where((t) => t.isRepeating).length;
@@ -125,7 +124,7 @@ class AgendaSectionDataService {
         });
     final scheduledProjectsStream = projectRepository
         .watchAll(
-          ProjectQuery.schedule(rangeStart: rangeStart, rangeEnd: rangeEnd),
+          scheduledProjectsQuery,
         )
         .map((projects) {
           final repeatingCount = projects.where((p) => p.isRepeating).length;
@@ -253,6 +252,7 @@ class AgendaSectionDataService {
     required DateTime focusDate,
     required DateTime rangeStart,
     required DateTime rangeEnd,
+    AgendaScope? scope,
     int? nearTermDaysOverride,
   }) async {
     final fetchStartTime = kDebugMode ? DateTime.now() : null;
@@ -278,18 +278,23 @@ class AgendaSectionDataService {
 
     // 1. Fetch overdue items
     final overdueStart = kDebugMode ? DateTime.now() : null;
-    final overdueTasks = await _getOverdueTasks(today);
-    final overdueProjects = await _getOverdueProjects(today);
+    final overdueTasks = await _getOverdueTasks(today, scope: scope);
+    final overdueProjects = await _getOverdueProjects(today, scope: scope);
     final overdueMs = (kDebugMode && overdueStart != null)
         ? DateTime.now().difference(overdueStart).inMilliseconds
         : null;
 
     // 2. Fetch items with dates within horizon
     final scheduledStart = kDebugMode ? DateTime.now() : null;
-    final tasksWithDates = await _getTasksWithDates(rangeStart, horizonEnd);
+    final tasksWithDates = await _getTasksWithDates(
+      rangeStart,
+      horizonEnd,
+      scope: scope,
+    );
     final projectsWithDates = await _getProjectsWithDates(
       rangeStart,
       horizonEnd,
+      scope: scope,
     );
     final scheduledMs = (kDebugMode && scheduledStart != null)
         ? DateTime.now().difference(scheduledStart).inMilliseconds
@@ -433,18 +438,65 @@ class AgendaSectionDataService {
   // Private helpers
   // ===========================================================================
 
-  Future<List<Task>> _getOverdueTasks(DateTime today) async {
-    // Use built-in overdue query: deadline < today AND completed = false
-    final query = TaskQuery.overdue();
-    return taskRepository.getAll(query);
+  List<TaskPredicate> _taskScopePredicates(AgendaScope? scope) {
+    return switch (scope) {
+      null => const <TaskPredicate>[],
+      ProjectAgendaScope(:final projectId) => <TaskPredicate>[
+        TaskProjectPredicate(
+          operator: ProjectOperator.matches,
+          projectId: projectId,
+        ),
+      ],
+      ValueAgendaScope(:final valueId) => <TaskPredicate>[
+        TaskValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: <String>[valueId],
+          includeInherited: false,
+        ),
+      ],
+    };
   }
 
-  Future<List<Project>> _getOverdueProjects(DateTime today) async {
-    // Query: deadline < today AND completed = false
+  List<ProjectPredicate> _projectScopePredicates(AgendaScope? scope) {
+    return switch (scope) {
+      null => const <ProjectPredicate>[],
+      ProjectAgendaScope(:final projectId) => <ProjectPredicate>[
+        ProjectIdPredicate(id: projectId),
+      ],
+      ValueAgendaScope(:final valueId) => <ProjectPredicate>[
+        ProjectValuePredicate(
+          operator: ValueOperator.hasAll,
+          valueIds: <String>[valueId],
+        ),
+      ],
+    };
+  }
+
+  TaskQuery _buildOverdueTasksQuery(DateTime today, AgendaScope? scope) {
     final startOfDay = dateOnly(today);
-    final query = ProjectQuery(
+    return TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: <TaskPredicate>[
+          TaskDatePredicate(
+            field: TaskDateField.deadlineDate,
+            operator: DateOperator.before,
+            date: startOfDay,
+          ),
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          ..._taskScopePredicates(scope),
+        ],
+      ),
+    );
+  }
+
+  ProjectQuery _buildOverdueProjectsQuery(DateTime today, AgendaScope? scope) {
+    final startOfDay = dateOnly(today);
+    return ProjectQuery(
       filter: QueryFilter<ProjectPredicate>(
-        shared: [
+        shared: <ProjectPredicate>[
           ProjectDatePredicate(
             field: ProjectDateField.deadlineDate,
             operator: DateOperator.before,
@@ -454,32 +506,130 @@ class AgendaSectionDataService {
             field: ProjectBoolField.completed,
             operator: BoolOperator.isFalse,
           ),
+          ..._projectScopePredicates(scope),
         ],
       ),
     );
+  }
+
+  TaskQuery _buildScheduledTasksQuery({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    required AgendaScope? scope,
+  }) {
+    return TaskQuery(
+      filter: QueryFilter<TaskPredicate>(
+        shared: <TaskPredicate>[
+          const TaskBoolPredicate(
+            field: TaskBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          ..._taskScopePredicates(scope),
+        ],
+        orGroups: <List<TaskPredicate>>[
+          <TaskPredicate>[
+            TaskDatePredicate(
+              field: TaskDateField.startDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+          <TaskPredicate>[
+            TaskDatePredicate(
+              field: TaskDateField.deadlineDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+        ],
+      ),
+      occurrenceExpansion: OccurrenceExpansion(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+  }
+
+  ProjectQuery _buildScheduledProjectsQuery({
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+    required AgendaScope? scope,
+  }) {
+    return ProjectQuery(
+      filter: QueryFilter<ProjectPredicate>(
+        shared: <ProjectPredicate>[
+          const ProjectBoolPredicate(
+            field: ProjectBoolField.completed,
+            operator: BoolOperator.isFalse,
+          ),
+          ..._projectScopePredicates(scope),
+        ],
+        orGroups: <List<ProjectPredicate>>[
+          <ProjectPredicate>[
+            ProjectDatePredicate(
+              field: ProjectDateField.startDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+          <ProjectPredicate>[
+            ProjectDatePredicate(
+              field: ProjectDateField.deadlineDate,
+              operator: DateOperator.between,
+              startDate: rangeStart,
+              endDate: rangeEnd,
+            ),
+          ],
+        ],
+      ),
+      occurrenceExpansion: OccurrenceExpansion(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+  }
+
+  Future<List<Task>> _getOverdueTasks(
+    DateTime today, {
+    required AgendaScope? scope,
+  }) async {
+    final query = _buildOverdueTasksQuery(today, scope);
+    return taskRepository.getAll(query);
+  }
+
+  Future<List<Project>> _getOverdueProjects(
+    DateTime today, {
+    required AgendaScope? scope,
+  }) async {
+    final query = _buildOverdueProjectsQuery(today, scope);
     return projectRepository.getAll(query);
   }
 
   Future<List<Task>> _getTasksWithDates(
     DateTime fromDate,
-    DateTime toDate,
-  ) async {
-    // Use schedule query with occurrence expansion for repeating tasks
-    final query = TaskQuery.schedule(
+    DateTime toDate, {
+    required AgendaScope? scope,
+  }) async {
+    final query = _buildScheduledTasksQuery(
       rangeStart: fromDate,
       rangeEnd: toDate,
+      scope: scope,
     );
     return taskRepository.getAll(query);
   }
 
   Future<List<Project>> _getProjectsWithDates(
     DateTime fromDate,
-    DateTime toDate,
-  ) async {
-    // Use schedule query with occurrence expansion for repeating projects
-    final query = ProjectQuery.schedule(
+    DateTime toDate, {
+    required AgendaScope? scope,
+  }) async {
+    final query = _buildScheduledProjectsQuery(
       rangeStart: fromDate,
       rangeEnd: toDate,
+      scope: scope,
     );
     return projectRepository.getAll(query);
   }

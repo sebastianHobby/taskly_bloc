@@ -1,5 +1,6 @@
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 
 /// Service that provides today's incomplete task count for navigation badges.
 ///
@@ -14,12 +15,12 @@ import 'package:taskly_domain/queries.dart';
 class TodayBadgeService {
   TodayBadgeService({
     required TaskRepositoryContract taskRepository,
-    DateTime Function()? nowFactory,
+    required HomeDayService homeDayService,
   }) : _taskRepository = taskRepository,
-       _nowFactory = nowFactory ?? DateTime.now;
+       _homeDayService = homeDayService;
 
   final TaskRepositoryContract _taskRepository;
-  final DateTime Function() _nowFactory;
+  final HomeDayService _homeDayService;
 
   /// Watch stream of incomplete task count for today.
   ///
@@ -27,7 +28,7 @@ class TodayBadgeService {
   /// whenever the underlying task data changes. The repository's watchCount
   /// uses SQL COUNT for efficient database-level counting.
   Stream<int> watchIncompleteCount() {
-    final now = _nowFactory();
-    return _taskRepository.watchAllCount(TaskQuery.today(now: now));
+    final dayKeyUtc = _homeDayService.todayDayKeyUtc();
+    return _taskRepository.watchAllCount(TaskQuery.today(now: dayKeyUtc));
   }
 }

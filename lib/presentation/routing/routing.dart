@@ -168,6 +168,20 @@ abstract final class Routing {
   static void toInbox(BuildContext context) =>
       GoRouter.of(context).go('/inbox');
 
+  // === SCOPED FEED ROUTES (MVP) ===
+
+  /// Push the scoped Anytime feed for a project.
+  static void pushProjectAnytime(BuildContext context, String projectId) {
+    if (projectId.trim().isEmpty) return;
+    GoRouter.of(context).push('/project/$projectId/anytime');
+  }
+
+  /// Push the scoped Anytime feed for a value.
+  static void pushValueAnytime(BuildContext context, String valueId) {
+    if (valueId.trim().isEmpty) return;
+    GoRouter.of(context).push('/value/$valueId/anytime');
+  }
+
   static void toValueNew(BuildContext context) =>
       GoRouter.of(context).push('/value/new');
 
