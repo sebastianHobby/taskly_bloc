@@ -83,7 +83,7 @@ class AttentionEngine implements AttentionEngineContract {
         .startWith(_clock.nowUtc().microsecondsSinceEpoch);
 
     final dayUtc$ = pulse$
-      .map((_) => _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc()))
+        .map((_) => _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc()))
         .distinct((a, b) => a.isAtSameMomentAs(b));
 
     final snapshot$ = dayUtc$.switchMap(
@@ -737,9 +737,7 @@ class AttentionEngine implements AttentionEngineContract {
 
   bool _isTaskOverdue(Task task, {required int thresholdHours}) {
     if (task.deadlineDate == null) return false;
-    final threshold = _clock
-        .nowUtc()
-        .subtract(Duration(hours: thresholdHours));
+    final threshold = _clock.nowUtc().subtract(Duration(hours: thresholdHours));
     return task.deadlineDate!.isBefore(threshold);
   }
 

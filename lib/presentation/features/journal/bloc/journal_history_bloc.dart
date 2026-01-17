@@ -32,7 +32,7 @@ class JournalHistoryBloc extends Cubit<JournalHistoryState> {
     required HomeDayKeyService dayKeyService,
   }) : _repository = repository,
        _dayKeyService = dayKeyService,
-      super(const JournalHistoryLoading()) {
+       super(const JournalHistoryLoading()) {
     _subscribe();
   }
 

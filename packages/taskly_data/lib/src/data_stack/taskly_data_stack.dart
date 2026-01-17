@@ -37,6 +37,7 @@ final class TasklyDataBindings {
     required this.taskRepository,
     required this.valueRepository,
     required this.settingsRepository,
+    required this.homeDayKeyService,
     required this.allocationSnapshotRepository,
     required this.attentionRepository,
     required this.analyticsRepository,
@@ -56,6 +57,7 @@ final class TasklyDataBindings {
   final TaskRepositoryContract taskRepository;
   final ValueRepositoryContract valueRepository;
   final SettingsRepositoryContract settingsRepository;
+  final HomeDayKeyService homeDayKeyService;
   final AllocationSnapshotRepositoryContract allocationSnapshotRepository;
   final AttentionRepositoryContract attentionRepository;
 
@@ -219,12 +221,21 @@ final class TasklyDataStack {
   TasklyDataBindings createBindings({
     required OccurrenceStreamExpanderContract occurrenceExpander,
     required OccurrenceWriteHelperContract occurrenceWriteHelper,
+    Clock clock = systemClock,
   }) {
+    final settingsRepository = SettingsRepository(driftDb: driftDb);
+
+    final homeDayKeyService = HomeDayKeyService(
+      settingsRepository: settingsRepository,
+      clock: clock,
+    );
+
     final projectRepository = ProjectRepository(
       driftDb: driftDb,
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
+      dayKeyService: homeDayKeyService,
     );
 
     final taskRepository = TaskRepository(
@@ -232,14 +243,13 @@ final class TasklyDataStack {
       occurrenceExpander: occurrenceExpander,
       occurrenceWriteHelper: occurrenceWriteHelper,
       idGenerator: idGenerator,
+      dayKeyService: homeDayKeyService,
     );
 
     final valueRepository = ValueRepository(
       driftDb: driftDb,
       idGenerator: idGenerator,
     );
-
-    final settingsRepository = SettingsRepository(driftDb: driftDb);
 
     final allocationSnapshotRepository = AllocationSnapshotRepository(
       db: driftDb,
@@ -259,6 +269,8 @@ final class TasklyDataStack {
       valueRepo: valueRepository,
       journalRepo: journalRepository,
       analyticsRepo: analyticsRepository,
+      dayKeyService: homeDayKeyService,
+      clock: clock,
     );
 
     final notificationPresenter = LoggingNotificationPresenter().call;
@@ -281,6 +293,7 @@ final class TasklyDataStack {
       taskRepository: taskRepository,
       valueRepository: valueRepository,
       settingsRepository: settingsRepository,
+      homeDayKeyService: homeDayKeyService,
       allocationSnapshotRepository: allocationSnapshotRepository,
       attentionRepository: attentionRepository,
       analyticsRepository: analyticsRepository,

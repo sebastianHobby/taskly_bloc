@@ -5,6 +5,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 part 'project_detail_bloc.freezed.dart';
@@ -94,6 +95,25 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final ProjectCommandHandler _commandHandler;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    String? entityId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'projects',
+      screen: 'project_detail',
+      intent: intent,
+      operation: operation,
+      entityType: 'project',
+      entityId: entityId,
+      extraFields: extraFields,
+    );
+  }
 
   @override
   Talker get logger => talkerRaw;
@@ -159,10 +179,15 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailUpdate event,
     Emitter<ProjectDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_update_requested',
+      operation: 'projects.update',
+      entityId: event.command.id,
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command),
+      () => _commandHandler.handleUpdate(event.command, context: context),
     );
   }
 
@@ -170,9 +195,14 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailDelete event,
     Emitter<ProjectDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_delete_requested',
+      operation: 'projects.delete',
+      entityId: event.id,
+    );
     await executeDeleteOperation(
       emit,
-      () => _projectRepository.delete(event.id),
+      () => _projectRepository.delete(event.id, context: context),
     );
   }
 
@@ -180,10 +210,14 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     _ProjectDetailCreate event,
     Emitter<ProjectDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'project_create_requested',
+      operation: 'projects.create',
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command),
+      () => _commandHandler.handleCreate(event.command, context: context),
     );
   }
 
@@ -192,9 +226,16 @@ class ProjectDetailBloc extends Bloc<ProjectDetailEvent, ProjectDetailState>
     Emitter<ProjectDetailState> emit,
   ) async {
     try {
+      final context = _newContext(
+        intent: 'project_set_pinned_requested',
+        operation: 'projects.setPinned',
+        entityId: event.id,
+        extraFields: <String, Object?>{'isPinned': event.isPinned},
+      );
       await _projectRepository.setPinned(
         id: event.id,
         isPinned: event.isPinned,
+        context: context,
       );
 
       emit(

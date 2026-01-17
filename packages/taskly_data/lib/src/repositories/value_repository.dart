@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' as drift_pkg;
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart'
     as drift;
 import 'package:taskly_data/src/id/id_generator.dart';
@@ -219,25 +220,35 @@ class ValueRepository implements ValueRepositoryContract {
     required String color,
     ValuePriority priority = ValuePriority.medium,
     String? iconName,
+    OperationContext? context,
   }) async {
-    talker.debug('[ValueRepository] create: name="$name", priority=$priority');
-    final now = DateTime.now();
+    return FailureGuard.run(
+      () async {
+        talker.debug(
+          '[ValueRepository] create: name="$name", priority=$priority',
+        );
+        final now = DateTime.now();
 
-    final normalizedColor = _normalizeColorOrThrow(color);
+        final normalizedColor = _normalizeColorOrThrow(color);
 
-    // Generate deterministic v5 ID
-    final id = idGenerator.valueId(name: name);
+        // Generate deterministic v5 ID
+        final id = idGenerator.valueId(name: name);
 
-    await _createValue(
-      drift.ValueTableCompanion(
-        id: drift_pkg.Value(id),
-        name: drift_pkg.Value(name),
-        color: drift_pkg.Value(normalizedColor),
-        priority: drift_pkg.Value(priority),
-        iconName: drift_pkg.Value(iconName),
-        createdAt: drift_pkg.Value(now),
-        updatedAt: drift_pkg.Value(now),
-      ),
+        await _createValue(
+          drift.ValueTableCompanion(
+            id: drift_pkg.Value(id),
+            name: drift_pkg.Value(name),
+            color: drift_pkg.Value(normalizedColor),
+            priority: drift_pkg.Value(priority),
+            iconName: drift_pkg.Value(iconName),
+            createdAt: drift_pkg.Value(now),
+            updatedAt: drift_pkg.Value(now),
+          ),
+        );
+      },
+      area: 'data.value',
+      opName: 'create',
+      context: context,
     );
   }
 
@@ -248,34 +259,54 @@ class ValueRepository implements ValueRepositoryContract {
     required String color,
     ValuePriority? priority,
     String? iconName,
+    OperationContext? context,
   }) async {
-    talker.debug('[ValueRepository] update: id=$id, name="$name"');
-    final existing = await _getValueById(id);
-    if (existing == null) {
-      talker.warning('[ValueRepository] update failed: value not found id=$id');
-      throw RepositoryNotFoundException('No value found to update');
-    }
+    return FailureGuard.run(
+      () async {
+        talker.debug('[ValueRepository] update: id=$id, name="$name"');
+        final existing = await _getValueById(id);
+        if (existing == null) {
+          talker.warning(
+            '[ValueRepository] update failed: value not found id=$id',
+          );
+          throw RepositoryNotFoundException('No value found to update');
+        }
 
-    final normalizedColor = _normalizeColorOrThrow(color);
+        final normalizedColor = _normalizeColorOrThrow(color);
 
-    final now = DateTime.now();
-    await _updateValue(
-      drift.ValueTableCompanion(
-        id: drift_pkg.Value(id),
-        name: drift_pkg.Value(name),
-        color: drift_pkg.Value(normalizedColor),
-        priority: priority != null
-            ? drift_pkg.Value(priority)
-            : const drift_pkg.Value<ValuePriority>.absent(),
-        iconName: drift_pkg.Value(iconName),
-        updatedAt: drift_pkg.Value(now),
-      ),
+        final now = DateTime.now();
+        await _updateValue(
+          drift.ValueTableCompanion(
+            id: drift_pkg.Value(id),
+            name: drift_pkg.Value(name),
+            color: drift_pkg.Value(normalizedColor),
+            priority: priority != null
+                ? drift_pkg.Value(priority)
+                : const drift_pkg.Value<ValuePriority>.absent(),
+            iconName: drift_pkg.Value(iconName),
+            updatedAt: drift_pkg.Value(now),
+          ),
+        );
+      },
+      area: 'data.value',
+      opName: 'update',
+      context: context,
     );
   }
 
   @override
-  Future<void> delete(String id) async {
-    talker.debug('[ValueRepository] delete: id=$id');
-    await _deleteValue(drift.ValueTableCompanion(id: drift_pkg.Value(id)));
+  Future<void> delete(
+    String id, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        talker.debug('[ValueRepository] delete: id=$id');
+        await _deleteValue(drift.ValueTableCompanion(id: drift_pkg.Value(id)));
+      },
+      area: 'data.value',
+      opName: 'delete',
+      context: context,
+    );
   }
 }

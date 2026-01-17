@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
@@ -56,26 +57,37 @@ class SettingsRepository implements SettingsRepositoryContract {
   }
 
   @override
-  Future<void> save<T>(SettingsKey<T> key, T value) async {
-    final saveStartTime = DateTime.now();
-    final profile = await _ensureProfile();
-    final overrides = _parseOverrides(
-      profile.settingsOverrides,
-      source: 'save<$T> key=$key',
-      profileId: profile.id,
-    );
-    final updated = _upsertOverride(key, value, overrides);
-    await _writeOverrides(
-      profileId: profile.id,
-      overrides: updated,
-    );
+  Future<void> save<T>(
+    SettingsKey<T> key,
+    T value, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final saveStartTime = DateTime.now();
+        final profile = await _ensureProfile();
+        final overrides = _parseOverrides(
+          profile.settingsOverrides,
+          source: 'save<$T> key=$key',
+          profileId: profile.id,
+        );
+        final updated = _upsertOverride(key, value, overrides);
+        await _writeOverrides(
+          profileId: profile.id,
+          overrides: updated,
+        );
 
-    final driftWriteTime = DateTime.now();
-    _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
-    talker.repositoryLog(
-      'Settings',
-      'save<$T>: key=$key complete in '
-          '${driftWriteTime.difference(saveStartTime).inMilliseconds}ms',
+        final driftWriteTime = DateTime.now();
+        _lastSaveCompletedAtUtc = driftWriteTime.toUtc();
+        talker.repositoryLog(
+          'Settings',
+          'save<$T>: key=$key complete in '
+              '${driftWriteTime.difference(saveStartTime).inMilliseconds}ms',
+        );
+      },
+      area: 'data.settings',
+      opName: 'save',
+      context: context,
     );
   }
 

@@ -2,6 +2,10 @@
 ///
 /// Handles all write operations for occurrence-specific mutations such as
 /// completing, skipping, and rescheduling occurrences.
+library;
+
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
+
 abstract class OccurrenceWriteHelperContract {
   // ===========================================================================
   // TASK OCCURRENCE WRITES
@@ -21,6 +25,7 @@ abstract class OccurrenceWriteHelperContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   });
 
   /// Removes completion for a task occurrence.
@@ -30,6 +35,7 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> uncompleteTaskOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   });
 
   /// Skips a task occurrence (will not appear in expansion).
@@ -39,6 +45,7 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> skipTaskOccurrence({
     required String taskId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Reschedules a task occurrence to a new date.
@@ -55,6 +62,7 @@ abstract class OccurrenceWriteHelperContract {
     required DateTime originalDate,
     required DateTime newDate,
     DateTime? newDeadline,
+    OperationContext? context,
   });
 
   /// Removes an exception (skip or reschedule) for a task occurrence.
@@ -64,25 +72,26 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> removeTaskException({
     required String taskId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Stops generating future occurrences for a repeating task.
   /// Keeps all history intact.
   ///
   /// [taskId] - The task's unique identifier
-  Future<void> stopTaskSeries(String taskId);
+  Future<void> stopTaskSeries(String taskId, {OperationContext? context});
 
   /// Completes the task series: stops future occurrences and deletes
   /// future exceptions (past exceptions kept for reporting).
   ///
   /// [taskId] - The task's unique identifier
-  Future<void> completeTaskSeries(String taskId);
+  Future<void> completeTaskSeries(String taskId, {OperationContext? context});
 
   /// Converts a repeating task to a one-time task: stops future occurrences,
   /// deletes future exceptions, and clears the recurrence rule.
   ///
   /// [taskId] - The task's unique identifier
-  Future<void> convertTaskToOneTime(String taskId);
+  Future<void> convertTaskToOneTime(String taskId, {OperationContext? context});
 
   // ===========================================================================
   // PROJECT OCCURRENCE WRITES
@@ -102,6 +111,7 @@ abstract class OccurrenceWriteHelperContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   });
 
   /// Removes completion for a project occurrence.
@@ -111,6 +121,7 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> uncompleteProjectOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   });
 
   /// Skips a project occurrence (will not appear in expansion).
@@ -120,6 +131,7 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> skipProjectOccurrence({
     required String projectId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Reschedules a project occurrence to a new date.
@@ -136,6 +148,7 @@ abstract class OccurrenceWriteHelperContract {
     required DateTime originalDate,
     required DateTime newDate,
     DateTime? newDeadline,
+    OperationContext? context,
   });
 
   /// Removes an exception (skip or reschedule) for a project occurrence.
@@ -145,23 +158,30 @@ abstract class OccurrenceWriteHelperContract {
   Future<void> removeProjectException({
     required String projectId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Stops generating future occurrences for a repeating project.
   /// Keeps all history intact.
   ///
   /// [projectId] - The project's unique identifier
-  Future<void> stopProjectSeries(String projectId);
+  Future<void> stopProjectSeries(String projectId, {OperationContext? context});
 
   /// Completes the project series: stops future occurrences and deletes
   /// future exceptions (past exceptions kept for reporting).
   ///
   /// [projectId] - The project's unique identifier
-  Future<void> completeProjectSeries(String projectId);
+  Future<void> completeProjectSeries(
+    String projectId, {
+    OperationContext? context,
+  });
 
   /// Converts a repeating project to a one-time project: stops future occurrences,
   /// deletes future exceptions, and clears the recurrence rule.
   ///
   /// [projectId] - The project's unique identifier
-  Future<void> convertProjectToOneTime(String projectId);
+  Future<void> convertProjectToOneTime(
+    String projectId, {
+    OperationContext? context,
+  });
 }

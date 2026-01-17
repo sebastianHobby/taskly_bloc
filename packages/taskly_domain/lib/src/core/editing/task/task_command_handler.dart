@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/task/task_commands.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 final class TaskCommandHandler {
   TaskCommandHandler({required TaskRepositoryContract taskRepository})
@@ -10,7 +11,10 @@ final class TaskCommandHandler {
 
   final TaskRepositoryContract _taskRepository;
 
-  Future<CommandResult> handleCreate(CreateTaskCommand command) async {
+  Future<CommandResult> handleCreate(
+    CreateTaskCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -26,12 +30,16 @@ final class TaskCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      context: context,
     );
 
     return const CommandResult.success();
   }
 
-  Future<CommandResult> handleUpdate(UpdateTaskCommand command) async {
+  Future<CommandResult> handleUpdate(
+    UpdateTaskCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -48,6 +56,7 @@ final class TaskCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      context: context,
     );
 
     return const CommandResult.success();

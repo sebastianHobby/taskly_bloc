@@ -243,15 +243,12 @@ Implementation follow-ups to keep in mind:
 
 - Completion timestamp → home-day semantics: persist both `completedAtUtc` (instant) and a derived `completedHomeDayKey` (`YYYY-MM-DD`, computed using the then-current home offset). Use `completedHomeDayKey` for recurrence anchoring (DEC-214A).
 - Occurrence date storage contract (exceptions + completion history): treat occurrence dates as date-only keys (UTC-midnight `DateTime` encoded as `YYYY-MM-DD`) for `occurrenceDate`, `originalOccurrenceDate`, `originalDate`, `newDate`, etc (DEC-215A).
-- UI “today” contract: introduce a small presentation-facing Today provider backed by domain `Clock` + home-day key semantics so widgets don’t call `DateTime.now()` for day identity (DEC-216C).
 
 - Screen composition post-USM: allow a static code-level “screen template” per screen to wire sections together (still explicit code; not data-driven) (DEC-054B).
 - Pagination convention: repositories expose “current window” streams; BLoC owns paging intents; widgets only provide scroll signals (no repo calls) (DEC-055A).
 - Bootstrap readiness/gating: `AppLifecycleBloc` gates app shell routes based on env/data/auth/maintenance readiness; screens assume dependencies are ready once routed (DEC-056A).
 
 - Refresh allocation wiring: My Day overflow action emits an intent; dispatcher routes to My Day BLoC; domain coordinator/use-case refreshes the allocation snapshot (DEC-057A).
-- Invalid deep link handling: single NotFound screen + structured router log event + “Go Home” CTA (DEC-058A).
-- Editor host placement: shared `EditorHostPage` owns sheet/panel/full-page decisions so DEC-025A/DEC-028A are enforced in one place (DEC-059A).
 
 - Editor form framework + typing policy: standardize all editors on `flutter_form_builder`. Widgets own the `FormBuilder` state/key and field widgets, while the editor BLoC owns the entity subscription/snapshot, validation policy, and save/delete intents. The widget→BLoC boundary must use typed draft/value objects (no `Map<String, dynamic>` / stringly-typed field names crossing into BLoCs) (DEC-106A).
 
@@ -273,7 +270,6 @@ Implementation follow-ups to keep in mind:
 - Post-USM BLoC ownership: hybrid — each screen has a screen-level BLoC for scope + orchestration; heavy/reusable sections may have their own BLoCs (DEC-066C).
 - Presentation state primitive (MVP): use `Bloc` for new presentation state; avoid introducing new `Cubit`s. Prefer explicit events + states to keep intent logging and cross-screen conventions consistent.
 - One-off UI effects: BLoCs expose a separate `UiEffect` stream; widgets forward to the Intent Dispatcher for navigation/dialog/snackbar effects (DEC-067A).
-- Scoped route context: introduce a reusable `ScopeContextBloc` producing `ScopeHeaderUiModel` and derived counts/summary metrics for `/project/:id/*` and `/value/:id/*` routes (DEC-068B).
 
 - Scoped header content (MVP): `ScopeHeaderRow` shows identity plus a small “two-metrics” summary for orientation; metrics are computed in `ScopeContextBloc` (subscriptions remain in BLoCs) and kept cheap/available via public domain/data APIs (DEC-125B).
 
@@ -291,29 +287,20 @@ Implementation follow-ups to keep in mind:
 
 - Scheduled scoped header + de-duplication (MVP): on scoped Scheduled routes, render a single `ScopeHeaderRow(scope)` for orientation and suppress any grouping/header row that would duplicate that same scope identity (DEC-192A).
 
-- Global synthetic Inbox pseudo-project (MVP): tasks with no project are grouped under a pseudo project called “Inbox”. Inbox behaves like a project for grouping/headers, but is not editable/deletable and must not be treated as a real `ProjectId` for editor routes. This is a global app concept (applies wherever a project header could appear) and is modeled in the domain via a synthetic grouping reference (not a UI-only hack) (DEC-129B, DEC-130A).
-- Inbox navigation (MVP): tapping the Inbox header navigates to an Inbox placeholder screen (empty-state screen) rather than opening an editor (DEC-130A).
-
-- Synthetic project grouping reference shape (MVP): define a public domain type (e.g., `ProjectGroupingRef`) as a sealed union with cases `real(ProjectId)` and `inbox` (no ID). This type must not be treated as a `ProjectId`, and must provide a stable key representation for grouping/persistence (e.g., `project:<id>` and `inbox`) without leaking UI concerns (DEC-131A).
-- Inbox route shape (MVP): Inbox is a global, deep-linkable shell route at `/inbox` (same app-shell container as `/my-day`, `/anytime`, `/scheduled`), and is not an editor route. Normal back-stack rules apply when navigated to from within the app shell (DEC-132A).
 - `rowKey` format conventions (MVP): `rowKey` values are deterministic, globally stable strings with a versioned prefix (e.g., `v1/...`) and a composite structure including `screen` + `rowType` + required disambiguators. Scheduled item rows must include the day key and agenda tag (Starts/Ongoing/Due) when needed to avoid collisions; header and placeholder rows must also have deterministic keys (DEC-133A).
-- Inbox screen behavior (MVP): Inbox is a real feed screen that shows all “no project” tasks (not just an empty placeholder). It uses the same feed row model + feed section BLoC pattern; tapping a task row opens the task editor route; Inbox itself remains non-editable/non-deletable (DEC-134A).
 - Minimal a11y policy for hierarchy feeds (MVP): list renderers derive hierarchy semantics from scanning the flat list using `depth` + grouping keys (and the known row variants), ensuring deterministic reading order and proper header semantics; `rowKey` is identity-only (not spoken). Prefer best-practice semantics labeling that includes the current group context (bucket/date) for headers/placeholder rows (DEC-135A).
 
 - Scheduled occurrence identity (MVP): define a public domain reference type (e.g., `AgendaOccurrenceRef`) that uniquely identifies a rendered Scheduled row instance using typed fields (entity type + entity ID + local day + agenda tag Starts/Ongoing/Due, plus an extra disambiguator if RRULE can yield multiple same-day same-tag instances). This ref is the canonical identity for Scheduled “instances” and supports deterministic `rowKey`s and action dispatch without making `rowKey` the source of truth (DEC-136A).
 - Scheduled rowKey identity source (MVP): Scheduled task/project item rows always use `AgendaOccurrenceRef` as the canonical instance identity (for both repeating and non-repeating), and `rowKey` encodes the same fields (including `instanceKey` when present) under the Scheduled screen namespace (DEC-190A).
-- Editor routes in `go_router` (MVP): keep editor paths exactly as locked (`/task/:id/edit`, `/project/:id/edit`, `/value/:id/edit`) and implement them as top-level routes that always build the shared `EditorHostPage`. `EditorHostPage` owns the sheet/panel vs full-page decision using the in-shell-origin vs direct deep-link rule (DEC-137A).
 - Filter persistence with Inbox feed (MVP): treat Inbox as its own `screenKey` (e.g., `inbox`) with `scopeKey=global` under the existing `(screenKey, scopeKey)` persistence scheme. Do not model Inbox as a scope identity (it is not a `ProjectId`) and do not reuse Anytime’s scope keys for Inbox (DEC-138A).
 
 - `rowKey` encoding + escaping standard (MVP): use a canonical, human-readable, versioned composite string format (e.g., `v1/<screen>/<rowType>/<k>=<v>...`) where values are UTF-8 percent-encoded and IDs use their canonical string form. Dates use `YYYY-MM-DD`; enums are lowercase. Encoded values must not contain raw `/` or `=` (DEC-139A).
-- Inbox feed row model shape (MVP): the Inbox screen’s chrome shows the Inbox identity; the list itself contains only Task rows (flat) for “no project” tasks (no Inbox header row inside the list) (DEC-140A).
 - Scheduled occurrence disambiguator (MVP): when the occurrence engine can yield multiple same-day same-tag instances, the domain must provide an additional stable `instanceKey` (engine-generated) on `AgendaOccurrenceRef` to disambiguate identity independent of ordering (DEC-141B).
 
 - `rowKey` construction ownership (MVP): each feed section BLoC constructs canonical `rowKey` strings as part of row mapping, using shared presentation-layer helpers as needed. Do not move `rowKey` generation into `taskly_ui` or into domain (DEC-142A).
 - A11y localization policy for derived group-context labels (MVP): renderers build screen-reader labels from structured row fields (bucket title/date label/placeholder kind/entity title) using app localization; BLoCs emit structured data, not prebuilt semantics strings (DEC-143A).
 - Inbox task capabilities + overflow actions (MVP): Inbox uses the same capability-driven overflow menu model as other feeds (central action catalog + BLoCs decide availability from domain capabilities + context). Avoid Inbox-specific action IDs for MVP (DEC-144A).
 
-- Inbox “no project” definition (MVP): Inbox shows tasks whose project reference is absent in the domain model (e.g., `projectId == null`); Inbox membership is exactly this rule with no additional heuristics in MVP (DEC-145A).
 - Project assignment from Inbox (MVP): include a non-destructive overflow action “Assign to project…” (from the central action catalog) that opens a picker flow; availability is capability-driven and uses the standard intent dispatcher + BLoC mutation path (DEC-146B).
 - Scheduled “ongoing” tagging across ranges (MVP): Starts/Ongoing/Due tags are taken directly from the occurrence engine output within the requested range; `AgendaOccurrenceRef` includes the tag and no additional cross-range persistence is introduced for “ongoing” (DEC-147A).
 
@@ -338,13 +325,10 @@ Implementation follow-ups to keep in mind:
 
 - Task project assignment mutation API (MVP): implement project assignment as a typed intent (e.g., `AssignTaskProjectIntent(taskId, ProjectId?)`) that routes through the central Intent Dispatcher to a domain use-case which performs the write via repository contracts. UI updates are driven by offline-first DB watchers (DEC-160A).
 - Capability gating for “Assign project” (MVP): show the action only when domain capabilities indicate the task is editable and the project field is mutable; otherwise hide it (do not show disabled) (DEC-161A).
-- Inbox screen header/navigation (MVP): Inbox uses a standard screen header (AppBar title “Inbox” + optional short explanation), no edit affordance, and normal back behavior (DEC-162A).
 
 - “Assign to project” feedback UX (MVP): on success, close the picker modal without additional toasts/snackbars; on failure, show an inline error in the modal with retry and keep the modal open (DEC-163A).
-- Inbox empty-state (MVP): when Inbox has zero “no project” tasks, show a friendly empty state with a single primary CTA “Create task” (no secondary CTA) (DEC-164A).
 - RowKey helper location (MVP): place `rowKey` helper functions in the app presentation layer near list-row mapping utilities; keep them pure functions and do not move them into `taskly_ui` or other packages (DEC-165A).
 
-- Inbox “Create task” CTA (MVP): CTA opens the Task Editor for a new task draft with `projectId = null` (Inbox) using the standard editor host presentation rules (DEC-166A).
 - New-task editor identity (MVP): introduce an ephemeral `TaskDraftId` used only within presentation/editor while editing a not-yet-saved task; save creates the real entity and closes the editor (DEC-167A).
 - New task visibility in feeds (MVP): new task drafts do not appear in feeds until saved; no temporary/optimistic feed rows are introduced, so no draft rowKeys are required in feeds (DEC-168A).
 
@@ -355,24 +339,14 @@ Implementation follow-ups to keep in mind:
 - “New task” deep link policy (MVP): do not add a deep-linkable route for creating a new task; creation is reachable from in-shell CTAs/buttons only in MVP (DEC-172A).
 
 - New task editor launch mechanism (MVP): open the new-task draft editor via an in-shell modal flow (sheet/panel/dialog depending on platform) with no URL route; still apply the shared editor host sizing/presentation rules for in-shell editors (DEC-188A).
-- Inbox create-task CTA placement (MVP): use a FAB to create a new task on platforms where FAB is idiomatic; on other platforms, provide an equivalent primary “New task” action in the screen chrome (DEC-173C).
 - Logging for assign-project + create-task intents (MVP): log these intents using the standard structured logging schema (`feature`, `screen`, `intent`, `operation`, `correlationId`, entity refs) for diagnostics and traceability (DEC-174A).
 
-- Inbox FAB platform rule (MVP): use a FAB for “New task” on Android/iOS; use a primary header action on desktop/web (DEC-175A).
 - Inbox task ordering (MVP): reuse Anytime task ordering rules for Inbox so behavior is consistent and deterministic (DEC-176A).
-- Inbox list section rendering (MVP): use the standard list section patterns (loading state, empty state per DEC-164A, inline error banner + retry) consistent with other feeds (DEC-177A).
 
-- Inbox destination visibility (MVP): Inbox is a first-class destination alongside My Day / Anytime / Scheduled and is visible in the app’s destinations navigation chrome (rail/drawer) (DEC-178A).
 - Inbox header-row interaction rule (MVP): in feeds where Inbox appears as a project-like header row, tapping it navigates to `/inbox`. Its overflow never offers edit/delete/rename and never treats it as a real project; it may expose capability-driven actions applicable to children (e.g., bulk assign) via the standard action system (DEC-179A).
 - Inbox multi-select (MVP): do not add Inbox-specific multi-select/bulk action UX in MVP; keep Inbox single-selection/tap-to-edit behaviors only (DEC-180B).
 
-- Inbox deep-link behavior (MVP): `/inbox` is paramless and is never NotFound; failures are handled via normal app readiness gating and inline error/retry patterns (DEC-181A).
-- Inbox scope header rendering (MVP): `/inbox` never renders a `ScopeHeaderRow` (Inbox is not a scope entity); use only screen chrome + list section (DEC-182A).
-- Inbox task rowKey convention (MVP): task rows in Inbox use an Inbox-specific `rowKey` namespace (e.g., `v1/inbox/task/id=<id>`) to avoid cross-screen key collisions and to stabilize per-screen scroll/ephemeral state (DEC-183B).
 
-- Inbox empty-state modeling (MVP): do not model the empty-state as a list row; render it via standard section-level empty UI (no `rowKey` required) (DEC-184A).
-- Inbox retry responsibility (MVP): retry triggers the Inbox feed section BLoC to resubscribe/reload; UI emits only a retry event and never calls repositories directly (DEC-185A).
-- Inbox header row in Anytime (MVP): Anytime includes an Inbox project-like header row with a stable Anytime namespace key (e.g., `v1/anytime/group_header/project=inbox`) and label “Inbox”; tapping it navigates to `/inbox` per the Inbox header interaction rule (DEC-186A).
 
 - Cross-screen list row modeling: shared flat `ListRowUiModel` union for My Day / Anytime / Scheduled; hierarchy is expressed via minimal structural metadata (e.g., `depth` + grouping keys) supporting only the needed shapes (Values → Projects → Tasks, Projects → Tasks). Value grouping headers are configurable per screen between header-only vs tappable-to-scope navigation (DEC-069A).
 - Row identity keys (MVP): every `ListRowUiModel` variant (headers + entity rows) includes a required, stable `rowKey` used for Flutter keys, a11y identity, scroll targeting (e.g., jump-to-today), and stabilizing ephemeral UI state across rebuilds (DEC-127A).
@@ -451,78 +425,11 @@ Implementation follow-ups to keep in mind:
 - PowerSync + SQLite: avoid Drift UPSERT helpers on PowerSync schema tables (view limitation).
 
 ## Work packages (discrete bundles)
-
-### Package A — Public API cleanup and `lib/src` restructuring (per extracted package)
-
-**Intent:** The app (and other packages) should import only curated entrypoints. No deep imports into internal folders.
-
-Deliverables (for each package):
-- Establish `lib/src/**` as implementation location.
-- Create curated public entrypoints:
-  - `taskly_core`: `env.dart`, `logging.dart`, plus a small `taskly_core.dart` barrel.
-  - `taskly_domain`: bounded context entrypoints (examples: `allocation.dart`, `attention.dart`, `journal.dart`, `queries.dart`, `interfaces.dart`, `time.dart`) + `taskly_domain.dart` barrel.
-  - `taskly_data`: entrypoints (examples: `sync.dart`, `db.dart`, `id.dart`) + `taskly_data.dart` barrel.
-- Update app + other packages so they do not import from `package:taskly_*/src/...`.
-
-Acceptance criteria:
-- App and packages compile using only the public entrypoints.
-- Public surface is intentionally small and reviewed.
-
-#### Phase 1 / Batch 1 — `taskly_core` API cleanup (approved for implementation)
-
-Status: Complete (2026-01-17).
-
-Scope:
-- Move implementation from `packages/taskly_core/lib/core/**` to `packages/taskly_core/lib/src/**`.
-- Introduce public entrypoints:
-  - `packages/taskly_core/lib/env.dart`
-  - `packages/taskly_core/lib/logging.dart`
-  - keep/adjust `packages/taskly_core/lib/taskly_core.dart` as a small barrel.
-- Update usages (at minimum inside `taskly_data`) so imports become:
-  - `package:taskly_core/env.dart`
-  - `package:taskly_core/logging.dart`
-  (or via the barrel if chosen).
-
-Non-goals:
-- No runtime behavior changes.
-- No USM removal changes.
-- No app bootstrap refactor.
-
-#### Phase 1 / Batch 2 — `taskly_domain` public API cleanup + `lib/src` restructure
-
-Status: Complete (2026-01-17).
-
-Scope:
-- App code imports use only `taskly_domain` public entrypoints (no deep imports into internal folders).
-- `packages/taskly_domain/lib/domain/**` moved to `packages/taskly_domain/lib/src/**`.
-- Public entrypoints under `packages/taskly_domain/lib/*.dart` updated to export from `src/**`.
-- Internal `taskly_domain` imports updated to avoid `package:taskly_domain/domain/...`.
-
-Notes:
-- No new public exports were introduced; this was a mechanical path + boundary cleanup.
-- Repo validated with `flutter analyze` (clean).
-
-#### Phase 1 / Batch 3 — `taskly_data` public API cleanup + `lib/src` restructure
-
-Status: Complete (2026-01-17).
-
-Scope:
-- Moved implementation from `packages/taskly_data/lib/data/**` to `packages/taskly_data/lib/src/**`.
-- Introduced curated public entrypoints:
-  - `packages/taskly_data/lib/db.dart`
-  - `packages/taskly_data/lib/id.dart`
-  - `packages/taskly_data/lib/sync.dart`
-  - `packages/taskly_data/lib/repository_exceptions.dart`
-  - keep `packages/taskly_data/lib/data_stack.dart` and `packages/taskly_data/lib/taskly_data.dart` as the primary app-facing API.
-- Removed the DI-module export from `taskly_data` public API; app composition owns GetIt wiring.
-- Updated internal imports within `taskly_data` and migrated app shims so no code imports from `package:taskly_data/data/...`.
-
-Notes:
-- App now initializes `TasklyDataStack`, then requests typed bindings and registers domain contracts in the app DI root.
-- Repo validated with `flutter analyze` (clean).
-
-
 ### Completed packages (shipped)
+
+- Public API cleanup + `lib/src` restructure (Package A): complete (2026-01-17).
+  - `taskly_core`, `taskly_domain`, and `taskly_data` use curated public entrypoints.
+  - App + packages no longer deep-import `package:taskly_*/src/...`.
 
 - Day-1 data stack and auth/sync wiring (Package B): complete (2026-01-17).
   - `taskly_data` owns Supabase + PowerSync + Drift wiring behind `TasklyDataStack`.
@@ -537,29 +444,13 @@ Notes:
 **Intent:** Remove data-driven screen system from the user experience while keeping the architecture boundary rule.
 
 Deliverables:
-- Disable/remove USM routing entrypoints:
-  - catch-all `/:segment`
+- Disable/remove remaining USM routing entrypoints:
   - screen catalog and screen editor UI
   - unified screen page rendering
-- Replace with explicit, hand-authored screens for the MVP:
-  - My Day
-  - Anytime (Someday)
-  - Scheduled
+- Replace remaining shell routes that still render USM-backed system screens.
 
 Progress:
-- Completed (2026-01-17): Routing strangler entrypoints
-  - Removed the unified catch-all `/:segment` route.
-  - Added explicit `go_router` routes for MVP entrypoints (`/my-day`, `/anytime`, `/scheduled`) and other typed system screens.
-  - Added router-level NotFound handling and UUID route param validation.
-- Completed (2026-01-17): Scoped Anytime context header metrics (DEC-068B, DEC-125B)
-  - Scoped Anytime routes show an orientation header with task/project counts as defined above.
-- Completed (2026-01-17): UI “today” provider (DEC-216C)
-  - Introduced a presentation-facing time provider backed by home-day semantics; began removing direct `DateTime.now()` calls from widgets.
-- Completed (2026-01-17): Inbox explicit screen
-  - Added `/inbox` as a first-class route and main navigation destination.
-  - Implemented `InboxFeedBloc` subscribing to `TaskQuery.inbox()` and mapping to a flat `ListRowUiModel` row list with stable `rowKey`s.
-  - Inbox UI renders rows via the shared row renderers (task rows) and uses the in-shell modal new-task editor for “Create task”.
-- In progress: Replace MVP screens with explicit Flutter screens (BLoCs + widgets), removing remaining USM rendering from the MVP user experience.
+- In progress: Remove remaining USM screens + entrypoints from the user experience.
 
 Presentation design decisions (confirmed):
 - DEC-010B (Navigation): Adaptive destinations navigation (rail on desktop/tablet, drawer/bottom nav adaptation on mobile) for My Day / Anytime / Scheduled.
@@ -594,16 +485,6 @@ UI model policy decision (confirmed):
 ### Package E — Delete root `lib/domain/**` and `lib/data/**` (DEC-002A)
 
 **Intent:** Complete the migration so the app uses packages only.
-
-Progress:
-- Completed (2026-01-17): Remove USM-era tile capability dependency from root domain
-  - Moved tile capability model + resolver into presentation:
-    - `lib/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart`
-    - `lib/presentation/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart`
-  - Deleted legacy USM/root-domain implementations:
-    - `lib/domain/screens/templates/params/entity_tile_capabilities.dart` (+ generated outputs)
-    - `lib/domain/screens/runtime/entity_tile_capabilities_resolver.dart`
-  - Updated app + legacy USM + tests to import the new presentation locations.
 
 Deliverables:
 - Remove root domain/data folders.

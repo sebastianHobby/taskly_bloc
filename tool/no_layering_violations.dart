@@ -128,7 +128,9 @@ Future<void> main(List<String> args) async {
 // Examples:
 //   import 'package:taskly_bloc/presentation/foo.dart';
 //   import "../data/bar.dart" as bar;
-final _importLine = RegExp(r'^\s*import\s+([\"\'])([^\"\']+)\1');
+final RegExp _importLine = RegExp(
+  r'''^\s*import\s+(["'])([^"']+)\1''',
+);
 
 enum _Layer {
   presentation,

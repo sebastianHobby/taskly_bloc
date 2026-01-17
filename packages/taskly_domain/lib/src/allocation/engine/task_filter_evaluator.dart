@@ -14,7 +14,11 @@ class TaskFilterEvaluator {
   }) {
     // 1. Check shared predicates (AND)
     for (final predicate in filter.shared) {
-      if (!_evaluatePredicate(predicate, task, todayDayKeyUtc: todayDayKeyUtc)) {
+      if (!_evaluatePredicate(
+        predicate,
+        task,
+        todayDayKeyUtc: todayDayKeyUtc,
+      )) {
         return false;
       }
     }

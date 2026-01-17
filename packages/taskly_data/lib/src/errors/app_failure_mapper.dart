@@ -1,13 +1,28 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:sqlite3/sqlite3.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_domain/errors.dart';
+
+import 'package:taskly_data/src/repositories/repository_exceptions.dart';
 
 /// Maps implementation-layer exceptions into domain [AppFailure] types.
 abstract final class AppFailureMapper {
   static AppFailure fromException(Object error) {
     if (error is AppFailure) return error;
+
+    if (error is RepositoryValidationException) {
+      return InputValidationFailure(message: error.message, cause: error);
+    }
+
+    if (error is RepositoryNotFoundException) {
+      return NotFoundFailure(message: error.message, cause: error);
+    }
+
+    if (error is SqliteException) {
+      return StorageFailure(message: error.message, cause: error);
+    }
 
     if (error is AuthException) {
       return AuthFailure(

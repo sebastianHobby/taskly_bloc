@@ -2,6 +2,7 @@ import 'package:taskly_domain/src/analytics/model/analytics_insight.dart';
 import 'package:taskly_domain/src/analytics/model/analytics_snapshot.dart';
 import 'package:taskly_domain/src/analytics/model/correlation_result.dart';
 import 'package:taskly_domain/src/analytics/model/date_range.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Repository contract for analytics data
 abstract class AnalyticsRepositoryContract {
@@ -13,9 +14,12 @@ abstract class AnalyticsRepositoryContract {
     String? entityId,
   });
 
-  Future<void> saveSnapshot(AnalyticsSnapshot snapshot);
+  Future<void> saveSnapshot(AnalyticsSnapshot snapshot, {OperationContext? context});
 
-  Future<void> saveSnapshots(List<AnalyticsSnapshot> snapshots);
+  Future<void> saveSnapshots(
+    List<AnalyticsSnapshot> snapshots, {
+    OperationContext? context,
+  });
 
   // === Correlations ===
 
@@ -24,9 +28,15 @@ abstract class AnalyticsRepositoryContract {
     required DateRange range,
   });
 
-  Future<void> saveCorrelation(CorrelationResult correlation);
+  Future<void> saveCorrelation(
+    CorrelationResult correlation, {
+    OperationContext? context,
+  });
 
-  Future<void> saveCorrelations(List<CorrelationResult> correlations);
+  Future<void> saveCorrelations(
+    List<CorrelationResult> correlations, {
+    OperationContext? context,
+  });
 
   // === Insights ===
 
@@ -35,7 +45,7 @@ abstract class AnalyticsRepositoryContract {
     int? limit,
   });
 
-  Future<void> saveInsight(AnalyticsInsight insight);
+  Future<void> saveInsight(AnalyticsInsight insight, {OperationContext? context});
 
-  Future<void> dismissInsight(String insightId);
+  Future<void> dismissInsight(String insightId, {OperationContext? context});
 }

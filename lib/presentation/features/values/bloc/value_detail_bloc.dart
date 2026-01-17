@@ -5,6 +5,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 part 'value_detail_bloc.freezed.dart';
@@ -66,6 +67,25 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
 
   final ValueRepositoryContract _valueRepository;
   final ValueCommandHandler _commandHandler;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    String? entityId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'values',
+      screen: 'value_detail',
+      intent: intent,
+      operation: operation,
+      entityType: 'value',
+      entityId: entityId,
+      extraFields: extraFields,
+    );
+  }
 
   @override
   Talker get logger => talkerRaw;
@@ -105,10 +125,14 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     _ValueDetailCreate event,
     Emitter<ValueDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'value_create_requested',
+      operation: 'values.create',
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command),
+      () => _commandHandler.handleCreate(event.command, context: context),
     );
   }
 
@@ -116,10 +140,15 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     _ValueDetailUpdate event,
     Emitter<ValueDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'value_update_requested',
+      operation: 'values.update',
+      entityId: event.command.id,
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command),
+      () => _commandHandler.handleUpdate(event.command, context: context),
     );
   }
 
@@ -127,10 +156,15 @@ class ValueDetailBloc extends Bloc<ValueDetailEvent, ValueDetailState>
     _ValueDetailDelete event,
     Emitter<ValueDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'value_delete_requested',
+      operation: 'values.delete',
+      entityId: event.id,
+    );
     await executeOperation(
       emit,
       EntityOperation.delete,
-      () => _valueRepository.delete(event.id),
+      () => _valueRepository.delete(event.id, context: context),
     );
   }
 

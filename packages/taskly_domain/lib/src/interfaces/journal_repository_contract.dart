@@ -7,6 +7,7 @@ import 'package:taskly_domain/src/journal/model/tracker_preference.dart';
 import 'package:taskly_domain/src/journal/model/tracker_state_day.dart';
 import 'package:taskly_domain/src/journal/model/tracker_state_entry.dart';
 import 'package:taskly_domain/src/queries/journal_query.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Repository contract for journal data.
 ///
@@ -35,15 +36,15 @@ abstract class JournalRepositoryContract {
     required DateTime date,
   });
 
-  Future<void> saveJournalEntry(JournalEntry entry);
+  Future<void> saveJournalEntry(JournalEntry entry, {OperationContext? context});
 
   /// Upsert a journal entry and return the ID that was used.
   ///
   /// This is useful for workflows that need a stable entry ID to attach
   /// tracker events (e.g. mood) to the entry.
-  Future<String> upsertJournalEntry(JournalEntry entry);
+  Future<String> upsertJournalEntry(JournalEntry entry, {OperationContext? context});
 
-  Future<void> deleteJournalEntry(String id);
+  Future<void> deleteJournalEntry(String id, {OperationContext? context});
 
   // === Trackers (OPT-A: event-log + projections) ===
 
@@ -63,19 +64,31 @@ abstract class JournalRepositoryContract {
     required DateRange range,
   });
 
-  Future<void> saveTrackerDefinition(TrackerDefinition definition);
+  Future<void> saveTrackerDefinition(
+    TrackerDefinition definition, {
+    OperationContext? context,
+  });
 
-  Future<void> saveTrackerPreference(TrackerPreference preference);
+  Future<void> saveTrackerPreference(
+    TrackerPreference preference, {
+    OperationContext? context,
+  });
 
-  Future<void> saveTrackerDefinitionChoice(TrackerDefinitionChoice choice);
+  Future<void> saveTrackerDefinitionChoice(
+    TrackerDefinitionChoice choice, {
+    OperationContext? context,
+  });
 
-  Future<void> appendTrackerEvent(TrackerEvent event);
+  Future<void> appendTrackerEvent(TrackerEvent event, {OperationContext? context});
 
   /// Soft-delete a tracker definition and purge its local event/projection data.
   ///
   /// This keeps the definition row (with `deletedAt`) for sync/auditing while
   /// removing local UI/analytics noise from associated events and projections.
-  Future<void> deleteTrackerAndData(String trackerId);
+  Future<void> deleteTrackerAndData(
+    String trackerId, {
+    OperationContext? context,
+  });
 
   /// Watch raw tracker events for building B1 Journal UIs.
   ///

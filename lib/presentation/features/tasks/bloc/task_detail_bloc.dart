@@ -5,6 +5,7 @@ import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/detail_bloc_mixin.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/taskly_domain.dart';
 
 part 'task_detail_bloc.freezed.dart';
@@ -101,6 +102,25 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
   final ProjectRepositoryContract _projectRepository;
   final ValueRepositoryContract _valueRepository;
   final TaskCommandHandler _commandHandler;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    String? entityId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'tasks',
+      screen: 'task_detail',
+      intent: intent,
+      operation: operation,
+      entityType: 'task',
+      entityId: entityId,
+      extraFields: extraFields,
+    );
+  }
 
   @override
   Talker get logger => talkerRaw;
@@ -187,10 +207,17 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     _TaskDetailCreate event,
     Emitter<TaskDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'task_create_requested',
+      operation: 'tasks.create',
+      extraFields: <String, Object?>{
+        'hasProjectId': event.command.projectId != null,
+      },
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.create,
-      () => _commandHandler.handleCreate(event.command),
+      () => _commandHandler.handleCreate(event.command, context: context),
     );
   }
 
@@ -198,10 +225,15 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     _TaskDetailUpdate event,
     Emitter<TaskDetailState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'task_update_requested',
+      operation: 'tasks.update',
+      entityId: event.command.id,
+    );
     await _executeValidatedCommand(
       emit,
       EntityOperation.update,
-      () => _commandHandler.handleUpdate(event.command),
+      () => _commandHandler.handleUpdate(event.command, context: context),
     );
   }
 
@@ -209,7 +241,15 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     _TaskDetailDelete event,
     Emitter<TaskDetailState> emit,
   ) async {
-    await executeDeleteOperation(emit, () => _taskRepository.delete(event.id));
+    final context = _newContext(
+      intent: 'task_delete_requested',
+      operation: 'tasks.delete',
+      entityId: event.id,
+    );
+    await executeDeleteOperation(
+      emit,
+      () => _taskRepository.delete(event.id, context: context),
+    );
   }
 
   Future<void> _onSetPinned(
@@ -217,7 +257,18 @@ class TaskDetailBloc extends Bloc<TaskDetailEvent, TaskDetailState>
     Emitter<TaskDetailState> emit,
   ) async {
     try {
-      await _taskRepository.setPinned(id: event.id, isPinned: event.isPinned);
+      final context = _newContext(
+        intent: 'task_set_pinned_requested',
+        operation: 'tasks.setPinned',
+        entityId: event.id,
+        extraFields: <String, Object?>{'isPinned': event.isPinned},
+      );
+
+      await _taskRepository.setPinned(
+        id: event.id,
+        isPinned: event.isPinned,
+        context: context,
+      );
 
       emit(
         TaskDetailState.inlineActionSuccess(

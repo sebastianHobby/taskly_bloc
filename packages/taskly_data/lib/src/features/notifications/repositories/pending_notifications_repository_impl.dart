@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:taskly_core/logging.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart' as db;
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
 
@@ -41,26 +41,24 @@ class PendingNotificationsRepositoryImpl
   Future<void> markDelivered({
     required String id,
     DateTime? deliveredAt,
+    OperationContext? context,
   }) async {
     final now = deliveredAt ?? DateTime.now();
 
-    try {
-      await (_db.update(
-        _db.pendingNotifications,
-      )..where((t) => t.id.equals(id))).write(
-        db.PendingNotificationsCompanion(
-          status: const Value('delivered'),
-          deliveredAt: Value(now),
-        ),
-      );
-    } catch (error, stackTrace) {
-      talker.handle(
-        error,
-        stackTrace,
-        '[PendingNotificationsRepo] Failed to mark notification '
-        'delivered: $id',
-      );
-      rethrow;
-    }
+    return FailureGuard.run(
+      () async {
+        await (_db.update(
+          _db.pendingNotifications,
+        )..where((t) => t.id.equals(id))).write(
+          db.PendingNotificationsCompanion(
+            status: const Value('delivered'),
+            deliveredAt: Value(now),
+          ),
+        );
+      },
+      area: 'data.notifications',
+      opName: 'markDelivered',
+      context: context,
+    );
   }
 }

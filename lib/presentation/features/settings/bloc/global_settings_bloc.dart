@@ -5,10 +5,12 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
 import 'package:taskly_domain/settings.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 part 'global_settings_bloc.freezed.dart';
 
@@ -141,7 +143,24 @@ class GlobalSettingsBloc
   }
 
   final SettingsRepositoryContract _settingsRepository;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
   StreamSubscription<GlobalSettings>? _subscription;
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'settings',
+      screen: 'global_settings',
+      intent: intent,
+      operation: operation,
+      entityType: 'settings',
+      extraFields: extraFields,
+    );
+  }
 
   @override
   Future<void> close() {
@@ -215,7 +234,18 @@ class GlobalSettingsBloc
       '  new=${event.themeMode}',
     );
     try {
-      await _settingsRepository.save(SettingsKey.global, updated);
+      final context = _newContext(
+        intent: 'settings_theme_mode_changed',
+        operation: 'settings.save.global',
+        extraFields: <String, Object?>{
+          'themeMode': event.themeMode.name,
+        },
+      );
+      await _settingsRepository.save(
+        SettingsKey.global,
+        updated,
+        context: context,
+      );
       talker.warning(
         '[settings.global] ThemeMode persisted\n'
         '  at=${DateTime.now().toUtc()}\n'
@@ -243,7 +273,16 @@ class GlobalSettingsBloc
       '  old color: ${state.settings.colorSchemeSeedArgb}\n'
       '  new color: ${event.colorArgb}',
     );
-    await _settingsRepository.save(SettingsKey.global, updated);
+    final context = _newContext(
+      intent: 'settings_color_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'colorArgb': event.colorArgb},
+    );
+    await _settingsRepository.save(
+      SettingsKey.global,
+      updated,
+      context: context,
+    );
   }
 
   Future<void> _onLocaleChanged(
@@ -251,7 +290,16 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(localeCode: event.localeCode);
-    await _settingsRepository.save(SettingsKey.global, updated);
+    final context = _newContext(
+      intent: 'settings_locale_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'localeCode': event.localeCode},
+    );
+    await _settingsRepository.save(
+      SettingsKey.global,
+      updated,
+      context: context,
+    );
   }
 
   Future<void> _onHomeTimeZoneOffsetChanged(
@@ -261,7 +309,16 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       homeTimeZoneOffsetMinutes: event.offsetMinutes,
     );
-    await _settingsRepository.save(SettingsKey.global, updated);
+    final context = _newContext(
+      intent: 'settings_home_tz_offset_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'offsetMinutes': event.offsetMinutes},
+    );
+    await _settingsRepository.save(
+      SettingsKey.global,
+      updated,
+      context: context,
+    );
   }
 
   Future<void> _onTextScaleChanged(
@@ -271,7 +328,16 @@ class GlobalSettingsBloc
     final updated = state.settings.copyWith(
       textScaleFactor: event.textScaleFactor,
     );
-    await _settingsRepository.save(SettingsKey.global, updated);
+    final context = _newContext(
+      intent: 'settings_text_scale_changed',
+      operation: 'settings.save.global',
+      extraFields: <String, Object?>{'textScaleFactor': event.textScaleFactor},
+    );
+    await _settingsRepository.save(
+      SettingsKey.global,
+      updated,
+      context: context,
+    );
   }
 
   Future<void> _onOnboardingCompleted(
@@ -279,6 +345,14 @@ class GlobalSettingsBloc
     Emitter<GlobalSettingsState> emit,
   ) async {
     final updated = state.settings.copyWith(onboardingCompleted: true);
-    await _settingsRepository.save(SettingsKey.global, updated);
+    final context = _newContext(
+      intent: 'settings_onboarding_completed',
+      operation: 'settings.save.global',
+    );
+    await _settingsRepository.save(
+      SettingsKey.global,
+      updated,
+      context: context,
+    );
   }
 }

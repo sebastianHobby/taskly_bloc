@@ -33,6 +33,8 @@ sealed class AppFailure implements Exception {
       AppFailureKind.auth => 'Authentication failed',
       AppFailureKind.unauthorized => 'You are not signed in',
       AppFailureKind.forbidden => 'You do not have permission',
+      AppFailureKind.validation => 'Please check your input',
+      AppFailureKind.notFound => 'Not found',
       AppFailureKind.network => 'Network error. Please try again.',
       AppFailureKind.timeout => 'Request timed out. Please try again.',
       AppFailureKind.rateLimited => 'Too many requests. Try again later.',
@@ -51,6 +53,8 @@ enum AppFailureKind {
   auth,
   unauthorized,
   forbidden,
+  validation,
+  notFound,
   network,
   timeout,
   rateLimited,
@@ -77,6 +81,20 @@ final class ForbiddenFailure extends AppFailure {
 
   @override
   AppFailureKind get kind => AppFailureKind.forbidden;
+}
+
+final class InputValidationFailure extends AppFailure {
+  const InputValidationFailure({super.message, super.code, super.cause});
+
+  @override
+  AppFailureKind get kind => AppFailureKind.validation;
+}
+
+final class NotFoundFailure extends AppFailure {
+  const NotFoundFailure({super.message, super.code, super.cause});
+
+  @override
+  AppFailureKind get kind => AppFailureKind.notFound;
 }
 
 final class NetworkFailure extends AppFailure {

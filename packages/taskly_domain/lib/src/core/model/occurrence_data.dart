@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
-import 'package:taskly_domain/src/time/clock.dart';
 
 /// Shared occurrence data - composed into Task and Project domain models.
 ///
@@ -58,11 +57,11 @@ class OccurrenceData extends Equatable {
 
   /// Whether this occurrence is overdue (past deadline and not completed).
   /// Returns false if there's no deadline.
-  bool get isOverdue {
+  bool isOverdueAt({required DateTime nowUtc}) {
     if (deadline == null || isCompleted) {
       return false;
     }
-    return systemClock.nowUtc().isAfter(deadline!);
+    return nowUtc.isAfter(deadline!);
   }
 
   /// Creates a copy of this OccurrenceData with the given fields replaced.

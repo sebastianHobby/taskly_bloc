@@ -33,15 +33,24 @@ class StubJournalRepository implements JournalRepositoryContract {
   }
 
   @override
-  Future<void> saveJournalEntry(JournalEntry entry) async {}
+  Future<void> saveJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {}
 
   @override
-  Future<String> upsertJournalEntry(JournalEntry entry) async {
+  Future<String> upsertJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {
     return entry.id;
   }
 
   @override
-  Future<void> deleteJournalEntry(String id) async {}
+  Future<void> deleteJournalEntry(
+    String id, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Stream<List<TrackerDefinition>> watchTrackerDefinitions() {
@@ -75,21 +84,34 @@ class StubJournalRepository implements JournalRepositoryContract {
   }
 
   @override
-  Future<void> saveTrackerDefinition(TrackerDefinition definition) async {}
+  Future<void> saveTrackerDefinition(
+    TrackerDefinition definition, {
+    OperationContext? context,
+  }) async {}
 
   @override
-  Future<void> saveTrackerPreference(TrackerPreference preference) async {}
+  Future<void> saveTrackerPreference(
+    TrackerPreference preference, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Future<void> saveTrackerDefinitionChoice(
-    TrackerDefinitionChoice choice,
-  ) async {}
+    TrackerDefinitionChoice choice, {
+    OperationContext? context,
+  }) async {}
 
   @override
-  Future<void> appendTrackerEvent(TrackerEvent event) async {}
+  Future<void> appendTrackerEvent(
+    TrackerEvent event, {
+    OperationContext? context,
+  }) async {}
 
   @override
-  Future<void> deleteTrackerAndData(String trackerId) async {}
+  Future<void> deleteTrackerAndData(
+    String trackerId, {
+    OperationContext? context,
+  }) async {}
 
   @override
   Stream<List<TrackerEvent>> watchTrackerEvents({
