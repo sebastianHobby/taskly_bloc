@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/mood_rating.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 

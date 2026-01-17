@@ -1,6 +1,6 @@
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
+import 'package:taskly_domain/domain/queries/project_query.dart';
+import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';

@@ -1,13 +1,3 @@
-﻿import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
-import 'package:taskly_bloc/domain/analytics/model/analytics_insight.dart';
-import 'package:taskly_bloc/domain/analytics/model/correlation_result.dart';
-import 'package:taskly_bloc/domain/analytics/model/date_range.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
-import 'package:taskly_bloc/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
-
 /// Test data builders using the Object Mother pattern.
 ///
 /// Provides factory methods for creating domain objects with sensible defaults
@@ -38,6 +28,11 @@ import 'package:taskly_bloc/domain/queries/task_predicate.dart' as predicates;
 /// - Provides consistent test data
 /// - Single place to update when models change
 /// - Makes test intent clear through named parameters
+
+import 'package:taskly_domain/queries.dart' as predicates;
+import 'package:taskly_domain/task_rules.dart' show RelativeComparison;
+import 'package:taskly_domain/taskly_domain.dart' hide RelativeComparison;
+
 class TestData {
   static int _counter = 0;
 

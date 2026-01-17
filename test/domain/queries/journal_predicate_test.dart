@@ -1,8 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
-import 'package:taskly_bloc/domain/queries/journal_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart'
-    show DateOperator, RelativeComparison;
+import 'package:taskly_domain/taskly_domain.dart';
 
 void main() {
   group('JournalPredicate', () {

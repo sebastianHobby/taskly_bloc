@@ -1,0 +1,27 @@
+name: taskly_data
+publish_to: 'none'
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  drift: any
+  drift_sqlite_async: any
+  equatable: any
+  flutter:
+    sdk: flutter
+  get_it: any
+  meta: any
+  powersync: any
+  rxdart: any
+  supabase_flutter: any
+  talker: any
+  taskly_core:
+    path: ../taskly_core
+  taskly_domain:
+    path: ../taskly_domain
+
+dev_dependencies:
+  build_runner: ^2.10.4
+  drift_dev: ^2.20.3
+

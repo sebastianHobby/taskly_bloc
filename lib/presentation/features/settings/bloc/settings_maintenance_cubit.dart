@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
-import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
-import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
+import 'package:taskly_domain/domain/allocation/engine/allocation_snapshot_coordinator.dart';
+import 'package:taskly_domain/domain/services/debug/template_data_service.dart';
+import 'package:taskly_domain/domain/services/maintenance/local_data_maintenance_service.dart';
 
 enum SettingsMaintenanceAction {
   generateTemplateData,

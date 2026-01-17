@@ -1,10 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('TaskEffectiveValuesX', () {
     test('uses explicit task values when present', () {
@@ -46,7 +42,7 @@ void main() {
         completed: false,
         project: project,
         values: [valueB],
-        primaryValueId: valueBId,
+        overridePrimaryValueId: valueBId,
       );
 
       expect(task.isInheritingValues, isFalse);
@@ -86,6 +82,7 @@ void main() {
         completed: false,
         values: [valueA, valueB],
         primaryValueId: valueAId,
+        secondaryValueId: valueBId,
       );
 
       final task = Task(
@@ -104,6 +101,64 @@ void main() {
       expect(task.effectivePrimaryValue, valueA);
       expect(task.effectiveSecondaryValues, [valueB]);
       expect(task.isEffectivelyValueless, isFalse);
+    });
+
+    test('override primary prevents inheriting project secondary', () {
+      final now = DateTime.utc(2026, 1, 1);
+
+      const valueAId = 'value-a';
+      const valueBId = 'value-b';
+      const valueCId = 'value-c';
+
+      final valueA = Value(
+        id: valueAId,
+        createdAt: now,
+        updatedAt: now,
+        name: 'Health',
+        priority: ValuePriority.medium,
+      );
+      final valueB = Value(
+        id: valueBId,
+        createdAt: now,
+        updatedAt: now,
+        name: 'Work',
+        priority: ValuePriority.medium,
+      );
+      final valueC = Value(
+        id: valueCId,
+        createdAt: now,
+        updatedAt: now,
+        name: 'Family',
+        priority: ValuePriority.medium,
+      );
+
+      final project = Project(
+        id: 'project-1',
+        createdAt: now,
+        updatedAt: now,
+        name: 'P1',
+        completed: false,
+        values: [valueA, valueB],
+        primaryValueId: valueAId,
+        secondaryValueId: valueBId,
+      );
+
+      final task = Task(
+        id: 'task-1',
+        createdAt: now,
+        updatedAt: now,
+        name: 'T1',
+        completed: false,
+        project: project,
+        values: [valueC],
+        overridePrimaryValueId: valueCId,
+      );
+
+      expect(task.isOverridingValues, isTrue);
+      expect(task.isInheritingValues, isFalse);
+      expect(task.effectiveValues, [valueC]);
+      expect(task.effectivePrimaryValueId, valueCId);
+      expect(task.effectiveSecondaryValues, isEmpty);
     });
 
     test('is valueless when both task and project have none', () {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
+import 'package:taskly_domain/domain/core/model/entity_operation.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
 
 void showEditorErrorSnackBar(BuildContext context, Object error) {

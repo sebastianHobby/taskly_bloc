@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
 
 /// Custom matchers for testing common patterns in the application.
 ///
@@ -53,6 +52,7 @@ import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
 /// expect(state, isStateOfType<TaskDetailLoadSuccess>()
 ///     .having((s) => s.task.id, 'task.id', 'task-1'));
 /// ```
+import 'package:taskly_domain/taskly_domain.dart';
 TypeMatcher<T> isStateOfType<T>() => isA<T>();
 
 /// Matcher that checks both type and a condition.
@@ -523,4 +523,4 @@ Matcher isListLoadedState({int? itemCount}) => predicate<dynamic>(
 // Import needed for EntityOperation
 // ============================================================================
 // Note: Add this import at the top of the file if not present:
-// import 'package:taskly_bloc/domain/models/entity_operation.dart';
+// import 'package:taskly_domain/domain/core/model/entity_operation.dart';

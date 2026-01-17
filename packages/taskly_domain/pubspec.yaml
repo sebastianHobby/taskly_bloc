@@ -1,0 +1,15 @@
+name: taskly_domain
+publish_to: 'none'
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  equatable: any
+  flutter:
+    sdk: flutter
+  meta: any
+  rxdart: any
+  taskly_core:
+    path: ../taskly_core
+

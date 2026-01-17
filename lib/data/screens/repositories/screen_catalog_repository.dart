@@ -2,7 +2,7 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart'
     show ScreenCatalogRepositoryImpl;
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
+import 'package:taskly_bloc/domain/screens/catalog/model/screen_preferences.dart';
 
 /// Repository wrapper that delegates to the database implementation.
 ///

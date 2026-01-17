@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
-import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(() async {
     await initializeDateFormatting('en');

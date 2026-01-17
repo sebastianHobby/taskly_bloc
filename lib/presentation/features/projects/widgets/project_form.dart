@@ -11,7 +11,7 @@ import 'package:taskly_bloc/presentation/widgets/form_recurrence_chip.dart';
 import 'package:taskly_bloc/presentation/widgets/recurrence_picker.dart';
 import 'package:taskly_bloc/presentation/widgets/form_shell.dart';
 import 'package:taskly_bloc/presentation/widgets/values_alignment/values_alignment_sheet.dart';
-import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_domain/domain/domain.dart';
 
 /// A modern form for creating or editing projects.
 ///

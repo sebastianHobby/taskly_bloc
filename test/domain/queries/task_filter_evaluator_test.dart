@@ -1,13 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
-import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_filter_evaluator.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('TaskFilterEvaluator', () {
     test('includeInherited only applies when task has no values', () {
@@ -59,7 +52,7 @@ void main() {
         completed: false,
         project: project,
         values: [taskValue],
-        primaryValueId: taskValueId,
+        overridePrimaryValueId: taskValueId,
       );
 
       const evaluator = TaskFilterEvaluator();

@@ -1,7 +1,7 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
+import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 final class JournalTodayComposerModuleInterpreterV1 {

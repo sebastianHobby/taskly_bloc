@@ -4,15 +4,9 @@ import '../../../../helpers/test_imports.dart';
 
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_repository_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule_runtime_state.dart';
-import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _FakeAttentionEngine implements AttentionEngineContract {
   _FakeAttentionEngine({
     required this.action,

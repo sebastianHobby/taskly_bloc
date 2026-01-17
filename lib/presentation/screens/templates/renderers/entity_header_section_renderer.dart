@@ -1,6 +1,6 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';

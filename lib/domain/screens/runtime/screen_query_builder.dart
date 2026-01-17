@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_domain/domain/time/date_only.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart'
     as screen_models;
@@ -8,12 +8,12 @@ import 'package:taskly_bloc/domain/screens/language/models/section_ref.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
-import 'package:taskly_bloc/presentation/shared/models/sort_preferences.dart'
+import 'package:taskly_domain/domain/preferences/model/sort_preferences.dart'
     as sort_preferences;
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
+import 'package:taskly_domain/domain/queries/project_query.dart';
+import 'package:taskly_domain/domain/queries/query_filter.dart';
+import 'package:taskly_domain/domain/queries/task_predicate.dart';
+import 'package:taskly_domain/domain/queries/task_query.dart';
 
 /// Builds concrete query objects from persisted screen configuration.
 class ScreenQueryBuilder {

@@ -1,14 +1,6 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/domain/interfaces/auth_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/occurrence_stream_expander_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/occurrence_write_helper_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/pending_notifications_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 /// Shared mock implementations for repository contracts.
 ///
@@ -17,6 +9,7 @@ import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
 
 // === Core Repositories ===
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockTaskRepositoryContract extends Mock
     implements TaskRepositoryContract {}
 

@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/filtering/evaluation_context.dart';
-import 'package:taskly_bloc/domain/filtering/task_rules.dart';
 
 import '../../../fixtures/test_data.dart';
 import '../../../helpers/fallback_values.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 

@@ -1,7 +1,4 @@
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_item.dart';
-import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
@@ -12,6 +9,7 @@ import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
 
 import '../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
 

@@ -4,19 +4,19 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/time/date_only.dart';
+import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
+import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_tile_capabilities_resolver.dart';
-import 'package:taskly_bloc/domain/queries/project_predicate.dart';
-import 'package:taskly_bloc/domain/queries/query_filter.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
+import 'package:taskly_domain/domain/queries/project_predicate.dart';
+import 'package:taskly_domain/domain/queries/query_filter.dart';
+import 'package:taskly_domain/domain/queries/task_predicate.dart';
+import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/domain/queries/project_query.dart';
 
 /// Service for fetching and transforming data for the AgendaSection renderer.
 ///

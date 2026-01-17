@@ -1,6 +1,6 @@
 /// Backwards-compatible export.
 ///
-/// Prefer importing from `package:taskly_bloc/core/env/env.dart`.
+/// Prefer importing from `package:taskly_core/env.dart`.
 library;
 
-export 'package:taskly_bloc/core/env/env.dart';
+export 'package:taskly_core/env.dart';

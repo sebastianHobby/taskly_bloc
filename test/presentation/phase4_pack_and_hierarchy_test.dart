@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -17,6 +15,7 @@ import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../fixtures/test_data.dart';
 import '../helpers/widget_test_helpers.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 Future<void> _pumpForStream(WidgetTester tester, [int frameCount = 10]) async {
   for (var i = 0; i < frameCount; i++) {
     await tester.pump();

@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/attention/contracts/attention_engine_contract.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_resolution.dart';
-import 'package:taskly_bloc/domain/attention/model/attention_rule.dart';
-import 'package:taskly_bloc/domain/attention/query/attention_query.dart';
+import 'package:taskly_domain/domain/attention/contracts/attention_engine_contract.dart';
+import 'package:taskly_domain/domain/attention/model/attention_resolution.dart';
+import 'package:taskly_domain/domain/attention/model/attention_rule.dart';
+import 'package:taskly_domain/domain/attention/query/attention_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/section_template_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_section_params_v2.dart';
-import 'package:taskly_bloc/domain/services/progress/today_progress_service.dart';
+import 'package:taskly_domain/domain/services/progress/today_progress_service.dart';
 
 class AttentionBannerSectionInterpreterV2
     implements SectionTemplateInterpreter<AttentionBannerSectionParamsV2> {

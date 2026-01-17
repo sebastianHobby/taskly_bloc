@@ -116,7 +116,7 @@ void blocTestSafe<B extends BlocBase<S>, S>(
     description,
     build: build,
     setUp: () async {
-      initializeTalkerForTest();
+      initializeLoggingForTest();
       if (setUp != null) await setUp();
     },
     seed: seed,
@@ -163,7 +163,7 @@ void verifyInitialState<B extends BlocBase<S>, S>({
   required S expected,
 }) {
   test('initial state is $expected', () {
-    initializeTalkerForTest();
+    initializeLoggingForTest();
     final bloc = build();
     expect(bloc.state, equals(expected));
     bloc.close();

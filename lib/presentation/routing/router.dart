@@ -28,7 +28,7 @@ import 'package:taskly_bloc/presentation/features/values/view/value_editor_route
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
   observers: [
-    TalkerRouteObserver(talker.raw),
+    TalkerRouteObserver(talkerRaw),
     appRouteObserver,
     PerformanceRouteObserver(),
   ],

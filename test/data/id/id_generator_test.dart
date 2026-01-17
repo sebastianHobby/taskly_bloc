@@ -78,8 +78,6 @@ void main() {
       group('v5 tables (deterministic)', () {
         test('isDeterministic returns true for v5 tables', () {
           expect(IdGenerator.isDeterministic('values'), isTrue);
-          expect(IdGenerator.isDeterministic('task_values'), isTrue);
-          expect(IdGenerator.isDeterministic('project_values'), isTrue);
           expect(
             IdGenerator.isDeterministic('task_completion_history'),
             isTrue,
@@ -318,88 +316,7 @@ void main() {
         });
       });
 
-      group('taskValueId', () {
-        test('generates deterministic ID from task and value', () {
-          final id1 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-          final id2 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-
-          expect(id1, equals(id2));
-          expect(id1.length, 36);
-        });
-
-        test('different tasks produce different IDs', () {
-          final id1 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-          final id2 = idGenerator.taskValueId(
-            taskId: 'task-2',
-            valueId: 'value-1',
-          );
-          expect(id1, isNot(equals(id2)));
-        });
-      });
-
-      group('taskValueId', () {
-        test('generates deterministic ID from task and value', () {
-          final id1 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-          final id2 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-
-          expect(id1, equals(id2));
-          expect(id1.length, 36);
-        });
-
-        test('different tasks produce different IDs', () {
-          final id1 = idGenerator.taskValueId(
-            taskId: 'task-1',
-            valueId: 'value-1',
-          );
-          final id2 = idGenerator.taskValueId(
-            taskId: 'task-2',
-            valueId: 'value-1',
-          );
-
-          expect(id1, isNot(equals(id2)));
-        });
-
-        test('same across different users (no user in path)', () {
-          final gen1 = IdGenerator.withUserId('user-1');
-          final gen2 = IdGenerator.withUserId('user-2');
-
-          final id1 = gen1.taskValueId(taskId: 'task-1', valueId: 'value-1');
-          final id2 = gen2.taskValueId(taskId: 'task-1', valueId: 'value-1');
-
-          // taskValueId uses _v5NoUser, so same IDs for same inputs
-          expect(id1, equals(id2));
-        });
-      });
-
-      group('projectValueId', () {
-        test('generates deterministic ID from project and value', () {
-          final id1 = idGenerator.projectValueId(
-            projectId: 'project-1',
-            valueId: 'value-1',
-          );
-          final id2 = idGenerator.projectValueId(
-            projectId: 'project-1',
-            valueId: 'value-1',
-          );
-
-          expect(id1, equals(id2));
-        });
-
+      group('taskCompletionId', () {
         test('different dates produce different IDs', () {
           final id1 = idGenerator.taskCompletionId(
             taskId: 'task-1',

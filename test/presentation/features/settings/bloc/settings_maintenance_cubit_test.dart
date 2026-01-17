@@ -2,13 +2,11 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
-import 'package:taskly_bloc/domain/services/debug/template_data_service.dart';
-import 'package:taskly_bloc/domain/services/maintenance/local_data_maintenance_service.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
 
 import '../../../../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _MockTemplateDataService extends Mock implements TemplateDataService {}
 
 class _MockLocalDataMaintenanceService extends Mock

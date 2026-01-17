@@ -1,6 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
@@ -8,6 +6,7 @@ import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabili
 
 import '../../../fixtures/test_data.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('SectionDataResult', () {
     group('DataSectionResult', () {

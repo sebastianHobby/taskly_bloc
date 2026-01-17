@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_bloc/domain/journal/model/journal_entry.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
+import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
+import 'package:taskly_domain/domain/time/date_only.dart';
 
 final class JournalHistoryListSectionRendererV1 extends StatelessWidget {
   const JournalHistoryListSectionRendererV1({

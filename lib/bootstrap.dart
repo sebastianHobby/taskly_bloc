@@ -5,18 +5,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:talker_bloc_logger/talker_bloc_logger.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/core/env/env.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/allocation/engine/allocation_snapshot_coordinator.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_prewarm_service.dart';
-import 'package:taskly_bloc/domain/services/attention/attention_temporal_invalidation_service.dart';
-import 'package:taskly_bloc/domain/services/time/app_lifecycle_service.dart';
-import 'package:taskly_bloc/domain/services/time/home_day_key_service.dart';
-import 'package:taskly_bloc/domain/services/time/temporal_trigger_service.dart';
+import 'package:taskly_core/logging.dart';
+import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_detail_unified_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_detail_unified_page.dart';
@@ -115,7 +109,7 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
   // Initialize Talker logging system first (outside zone so it's always available)
   // Note: File logging observer defers initialization until first log to ensure bindings ready
-  initializeTalker();
+  initializeLogging();
 
   // Set up PowerSync logging integration
   // PowerSync uses Dart's logging package - forward logs to Talker
@@ -176,7 +170,7 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
 
       // Use TalkerBlocObserver for unified BLoC logging
       Bloc.observer = TalkerBlocObserver(
-        talker: talker.raw,
+        talker: talkerRaw,
         settings: TalkerBlocLoggerSettings(
           printCreations: kDebugMode,
           printClosings: kDebugMode,
@@ -292,9 +286,9 @@ class _BootstrapFailureApp extends StatelessWidget {
 Future<void> _maybeDevAutoLogin() async {
   if (!kDebugMode) return;
 
-  final supabase = Supabase.instance.client;
+  final authRepo = getIt<AuthRepositoryContract>();
 
-  if (supabase.auth.currentSession != null) {
+  if (authRepo.currentSession != null) {
     talker.debug('[auth] Already authenticated, skipping dev auto-login');
     return;
   }
@@ -306,7 +300,7 @@ Future<void> _maybeDevAutoLogin() async {
 
   try {
     talker.info('[auth] Attempting dev auto-login...');
-    await supabase.auth.signInWithPassword(
+    await authRepo.signInWithPassword(
       email: Env.devUsername,
       password: Env.devPassword,
     );

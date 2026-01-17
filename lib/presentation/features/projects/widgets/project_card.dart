@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';

@@ -1,10 +1,10 @@
-﻿import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
+import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/core/model/value.dart';
+import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
@@ -16,8 +16,8 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 ///
 /// The app uses convention-based routing with a small set of patterns:
 ///
-/// - **Unified screens**: `/:segment` → handled by [buildScreen]
-///   - URL segments use hyphens (`my_day` → `/my-day`).
+/// - **Unified screens**: `/:segment` ? handled by [buildScreen]
+///   - URL segments use hyphens (`my_day` ? `/my-day`).
 ///   - The canonical Anytime URL segment is `anytime`, which maps to the
 ///     legacy system screen key `someday`.
 /// - **Entity detail (read/composite)**: `/<entityType>/:id`
@@ -26,8 +26,8 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 ///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
-/// Screen paths use convention: `screenKey` → `/${screenKey}` with
-/// underscores converted to hyphens (e.g., `my_day` → `/my-day`).
+/// Screen paths use convention: `screenKey` ? `/${screenKey}` with
+/// underscores converted to hyphens (e.g., `my_day` ? `/my-day`).
 ///
 /// Entity paths use convention: `/${entityType}/${id}`
 /// (e.g., `/project/xyz-456`, `/value/xyz-456`).

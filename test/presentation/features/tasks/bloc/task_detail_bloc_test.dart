@@ -1,12 +1,11 @@
 import '../../../../helpers/test_imports.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
-import 'package:taskly_bloc/domain/core/editing/editing.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 
 import '../../../../fixtures/test_data.dart';
 import '../../../../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   late MockTaskRepositoryContract taskRepo;
   late MockProjectRepositoryContract projectRepo;

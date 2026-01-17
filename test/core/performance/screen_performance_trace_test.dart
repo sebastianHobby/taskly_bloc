@@ -1,14 +1,14 @@
 import '../../helpers/test_imports.dart';
 
 import 'package:taskly_bloc/core/logging/talker_service.dart'
-    show initializeTalkerForTest;
+    show initializeLoggingForTest;
 import 'package:taskly_bloc/core/performance/performance_trace_context.dart';
 import 'package:taskly_bloc/core/performance/screen_performance_trace.dart';
 
 void main() {
   group('ScreenPerformanceTrace', () {
     setUp(() {
-      initializeTalkerForTest();
+      initializeLoggingForTest();
       PerformanceTraceContext.instance.currentScreenTraceId = null;
     });
 

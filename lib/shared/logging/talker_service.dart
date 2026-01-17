@@ -1,6 +1,6 @@
 /// Backwards-compatible export.
 ///
-/// Prefer importing from `package:taskly_bloc/core/logging/talker_service.dart`.
+/// Prefer importing from `package:taskly_core/logging.dart`.
 library;
 
-export 'package:taskly_bloc/core/logging/talker_service.dart';
+export 'package:taskly_core/logging.dart';

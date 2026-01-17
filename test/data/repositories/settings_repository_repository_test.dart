@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme_mode.dart';
-import 'package:taskly_bloc/domain/settings/model/global_settings.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
 
 import '../../helpers/base_repository_helpers.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('SettingsRepository (repository)', () {
     late RepositoryTestContext ctx;

@@ -10,12 +10,6 @@
 library;
 
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/domain/core/model/entity_operation.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/projects/bloc/project_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
@@ -27,6 +21,7 @@ import '../helpers/test_imports.dart';
 // Mocks
 // ═══════════════════════════════════════════════════════════════════════════
 
+import 'package:taskly_domain/taskly_domain.dart';
 class MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class MockProjectRepository extends Mock implements ProjectRepositoryContract {}

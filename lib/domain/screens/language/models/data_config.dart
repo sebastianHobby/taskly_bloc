@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/value_query.dart';
-import 'package:taskly_bloc/domain/queries/journal_query.dart';
+import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/domain/queries/project_query.dart';
+import 'package:taskly_domain/domain/queries/value_query.dart';
+import 'package:taskly_domain/domain/queries/journal_query.dart';
 
 part 'data_config.freezed.dart';
 part 'data_config.g.dart';

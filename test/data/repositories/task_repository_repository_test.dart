@@ -1,14 +1,13 @@
 import '../../helpers/test_imports.dart';
-import 'package:taskly_bloc/domain/time/date_only.dart';
 import 'package:taskly_bloc/data/repositories/project_repository.dart';
 import 'package:taskly_bloc/data/repositories/task_repository.dart';
 import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/domain/domain.dart';
 
 import '../../helpers/base_repository_helpers.dart';
 import '../../mocks/fake_id_generator.dart';
 import '../../mocks/repository_mocks.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);
@@ -97,7 +96,7 @@ void main() {
 
         expect(loaded.values, hasLength(1));
         expect(loaded.values.single.id, valueId);
-        expect(loaded.primaryValueId, valueId);
+        expect(loaded.overridePrimaryValueId, valueId);
 
         expect(loaded.startDate, dateOnly(start));
         expect(loaded.deadlineDate, dateOnly(deadline));

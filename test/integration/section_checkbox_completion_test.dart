@@ -11,9 +11,6 @@ import 'package:provider/provider.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/theme/app_theme.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
-import 'package:taskly_bloc/domain/domain.dart';
-import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
@@ -30,8 +27,9 @@ import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import '../fixtures/test_data.dart';
 import '../helpers/test_helpers.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
-  setUpAll(initializeTalkerForTest);
+  setUpAll(initializeLoggingForTest);
   group('SectionWidget task checkbox completion', () {
     testWidgetsSafe(
       'dispatches completion intent for task checkbox',

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 
 /// Journal Today "composer" section.

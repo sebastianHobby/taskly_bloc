@@ -1,17 +1,10 @@
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/domain/core/model/project.dart';
-import 'package:taskly_bloc/domain/core/model/task.dart';
-import 'package:taskly_bloc/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_bloc/domain/queries/project_predicate.dart';
-import 'package:taskly_bloc/domain/queries/project_query.dart';
-import 'package:taskly_bloc/domain/queries/task_predicate.dart';
-import 'package:taskly_bloc/domain/queries/task_query.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
 
 import '../../../helpers/test_imports.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 class _FakeTaskRepository implements TaskRepositoryContract {
   _FakeTaskRepository({required this.overdue, required this.scheduled});
 

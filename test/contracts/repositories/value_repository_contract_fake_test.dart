@@ -6,8 +6,8 @@ library;
 
 import '../../helpers/test_imports.dart';
 import '../../mocks/fake_repositories.dart';
-import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 
+import 'package:taskly_domain/taskly_domain.dart';
 void main() {
   group('ValueRepositoryContract (fake implementation)', () {
     late FakeValueRepository repo;

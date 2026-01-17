@@ -19,14 +19,12 @@ import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:test/test.dart' show Tags;
 import 'package:taskly_bloc/app/di/dependency_injection.dart'
-    show getIt, setupDependencies;
+  show getIt, setupDependencies;
+import 'package:taskly_domain/preferences.dart' show SettingsKey;
 import 'package:taskly_bloc/app/env/env.dart';
 import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart'
     show getDatabasePath;
 import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_bloc/domain/preferences/model/settings_key.dart';
-import 'package:taskly_bloc/domain/settings/settings.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 
 import 'e2e_test_helpers.dart';
@@ -67,7 +65,7 @@ void main() {
   String? authPassword;
 
   setUpAll(() async {
-    initializeTalkerForTest();
+    initializeLoggingForTest();
 
     if (!_canRunAgainstLocalStack) {
       return;

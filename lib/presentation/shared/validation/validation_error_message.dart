@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:taskly_bloc/domain/core/editing/validation_error.dart';
+import 'package:taskly_domain/domain/core/editing/validation_error.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 
 /// Maps a domain [ValidationError] to user-facing text.

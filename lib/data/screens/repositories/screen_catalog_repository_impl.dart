@@ -4,7 +4,7 @@ import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
     as db;
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
+import 'package:taskly_bloc/domain/screens/catalog/model/screen_preferences.dart';
 
 /// Drift implementation of [ScreenCatalogRepositoryContract].
 ///

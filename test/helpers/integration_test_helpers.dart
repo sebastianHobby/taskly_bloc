@@ -50,7 +50,6 @@ import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.
 import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
 import 'package:taskly_bloc/data/repositories/settings_repository.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
-import 'package:taskly_bloc/domain/interfaces/settings_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
@@ -64,6 +63,7 @@ import 'test_db.dart';
 /// Default timeout for integration tests (45 seconds).
 ///
 /// Integration tests involve real I/O and may be slower than unit tests.
+import 'package:taskly_domain/taskly_domain.dart';
 const Duration kIntegrationTestTimeout = Duration(seconds: 45);
 
 /// Default timeout for waiting on BLoC state changes.
@@ -143,7 +143,7 @@ class IntegrationTestContext {
 
   /// Creates a new integration test context with fresh database.
   static Future<IntegrationTestContext> create() async {
-    initializeTalkerForTest();
+    initializeLoggingForTest();
     final db = createTestDb();
     final settingsRepository = SettingsRepository(driftDb: db);
 
