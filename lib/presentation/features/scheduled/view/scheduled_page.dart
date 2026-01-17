@@ -22,6 +22,7 @@ class ScheduledPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => ScheduledFeedBloc(
         agendaDataService: getIt(),
+        homeDayService: getIt(),
         scope: scope,
       ),
       child: const _ScheduledView(),

@@ -30,9 +30,6 @@ abstract final class SectionTemplateId {
 
   // Former custom screens (now templated)
   static const settingsMenu = 'settings_menu';
-  static const allocationSettings = 'allocation_settings';
-  static const attentionRules = 'attention_rules';
-  static const focusSetupWizard = 'focus_setup_wizard';
   static const trackerManagement = 'tracker_management';
   static const statisticsDashboard = 'statistics_dashboard';
 
