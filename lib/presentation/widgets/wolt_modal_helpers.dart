@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/presentation/widgets/modal_chrome_scope.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// Helper to centralize modal usage for detail sheets.
 ///

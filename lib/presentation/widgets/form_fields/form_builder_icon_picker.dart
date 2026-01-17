@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_picker_dialog.dart';
+import 'package:taskly_bloc/presentation/widgets/icon_picker/icon_catalog.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// A FormBuilder field for selecting an icon from a predefined list.
 ///
@@ -83,6 +84,11 @@ class _IconPickerButton extends StatelessWidget {
               final result = await IconPickerDialog.show(
                 context,
                 selectedIcon: selected,
+                categories: defaultIconCategories,
+                title: 'Select Icon',
+                searchHintText: 'Search icons...',
+                allCategoryLabel: 'All',
+                noIconsFoundLabel: 'No icons found',
               );
               if (result != null) {
                 onSelected(result);

@@ -4,10 +4,10 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/delete_confirmation.dart';
-import 'package:taskly_bloc/presentation/widgets/swipe_to_delete.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/values/bloc/value_list_bloc.dart';
 import 'package:taskly_bloc/presentation/widgets/value_chip.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 class ValuesListView extends StatelessWidget {
   const ValuesListView({
@@ -29,6 +29,7 @@ class ValuesListView extends StatelessWidget {
           SwipeToDelete(
             itemKey: ValueKey(value.id),
             enabled: enableSwipeToDelete,
+            deleteLabel: context.l10n.deleteLabel,
             confirmDismiss: () => showDeleteConfirmationDialog(
               context: context,
               title: context.l10n.deleteValue,
