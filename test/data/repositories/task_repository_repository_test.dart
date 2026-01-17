@@ -6,6 +6,7 @@ import '../../mocks/fake_id_generator.dart';
 import '../../mocks/repository_mocks.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   setUpAll(setUpAllTestEnvironment);
   setUp(setUpTestEnvironment);

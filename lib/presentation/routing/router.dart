@@ -13,6 +13,8 @@ import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_p
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/inbox/view/inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
+import 'package:taskly_bloc/core/env/env.dart';
+import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -70,7 +72,10 @@ final router = GoRouter(
         // === MVP SHELL ROUTES (Package D strangler entrypoints) ===
         GoRoute(
           path: Routing.screenPath('my_day'),
-          builder: (_, __) => Routing.buildScreen('my_day'),
+          builder: (_, __) {
+            if (Env.enableMvpMyDay) return const MyDayMvpPage();
+            return Routing.buildScreen('my_day');
+          },
         ),
         GoRoute(
           path: Routing.screenPath('someday'),
