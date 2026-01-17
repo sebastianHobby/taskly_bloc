@@ -1374,6 +1374,13 @@ packages:
       relative: true
     source: path
     version: "0.0.0"
+  taskly_ui:
+    dependency: "direct main"
+    description:
+      path: "packages/taskly_ui"
+      relative: true
+    source: path
+    version: "0.0.0"
   term_glyph:
     dependency: transitive
     description:

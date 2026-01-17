@@ -57,8 +57,19 @@ abstract final class Routing {
   ///
   /// This is used by the authenticated app shell to decide whether a location
   /// should count as an active navigation destination.
+  static const Set<String> _navigationScreenKeys = {
+    'my_day',
+    'inbox',
+    'scheduled',
+    'someday',
+    'journal',
+    'values',
+    'review_inbox',
+    'settings',
+  };
+
   static bool isSystemScreenKey(String screenKey) =>
-      SystemScreenSpecs.isSystemScreen(screenKey);
+      _navigationScreenKeys.contains(screenKey.replaceAll('-', '_'));
 
   /// Entity route prefixes supported by the router.
   static const entityTypes = {'task', 'project', 'value'};

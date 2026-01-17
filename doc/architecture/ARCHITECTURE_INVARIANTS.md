@@ -37,6 +37,30 @@ Guardrail:
 - `core/` is for cross-cutting infrastructure (DI wiring, platform integration,
   logging, etc.).
 
+### 1.3 Package public API boundary (strict)
+
+Dart package convention is a visibility boundary:
+
+- `lib/` is public API.
+- `lib/src/` is implementation detail.
+
+Normative rules:
+
+- Code outside a package must not import or export `package:<pkg>/src/...`.
+- Each package must expose a clean public surface via `lib/` entrypoints
+  (typically a barrel like `package:<pkg>/<pkg>.dart` or feature barrels).
+- If another package needs something that currently lives under `lib/src/`, do
+  not deep-import it.
+  - Prefer promoting the symbol into the package's public API (`lib/`), or
+  introducing an explicit shared abstraction in an appropriate shared package.
+  - If a narrow exception is unavoidable, document it and keep it temporary.
+
+Guardrail:
+
+- Script: [tool/no_local_package_src_deep_imports.dart](../../tool/no_local_package_src_deep_imports.dart)
+  - Fails on `import`/`export` of `package:<local>/src/...` from outside that
+    local package.
+
 ## 2) Presentation boundary (BLoC-only)
 
 - Widgets/pages must not call repositories/services directly.
@@ -46,9 +70,80 @@ Guardrail:
 Allowed exceptions (narrow): ephemeral UI-only state (controllers, focus nodes,
 animations, scroll controllers) that does not represent domain/data state.
 
+### 2.1 Shared UI extraction: `packages/taskly_ui` (strict)
+
+Reusable UI components (widgets and small UI helpers) must live in
+`packages/taskly_ui`.
+
+Normative rules:
+
+- `taskly_ui` must remain **pure UI**: no BLoCs/Cubits, no repositories/services,
+  no use-cases, no DI, and no stream subscriptions.
+- `taskly_ui` must not perform navigation or import app routing (`go_router`,
+  `Routing`, etc.).
+- Reusable UI must follow **data in / events out** APIs (props + callbacks).
+- App code must not deep-import `taskly_ui` internals; import only
+  `package:taskly_ui/taskly_ui.dart`.
+
+Allowed exceptions (narrow):
+
+- Ephemeral UI-only state that is inherently screen-local (controllers, focus
+  nodes, animations, scroll controllers).
+- Feature-unique widgets that are not reused (keep them inside the owning
+  feature/screen; promote to `taskly_ui` if they become shared).
+- Short-lived experiments/prototypes that are explicitly scoped and removed or
+  extracted if they become permanent.
+
 See: [doc/architecture/README.md](README.md)
 
 See also: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
+
+### 2.2 UI composition model (4-tier) (strict)
+
+All UI in Taskly must follow a consistent composition vocabulary so shared UI
+stays reusable and feature screens remain easy to reason about.
+
+Normative rules:
+
+- All reusable UI must be expressed using the **4-tier model**:
+  - **Primitives**: tiny, style-driven building blocks (buttons, chips,
+    spacing, text styles). No domain meaning.
+  - **Entities**: UI for a single domain concept (for example, a “Task tile”
+    visual), still **render-only** with callbacks.
+  - **Sections**: composed blocks that group primitives/entities into a
+    reusable chunk (empty/error sections, list headers, etc.). Must remain
+    presentation-agnostic (no routing/state).
+  - **Screens/Templates**: full pages and flows (routing, BLoC wiring, effects,
+    feature-specific orchestration). These live in the app presentation layer.
+
+- Code placement is strict:
+  - **Primitives / Entities / Sections** that are shared across screens/features
+    must live in `packages/taskly_ui`.
+  - **Screens/Templates** must live in the app presentation layer (for example
+    under `lib/presentation/`). They must not live in `packages/taskly_ui`.
+
+- Shared UI APIs must be **data in / events out**:
+  - render from immutable inputs (props/view-models)
+  - report user intent only via callbacks
+  - no app side-effects (no writes, no navigation)
+
+- `taskly_ui` must remain pure UI (see 2.1): no BLoCs/Cubits, repositories,
+  services/use-cases, DI wiring, or stream subscriptions; no routing/navigation.
+
+- `taskly_ui` source layout must reflect the 4-tier taxonomy:
+  - `packages/taskly_ui/lib/src/primitives/`
+  - `packages/taskly_ui/lib/src/entities/`
+  - `packages/taskly_ui/lib/src/sections/`
+  - (Reserved) `packages/taskly_ui/lib/src/templates/` for layout-only
+    scaffolding that remains routing/state-free.
+
+Allowed exceptions (narrow):
+
+- Ephemeral UI-only state that is inherently screen-local (controllers, focus
+  nodes, animations, scroll controllers).
+- Feature-unique widgets that are not reused (keep in the owning feature).
+- Explicitly short-lived prototypes/experiments that are scoped and removed or
+  extracted if they become permanent.
 
 ## 3) State management standard
 

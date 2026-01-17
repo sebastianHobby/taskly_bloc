@@ -5,6 +5,7 @@ import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 
 /// Service for computing badge counts for navigation screens.
 ///
@@ -23,6 +24,16 @@ class NavigationBadgeService {
   final ProjectRepositoryContract _projectRepository;
 
   final Map<String, Stream<int>?> _badgeStreamCache = {};
+
+  /// Returns a stream of badge counts for a given system [screenKey].
+  ///
+  /// For screens that have migrated off USM (and no longer have a typed
+  /// [ScreenSpec] in [SystemScreenSpecs]), this returns null.
+  Stream<int>? badgeStreamForScreenKey(String screenKey) {
+    final spec = SystemScreenSpecs.getByKey(screenKey);
+    if (spec == null) return null;
+    return badgeStreamFor(spec);
+  }
 
   /// Returns a stream of badge counts for the given screen.
   ///

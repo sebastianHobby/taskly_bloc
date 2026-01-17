@@ -41,6 +41,18 @@ non-UI streams directly.
 If an exception starts to depend on domain/data or becomes shared across screens,
 promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
+### 1.1.2 UI composition model (4-tier)
+
+All UI in Taskly uses a consistent 4-tier composition model:
+
+- **Primitives / Entities / Sections**: shared, reusable UI that follows “data
+  in / events out”. Shared components belong in `packages/taskly_ui`.
+- **Screens/Templates**: full pages and flows (routing + BLoC wiring + effects).
+  These live in the app presentation layer (typically under `lib/presentation/`).
+
+Normative details live in: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
+(section 2.2).
+
 ### 1.1.1 Write correlation rule (OperationContext)
 
 **Normative rule:** Every user-initiated mutation must pass an

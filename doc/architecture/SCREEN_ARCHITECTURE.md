@@ -50,10 +50,58 @@ services**, not from a runtime screen interpreter.
 
 Recommended reuse mechanisms:
 
-- Shared presentation components under `lib/presentation/...` (widgets,
-  theming/extensions)
+- Shared UI components in `packages/taskly_ui` (pure UI only; see below)
+- Shared presentation components under `lib/presentation/...` when they are
+  screen/feature-specific or still in the process of extraction
 - Shared domain services/use-cases under `lib/domain/...` (or extracted packages)
 - Shared repositories/contracts and implementations
+
+## 4.2 UI composition model (4-tier) (strict)
+
+All UI must use the same composition vocabulary:
+
+- **Primitives**: tiny, style-driven building blocks with no domain meaning.
+- **Entities**: render-only UI for a single domain concept, still “data in /
+  events out”.
+- **Sections**: composed, reusable chunks that group primitives/entities.
+  Sections must remain presentation-agnostic (no routing/state).
+- **Screens/Templates**: full pages and flows (routing, BLoC wiring, effects,
+  feature orchestration).
+
+Code placement is strict:
+
+- Shared **Primitives / Entities / Sections** belong in `packages/taskly_ui`.
+- **Screens/Templates** belong in the app presentation layer.
+
+See the normative rule:
+- [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section 2.2)
+
+### 4.3 Shared UI package: `taskly_ui` (strict)
+
+To reduce inconsistent look-and-feel and avoid ad-hoc cross-feature imports,
+prefer extracting reusable UI building blocks into `packages/taskly_ui`.
+
+Normative boundaries for `taskly_ui`:
+
+- `taskly_ui` is **pure UI** (widgets + small UI helpers).
+- `taskly_ui` must not contain BLoCs/Cubits, subscribe to domain/data streams,
+  or call repositories/services/use-cases.
+- `taskly_ui` must not perform navigation (no app routing, no `go_router`).
+- Interactivity is expressed as **callbacks / UI events** that are handled by
+  the app-owned screen/BLoC.
+
+Package hygiene (recommended):
+
+- App code should import only `package:taskly_ui/taskly_ui.dart`.
+- Keep `taskly_ui` implementation private under `packages/taskly_ui/lib/src/`.
+
+Taxonomy layout (strict):
+
+- `packages/taskly_ui/lib/src/primitives/`
+- `packages/taskly_ui/lib/src/entities/`
+- `packages/taskly_ui/lib/src/sections/`
+- (Reserved) `packages/taskly_ui/lib/src/templates/` for layout-only
+  scaffolding that remains routing/state-free.
 
 ## 5) Errors and Empty States
 

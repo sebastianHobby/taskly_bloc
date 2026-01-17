@@ -83,11 +83,6 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
       ScreenTemplateEntityDetailScaffoldV1;
 
   // Full-screen, self-contained templates (feature UIs)
-  const factory ScreenTemplateSpec.settingsMenu() = ScreenTemplateSettingsMenu;
-  const factory ScreenTemplateSpec.trackerManagement() =
-      ScreenTemplateTrackerManagement;
-  const factory ScreenTemplateSpec.statisticsDashboard() =
-      ScreenTemplateStatisticsDashboard;
   const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
   const factory ScreenTemplateSpec.myDayFocusModeRequired() =
       ScreenTemplateMyDayFocusModeRequired;

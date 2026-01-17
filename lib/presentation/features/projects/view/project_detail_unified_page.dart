@@ -15,12 +15,11 @@ import 'package:taskly_bloc/core/performance/performance_logger.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_spec_state.dart';
-import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/loading_state_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/screen_template_widget.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// Unified project detail page using the screen model.
 ///

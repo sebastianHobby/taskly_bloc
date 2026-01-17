@@ -28,11 +28,6 @@ abstract final class SectionTemplateId {
   static const journalHistoryListV1 = 'journal_history_list_v1';
   static const journalManageTrackersV1 = 'journal_manage_trackers_v1';
 
-  // Former custom screens (now templated)
-  static const settingsMenu = 'settings_menu';
-  static const trackerManagement = 'tracker_management';
-  static const statisticsDashboard = 'statistics_dashboard';
-
   // Screen-level gates (full-screen)
   static const myDayFocusModeRequired = 'my_day_focus_mode_required';
 }

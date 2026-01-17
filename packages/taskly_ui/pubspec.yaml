@@ -1,0 +1,14 @@
+name: taskly_ui
+publish_to: none
+description: Shared pure-UI components for Taskly.
+
+environment:
+  sdk: ^3.9.0
+  flutter: ^3.35.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
