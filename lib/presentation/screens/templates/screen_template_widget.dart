@@ -2,10 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_domain/analytics.dart';
-import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/language/models/app_bar_action.dart';
 import 'package:taskly_bloc/domain/screens/language/models/fab_operation.dart';
@@ -16,8 +14,6 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
-import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
-import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_page.dart';
 import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
@@ -53,24 +49,6 @@ class ScreenTemplateWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget buildFocusSetupWizard() {
-      FocusSetupWizardStep? parseInitialStep() {
-        final step = GoRouterState.of(context).uri.queryParameters['step'];
-        return switch (step) {
-          'select_focus_mode' => FocusSetupWizardStep.selectFocusMode,
-          _ => null,
-        };
-      }
-
-      return BlocProvider(
-        create: (_) => FocusSetupBloc(
-          settingsRepository: getIt<SettingsRepositoryContract>(),
-          valueRepository: getIt(),
-        )..add(FocusSetupEvent.started(initialStep: parseInitialStep())),
-        child: const FocusSetupWizardPage(),
-      );
-    }
-
     return data.template.when(
       standardScaffoldV1: () => _StandardScaffoldV1Template(
         data: data,
@@ -84,11 +62,6 @@ class ScreenTemplateWidget extends StatelessWidget {
       ),
       statisticsDashboard: () => const _StatisticsDashboardPlaceholder(),
       journalHub: () => const JournalHubPage(),
-      attentionRules: () => const _PlaceholderTemplate(
-        title: 'Attention Rules',
-        message: 'Attention rules UI is being rebuilt.',
-      ),
-      focusSetupWizard: buildFocusSetupWizard,
       myDayFocusModeRequired: () => const MyDayFocusModeRequiredPage(),
     );
   }

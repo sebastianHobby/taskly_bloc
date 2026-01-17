@@ -7,6 +7,7 @@ import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.d
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
 
 sealed class ScheduledFeedEvent {
   const ScheduledFeedEvent();
@@ -43,8 +44,10 @@ final class ScheduledFeedError extends ScheduledFeedState {
 class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   ScheduledFeedBloc({
     required AgendaSectionDataService agendaDataService,
+    required HomeDayService homeDayService,
     ScheduledScope scope = const GlobalScheduledScope(),
   }) : _agendaDataService = agendaDataService,
+       _homeDayService = homeDayService,
        _scope = scope,
        super(const ScheduledFeedLoading()) {
     on<ScheduledFeedStarted>(_onStarted);
@@ -54,6 +57,7 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   }
 
   final AgendaSectionDataService _agendaDataService;
+  final HomeDayService _homeDayService;
   final ScheduledScope _scope;
 
   StreamSubscription<AgendaData>? _sub;
@@ -76,15 +80,14 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   Future<void> _subscribe(Emitter<ScheduledFeedState> emit) async {
     await _sub?.cancel();
 
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final rangeStart = today;
-    final rangeEnd = today.add(const Duration(days: 30));
+    final todayDayKeyUtc = _homeDayService.todayDayKeyUtc();
+    final rangeStart = todayDayKeyUtc;
+    final rangeEnd = todayDayKeyUtc.add(const Duration(days: 30));
 
     _sub = _agendaDataService
         .watchAgendaData(
-          referenceDate: today,
-          focusDate: today,
+          referenceDate: todayDayKeyUtc,
+          focusDate: todayDayKeyUtc,
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
           scope: _toAgendaScope(_scope),

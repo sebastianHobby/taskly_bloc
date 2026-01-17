@@ -9,7 +9,7 @@ import 'package:taskly_data/src/infrastructure/drift/features/journal_tables.dri
 import 'package:taskly_data/src/infrastructure/drift/features/screen_tables.drift.dart';
 import 'package:taskly_data/src/infrastructure/drift/features/shared_enums.dart';
 import 'package:taskly_data/src/infrastructure/drift/features/tracker_tables.drift.dart';
-import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/core.dart' hide Value;
 part 'drift_database.g.dart';
 
 /// Exception types for recurrence modifications
@@ -52,12 +52,14 @@ class ProjectTable extends Table {
       boolean().clientDefault(() => false).named('pinned')();
 
   /// Primary value slot for this project (nullable).
+  @ReferenceName('primaryValueProjects')
   TextColumn get primaryValueId => text()
       .nullable()
       .named('primary_value_id')
       .references(ValueTable, #id, onDelete: KeyAction.setNull)();
 
   /// Secondary value slot for this project (nullable).
+  @ReferenceName('secondaryValueProjects')
   TextColumn get secondaryValueId => text()
       .nullable()
       .named('secondary_value_id')
@@ -115,12 +117,14 @@ class TaskTable extends Table {
   /// Task override primary value slot (nullable).
   ///
   /// When set, the task is considered to override project value slots.
+  @ReferenceName('overridePrimaryValueTasks')
   TextColumn get overridePrimaryValueId => text()
       .nullable()
       .named('override_primary_value_id')
       .references(ValueTable, #id, onDelete: KeyAction.setNull)();
 
   /// Task override secondary value slot (nullable).
+  @ReferenceName('overrideSecondaryValueTasks')
   TextColumn get overrideSecondaryValueId => text()
       .nullable()
       .named('override_secondary_value_id')

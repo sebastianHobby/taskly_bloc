@@ -26,6 +26,8 @@ import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/home_day_service.dart';
+import 'package:taskly_bloc/presentation/shared/services/time/now_service.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/agenda_section_interpreter_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/data_list_section_interpreter_v2.dart';
@@ -77,6 +79,13 @@ Future<void> setupDependencies() async {
   getIt.registerSingleton<Clock>(systemClock);
 
   getIt
+    ..registerLazySingleton<NowService>(SystemNowService.new)
+    ..registerLazySingleton<HomeDayService>(
+      () => HomeDayService(
+        dayKeyService: getIt<HomeDayKeyService>(),
+        nowService: getIt<NowService>(),
+      ),
+    )
     // Register occurrence stream expander for reading occurrences
     ..registerLazySingleton<OccurrenceStreamExpanderContract>(
       OccurrenceStreamExpander.new,
@@ -190,6 +199,8 @@ Future<void> setupDependencies() async {
       () => AgendaSectionDataService(
         taskRepository: getIt<TaskRepositoryContract>(),
         projectRepository: getIt<ProjectRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+        clock: getIt<Clock>(),
       ),
     )
     ..registerLazySingleton<SectionDataService>(

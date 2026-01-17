@@ -9,6 +9,7 @@ import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/services.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
@@ -24,17 +25,25 @@ class AgendaSectionDataService {
   AgendaSectionDataService({
     required this.taskRepository,
     required this.projectRepository,
+    required HomeDayKeyService dayKeyService,
+    Clock clock = systemClock,
     this.nearTermDays = 7,
-  });
+  }) : _dayKeyService = dayKeyService,
+       _clock = clock,
+       _loadedRangeEnd = dayKeyService
+           .todayDayKeyUtc(nowUtc: clock.nowUtc())
+           .add(const Duration(days: 30));
 
   final TaskRepositoryContract taskRepository;
   final ProjectRepositoryContract projectRepository;
+  final HomeDayKeyService _dayKeyService;
+  final Clock _clock;
 
   /// Number of days from today to show empty day placeholders.
   final int nearTermDays;
 
   /// Current loaded range end (for on-demand loading).
-  DateTime _loadedRangeEnd = DateTime.now().add(const Duration(days: 30));
+  DateTime _loadedRangeEnd;
 
   /// Watches agenda data reactively for a given range.
   ///
@@ -48,7 +57,7 @@ class AgendaSectionDataService {
     AgendaScope? scope,
     int? nearTermDaysOverride,
   }) {
-    final watchStartTime = kDebugMode ? DateTime.now() : null;
+    final watchStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final rangeDays = rangeEnd.difference(rangeStart).inDays;
     final logMsg =
         '🚀 Scheduled: Starting watchAgendaData (range: $rangeDays days)';
@@ -62,11 +71,7 @@ class AgendaSectionDataService {
       );
     }
 
-    final today = DateTime(
-      referenceDate.year,
-      referenceDate.month,
-      referenceDate.day,
-    );
+    final today = dateOnly(referenceDate);
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
 
     final overdueTasksQuery = _buildOverdueTasksQuery(today, scope);
@@ -143,7 +148,7 @@ class AgendaSectionDataService {
       scheduledTasksStream,
       scheduledProjectsStream,
       (overdueTasks, overdueProjects, tasksWithDates, projectsWithDates) {
-        final processingStart = kDebugMode ? DateTime.now() : null;
+        final processingStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
         if (kDebugMode) {
           developer.log(
             '⚙️ Scheduled: Processing data - '
@@ -174,7 +179,7 @@ class AgendaSectionDataService {
         // 2. Expand items into per-day entries and group by date
         final itemsByDate = <DateTime, List<AgendaItem>>{};
 
-        final expansionStart = kDebugMode ? DateTime.now() : null;
+        final expansionStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
         for (final task in tasksWithDates) {
           _addTaskToDateMap(task, itemsByDate, today, rangeEnd);
         }
@@ -182,8 +187,8 @@ class AgendaSectionDataService {
         for (final project in projectsWithDates) {
           _addProjectToDateMap(project, itemsByDate, today, rangeEnd);
         }
-        final expansionMs = (kDebugMode && expansionStart != null)
-            ? DateTime.now().difference(expansionStart).inMilliseconds
+        final expansionMs = kDebugMode
+            ? expansionStopwatch?.elapsedMilliseconds
             : null;
 
         final totalAgendaItems = itemsByDate.values.fold<int>(
@@ -191,28 +196,24 @@ class AgendaSectionDataService {
           (sum, items) => sum + items.length,
         );
 
-        final groupingStart = kDebugMode ? DateTime.now() : null;
+        final groupingStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
         final groups = _generateDateGroups(
           itemsByDate: itemsByDate,
           today: today,
           nearTermDays: effectiveNearTermDays,
           horizonEnd: rangeEnd,
         );
-        final groupingMs = (kDebugMode && groupingStart != null)
-            ? DateTime.now().difference(groupingStart).inMilliseconds
+        final groupingMs = kDebugMode
+            ? groupingStopwatch?.elapsedMilliseconds
             : null;
 
         if (kDebugMode &&
-            watchStartTime != null &&
-            processingStart != null &&
+            watchStopwatch != null &&
+            processingStopwatch != null &&
             expansionMs != null &&
             groupingMs != null) {
-          final processingMs = DateTime.now()
-              .difference(processingStart)
-              .inMilliseconds;
-          final totalMs = DateTime.now()
-              .difference(watchStartTime)
-              .inMilliseconds;
+          final processingMs = processingStopwatch.elapsedMilliseconds;
+          final totalMs = watchStopwatch.elapsedMilliseconds;
 
           final completionMsg =
               '✅ Scheduled: Complete - '
@@ -255,7 +256,7 @@ class AgendaSectionDataService {
     AgendaScope? scope,
     int? nearTermDaysOverride,
   }) async {
-    final fetchStartTime = kDebugMode ? DateTime.now() : null;
+    final fetchStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final rangeDays = rangeEnd.difference(rangeStart).inDays;
     if (kDebugMode) {
       developer.log(
@@ -269,23 +270,17 @@ class AgendaSectionDataService {
     }
 
     final effectiveNearTermDays = nearTermDaysOverride ?? nearTermDays;
-    final today = DateTime(
-      referenceDate.year,
-      referenceDate.month,
-      referenceDate.day,
-    );
+    final today = dateOnly(referenceDate);
     final horizonEnd = rangeEnd;
 
     // 1. Fetch overdue items
-    final overdueStart = kDebugMode ? DateTime.now() : null;
+    final overdueStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final overdueTasks = await _getOverdueTasks(today, scope: scope);
     final overdueProjects = await _getOverdueProjects(today, scope: scope);
-    final overdueMs = (kDebugMode && overdueStart != null)
-        ? DateTime.now().difference(overdueStart).inMilliseconds
-        : null;
+    final overdueMs = kDebugMode ? overdueStopwatch?.elapsedMilliseconds : null;
 
     // 2. Fetch items with dates within horizon
-    final scheduledStart = kDebugMode ? DateTime.now() : null;
+    final scheduledStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final tasksWithDates = await _getTasksWithDates(
       rangeStart,
       horizonEnd,
@@ -296,8 +291,8 @@ class AgendaSectionDataService {
       horizonEnd,
       scope: scope,
     );
-    final scheduledMs = (kDebugMode && scheduledStart != null)
-        ? DateTime.now().difference(scheduledStart).inMilliseconds
+    final scheduledMs = kDebugMode
+        ? scheduledStopwatch?.elapsedMilliseconds
         : null;
 
     if (kDebugMode && overdueMs != null && scheduledMs != null) {
@@ -343,24 +338,22 @@ class AgendaSectionDataService {
     }
 
     // 5. Generate date groups with empty day handling
-    final groupingStart = kDebugMode ? DateTime.now() : null;
+    final groupingStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final groups = _generateDateGroups(
       itemsByDate: itemsByDate,
       today: today,
       nearTermDays: effectiveNearTermDays,
       horizonEnd: horizonEnd,
     );
-    final groupingMs = (kDebugMode && groupingStart != null)
-        ? DateTime.now().difference(groupingStart).inMilliseconds
+    final groupingMs = kDebugMode
+        ? groupingStopwatch?.elapsedMilliseconds
         : null;
 
     final totalAgendaItems = itemsByDate.values.fold<int>(
       0,
       (sum, items) => sum + items.length,
     );
-    final totalMs = (kDebugMode && fetchStartTime != null)
-        ? DateTime.now().difference(fetchStartTime).inMilliseconds
-        : null;
+    final totalMs = kDebugMode ? fetchStopwatch?.elapsedMilliseconds : null;
 
     if (kDebugMode && totalMs != null && groupingMs != null) {
       final fetchCompleteMsg =
@@ -393,8 +386,8 @@ class AgendaSectionDataService {
 
   /// Loads initial data (today + 1 month).
   Future<AgendaData> loadInitial() {
-    final today = DateTime.now();
-    final rangeStart = DateTime(today.year, today.month, today.day);
+    final today = _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc());
+    final rangeStart = today;
     _loadedRangeEnd = today.add(const Duration(days: 30));
     return getAgendaData(
       referenceDate: today,
@@ -407,11 +400,11 @@ class AgendaSectionDataService {
   /// Loads more data when user scrolls past current horizon.
   Future<AgendaData> loadMore(DateTime newHorizonEnd) {
     _loadedRangeEnd = newHorizonEnd;
-    final now = DateTime.now();
-    final rangeStart = DateTime(now.year, now.month, now.day);
+    final today = _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc());
+    final rangeStart = today;
     return getAgendaData(
-      referenceDate: now,
-      focusDate: now,
+      referenceDate: today,
+      focusDate: today,
       rangeStart: rangeStart,
       rangeEnd: _loadedRangeEnd,
     );
@@ -419,16 +412,14 @@ class AgendaSectionDataService {
 
   /// Jumps to a specific date (from calendar modal).
   Future<AgendaData> jumpToDate(DateTime targetDate) {
+    final targetDay = dateOnly(targetDate);
+
     // Load 1 month after target date (1 week before is in near-term range)
-    _loadedRangeEnd = targetDate.add(const Duration(days: 30));
-    final rangeStart = DateTime(
-      targetDate.year,
-      targetDate.month,
-      targetDate.day,
-    );
+    _loadedRangeEnd = targetDay.add(const Duration(days: 30));
+    final rangeStart = targetDay;
     return getAgendaData(
-      referenceDate: DateTime.now(),
-      focusDate: targetDate,
+      referenceDate: _dayKeyService.todayDayKeyUtc(nowUtc: _clock.nowUtc()),
+      focusDate: targetDay,
       rangeStart: rangeStart,
       rangeEnd: _loadedRangeEnd,
     );

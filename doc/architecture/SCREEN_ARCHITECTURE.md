@@ -60,6 +60,20 @@ Recommended reuse mechanisms:
 - Prefer screen-specific error handling and retries in the BLoC.
 - Use typed error states to keep rendering deterministic.
 
+## 5.1 Mutations and OperationContext (strict)
+
+User-initiated mutations must be correlated end-to-end using
+`OperationContext`.
+
+- Create the `OperationContext` in the BLoC handler where the user intent is
+  interpreted (tap/submit/confirm).
+- Pass `context` down through domain write APIs and into repository mutations.
+- Ensure failures surfaced back to the BLoC preserve the context correlation id
+  so logs and UI failures can be joined.
+
+See the normative rule in:
+- [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
+
 ## 6) Legacy Note
 
 Legacy USM concepts (spec-interpreted screens, template renderers, and

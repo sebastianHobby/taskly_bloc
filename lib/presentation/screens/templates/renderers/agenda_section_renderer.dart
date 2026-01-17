@@ -59,9 +59,9 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   @override
   void initState() {
     super.initState();
-    final today = _dateOnly(DateTime.now());
+    final today = _todayDayKeyUtc();
     _rangeStart = today;
-    _rangeEndExclusive = DateTime(today.year, today.month + 1, 1);
+    _rangeEndExclusive = DateTime.utc(today.year, today.month + 1, 1);
   }
 
   @override
@@ -69,7 +69,9 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
     super.dispose();
   }
 
-  DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+  DateTime _dateOnly(DateTime d) => DateTime.utc(d.year, d.month, d.day);
+
+  DateTime _todayDayKeyUtc() => _dateOnly(widget.data.agendaData.focusDate);
 
   bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
@@ -106,7 +108,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
 
   @override
   Widget build(BuildContext context) {
-    final buildStart = kDebugMode ? DateTime.now() : null;
+    final buildStopwatch = kDebugMode ? (Stopwatch()..start()) : null;
     final agendaData = widget.data.agendaData;
 
     if (kDebugMode) {
@@ -144,8 +146,8 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
       AgendaLayoutV2.timeline => _buildDayCardsFeed(context, agendaData),
     };
 
-    if (kDebugMode && buildStart != null) {
-      final buildMs = DateTime.now().difference(buildStart).inMilliseconds;
+    if (kDebugMode && buildStopwatch != null) {
+      final buildMs = buildStopwatch.elapsedMilliseconds;
       if (buildMs > 100) {
         final slowBuildMsg = '⚠️ Scheduled UI: Slow build - ${buildMs}ms';
         developer.log(
@@ -166,7 +168,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   }
 
   Widget _buildDayCardsFeed(BuildContext context, AgendaData agendaData) {
-    final today = _dateOnly(DateTime.now());
+    final today = _todayDayKeyUtc();
     final selectedStart = _dateOnly(_rangeStart);
     final selectedEndExclusive = _dateOnly(_rangeEndExclusive);
 
@@ -261,6 +263,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         children.add(
           _DayCard(
             date: g.date,
+            todayDayKeyUtc: today,
             items: g.items,
             inProgressExpanded: _expandedInProgressDates.contains(g.date),
             onToggleInProgress: () {
@@ -300,6 +303,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         children.add(
           _DayCard(
             date: g.date,
+            todayDayKeyUtc: today,
             items: g.items,
             inProgressExpanded: _expandedInProgressDates.contains(g.date),
             onToggleInProgress: () {
@@ -340,6 +344,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         children.add(
           _DayCard(
             date: g.date,
+            todayDayKeyUtc: today,
             items: g.items,
             inProgressExpanded: _expandedInProgressDates.contains(g.date),
             onToggleInProgress: () {
@@ -551,7 +556,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
   }
 
   void _setPresetRange(_DateRangePreset preset) {
-    final today = _dateOnly(DateTime.now());
+    final today = _todayDayKeyUtc();
 
     final (DateTime start, DateTime endExclusive) = switch (preset) {
       _DateRangePreset.today => (
@@ -1239,6 +1244,7 @@ class _DayCardsBlockHeader extends StatelessWidget {
 class _DayCard extends StatelessWidget {
   const _DayCard({
     required this.date,
+    required this.todayDayKeyUtc,
     required this.items,
     required this.inProgressExpanded,
     required this.onToggleInProgress,
@@ -1247,6 +1253,7 @@ class _DayCard extends StatelessWidget {
   });
 
   final DateTime date;
+  final DateTime todayDayKeyUtc;
   final List<AgendaItem> items;
   final bool inProgressExpanded;
   final VoidCallback onToggleInProgress;
@@ -1259,8 +1266,7 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = todayDayKeyUtc;
     final tomorrow = today.add(const Duration(days: 1));
 
     final semantic = _isSameDay(date, today)

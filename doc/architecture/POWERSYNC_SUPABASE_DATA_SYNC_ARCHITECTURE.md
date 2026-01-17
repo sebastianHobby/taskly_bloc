@@ -18,6 +18,13 @@ Presentation boundary (normative): widgets/pages do not call repositories
 directly and do not subscribe to Drift/repository streams directly. BLoCs own
 those subscriptions and expose derived UI state.
 
+Write correlation (normative): user-initiated mutations must carry an
+`OperationContext` (with a `correlationId`) from presentation into repository
+writes so upload/download anomalies and AppFailure mapping can be correlated in
+logs.
+
+See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
+
 Key implications:
 
 - The app can work while offline (Drift reads/writes remain available).

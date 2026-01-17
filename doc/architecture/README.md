@@ -41,6 +41,14 @@ non-UI streams directly.
 If an exception starts to depend on domain/data or becomes shared across screens,
 promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
+### 1.1.1 Write correlation rule (OperationContext)
+
+**Normative rule:** Every user-initiated mutation must pass an
+`OperationContext` (with a correlation id) from presentation into domain/data
+writes for structured logging and consistent failure mapping.
+
+See: [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md) (section: 8.1)
+
 ### 1.2 System-level architecture diagram
 
 ```text

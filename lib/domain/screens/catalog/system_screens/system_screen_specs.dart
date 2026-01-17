@@ -217,27 +217,6 @@ abstract class SystemScreenSpecs {
     template: const ScreenTemplateSpec.trackerManagement(),
   );
 
-  static final allocationSettings = ScreenSpec(
-    id: 'allocation_settings',
-    screenKey: 'allocation_settings',
-    name: 'Allocation Settings',
-    template: const ScreenTemplateSpec.focusSetupWizard(),
-  );
-
-  static final focusSetup = ScreenSpec(
-    id: 'focus_setup',
-    screenKey: 'focus_setup',
-    name: 'Focus Setup',
-    template: const ScreenTemplateSpec.focusSetupWizard(),
-  );
-
-  static final attentionRules = ScreenSpec(
-    id: 'attention_rules',
-    screenKey: 'attention_rules',
-    name: 'Attention Rules',
-    template: const ScreenTemplateSpec.attentionRules(),
-  );
-
   /// Canonical system screens shown in the main navigation UI.
   static List<ScreenSpec> get navigationScreens => [
     myDay,
@@ -284,9 +263,6 @@ abstract class SystemScreenSpecs {
     journalHistory.screenKey: journalHistory,
     journalManageTrackers.screenKey: journalManageTrackers,
     trackers.screenKey: trackers,
-    allocationSettings.screenKey: allocationSettings,
-    focusSetup.screenKey: focusSetup,
-    attentionRules.screenKey: attentionRules,
     reviewInbox.screenKey: reviewInbox,
   };
 

@@ -61,7 +61,6 @@ const schema = Schema([
     ignoreEmptyUpdates: true,
   ),
   Table('pending_notifications', [
-    Column.text('id'),
     Column.text('user_id'),
     Column.text('scheduled_for'),
     Column.text('status'),

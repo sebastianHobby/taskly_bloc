@@ -132,6 +132,35 @@ Recurrence + date-only semantics are further specified in:
 - Reactive streams used for UI must not permanently terminate the UI due to a
   transient failure; map failures into state and provide explicit retry.
 
+### 8.1 OperationContext for write correlation (strict)
+
+All **user-initiated mutations** must be correlated end-to-end with an
+`OperationContext`.
+
+Normative rules:
+
+- Presentation creates an `OperationContext` **at the boundary of the user
+  intent** (typically in the BLoC event handler) and passes it down through
+  domain write APIs into repository mutations.
+- Any domain/data API that performs a mutation **must accept** an optional
+  `OperationContext? context` parameter and **must forward it** when delegating
+  to deeper layers.
+- Data-layer write implementations must include the `OperationContext` fields
+  (at minimum `correlationId`, `feature`, `screen`, `intent`, `operation`, and
+  entity identifiers when present) in structured logs.
+- When mapping errors to user-facing failures (e.g., `AppFailure`), prefer a
+  consistent mapping that preserves the `correlationId` so failures and logs can
+  be joined.
+
+Rationale:
+
+- Enables correlated structured logging across UI → domain → data.
+- Makes failure mapping deterministic and debuggable without relying on ad-hoc
+  log messages.
+
+Implementation note (non-normative): presentation uses a factory helper to
+generate `OperationContext` with a UUID v4 correlation id.
+
 ## 9) Documentation invariants
 
 - Documents under `doc/architecture/` describe the **future-state** architecture.

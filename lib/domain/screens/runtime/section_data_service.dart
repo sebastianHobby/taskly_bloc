@@ -451,12 +451,11 @@ class SectionDataService {
   Future<SectionDataResult> _fetchAgendaSectionV2(
     AgendaSectionParamsV2 params,
   ) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final rangeEnd = DateTime(today.year, today.month + 2, 0);
+    final today = _todayUtcDay();
+    final rangeEnd = DateTime.utc(today.year, today.month + 2, 0);
     final agendaData = await _agendaDataService.getAgendaData(
-      referenceDate: now,
-      focusDate: now,
+      referenceDate: today,
+      focusDate: today,
       rangeStart: today,
       rangeEnd: rangeEnd,
     );
@@ -475,14 +474,13 @@ class SectionDataService {
   Stream<SectionDataResult> _watchAgendaSectionV2(
     AgendaSectionParamsV2 params,
   ) async* {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final rangeEnd = DateTime(today.year, today.month + 2, 0);
+    final today = _todayUtcDay();
+    final rangeEnd = DateTime.utc(today.year, today.month + 2, 0);
 
     yield* _agendaDataService
         .watchAgendaData(
-          referenceDate: now,
-          focusDate: now,
+          referenceDate: today,
+          focusDate: today,
           rangeStart: today,
           rangeEnd: rangeEnd,
         )
@@ -714,8 +712,7 @@ class SectionDataService {
     List<Task> tasks,
     AgendaDateFieldV2 dateField,
   ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = _todayUtcDay();
 
     final map = <String, AgendaTagV2>{};
     for (final task in tasks) {
@@ -724,10 +721,18 @@ class SectionDataService {
 
       final startDay = start == null
           ? null
-          : DateTime(start.year, start.month, start.day);
+          : DateTime.utc(
+              start.year,
+              start.month,
+              start.day,
+            );
       final deadlineDay = deadline == null
           ? null
-          : DateTime(deadline.year, deadline.month, deadline.day);
+          : DateTime.utc(
+              deadline.year,
+              deadline.month,
+              deadline.day,
+            );
 
       final hasSameStartAndDeadline =
           startDay != null && deadlineDay != null && startDay == deadlineDay;

@@ -89,10 +89,6 @@ sealed class ScreenTemplateSpec with _$ScreenTemplateSpec {
   const factory ScreenTemplateSpec.statisticsDashboard() =
       ScreenTemplateStatisticsDashboard;
   const factory ScreenTemplateSpec.journalHub() = ScreenTemplateJournalHub;
-  const factory ScreenTemplateSpec.attentionRules() =
-      ScreenTemplateAttentionRules;
-  const factory ScreenTemplateSpec.focusSetupWizard() =
-      ScreenTemplateFocusSetupWizard;
   const factory ScreenTemplateSpec.myDayFocusModeRequired() =
       ScreenTemplateMyDayFocusModeRequired;
 }
