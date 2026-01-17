@@ -891,7 +891,7 @@ class TaskRepository implements TaskRepositoryContract {
           .map((rows) => rows.map(toExceptionData).toList());
 
       final evaluator = TaskFilterEvaluator();
-      final context = EvaluationContext();
+      final context = EvaluationContext(today: dateOnly(systemClock.nowUtc()));
       bool postExpansionFilter(Task task) {
         return evaluator.matches(task, query.filter, context);
       }

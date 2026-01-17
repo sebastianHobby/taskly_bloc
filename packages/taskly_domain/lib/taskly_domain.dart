@@ -16,4 +16,5 @@ export 'preferences.dart';
 export 'queries.dart';
 export 'services.dart';
 export 'settings.dart';
+export 'telemetry.dart';
 export 'time.dart';

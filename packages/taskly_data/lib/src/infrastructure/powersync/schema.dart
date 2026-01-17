@@ -61,6 +61,7 @@ const schema = Schema([
     ignoreEmptyUpdates: true,
   ),
   Table('pending_notifications', [
+    Column.text('id'),
     Column.text('user_id'),
     Column.text('scheduled_for'),
     Column.text('status'),
@@ -309,16 +310,6 @@ const schema = Schema([
     Column.text('tracker_id'),
     Column.text('value'),
     Column.text('last_event_id'),
-    Column.text('updated_at'),
-  ]),
-
-  Table('screen_preferences', [
-    // user_id is synced and enforced by backend/RLS. The app does not use it.
-    Column.text('user_id'),
-    Column.text('screen_key'),
-    Column.integer('is_active'),
-    Column.integer('sort_order'),
-    Column.text('created_at'),
     Column.text('updated_at'),
   ]),
 ]);

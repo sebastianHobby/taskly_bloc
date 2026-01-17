@@ -34,9 +34,14 @@ class AnalyticsServiceImpl implements AnalyticsService {
       entityType: entityType,
     );
 
+    final nowUtc = systemClock.nowUtc();
+    final todayDayKeyUtc = dateOnly(nowUtc);
+
     return _taskStatsCalculator.calculate(
       tasks: tasks,
       statType: statType,
+      nowUtc: nowUtc,
+      todayDayKeyUtc: todayDayKeyUtc,
       range: range,
     );
   }
@@ -53,11 +58,16 @@ class AnalyticsServiceImpl implements AnalyticsService {
       entityType: entityType,
     );
 
+    final nowUtc = systemClock.nowUtc();
+    final todayDayKeyUtc = dateOnly(nowUtc);
+
     final Map<TaskStatType, StatResult> results = {};
     for (final statType in statTypes) {
       results[statType] = _taskStatsCalculator.calculate(
         tasks: tasks,
         statType: statType,
+        nowUtc: nowUtc,
+        todayDayKeyUtc: todayDayKeyUtc,
         range: range,
       );
     }

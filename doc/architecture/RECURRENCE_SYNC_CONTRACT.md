@@ -173,6 +173,25 @@ Rationale:
 
 ## 6) Implementation guidance (PowerSync-safe)
 
+## 6.0 Architecture guardrails (normative)
+
+These are maintainability and correctness guardrails. Future changes should be
+reviewed against them.
+
+- Single write surface: recurrence tables must be written only through the
+  dedicated recurrence write helper/repository.
+- Dual-layer invariants: enforce invariants in Supabase (constraints/RLS) and
+  mirror the critical ones in the write helper to avoid local/remote drift.
+- Deterministic ID discipline: deterministic IDs represent logical events.
+  Never overwrite existing rows on ID conflict. Conflicts with materially
+  different payloads must emit a `SyncAnomaly`.
+- Schema + replication gate: any schema change that recurrence code depends on
+  must include Supabase migrations + RLS and PowerSync sync-rules updates, plus
+  local converters/schema updates.
+- Observability: emit `SyncAnomaly` consistently for blocked writes and
+  idempotency conflicts; include enough context to diagnose (correlation ID,
+  entity ref, original date, operation kind).
+
 ### 6.1 Single write surface
 
 To prevent drift:
@@ -235,6 +254,11 @@ Before implementing features that depend on recurrence tables:
   - TEXT UUID `id`
   - date-only converters
 - Upload normalization updated (if any new JSON/text columns are added).
+
+Guardrail (recommended):
+
+- Run `dart run tool/no_powersync_local_upserts.dart` to ensure Drift UPSERT helpers
+  are not used in PowerSync write paths.
 
 ## 9) Suggested tests (high leverage)
 

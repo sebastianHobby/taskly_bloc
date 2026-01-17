@@ -2,7 +2,7 @@
 
 > Audience: developers + architects
 >
-> Scope: the *current* allocation system in this repo (inputs -> focus-mode config -> allocation computation -> daily snapshots -> unified screen integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
+> Scope: the allocation system in the **future-state** architecture (inputs -> focus-mode config -> allocation computation -> daily snapshots -> screen integration), with emphasis on **My Day**, **focus modes**, and **when/how allocation is invoked**.
 
 ## 1) Executive Summary
 
@@ -13,10 +13,10 @@ Taskly's **allocation system** produces a daily "Focus list" of tasks by combini
 - **Value priorities** (weights derived from user values)
 - Optional strategy signals such as **urgency** and **neglect**
 
-This output is exposed to the app primarily through the **unified screen system**:
+This output is exposed to the app primarily through the **My Day screen**:
 
-- `allocation` section template renders the Focus list.
-- `allocation_alerts` section template renders **allocation warnings** (implemented via the attention system).
+- The screen’s BLoC reads the latest allocation snapshot and exposes widget-ready state.
+- Allocation warnings are surfaced via the attention system.
 - The system prefers a persisted **daily allocation snapshot** so that My Day remains stable throughout the day.
 
 A key UX invariant:
@@ -38,7 +38,7 @@ A key UX invariant:
 ### Domain services (allocation engine)
 - Orchestrator:
   - [lib/domain/allocation/engine/allocation_orchestrator.dart](../../lib/domain/allocation/engine/allocation_orchestrator.dart)
-- Snapshot refresh coordinator (unified triggers):
+- Snapshot refresh coordinator:
   - [lib/domain/allocation/engine/allocation_snapshot_coordinator.dart](../../lib/domain/allocation/engine/allocation_snapshot_coordinator.dart)
 - Strategy implementations (selection is config-driven):
   - [lib/domain/allocation/engine/proportional_allocator.dart](../../lib/domain/allocation/engine/proportional_allocator.dart)
@@ -61,24 +61,11 @@ A key UX invariant:
 - Drift repository implementation:
   - [lib/data/allocation/repositories/allocation_snapshot_repository.dart](../../lib/data/allocation/repositories/allocation_snapshot_repository.dart)
 
-### Unified screen integration (templates + gating)
-- Section template IDs:
-  - [lib/domain/screens/language/models/section_template_id.dart](../../lib/domain/screens/language/models/section_template_id.dart)
-- Section params:
-  - [lib/domain/screens/templates/params/allocation_section_params.dart](../../lib/domain/screens/templates/params/allocation_section_params.dart)
-  - [lib/domain/screens/templates/params/allocation_alerts_section_params.dart](../../lib/domain/screens/templates/params/allocation_alerts_section_params.dart)
-- Section interpreters:
-  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
-  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
-- "Data plumbing" for templates:
-  - [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
-  - [lib/domain/screens/runtime/section_data_result.dart](../../lib/domain/screens/runtime/section_data_result.dart)
-- Screen gating:
-  - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
-  - [lib/domain/screens/runtime/screen_spec_data_interpreter.dart](../../lib/domain/screens/runtime/screen_spec_data_interpreter.dart)
+### Screen integration (My Day)
 
-### System screen definition (My Day)
-- [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
+My Day is an explicit screen (route + page) that renders allocation outputs.
+Any gating (e.g. “focus mode required”) is implemented in the presentation
+layer via explicit screens/pages and BLoC state.
 
 ### Presentation (My Day gate + allocation rendering + focus setup)
 - Gate page shown when focus mode is not selected:
@@ -98,19 +85,9 @@ A key UX invariant:
 ```text
 +---------------------------------------------------------------+
 |                        Presentation                            |
-|  - My Day (unified screen)                                     |
+|  - My Day screen + BLoC                                        |
 |  - AllocationSectionRenderer                                   |
 |  - FocusSetupWizard (config writes)                            |
-+---------------------------------------------------------------+
-                                |
-                                v
-+---------------------------------------------------------------+
-|                    Unified Screen Pipeline                     |
-|  ScreenSpecDataInterpreter                                     |
-|   - applies ScreenGateSpec criteria (e.g., focus mode required) |
-|   - runs section template interpreters                          |
-|     - allocation -> SectionDataService.watchAllocation()        |
-|     - allocation_alerts -> AttentionEngine                      |
 +---------------------------------------------------------------+
                                 |
                                 v
@@ -147,23 +124,14 @@ A key UX invariant:
 
 ### 4.1 My Day: Focus-mode gate -> Focus setup -> Allocation sections
 
-My Day is a **system screen** with a **screen-level gate**.
+My Day is an **explicit screen** with a **presentation-owned gate**.
 
-- Definition: `SystemScreenSpecs.myDay`
-  - [lib/domain/screens/catalog/system_screens/system_screen_specs.dart](../../lib/domain/screens/catalog/system_screens/system_screen_specs.dart)
-- Gate criteria: `allocationFocusModeNotSelected`
-  - [lib/domain/screens/language/models/screen_gate_config.dart](../../lib/domain/screens/language/models/screen_gate_config.dart)
+Gate criteria:
 
-**Reactive gating logic** (domain-side):
+- `AllocationConfig.hasSelectedFocusMode == true`
 
-- `ScreenSpecDataInterpreter.watchScreen()` checks gate criteria.
-- For `allocationFocusModeNotSelected`, it watches settings:
-  - `SettingsKey.allocation` and `AllocationConfig.hasSelectedFocusMode`.
-- While active, the screen's normal modules are skipped and the gate template
-  is rendered (no modules).
-
-See gate evaluation:
-- [lib/domain/screens/runtime/screen_spec_data_interpreter.dart](../../lib/domain/screens/runtime/screen_spec_data_interpreter.dart)
+Gating is implemented in the presentation layer using explicit pages and BLoC
+state (not a domain-level screen interpreter).
 
 **What the user experiences**:
 
@@ -180,10 +148,8 @@ See gate evaluation:
      - strategySettings = preset or user-tuned
 4) After save, FocusSetupWizardPage requests an immediate snapshot refresh via
   `AllocationSnapshotCoordinator` so snapshot-based screens refresh immediately.
-5) Return to My Day; gate is now inactive; normal sections render:
-   - check_in_summary
-   - allocation_alerts
-   - allocation
+5) Return to My Day; gate is now inactive; the screen renders allocation output
+  and any allocation-related attention items.
 ```
 
 Key save behavior:
@@ -196,28 +162,20 @@ Key post-save "refresh" call (requests an immediate snapshot refresh):
 
 ### 4.2 Allocation section: Snapshot-first, with live fallback
 
-The `allocation` template is interpreted by `AllocationSectionInterpreter`, which delegates to `SectionDataService`.
-
-- Interpreter:
-  - [lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_section_interpreter.dart)
-- Data service:
-  - [lib/domain/screens/runtime/section_data_service.dart](../../lib/domain/screens/runtime/section_data_service.dart)
+My Day is snapshot-first.
 
 **Runtime sequence (watch path):**
 
 ```text
-1) Unified screen pipeline executes AllocationSectionInterpreter.watch(params)
-2) SectionDataService._watchAllocationSection():
-   - determine current UTC day
-   - subscribe to AllocationSnapshotRepository.watchLatestForUtcDay(day)
+1) My Day BLoC determines current UTC day
+2) Subscribe to AllocationSnapshotRepository.watchLatestForUtcDay(day)
 3) If snapshot exists:
-   - fetch Task entities referenced by snapshot entries
-   - build groups (pinned + tasksByValue)
-   - emit SectionDataResult.allocation(...)
+  - fetch Task entities referenced by snapshot entries
+  - build widget-ready groups (pinned + tasksByValue)
 4) If snapshot does not exist yet:
-   - fall back to AllocationOrchestrator.watchAllocation()
-   - build groups from the computed allocation result
-   - emit SectionDataResult.allocation(...)
+  - fall back to AllocationOrchestrator.watchAllocation()
+  - build groups from the computed allocation result
+5) Emit BLoC state; widgets render it
 ```
 
 **Snapshot-first behavior exists for stability**:
@@ -354,17 +312,16 @@ Save behavior:
 
 ## 7) Integration with Allocation Alerts (Attention system)
 
-My Day includes an `allocation_alerts` section. This is *not* computed by the allocator directly.
+Allocation alerts are *not* computed by the allocator directly.
 
 Instead:
 
-- `AllocationAlertsSectionInterpreter.fetch()` calls:
+- My Day BLoC (or a dedicated child BLoC) calls:
   - `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
 - Allocation alert rules are evaluated **against the current day's snapshot**:
   - "Show candidates that match predicate X but are not allocated today."
 
 Key implementation:
-- [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
 - [lib/domain/attention/engine/attention_engine.dart](../../lib/domain/attention/engine/attention_engine.dart)
 
 Important design note (current state):
@@ -379,13 +336,11 @@ Important design note (current state):
 
 ## 8) When / How Allocation Is Called (Trigger points)
 
-### 8.1 Unified screens (primary)
+### 8.1 My Day screen (primary)
 
-Allocation runs when a screen contains the `allocation` template.
+Allocation is read whenever the My Day BLoC is active:
 
-- `AllocationSectionInterpreter.watch()`
-  - calls `SectionDataService.watchAllocation()`
-  - prefers snapshot stream; falls back to orchestrator only when necessary.
+- Prefer snapshot stream; fall back to orchestrator only when necessary.
 
 ### 8.2 Focus setup save (explicit refresh)
 

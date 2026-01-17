@@ -8,9 +8,6 @@ import 'package:taskly_data/data_stack.dart';
 import 'package:taskly_data/db.dart';
 import 'package:taskly_data/id.dart';
 import 'package:taskly_domain/taskly_domain.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_query_builder.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_grouper.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
@@ -157,14 +154,6 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<AttentionTemporalInvalidationService>(
       () => AttentionTemporalInvalidationService(
         temporalTriggerService: getIt<TemporalTriggerService>(),
-      ),
-    )
-    // Screens - system screens come from code; user preferences come from DB.
-    ..registerLazySingleton<ScreenCatalogRepositoryContract>(
-      () => ScreenCatalogRepository(
-        databaseRepository: ScreenCatalogRepositoryImpl(
-          getIt<AppDatabase>(),
-        ),
       ),
     )
     ..registerLazySingleton<AllocationOrchestrator>(

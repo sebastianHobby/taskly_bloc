@@ -46,12 +46,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:meta/meta.dart';
 import 'package:taskly_bloc/shared/logging/talker_service.dart';
 import 'package:taskly_data/db.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository.dart';
-import 'package:taskly_bloc/data/screens/repositories/screen_catalog_repository_impl.dart';
 import 'package:taskly_data/repositories.dart';
-import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_bloc/presentation/shared/models/screen_preferences.dart';
 
 import 'disposables.dart';
 import 'test_db.dart';
@@ -64,6 +59,7 @@ import 'test_db.dart';
 ///
 /// Integration tests involve real I/O and may be slower than unit tests.
 import 'package:taskly_domain/taskly_domain.dart';
+
 const Duration kIntegrationTestTimeout = Duration(seconds: 45);
 
 /// Default timeout for waiting on BLoC state changes.
@@ -137,7 +133,6 @@ void testIntegration(
 class IntegrationTestContext {
   IntegrationTestContext._({
     required this.db,
-    required this.screensRepository,
     required this.settingsRepository,
   });
 
@@ -147,42 +142,16 @@ class IntegrationTestContext {
     final db = createTestDb();
     final settingsRepository = SettingsRepository(driftDb: db);
 
-    final screensRepository = ScreenCatalogRepository(
-      databaseRepository: ScreenCatalogRepositoryImpl(
-        db,
-      ),
-    );
-
     return IntegrationTestContext._(
       db: db,
-      screensRepository: screensRepository,
       settingsRepository: settingsRepository,
     );
   }
 
   final AppDatabase db;
-  final ScreenCatalogRepositoryContract screensRepository;
   final SettingsRepositoryContract settingsRepository;
 
   final DisposableBag _bag = DisposableBag();
-
-  /// Sets up preferences for all system screens.
-  ///
-  /// System screens are code-based and don't need to be seeded into the
-  /// database. This method sets up their preferences (isActive, sortOrder).
-  Future<void> seedSystemScreens({String userId = 'test-user'}) async {
-    for (final screen in SystemScreenSpecs.all) {
-      await screensRepository.updateScreenPreferences(
-        screen.screenKey,
-        ScreenPreferences(
-          isActive: true,
-          sortOrder: SystemScreenSpecs.getDefaultSortOrder(
-            screen.screenKey,
-          ),
-        ),
-      );
-    }
-  }
 
   /// Seeds a single custom screen definition into the database.
   /// Tracks a BLoC for automatic cleanup.

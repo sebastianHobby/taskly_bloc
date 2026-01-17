@@ -15,11 +15,10 @@ abstract class DateRange with _$DateRange {
   factory DateRange.fromJson(Map<String, dynamic> json) =>
       _$DateRangeFromJson(json);
 
-  factory DateRange.last30Days() {
-    final now = DateTime.now();
+  factory DateRange.last30Days({required DateTime end}) {
     return DateRange(
-      start: now.subtract(const Duration(days: 30)),
-      end: now,
+      start: end.subtract(const Duration(days: 30)),
+      end: end,
     );
   }
 

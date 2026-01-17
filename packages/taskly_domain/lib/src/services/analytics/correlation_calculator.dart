@@ -21,7 +21,7 @@ class CorrelationCalculator {
     bool? sourceHigherIsBetter,
     bool? targetHigherIsBetter,
   }) {
-    final startTime = DateTime.now();
+    final stopwatch = Stopwatch()..start();
 
     if (sourceDays.isEmpty || targetData.isEmpty) {
       return _insufficientDataResult(
@@ -145,7 +145,7 @@ class CorrelationCalculator {
       sampleSize: x.length,
     );
 
-    final calculationTime = DateTime.now().difference(startTime).inMilliseconds;
+    final calculationTime = stopwatch.elapsedMilliseconds;
 
     return CorrelationResult(
       sourceLabel: sourceLabel,

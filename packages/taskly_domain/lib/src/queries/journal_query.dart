@@ -90,11 +90,11 @@ class JournalQuery {
 
   /// Factory: Recent entries (last N days).
   factory JournalQuery.recent({
+    required DateTime todayDayKeyUtc,
     int days = 7,
     List<SortCriterion>? sortCriteria,
   }) {
-    final now = DateTime.now();
-    final startDate = dateOnly(now.subtract(Duration(days: days)));
+    final startDate = todayDayKeyUtc.subtract(Duration(days: days));
     return JournalQuery(
       filter: QueryFilter<JournalPredicate>(
         shared: [

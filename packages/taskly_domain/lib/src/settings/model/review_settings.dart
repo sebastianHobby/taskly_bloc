@@ -89,33 +89,36 @@ abstract class ReviewSettings with _$ReviewSettings {
   };
 
   /// Checks if a specific review type is due based on last completion.
-  bool isDue(ReviewType type, {DateTime? now}) {
+  bool isDue(ReviewType type, {required DateTime now}) {
     final config = getConfig(type);
     if (!config.enabled) return false;
     if (config.lastCompletedAt == null) return true;
 
-    final currentTime = now ?? DateTime.now();
-    final daysSince = currentTime.difference(config.lastCompletedAt!).inDays;
+    final daysSince = now.difference(config.lastCompletedAt!).inDays;
     return daysSince >= config.frequencyDays;
   }
 
   /// Returns all review types that are currently due.
-  List<ReviewType> getDueReviews({DateTime? now}) {
+  List<ReviewType> getDueReviews({required DateTime now}) {
     return ReviewType.values.where((type) => isDue(type, now: now)).toList();
   }
 
   /// Returns a copy with the specified review type marked as completed.
-  ReviewSettings markCompleted(ReviewType type, {DateTime? completedAt}) {
-    final time = completedAt ?? DateTime.now();
+  ReviewSettings markCompleted(
+    ReviewType type, {
+    required DateTime completedAt,
+  }) {
     return switch (type) {
       ReviewType.valuesAlignment => copyWith(
-        valuesAlignment: valuesAlignment.copyWith(lastCompletedAt: time),
+        valuesAlignment: valuesAlignment.copyWith(lastCompletedAt: completedAt),
       ),
       ReviewType.balance => copyWith(
-        balance: balance.copyWith(lastCompletedAt: time),
+        balance: balance.copyWith(lastCompletedAt: completedAt),
       ),
       ReviewType.pinnedTasksCheck => copyWith(
-        pinnedTasksCheck: pinnedTasksCheck.copyWith(lastCompletedAt: time),
+        pinnedTasksCheck: pinnedTasksCheck.copyWith(
+          lastCompletedAt: completedAt,
+        ),
       ),
     };
   }

@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/journal.dart';
 import 'package:taskly_domain/queries.dart';
+import 'package:taskly_domain/services.dart';
 
 sealed class JournalHistoryState {
   const JournalHistoryState();
@@ -26,13 +27,17 @@ final class JournalHistoryError extends JournalHistoryState {
 }
 
 class JournalHistoryBloc extends Cubit<JournalHistoryState> {
-  JournalHistoryBloc({required JournalRepositoryContract repository})
-    : _repository = repository,
+  JournalHistoryBloc({
+    required JournalRepositoryContract repository,
+    required HomeDayKeyService dayKeyService,
+  }) : _repository = repository,
+       _dayKeyService = dayKeyService,
       super(const JournalHistoryLoading()) {
     _subscribe();
   }
 
   final JournalRepositoryContract _repository;
+  final HomeDayKeyService _dayKeyService;
 
   StreamSubscription<List<JournalEntry>>? _sub;
 
@@ -44,8 +49,11 @@ class JournalHistoryBloc extends Cubit<JournalHistoryState> {
   }
 
   void _subscribe() {
+    final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc();
     _sub = _repository
-        .watchJournalEntriesByQuery(JournalQuery.recent(days: 30))
+        .watchJournalEntriesByQuery(
+          JournalQuery.recent(days: 30, todayDayKeyUtc: todayDayKeyUtc),
+        )
         .listen(
           (entries) {
             emit(JournalHistoryLoaded(entries));

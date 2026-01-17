@@ -191,14 +191,13 @@ final class TasklyDataStack {
     _sessionUserId = null;
     _sessionStarted = false;
 
-    if (clearLocalData) {
-      await localDataMaintenanceService.clearLocalData();
-      return;
-    }
-
     try {
       await syncDb.disconnect();
     } catch (_) {}
+
+    if (clearLocalData) {
+      await localDataMaintenanceService.clearLocalData();
+    }
   }
 
   /// Best-effort cleanup.

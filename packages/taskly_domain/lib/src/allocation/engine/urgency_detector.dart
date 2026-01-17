@@ -33,12 +33,11 @@ class UrgencyDetector {
   /// A task is urgent if:
   /// - It has a deadline, AND
   /// - The deadline is within [taskThresholdDays] days from now
-  bool isTaskUrgent(Task task) {
+  bool isTaskUrgent(Task task, {required DateTime todayDayKeyUtc}) {
     final deadline = task.deadlineDate;
     if (deadline == null) return false;
 
-    final now = DateTime.now();
-    final daysUntilDeadline = deadline.difference(now).inDays;
+    final daysUntilDeadline = deadline.difference(todayDayKeyUtc).inDays;
     return daysUntilDeadline <= taskThresholdDays;
   }
 
@@ -47,33 +46,43 @@ class UrgencyDetector {
   /// A project is urgent if:
   /// - It has a deadline, AND
   /// - The deadline is within [projectThresholdDays] days from now
-  bool isProjectUrgent(Project project) {
+  bool isProjectUrgent(Project project, {required DateTime todayDayKeyUtc}) {
     final deadline = project.deadlineDate;
     if (deadline == null) return false;
 
-    final now = DateTime.now();
-    final daysUntilDeadline = deadline.difference(now).inDays;
+    final daysUntilDeadline = deadline.difference(todayDayKeyUtc).inDays;
     return daysUntilDeadline <= projectThresholdDays;
   }
 
   /// Filters [tasks] to return only urgent tasks.
-  List<Task> findUrgentTasks(List<Task> tasks) {
-    return tasks.where(isTaskUrgent).toList();
+  List<Task> findUrgentTasks(List<Task> tasks, {required DateTime todayDayKeyUtc}) {
+    return tasks
+        .where((t) => isTaskUrgent(t, todayDayKeyUtc: todayDayKeyUtc))
+        .toList();
   }
 
   /// Filters [projects] to return only urgent projects.
-  List<Project> findUrgentProjects(List<Project> projects) {
-    return projects.where(isProjectUrgent).toList();
+  List<Project> findUrgentProjects(
+    List<Project> projects, {
+    required DateTime todayDayKeyUtc,
+  }) {
+    return projects
+        .where((p) => isProjectUrgent(p, todayDayKeyUtc: todayDayKeyUtc))
+        .toList();
   }
 
   /// Returns tasks that are urgent but have no value assigned.
   ///
   /// These are the tasks that trigger warnings in `warnOnly` mode
   /// or get included in `includeAll` mode.
-  List<Task> findUrgentValuelessTasks(List<Task> tasks) {
+  List<Task> findUrgentValuelessTasks(
+    List<Task> tasks, {
+    required DateTime todayDayKeyUtc,
+  }) {
     return tasks.where((task) {
       final hasNoValue = task.isEffectivelyValueless;
-      return hasNoValue && isTaskUrgent(task);
+      return hasNoValue &&
+          isTaskUrgent(task, todayDayKeyUtc: todayDayKeyUtc);
     }).toList();
   }
 }

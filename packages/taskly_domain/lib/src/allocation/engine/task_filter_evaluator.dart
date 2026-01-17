@@ -1,15 +1,20 @@
 import 'package:taskly_domain/src/core/model/task.dart';
 import 'package:taskly_domain/src/queries/query_filter.dart';
 import 'package:taskly_domain/src/queries/task_predicate.dart';
+import 'package:taskly_domain/src/time/date_only.dart';
 
 /// Evaluates tasks against dynamic query filters.
 class TaskFilterEvaluator {
   const TaskFilterEvaluator();
 
-  bool evaluate(QueryFilter<TaskPredicate> filter, Task task) {
+  bool evaluate(
+    QueryFilter<TaskPredicate> filter,
+    Task task, {
+    required DateTime todayDayKeyUtc,
+  }) {
     // 1. Check shared predicates (AND)
     for (final predicate in filter.shared) {
-      if (!_evaluatePredicate(predicate, task)) {
+      if (!_evaluatePredicate(predicate, task, todayDayKeyUtc: todayDayKeyUtc)) {
         return false;
       }
     }
@@ -23,7 +28,11 @@ class TaskFilterEvaluator {
       // Each group is an AND list. If any group passes, the OR check passes.
       bool groupMatches = true;
       for (final predicate in group) {
-        if (!_evaluatePredicate(predicate, task)) {
+        if (!_evaluatePredicate(
+          predicate,
+          task,
+          todayDayKeyUtc: todayDayKeyUtc,
+        )) {
           groupMatches = false;
           break;
         }
@@ -36,10 +45,18 @@ class TaskFilterEvaluator {
     return false;
   }
 
-  bool _evaluatePredicate(TaskPredicate predicate, Task task) {
+  bool _evaluatePredicate(
+    TaskPredicate predicate,
+    Task task, {
+    required DateTime todayDayKeyUtc,
+  }) {
     return switch (predicate) {
       final TaskBoolPredicate p => _evaluateBool(p, task),
-      final TaskDatePredicate p => _evaluateDate(p, task),
+      final TaskDatePredicate p => _evaluateDate(
+        p,
+        task,
+        todayDayKeyUtc: todayDayKeyUtc,
+      ),
       final TaskProjectPredicate p => _evaluateProject(p, task),
       final TaskValuePredicate p => _evaluateValue(p, task),
     };
@@ -56,7 +73,11 @@ class TaskFilterEvaluator {
     };
   }
 
-  bool _evaluateDate(TaskDatePredicate p, Task task) {
+  bool _evaluateDate(
+    TaskDatePredicate p,
+    Task task, {
+    required DateTime todayDayKeyUtc,
+  }) {
     final date = switch (p.field) {
       TaskDateField.startDate => task.startDate,
       TaskDateField.deadlineDate => task.deadlineDate,
@@ -70,8 +91,6 @@ class TaskFilterEvaluator {
     if (p.operator == DateOperator.isNotNull) return date != null;
 
     if (date == null) return false; // Cannot compare null date
-
-    final now = DateTime.now(); // TODO: Should be passed in for testability
 
     switch (p.operator) {
       case DateOperator.onOrAfter:
@@ -98,23 +117,19 @@ class TaskFilterEvaluator {
         if (p.relativeDays == null || p.relativeComparison == null) {
           return false;
         }
-        final targetDate = DateTime(
-          now.year,
-          now.month,
-          now.day,
-        ).add(Duration(days: p.relativeDays!));
-        final dateOnly = DateTime(date.year, date.month, date.day);
+        final targetDate = todayDayKeyUtc.add(Duration(days: p.relativeDays!));
+        final dateOnlyValue = dateOnly(date.toUtc());
 
         return switch (p.relativeComparison!) {
-          RelativeComparison.on => dateOnly.isAtSameMomentAs(targetDate),
-          RelativeComparison.before => dateOnly.isBefore(targetDate),
-          RelativeComparison.after => dateOnly.isAfter(targetDate),
+          RelativeComparison.on => dateOnlyValue.isAtSameMomentAs(targetDate),
+          RelativeComparison.before => dateOnlyValue.isBefore(targetDate),
+          RelativeComparison.after => dateOnlyValue.isAfter(targetDate),
           RelativeComparison.onOrAfter =>
-            dateOnly.isAfter(targetDate) ||
-                dateOnly.isAtSameMomentAs(targetDate),
+            dateOnlyValue.isAfter(targetDate) ||
+                dateOnlyValue.isAtSameMomentAs(targetDate),
           RelativeComparison.onOrBefore =>
-            dateOnly.isBefore(targetDate) ||
-                dateOnly.isAtSameMomentAs(targetDate),
+            dateOnlyValue.isBefore(targetDate) ||
+                dateOnlyValue.isAtSameMomentAs(targetDate),
         };
       case DateOperator.isNull:
       case DateOperator.isNotNull:

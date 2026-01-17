@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:taskly_domain/src/time/clock.dart';
 import 'package:taskly_domain/src/time/date_only.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/src/interfaces/settings_repository_contract.dart';
@@ -13,10 +14,14 @@ import 'package:taskly_domain/src/preferences/model/settings_key.dart';
 ///
 /// This intentionally uses a fixed offset (minutes) and does not model DST.
 class HomeDayKeyService {
-  HomeDayKeyService({required SettingsRepositoryContract settingsRepository})
-    : _settingsRepository = settingsRepository;
+  HomeDayKeyService({
+    required SettingsRepositoryContract settingsRepository,
+    Clock clock = systemClock,
+  }) : _settingsRepository = settingsRepository,
+       _clock = clock;
 
   final SettingsRepositoryContract _settingsRepository;
+  final Clock _clock;
 
   StreamSubscription<GlobalSettings>? _subscription;
   int _offsetMinutes = 0;
@@ -56,7 +61,7 @@ class HomeDayKeyService {
 
   /// Returns today's home-day key as a UTC-midnight date-only key.
   DateTime todayDayKeyUtc({DateTime? nowUtc}) {
-    final utc = nowUtc ?? DateTime.now().toUtc();
+    final utc = nowUtc ?? _clock.nowUtc();
     final shifted = utc.add(Duration(minutes: _offsetMinutes));
     return dateOnly(shifted);
   }
@@ -65,7 +70,7 @@ class HomeDayKeyService {
   ///
   /// This is used for timer-based day-boundary triggers.
   DateTime nextHomeDayBoundaryUtc({DateTime? nowUtc}) {
-    final utc = nowUtc ?? DateTime.now().toUtc();
+    final utc = nowUtc ?? _clock.nowUtc();
     final offset = Duration(minutes: _offsetMinutes);
     final homeNow = utc.add(offset);
 

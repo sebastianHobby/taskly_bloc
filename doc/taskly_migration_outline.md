@@ -34,12 +34,29 @@
   - direct deep link (no back-stack) → render editor full-page
 - **State management policy (presentation)**: for new work, prefer full `Bloc` (events + states) over `Cubit`. Existing Cubits may remain temporarily, but do not introduce new Cubits.
 - **Notes**: Most shell routes still render USM-backed system screens via `ScreenSpec` for now. `/anytime` is now an explicit Flutter screen and no longer uses USM.
+- **Scoped route context (Anytime)**: `ScopeHeader` now uses `ScopeContextBloc` for scoped Anytime routes with the requested simple metrics:
+  - Value scope: task count + project count
+  - Project scope: task count only
+- **UI “today” contract (DEC-216C)**: Added a small presentation-facing time provider and started migrating presentation code away from `DateTime.now()`:
+  - New `NowService` + `HomeDayService` (backed by `HomeDayKeyService`)
+  - `TodayBadgeService` now uses home-day key semantics (not raw `DateTime.now()`)
+  - Migrated a few common UI utilities/widgets to read time from `NowService`
 - **Inbox (MVP feed)**: `/inbox` now renders a real “no project” tasks feed using the shared flat row model (`ListRowUiModel`) with stable `rowKey`s, backed by a feed BLoC.
 - **Create-task consistency**: “Create task” CTAs in MVP feeds now open the in-shell modal editor (via `EditorLauncher`) instead of pushing a `/task/new` route.
+
+- **Centralized error taxonomy + reporter pipeline (DEC-039A–DEC-044A)**: implemented a first vertical slice in the Auth flow.
+  - Data maps Supabase/auth exceptions into domain `AppFailure`.
+  - Presentation creates an `OperationContext` with `correlationId` + structured fields and passes it into the repository.
+  - Unexpected/unmapped errors go through `AppErrorReporter` (structured logs + minimal throttled snackbar).
 
 Implementation follow-ups to keep in mind:
 - **Scheduled scope header** (DEC-192A): scoped Scheduled routes should render a single `ScopeHeaderRow(scope)` for orientation and suppress any duplicate header.
 - **Scheduled range query contract** (DEC-253A): `watchScheduledOccurrences(...)` is still the target domain API; current MVP Scheduled is implemented via `AgendaSectionDataService.watchAgendaData(...)` as an interim.
+
+- **Error handling migration work item (DEC-039A–DEC-044A)**: replicate the Auth vertical slice pattern across the app.
+  - Create an `OperationContext` in each BLoC intent handler and pass it down into domain/data operations.
+  - Ensure data catches exceptions and throws domain `AppFailure` (with `UnknownFailure` fallback).
+  - Use `AppErrorReporter` only for unexpected/unmapped failures; keep expected failures screen-owned.
 
 ## Decisions locked in
 
@@ -217,6 +234,12 @@ Implementation follow-ups to keep in mind:
 - Drift/SQLite representation for date-only recurrence columns: store as SQLite TEXT (`YYYY-MM-DD`) and use the existing date-only converter pattern rather than `dateTime()` columns (DEC-227A).
 - Supabase schema for recurrence date-only + constraints: use Postgres `date` columns for occurrence keys and add unique indexes on `(entity_id, original_occurrence_date)` (DEC-228A).
 - Pre-implementation “done gate” checks: before implementing schema-dependent recurrence work, confirm (1) destructive reset was executed per DEC-223A and (2) Supabase + PowerSync sync rules were updated per DEC-224A (DEC-229A).
+
+  Minimal checklist for the gate (MVP):
+  - Supabase migrations exist for new/changed recurrence tables, indexes, CHECKs, and RLS.
+  - PowerSync sync rules include the recurrence tables/columns.
+  - Local Drift schema uses TEXT UUID `id` and date-only converters for the recurrence tables.
+  - Guardrail passes: `dart run tool/no_powersync_local_upserts.dart`.
 
 - Completion timestamp → home-day semantics: persist both `completedAtUtc` (instant) and a derived `completedHomeDayKey` (`YYYY-MM-DD`, computed using the then-current home offset). Use `completedHomeDayKey` for recurrence anchoring (DEC-214A).
 - Occurrence date storage contract (exceptions + completion history): treat occurrence dates as date-only keys (UTC-midnight `DateTime` encoded as `YYYY-MM-DD`) for `occurrenceDate`, `originalOccurrenceDate`, `originalDate`, `newDate`, etc (DEC-215A).
@@ -528,6 +551,10 @@ Progress:
   - Removed the unified catch-all `/:segment` route.
   - Added explicit `go_router` routes for MVP entrypoints (`/my-day`, `/anytime`, `/scheduled`) and other typed system screens.
   - Added router-level NotFound handling and UUID route param validation.
+- Completed (2026-01-17): Scoped Anytime context header metrics (DEC-068B, DEC-125B)
+  - Scoped Anytime routes show an orientation header with task/project counts as defined above.
+- Completed (2026-01-17): UI “today” provider (DEC-216C)
+  - Introduced a presentation-facing time provider backed by home-day semantics; began removing direct `DateTime.now()` calls from widgets.
 - Completed (2026-01-17): Inbox explicit screen
   - Added `/inbox` as a first-class route and main navigation destination.
   - Implemented `InboxFeedBloc` subscribing to `TaskQuery.inbox()` and mapping to a flat `ListRowUiModel` row list with stable `rowKey`s.

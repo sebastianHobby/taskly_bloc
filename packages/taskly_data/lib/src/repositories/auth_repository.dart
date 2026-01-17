@@ -1,6 +1,9 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/telemetry.dart';
+
+import 'package:taskly_data/src/errors/app_failure_mapper.dart';
 
 /// Implementation of authentication repository using Supabase.
 class AuthRepository implements AuthRepositoryContract {
@@ -22,8 +25,7 @@ class AuthRepository implements AuthRepositoryContract {
 
   @override
   Future<AuthResponse> signInWithPassword({
-    required String email,
-    required String password,
+    required String email, required String password, OperationContext? context,
   }) async {
     AppLog.info(
       'data.auth',
@@ -37,15 +39,21 @@ class AuthRepository implements AuthRepositoryContract {
       AppLog.info('data.auth', 'signInWithPassword: success');
       return response;
     } catch (e, st) {
-      AppLog.handle('data.auth', 'signInWithPassword failed', e, st);
-      rethrow;
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'signInWithPassword failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
     }
   }
 
   @override
   Future<AuthResponse> signUp({
-    required String email,
-    required String password,
+    required String email, required String password, OperationContext? context,
   }) async {
     AppLog.info('data.auth', 'signUp: email=${AppLog.maskEmail(email)}');
     try {
@@ -56,25 +64,42 @@ class AuthRepository implements AuthRepositoryContract {
       AppLog.info('data.auth', 'signUp: success');
       return response;
     } catch (e, st) {
-      AppLog.handle('data.auth', 'signUp failed', e, st);
-      rethrow;
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'signUp failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
     }
   }
 
   @override
-  Future<void> signOut() async {
+  Future<void> signOut({OperationContext? context}) async {
     AppLog.info('data.auth', 'signOut');
     try {
       await _client.auth.signOut();
       AppLog.info('data.auth', 'signOut: success');
     } catch (e, st) {
-      AppLog.handle('data.auth', 'signOut failed', e, st);
-      rethrow;
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'signOut failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
     }
   }
 
   @override
-  Future<void> resetPasswordForEmail(String email) async {
+  Future<void> resetPasswordForEmail(
+    String email, {
+    OperationContext? context,
+  }) async {
     AppLog.info(
       'data.auth',
       'resetPasswordForEmail: email=${AppLog.maskEmail(email)}',
@@ -83,13 +108,23 @@ class AuthRepository implements AuthRepositoryContract {
       await _client.auth.resetPasswordForEmail(email);
       AppLog.info('data.auth', 'resetPasswordForEmail: success');
     } catch (e, st) {
-      AppLog.handle('data.auth', 'resetPasswordForEmail failed', e, st);
-      rethrow;
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'resetPasswordForEmail failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
     }
   }
 
   @override
-  Future<UserResponse> updatePassword(String newPassword) async {
+  Future<UserResponse> updatePassword(
+    String newPassword, {
+    OperationContext? context,
+  }) async {
     AppLog.info('data.auth', 'updatePassword');
     try {
       final response = await _client.auth.updateUser(
@@ -98,8 +133,15 @@ class AuthRepository implements AuthRepositoryContract {
       AppLog.info('data.auth', 'updatePassword: success');
       return response;
     } catch (e, st) {
-      AppLog.handle('data.auth', 'updatePassword failed', e, st);
-      rethrow;
+      final failure = AppFailureMapper.fromException(e);
+      AppLog.handleStructured(
+        'data.auth',
+        'updatePassword failed',
+        failure,
+        st,
+        context?.toLogFields() ?? const <String, Object?>{},
+      );
+      throw failure;
     }
   }
 }

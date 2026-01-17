@@ -2,7 +2,7 @@
 
 > Audience: developers + architects
 >
-> Scope: the *current* attention system in this repo (rules → evaluation → persistence → section rendering), including where it plugs into the unified screen pipeline.
+> Scope: the attention system in the **future-state** architecture (rules → evaluation → persistence → rendering in screens/settings).
 
 ## 1) Executive Summary
 
@@ -10,17 +10,14 @@ Taskly’s **attention system** is a rule-based mechanism that detects items tha
 need user attention (e.g., overdue tasks, idle projects, periodic reviews) and
 surfaces them as **`AttentionItem`** view-models in multiple places:
 
-- **Support sections** on unified screens:
-  - Issues summary (`issuesSummary`)
-  - Allocation alerts (`allocationAlerts`)
-  - Check-in summary (`checkInSummary`)
+- **Feature screens** (as dedicated panels/sections within explicit screens)
 - **Settings** page for enabling/disabling rules (`Attention Rules`)
 
 The core idea:
 
 - **`AttentionRule`** is the persisted configuration (what to detect + how to
   display it).
-- **`AttentionEngine`** is the reactive evaluation engine. Sections construct an
+- **`AttentionEngine`** is the reactive evaluation engine. BLoCs construct an
   **`AttentionQuery`** and subscribe to `AttentionEngine.watch(query)`.
 - User actions are stored as **`AttentionResolution`** rows. “Dismiss until
   state changes” is implemented using engine-owned runtime state
@@ -63,13 +60,10 @@ Key files:
 - Seeder:
   - [lib/data/attention/maintenance/attention_seeder.dart](../../lib/data/attention/maintenance/attention_seeder.dart)
 
-### Screen integration (templates)
-- Issues summary:
-  - [lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart)
-- Allocation alerts:
-  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
-- Check-in summary:
-  - [lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart)
+### Screen integration
+
+Attention is consumed by presentation-layer BLoCs, which subscribe to
+`AttentionEngine.watch(query)` and expose widget-ready state.
 
 ### Presentation (widgets + settings)
 - Settings page:
@@ -95,17 +89,12 @@ Key files:
               │ toggle active          │ render items             │
               v                        v                          v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                          SECTION INTERPRETERS                                    │
-│  ┌─────────────────────┐  ┌──────────────────────┐  ┌─────────────────────────┐ │
-│  │IssuesSummarySection │  │CheckInSummarySection │  │AllocationAlertsSection  │ │
-│  │    Interpreter      │  │    Interpreter       │  │    Interpreter          │ │
-│  │                     │  │                      │  │                         │ │
-│  │ domains: {'issues'} │  │ domains: {'reviews'} │  │ domains: {'allocation'} │ │
-│  └──────────┬──────────┘  └──────────┬───────────┘  └───────────┬─────────────┘ │
-└─────────────│───────────────────────│───────────────────────────│───────────────┘
-              │                        │                          │
-              │ AttentionQuery         │ AttentionQuery           │ AttentionQuery
-              v                        v                          v
+│                                   BLOCS                                          │
+│  - build AttentionQuery                                                          │
+│  - subscribe to engine and expose widget-ready state                             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+              |
+              v
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                            ATTENTION ENGINE                                      │
 │                                                                                  │
@@ -182,9 +171,9 @@ This is the most canonical attention flow because it uses persisted rules and
 dismissal tracking.
 
 ```text
-1) Section interpreter runs: IssuesSummarySectionInterpreter.fetch(params)
-2) It builds an AttentionQuery (domains={'issues'}, optional entityTypes/minSeverity)
-3) It subscribes to AttentionEngine.watch(query)
+1) Issues/Problems screen BLoC builds an AttentionQuery
+   (domains={'issues'}, optional entityTypes/minSeverity)
+2) It subscribes to AttentionEngine.watch(query)
 4) Engine combines:
   - attentionRepository.watchActiveRules() filtered by query
   - taskRepository.watchAll() + projectRepository.watchAll()
@@ -192,8 +181,8 @@ dismissal tracking.
 5) Engine evaluates matching rules into AttentionItems, applying suppression
   semantics using runtime state (state hash + dismissal/snooze) and the latest
   resolution.
-6) Interpreter packages items into SectionDataResult.issuesSummary(...)
-7) Renderer displays tiles (AttentionItemTile) and counts
+6) BLoC emits widget-ready state (items + counts)
+7) Screen widgets render tiles (AttentionItemTile) and counts
 ```
 
 ### 3.3 Persistence Model (Rules + Resolutions)
@@ -330,16 +319,13 @@ Important nuance in the current repo state:
 
 ## 5) Integration Points (How Attention Surfaces in UI)
 
-### 5.1 Support sections (unified screens)
+### 5.1 Feature screens
 
-- `issuesSummary` -> subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
-  - [lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/issues_summary_section_interpreter.dart)
+Screens surface attention by subscribing from BLoCs:
 
-- `checkInSummary` -> subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
-  - [lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/check_in_summary_section_interpreter.dart)
-
-- `allocationAlerts` -> subscribes to `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
-  - [lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart](../../lib/domain/screens/templates/interpreters/allocation_alerts_section_interpreter.dart)
+- Issues/Problems surface: `AttentionEngine.watch(AttentionQuery(domains: {'issues'}))`
+- Reviews/check-ins surface: `AttentionEngine.watch(AttentionQuery(domains: {'reviews'}))`
+- Allocation alerts surface: `AttentionEngine.watch(AttentionQuery(domains: {'allocation'}))`
 
 ### 5.2 Settings: toggling attention rules
 
@@ -366,9 +352,9 @@ To support this without introducing OS notifications or server scheduling, the r
 - **Engine refresh**: the attention engine subscribes to invalidations and
   re-evaluates even when domain data streams haven't changed
 
-This keeps attention evaluation driven by the unified screen pipeline (sections
-still subscribe to attention items via `AttentionEngine.watch(query)`), but
-ensures the UI re-checks on:
+This keeps attention evaluation reactive (screens still subscribe to attention
+items via `AttentionEngine.watch(query)` from BLoCs) and ensures the UI
+re-checks on:
 
 - app resume (covers "user opens app")
 - home-day boundary (covers "new day")
@@ -447,7 +433,7 @@ the next post-auth maintenance run.
 
 ### 6.4 Result: Issues Summary picks it up automatically
 
-Because `IssuesSummarySectionInterpreter` builds an `AttentionQuery` and then
+Because the Issues/Problems screen BLoC builds an `AttentionQuery` and then
 subscribes to `AttentionEngine.watch(query)`, the new rule will be included as
 soon as:
 

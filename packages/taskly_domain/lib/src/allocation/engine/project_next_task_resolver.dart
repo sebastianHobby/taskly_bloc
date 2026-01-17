@@ -22,6 +22,7 @@ class ProjectNextTaskResolver {
     required List<Task> projectTasks,
     required Set<String> focusTaskIds,
     required AllocationConfig config,
+    required DateTime todayDayKeyUtc,
   }) {
     if (projectTasks.isEmpty) return null;
 
@@ -36,7 +37,7 @@ class ProjectNextTaskResolver {
     // Priority 2: Urgent tasks (deadline within threshold)
     final urgent = projectTasks.where((t) {
       if (t.deadlineDate == null) return false;
-      final daysUntil = t.deadlineDate!.difference(DateTime.now()).inDays;
+      final daysUntil = t.deadlineDate!.difference(todayDayKeyUtc).inDays;
       return daysUntil <= config.strategySettings.taskUrgencyThresholdDays;
     });
     if (urgent.isNotEmpty) {

@@ -167,8 +167,8 @@ jobs:
       - name: Generate code
         run: flutter pub run build_runner build --delete-conflicting-outputs
 
-      - name: Block deep imports into local package src/
-        run: dart run tool/no_local_package_src_deep_imports.dart
+      - name: Run repo guardrails
+        run: dart run tool/guardrails.dart
       
       - name: Run flutter analyze
         run: flutter analyze --fatal-warnings --no-fatal-infos

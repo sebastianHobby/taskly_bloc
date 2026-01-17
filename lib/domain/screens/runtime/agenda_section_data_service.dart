@@ -11,7 +11,7 @@ import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/time.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
-import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
+import 'package:taskly_bloc/domain/entity_views/tile_capabilities/entity_tile_capabilities_resolver.dart';
 
 /// Service for fetching and transforming data for the AgendaSection renderer.
 ///

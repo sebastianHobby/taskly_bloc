@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
+import 'package:taskly_domain/src/time/clock.dart';
 
 /// Shared occurrence data - composed into Task and Project domain models.
 ///
@@ -61,7 +62,7 @@ class OccurrenceData extends Equatable {
     if (deadline == null || isCompleted) {
       return false;
     }
-    return DateTime.now().isAfter(deadline!);
+    return systemClock.nowUtc().isAfter(deadline!);
   }
 
   /// Creates a copy of this OccurrenceData with the given fields replaced.

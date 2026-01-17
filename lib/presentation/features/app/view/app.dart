@@ -5,6 +5,7 @@ import 'package:taskly_bloc/core/logging/talker_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_bloc/core/errors/app_error_reporter.dart';
 import 'package:taskly_bloc/core/startup/authenticated_app_services_coordinator.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_domain/analytics.dart';
@@ -42,6 +43,9 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 class App extends StatelessWidget {
   const App({super.key});
 
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   @override
   Widget build(BuildContext context) {
     // GlobalSettingsBloc is provided at the root level, before AuthBloc,
@@ -58,6 +62,9 @@ class App extends StatelessWidget {
           try {
             final bloc = AuthBloc(
               authRepository: getIt<AuthRepositoryContract>(),
+              errorReporter: AppErrorReporter(
+                messengerKey: App.scaffoldMessengerKey,
+              ),
             )..add(const AuthSubscriptionRequested());
             talker.debug('[app] AuthBloc created successfully');
             return bloc;
@@ -114,6 +121,7 @@ class _ThemedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
+          scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
           themeMode: state.flutterThemeMode,
@@ -139,6 +147,7 @@ class _UnauthenticatedApp extends StatelessWidget {
     return BlocBuilder<GlobalSettingsBloc, GlobalSettingsState>(
       builder: (context, state) {
         return MaterialApp(
+          scaffoldMessengerKey: App.scaffoldMessengerKey,
           theme: AppTheme.lightTheme(seedColor: state.seedColor),
           darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
           themeMode: state.flutterThemeMode,
@@ -179,9 +188,6 @@ class _UnauthenticatedApp extends StatelessWidget {
 class _AuthenticatedApp extends StatelessWidget {
   const _AuthenticatedApp();
 
-  static final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
-      GlobalKey<ScaffoldMessengerState>();
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -217,7 +223,7 @@ class _AuthenticatedApp extends StatelessWidget {
             final settings = state.settings;
 
             return MaterialApp.router(
-              scaffoldMessengerKey: _scaffoldMessengerKey,
+              scaffoldMessengerKey: App.scaffoldMessengerKey,
               theme: AppTheme.lightTheme(seedColor: state.seedColor),
               darkTheme: AppTheme.darkTheme(seedColor: state.seedColor),
               themeMode: state.flutterThemeMode,
@@ -230,7 +236,7 @@ class _AuthenticatedApp extends StatelessWidget {
               debugShowCheckedModeBanner: false,
               builder: (context, child) {
                 return _ScreenActionsFailureSnackBarListener(
-                  scaffoldMessengerKey: _scaffoldMessengerKey,
+                  scaffoldMessengerKey: App.scaffoldMessengerKey,
                   child: MediaQuery(
                     data: MediaQuery.of(context).copyWith(
                       textScaler: TextScaler.linear(settings.textScaleFactor),
