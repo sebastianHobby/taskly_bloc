@@ -83,10 +83,6 @@ class NavigationIconResolver {
         icon: Icons.timeline_outlined,
         selectedIcon: Icons.timeline,
       ),
-      'allocation_settings' || 'allocation-settings' => (
-        icon: Icons.tune_outlined,
-        selectedIcon: Icons.tune,
-      ),
       'focus_setup' || 'focus-setup' => (
         icon: Icons.tune_outlined,
         selectedIcon: Icons.tune,

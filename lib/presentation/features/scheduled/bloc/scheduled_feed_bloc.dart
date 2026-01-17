@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_scope.dart';
 import 'package:taskly_bloc/domain/screens/runtime/agenda_section_data_service.dart';
@@ -50,8 +49,11 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
        _homeDayService = homeDayService,
        _scope = scope,
        super(const ScheduledFeedLoading()) {
-    on<ScheduledFeedStarted>(_onStarted);
-    on<ScheduledFeedRetryRequested>(_onRetryRequested);
+    on<ScheduledFeedStarted>(_onStarted, transformer: restartable());
+    on<ScheduledFeedRetryRequested>(
+      _onRetryRequested,
+      transformer: restartable(),
+    );
 
     add(const ScheduledFeedStarted());
   }
@@ -60,13 +62,11 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
   final HomeDayService _homeDayService;
   final ScheduledScope _scope;
 
-  StreamSubscription<AgendaData>? _sub;
-
   Future<void> _onStarted(
     ScheduledFeedStarted event,
     Emitter<ScheduledFeedState> emit,
   ) async {
-    await _subscribe(emit);
+    await _bind(emit);
   }
 
   Future<void> _onRetryRequested(
@@ -74,36 +74,33 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     Emitter<ScheduledFeedState> emit,
   ) async {
     emit(const ScheduledFeedLoading());
-    await _subscribe(emit);
+    await _bind(emit);
   }
 
-  Future<void> _subscribe(Emitter<ScheduledFeedState> emit) async {
-    await _sub?.cancel();
-
+  Future<void> _bind(Emitter<ScheduledFeedState> emit) async {
     final todayDayKeyUtc = _homeDayService.todayDayKeyUtc();
     final rangeStart = todayDayKeyUtc;
     final rangeEnd = todayDayKeyUtc.add(const Duration(days: 30));
 
-    _sub = _agendaDataService
-        .watchAgendaData(
-          referenceDate: todayDayKeyUtc,
-          focusDate: todayDayKeyUtc,
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-          scope: _toAgendaScope(_scope),
-        )
-        .listen(
-          (agenda) {
-            try {
-              emit(ScheduledFeedLoaded(rows: _mapToRows(agenda)));
-            } catch (e) {
-              emit(ScheduledFeedError(message: e.toString()));
-            }
-          },
-          onError: (Object e, StackTrace s) {
-            emit(ScheduledFeedError(message: e.toString()));
-          },
-        );
+    await emit.forEach<AgendaData>(
+      _agendaDataService.watchAgendaData(
+        referenceDate: todayDayKeyUtc,
+        focusDate: todayDayKeyUtc,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        scope: _toAgendaScope(_scope),
+      ),
+      onData: (agenda) {
+        try {
+          return ScheduledFeedLoaded(rows: _mapToRows(agenda));
+        } catch (e) {
+          return ScheduledFeedError(message: e.toString());
+        }
+      },
+      onError: (error, stackTrace) => ScheduledFeedError(
+        message: error.toString(),
+      ),
+    );
   }
 
   AgendaScope? _toAgendaScope(ScheduledScope scope) {
@@ -262,11 +259,5 @@ class ScheduledFeedBloc extends Bloc<ScheduledFeedEvent, ScheduledFeedState> {
     final m = date.month.toString().padLeft(2, '0');
     final d = date.day.toString().padLeft(2, '0');
     return '$y-$m-$d';
-  }
-
-  @override
-  Future<void> close() async {
-    await _sub?.cancel();
-    return super.close();
   }
 }

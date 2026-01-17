@@ -48,12 +48,34 @@ animations, scroll controllers) that does not represent domain/data state.
 
 See: [doc/architecture/README.md](README.md)
 
+See also: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
+
 ## 3) State management standard
 
 - Application state is **BLoC-only**.
 - Do not introduce new Cubits for domain/app state.
 - Keep navigation/snackbar/dialog side-effects driven by presentation patterns
   that do not leak domain/data dependencies.
+
+### 3.1 Reactive subscription lifecycle (strict)
+
+Reactive streams used to derive UI state must be bound to BLoC event-handler
+lifecycle.
+
+Normative rules:
+
+- Do not call `emit(...)` from any asynchronous callback that may outlive the
+  current event handler.
+  - Examples: stream `.listen(...)` callbacks, `future.then(...)`, timers.
+- For stream-backed screens, bind streams using `await emit.forEach(...)` or
+  `await emit.onEach(...)`.
+- After any `await` point, do not emit unless the handler is still active.
+  - Check `if (emit.isDone) return;` before emitting.
+
+Rationale:
+
+- Prevents "emit was called after an event handler completed normally" crashes.
+- Makes cancellation/retry deterministic.
 
 ## 4) Write boundary and atomicity
 

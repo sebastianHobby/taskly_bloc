@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/row_key.dart';
 import 'package:taskly_domain/allocation.dart';
@@ -8,6 +9,7 @@ import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/queries.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:rxdart/rxdart.dart';
 
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 
@@ -62,8 +64,11 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
        _temporalTriggerService = temporalTriggerService,
        _scope = scope,
        super(const AnytimeFeedLoading()) {
-    on<AnytimeFeedStarted>(_onStarted);
-    on<AnytimeFeedRetryRequested>(_onRetryRequested);
+    on<AnytimeFeedStarted>(_onStarted, transformer: restartable());
+    on<AnytimeFeedRetryRequested>(
+      _onRetryRequested,
+      transformer: restartable(),
+    );
     on<AnytimeFeedFocusOnlyChanged>(_onFocusOnlyChanged);
 
     add(const AnytimeFeedStarted());
@@ -75,20 +80,15 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
   final TemporalTriggerService _temporalTriggerService;
   final AnytimeScope? _scope;
 
-  StreamSubscription<List<Task>>? _tasksSub;
-  StreamSubscription<List<AllocationSnapshotTaskRef>>? _allocatedSub;
-  StreamSubscription<dynamic>? _triggersSub;
-
   List<Task> _latestTasks = const <Task>[];
   Set<String> _allocatedTaskIds = const <String>{};
   bool _focusOnly = false;
-  DateTime? _dayKeyUtc;
 
   Future<void> _onStarted(
     AnytimeFeedStarted event,
     Emitter<AnytimeFeedState> emit,
   ) async {
-    await _subscribe(emit);
+    await _bind(emit);
   }
 
   Future<void> _onRetryRequested(
@@ -96,7 +96,7 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     Emitter<AnytimeFeedState> emit,
   ) async {
     emit(const AnytimeFeedLoading());
-    await _subscribe(emit);
+    await _bind(emit);
   }
 
   void _onFocusOnlyChanged(
@@ -107,32 +107,47 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     _emitRows(emit);
   }
 
-  Future<void> _subscribe(Emitter<AnytimeFeedState> emit) async {
-    await _tasksSub?.cancel();
-    await _allocatedSub?.cancel();
-    await _triggersSub?.cancel();
-
+  Future<void> _bind(Emitter<AnytimeFeedState> emit) async {
     final query = _scopeQuery(TaskQuery.incomplete(), _scope);
 
-    _tasksSub = _taskRepository
-        .watchAll(query)
-        .listen(
-          (tasks) {
-            _latestTasks = tasks;
-            _emitRows(emit);
-          },
-          onError: (Object e, StackTrace s) {
-            emit(AnytimeFeedError(message: e.toString()));
-          },
-        );
+    final dayKeyStream = Rx.merge<DateTime>([
+      Stream<DateTime>.value(_dayKeyService.todayDayKeyUtc()),
+      _temporalTriggerService.events
+          .where(
+            (event) => event is HomeDayBoundaryCrossed || event is AppResumed,
+          )
+          .map((_) => _dayKeyService.todayDayKeyUtc()),
+    ]).distinct();
 
-    _triggersSub = _temporalTriggerService.events.listen((event) {
-      if (event is HomeDayBoundaryCrossed || event is AppResumed) {
-        _setDayKeyAndResubscribeAllocated(emit);
-      }
-    });
+    final allocatedRefsStream = dayKeyStream.switchMap(
+      _allocationSnapshotRepository.watchLatestTaskRefsForUtcDay,
+    );
 
-    _setDayKeyAndResubscribeAllocated(emit);
+    await Future.wait<void>([
+      emit.onEach<List<Task>>(
+        _taskRepository.watchAll(query),
+        onData: (tasks) {
+          _latestTasks = tasks;
+          _emitRows(emit);
+        },
+        onError: (error, stackTrace) {
+          emit(AnytimeFeedError(message: error.toString()));
+        },
+      ),
+      emit.onEach<List<AllocationSnapshotTaskRef>>(
+        allocatedRefsStream,
+        onData: (refs) {
+          _allocatedTaskIds = {
+            for (final r in refs)
+              if (r.taskId.trim().isNotEmpty) r.taskId,
+          };
+          _emitRows(emit);
+        },
+        onError: (error, stackTrace) {
+          emit(AnytimeFeedError(message: error.toString()));
+        },
+      ),
+    ]);
   }
 
   TaskQuery _scopeQuery(TaskQuery base, AnytimeScope? scope) {
@@ -153,32 +168,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
         ),
       ]),
     };
-  }
-
-  void _setDayKeyAndResubscribeAllocated(Emitter<AnytimeFeedState> emit) {
-    final nextDayKeyUtc = _dayKeyService.todayDayKeyUtc();
-
-    if (_dayKeyUtc != null && _dayKeyUtc!.isAtSameMomentAs(nextDayKeyUtc)) {
-      return;
-    }
-
-    _dayKeyUtc = nextDayKeyUtc;
-
-    _allocatedSub?.cancel();
-    _allocatedSub = _allocationSnapshotRepository
-        .watchLatestTaskRefsForUtcDay(nextDayKeyUtc)
-        .listen(
-          (refs) {
-            _allocatedTaskIds = {
-              for (final r in refs)
-                if (r.taskId.trim().isNotEmpty) r.taskId,
-            };
-            _emitRows(emit);
-          },
-          onError: (Object e, StackTrace s) {
-            emit(AnytimeFeedError(message: e.toString()));
-          },
-        );
   }
 
   void _emitRows(Emitter<AnytimeFeedState> emit) {
@@ -377,14 +366,6 @@ class AnytimeFeedBloc extends Bloc<AnytimeFeedEvent, AnytimeFeedState> {
     if (byName != 0) return byName;
 
     return a.id.compareTo(b.id);
-  }
-
-  @override
-  Future<void> close() async {
-    await _tasksSub?.cancel();
-    await _allocatedSub?.cancel();
-    await _triggersSub?.cancel();
-    return super.close();
   }
 }
 

@@ -186,6 +186,7 @@ For the deeper dive see:
 ## 3) Architecture Docs Index (This Folder)
 
 - Architecture invariants (normative): [ARCHITECTURE_INVARIANTS.md](ARCHITECTURE_INVARIANTS.md)
+- BLoC guidelines: [BLOC_GUIDELINES.md](BLOC_GUIDELINES.md)
 - Screen architecture (future): [SCREEN_ARCHITECTURE.md](SCREEN_ARCHITECTURE.md)
 - Legacy architecture overview: [LEGACY_ARCHITECTURE_OVERVIEW.md](LEGACY_ARCHITECTURE_OVERVIEW.md)
 - Journal + statistics: [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
