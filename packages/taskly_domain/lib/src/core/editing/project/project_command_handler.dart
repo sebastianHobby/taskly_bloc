@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/project/project_commands.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/project_repository_contract.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 final class ProjectCommandHandler {
   ProjectCommandHandler({required ProjectRepositoryContract projectRepository})
@@ -10,7 +11,10 @@ final class ProjectCommandHandler {
 
   final ProjectRepositoryContract _projectRepository;
 
-  Future<CommandResult> handleCreate(CreateProjectCommand command) async {
+  Future<CommandResult> handleCreate(
+    CreateProjectCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -25,12 +29,16 @@ final class ProjectCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      context: context,
     );
 
     return const CommandResult.success();
   }
 
-  Future<CommandResult> handleUpdate(UpdateProjectCommand command) async {
+  Future<CommandResult> handleUpdate(
+    UpdateProjectCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -46,6 +54,7 @@ final class ProjectCommandHandler {
       repeatFromCompletion: command.repeatFromCompletion,
       seriesEnded: command.seriesEnded,
       valueIds: command.valueIds,
+      context: context,
     );
 
     return const CommandResult.success();

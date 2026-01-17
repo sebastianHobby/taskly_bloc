@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_domain/taskly_domain.dart' hide Value;
@@ -48,51 +49,71 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
   }
 
   @override
-  Future<void> saveSnapshot(AnalyticsSnapshot snapshot) async {
-    // Use v5 deterministic ID for snapshots (entityType + entityId + date)
-    final snapshotId = snapshot.id.isEmpty
-        ? _idGenerator.analyticsSnapshotId(
-            entityType: snapshot.entityType,
-            entityId: snapshot.entityId ?? '',
-            snapshotDate: snapshot.snapshotDate,
-          )
-        : snapshot.id;
+  Future<void> saveSnapshot(
+    AnalyticsSnapshot snapshot, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        // Use v5 deterministic ID for snapshots (entityType + entityId + date)
+        final snapshotId = snapshot.id.isEmpty
+            ? _idGenerator.analyticsSnapshotId(
+                entityType: snapshot.entityType,
+                entityId: snapshot.entityId ?? '',
+                snapshotDate: snapshot.snapshotDate,
+              )
+            : snapshot.id;
 
-    final updated =
-        await (_database.update(
-          _database.analyticsSnapshots,
-        )..where((s) => s.id.equals(snapshotId))).write(
-          AnalyticsSnapshotsCompanion(
-            entityType: Value(snapshot.entityType),
-            entityId: Value(snapshot.entityId),
-            snapshotDate: Value(snapshot.snapshotDate),
-            metrics: Value(snapshot.metrics),
-          ),
-        );
+        final updated =
+            await (_database.update(
+              _database.analyticsSnapshots,
+            )..where((s) => s.id.equals(snapshotId))).write(
+              AnalyticsSnapshotsCompanion(
+                entityType: Value(snapshot.entityType),
+                entityId: Value(snapshot.entityId),
+                snapshotDate: Value(snapshot.snapshotDate),
+                metrics: Value(snapshot.metrics),
+              ),
+            );
 
-    if (updated == 0) {
-      await _database
-          .into(_database.analyticsSnapshots)
-          .insert(
-            AnalyticsSnapshotsCompanion(
-              id: Value(snapshotId),
-              entityType: Value(snapshot.entityType),
-              entityId: Value(snapshot.entityId),
-              snapshotDate: Value(snapshot.snapshotDate),
-              metrics: Value(snapshot.metrics),
-            ),
-            mode: InsertMode.insertOrAbort,
-          );
-    }
+        if (updated == 0) {
+          await _database
+              .into(_database.analyticsSnapshots)
+              .insert(
+                AnalyticsSnapshotsCompanion(
+                  id: Value(snapshotId),
+                  entityType: Value(snapshot.entityType),
+                  entityId: Value(snapshot.entityId),
+                  snapshotDate: Value(snapshot.snapshotDate),
+                  metrics: Value(snapshot.metrics),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+      },
+      area: 'data.analytics',
+      opName: 'saveSnapshot',
+      context: context,
+    );
   }
 
   @override
-  Future<void> saveSnapshots(List<AnalyticsSnapshot> snapshots) async {
-    await _database.transaction(() async {
-      for (final snapshot in snapshots) {
-        await saveSnapshot(snapshot);
-      }
-    });
+  Future<void> saveSnapshots(
+    List<AnalyticsSnapshot> snapshots, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        await _database.transaction(() async {
+          for (final snapshot in snapshots) {
+            await saveSnapshot(snapshot, context: context);
+          }
+        });
+      },
+      area: 'data.analytics',
+      opName: 'saveSnapshots',
+      context: context,
+    );
   }
 
   @override
@@ -121,8 +142,8 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
       (targetIdsByType[row.targetType] ??= <String>{}).add(row.targetId);
     }
 
-    final sourceLabelsById = await _resolveEntityLabelsByType(sourceIdsByType);
-    final targetLabelsById = await _resolveEntityLabelsByType(targetIdsByType);
+    final sourceLabelsById = await resolveEntityLabelsByType(sourceIdsByType);
+    final targetLabelsById = await resolveEntityLabelsByType(targetIdsByType);
 
     return results.map((row) {
       // Parse enhanced fields from JSON
@@ -157,15 +178,15 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
       return CorrelationResult(
         sourceLabel:
             sourceLabelsById[row.sourceId] ??
-            _fallbackLabel(row.sourceType, row.sourceId),
+            fallbackLabel(row.sourceType, row.sourceId),
         targetLabel:
             targetLabelsById[row.targetId] ??
-            _fallbackLabel(row.targetType, row.targetId),
+            fallbackLabel(row.targetType, row.targetId),
         coefficient: row.coefficient ?? 0.0,
         sampleSize: row.sampleSize,
         strength:
-            _parseStrength(row.strength) ??
-            _strengthFromCoefficient(row.coefficient ?? 0.0),
+            parseStrength(row.strength) ??
+            strengthFromCoefficient(row.coefficient ?? 0.0),
         insight: row.insight ?? '',
         valueWithSource: row.valueWithSource,
         valueWithoutSource: row.valueWithoutSource,
@@ -180,55 +201,12 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
   }
 
   @override
-  Future<void> saveCorrelation(CorrelationResult correlation) async {
-    // Convert enhanced fields to Map (the TypeConverter handles JSON serialization)
-    final significanceMap = correlation.statisticalSignificance?.toJson();
-    final performanceMap = correlation.performanceMetrics?.toJson();
-
-    final sourceId = correlation.sourceId ?? correlation.sourceLabel;
-    final targetId = correlation.targetId ?? correlation.targetLabel;
-
-    final sourceType =
-        correlation.sourceType ?? _inferEntityTypeFromId(sourceId);
-    final targetType =
-        correlation.targetType ?? _inferEntityTypeFromId(targetId);
-    final inferredCorrelationType = _inferCorrelationType(
-      sourceType: sourceType,
-      targetType: targetType,
-    );
-
-    await _database
-        .into(_database.analyticsCorrelations)
-        .insert(
-          AnalyticsCorrelationsCompanion(
-            id: Value(_idGenerator.analyticsCorrelationId()),
-            correlationType: Value(inferredCorrelationType),
-            sourceType: Value(sourceType),
-            sourceId: Value(sourceId),
-            targetType: Value(targetType),
-            targetId: Value(targetId),
-            periodStart: Value(
-              DateTime.now().subtract(const Duration(days: 30)),
-            ),
-            periodEnd: Value(DateTime.now()),
-            coefficient: Value(correlation.coefficient),
-            sampleSize: Value(correlation.sampleSize ?? 0),
-            strength: Value(correlation.strength.name),
-            insight: Value(correlation.insight ?? ''),
-            valueWithSource: Value(correlation.valueWithSource),
-            valueWithoutSource: Value(correlation.valueWithoutSource),
-            computedAt: Value(DateTime.now()),
-            statisticalSignificance: Value(significanceMap),
-            performanceMetrics: Value(performanceMap),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-  }
-
-  @override
-  Future<void> saveCorrelations(List<CorrelationResult> correlations) async {
-    await _database.batch((batch) {
-      for (final correlation in correlations) {
+  Future<void> saveCorrelation(
+    CorrelationResult correlation, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
         // Convert enhanced fields to Map (the TypeConverter handles JSON serialization)
         final significanceMap = correlation.statisticalSignificance?.toJson();
         final performanceMap = correlation.performanceMetrics?.toJson();
@@ -237,51 +215,115 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
         final targetId = correlation.targetId ?? correlation.targetLabel;
 
         final sourceType =
-            correlation.sourceType ?? _inferEntityTypeFromId(sourceId);
+            correlation.sourceType ?? inferEntityTypeFromId(sourceId);
         final targetType =
-            correlation.targetType ?? _inferEntityTypeFromId(targetId);
-        final inferredCorrelationType = _inferCorrelationType(
+            correlation.targetType ?? inferEntityTypeFromId(targetId);
+        final inferredCorrelationType = inferCorrelationType(
           sourceType: sourceType,
           targetType: targetType,
         );
 
-        batch.insert(
-          _database.analyticsCorrelations,
-          AnalyticsCorrelationsCompanion(
-            id: Value(_idGenerator.analyticsCorrelationId()),
-            correlationType: Value(inferredCorrelationType),
-            sourceType: Value(sourceType),
-            sourceId: Value(sourceId),
-            targetType: Value(targetType),
-            targetId: Value(targetId),
-            periodStart: Value(
-              DateTime.now().subtract(const Duration(days: 30)),
-            ),
-            periodEnd: Value(DateTime.now()),
-            coefficient: Value(correlation.coefficient),
-            sampleSize: Value(correlation.sampleSize ?? 0),
-            strength: Value(correlation.strength.name),
-            insight: Value(correlation.insight ?? ''),
-            valueWithSource: Value(correlation.valueWithSource),
-            valueWithoutSource: Value(correlation.valueWithoutSource),
-            computedAt: Value(DateTime.now()),
-            statisticalSignificance: Value(significanceMap),
-            performanceMetrics: Value(performanceMap),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-      }
-    });
+        await _database
+            .into(_database.analyticsCorrelations)
+            .insert(
+              AnalyticsCorrelationsCompanion(
+                id: Value(_idGenerator.analyticsCorrelationId()),
+                correlationType: Value(inferredCorrelationType),
+                sourceType: Value(sourceType),
+                sourceId: Value(sourceId),
+                targetType: Value(targetType),
+                targetId: Value(targetId),
+                periodStart: Value(
+                  DateTime.now().subtract(const Duration(days: 30)),
+                ),
+                periodEnd: Value(DateTime.now()),
+                coefficient: Value(correlation.coefficient),
+                sampleSize: Value(correlation.sampleSize ?? 0),
+                strength: Value(correlation.strength.name),
+                insight: Value(correlation.insight ?? ''),
+                valueWithSource: Value(correlation.valueWithSource),
+                valueWithoutSource: Value(correlation.valueWithoutSource),
+                computedAt: Value(DateTime.now()),
+                statisticalSignificance: Value(significanceMap),
+                performanceMetrics: Value(performanceMap),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      },
+      area: 'data.analytics',
+      opName: 'saveCorrelation',
+      context: context,
+    );
   }
 
-  CorrelationStrength? _parseStrength(String raw) {
+  @override
+  Future<void> saveCorrelations(
+    List<CorrelationResult> correlations, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        await _database.batch((batch) {
+          for (final correlation in correlations) {
+            // Convert enhanced fields to Map (the TypeConverter handles JSON serialization)
+            final significanceMap = correlation.statisticalSignificance
+                ?.toJson();
+            final performanceMap = correlation.performanceMetrics?.toJson();
+
+            final sourceId = correlation.sourceId ?? correlation.sourceLabel;
+            final targetId = correlation.targetId ?? correlation.targetLabel;
+
+            final sourceType =
+                correlation.sourceType ?? inferEntityTypeFromId(sourceId);
+            final targetType =
+                correlation.targetType ?? inferEntityTypeFromId(targetId);
+            final inferredCorrelationType = inferCorrelationType(
+              sourceType: sourceType,
+              targetType: targetType,
+            );
+
+            batch.insert(
+              _database.analyticsCorrelations,
+              AnalyticsCorrelationsCompanion(
+                id: Value(_idGenerator.analyticsCorrelationId()),
+                correlationType: Value(inferredCorrelationType),
+                sourceType: Value(sourceType),
+                sourceId: Value(sourceId),
+                targetType: Value(targetType),
+                targetId: Value(targetId),
+                periodStart: Value(
+                  DateTime.now().subtract(const Duration(days: 30)),
+                ),
+                periodEnd: Value(DateTime.now()),
+                coefficient: Value(correlation.coefficient),
+                sampleSize: Value(correlation.sampleSize ?? 0),
+                strength: Value(correlation.strength.name),
+                insight: Value(correlation.insight ?? ''),
+                valueWithSource: Value(correlation.valueWithSource),
+                valueWithoutSource: Value(correlation.valueWithoutSource),
+                computedAt: Value(DateTime.now()),
+                statisticalSignificance: Value(significanceMap),
+                performanceMetrics: Value(performanceMap),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+          }
+        });
+      },
+      area: 'data.analytics',
+      opName: 'saveCorrelations',
+      context: context,
+    );
+  }
+
+  CorrelationStrength? parseStrength(String raw) {
     for (final value in CorrelationStrength.values) {
       if (value.name == raw) return value;
     }
     return null;
   }
 
-  String _inferEntityTypeFromId(String id) {
+  String inferEntityTypeFromId(String id) {
     final normalized = id.toLowerCase();
     if (normalized.startsWith('task-')) return 'task';
     if (normalized.startsWith('project-')) return 'project';
@@ -290,7 +332,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     return _unknownType;
   }
 
-  String _inferCorrelationType({
+  String inferCorrelationType({
     required String sourceType,
     required String targetType,
   }) {
@@ -300,9 +342,9 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     return '${sourceType}_$targetType';
   }
 
-  String _fallbackLabel(String type, String id) => '$type-$id';
+  String fallbackLabel(String type, String id) => '$type-$id';
 
-  Future<Map<String, String>> _resolveEntityLabelsByType(
+  Future<Map<String, String>> resolveEntityLabelsByType(
     Map<String, Set<String>> idsByType,
   ) async {
     if (idsByType.isEmpty) return {};
@@ -342,7 +384,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     return labels;
   }
 
-  CorrelationStrength _strengthFromCoefficient(double coefficient) {
+  CorrelationStrength strengthFromCoefficient(double coefficient) {
     if (coefficient > 0.5) return CorrelationStrength.strongPositive;
     if (coefficient > 0.3) return CorrelationStrength.moderatePositive;
     if (coefficient > 0.1) return CorrelationStrength.weakPositive;
@@ -372,7 +414,7 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
     return results.map((row) {
       return AnalyticsInsight(
         id: row.id,
-        insightType: _parseInsightType(row.insightType),
+        insightType: parseInsightType(row.insightType),
         title: row.title,
         description: row.description,
         generatedAt: row.generatedAt,
@@ -387,40 +429,60 @@ class AnalyticsRepositoryImpl implements AnalyticsRepositoryContract {
   }
 
   @override
-  Future<void> saveInsight(AnalyticsInsight insight) async {
-    // Use v4 random ID for insights (unique findings)
-    final insightId = insight.id.isEmpty
-        ? _idGenerator.analyticsInsightId()
-        : insight.id;
+  Future<void> saveInsight(
+    AnalyticsInsight insight, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        // Use v4 random ID for insights (unique findings)
+        final insightId = insight.id.isEmpty
+            ? _idGenerator.analyticsInsightId()
+            : insight.id;
 
-    await _database
-        .into(_database.analyticsInsights)
-        .insert(
-          AnalyticsInsightsCompanion(
-            id: Value(insightId),
-            insightType: Value(insight.insightType.name),
-            title: Value(insight.title),
-            description: Value(insight.description),
-            metadata: Value(insight.metadata),
-            score: Value(insight.score),
-            confidence: Value(insight.confidence),
-            isPositive: Value(insight.isPositive),
-            generatedAt: Value(insight.generatedAt),
-            periodStart: Value(insight.periodStart),
-            periodEnd: Value(insight.periodEnd),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
+        await _database
+            .into(_database.analyticsInsights)
+            .insert(
+              AnalyticsInsightsCompanion(
+                id: Value(insightId),
+                insightType: Value(insight.insightType.name),
+                title: Value(insight.title),
+                description: Value(insight.description),
+                metadata: Value(insight.metadata),
+                score: Value(insight.score),
+                confidence: Value(insight.confidence),
+                isPositive: Value(insight.isPositive),
+                generatedAt: Value(insight.generatedAt),
+                periodStart: Value(insight.periodStart),
+                periodEnd: Value(insight.periodEnd),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      },
+      area: 'data.analytics',
+      opName: 'saveInsight',
+      context: context,
+    );
   }
 
   @override
-  Future<void> dismissInsight(String insightId) async {
-    await (_database.delete(
-      _database.analyticsInsights,
-    )..where((i) => i.id.equals(insightId))).go();
+  Future<void> dismissInsight(
+    String insightId, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        await (_database.delete(
+          _database.analyticsInsights,
+        )..where((i) => i.id.equals(insightId))).go();
+      },
+      area: 'data.analytics',
+      opName: 'dismissInsight',
+      context: context,
+    );
   }
 
-  InsightType _parseInsightType(String typeStr) {
+  InsightType parseInsightType(String typeStr) {
     return InsightType.values.firstWhere(
       (t) => t.name == typeStr,
       orElse: () => InsightType.correlationDiscovery,

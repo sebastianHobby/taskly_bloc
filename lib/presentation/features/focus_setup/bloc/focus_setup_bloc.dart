@@ -4,6 +4,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/preferences.dart';
@@ -343,6 +344,8 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
 
   final SettingsRepositoryContract _settingsRepository;
   final ValueRepositoryContract _valueRepository;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
 
   StreamSubscription<AllocationConfig>? _allocationSub;
   StreamSubscription<dynamic>? _valuesSub;
@@ -433,9 +436,18 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
     if (name.isEmpty) return;
 
     try {
+      final context = _contextFactory.create(
+        feature: 'focus_setup',
+        screen: 'focus_setup',
+        intent: 'value_quick_add_requested',
+        operation: 'values.create',
+        entityType: 'value',
+        extraFields: <String, Object?>{'source': 'focus_setup'},
+      );
       await _valueRepository.create(
         name: name,
         color: _colorHexForName(name),
+        context: context,
       );
     } catch (e, st) {
       talker.handle(e, st, '[FocusSetupBloc] quick add value failed');
@@ -677,7 +689,19 @@ class FocusSetupBloc extends Bloc<FocusSetupEvent, FocusSetupState> {
         strategySettings: strategySettings,
       );
 
-      await _settingsRepository.save(SettingsKey.allocation, updatedConfig);
+      final context = _contextFactory.create(
+        feature: 'focus_setup',
+        screen: 'focus_setup',
+        intent: 'allocation_finalize_requested',
+        operation: 'settings.save.allocation',
+        entityType: 'settings',
+      );
+
+      await _settingsRepository.save(
+        SettingsKey.allocation,
+        updatedConfig,
+        context: context,
+      );
 
       add(const FocusSetupEvent.saveSucceeded());
     } catch (e, st) {

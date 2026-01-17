@@ -1,6 +1,7 @@
 import 'package:taskly_domain/src/domain.dart';
 import 'package:taskly_domain/src/core/model/value_priority.dart';
 import 'package:taskly_domain/src/queries/value_query.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class ValueRepositoryContract {
   /// Watch values with optional filtering.
@@ -24,6 +25,7 @@ abstract class ValueRepositoryContract {
     required String color,
     String? iconName,
     ValuePriority priority = ValuePriority.medium,
+    OperationContext? context,
   });
   Future<void> update({
     required String id,
@@ -31,6 +33,7 @@ abstract class ValueRepositoryContract {
     required String color,
     String? iconName,
     ValuePriority? priority,
+    OperationContext? context,
   });
-  Future<void> delete(String id);
+  Future<void> delete(String id, {OperationContext? context});
 }

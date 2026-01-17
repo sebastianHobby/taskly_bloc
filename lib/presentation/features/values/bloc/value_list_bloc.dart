@@ -3,9 +3,11 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/presentation/shared/mixins/list_bloc_mixin.dart';
 import 'package:taskly_bloc/presentation/shared/utils/sort_utils.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/core.dart';
 import 'package:taskly_domain/preferences.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 part 'value_list_bloc.freezed.dart';
 
@@ -59,6 +61,25 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
   final SettingsRepositoryContract? _settingsRepository;
   final PageKey? _pageKey;
   SortPreferences _sortPreferences;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    String? entityId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'values',
+      screen: 'value_list',
+      intent: intent,
+      operation: operation,
+      entityType: 'value',
+      entityId: entityId,
+      extraFields: extraFields,
+    );
+  }
 
   SortPreferences get currentSortPreferences => _sortPreferences;
 
@@ -120,9 +141,19 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
 
     // Persist to settings
     if (_settingsRepository != null && _pageKey != null) {
+      final context = _contextFactory.create(
+        feature: 'values',
+        screen: 'value_list',
+        intent: 'values_sort_preferences_changed',
+        operation: 'settings.save.pageSort',
+        extraFields: <String, Object?>{
+          'pageKey': _pageKey.toString(),
+        },
+      );
       await _settingsRepository.save(
         SettingsKey.pageSort(_pageKey),
         event.preferences,
+        context: context,
       );
     }
   }
@@ -131,9 +162,14 @@ class ValueListBloc extends Bloc<ValueListEvent, ValueListState>
     ValueListDeleteValue event,
     Emitter<ValueListState> emit,
   ) async {
+    final context = _newContext(
+      intent: 'value_delete_requested',
+      operation: 'values.delete',
+      entityId: event.value.id,
+    );
     await executeDelete(
       emit,
-      delete: () => _valueRepository.delete(event.value.id),
+      delete: () => _valueRepository.delete(event.value.id, context: context),
     );
   }
 }

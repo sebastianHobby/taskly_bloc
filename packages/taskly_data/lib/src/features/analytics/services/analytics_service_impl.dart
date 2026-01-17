@@ -7,11 +7,15 @@ class AnalyticsServiceImpl implements AnalyticsService {
     required ProjectRepositoryContract projectRepo,
     required ValueRepositoryContract valueRepo,
     required JournalRepositoryContract journalRepo,
+    required HomeDayKeyService dayKeyService,
+    Clock clock = systemClock,
   }) : _analyticsRepo = analyticsRepo,
        _taskRepo = taskRepo,
        _projectRepo = projectRepo,
        _valueRepo = valueRepo,
        _journalRepo = journalRepo,
+       _dayKeyService = dayKeyService,
+       _clock = clock,
        _taskStatsCalculator = TaskStatsCalculator(),
        _correlationCalculator = CorrelationCalculator();
   final AnalyticsRepositoryContract _analyticsRepo;
@@ -19,6 +23,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
   final ProjectRepositoryContract _projectRepo;
   final ValueRepositoryContract _valueRepo;
   final JournalRepositoryContract _journalRepo;
+  final HomeDayKeyService _dayKeyService;
+  final Clock _clock;
   final TaskStatsCalculator _taskStatsCalculator;
   final CorrelationCalculator _correlationCalculator;
 
@@ -34,8 +40,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       entityType: entityType,
     );
 
-    final nowUtc = systemClock.nowUtc();
-    final todayDayKeyUtc = dateOnly(nowUtc);
+    final nowUtc = _clock.nowUtc();
+    final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: nowUtc);
 
     return _taskStatsCalculator.calculate(
       tasks: tasks,
@@ -58,8 +64,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       entityType: entityType,
     );
 
-    final nowUtc = systemClock.nowUtc();
-    final todayDayKeyUtc = dateOnly(nowUtc);
+    final nowUtc = _clock.nowUtc();
+    final todayDayKeyUtc = _dayKeyService.todayDayKeyUtc(nowUtc: nowUtc);
 
     final Map<TaskStatType, StatResult> results = {};
     for (final statType in statTypes) {

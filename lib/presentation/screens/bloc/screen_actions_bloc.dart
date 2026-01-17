@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
+import 'package:taskly_bloc/presentation/shared/telemetry/operation_context_factory.dart';
 import 'package:taskly_domain/analytics.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_action_service.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/screen_actions_state.dart';
+import 'package:taskly_domain/telemetry.dart';
 
 sealed class ScreenActionsEvent {
   const ScreenActionsEvent();
@@ -146,22 +148,57 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
   }
 
   final EntityActionService _entityActionService;
+  final OperationContextFactory _contextFactory =
+      const OperationContextFactory();
+
+  OperationContext _newContext({
+    required String intent,
+    required String operation,
+    required EntityType entityType,
+    required String entityId,
+    Map<String, Object?> extraFields = const <String, Object?>{},
+  }) {
+    return _contextFactory.create(
+      feature: 'usm',
+      screen: 'screen_actions',
+      intent: intent,
+      operation: operation,
+      entityType: entityType.name,
+      entityId: entityId,
+      extraFields: extraFields,
+    );
+  }
 
   Future<void> _onTaskCompletionChanged(
     ScreenActionsTaskCompletionChanged event,
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final context = _newContext(
+        intent: 'task_completion_changed',
+        operation: event.completed
+            ? 'complete_occurrence'
+            : 'uncomplete_occurrence',
+        entityType: EntityType.task,
+        entityId: event.taskId,
+        extraFields: <String, Object?>{
+          'occurrenceDate': event.occurrenceDate?.toIso8601String(),
+          'originalOccurrenceDate': event.originalOccurrenceDate
+              ?.toIso8601String(),
+        },
+      );
       if (event.completed) {
         await _entityActionService.completeTask(
           event.taskId,
           occurrenceDate: event.occurrenceDate,
           originalOccurrenceDate: event.originalOccurrenceDate,
+          context: context,
         );
       } else {
         await _entityActionService.uncompleteTask(
           event.taskId,
           occurrenceDate: event.occurrenceDate,
+          context: context,
         );
       }
       event.completer?.complete();
@@ -186,16 +223,31 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final context = _newContext(
+        intent: 'project_completion_changed',
+        operation: event.completed
+            ? 'complete_occurrence'
+            : 'uncomplete_occurrence',
+        entityType: EntityType.project,
+        entityId: event.projectId,
+        extraFields: <String, Object?>{
+          'occurrenceDate': event.occurrenceDate?.toIso8601String(),
+          'originalOccurrenceDate': event.originalOccurrenceDate
+              ?.toIso8601String(),
+        },
+      );
       if (event.completed) {
         await _entityActionService.completeProject(
           event.projectId,
           occurrenceDate: event.occurrenceDate,
           originalOccurrenceDate: event.originalOccurrenceDate,
+          context: context,
         );
       } else {
         await _entityActionService.uncompleteProject(
           event.projectId,
           occurrenceDate: event.occurrenceDate,
+          context: context,
         );
       }
       event.completer?.complete();
@@ -220,10 +272,17 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final context = _newContext(
+        intent: 'task_pinned_changed',
+        operation: event.pinned ? 'pin' : 'unpin',
+        entityType: EntityType.task,
+        entityId: event.taskId,
+        extraFields: <String, Object?>{'pinned': event.pinned},
+      );
       if (event.pinned) {
-        await _entityActionService.pinTask(event.taskId);
+        await _entityActionService.pinTask(event.taskId, context: context);
       } else {
-        await _entityActionService.unpinTask(event.taskId);
+        await _entityActionService.unpinTask(event.taskId, context: context);
       }
       event.completer?.complete();
     } catch (e, st) {
@@ -247,10 +306,23 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final context = _newContext(
+        intent: 'project_pinned_changed',
+        operation: event.pinned ? 'pin' : 'unpin',
+        entityType: EntityType.project,
+        entityId: event.projectId,
+        extraFields: <String, Object?>{'pinned': event.pinned},
+      );
       if (event.pinned) {
-        await _entityActionService.pinProject(event.projectId);
+        await _entityActionService.pinProject(
+          event.projectId,
+          context: context,
+        );
       } else {
-        await _entityActionService.unpinProject(event.projectId);
+        await _entityActionService.unpinProject(
+          event.projectId,
+          context: context,
+        );
       }
       event.completer?.complete();
     } catch (e, st) {
@@ -274,10 +346,19 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final context = _contextFactory.create(
+        feature: 'usm',
+        screen: 'screen_actions',
+        intent: 'delete_entity',
+        operation: 'delete',
+        entityType: event.entityType.name,
+        entityId: event.entityId,
+      );
       await _entityActionService.performAction(
         entityId: event.entityId,
         entityType: event.entityType,
         action: EntityActionType.delete,
+        context: context,
       );
       event.completer?.complete();
     } catch (e, st) {
@@ -301,9 +382,20 @@ class ScreenActionsBloc extends Bloc<ScreenActionsEvent, ScreenActionsState> {
     Emitter<ScreenActionsState> emit,
   ) async {
     try {
+      final targetProjectId = event.targetProjectId.isEmpty
+          ? null
+          : event.targetProjectId;
+      final context = _newContext(
+        intent: 'move_task_to_project',
+        operation: 'move',
+        entityType: EntityType.task,
+        entityId: event.taskId,
+        extraFields: <String, Object?>{'targetProjectId': targetProjectId},
+      );
       await _entityActionService.moveTask(
         event.taskId,
-        event.targetProjectId.isEmpty ? null : event.targetProjectId,
+        targetProjectId,
+        context: context,
       );
       event.completer?.complete();
     } catch (e, st) {

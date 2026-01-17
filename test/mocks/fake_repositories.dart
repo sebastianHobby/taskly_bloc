@@ -87,6 +87,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    OperationContext? context,
   }) async {
     final idx = _last.indexWhere((t) => t.id == id);
     if (idx == -1) return;
@@ -114,7 +115,11 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Future<void> setPinned({required String id, required bool isPinned}) async {
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
+    OperationContext? context,
+  }) async {
     final idx = _last.indexWhere((t) => t.id == id);
     if (idx == -1) return;
 
@@ -139,6 +144,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    OperationContext? context,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -162,7 +168,7 @@ class FakeTaskRepository implements TaskRepositoryContract {
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<void> delete(String id, {OperationContext? context}) async {
     _last = _last.where((t) => t.id != id).toList();
     _controller.add(_last);
   }
@@ -218,18 +224,21 @@ class FakeTaskRepository implements TaskRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   }) async {}
 
   @override
   Future<void> uncompleteOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   }) async {}
 
   @override
   Future<void> skipOccurrence({
     required String taskId,
     required DateTime originalDate,
+    OperationContext? context,
   }) async {}
 
   @override
@@ -237,8 +246,8 @@ class FakeTaskRepository implements TaskRepositoryContract {
     required String taskId,
     required DateTime originalDate,
     required DateTime newDate,
+    OperationContext? context,
   }) async {}
-
   Future<void> removeException({
     required String taskId,
     required DateTime originalDate,
@@ -293,7 +302,11 @@ class FakeSettingsRepository implements SettingsRepositoryContract {
   Future<T> load<T>(SettingsKey<T> key) async => _extractValue(key);
 
   @override
-  Future<void> save<T>(SettingsKey<T> key, T value) async {
+  Future<void> save<T>(
+    SettingsKey<T> key,
+    T value, {
+    OperationContext? context,
+  }) async {
     _applyValue(key, value);
     _controller.add(null);
   }
@@ -390,7 +403,11 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<void> setPinned({required String id, required bool isPinned}) async {
+  Future<void> setPinned({
+    required String id,
+    required bool isPinned,
+    OperationContext? context,
+  }) async {
     final idx = _last.indexWhere((p) => p.id == id);
     if (idx == -1) return;
 
@@ -419,6 +436,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    OperationContext? context,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -454,6 +472,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    OperationContext? context,
   }) async {
     final idx = _last.indexWhere((p) => p.id == id);
     if (idx == -1) return;
@@ -479,7 +498,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<void> delete(String id, {OperationContext? context}) async {
     _last = _last.where((p) => p.id != id).toList();
     _controller.add(_last);
   }
@@ -503,18 +522,21 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   }) async {}
 
   @override
   Future<void> uncompleteOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   }) async {}
 
   @override
   Future<void> skipOccurrence({
     required String projectId,
     required DateTime originalDate,
+    OperationContext? context,
   }) async {}
 
   @override
@@ -522,6 +544,7 @@ class FakeProjectRepository implements ProjectRepositoryContract {
     required String projectId,
     required DateTime originalDate,
     required DateTime newDate,
+    OperationContext? context,
   }) async {}
 
   Future<List<Project>> getProjectsByIds(List<String> ids) async =>
@@ -577,6 +600,7 @@ class FakeValueRepository implements ValueRepositoryContract {
     required String color,
     String? iconName,
     ValuePriority priority = ValuePriority.medium,
+    OperationContext? context,
   }) async {
     final now = DateTime.now();
     final id = 'gen-${now.microsecondsSinceEpoch}';
@@ -600,6 +624,7 @@ class FakeValueRepository implements ValueRepositoryContract {
     required String color,
     String? iconName,
     ValuePriority? priority,
+    OperationContext? context,
   }) async {
     final idx = _last.indexWhere((v) => v.id == id);
     if (idx == -1) return;
@@ -618,7 +643,7 @@ class FakeValueRepository implements ValueRepositoryContract {
   }
 
   @override
-  Future<void> delete(String id) async {
+  Future<void> delete(String id, {OperationContext? context}) async {
     _last = _last.where((v) => v.id != id).toList();
   }
 

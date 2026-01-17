@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/domain.dart';
 import 'package:taskly_domain/src/queries/task_query.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class TaskRepositoryContract {
   /// Watch tasks with optional filtering, sorting, and occurrence expansion.
@@ -68,6 +69,7 @@ abstract class TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    OperationContext? context,
   });
 
   Future<void> update({
@@ -84,15 +86,17 @@ abstract class TaskRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    OperationContext? context,
   });
 
   /// Set the pinned status of a task.
   Future<void> setPinned({
     required String id,
     required bool isPinned,
+    OperationContext? context,
   });
 
-  Future<void> delete(String id);
+  Future<void> delete(String id, {OperationContext? context});
 
   // =========================================================================
   // OCCURRENCE METHODS
@@ -133,6 +137,7 @@ abstract class TaskRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   });
 
   /// Remove completion for a specific occurrence.
@@ -142,6 +147,7 @@ abstract class TaskRepositoryContract {
   Future<void> uncompleteOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   });
 
   /// Skip a specific occurrence (won't appear in expansion).
@@ -151,6 +157,7 @@ abstract class TaskRepositoryContract {
   Future<void> skipOccurrence({
     required String taskId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Reschedule a specific occurrence to a new date.
@@ -162,5 +169,6 @@ abstract class TaskRepositoryContract {
     required String taskId,
     required DateTime originalDate,
     required DateTime newDate,
+    OperationContext? context,
   });
 }

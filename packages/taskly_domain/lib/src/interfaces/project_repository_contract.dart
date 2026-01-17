@@ -1,5 +1,6 @@
 import 'package:taskly_domain/src/domain.dart';
 import 'package:taskly_domain/src/queries/project_query.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 abstract class ProjectRepositoryContract {
   /// Watch projects with optional filtering, sorting, and occurrence expansion.
@@ -49,6 +50,7 @@ abstract class ProjectRepositoryContract {
     bool seriesEnded = false,
     List<String>? valueIds,
     int? priority,
+    OperationContext? context,
   });
 
   Future<void> update({
@@ -64,15 +66,17 @@ abstract class ProjectRepositoryContract {
     List<String>? valueIds,
     int? priority,
     bool? isPinned,
+    OperationContext? context,
   });
 
   /// Set the pinned status of a project.
   Future<void> setPinned({
     required String id,
     required bool isPinned,
+    OperationContext? context,
   });
 
-  Future<void> delete(String id);
+  Future<void> delete(String id, {OperationContext? context});
 
   // =========================================================================
   // OCCURRENCE METHODS
@@ -100,18 +104,21 @@ abstract class ProjectRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   });
 
   /// Remove completion for a specific occurrence.
   Future<void> uncompleteOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   });
 
   /// Skip a specific occurrence.
   Future<void> skipOccurrence({
     required String projectId,
     required DateTime originalDate,
+    OperationContext? context,
   });
 
   /// Reschedule a specific occurrence.
@@ -119,5 +126,6 @@ abstract class ProjectRepositoryContract {
     required String projectId,
     required DateTime originalDate,
     required DateTime newDate,
+    OperationContext? context,
   });
 }

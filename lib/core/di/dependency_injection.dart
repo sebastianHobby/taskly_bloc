@@ -74,6 +74,8 @@ Future<void> setupDependencies() async {
       dataStack.localDataMaintenanceService,
     );
 
+  getIt.registerSingleton<Clock>(systemClock);
+
   getIt
     // Register occurrence stream expander for reading occurrences
     ..registerLazySingleton<OccurrenceStreamExpanderContract>(
@@ -91,6 +93,7 @@ Future<void> setupDependencies() async {
       dataStack.createBindings(
         occurrenceExpander: getIt<OccurrenceStreamExpanderContract>(),
         occurrenceWriteHelper: getIt<OccurrenceWriteHelperContract>(),
+        clock: getIt<Clock>(),
       ),
     )
     ..registerSingleton<ProjectRepositoryContract>(
@@ -129,10 +132,8 @@ Future<void> setupDependencies() async {
     ..registerSingleton<PendingNotificationsProcessor>(
       getIt<TasklyDataBindings>().pendingNotificationsProcessor,
     )
-    ..registerLazySingleton<HomeDayKeyService>(
-      () => HomeDayKeyService(
-        settingsRepository: getIt<SettingsRepositoryContract>(),
-      ),
+    ..registerSingleton<HomeDayKeyService>(
+      getIt<TasklyDataBindings>().homeDayKeyService,
     )
     ..registerLazySingleton<AppLifecycleService>(AppLifecycleService.new)
     ..registerLazySingleton<PerformanceLogger>(PerformanceLogger.new)
@@ -140,6 +141,7 @@ Future<void> setupDependencies() async {
       () => TemporalTriggerService(
         dayKeyService: getIt<HomeDayKeyService>(),
         lifecycleService: getIt<AppLifecycleService>(),
+        clock: getIt<Clock>(),
       ),
     )
     ..registerLazySingleton<TodayProgressService>(
@@ -166,6 +168,7 @@ Future<void> setupDependencies() async {
         allocationSnapshotRepository:
             getIt<AllocationSnapshotRepositoryContract>(),
         dayKeyService: getIt<HomeDayKeyService>(),
+        clock: getIt<Clock>(),
       ),
     )
     ..registerLazySingleton<AllocationSnapshotCoordinator>(
@@ -219,6 +222,7 @@ Future<void> setupDependencies() async {
         dayKeyService: getIt<HomeDayKeyService>(),
         invalidations:
             getIt<AttentionTemporalInvalidationService>().invalidations,
+        clock: getIt<Clock>(),
       ),
     )
     ..registerLazySingleton<attention_engine_v2.AttentionEngineContract>(
@@ -279,7 +283,10 @@ Future<void> setupDependencies() async {
       () => JournalTodayBloc(repository: getIt<JournalRepositoryContract>()),
     )
     ..registerFactory<JournalHistoryBloc>(
-      () => JournalHistoryBloc(repository: getIt<JournalRepositoryContract>()),
+      () => JournalHistoryBloc(
+        repository: getIt<JournalRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
+      ),
     )
     ..registerFactoryParam<AddLogCubit, Set<String>, void>(
       (preselectedTrackerIds, _) => AddLogCubit(
@@ -401,6 +408,7 @@ Future<void> setupDependencies() async {
     ..registerLazySingleton<JournalHistoryListModuleInterpreterV1>(
       () => JournalHistoryListModuleInterpreterV1(
         repository: getIt<JournalRepositoryContract>(),
+        dayKeyService: getIt<HomeDayKeyService>(),
       ),
     )
     ..registerLazySingleton<JournalManageTrackersModuleInterpreterV1>(

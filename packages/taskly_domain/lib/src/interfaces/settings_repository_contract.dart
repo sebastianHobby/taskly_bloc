@@ -1,4 +1,5 @@
 import 'package:taskly_domain/src/preferences/model/settings_key.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Repository contract for managing application settings.
 ///
@@ -22,5 +23,5 @@ abstract class SettingsRepositoryContract {
   Future<T> load<T>(SettingsKey<T> key);
 
   /// Save a new value for a setting.
-  Future<void> save<T>(SettingsKey<T> key, T value);
+  Future<void> save<T>(SettingsKey<T> key, T value, {OperationContext? context});
 }

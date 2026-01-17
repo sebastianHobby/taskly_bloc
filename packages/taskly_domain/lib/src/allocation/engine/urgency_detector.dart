@@ -55,7 +55,10 @@ class UrgencyDetector {
   }
 
   /// Filters [tasks] to return only urgent tasks.
-  List<Task> findUrgentTasks(List<Task> tasks, {required DateTime todayDayKeyUtc}) {
+  List<Task> findUrgentTasks(
+    List<Task> tasks, {
+    required DateTime todayDayKeyUtc,
+  }) {
     return tasks
         .where((t) => isTaskUrgent(t, todayDayKeyUtc: todayDayKeyUtc))
         .toList();
@@ -81,8 +84,7 @@ class UrgencyDetector {
   }) {
     return tasks.where((task) {
       final hasNoValue = task.isEffectivelyValueless;
-      return hasNoValue &&
-          isTaskUrgent(task, todayDayKeyUtc: todayDayKeyUtc);
+      return hasNoValue && isTaskUrgent(task, todayDayKeyUtc: todayDayKeyUtc);
     }).toList();
   }
 }

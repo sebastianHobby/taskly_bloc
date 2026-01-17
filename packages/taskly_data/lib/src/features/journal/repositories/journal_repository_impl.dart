@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/repositories/mappers/journal_predicate_mapper.dart';
@@ -95,57 +96,82 @@ class JournalRepositoryImpl
   }
 
   @override
-  Future<void> saveJournalEntry(JournalEntry entry) async {
-    await upsertJournalEntry(entry);
+  Future<void> saveJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {
+    await upsertJournalEntry(entry, context: context);
   }
 
   @override
-  Future<String> upsertJournalEntry(JournalEntry entry) async {
-    final entryId = entry.id.isEmpty ? _idGenerator.journalEntryId() : entry.id;
+  Future<String> upsertJournalEntry(
+    JournalEntry entry, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final entryId = entry.id.isEmpty
+            ? _idGenerator.journalEntryId()
+            : entry.id;
 
-    final updated =
-        await (_database.update(
+        final updated =
+            await (_database.update(
+              _database.journalEntries,
+            )..where((e) => e.id.equals(entryId))).write(
+              JournalEntriesCompanion(
+                entryDate: Value(entry.entryDate),
+                entryTime: Value(entry.entryTime),
+                occurredAt: Value(entry.occurredAt),
+                localDate: Value(entry.localDate),
+                journalText: Value(entry.journalText),
+                updatedAt: Value(entry.updatedAt),
+                deletedAt: Value(entry.deletedAt),
+                createdAt: const Value<DateTime>.absent(),
+              ),
+            );
+
+        if (updated == 0) {
+          await _database
+              .into(_database.journalEntries)
+              .insert(
+                JournalEntriesCompanion(
+                  id: Value(entryId),
+                  entryDate: Value(entry.entryDate),
+                  entryTime: Value(entry.entryTime),
+                  occurredAt: Value(entry.occurredAt),
+                  localDate: Value(entry.localDate),
+                  journalText: Value(entry.journalText),
+                  createdAt: Value(entry.createdAt),
+                  updatedAt: Value(entry.updatedAt),
+                  deletedAt: Value(entry.deletedAt),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+
+        return entryId;
+      },
+      area: 'data.journal',
+      opName: 'upsertJournalEntry',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> deleteJournalEntry(
+    String id, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        await (_database.delete(
           _database.journalEntries,
-        )..where((e) => e.id.equals(entryId))).write(
-          JournalEntriesCompanion(
-            entryDate: Value(entry.entryDate),
-            entryTime: Value(entry.entryTime),
-            occurredAt: Value(entry.occurredAt),
-            localDate: Value(entry.localDate),
-            journalText: Value(entry.journalText),
-            updatedAt: Value(entry.updatedAt),
-            deletedAt: Value(entry.deletedAt),
-            createdAt: const Value<DateTime>.absent(),
-          ),
-        );
-
-    if (updated == 0) {
-      await _database
-          .into(_database.journalEntries)
-          .insert(
-            JournalEntriesCompanion(
-              id: Value(entryId),
-              entryDate: Value(entry.entryDate),
-              entryTime: Value(entry.entryTime),
-              occurredAt: Value(entry.occurredAt),
-              localDate: Value(entry.localDate),
-              journalText: Value(entry.journalText),
-              createdAt: Value(entry.createdAt),
-              updatedAt: Value(entry.updatedAt),
-              deletedAt: Value(entry.deletedAt),
-            ),
-            mode: InsertMode.insertOrAbort,
-          );
-    }
-
-    return entryId;
-  }
-
-  @override
-  Future<void> deleteJournalEntry(String id) async {
-    await (_database.delete(
-      _database.journalEntries,
-    )..where((e) => e.id.equals(id))).go();
+        )..where((e) => e.id.equals(id))).go();
+      },
+      area: 'data.journal',
+      opName: 'deleteJournalEntry',
+      context: context,
+    );
   }
 
   // === Trackers (OPT-A: event-log + projections) ===
@@ -212,236 +238,284 @@ class JournalRepositoryImpl
   }
 
   @override
-  Future<void> saveTrackerDefinition(TrackerDefinition definition) async {
-    final id = definition.id.isEmpty
-        ? _idGenerator.trackerDefinitionId(name: definition.name)
-        : definition.id;
+  Future<void> saveTrackerDefinition(
+    TrackerDefinition definition, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final id = definition.id.isEmpty
+            ? _idGenerator.trackerDefinitionId(name: definition.name)
+            : definition.id;
 
-    final updated =
-        await (_database.update(
-          _database.trackerDefinitions,
-        )..where((t) => t.id.equals(id))).write(
-          TrackerDefinitionsCompanion(
-            name: Value(definition.name),
-            description: Value(definition.description),
-            scope: Value(definition.scope),
-            roles: Value(jsonEncode(definition.roles)),
-            valueType: Value(definition.valueType),
-            config: Value(jsonEncode(definition.config)),
-            goal: Value(jsonEncode(definition.goal)),
-            isActive: Value(definition.isActive),
-            sortOrder: Value(definition.sortOrder),
-            updatedAt: Value(definition.updatedAt),
-            deletedAt: Value(definition.deletedAt),
-            source: Value(definition.source),
-            systemKey: Value(definition.systemKey),
-            opKind: Value(definition.opKind),
-            valueKind: Value(definition.valueKind),
-            unitKind: Value(definition.unitKind),
-            minInt: Value(definition.minInt),
-            maxInt: Value(definition.maxInt),
-            stepInt: Value(definition.stepInt),
-            linkedValueId: Value(definition.linkedValueId),
-            isOutcome: Value(definition.isOutcome),
-            isInsightEnabled: Value(definition.isInsightEnabled),
-            higherIsBetter: Value(definition.higherIsBetter),
-            createdAt: const Value<DateTime>.absent(),
-          ),
-        );
+        final updated =
+            await (_database.update(
+              _database.trackerDefinitions,
+            )..where((t) => t.id.equals(id))).write(
+              TrackerDefinitionsCompanion(
+                name: Value(definition.name),
+                description: Value(definition.description),
+                scope: Value(definition.scope),
+                roles: Value(jsonEncode(definition.roles)),
+                valueType: Value(definition.valueType),
+                config: Value(jsonEncode(definition.config)),
+                goal: Value(jsonEncode(definition.goal)),
+                isActive: Value(definition.isActive),
+                sortOrder: Value(definition.sortOrder),
+                updatedAt: Value(definition.updatedAt),
+                deletedAt: Value(definition.deletedAt),
+                source: Value(definition.source),
+                systemKey: Value(definition.systemKey),
+                opKind: Value(definition.opKind),
+                valueKind: Value(definition.valueKind),
+                unitKind: Value(definition.unitKind),
+                minInt: Value(definition.minInt),
+                maxInt: Value(definition.maxInt),
+                stepInt: Value(definition.stepInt),
+                linkedValueId: Value(definition.linkedValueId),
+                isOutcome: Value(definition.isOutcome),
+                isInsightEnabled: Value(definition.isInsightEnabled),
+                higherIsBetter: Value(definition.higherIsBetter),
+                createdAt: const Value<DateTime>.absent(),
+              ),
+            );
 
-    if (updated == 0) {
-      await _database
-          .into(_database.trackerDefinitions)
-          .insert(
-            TrackerDefinitionsCompanion(
-              id: Value(id),
-              name: Value(definition.name),
-              description: Value(definition.description),
-              scope: Value(definition.scope),
-              roles: Value(jsonEncode(definition.roles)),
-              valueType: Value(definition.valueType),
-              config: Value(jsonEncode(definition.config)),
-              goal: Value(jsonEncode(definition.goal)),
-              isActive: Value(definition.isActive),
-              sortOrder: Value(definition.sortOrder),
-              createdAt: Value(definition.createdAt),
-              updatedAt: Value(definition.updatedAt),
-              deletedAt: Value(definition.deletedAt),
-              source: Value(definition.source),
-              systemKey: Value(definition.systemKey),
-              opKind: Value(definition.opKind),
-              valueKind: Value(definition.valueKind),
-              unitKind: Value(definition.unitKind),
-              minInt: Value(definition.minInt),
-              maxInt: Value(definition.maxInt),
-              stepInt: Value(definition.stepInt),
-              linkedValueId: Value(definition.linkedValueId),
-              isOutcome: Value(definition.isOutcome),
-              isInsightEnabled: Value(definition.isInsightEnabled),
-              higherIsBetter: Value(definition.higherIsBetter),
-            ),
-            mode: InsertMode.insertOrAbort,
-          );
-    }
+        if (updated == 0) {
+          await _database
+              .into(_database.trackerDefinitions)
+              .insert(
+                TrackerDefinitionsCompanion(
+                  id: Value(id),
+                  name: Value(definition.name),
+                  description: Value(definition.description),
+                  scope: Value(definition.scope),
+                  roles: Value(jsonEncode(definition.roles)),
+                  valueType: Value(definition.valueType),
+                  config: Value(jsonEncode(definition.config)),
+                  goal: Value(jsonEncode(definition.goal)),
+                  isActive: Value(definition.isActive),
+                  sortOrder: Value(definition.sortOrder),
+                  createdAt: Value(definition.createdAt),
+                  updatedAt: Value(definition.updatedAt),
+                  deletedAt: Value(definition.deletedAt),
+                  source: Value(definition.source),
+                  systemKey: Value(definition.systemKey),
+                  opKind: Value(definition.opKind),
+                  valueKind: Value(definition.valueKind),
+                  unitKind: Value(definition.unitKind),
+                  minInt: Value(definition.minInt),
+                  maxInt: Value(definition.maxInt),
+                  stepInt: Value(definition.stepInt),
+                  linkedValueId: Value(definition.linkedValueId),
+                  isOutcome: Value(definition.isOutcome),
+                  isInsightEnabled: Value(definition.isInsightEnabled),
+                  higherIsBetter: Value(definition.higherIsBetter),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+      },
+      area: 'data.journal',
+      opName: 'saveTrackerDefinition',
+      context: context,
+    );
   }
 
   @override
-  Future<void> saveTrackerPreference(TrackerPreference preference) async {
-    final id = preference.id.isEmpty
-        ? _idGenerator.trackerPreferenceId(trackerId: preference.trackerId)
-        : preference.id;
+  Future<void> saveTrackerPreference(
+    TrackerPreference preference, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final id = preference.id.isEmpty
+            ? _idGenerator.trackerPreferenceId(trackerId: preference.trackerId)
+            : preference.id;
 
-    final updated =
-        await (_database.update(
-          _database.trackerPreferences,
-        )..where((t) => t.id.equals(id))).write(
-          TrackerPreferencesCompanion(
-            trackerId: Value(preference.trackerId),
-            isActive: Value(preference.isActive),
-            sortOrder: Value(preference.sortOrder),
-            pinned: Value(preference.pinned),
-            showInQuickAdd: Value(preference.showInQuickAdd),
-            color: Value(preference.color),
-            updatedAt: Value(preference.updatedAt),
-            createdAt: const Value<DateTime>.absent(),
-          ),
-        );
+        final updated =
+            await (_database.update(
+              _database.trackerPreferences,
+            )..where((t) => t.id.equals(id))).write(
+              TrackerPreferencesCompanion(
+                trackerId: Value(preference.trackerId),
+                isActive: Value(preference.isActive),
+                sortOrder: Value(preference.sortOrder),
+                pinned: Value(preference.pinned),
+                showInQuickAdd: Value(preference.showInQuickAdd),
+                color: Value(preference.color),
+                updatedAt: Value(preference.updatedAt),
+                createdAt: const Value<DateTime>.absent(),
+              ),
+            );
 
-    if (updated == 0) {
-      await _database
-          .into(_database.trackerPreferences)
-          .insert(
-            TrackerPreferencesCompanion(
-              id: Value(id),
-              trackerId: Value(preference.trackerId),
-              isActive: Value(preference.isActive),
-              sortOrder: Value(preference.sortOrder),
-              pinned: Value(preference.pinned),
-              showInQuickAdd: Value(preference.showInQuickAdd),
-              color: Value(preference.color),
-              createdAt: Value(preference.createdAt),
-              updatedAt: Value(preference.updatedAt),
-            ),
-            mode: InsertMode.insertOrAbort,
-          );
-    }
+        if (updated == 0) {
+          await _database
+              .into(_database.trackerPreferences)
+              .insert(
+                TrackerPreferencesCompanion(
+                  id: Value(id),
+                  trackerId: Value(preference.trackerId),
+                  isActive: Value(preference.isActive),
+                  sortOrder: Value(preference.sortOrder),
+                  pinned: Value(preference.pinned),
+                  showInQuickAdd: Value(preference.showInQuickAdd),
+                  color: Value(preference.color),
+                  createdAt: Value(preference.createdAt),
+                  updatedAt: Value(preference.updatedAt),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+      },
+      area: 'data.journal',
+      opName: 'saveTrackerPreference',
+      context: context,
+    );
   }
 
   @override
   Future<void> saveTrackerDefinitionChoice(
-    TrackerDefinitionChoice choice,
-  ) async {
-    final id = choice.id.isEmpty
-        ? _idGenerator.trackerDefinitionChoiceId(
-            trackerId: choice.trackerId,
-            choiceKey: choice.choiceKey,
-          )
-        : choice.id;
+    TrackerDefinitionChoice choice, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final id = choice.id.isEmpty
+            ? _idGenerator.trackerDefinitionChoiceId(
+                trackerId: choice.trackerId,
+                choiceKey: choice.choiceKey,
+              )
+            : choice.id;
 
-    final updated =
-        await (_database.update(
-          _database.trackerDefinitionChoices,
-        )..where((c) => c.id.equals(id))).write(
-          TrackerDefinitionChoicesCompanion(
-            trackerId: Value(choice.trackerId),
-            choiceKey: Value(choice.choiceKey),
-            label: Value(choice.label),
-            sortOrder: Value(choice.sortOrder),
-            isActive: Value(choice.isActive),
-            updatedAt: Value(choice.updatedAt),
-            createdAt: const Value<DateTime>.absent(),
-          ),
-        );
+        final updated =
+            await (_database.update(
+              _database.trackerDefinitionChoices,
+            )..where((c) => c.id.equals(id))).write(
+              TrackerDefinitionChoicesCompanion(
+                trackerId: Value(choice.trackerId),
+                choiceKey: Value(choice.choiceKey),
+                label: Value(choice.label),
+                sortOrder: Value(choice.sortOrder),
+                isActive: Value(choice.isActive),
+                updatedAt: Value(choice.updatedAt),
+                createdAt: const Value<DateTime>.absent(),
+              ),
+            );
 
-    if (updated == 0) {
-      await _database
-          .into(_database.trackerDefinitionChoices)
-          .insert(
-            TrackerDefinitionChoicesCompanion(
-              id: Value(id),
-              trackerId: Value(choice.trackerId),
-              choiceKey: Value(choice.choiceKey),
-              label: Value(choice.label),
-              sortOrder: Value(choice.sortOrder),
-              isActive: Value(choice.isActive),
-              createdAt: Value(choice.createdAt),
-              updatedAt: Value(choice.updatedAt),
+        if (updated == 0) {
+          await _database
+              .into(_database.trackerDefinitionChoices)
+              .insert(
+                TrackerDefinitionChoicesCompanion(
+                  id: Value(id),
+                  trackerId: Value(choice.trackerId),
+                  choiceKey: Value(choice.choiceKey),
+                  label: Value(choice.label),
+                  sortOrder: Value(choice.sortOrder),
+                  isActive: Value(choice.isActive),
+                  createdAt: Value(choice.createdAt),
+                  updatedAt: Value(choice.updatedAt),
+                ),
+                mode: InsertMode.insertOrAbort,
+              );
+        }
+      },
+      area: 'data.journal',
+      opName: 'saveTrackerDefinitionChoice',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> appendTrackerEvent(
+    TrackerEvent event, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final id = event.id.isEmpty ? _idGenerator.trackerEventId() : event.id;
+
+        String? value;
+        if (event.value != null) {
+          value = event.value is String
+              ? event.value! as String
+              : jsonEncode(event.value);
+        }
+
+        // Events are append-only; duplicate inserts are safe to ignore.
+        await _database
+            .into(_database.trackerEvents)
+            .insert(
+              TrackerEventsCompanion(
+                id: Value(id),
+                trackerId: Value(event.trackerId),
+                anchorType: Value(event.anchorType),
+                entryId: Value(event.entryId),
+                anchorDate: Value(event.anchorDate),
+                op: Value(event.op),
+                value: Value(value),
+                occurredAt: Value(event.occurredAt),
+                recordedAt: Value(event.recordedAt),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+      },
+      area: 'data.journal',
+      opName: 'appendTrackerEvent',
+      context: context,
+    );
+  }
+
+  @override
+  Future<void> deleteTrackerAndData(
+    String trackerId, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        final trimmed = trackerId.trim();
+        if (trimmed.isEmpty) return;
+
+        final nowUtc = DateTime.now().toUtc();
+
+        await _database.transaction(() async {
+          // Soft delete the definition row (keeps it for sync/auditing).
+          await (_database.update(
+            _database.trackerDefinitions,
+          )..where((t) => t.id.equals(trimmed))).write(
+            TrackerDefinitionsCompanion(
+              isActive: const Value(false),
+              deletedAt: Value(nowUtc),
+              updatedAt: Value(nowUtc),
             ),
-            mode: InsertMode.insertOrAbort,
           );
-    }
-  }
 
-  @override
-  Future<void> appendTrackerEvent(TrackerEvent event) async {
-    final id = event.id.isEmpty ? _idGenerator.trackerEventId() : event.id;
+          // Purge local rows that would otherwise keep showing up in UI/analytics.
+          await (_database.delete(
+            _database.trackerPreferences,
+          )..where((p) => p.trackerId.equals(trimmed))).go();
 
-    String? value;
-    if (event.value != null) {
-      value = event.value is String
-          ? event.value! as String
-          : jsonEncode(event.value);
-    }
+          await (_database.delete(
+            _database.trackerDefinitionChoices,
+          )..where((c) => c.trackerId.equals(trimmed))).go();
 
-    // Events are append-only; duplicate inserts are safe to ignore.
-    await _database
-        .into(_database.trackerEvents)
-        .insert(
-          TrackerEventsCompanion(
-            id: Value(id),
-            trackerId: Value(event.trackerId),
-            anchorType: Value(event.anchorType),
-            entryId: Value(event.entryId),
-            anchorDate: Value(event.anchorDate),
-            op: Value(event.op),
-            value: Value(value),
-            occurredAt: Value(event.occurredAt),
-            recordedAt: Value(event.recordedAt),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-  }
+          await (_database.delete(
+            _database.trackerEvents,
+          )..where((e) => e.trackerId.equals(trimmed))).go();
 
-  @override
-  Future<void> deleteTrackerAndData(String trackerId) async {
-    final trimmed = trackerId.trim();
-    if (trimmed.isEmpty) return;
+          await (_database.delete(
+            _database.trackerStateDay,
+          )..where((s) => s.trackerId.equals(trimmed))).go();
 
-    final nowUtc = DateTime.now().toUtc();
-
-    await _database.transaction(() async {
-      // Soft delete the definition row (keeps it for sync/auditing).
-      await (_database.update(
-        _database.trackerDefinitions,
-      )..where((t) => t.id.equals(trimmed))).write(
-        TrackerDefinitionsCompanion(
-          isActive: const Value(false),
-          deletedAt: Value(nowUtc),
-          updatedAt: Value(nowUtc),
-        ),
-      );
-
-      // Purge local rows that would otherwise keep showing up in UI/analytics.
-      await (_database.delete(
-        _database.trackerPreferences,
-      )..where((p) => p.trackerId.equals(trimmed))).go();
-
-      await (_database.delete(
-        _database.trackerDefinitionChoices,
-      )..where((c) => c.trackerId.equals(trimmed))).go();
-
-      await (_database.delete(
-        _database.trackerEvents,
-      )..where((e) => e.trackerId.equals(trimmed))).go();
-
-      await (_database.delete(
-        _database.trackerStateDay,
-      )..where((s) => s.trackerId.equals(trimmed))).go();
-
-      await (_database.delete(
-        _database.trackerStateEntry,
-      )..where((s) => s.trackerId.equals(trimmed))).go();
-    });
+          await (_database.delete(
+            _database.trackerStateEntry,
+          )..where((s) => s.trackerId.equals(trimmed))).go();
+        });
+      },
+      area: 'data.journal',
+      opName: 'deleteTrackerAndData',
+      context: context,
+    );
   }
 
   @override

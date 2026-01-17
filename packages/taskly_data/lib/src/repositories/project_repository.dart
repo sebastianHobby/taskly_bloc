@@ -3,6 +3,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:taskly_core/logging.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
 import 'package:taskly_data/src/repositories/mappers/project_predicate_mapper.dart';
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
@@ -16,7 +17,9 @@ class ProjectRepository implements ProjectRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb);
+    required HomeDayKeyService dayKeyService,
+  }) : _predicateMapper = ProjectPredicateMapper(driftDb: driftDb),
+       _dayKeyService = dayKeyService;
 
   // Task counts are merged into Project domain objects. We intentionally keep
   // the project+values join separate from task counting to avoid join row
@@ -28,6 +31,7 @@ class ProjectRepository implements ProjectRepositoryContract {
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final ProjectPredicateMapper _predicateMapper;
+  final HomeDayKeyService _dayKeyService;
 
   // Shared streams using RxDart for efficient multi-subscriber support
   ValueStream<List<Project>>? _sharedProjectsWithRelated;
@@ -329,7 +333,7 @@ class ProjectRepository implements ProjectRepositoryContract {
         .map((rows) => rows.map(_toExceptionData).toList());
 
     final evaluator = ProjectFilterEvaluator();
-    final ctx = EvaluationContext(today: dateOnly(systemClock.nowUtc()));
+    final ctx = EvaluationContext(today: _dayKeyService.todayDayKeyUtc());
 
     return occurrenceExpander.expandProjectOccurrences(
       projectsStream: baseStream,
@@ -531,62 +535,70 @@ class ProjectRepository implements ProjectRepositoryContract {
     bool seriesEnded = false,
     List<String>? valueIds,
     int? priority,
+    OperationContext? context,
   }) async {
-    talker.debug('[ProjectRepository] create: name="$name"');
+    return FailureGuard.run(
+      () async {
+        talker.debug('[ProjectRepository] create: name="$name"');
 
-    if (valueIds == null || valueIds.isEmpty) {
-      throw RepositoryValidationException(
-        'Projects must have at least one value.',
-      );
-    }
+        if (valueIds == null || valueIds.isEmpty) {
+          throw RepositoryValidationException(
+            'Projects must have at least one value.',
+          );
+        }
 
-    final normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
-    if (normalizedValueIds.isEmpty) {
-      throw RepositoryValidationException(
-        'Projects must have at least one value.',
-      );
-    }
-    if (normalizedValueIds.length > 2) {
-      throw RepositoryValidationException(
-        'Projects may have at most two values (primary + optional secondary).',
-      );
-    }
-    final primaryValueId = normalizedValueIds.first;
-    final secondaryValueId = normalizedValueIds.length > 1
-        ? normalizedValueIds[1]
-        : null;
+        final normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+        if (normalizedValueIds.isEmpty) {
+          throw RepositoryValidationException(
+            'Projects must have at least one value.',
+          );
+        }
+        if (normalizedValueIds.length > 2) {
+          throw RepositoryValidationException(
+            'Projects may have at most two values (primary + optional secondary).',
+          );
+        }
+        final primaryValueId = normalizedValueIds.first;
+        final secondaryValueId = normalizedValueIds.length > 1
+            ? normalizedValueIds[1]
+            : null;
 
-    if (secondaryValueId != null && secondaryValueId == primaryValueId) {
-      throw RepositoryValidationException(
-        'Secondary value must be different from primary value.',
-      );
-    }
-    final now = DateTime.now();
-    final id = idGenerator.projectId();
+        if (secondaryValueId != null && secondaryValueId == primaryValueId) {
+          throw RepositoryValidationException(
+            'Secondary value must be different from primary value.',
+          );
+        }
+        final now = DateTime.now();
+        final id = idGenerator.projectId();
 
-    final normalizedStartDate = dateOnlyOrNull(startDate);
-    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedStartDate = dateOnlyOrNull(startDate);
+        final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    await driftDb.transaction(() async {
-      await _createProject(
-        ProjectTableCompanion(
-          id: drift_pkg.Value(id),
-          name: drift_pkg.Value(name),
-          description: drift_pkg.Value(description),
-          completed: drift_pkg.Value(completed),
-          startDate: drift_pkg.Value(normalizedStartDate),
-          deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-          repeatIcalRrule: drift_pkg.Value(repeatIcalRrule ?? ''),
-          repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
-          seriesEnded: drift_pkg.Value(seriesEnded),
-          priority: drift_pkg.Value(priority),
-          primaryValueId: drift_pkg.Value(primaryValueId),
-          secondaryValueId: drift_pkg.Value(secondaryValueId),
-          createdAt: drift_pkg.Value(now),
-          updatedAt: drift_pkg.Value(now),
-        ),
-      );
-    });
+        await driftDb.transaction(() async {
+          await _createProject(
+            ProjectTableCompanion(
+              id: drift_pkg.Value(id),
+              name: drift_pkg.Value(name),
+              description: drift_pkg.Value(description),
+              completed: drift_pkg.Value(completed),
+              startDate: drift_pkg.Value(normalizedStartDate),
+              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+              repeatIcalRrule: drift_pkg.Value(repeatIcalRrule ?? ''),
+              repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+              seriesEnded: drift_pkg.Value(seriesEnded),
+              priority: drift_pkg.Value(priority),
+              primaryValueId: drift_pkg.Value(primaryValueId),
+              secondaryValueId: drift_pkg.Value(secondaryValueId),
+              createdAt: drift_pkg.Value(now),
+              updatedAt: drift_pkg.Value(now),
+            ),
+          );
+        });
+      },
+      area: 'data.project',
+      opName: 'create',
+      context: context,
+    );
   }
 
   @override
@@ -603,105 +615,135 @@ class ProjectRepository implements ProjectRepositoryContract {
     List<String>? valueIds,
     int? priority,
     bool? isPinned,
+    OperationContext? context,
   }) async {
-    talker.debug('[ProjectRepository] update: id=$id, name="$name"');
+    return FailureGuard.run(
+      () async {
+        talker.debug('[ProjectRepository] update: id=$id, name="$name"');
 
-    if (valueIds != null && valueIds.isEmpty) {
-      throw RepositoryValidationException(
-        'Projects must have at least one value.',
-      );
-    }
+        if (valueIds != null && valueIds.isEmpty) {
+          throw RepositoryValidationException(
+            'Projects must have at least one value.',
+          );
+        }
 
-    List<String>? normalizedValueIds;
-    if (valueIds != null) {
-      normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
-      if (normalizedValueIds.isEmpty) {
-        throw RepositoryValidationException(
-          'Projects must have at least one value.',
-        );
-      }
-      if (normalizedValueIds.length > 2) {
-        throw RepositoryValidationException(
-          'Projects may have at most two values (primary + optional secondary).',
-        );
-      }
-      if (normalizedValueIds.length == 2 &&
-          normalizedValueIds[0] == normalizedValueIds[1]) {
-        throw RepositoryValidationException(
-          'Secondary value must be different from primary value.',
-        );
-      }
-    }
+        List<String>? normalizedValueIds;
+        if (valueIds != null) {
+          normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+          if (normalizedValueIds.isEmpty) {
+            throw RepositoryValidationException(
+              'Projects must have at least one value.',
+            );
+          }
+          if (normalizedValueIds.length > 2) {
+            throw RepositoryValidationException(
+              'Projects may have at most two values (primary + optional secondary).',
+            );
+          }
+          if (normalizedValueIds.length == 2 &&
+              normalizedValueIds[0] == normalizedValueIds[1]) {
+            throw RepositoryValidationException(
+              'Secondary value must be different from primary value.',
+            );
+          }
+        }
 
-    final existing = await _getProjectById(id);
-    if (existing == null) {
-      talker.warning(
-        '[ProjectRepository] update failed: project not found id=$id',
-      );
-      throw RepositoryNotFoundException('No project found to update');
-    }
+        final existing = await _getProjectById(id);
+        if (existing == null) {
+          talker.warning(
+            '[ProjectRepository] update failed: project not found id=$id',
+          );
+          throw RepositoryNotFoundException('No project found to update');
+        }
 
-    final now = DateTime.now();
+        final now = DateTime.now();
 
-    final normalizedStartDate = dateOnlyOrNull(startDate);
-    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedStartDate = dateOnlyOrNull(startDate);
+        final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    await driftDb.transaction(() async {
-      await _updateProject(
-        ProjectTableCompanion(
-          id: drift_pkg.Value(id),
-          name: drift_pkg.Value(name),
-          description: drift_pkg.Value(description),
-          completed: drift_pkg.Value(completed),
-          startDate: drift_pkg.Value(normalizedStartDate),
-          deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-          repeatIcalRrule: repeatIcalRrule == null
-              ? const drift_pkg.Value<String>.absent()
-              : drift_pkg.Value(repeatIcalRrule),
-          repeatFromCompletion: repeatFromCompletion == null
-              ? const drift_pkg.Value<bool>.absent()
-              : drift_pkg.Value(repeatFromCompletion),
-          priority: drift_pkg.Value(priority),
-          isPinned: isPinned == null
-              ? drift_pkg.Value(existing.isPinned)
-              : drift_pkg.Value(isPinned),
-          seriesEnded: seriesEnded == null
-              ? const drift_pkg.Value<bool>.absent()
-              : drift_pkg.Value(seriesEnded),
-          primaryValueId: normalizedValueIds == null
-              ? const drift_pkg.Value<String?>.absent()
-              : drift_pkg.Value(normalizedValueIds.first),
-          secondaryValueId: normalizedValueIds == null
-              ? const drift_pkg.Value<String?>.absent()
-              : drift_pkg.Value(
-                  normalizedValueIds.length > 1 ? normalizedValueIds[1] : null,
-                ),
-          updatedAt: drift_pkg.Value(now),
-        ),
-      );
-    });
+        await driftDb.transaction(() async {
+          await _updateProject(
+            ProjectTableCompanion(
+              id: drift_pkg.Value(id),
+              name: drift_pkg.Value(name),
+              description: drift_pkg.Value(description),
+              completed: drift_pkg.Value(completed),
+              startDate: drift_pkg.Value(normalizedStartDate),
+              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+              repeatIcalRrule: repeatIcalRrule == null
+                  ? const drift_pkg.Value<String>.absent()
+                  : drift_pkg.Value(repeatIcalRrule),
+              repeatFromCompletion: repeatFromCompletion == null
+                  ? const drift_pkg.Value<bool>.absent()
+                  : drift_pkg.Value(repeatFromCompletion),
+              priority: drift_pkg.Value(priority),
+              isPinned: isPinned == null
+                  ? drift_pkg.Value(existing.isPinned)
+                  : drift_pkg.Value(isPinned),
+              seriesEnded: seriesEnded == null
+                  ? const drift_pkg.Value<bool>.absent()
+                  : drift_pkg.Value(seriesEnded),
+              primaryValueId: normalizedValueIds == null
+                  ? const drift_pkg.Value<String?>.absent()
+                  : drift_pkg.Value(normalizedValueIds.first),
+              secondaryValueId: normalizedValueIds == null
+                  ? const drift_pkg.Value<String?>.absent()
+                  : drift_pkg.Value(
+                      normalizedValueIds.length > 1
+                          ? normalizedValueIds[1]
+                          : null,
+                    ),
+              updatedAt: drift_pkg.Value(now),
+            ),
+          );
+        });
+      },
+      area: 'data.project',
+      opName: 'update',
+      context: context,
+    );
   }
 
   @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
+    OperationContext? context,
   }) async {
-    talker.debug('[ProjectRepository] setPinned: id=$id, isPinned=$isPinned');
-    await (driftDb.update(
-      driftDb.projectTable,
-    )..where((t) => t.id.equals(id))).write(
-      ProjectTableCompanion(
-        isPinned: drift_pkg.Value(isPinned),
-        updatedAt: drift_pkg.Value(DateTime.now()),
-      ),
+    return FailureGuard.run(
+      () async {
+        talker.debug(
+          '[ProjectRepository] setPinned: id=$id, isPinned=$isPinned',
+        );
+        await (driftDb.update(
+          driftDb.projectTable,
+        )..where((t) => t.id.equals(id))).write(
+          ProjectTableCompanion(
+            isPinned: drift_pkg.Value(isPinned),
+            updatedAt: drift_pkg.Value(DateTime.now()),
+          ),
+        );
+      },
+      area: 'data.project',
+      opName: 'setPinned',
+      context: context,
     );
   }
 
   @override
-  Future<void> delete(String id) async {
-    talker.debug('[ProjectRepository] delete: id=$id');
-    await _deleteProject(ProjectTableCompanion(id: drift_pkg.Value(id)));
+  Future<void> delete(
+    String id, {
+    OperationContext? context,
+  }) async {
+    return FailureGuard.run(
+      () async {
+        talker.debug('[ProjectRepository] delete: id=$id');
+        await _deleteProject(ProjectTableCompanion(id: drift_pkg.Value(id)));
+      },
+      area: 'data.project',
+      opName: 'delete',
+      context: context,
+    );
   }
 
   // ===========================================================================
@@ -789,12 +831,14 @@ class ProjectRepository implements ProjectRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   }) {
     return occurrenceWriteHelper.completeProjectOccurrence(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
       originalOccurrenceDate: originalOccurrenceDate,
       notes: notes,
+      context: context,
     );
   }
 
@@ -802,10 +846,12 @@ class ProjectRepository implements ProjectRepositoryContract {
   Future<void> uncompleteOccurrence({
     required String projectId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   }) {
     return occurrenceWriteHelper.uncompleteProjectOccurrence(
       projectId: projectId,
       occurrenceDate: occurrenceDate,
+      context: context,
     );
   }
 
@@ -813,10 +859,12 @@ class ProjectRepository implements ProjectRepositoryContract {
   Future<void> skipOccurrence({
     required String projectId,
     required DateTime originalDate,
+    OperationContext? context,
   }) {
     return occurrenceWriteHelper.skipProjectOccurrence(
       projectId: projectId,
       originalDate: originalDate,
+      context: context,
     );
   }
 
@@ -826,12 +874,14 @@ class ProjectRepository implements ProjectRepositoryContract {
     required DateTime originalDate,
     required DateTime newDate,
     DateTime? newDeadline,
+    OperationContext? context,
   }) {
     return occurrenceWriteHelper.rescheduleProjectOccurrence(
       projectId: projectId,
       originalDate: originalDate,
       newDate: newDate,
       newDeadline: newDeadline,
+      context: context,
     );
   }
 

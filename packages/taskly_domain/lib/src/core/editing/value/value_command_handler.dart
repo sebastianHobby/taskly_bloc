@@ -3,6 +3,7 @@ import 'package:taskly_domain/src/core/editing/validation_error.dart';
 import 'package:taskly_domain/src/core/editing/value/value_commands.dart';
 import 'package:taskly_domain/src/forms/field_key.dart';
 import 'package:taskly_domain/src/interfaces/value_repository_contract.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 final class ValueCommandHandler {
   ValueCommandHandler({required ValueRepositoryContract valueRepository})
@@ -10,7 +11,10 @@ final class ValueCommandHandler {
 
   final ValueRepositoryContract _valueRepository;
 
-  Future<CommandResult> handleCreate(CreateValueCommand command) async {
+  Future<CommandResult> handleCreate(
+    CreateValueCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command.name, command.color, command.iconName);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -19,12 +23,16 @@ final class ValueCommandHandler {
       color: command.color,
       priority: command.priority,
       iconName: command.iconName,
+      context: context,
     );
 
     return const CommandResult.success();
   }
 
-  Future<CommandResult> handleUpdate(UpdateValueCommand command) async {
+  Future<CommandResult> handleUpdate(
+    UpdateValueCommand command, {
+    OperationContext? context,
+  }) async {
     final failure = _validate(command.name, command.color, command.iconName);
     if (failure != null) return CommandResult.validationFailure(failure);
 
@@ -34,6 +42,7 @@ final class ValueCommandHandler {
       color: command.color,
       priority: command.priority,
       iconName: command.iconName,
+      context: context,
     );
 
     return const CommandResult.success();

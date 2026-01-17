@@ -5,6 +5,7 @@ import 'package:taskly_domain/taskly_domain.dart';
 import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
 import 'package:taskly_data/src/id/id_generator.dart';
 import 'package:taskly_data/src/mappers/drift_to_domain.dart';
+import 'package:taskly_data/src/errors/failure_guard.dart';
 import 'package:taskly_data/src/repositories/mappers/task_predicate_mapper.dart';
 import 'package:taskly_data/src/repositories/query_stream_cache.dart';
 import 'package:taskly_data/src/repositories/repository_exceptions.dart';
@@ -37,13 +38,16 @@ class TaskRepository implements TaskRepositoryContract {
     required this.occurrenceExpander,
     required this.occurrenceWriteHelper,
     required this.idGenerator,
-  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb);
+    required HomeDayKeyService dayKeyService,
+  }) : _predicateMapper = TaskPredicateMapper(driftDb: driftDb),
+       _dayKeyService = dayKeyService;
 
   final AppDatabase driftDb;
   final OccurrenceStreamExpanderContract occurrenceExpander;
   final OccurrenceWriteHelperContract occurrenceWriteHelper;
   final IdGenerator idGenerator;
   final TaskPredicateMapper _predicateMapper;
+  final HomeDayKeyService _dayKeyService;
 
   // Tier-based shared streams for common query patterns
   // Reduces concurrent queries from 6-7 down to 2-3
@@ -395,63 +399,75 @@ class TaskRepository implements TaskRepositoryContract {
     bool repeatFromCompletion = false,
     bool seriesEnded = false,
     List<String>? valueIds,
+    OperationContext? context,
   }) async {
-    talker.debug('[TaskRepository] create: name="$name", projectId=$projectId');
-    final now = DateTime.now();
-    final id = idGenerator.taskId();
+    await FailureGuard.run(
+      () async {
+        talker.debug(
+          '[TaskRepository] create: name="$name", projectId=$projectId',
+        );
+        final now = DateTime.now();
+        final id = idGenerator.taskId();
 
-    final normalizedStartDate = dateOnlyOrNull(startDate);
-    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+        final normalizedStartDate = dateOnlyOrNull(startDate);
+        final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
 
-    final normalizedValueIds = (valueIds ?? const <String>[])
-        .where((v) => v.isNotEmpty)
-        .toList();
-    if (normalizedValueIds.length > 2) {
-      throw RepositoryValidationException(
-        'Tasks may have at most two override values (primary + optional secondary).',
-      );
-    }
-    if (normalizedValueIds.length == 2 &&
-        normalizedValueIds[0] == normalizedValueIds[1]) {
-      throw RepositoryValidationException(
-        'Secondary value must be different from primary value.',
-      );
-    }
-    final overridePrimaryValueId = normalizedValueIds.isEmpty
-        ? null
-        : normalizedValueIds.first;
-    final overrideSecondaryValueId = normalizedValueIds.length > 1
-        ? normalizedValueIds[1]
-        : null;
-
-    await driftDb.transaction(() async {
-      await driftDb
-          .into(driftDb.taskTable)
-          .insert(
-            TaskTableCompanion(
-              id: drift_pkg.Value(id),
-              name: drift_pkg.Value(name),
-              description: drift_pkg.Value(description),
-              completed: drift_pkg.Value(completed),
-              startDate: drift_pkg.Value(normalizedStartDate),
-              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-              projectId: drift_pkg.Value(projectId),
-              priority: drift_pkg.Value(priority),
-              isPinned: const drift_pkg.Value(false),
-              repeatIcalRrule: repeatIcalRrule == null
-                  ? const drift_pkg.Value<String>.absent()
-                  : drift_pkg.Value(repeatIcalRrule),
-              repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
-              seriesEnded: drift_pkg.Value(seriesEnded),
-              overridePrimaryValueId: drift_pkg.Value(overridePrimaryValueId),
-              overrideSecondaryValueId: drift_pkg.Value(
-                overrideSecondaryValueId,
-              ),
-              createdAt: drift_pkg.Value(now),
-              updatedAt: drift_pkg.Value(now),
-            ),
+        final normalizedValueIds = (valueIds ?? const <String>[])
+            .where((v) => v.isNotEmpty)
+            .toList();
+        if (normalizedValueIds.length > 2) {
+          throw RepositoryValidationException(
+            'Tasks may have at most two override values (primary + optional secondary).',
           );
-    });
+        }
+        if (normalizedValueIds.length == 2 &&
+            normalizedValueIds[0] == normalizedValueIds[1]) {
+          throw RepositoryValidationException(
+            'Secondary value must be different from primary value.',
+          );
+        }
+        final overridePrimaryValueId = normalizedValueIds.isEmpty
+            ? null
+            : normalizedValueIds.first;
+        final overrideSecondaryValueId = normalizedValueIds.length > 1
+            ? normalizedValueIds[1]
+            : null;
+
+        await driftDb.transaction(() async {
+          await driftDb
+              .into(driftDb.taskTable)
+              .insert(
+                TaskTableCompanion(
+                  id: drift_pkg.Value(id),
+                  name: drift_pkg.Value(name),
+                  description: drift_pkg.Value(description),
+                  completed: drift_pkg.Value(completed),
+                  startDate: drift_pkg.Value(normalizedStartDate),
+                  deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+                  projectId: drift_pkg.Value(projectId),
+                  priority: drift_pkg.Value(priority),
+                  isPinned: const drift_pkg.Value(false),
+                  repeatIcalRrule: repeatIcalRrule == null
+                      ? const drift_pkg.Value<String>.absent()
+                      : drift_pkg.Value(repeatIcalRrule),
+                  repeatFromCompletion: drift_pkg.Value(repeatFromCompletion),
+                  seriesEnded: drift_pkg.Value(seriesEnded),
+                  overridePrimaryValueId: drift_pkg.Value(
+                    overridePrimaryValueId,
+                  ),
+                  overrideSecondaryValueId: drift_pkg.Value(
+                    overrideSecondaryValueId,
+                  ),
+                  createdAt: drift_pkg.Value(now),
+                  updatedAt: drift_pkg.Value(now),
+                ),
+              );
+        });
+      },
+      area: 'data.task',
+      opName: 'create',
+      context: context,
+    );
   }
 
   @override
@@ -469,103 +485,130 @@ class TaskRepository implements TaskRepositoryContract {
     bool? seriesEnded,
     List<String>? valueIds,
     bool? isPinned,
+    OperationContext? context,
   }) async {
-    talker.debug('[TaskRepository] update: id=$id, name="$name"');
-    final existing = await (driftDb.select(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).getSingleOrNull();
-    if (existing == null) {
-      talker.warning('[TaskRepository] update failed: task not found id=$id');
-      throw RepositoryNotFoundException('No task found to update');
-    }
-
-    final now = DateTime.now();
-
-    final normalizedStartDate = dateOnlyOrNull(startDate);
-    final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
-
-    List<String>? normalizedValueIds;
-    if (valueIds != null) {
-      normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
-      if (normalizedValueIds.length > 2) {
-        throw RepositoryValidationException(
-          'Tasks may have at most two override values (primary + optional secondary).',
-        );
-      }
-      if (normalizedValueIds.length == 2 &&
-          normalizedValueIds[0] == normalizedValueIds[1]) {
-        throw RepositoryValidationException(
-          'Secondary value must be different from primary value.',
-        );
-      }
-    }
-    final overridePrimaryValueId = normalizedValueIds == null
-        ? null
-        : (normalizedValueIds.isEmpty ? null : normalizedValueIds.first);
-    final overrideSecondaryValueId = normalizedValueIds == null
-        ? null
-        : (normalizedValueIds.length > 1 ? normalizedValueIds[1] : null);
-
-    await driftDb.transaction(() async {
-      await driftDb
-          .update(driftDb.taskTable)
-          .replace(
-            TaskTableCompanion(
-              id: drift_pkg.Value(id),
-              name: drift_pkg.Value(name),
-              description: drift_pkg.Value(description),
-              completed: drift_pkg.Value(completed),
-              startDate: drift_pkg.Value(normalizedStartDate),
-              deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
-              projectId: drift_pkg.Value(projectId),
-              priority: drift_pkg.Value(priority),
-              isPinned: isPinned == null
-                  ? drift_pkg.Value(existing.isPinned)
-                  : drift_pkg.Value(isPinned),
-              repeatIcalRrule: repeatIcalRrule == null
-                  ? const drift_pkg.Value<String>.absent()
-                  : drift_pkg.Value(repeatIcalRrule),
-              repeatFromCompletion: repeatFromCompletion == null
-                  ? drift_pkg.Value(existing.repeatFromCompletion)
-                  : drift_pkg.Value(repeatFromCompletion),
-              seriesEnded: seriesEnded == null
-                  ? drift_pkg.Value(existing.seriesEnded)
-                  : drift_pkg.Value(seriesEnded),
-              overridePrimaryValueId: normalizedValueIds == null
-                  ? const drift_pkg.Value<String?>.absent()
-                  : drift_pkg.Value(overridePrimaryValueId),
-              overrideSecondaryValueId: normalizedValueIds == null
-                  ? const drift_pkg.Value<String?>.absent()
-                  : drift_pkg.Value(overrideSecondaryValueId),
-              createdAt: drift_pkg.Value(existing.createdAt),
-              updatedAt: drift_pkg.Value(now),
-            ),
+    await FailureGuard.run(
+      () async {
+        talker.debug('[TaskRepository] update: id=$id, name="$name"');
+        final existing = await (driftDb.select(
+          driftDb.taskTable,
+        )..where((t) => t.id.equals(id))).getSingleOrNull();
+        if (existing == null) {
+          talker.warning(
+            '[TaskRepository] update failed: task not found id=$id',
           );
-    });
+          throw RepositoryNotFoundException('No task found to update');
+        }
+
+        final now = DateTime.now();
+
+        final normalizedStartDate = dateOnlyOrNull(startDate);
+        final normalizedDeadlineDate = dateOnlyOrNull(deadlineDate);
+
+        List<String>? normalizedValueIds;
+        if (valueIds != null) {
+          normalizedValueIds = valueIds.where((v) => v.isNotEmpty).toList();
+          if (normalizedValueIds.length > 2) {
+            throw RepositoryValidationException(
+              'Tasks may have at most two override values (primary + optional secondary).',
+            );
+          }
+          if (normalizedValueIds.length == 2 &&
+              normalizedValueIds[0] == normalizedValueIds[1]) {
+            throw RepositoryValidationException(
+              'Secondary value must be different from primary value.',
+            );
+          }
+        }
+        final overridePrimaryValueId = normalizedValueIds == null
+            ? null
+            : (normalizedValueIds.isEmpty ? null : normalizedValueIds.first);
+        final overrideSecondaryValueId = normalizedValueIds == null
+            ? null
+            : (normalizedValueIds.length > 1 ? normalizedValueIds[1] : null);
+
+        await driftDb.transaction(() async {
+          await driftDb
+              .update(driftDb.taskTable)
+              .replace(
+                TaskTableCompanion(
+                  id: drift_pkg.Value(id),
+                  name: drift_pkg.Value(name),
+                  description: drift_pkg.Value(description),
+                  completed: drift_pkg.Value(completed),
+                  startDate: drift_pkg.Value(normalizedStartDate),
+                  deadlineDate: drift_pkg.Value(normalizedDeadlineDate),
+                  projectId: drift_pkg.Value(projectId),
+                  priority: drift_pkg.Value(priority),
+                  isPinned: isPinned == null
+                      ? drift_pkg.Value(existing.isPinned)
+                      : drift_pkg.Value(isPinned),
+                  repeatIcalRrule: repeatIcalRrule == null
+                      ? const drift_pkg.Value<String>.absent()
+                      : drift_pkg.Value(repeatIcalRrule),
+                  repeatFromCompletion: repeatFromCompletion == null
+                      ? drift_pkg.Value(existing.repeatFromCompletion)
+                      : drift_pkg.Value(repeatFromCompletion),
+                  seriesEnded: seriesEnded == null
+                      ? drift_pkg.Value(existing.seriesEnded)
+                      : drift_pkg.Value(seriesEnded),
+                  overridePrimaryValueId: normalizedValueIds == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(overridePrimaryValueId),
+                  overrideSecondaryValueId: normalizedValueIds == null
+                      ? const drift_pkg.Value<String?>.absent()
+                      : drift_pkg.Value(overrideSecondaryValueId),
+                  createdAt: drift_pkg.Value(existing.createdAt),
+                  updatedAt: drift_pkg.Value(now),
+                ),
+              );
+        });
+      },
+      area: 'data.task',
+      opName: 'update',
+      context: context,
+    );
   }
 
   @override
   Future<void> setPinned({
     required String id,
     required bool isPinned,
+    OperationContext? context,
   }) async {
-    talker.debug('[TaskRepository] setPinned: id=$id, isPinned=$isPinned');
-    await (driftDb.update(
-      driftDb.taskTable,
-    )..where((t) => t.id.equals(id))).write(
-      TaskTableCompanion(
-        isPinned: drift_pkg.Value(isPinned),
-        updatedAt: drift_pkg.Value(DateTime.now()),
-      ),
+    await FailureGuard.run(
+      () async {
+        talker.debug(
+          '[TaskRepository] setPinned: id=$id, isPinned=$isPinned',
+        );
+        await (driftDb.update(
+          driftDb.taskTable,
+        )..where((t) => t.id.equals(id))).write(
+          TaskTableCompanion(
+            isPinned: drift_pkg.Value(isPinned),
+            updatedAt: drift_pkg.Value(DateTime.now()),
+          ),
+        );
+      },
+      area: 'data.task',
+      opName: 'setPinned',
+      context: context,
     );
   }
 
   @override
-  Future<void> delete(String id) async {
-    talker.debug('[TaskRepository] delete: id=$id');
-    await driftDb
-        .delete(driftDb.taskTable)
-        .delete(TaskTableCompanion(id: drift_pkg.Value(id)));
+  Future<void> delete(String id, {OperationContext? context}) async {
+    await FailureGuard.run(
+      () async {
+        talker.debug('[TaskRepository] delete: id=$id');
+        await driftDb
+            .delete(driftDb.taskTable)
+            .delete(TaskTableCompanion(id: drift_pkg.Value(id)));
+      },
+      area: 'data.task',
+      opName: 'delete',
+      context: context,
+    );
   }
 
   // ===========================================================================
@@ -684,29 +727,35 @@ class TaskRepository implements TaskRepositoryContract {
     DateTime? occurrenceDate,
     DateTime? originalOccurrenceDate,
     String? notes,
+    OperationContext? context,
   }) => occurrenceWriteHelper.completeTaskOccurrence(
     taskId: taskId,
     occurrenceDate: occurrenceDate,
     originalOccurrenceDate: originalOccurrenceDate,
     notes: notes,
+    context: context,
   );
 
   @override
   Future<void> uncompleteOccurrence({
     required String taskId,
     DateTime? occurrenceDate,
+    OperationContext? context,
   }) => occurrenceWriteHelper.uncompleteTaskOccurrence(
     taskId: taskId,
     occurrenceDate: occurrenceDate,
+    context: context,
   );
 
   @override
   Future<void> skipOccurrence({
     required String taskId,
     required DateTime originalDate,
+    OperationContext? context,
   }) => occurrenceWriteHelper.skipTaskOccurrence(
     taskId: taskId,
     originalDate: originalDate,
+    context: context,
   );
 
   @override
@@ -715,11 +764,13 @@ class TaskRepository implements TaskRepositoryContract {
     required DateTime originalDate,
     required DateTime newDate,
     DateTime? newDeadline,
+    OperationContext? context,
   }) => occurrenceWriteHelper.rescheduleTaskOccurrence(
     taskId: taskId,
     originalDate: originalDate,
     newDate: newDate,
     newDeadline: newDeadline,
+    context: context,
   );
 
   Future<void> removeException({
@@ -891,7 +942,7 @@ class TaskRepository implements TaskRepositoryContract {
           .map((rows) => rows.map(toExceptionData).toList());
 
       final evaluator = TaskFilterEvaluator();
-      final context = EvaluationContext(today: dateOnly(systemClock.nowUtc()));
+      final context = EvaluationContext(today: _dayKeyService.todayDayKeyUtc());
       bool postExpansionFilter(Task task) {
         return evaluator.matches(task, query.filter, context);
       }

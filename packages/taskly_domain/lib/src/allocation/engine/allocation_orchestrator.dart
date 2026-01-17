@@ -21,6 +21,7 @@ import 'package:taskly_domain/src/services/time/home_day_key_service.dart';
 import 'package:taskly_domain/src/time/clock.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:taskly_domain/src/services/values/effective_values.dart';
+import 'package:taskly_domain/src/telemetry/operation_context.dart';
 
 /// Orchestrates task allocation using pinned labels and allocation strategies.
 ///
@@ -344,12 +345,10 @@ class AllocationOrchestrator {
   /// Future phases may implement focus-mode-specific logic.
   Future<AllocationResult> allocateRegularTasks(
     List<Task> tasks,
-    AllocationConfig config,
-    {
+    AllocationConfig config, {
     required DateTime nowUtc,
     required DateTime todayDayKeyUtc,
-  }
-  ) async {
+  }) async {
     // Get all values first - needed for both ranking check and allocation
     final values = await _valueRepository.getAll();
 
@@ -503,27 +502,46 @@ class AllocationOrchestrator {
   }
 
   /// Pin a task
-  Future<void> pinTask(String taskId) async {
+  Future<void> pinTask(String taskId, {OperationContext? context}) async {
     talker.debug('[AllocationOrchestrator] Pinning task: $taskId');
-    await _taskRepository.setPinned(id: taskId, isPinned: true);
+    await _taskRepository.setPinned(
+      id: taskId,
+      isPinned: true,
+      context: context,
+    );
   }
 
   /// Unpin a task
-  Future<void> unpinTask(String taskId) async {
+  Future<void> unpinTask(String taskId, {OperationContext? context}) async {
     talker.debug('[AllocationOrchestrator] Unpinning task: $taskId');
-    await _taskRepository.setPinned(id: taskId, isPinned: false);
+    await _taskRepository.setPinned(
+      id: taskId,
+      isPinned: false,
+      context: context,
+    );
   }
 
   /// Pin a project
-  Future<void> pinProject(String projectId) async {
+  Future<void> pinProject(String projectId, {OperationContext? context}) async {
     talker.debug('[AllocationOrchestrator] Pinning project: $projectId');
-    await _projectRepository.setPinned(id: projectId, isPinned: true);
+    await _projectRepository.setPinned(
+      id: projectId,
+      isPinned: true,
+      context: context,
+    );
   }
 
   /// Unpin a project
-  Future<void> unpinProject(String projectId) async {
+  Future<void> unpinProject(
+    String projectId, {
+    OperationContext? context,
+  }) async {
     talker.debug('[AllocationOrchestrator] Unpinning project: $projectId');
-    await _projectRepository.setPinned(id: projectId, isPinned: false);
+    await _projectRepository.setPinned(
+      id: projectId,
+      isPinned: false,
+      context: context,
+    );
   }
 
   /// Toggle task completion state
