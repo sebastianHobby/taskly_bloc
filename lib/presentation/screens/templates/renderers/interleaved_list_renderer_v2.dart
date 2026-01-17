@@ -1315,7 +1315,7 @@ class _InterleavedListRendererV2State extends State<InterleavedListRendererV2> {
     final label = switch (tag) {
       AgendaTagV2.starts => 'Starts',
       AgendaTagV2.due => 'Due',
-      AgendaTagV2.inProgress => 'In progress',
+      AgendaTagV2.inProgress => 'Ongoing',
     };
 
     prefixParts.add(_TagPill(label: label));

@@ -6,18 +6,26 @@ library;
 
 import 'dart:async';
 
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 import '../../../../helpers/test_imports.dart';
 
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
+
+class TestAttentionBellCubit extends Cubit<AttentionBellState>
+    implements AttentionBellCubit {
+  TestAttentionBellCubit() : super(AttentionBellState.loading());
+}
 
 const _testSpec = ScreenSpec(
   id: 'test-spec',
@@ -45,6 +53,8 @@ void main() {
 
   group('UnifiedScreenPageFromSpec regression tests', () {
     late MockScreenSpecDataInterpreter mockInterpreter;
+    late TestAttentionBellCubit attentionBellCubit;
+    late AttentionBannerSessionCubit attentionBannerSessionCubit;
 
     setUp(() async {
       await getIt.reset();
@@ -52,7 +62,16 @@ void main() {
 
       mockInterpreter = MockScreenSpecDataInterpreter();
 
+      attentionBellCubit = TestAttentionBellCubit();
+      attentionBannerSessionCubit = AttentionBannerSessionCubit();
+      addTearDown(attentionBellCubit.close);
+      addTearDown(attentionBannerSessionCubit.close);
+
       getIt.registerSingleton<ScreenSpecDataInterpreter>(mockInterpreter);
+      getIt.registerSingleton<AttentionBellCubit>(attentionBellCubit);
+      getIt.registerSingleton<AttentionBannerSessionCubit>(
+        attentionBannerSessionCubit,
+      );
     });
 
     testWidgetsSafe(
@@ -68,7 +87,7 @@ void main() {
           tester,
           home: const UnifiedScreenPageFromSpec(spec: _testSpec),
         );
-        await tester.pumpAndSettle();
+        await tester.pumpForStream();
 
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(
@@ -91,7 +110,7 @@ void main() {
           tester,
           home: const UnifiedScreenPageFromSpec(spec: _testSpec),
         );
-        await tester.pumpAndSettle();
+        await tester.pumpForStream();
 
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.text('Data fetch failed'), findsOneWidget);
@@ -109,7 +128,7 @@ void main() {
           tester,
           home: const UnifiedScreenPageFromSpec(spec: _testSpec),
         );
-        await tester.pumpAndSettle();
+        await tester.pumpForStream();
 
         expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(find.textContaining('Stream failed'), findsOneWidget);

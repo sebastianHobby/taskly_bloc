@@ -1,7 +1,7 @@
 # Phase 01 — Decision Gates + Spec/Style Toggles
 
 Created at: 2026-01-16T02:30:06Z
-Last updated at: 2026-01-16T02:30:06Z
+Last updated at: 2026-01-16T06:24:19.2555476Z
 
 ## Goal
 Lock the remaining UI open questions into implementable choices, and express “calmness” defaults through spec-driven styling (USM-friendly) instead of renderer forks.
@@ -39,6 +39,39 @@ Notes for UI-Q004 (must align with USM global tile actions):
 - A small, explicit “approved configuration” list (choices for Q001–Q005)
 - A mapping table: (approved choice) → (spec knob / code location)
 - If UI-Q004 requires it: a mapping of (section/module) → (capability override)
+
+## Approved configuration (assumed)
+User direction: “Implement full plan”. This phase treats that as approval for the remaining UI open questions.
+
+- UI-Q001 Row density: Option A (Minimal + expand)
+  - Implemented via `AgendaMetaDensityV1.minimalExpandable`.
+- UI-Q002 Priority encoding: subtle dot (default)
+  - Implemented via `AgendaPriorityEncodingV1.subtleDot` (tooltip exposes the numeric priority).
+- UI-Q003 Ongoing rows show/hide date chips: show deadline chip (start date hidden)
+  - Implemented via `agendaShowDeadlineChipOnOngoing=true` + `showOnlyDeadlineDate=true` on ongoing rows.
+- UI-Q004 Row actions visibility: progressive disclosure on desktop (hover/focus)
+  - Implemented via `AgendaActionsVisibilityV1.hoverOrFocus`.
+  - Guardrail: on touch platforms actions remain visible for discoverability.
+- UI-Q005 Grouping structure: keep existing blocks
+  - No grouping changes made (Today/This week/Next week/Later remain).
+
+## Mapping (choice → knob/location)
+- Style contract: `EntityStyleV1`
+  - `agendaMetaDensity`, `agendaPriorityEncoding`, `agendaActionsVisibility`, `agendaPrimaryValueIconOnly`, `agendaMaxSecondaryValues`, `agendaShowDeadlineChipOnOngoing`
+- Defaults (Scheduled / agendaV2): `EntityStyleResolver` (agendaV2 branch)
+- Plumbing to tiles: `ScreenItemTileBuilder` → `TaskView` / `ProjectView`
+- Rendering:
+  - Task agenda card: `TaskViewVariant.agendaCard` in `TaskView`
+  - Project agenda card: `ProjectViewVariant.agendaCard` in `ProjectView`
+- Tag pills visibility: renderer checks `EntityStyleV1.showAgendaTagPills`
+
+## Completion
+Completed at: 2026-01-16T06:24:19.2555476Z
+
+Summary:
+- Added agenda-specific, spec-driven calmness knobs to `EntityStyleV1` and resolved defaults for Scheduled/agendaV2.
+- Kept USM boundaries: no widget-layer mutation wiring introduced.
+- Restored analyzer cleanliness after incidental file corruption.
 
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.

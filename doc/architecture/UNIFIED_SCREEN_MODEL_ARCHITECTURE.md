@@ -39,11 +39,19 @@ Routing supports the following URL patterns:
 - **Entity editors (NAV-01)**:
   - Create: `/<entityType>/new` (e.g. `/task/new?projectId=abc`)
   - Edit: `/<entityType>/:id/edit`
+- **Journal entry editor**:
+  - Create: `/journal/entry/new` (optional query: `trackerIds=a,b,c`)
+  - Edit: `/journal/entry/:id/edit`
 - **Entity detail (read/composite)**: `/<entityType>/:id` (only for entities that have a read/composite surface)
 
 There are also a small number of **route aliases/redirects** (for backwards
 compatibility) implemented in the router (for example `/task/:id` →
-`/task/:id/edit`, and historical `/projects`/`/someday` paths).
+`/task/:id/edit`, legacy `/projects` paths, and legacy `/someday` redirecting
+to the canonical Anytime URL).
+
+Important naming note:
+- The system screen key for Anytime is still `someday`, but the canonical URL
+  segment is `anytime` (see `Routing.screenPath` and `Routing.parseScreenKey`).
 
 As of the core ED/RD cutover, **tasks are editor-only**: navigating to
 `/task/:id` opens the task editor modal (there is no read-only task detail
@@ -158,6 +166,10 @@ Failure surfacing policy (non-negotiable):
   - [lib/presentation/routing/routing.dart](../../lib/presentation/routing/routing.dart)
   - [lib/presentation/routing/router.dart](../../lib/presentation/routing/router.dart)
 
+Note: older migration docs may reference a legacy `lib/core/routing/` stack.
+In the current codebase, the authenticated app shell is wired to the router in
+`lib/presentation/routing/`.
+
 ---
 
 ## 3) High-Level Architecture
@@ -218,7 +230,7 @@ Plain-text sequence (portable Markdown):
 
 ```text
 1) User navigates to '/:segment' (URL uses hyphens)
-2) Routing.parseScreenKey(segment) -> screenKey (convert '-' back to '_')
+2) Routing.parseScreenKey(segment) -> screenKey (convert '-' → '_' and apply aliases, e.g. 'anytime' → 'someday')
 3) Router calls Routing.buildScreen(screenKey)
 4) Routing.buildScreen(screenKey) selects a ScreenSpec from SystemScreenSpecs
    (or returns a "Screen not found" widget if unknown)
@@ -539,16 +551,52 @@ module or gating at the screen level.
 These correspond to `ScreenModuleSpec` cases and are rendered using
 `SectionTemplateId`.
 
-| SectionTemplateId | Params type | What it renders | When to use |
-|---|---|---|---|
-| `task_list_v2` | `ListSectionParamsV2` | Task list driven by `TaskQuery` | Default for task-based screens. |
-| `value_list_v2` | `ListSectionParamsV2` | Value list driven by `ValueQuery` | Value dashboards and selection. |
-| `interleaved_list_v2` | `InterleavedListSectionParamsV2` | Mixed list feed (tasks/projects/values) | When one feed combines multiple sources. |
-| `hierarchy_value_project_task_v2` | `HierarchyValueProjectTaskSectionParamsV2` | Hierarchical Value → Project → Task view | When you need a structured hierarchy view. |
-| `agenda_v2` | `AgendaSectionParamsV2` | Date-grouped agenda view | Upcoming/scheduled/calendar-like screens. |
-| `attention_banner_v2` | `AttentionBannerSectionParamsV2` | Attention banner | Top-of-screen “attention” summary banners. |
-| `attention_inbox_v1` | `AttentionInboxSectionParamsV1` | Attention inbox | Review/attention flow UI. |
-| `entity_header` | `EntityHeaderSectionParams` | Entity header section (project/value) | Top section for entity detail screens. |
+| SectionTemplateId | Family | Params type | What it renders | When to use |
+|---|---|---|---|---|
+| `task_list_v2` | Query / List (tasks) | `ListSectionParamsV2` | Task list driven by `TaskQuery` | Default for task-based screens and entity detail (project tasks). |
+| `value_list_v2` | Query / List (values) | `ListSectionParamsV2` | Value list driven by `ValueQuery` | Value dashboards and selection. |
+| `interleaved_list_v2` | Query / List (mixed) | `InterleavedListSectionParamsV2` | Mixed list feed (tasks/projects/values) | When one feed combines multiple sources. |
+| `hierarchy_value_project_task_v2` | Query / Hierarchy | `HierarchyValueProjectTaskSectionParamsV2` | Hierarchical Value → Project → Task view | When you need structured grouping and drill-down scanning. |
+| `agenda_v2` | Agenda | `AgendaSectionParamsV2` | Date-grouped agenda view | Scheduled/time-sliced views (upcoming / “calendar-ish” feeds). |
+| `attention_banner_v2` | Attention | `AttentionBannerSectionParamsV2` | Attention banner | Top-of-screen “attention” summary banners. |
+| `attention_inbox_v1` | Attention | `AttentionInboxSectionParamsV1` | Attention inbox | Review/attention flow UI. |
+| `entity_header` | Entity detail | `EntityHeaderSectionParams` | Entity header section (project/value) | Top section for entity detail screens. |
+| `my_day_hero_v1` | My Day | none | My Day hero/summary module | My Day header composition. |
+| `my_day_ranked_tasks_v1` | My Day | none | My Day “Today” ranked tasks section | My Day primary content (allocation-driven). |
+| `create_value_cta_v1` | CTA | none | Values screen CTA (create value) | Values screen footer. |
+| `journal_today_composer_v1` | Journal | none | Journal Today composer/quick-add entry launcher | Journal screen header. |
+| `journal_today_entries_v1` | Journal | none | Journal Today entries list | Journal screen primary. |
+| `journal_history_teaser_v1` | Journal | none | CTA that navigates to journal history | Journal screen header. |
+| `journal_history_list_v1` | Journal | none | Journal history list | `journal_history` system screen. |
+| `journal_manage_trackers_v1` | Journal | none | Journal tracker management section | `journal_manage_trackers` system screen. |
+
+#### 6.4.1.1 Recommended module taxonomy (minimize variants)
+
+The current modules fall into a small number of **UI paradigms**. When
+introducing new screens or refactoring existing ones, try to stay inside these
+families instead of introducing new one-off modules/templates.
+
+- **Query family** (list-like): the primary user intent is “show results of a
+  query” (flat list, mixed list, or a structured hierarchy). This family is
+  where most “task/project/value view types” should converge.
+  - Flat lists: `task_list_v2`, `value_list_v2`
+  - Mixed lists: `interleaved_list_v2`
+  - Structured lists: `hierarchy_value_project_task_v2` (a Query variant with
+    deterministic grouping/structure)
+- **Agenda family**: the primary user intent is “show time-sliced work” (date
+  buckets, ongoing, upcoming). Agenda is not just a query list; it carries
+  distinct semantics and UX constraints.
+
+Practical boundary rule:
+- If the main axis is **entity grouping/filtering**, stay in Query.
+- If the main axis is **time**, use Agenda.
+
+This separation helps keep renderers simpler and keeps `EntityStyleV1` defaults
+stable per family.
+
+Note: `SectionTemplateId` includes some legacy IDs for former custom screens.
+In the typed USM pipeline, section rendering should be driven by `SectionVm`
+variants (and the corresponding `SectionTemplateId` values listed above).
 
 #### 6.4.2 Full-screen templates (rendered by `ScreenTemplateWidget`)
 
@@ -660,6 +708,17 @@ Current implementation notes:
   - [lib/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart](../../lib/presentation/screens/templates/renderers/interleaved_list_renderer_v2.dart)
 - Reusable filter UI belongs in template-level widgets under presentation:
   - [lib/presentation/screens/templates/widgets/section_filter_bar_v2.dart](../../lib/presentation/screens/templates/widgets/section_filter_bar_v2.dart)
+
+**Important exception (current state):** `entityDetailScaffoldV1` has a
+project-only task completion filter implemented at the *template* level (with
+local persistence via `PageStorage`) rather than as a Query-family module.
+
+Refactor target:
+- Prefer expressing this as a shared Query/List module concern (or a small
+  reusable “query filter bar” module) so entity detail screens do not carry
+  bespoke filter logic in the template.
+- Current implementation reference:
+  [lib/presentation/screens/templates/screen_template_widget.dart](../../lib/presentation/screens/templates/screen_template_widget.dart)
 
 Rationale:
 - The unified screen model stays typed/config-driven.

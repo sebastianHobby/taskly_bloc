@@ -316,10 +316,10 @@ Future<void> _maybeDevAutoLogin() async {
   }
 }
 
-/// Register screen and entity builders with [Routing].
+/// Register entity builders with [Routing].
 ///
-/// This centralizes all screen→bloc mappings. Screens not registered here
-/// automatically use the typed ScreenSpec rendering path.
+/// System screens are resolved by [Routing.buildScreen] via `SystemScreenSpecs`.
+/// Entity detail routes are resolved via registered builders.
 void _registerRoutingBuilders() {
   // Register entity detail builders
   Routing.registerEntityBuilders(

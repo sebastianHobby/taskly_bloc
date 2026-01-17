@@ -11,6 +11,167 @@ import 'package:taskly_bloc/domain/core/model/value_priority.dart';
 import 'package:taskly_bloc/domain/queries/project_query.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
 
+@immutable
+class _TemplateValueSeed {
+  const _TemplateValueSeed({
+    required this.name,
+    required this.color,
+    required this.priority,
+    this.iconName,
+  });
+
+  final String name;
+  final String color;
+  final ValuePriority priority;
+  final String? iconName;
+}
+
+/// Ensures icons are unique within a single template seed run.
+///
+/// Uses a small keyword-based mapper first for “suitable” icons, then falls
+/// back to a deterministic selection from a shared pool.
+class _UniqueValueIconAssigner {
+  _UniqueValueIconAssigner();
+
+  /// Pool of icon *names* that must exist in
+  /// `presentation/widgets/icon_picker/icon_picker_dialog.dart`.
+  static const _fallbackPool = <String>[
+    // Goals & Values
+    'values',
+    'flag',
+    'target',
+    'trophy',
+    'priority',
+    'rocket',
+    // Organization
+    'projects',
+    'folder_open',
+    'work',
+    'business',
+    'labels',
+    'tag',
+    'category',
+    'bookmark',
+    // Tasks
+    'checklist',
+    'task',
+    'done',
+    'pending',
+    // Time
+    'schedule',
+    'calendar',
+    'timer',
+    'alarm',
+    'history',
+    'hourglass',
+    // Journal
+    'mood',
+    'journal',
+    'self_care',
+    'health',
+    'meditation',
+    // Misc
+    'settings',
+    'tune',
+    'filter',
+    'sort',
+    'search',
+    'lightbulb',
+    'info',
+    'home',
+    'person',
+    'group',
+    'trackers',
+  ];
+
+  final Set<String> _used = <String>{};
+
+  String assign({required String valueName, String? preferred}) {
+    final normalized = valueName.trim();
+
+    if (preferred != null &&
+        preferred.isNotEmpty &&
+        !_used.contains(preferred)) {
+      _used.add(preferred);
+      return preferred;
+    }
+
+    final suggested = _suggestForName(normalized);
+    if (suggested != null && !_used.contains(suggested)) {
+      _used.add(suggested);
+      return suggested;
+    }
+
+    final startIndex = _stableIndex(normalized, _fallbackPool.length);
+    for (var offset = 0; offset < _fallbackPool.length; offset++) {
+      final candidate =
+          _fallbackPool[(startIndex + offset) % _fallbackPool.length];
+      if (_used.add(candidate)) {
+        return candidate;
+      }
+    }
+
+    // Should be unreachable unless pool is empty.
+    return 'values';
+  }
+
+  static String? _suggestForName(String name) {
+    final lower = name.toLowerCase();
+
+    if (lower.contains('life admin') ||
+        lower.contains('admin') ||
+        lower.contains('paper') ||
+        lower.contains('documents')) {
+      return 'checklist';
+    }
+
+    if (lower.contains('home') ||
+        lower.contains('comfort') ||
+        lower.contains('house') ||
+        lower.contains('chores')) {
+      return 'home';
+    }
+
+    if (lower.contains('relationship') ||
+        lower.contains('friends') ||
+        lower.contains('family') ||
+        lower.contains('social')) {
+      return 'group';
+    }
+
+    if (lower.contains('health') ||
+        lower.contains('energy') ||
+        lower.contains('exercise') ||
+        lower.contains('fitness')) {
+      return 'health';
+    }
+
+    if (lower.contains('learning') ||
+        lower.contains('curiosity') ||
+        lower.contains('study') ||
+        lower.contains('read')) {
+      return 'lightbulb';
+    }
+
+    return null;
+  }
+
+  static int _stableIndex(String input, int modulo) {
+    // Cheap deterministic hash (no crypto/security needs here).
+    var hash = 0;
+    for (final unit in input.codeUnits) {
+      hash = 0x1fffffff & (hash + unit);
+      hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+      hash ^= hash >> 6;
+    }
+    hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+    hash ^= hash >> 11;
+    hash = 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+    if (modulo <= 0) return 0;
+    return hash % modulo;
+  }
+}
+
 /// Debug-only helper that wipes user task data and seeds a curated dataset.
 ///
 /// This is intended for demos and screenshots. It deliberately uses repositories
@@ -75,36 +236,51 @@ class TemplateDataService {
     );
 
     // 3) Create Values (must exist or allocation soft-gates).
-    await _valueRepository.create(
-      name: 'Life Admin',
-      color: '#455A64',
-      iconName: '🧾',
-      priority: ValuePriority.high,
-    );
-    await _valueRepository.create(
-      name: 'Home & Comfort',
-      color: '#FB8C00',
-      iconName: '🏠',
-      priority: ValuePriority.medium,
-    );
-    await _valueRepository.create(
-      name: 'Relationships',
-      color: '#E91E63',
-      iconName: '🎉',
-      priority: ValuePriority.medium,
-    );
-    await _valueRepository.create(
-      name: 'Health & Energy',
-      color: '#43A047',
-      iconName: '💪',
-      priority: ValuePriority.high,
-    );
-    await _valueRepository.create(
-      name: 'Learning & Curiosity',
-      color: '#1E88E5',
-      iconName: '📚',
-      priority: ValuePriority.low,
-    );
+    const seeds = <_TemplateValueSeed>[
+      _TemplateValueSeed(
+        name: 'Life Admin',
+        color: '#455A64',
+        priority: ValuePriority.high,
+        iconName: 'checklist',
+      ),
+      _TemplateValueSeed(
+        name: 'Home & Comfort',
+        color: '#FB8C00',
+        priority: ValuePriority.medium,
+        iconName: 'home',
+      ),
+      _TemplateValueSeed(
+        name: 'Relationships',
+        color: '#E91E63',
+        priority: ValuePriority.medium,
+        iconName: 'group',
+      ),
+      _TemplateValueSeed(
+        name: 'Health & Energy',
+        color: '#43A047',
+        priority: ValuePriority.high,
+        iconName: 'health',
+      ),
+      _TemplateValueSeed(
+        name: 'Learning & Curiosity',
+        color: '#1E88E5',
+        priority: ValuePriority.low,
+        iconName: 'lightbulb',
+      ),
+    ];
+
+    final iconAssigner = _UniqueValueIconAssigner();
+    for (final seed in seeds) {
+      await _valueRepository.create(
+        name: seed.name,
+        color: seed.color,
+        iconName: iconAssigner.assign(
+          valueName: seed.name,
+          preferred: seed.iconName,
+        ),
+        priority: seed.priority,
+      );
+    }
 
     final valueIdByName = await _loadValueIdByName();
 

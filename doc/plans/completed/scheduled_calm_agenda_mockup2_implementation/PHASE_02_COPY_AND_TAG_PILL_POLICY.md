@@ -1,7 +1,7 @@
 # Phase 02 — Copy + Tag Pill Policy (UI-D001, part of UI-D002)
 
 Created at: 2026-01-16T02:30:06Z
-Last updated at: 2026-01-16T02:30:06Z
+Last updated at: 2026-01-16T06:24:19.2555476Z
 
 ## Goal
 Implement the confirmed copy change and ensure tag-pill presentation is calm and spec-driven.
@@ -21,6 +21,13 @@ Guardrail (USM alignment):
 ## Acceptance criteria
 - Scheduled shows “Ongoing” (not “In progress”) wherever the agenda tag pill appears.
 - If specs set `showAgendaTagPills=false`, Scheduled shows no pills without needing renderer forks.
+
+## Completion
+Completed at: 2026-01-16T06:24:19.2555476Z
+
+Summary:
+- Updated agenda tag label sources to show “Ongoing” (Scheduled renderer + list renderers + model label extension).
+- Confirmed tag pill rendering remains spec-driven via `EntityStyleV1.showAgendaTagPills`.
 
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.

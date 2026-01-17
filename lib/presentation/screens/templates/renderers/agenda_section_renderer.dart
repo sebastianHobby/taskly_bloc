@@ -654,7 +654,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
         foreground: scheme.onErrorContainer,
       ),
       AgendaDateTag.inProgress => _StatusPill(
-        label: 'IN PROGRESS',
+        label: 'ONGOING',
         background: scheme.surfaceContainerHighest,
         foreground: scheme.onSurfaceVariant,
       ),
@@ -906,7 +906,7 @@ class _AgendaSectionRendererState extends State<AgendaSectionRenderer> {
                         }),
                       ),
                       FilterChip(
-                        label: const Text('In Progress'),
+                        label: const Text('Ongoing'),
                         selected: tags.contains(AgendaDateTag.inProgress),
                         onSelected: (value) => setModalState(() {
                           value
@@ -1099,7 +1099,7 @@ class _InProgressCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 10),
                           _StatusPill(
-                            label: 'IN PROGRESS',
+                            label: 'ONGOING',
                             background: scheme.surfaceContainerHighest,
                             foreground: scheme.onSurfaceVariant,
                           ),
@@ -1313,7 +1313,7 @@ class _DayCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: 8),
           child: ListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text('In progress (${inProgressItems.length})'),
+            title: Text('Ongoing (${inProgressItems.length})'),
             trailing: const Icon(Icons.expand_more),
             onTap: onToggleInProgress,
           ),
@@ -1329,7 +1329,7 @@ class _DayCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'In progress',
+                    'Ongoing',
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),

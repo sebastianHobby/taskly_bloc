@@ -16,7 +16,7 @@ model:
 - **Offline-first**: the local DB is the primary source of truth for UI; sync is
   responsible for convergence.
 
-### 1.2 Presentation boundary rule (BLoC-only)
+### 1.1 Presentation boundary rule (BLoC-only)
 
 **Normative rule:** Widgets/pages in the presentation layer must not talk to
 repositories or domain/data services directly, and must not subscribe to
@@ -41,7 +41,7 @@ non-UI streams directly.
 If an exception starts to depend on domain/data or becomes shared across screens,
 promote it into a BLoC (or lower layer) and expose a BLoC state instead.
 
-### 1.1 System-level architecture diagram
+### 1.2 System-level architecture diagram
 
 ```text
 +-----------------------------------------------------------------------+
@@ -204,6 +204,7 @@ For the deeper dive see:
 - Journal + statistics: [JOURNAL_AND_STATISTICS_ARCHITECTURE.md](JOURNAL_AND_STATISTICS_ARCHITECTURE.md)
 - Screen purpose concepts: [screen_purpose_concepts.md](screen_purpose_concepts.md)
 - Offline-first + sync: [POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md](POWERSYNC_SUPABASE_DATA_SYNC_ARCHITECTURE.md)
+- Local dev / E2E (PowerSync + Supabase): [LOCAL_SUPABASE_POWERSYNC_E2E.md](LOCAL_SUPABASE_POWERSYNC_E2E.md)
 - Allocation: [ALLOCATION_SYSTEM_ARCHITECTURE.md](ALLOCATION_SYSTEM_ARCHITECTURE.md)
 - Attention: [ATTENTION_SYSTEM_ARCHITECTURE.md](ATTENTION_SYSTEM_ARCHITECTURE.md)
 - Testing: [TESTING_ARCHITECTURE.md](TESTING_ARCHITECTURE.md)

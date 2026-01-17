@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_bloc/presentation/features/journal/widgets/journal_today_shared_widgets.dart';
 
 /// Journal Today "composer" section.
 ///
@@ -18,50 +19,10 @@ final class JournalTodayComposerSectionRendererV1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Today',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: onAddLog,
-              icon: const Icon(Icons.add),
-              label: const Text('Add log'),
-            ),
-          ],
-        ),
-        if (pinnedTrackers.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Text(
-            'Quick add',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final tracker in pinnedTrackers)
-                ActionChip(
-                  label: Text(tracker.name),
-                  onPressed: () => onQuickAddTracker(tracker.id),
-                ),
-            ],
-          ),
-        ],
-      ],
+    return JournalTodayComposer(
+      pinnedTrackers: pinnedTrackers,
+      onAddLog: onAddLog,
+      onQuickAddTracker: onQuickAddTracker,
     );
   }
 }

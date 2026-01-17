@@ -66,6 +66,13 @@ class ScreenItemTileBuilder {
         isInFocus: isInFocus,
         compact: _isCompact(entityStyle),
         variant: _taskVariant(entityStyle),
+        agendaMetaDensity: entityStyle.agendaMetaDensity,
+        agendaPriorityEncoding: entityStyle.agendaPriorityEncoding,
+        agendaActionsVisibility: entityStyle.agendaActionsVisibility,
+        agendaPrimaryValueIconOnly: entityStyle.agendaPrimaryValueIconOnly,
+        agendaMaxSecondaryValues: entityStyle.agendaMaxSecondaryValues,
+        agendaShowDeadlineChipOnOngoing:
+            entityStyle.agendaShowDeadlineChipOnOngoing,
         onTap: onTap == null ? null : (_) => onTap(),
         titlePrefix: titlePrefix,
         statusBadge: statusBadge,
@@ -79,6 +86,13 @@ class ScreenItemTileBuilder {
         tileCapabilities: tileCapabilities ?? const EntityTileCapabilities(),
         compact: _isCompact(entityStyle),
         variant: _projectVariant(entityStyle),
+        agendaMetaDensity: entityStyle.agendaMetaDensity,
+        agendaPriorityEncoding: entityStyle.agendaPriorityEncoding,
+        agendaActionsVisibility: entityStyle.agendaActionsVisibility,
+        agendaPrimaryValueIconOnly: entityStyle.agendaPrimaryValueIconOnly,
+        agendaMaxSecondaryValues: entityStyle.agendaMaxSecondaryValues,
+        agendaShowDeadlineChipOnOngoing:
+            entityStyle.agendaShowDeadlineChipOnOngoing,
         taskCount: projectStats?.taskCount ?? project.taskCount,
         completedTaskCount:
             projectStats?.completedTaskCount ?? project.completedTaskCount,

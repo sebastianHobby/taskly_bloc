@@ -1,7 +1,7 @@
 # Scheduled Page — Calm Agenda (Mockup 2 alignment)
 
 Created at: 2026-01-16 (UTC)
-Last updated at: 2026-01-16 (UTC)
+Last updated at: 2026-01-16T06:24:19.2555476Z
 
 ## Context
 
@@ -118,6 +118,24 @@ Should the per-row overflow menu be:
 
 ### UI-Q005 — Grouping structure
 Keep existing blocks (Today/This week/Next week/Later) or shift toward a continuous feed with lighter section headers?
+
+## Implementation (record)
+
+### Chosen answers (from “implement full plan”)
+- UI-Q001: Option A (Minimal + expand)
+- UI-Q002: Priority encoding = subtle dot (default)
+- UI-Q003: Ongoing rows show a deadline chip (start date hidden)
+- UI-Q004: Overflow actions show on hover/focus for desktop; always visible on touch
+- UI-Q005: Keep existing grouping blocks
+
+### New spec-driven knobs (added)
+To avoid renderer forks and keep Scheduled configurable, agenda presentation is controlled via `EntityStyleV1`:
+- `agendaMetaDensity`
+- `agendaPriorityEncoding`
+- `agendaActionsVisibility`
+- `agendaPrimaryValueIconOnly`
+- `agendaMaxSecondaryValues`
+- `agendaShowDeadlineChipOnOngoing`
 
 ## Next Suggested Steps
 

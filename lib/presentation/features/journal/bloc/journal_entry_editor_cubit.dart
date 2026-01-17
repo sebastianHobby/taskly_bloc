@@ -45,6 +45,7 @@ final class JournalEntryEditorState {
     required this.availableTrackers,
     required this.selectedTrackerIds,
     required this.moodTrackerId,
+    required this.isDirty,
   });
 
   factory JournalEntryEditorState.initial({required String? entryId}) {
@@ -56,6 +57,7 @@ final class JournalEntryEditorState {
       availableTrackers: const <TrackerDefinition>[],
       selectedTrackerIds: const <String>{},
       moodTrackerId: null,
+      isDirty: false,
     );
   }
 
@@ -66,6 +68,7 @@ final class JournalEntryEditorState {
   final List<TrackerDefinition> availableTrackers;
   final Set<String> selectedTrackerIds;
   final String? moodTrackerId;
+  final bool isDirty;
 
   bool get isEditingExisting => entryId != null && entryId!.trim().isNotEmpty;
 
@@ -77,6 +80,7 @@ final class JournalEntryEditorState {
     List<TrackerDefinition>? availableTrackers,
     Set<String>? selectedTrackerIds,
     String? moodTrackerId,
+    bool? isDirty,
   }) {
     return JournalEntryEditorState(
       status: status ?? this.status,
@@ -86,6 +90,7 @@ final class JournalEntryEditorState {
       availableTrackers: availableTrackers ?? this.availableTrackers,
       selectedTrackerIds: selectedTrackerIds ?? this.selectedTrackerIds,
       moodTrackerId: moodTrackerId ?? this.moodTrackerId,
+      isDirty: isDirty ?? this.isDirty,
     );
   }
 }
@@ -116,6 +121,8 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
 
   Set<String> _initialSelected = const <String>{};
   JournalEntry? _initialEntry;
+  MoodRating? _initialMood;
+  String _initialNote = '';
 
   @override
   Future<void> close() async {
@@ -125,11 +132,11 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
   }
 
   void moodChanged(MoodRating? mood) {
-    emit(state.copyWith(mood: mood, status: const JournalEntryEditorIdle()));
+    emit(_withIdleAndDirty(state.copyWith(mood: mood)));
   }
 
   void noteChanged(String note) {
-    emit(state.copyWith(note: note, status: const JournalEntryEditorIdle()));
+    emit(_withIdleAndDirty(state.copyWith(note: note)));
   }
 
   void toggleTracker(String trackerId) {
@@ -140,12 +147,7 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
       next.add(trackerId);
     }
 
-    emit(
-      state.copyWith(
-        selectedTrackerIds: next,
-        status: const JournalEntryEditorIdle(),
-      ),
-    );
+    emit(_withIdleAndDirty(state.copyWith(selectedTrackerIds: next)));
   }
 
   Future<void> save() async {
@@ -253,10 +255,14 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
       if (state.entryId != null && state.entryId!.trim().isNotEmpty) {
         await _loadExistingEntry(state.entryId!);
       } else {
+        _initialMood = null;
+        _initialNote = '';
+        _initialSelected = {..._preselectedTrackerIds};
         emit(
           state.copyWith(
             selectedTrackerIds: {..._preselectedTrackerIds},
             status: const JournalEntryEditorIdle(),
+            isDirty: false,
           ),
         );
       }
@@ -367,6 +373,8 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
     }
 
     _initialSelected = {...selected};
+    _initialMood = mood;
+    _initialNote = entry.journalText ?? '';
 
     emit(
       state.copyWith(
@@ -374,8 +382,40 @@ class JournalEntryEditorCubit extends Cubit<JournalEntryEditorState> {
         note: entry.journalText ?? '',
         selectedTrackerIds: selected,
         status: const JournalEntryEditorIdle(),
+        isDirty: false,
       ),
     );
+  }
+
+  JournalEntryEditorState _withIdleAndDirty(JournalEntryEditorState next) {
+    final isDirty = _computeIsDirty(next);
+    return next.copyWith(
+      status: const JournalEntryEditorIdle(),
+      isDirty: isDirty,
+    );
+  }
+
+  bool _computeIsDirty(JournalEntryEditorState next) {
+    final moodChanged = next.mood != _initialMood;
+
+    final nextNote = next.note.trim();
+    final initialNote = _initialNote.trim();
+    final noteChanged = nextNote != initialNote;
+
+    final selectedChanged = !_sameSet(
+      next.selectedTrackerIds,
+      _initialSelected,
+    );
+    return moodChanged || noteChanged || selectedChanged;
+  }
+
+  bool _sameSet(Set<String> a, Set<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (final v in a) {
+      if (!b.contains(v)) return false;
+    }
+    return true;
   }
 
   String? _findMoodTrackerId() {

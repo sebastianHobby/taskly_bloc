@@ -65,9 +65,11 @@ class _PlainValueList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tileBuilder = ScreenItemTileBuilder();
-    final values = data.items.whereType<ScreenItemValue>().toList(
-      growable: false,
-    );
+    final values = data.items.whereType<ScreenItemValue>().toList()
+      ..sort(
+        (a, b) =>
+            a.value.name.toLowerCase().compareTo(b.value.name.toLowerCase()),
+      );
 
     if (values.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());

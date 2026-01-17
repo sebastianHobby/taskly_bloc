@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:taskly_bloc/domain/analytics/model/entity_type.dart';
 import 'package:taskly_bloc/domain/domain.dart';
+import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/services/values/effective_values.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
@@ -35,6 +36,12 @@ class TaskView extends StatelessWidget {
     this.compact = false,
     this.isInFocus = false,
     this.variant = TaskViewVariant.list,
+    this.agendaMetaDensity = AgendaMetaDensityV1.full,
+    this.agendaPriorityEncoding = AgendaPriorityEncodingV1.explicitPill,
+    this.agendaActionsVisibility = AgendaActionsVisibilityV1.always,
+    this.agendaPrimaryValueIconOnly = false,
+    this.agendaMaxSecondaryValues = 2,
+    this.agendaShowDeadlineChipOnOngoing = true,
     this.titlePrefix,
     this.statusBadge,
     this.trailing,
@@ -60,6 +67,27 @@ class TaskView extends StatelessWidget {
 
   /// Visual variant.
   final TaskViewVariant variant;
+
+  /// Agenda-only: how dense the meta line should be.
+  final AgendaMetaDensityV1 agendaMetaDensity;
+
+  /// Agenda-only: how priority should be encoded.
+  ///
+  /// Note: list-row variants may also read this to keep priority affordances
+  /// consistent across screen templates.
+  final AgendaPriorityEncodingV1 agendaPriorityEncoding;
+
+  /// Agenda-only: how row actions should be surfaced.
+  final AgendaActionsVisibilityV1 agendaActionsVisibility;
+
+  /// Agenda-only: render primary value as icon-only.
+  final bool agendaPrimaryValueIconOnly;
+
+  /// Agenda-only: max number of secondary value chips before summarizing.
+  final int agendaMaxSecondaryValues;
+
+  /// Agenda-only: on Ongoing rows, show a deadline chip.
+  final bool agendaShowDeadlineChipOnOngoing;
 
   /// Optional widget shown inline before the task title.
   final Widget? titlePrefix;
@@ -156,6 +184,9 @@ class TaskView extends StatelessWidget {
             ? (Task task) => Routing.toEntity(context, EntityType.task, task.id)
             : null);
 
+    final titlePriorityPrefix = _priorityTitlePrefix(context);
+    final titleFontWeight = _priorityTitleWeight();
+
     return Container(
       key: Key('task-${task.id}'),
       decoration: BoxDecoration(
@@ -179,15 +210,17 @@ class TaskView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 2),
-                child: _TaskCheckbox(
-                  completed: task.completed,
-                  isOverdue: isOverdue,
-                  onChanged: tileCapabilities.canToggleCompletion
-                      ? (value) => _dispatchCompletion(context, value)
-                      : null,
-                  taskName: task.name,
+              SizedBox.square(
+                dimension: 44,
+                child: Center(
+                  child: _TaskCheckbox(
+                    completed: task.completed,
+                    isOverdue: isOverdue,
+                    onChanged: tileCapabilities.canToggleCompletion
+                        ? (value) => _dispatchCompletion(context, value)
+                        : null,
+                    taskName: task.name,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -198,6 +231,10 @@ class TaskView extends StatelessWidget {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (titlePriorityPrefix != null) ...[
+                          titlePriorityPrefix,
+                          const SizedBox(width: 8),
+                        ],
                         if (titlePrefix != null) ...[
                           titlePrefix!,
                           const SizedBox(width: 8),
@@ -206,7 +243,7 @@ class TaskView extends StatelessWidget {
                           child: Text(
                             task.name,
                             style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w600,
+                              fontWeight: titleFontWeight,
                               decoration: task.completed
                                   ? TextDecoration.lineThrough
                                   : null,
@@ -217,18 +254,6 @@ class TaskView extends StatelessWidget {
                             maxLines: compact ? 1 : 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        if (trailing != null) ...[
-                          const SizedBox(width: 8),
-                          trailing!,
-                        ],
-                        const SizedBox(width: 10),
-                        _TaskTodayStatusMenuButton(
-                          taskId: task.id,
-                          taskName: task.name,
-                          isPinnedToMyDay: task.isPinned,
-                          isInMyDayAuto: isInFocus,
-                          tileCapabilities: tileCapabilities,
                         ),
                       ],
                     ),
@@ -245,6 +270,11 @@ class TaskView extends StatelessWidget {
                       hasRepeat: task.repeatIcalRrule != null,
                       secondaryValues: effectiveSecondaryValues,
                       priority: task.priority,
+                      priorityEncoding: agendaPriorityEncoding,
+                      primaryValueIconOnly: false,
+                      collapseSecondaryValuesToCount: false,
+                      showRepeatOnRight: true,
+                      showBothDatesIfPresent: true,
                       onTapValues: () {
                         if (!tileCapabilities.canAlignValues) return;
                         final dispatcher = context.read<TileIntentDispatcher>();
@@ -261,6 +291,29 @@ class TaskView extends StatelessWidget {
                       },
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 72,
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (trailing != null) ...[
+                        trailing!,
+                        const SizedBox(width: 8),
+                      ],
+                      _TaskTodayStatusMenuButton(
+                        taskId: task.id,
+                        taskName: task.name,
+                        isPinnedToMyDay: task.isPinned,
+                        isInMyDayAuto: isInFocus,
+                        tileCapabilities: tileCapabilities,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -298,6 +351,9 @@ class TaskView extends StatelessWidget {
         (tileCapabilities.canOpenDetails
             ? (Task task) => Routing.toEntity(context, EntityType.task, task.id)
             : null);
+
+    final titlePriorityPrefix = _priorityTitlePrefix(context);
+    final titleFontWeight = _priorityTitleWeight();
 
     return Material(
       key: Key('task-${task.id}'),
@@ -339,6 +395,10 @@ class TaskView extends StatelessWidget {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (titlePriorityPrefix != null) ...[
+                            titlePriorityPrefix,
+                            const SizedBox(width: 8),
+                          ],
                           if (titlePrefix != null) ...[
                             titlePrefix!,
                             const SizedBox(width: 10),
@@ -347,7 +407,7 @@ class TaskView extends StatelessWidget {
                             child: Text(
                               task.name,
                               style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
+                                fontWeight: titleFontWeight,
                                 decoration: task.completed
                                     ? TextDecoration.lineThrough
                                     : null,
@@ -363,19 +423,6 @@ class TaskView extends StatelessWidget {
                             const SizedBox(width: 10),
                             statusBadge!,
                           ],
-                          if (trailing != null) ...[
-                            const SizedBox(width: 8),
-                            trailing!,
-                          ],
-                          const SizedBox(width: 10),
-                          _TaskTodayStatusMenuButton(
-                            taskId: task.id,
-                            taskName: task.name,
-                            isPinnedToMyDay: task.isPinned,
-                            isInMyDayAuto: isInFocus,
-                            compact: true,
-                            tileCapabilities: tileCapabilities,
-                          ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -397,6 +444,13 @@ class TaskView extends StatelessWidget {
                               hasRepeat: task.repeatIcalRrule != null,
                               secondaryValues: effectiveSecondaryValues,
                               priority: task.priority,
+                              priorityEncoding: agendaPriorityEncoding,
+                              primaryValueIconOnly: agendaPrimaryValueIconOnly,
+                              maxSecondaryValues: agendaMaxSecondaryValues,
+                              metaDensity: agendaMetaDensity,
+                              collapseSecondaryValuesToCount: false,
+                              showRepeatOnRight: true,
+                              showBothDatesIfPresent: false,
                               onTapValues: () {
                                 if (!tileCapabilities.canAlignValues) return;
                                 final dispatcher = context
@@ -415,6 +469,30 @@ class TaskView extends StatelessWidget {
                             ),
                           ),
                           if (agendaInProgressStyle && endDay != null) ...[
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 72,
+                              child: Align(
+                                alignment: Alignment.topRight,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (trailing != null) ...[
+                                      trailing!,
+                                      const SizedBox(width: 8),
+                                    ],
+                                    _TaskTodayStatusMenuButton(
+                                      taskId: task.id,
+                                      taskName: task.name,
+                                      isPinnedToMyDay: task.isPinned,
+                                      isInMyDayAuto: isInFocus,
+                                      compact: true,
+                                      tileCapabilities: tileCapabilities,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 12),
                             _EndDayMarker(label: endDay),
                           ],
@@ -436,6 +514,48 @@ class TaskView extends StatelessWidget {
     if (end == null) return null;
     final locale = Localizations.localeOf(context);
     return DateFormat.E(locale.toLanguageTag()).format(end);
+  }
+
+  Widget? _priorityTitlePrefix(BuildContext context) {
+    if (agendaPriorityEncoding != AgendaPriorityEncodingV1.subtleDot) {
+      return null;
+    }
+
+    final p = task.priority;
+    if (p == null) return null;
+
+    final scheme = Theme.of(context).colorScheme;
+    final color = _priorityColorFor(scheme, p);
+    final label = 'Priority P$p';
+
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        label: label,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+
+  FontWeight _priorityTitleWeight() {
+    if (agendaPriorityEncoding != AgendaPriorityEncodingV1.subtleTitleWeight) {
+      return FontWeight.w600;
+    }
+
+    return switch (task.priority) {
+      1 => FontWeight.w800,
+      2 => FontWeight.w700,
+      3 => FontWeight.w600,
+      4 => FontWeight.w600,
+      _ => FontWeight.w600,
+    };
   }
 }
 
@@ -606,6 +726,7 @@ class _MetaLine extends StatelessWidget {
     required this.formatDate,
     required this.secondaryValues,
     required this.priority,
+    this.layout = _MetaLineLayout.singleWrap,
     this.primaryValue,
     this.projectName,
     this.projectId,
@@ -616,6 +737,13 @@ class _MetaLine extends StatelessWidget {
     this.isDueSoon = false,
     this.hasRepeat = false,
     this.showDates = true,
+    this.metaDensity = AgendaMetaDensityV1.full,
+    this.priorityEncoding = AgendaPriorityEncodingV1.explicitPill,
+    this.primaryValueIconOnly = false,
+    this.maxSecondaryValues = 2,
+    this.collapseSecondaryValuesToCount = false,
+    this.showRepeatOnRight = false,
+    this.showBothDatesIfPresent = false,
     this.onTapValues,
   });
 
@@ -624,116 +752,170 @@ class _MetaLine extends StatelessWidget {
   final String? projectId;
   final DateTime? startDate;
   final DateTime? deadlineDate;
+  final _MetaLineLayout layout;
   final bool isOverdue;
   final bool isDueToday;
   final bool isDueSoon;
   final bool hasRepeat;
   final bool showDates;
+  final AgendaMetaDensityV1 metaDensity;
+  final AgendaPriorityEncodingV1 priorityEncoding;
   final String Function(BuildContext, DateTime) formatDate;
   final List<Value> secondaryValues;
   final int? priority;
+  final bool primaryValueIconOnly;
+  final int maxSecondaryValues;
+  final bool collapseSecondaryValuesToCount;
+  final bool showRepeatOnRight;
+  final bool showBothDatesIfPresent;
   final VoidCallback? onTapValues;
 
-  Color _priorityColor(ColorScheme scheme, int p) {
-    return switch (p) {
-      1 => AppColors.rambutan80,
-      2 => AppColors.cempedak80,
-      3 => AppColors.blueberry80,
-      4 => scheme.onSurfaceVariant,
-      _ => scheme.onSurfaceVariant,
-    };
-  }
+  Color _priorityColor(ColorScheme scheme, int p) =>
+      _priorityColorFor(scheme, p);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
 
+    final effectiveExpanded = switch (metaDensity) {
+      AgendaMetaDensityV1.full => true,
+      AgendaMetaDensityV1.minimal => false,
+
+      // Task tiles don't currently implement an expansion affordance.
+      // Treat "expandable" density as collapsed.
+      AgendaMetaDensityV1.minimalExpandable => false,
+    };
+
     final leftChildren = <Widget>[];
+
+    final valueLineChildren = <Widget>[];
+
+    final otherMetaChildren = <Widget>[];
 
     final pValue = primaryValue;
     if (pValue != null) {
-      leftChildren.add(
-        ValueChip(
+      final valueChip = Tooltip(
+        message: pValue.name,
+        child: ValueChip(
           value: pValue,
           variant: ValueChipVariant.solid,
-          iconOnly: false,
-          onTap: null,
+          iconOnly: primaryValueIconOnly,
+          onTap: onTapValues,
         ),
       );
+
+      if (layout == _MetaLineLayout.splitPinnedDates) {
+        valueLineChildren.add(valueChip);
+      } else {
+        leftChildren.add(valueChip);
+      }
     }
 
     if (secondaryValues.isNotEmpty) {
       final allNames = secondaryValues.map((v) => v.name).join(', ');
-      if (secondaryValues.length <= 2) {
-        leftChildren.addAll(
-          secondaryValues.map(
-            (v) => Tooltip(
-              message: v.name,
-              child: ValueChip(
-                value: v,
-                variant: ValueChipVariant.outlined,
-                iconOnly: true,
-                onTap: null,
-              ),
-            ),
+      if (collapseSecondaryValuesToCount || !effectiveExpanded) {
+        final countPill = Tooltip(
+          message: allNames,
+          child: _CountPill(
+            label: '+${secondaryValues.length}',
+            onTap: onTapValues,
           ),
         );
+
+        if (layout == _MetaLineLayout.splitPinnedDates) {
+          valueLineChildren.add(countPill);
+        } else {
+          leftChildren.add(countPill);
+        }
       } else {
-        leftChildren.add(
-          Tooltip(
+        final remaining =
+            secondaryValues.length -
+            secondaryValues.take(maxSecondaryValues).length;
+
+        final dots = ValueDotsCluster(
+          values: secondaryValues,
+          maxDots: maxSecondaryValues,
+          onTap: onTapValues,
+        );
+
+        if (layout == _MetaLineLayout.splitPinnedDates) {
+          valueLineChildren.add(dots);
+        } else {
+          leftChildren.add(dots);
+        }
+
+        if (remaining > 0) {
+          final remainingPill = Tooltip(
             message: allNames,
             child: _CountPill(
-              label: '+${secondaryValues.length}',
-              onTap: null,
+              label: '+$remaining',
+              onTap: onTapValues,
             ),
-          ),
-        );
+          );
+
+          if (layout == _MetaLineLayout.splitPinnedDates) {
+            valueLineChildren.add(remainingPill);
+          } else {
+            leftChildren.add(remainingPill);
+          }
+        }
       }
     }
 
-    if (hasRepeat) {
-      leftChildren.add(
-        Icon(
-          Icons.sync_rounded,
-          size: 14,
-          color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
-        ),
-      );
-    }
-
     final p = priority;
-    if (p != null) {
-      leftChildren.add(
-        Tooltip(
-          message: 'Priority P$p',
-          child: _CountPill(
-            label: 'P$p',
-            foregroundColor: _priorityColor(scheme, p),
-          ),
+    if (p != null &&
+        priorityEncoding == AgendaPriorityEncodingV1.explicitPill) {
+      final priorityPill = Tooltip(
+        message: 'Priority P$p',
+        child: _CountPill(
+          label: 'P$p',
+          foregroundColor: _priorityColor(scheme, p),
         ),
       );
+
+      if (layout == _MetaLineLayout.splitPinnedDates) {
+        otherMetaChildren.add(priorityPill);
+      } else {
+        leftChildren.add(priorityPill);
+      }
     }
 
     final pName = projectName?.trim();
     if (pName != null && pName.isNotEmpty) {
-      leftChildren.add(
-        ProjectPill(
-          projectName: pName,
-          onTap: projectId == null
-              ? null
-              : () {
-                  Routing.toEntity(context, EntityType.project, projectId!);
-                },
-        ),
+      final projectPill = ProjectPill(
+        projectName: pName,
+        onTap: projectId == null
+            ? null
+            : () {
+                Routing.toEntity(context, EntityType.project, projectId!);
+              },
       );
+
+      if (layout == _MetaLineLayout.splitPinnedDates) {
+        otherMetaChildren.add(projectPill);
+      } else {
+        leftChildren.add(projectPill);
+      }
     } else if (projectId == null || projectId!.isEmpty) {
-      leftChildren.add(const ProjectPill(projectName: 'Inbox'));
+      const inboxPill = ProjectPill(projectName: 'Inbox');
+      if (layout == _MetaLineLayout.splitPinnedDates) {
+        otherMetaChildren.add(inboxPill);
+      } else {
+        leftChildren.add(inboxPill);
+      }
     }
 
     final hasAnyDates =
         showDates && (startDate != null || deadlineDate != null);
-    if (leftChildren.isEmpty && !hasAnyDates) {
+
+    final hasAnyMeta = switch (layout) {
+      _MetaLineLayout.singleWrap => leftChildren.isNotEmpty,
+      _MetaLineLayout.splitPinnedDates =>
+        valueLineChildren.isNotEmpty || otherMetaChildren.isNotEmpty,
+    };
+
+    if (!hasAnyMeta && !hasAnyDates) {
       return const SizedBox.shrink();
     }
 
@@ -743,12 +925,13 @@ class _MetaLine extends StatelessWidget {
         builder: (context, constraints) {
           final dateTokens = <Widget>[];
           if (showDates) {
-            final showBothDates =
-                startDate != null &&
-                deadlineDate != null &&
-                constraints.maxWidth >= 420;
+            final shouldShowBoth =
+                showBothDatesIfPresent ||
+                (startDate != null &&
+                    deadlineDate != null &&
+                    constraints.maxWidth >= 420);
 
-            if (showBothDates && startDate != null) {
+            if (startDate != null && (deadlineDate == null || shouldShowBoth)) {
               dateTokens.add(
                 DateChip.startDate(
                   context: context,
@@ -766,16 +949,75 @@ class _MetaLine extends StatelessWidget {
                   isDueSoon: isDueSoon,
                 ),
               );
-            } else if (!showBothDates && startDate != null) {
-              // If there's no deadline, we can still show start date.
-              dateTokens.add(
-                DateChip.startDate(
-                  context: context,
-                  label: formatDate(context, startDate!),
-                ),
-              );
             }
           }
+
+          final repeatIcon = hasRepeat && effectiveExpanded
+              ? Icon(
+                  Icons.sync_rounded,
+                  size: 14,
+                  color: scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                )
+              : null;
+
+          if (layout == _MetaLineLayout.splitPinnedDates) {
+            final line1Left = valueLineChildren;
+
+            final line2 = <Widget>[
+              if (hasRepeat && repeatIcon != null && !showRepeatOnRight)
+                repeatIcon,
+              ...otherMetaChildren,
+              if (hasRepeat && repeatIcon != null && showRepeatOnRight)
+                repeatIcon,
+            ];
+
+            final showLine1 = line1Left.isNotEmpty || dateTokens.isNotEmpty;
+            final showLine2 = line2.isNotEmpty;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (showLine1)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: line1Left,
+                        ),
+                      ),
+                      if (dateTokens.isNotEmpty) ...[
+                        const SizedBox(width: 12),
+                        Wrap(
+                          alignment: WrapAlignment.end,
+                          spacing: 12,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: dateTokens,
+                        ),
+                      ],
+                    ],
+                  ),
+                if (showLine1 && showLine2) const SizedBox(height: 6),
+                if (showLine2)
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: line2,
+                  ),
+              ],
+            );
+          }
+
+          final rightTokens = <Widget>[];
+          if (hasRepeat && showRepeatOnRight && repeatIcon != null) {
+            rightTokens.add(repeatIcon);
+          }
+          rightTokens.addAll(dateTokens);
 
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,13 +1030,13 @@ class _MetaLine extends StatelessWidget {
                   children: leftChildren,
                 ),
               ),
-              if (dateTokens.isNotEmpty) ...[
+              if (rightTokens.isNotEmpty) ...[
                 const SizedBox(width: 12),
                 Wrap(
                   spacing: 12,
                   runSpacing: 6,
                   crossAxisAlignment: WrapCrossAlignment.center,
-                  children: dateTokens,
+                  children: rightTokens,
                 ),
               ],
             ],
@@ -803,6 +1045,21 @@ class _MetaLine extends StatelessWidget {
       ),
     );
   }
+}
+
+enum _MetaLineLayout {
+  singleWrap,
+  splitPinnedDates,
+}
+
+Color _priorityColorFor(ColorScheme scheme, int p) {
+  return switch (p) {
+    1 => AppColors.rambutan80,
+    2 => AppColors.cempedak80,
+    3 => AppColors.blueberry80,
+    4 => scheme.onSurfaceVariant,
+    _ => scheme.onSurfaceVariant,
+  };
 }
 
 class _CountPill extends StatelessWidget {
