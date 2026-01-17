@@ -15,7 +15,7 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
 import 'package:taskly_bloc/presentation/screens/templates/widgets/section_filter_bar_v2.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
-import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 enum InterleavedListRenderModeV2 {

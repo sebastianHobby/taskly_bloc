@@ -9,7 +9,8 @@ import 'package:taskly_bloc/presentation/features/attention/view/attention_rules
 import 'package:taskly_bloc/presentation/features/focus_setup/bloc/focus_setup_bloc.dart';
 import 'package:taskly_bloc/presentation/screens/widgets/focus_mode_card.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 class FocusSetupWizardPage extends StatelessWidget {
   const FocusSetupWizardPage({super.key});
@@ -175,7 +176,10 @@ class _StepBody extends StatelessWidget {
       FocusSetupWizardStep.finalize => _FinalizeStep(state: state),
     };
 
-    return ContentConstraint(child: body);
+    return ContentConstraint(
+      applyConstraints: WindowSizeClass.of(context).isExpanded,
+      child: body,
+    );
   }
 }
 

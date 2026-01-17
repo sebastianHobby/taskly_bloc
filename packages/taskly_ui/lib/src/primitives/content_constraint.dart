@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 
 /// A widget that constrains its child to a maximum width and centers it.
 ///
@@ -18,15 +17,20 @@ import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 class ContentConstraint extends StatelessWidget {
   const ContentConstraint({
     required this.child,
+    required this.applyConstraints,
     this.maxWidth = 800,
     this.padding = EdgeInsets.zero,
     this.alignment = Alignment.topCenter,
-    this.applyOnAllSizes = false,
     super.key,
   });
 
   /// The child widget to constrain.
   final Widget child;
+
+  /// Whether constraints should be applied.
+  ///
+  /// The app should decide this using its own responsive logic.
+  final bool applyConstraints;
 
   /// Maximum width for the content. Defaults to 800dp.
   final double maxWidth;
@@ -37,14 +41,9 @@ class ContentConstraint extends StatelessWidget {
   /// Alignment when content is narrower than available space.
   final AlignmentGeometry alignment;
 
-  /// If true, applies constraints on all screen sizes.
-  /// If false (default), only applies on expanded screens (840dp+).
-  final bool applyOnAllSizes;
-
   @override
   Widget build(BuildContext context) {
-    // On compact/medium screens, just apply padding without constraints
-    if (!applyOnAllSizes && !context.isExpandedScreen) {
+    if (!applyConstraints) {
       return Padding(padding: padding, child: child);
     }
 
@@ -128,6 +127,7 @@ class SliverContentConstraint extends StatelessWidget {
 class ResponsiveBody extends StatelessWidget {
   const ResponsiveBody({
     required this.child,
+    required this.isExpandedLayout,
     this.maxWidth = 800,
     this.horizontalPadding = 0,
     super.key,
@@ -135,6 +135,11 @@ class ResponsiveBody extends StatelessWidget {
 
   /// The content to display.
   final Widget child;
+
+  /// Whether the layout should be treated as expanded (desktop / wide).
+  ///
+  /// The app should decide this using its own responsive logic.
+  final bool isExpandedLayout;
 
   /// Maximum width for content on wide screens.
   final double maxWidth;
@@ -144,9 +149,7 @@ class ResponsiveBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isExpanded = context.isExpandedScreen;
-
-    if (!isExpanded) {
+    if (!isExpandedLayout) {
       // Mobile/Tablet: Just apply horizontal padding if specified
       if (horizontalPadding > 0) {
         return Padding(

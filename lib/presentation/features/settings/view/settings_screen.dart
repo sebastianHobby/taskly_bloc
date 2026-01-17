@@ -10,11 +10,12 @@ import 'package:taskly_domain/settings.dart';
 import 'package:taskly_bloc/presentation/features/auth/bloc/auth_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/global_settings_bloc.dart';
 import 'package:taskly_bloc/presentation/features/settings/bloc/settings_maintenance_cubit.dart';
-import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
 import 'package:taskly_bloc/presentation/widgets/sign_out_confirmation.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 import 'package:taskly_bloc/presentation/features/settings/widgets/accent_palette_gallery.dart';
 import 'package:taskly_bloc/presentation/theme/app_seed_palettes.dart';
+import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// Settings screen for global app configuration.
 ///
@@ -47,6 +48,7 @@ class SettingsScreen extends StatelessWidget {
             final settings = state.settings;
 
             return ResponsiveBody(
+              isExpandedLayout: context.isExpandedScreen,
               child: ListView(
                 children: [
                   _buildSection(

@@ -1,7 +1,6 @@
 export 'date_chip.dart';
 export 'delete_confirmation.dart';
 export 'form_date_chip.dart';
-export 'icon_picker/icon_picker_dialog.dart';
 export 'value_chip.dart';
 export 'value_dots_cluster.dart';
 export 'values_footer.dart';
@@ -10,5 +9,3 @@ export 'pinned_indicator.dart';
 export 'priority_flag.dart';
 export 'project_pill.dart';
 export 'section_widget.dart';
-export 'settings_section_card.dart';
-export 'swipe_to_delete.dart';

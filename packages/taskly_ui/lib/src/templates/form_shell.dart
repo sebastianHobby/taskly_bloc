@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/presentation/widgets/modal_chrome_scope.dart';
+
+import 'package:taskly_ui/src/primitives/modal_chrome_scope.dart';
 
 /// A composable shell for modal forms with consistent styling.
 ///
@@ -32,14 +32,14 @@ class FormShell extends StatelessWidget {
     required this.child,
     required this.onSubmit,
     required this.submitTooltip,
+    required this.deleteTooltip,
+    required this.closeTooltip,
     this.onClose,
     this.onDelete,
     this.leadingActions = const <Widget>[],
     this.trailingActions = const <Widget>[],
     this.scrollController,
     this.submitIcon = Icons.check,
-    this.deleteTooltip = 'Delete',
-    this.closeTooltip = 'Close',
     this.handleBarWidth = 40.0,
     this.borderRadius = 20.0,
     this.showHandleBar,
@@ -54,6 +54,16 @@ class FormShell extends StatelessWidget {
 
   /// Tooltip for the submit button.
   final String submitTooltip;
+
+  /// Tooltip for the delete button.
+  ///
+  /// Must be provided by the caller (no app l10n inside taskly_ui).
+  final String deleteTooltip;
+
+  /// Tooltip for the close button.
+  ///
+  /// Must be provided by the caller (no app l10n inside taskly_ui).
+  final String closeTooltip;
 
   /// Icon for the submit button.
   final IconData submitIcon;
@@ -77,12 +87,6 @@ class FormShell extends StatelessWidget {
   /// Optional scroll controller for the scrollable content area.
   final ScrollController? scrollController;
 
-  /// Tooltip for the delete button.
-  final String deleteTooltip;
-
-  /// Tooltip for the close button.
-  final String closeTooltip;
-
   /// Width of the handle bar.
   final double handleBarWidth;
 
@@ -102,11 +106,10 @@ class FormShell extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final modalChrome = ModalChromeScope.maybeOf(context);
-    final windowSizeClass = WindowSizeClass.of(context);
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
     final resolvedShowHandleBar =
         showHandleBar ??
-        (windowSizeClass.isCompact &&
-            !(modalChrome?.modalHasDragHandle ?? false));
+        (isCompact && !(modalChrome?.modalHasDragHandle ?? false));
 
     final resolvedLeadingActions = <Widget>[
       if (onDelete != null)

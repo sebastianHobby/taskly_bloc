@@ -24,11 +24,13 @@ class SwipeToDelete extends StatelessWidget {
     required this.itemKey,
     required this.child,
     required this.onDismissed,
+    required this.deleteLabel,
     super.key,
     this.confirmDismiss,
     this.direction = SwipeDirection.endToStart,
     this.dismissThresholds = const {DismissDirection.endToStart: 0.4},
     this.enabled = true,
+    this.background,
   });
 
   /// A unique key for this dismissible item.
@@ -39,6 +41,11 @@ class SwipeToDelete extends StatelessWidget {
 
   /// Called when the item is dismissed.
   final VoidCallback onDismissed;
+
+  /// The label shown in the swipe background.
+  ///
+  /// Must be provided by the caller (no app l10n inside taskly_ui).
+  final String deleteLabel;
 
   /// Called to confirm whether the item should be dismissed.
   ///
@@ -53,6 +60,11 @@ class SwipeToDelete extends StatelessWidget {
 
   /// Whether swipe-to-delete is enabled.
   final bool enabled;
+
+  /// Optional custom background widget used for both swipe directions.
+  ///
+  /// If null, a default Material 3 delete background is used.
+  final Widget? background;
 
   DismissDirection get _dismissDirection => switch (direction) {
     SwipeDirection.startToEnd => DismissDirection.startToEnd,
@@ -83,16 +95,12 @@ class SwipeToDelete extends StatelessWidget {
         unawaited(HapticFeedback.heavyImpact());
         onDismissed();
       },
-      background: _buildBackground(
-        context,
-        colorScheme,
-        isStartToEnd: true,
-      ),
-      secondaryBackground: _buildBackground(
-        context,
-        colorScheme,
-        isStartToEnd: false,
-      ),
+      background:
+          background ??
+          _buildBackground(context, colorScheme, isStartToEnd: true),
+      secondaryBackground:
+          background ??
+          _buildBackground(context, colorScheme, isStartToEnd: false),
       child: child,
     );
   }
@@ -123,7 +131,7 @@ class SwipeToDelete extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            'Delete',
+            deleteLabel,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
               color: colorScheme.onErrorContainer,
               fontWeight: FontWeight.w600,

@@ -4,7 +4,7 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
-import 'package:taskly_bloc/presentation/widgets/sliver_separated_list.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 
 class TaskListRendererV2 extends StatelessWidget {

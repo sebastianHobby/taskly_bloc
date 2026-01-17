@@ -38,6 +38,8 @@ mobile platforms.
 * Architecture invariants are **strict**: review `doc/architecture/ARCHITECTURE_INVARIANTS.md` and obey them.
   * If a change would break an invariant, get **explicit user confirmation** and add a **documented architecture exception** (under `doc/architecture/`) before implementing.
 * Always review relevant architecture docs when making changes to ensure compliance with architecture rules/design patterns. Try to keep architecture clean and consistent wherever possible.
+* prefer powershell to delete or move files when needed.
+* Never use any git commands without explicit user confirmation.
 ### Testing (preferred workflow)
 
 

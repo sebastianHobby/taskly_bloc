@@ -92,17 +92,26 @@ Additional placement rule (strict):
 
 ## 4) Current State Snapshot (Jan 2026)
 
-- `taskly_ui` contains a small set of sections already:
-  - `EmptyStateWidget`, `ErrorStateWidget`, `LoadingStateWidget`, `FeedBody`
-  - exported via `packages/taskly_ui/lib/taskly_ui.dart`
+- `taskly_ui` now exports a broader shared UI surface via
+  `packages/taskly_ui/lib/taskly_ui.dart`, including:
+  - Sections: `EmptyStateWidget`, `ErrorStateWidget`, `LoadingStateWidget`,
+    `FeedBody`, `SettingsSectionCard`, `IconPickerDialog`
+  - Primitives: `ContentConstraint` + `SliverContentConstraint`,
+    `SliverSeparatedList`, `SwipeToDelete`, `ModalChromeScope`
+  - Templates: `FormShell`
 - The app has a large shared-widgets folder:
   - `lib/presentation/widgets/` (~56 files)
   - additional helpers under
     `lib/presentation/screens/widgets/` and templates widgets/renderers
 
 Known duplication:
-- The app currently has duplicate copies of the empty/error/loading widgets
-  that already exist in `taskly_ui`.
+- App-local duplicates of the empty/error/loading widgets have been removed;
+  app code uses the `taskly_ui` exports instead.
+
+Known integration note:
+- `IconPickerDialog` must remain l10n-agnostic: categories, titles, and labels
+  are supplied by the app (avoid defining default categories/constants inside
+  `taskly_ui`).
 
 
 ## 5) Migration Strategy Overview
@@ -177,6 +186,9 @@ Acceptance:
 - `flutter analyze` stays clean.
 - Guardrail `tool/no_local_package_src_deep_imports.dart` would pass.
 
+Status (Jan 2026): complete (analyzer clean; no app deep-imports of
+`package:taskly_ui/src/...`).
+
 
 ### Phase 1 — De-duplicate existing sections (highest ROI)
 
@@ -195,6 +207,8 @@ Acceptance:
 - No duplicate widget definitions remain in the app.
 - All usages compile and render the same.
 
+Status (Jan 2026): complete (duplicates removed; app uses `taskly_ui` exports).
+
 
 ### Phase 2 — Move “pure primitives” (minimal dependency risk)
 
@@ -210,6 +224,9 @@ Work:
 Acceptance:
 - No app imports remain for these widgets.
 - Public surface is only via `taskly_ui.dart`.
+
+Status (Jan 2026): complete (`SliverSeparatedList` is exported via
+`packages/taskly_ui/lib/taskly_ui.dart`).
 
 
 ### Phase 3 — Move primitives that need small API tweaks
@@ -227,6 +244,9 @@ Required API changes:
 Acceptance:
 - No hardcoded English strings remain in the shared widget.
 
+Status (Jan 2026): complete (`SwipeToDelete` is in `taskly_ui` and takes a
+`deleteLabel` provided by the app).
+
 
 ### Phase 4 — Move layout primitives by removing app responsive deps
 
@@ -241,6 +261,9 @@ Plan:
 
 Acceptance:
 - `taskly_ui` has no dependency on app responsive utilities.
+
+Status (Jan 2026): complete (`ContentConstraint` + `SliverContentConstraint`
+are exported from `taskly_ui`).
 
 
 ### Phase 5 — Move reusable sections (parameterize strings + callbacks)
@@ -322,15 +345,28 @@ Acceptance:
 - Use instead:
   - `packages/taskly_ui/lib/src/sections/*_state_widget.dart`
 
+Status: complete (duplicates removed; app uses `taskly_ui` exports).
+
 ### 8.2 Phase 2–4: primitives
-- `lib/presentation/widgets/sliver_separated_list.dart`
-- `lib/presentation/widgets/swipe_to_delete.dart`
-- `lib/presentation/widgets/content_constraint.dart`
+- Previously in app:
+  - `lib/presentation/widgets/sliver_separated_list.dart`
+  - `lib/presentation/widgets/swipe_to_delete.dart`
+  - `lib/presentation/widgets/content_constraint.dart`
+- Now in `taskly_ui` (exported via `packages/taskly_ui/lib/taskly_ui.dart`):
+  - `packages/taskly_ui/lib/src/primitives/sliver_separated_list.dart`
+  - `packages/taskly_ui/lib/src/primitives/swipe_to_delete.dart`
+  - `packages/taskly_ui/lib/src/primitives/content_constraint.dart`
+
+Status: complete.
 
 ### 8.3 Phase 5: sections
 - `lib/presentation/widgets/settings_section_card.dart`
 - `lib/presentation/widgets/icon_picker/icon_picker_dialog.dart`
 - `lib/presentation/widgets/form_shell.dart`
+
+Note: `SettingsSectionCard`, `IconPickerDialog`, and `FormShell` exist in
+`taskly_ui` already; verify/clean up any remaining app-local versions and
+imports as part of Phase 7.
 
 
 ## 9) Validation Checklist (per phase)
@@ -352,6 +388,9 @@ Notes:
   - Mitigation: keep `taskly_ui` `pubspec.yaml` minimal; run analyze frequently.
 - Risk: L10n regressions from parameterization.
   - Mitigation: provide required labels as parameters; add asserts/defaults.
+- Risk: Duplicated “defaults” cause ambiguous imports or l10n leakage.
+  - Mitigation: keep app-owned defaults (e.g., icon categories) in the app;
+    `taskly_ui` consumes them via parameters.
 - Risk: Theme divergence.
   - Mitigation: rely on Material 3 defaults first; add theme tokens only when
     necessary.
@@ -359,10 +398,9 @@ Notes:
 
 ## 11) Proposed Execution Order (recommended)
 
-1) Phase 1 de-duplication (fast, high confidence)
-2) Move `SliverSeparatedList`
-3) Move `SwipeToDelete` with string parameterization
-4) Refactor/move `ContentConstraint`
-5) Promote 1–2 sections (`SettingsSectionCard`, `IconPickerDialog`)
-6) Start entity VM extraction for `ValueChip`
+1) Phase 5: promote/standardize 1–2 reusable sections (`SettingsSectionCard`,
+  `IconPickerDialog`, `FormShell`) and remove any remaining app-local copies
+2) Phase 7: clean up exports + remove remaining app shared widgets now in
+  `taskly_ui`
+3) Phase 6: start entity VM extraction for `ValueChip`
 
