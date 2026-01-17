@@ -81,7 +81,7 @@ class TaskListRendererV2 extends StatelessWidget {
     final label = switch (tag) {
       AgendaTagV2.starts => 'Starts',
       AgendaTagV2.due => 'Due',
-      AgendaTagV2.inProgress => 'In progress',
+      AgendaTagV2.inProgress => 'Ongoing',
     };
 
     return _TagPill(label: label);

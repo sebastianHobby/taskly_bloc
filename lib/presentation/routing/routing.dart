@@ -10,19 +10,27 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 /// Single source of truth for navigation conventions and screen building.
 ///
 /// All URL path building, navigation, and screen construction is centralized here.
-/// Consumers should never construct paths manually or define routes elsewhere.
+/// Consumers should never construct paths manually.
 ///
 /// ## Route Patterns
 ///
-/// Only two route patterns exist:
-/// - **Screens**: `/:screenKey` → convention-based, handled by [buildScreen]
-/// - **Entities**: `/:entityType/:id` → parameterized, handled by [buildEntityDetail]
+/// The app uses convention-based routing with a small set of patterns:
+///
+/// - **Unified screens**: `/:segment` → handled by [buildScreen]
+///   - URL segments use hyphens (`my_day` → `/my-day`).
+///   - The canonical Anytime URL segment is `anytime`, which maps to the
+///     legacy system screen key `someday`.
+/// - **Entity detail (read/composite)**: `/<entityType>/:id`
+///   - Currently supported for `project` and `value`.
+/// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
+///   - Tasks are editor-only: `/task/:id` redirects to `/task/:id/edit`.
+/// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// Screen paths use convention: `screenKey` → `/${screenKey}` with
 /// underscores converted to hyphens (e.g., `my_day` → `/my-day`).
 ///
 /// Entity paths use convention: `/${entityType}/${id}`
-/// (e.g., `/task/abc-123`, `/project/xyz-456`).
+/// (e.g., `/project/xyz-456`, `/value/xyz-456`).
 ///
 /// ## Initialization
 ///
@@ -46,7 +54,7 @@ abstract final class Routing {
     return segment.replaceAll('-', '_');
   }
 
-  /// Entity types that have detail pages.
+  /// Entity route prefixes supported by the router.
   static const entityTypes = {'task', 'project', 'value'};
 
   /// Check if a path segment is an entity type (not a screen).

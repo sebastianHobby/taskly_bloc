@@ -12,9 +12,15 @@ import 'package:taskly_bloc/presentation/features/values/view/value_editor_route
 
 /// Router for authenticated app shell.
 ///
-/// Uses convention-based routing with only two patterns:
-/// - **Screens**: `/:segment` → handled by [Routing.buildScreen]
-/// - **Entities**: `/:entityType/:id` → handled by [Routing.buildEntityDetail]
+/// Uses convention-based routing with a small set of patterns:
+/// - **Unified screens**: `/:segment` → handled by [Routing.buildScreen]
+///   - Screen segments use hyphens (`my_day` → `/my-day`).
+///   - The canonical Anytime URL segment is `anytime` (mapped to screenKey
+///     `someday` by [Routing.parseScreenKey]).
+/// - **Entity detail (read/composite)**: `/<entityType>/:id` → handled by
+///   [Routing.buildEntityDetail]
+/// - **Entity editors (NAV-01)**: `/<entityType>/new` and `/<entityType>/:id/edit`
+/// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// All screen/entity builders are registered in [Routing] at bootstrap.
 /// Note: a small number of legacy aliases/redirects still exist for backwards
@@ -67,7 +73,7 @@ final router = GoRouter(
 
         // === ENTITY EDITOR ROUTES (NAV-01) ===
         // Create + edit are route-backed editor entry points.
-        // They open the modal editor and then return (pop or my-day fallback).
+        // They open the modal editor and then return (pop).
 
         // Journal entry editor (create + edit)
         GoRoute(
@@ -94,7 +100,7 @@ final router = GoRouter(
           ),
         ),
 
-        // Task (editor-only)
+        // Task (editor-only; no read-only task detail surface)
         GoRoute(
           path: '/task/new',
           builder: (_, state) => TaskEditorRoutePage(
@@ -124,7 +130,7 @@ final router = GoRouter(
           builder: (_, state) => const SizedBox.shrink(),
         ),
 
-        // Project (detail + edit)
+        // Project (editor routes)
         GoRoute(
           path: '/project/new',
           builder: (_, __) => const ProjectEditorRoutePage(projectId: null),
@@ -136,7 +142,7 @@ final router = GoRouter(
           ),
         ),
 
-        // Value (detail + edit)
+        // Value (editor routes)
         GoRoute(
           path: '/value/new',
           builder: (_, __) => const ValueEditorRoutePage(valueId: null),
@@ -148,8 +154,8 @@ final router = GoRouter(
           ),
         ),
 
-        // === ENTITY DETAIL ROUTES ===
-        // These are parameterized routes that need IDs
+        // === ENTITY DETAIL ROUTES (RD surfaces) ===
+        // Parameterized routes for read/composite entity pages.
         GoRoute(
           path: '/project/:id',
           builder: (_, state) => Routing.buildEntityDetail(
@@ -166,8 +172,8 @@ final router = GoRouter(
         ),
 
         // === UNIFIED SCREEN ROUTE (convention-based catch-all) ===
-        // ALL screens: my_day, settings, journal, etc.
-        // Builders are registered in Routing at bootstrap.
+        // All system screens: my_day, settings, journal, etc.
+        // Note: Routing.parseScreenKey handles aliases (e.g. 'anytime' -> 'someday').
         GoRoute(
           path: '/:segment',
           builder: (_, state) {

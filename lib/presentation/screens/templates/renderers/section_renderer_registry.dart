@@ -101,8 +101,7 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
             entityStyle: s.entityStyle,
             title: s.title,
             persistenceKey: persistenceKey,
-            enableSegmentedTabs:
-                persistenceKey != null && persistenceKey.startsWith('values:'),
+            enableSegmentedTabs: false,
           );
         }
 

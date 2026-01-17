@@ -21,7 +21,7 @@ extension AgendaDateTagX on AgendaDateTag {
   /// Display label for the tag.
   String get label => switch (this) {
     AgendaDateTag.starts => 'Starts',
-    AgendaDateTag.inProgress => 'In Progress',
+    AgendaDateTag.inProgress => 'Ongoing',
     AgendaDateTag.due => 'Due',
   };
 
@@ -69,7 +69,7 @@ class AgendaItem {
   /// The project entity (if entityType == 'project').
   final Project? project;
 
-  /// Whether to display in condensed "In Progress" format.
+  /// Whether to display in condensed "Ongoing" format.
   ///
   /// When true, shows only name and mini indicator without full metadata.
   /// Used for intermediate days between start and deadline.

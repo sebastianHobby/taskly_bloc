@@ -30,6 +30,19 @@ final class EntityStyleResolver {
       valueVariant: override.valueVariant ?? base.valueVariant,
       showAgendaTagPills:
           override.showAgendaTagPills ?? base.showAgendaTagPills,
+      agendaMetaDensity: override.agendaMetaDensity ?? base.agendaMetaDensity,
+      agendaPriorityEncoding:
+          override.agendaPriorityEncoding ?? base.agendaPriorityEncoding,
+      agendaActionsVisibility:
+          override.agendaActionsVisibility ?? base.agendaActionsVisibility,
+      agendaPrimaryValueIconOnly:
+          override.agendaPrimaryValueIconOnly ??
+          base.agendaPrimaryValueIconOnly,
+      agendaMaxSecondaryValues:
+          override.agendaMaxSecondaryValues ?? base.agendaMaxSecondaryValues,
+      agendaShowDeadlineChipOnOngoing:
+          override.agendaShowDeadlineChipOnOngoing ??
+          base.agendaShowDeadlineChipOnOngoing,
     );
   }
 
@@ -46,6 +59,14 @@ final class EntityStyleResolver {
         taskVariant: TaskTileVariant.agenda,
         projectVariant: ProjectTileVariant.agenda,
         showAgendaTagPills: true,
+
+        // Scheduled calm agenda defaults (mockup 2 alignment).
+        agendaMetaDensity: AgendaMetaDensityV1.minimalExpandable,
+        agendaPriorityEncoding: AgendaPriorityEncodingV1.subtleDot,
+        agendaActionsVisibility: AgendaActionsVisibilityV1.hoverOrFocus,
+        agendaPrimaryValueIconOnly: true,
+        agendaMaxSecondaryValues: 2,
+        agendaShowDeadlineChipOnOngoing: true,
       );
     }
 
@@ -59,6 +80,9 @@ final class EntityStyleResolver {
         taskVariant: TaskTileVariant.listTile,
         projectVariant: ProjectTileVariant.listTile,
         showAgendaTagPills: false,
+        agendaPriorityEncoding: AgendaPriorityEncodingV1.subtleDot,
+        agendaPrimaryValueIconOnly: false,
+        agendaMaxSecondaryValues: 2,
       );
     }
 

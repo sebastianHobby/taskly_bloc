@@ -4,18 +4,26 @@
 /// fails fast if the page stays stuck on the loading spinner.
 library;
 
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banner_session_cubit.dart';
+import 'package:taskly_bloc/presentation/features/attention/bloc/attention_bell_cubit.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 import '../../../../helpers/test_imports.dart';
 
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
+
+class TestAttentionBellCubit extends Cubit<AttentionBellState>
+    implements AttentionBellCubit {
+  TestAttentionBellCubit() : super(AttentionBellState.loading());
+}
 
 const _testSpec = ScreenSpec(
   id: 'test-spec',
@@ -38,6 +46,8 @@ void main() {
 
   group('UnifiedScreenPageFromSpec (widget) infinite loading guards', () {
     late MockScreenSpecDataInterpreter interpreter;
+    late TestAttentionBellCubit attentionBellCubit;
+    late AttentionBannerSessionCubit attentionBannerSessionCubit;
 
     setUp(() async {
       // The widget under test uses getIt internally.
@@ -51,9 +61,18 @@ void main() {
       );
 
       getIt.registerSingleton<ScreenSpecDataInterpreter>(interpreter);
+
+      attentionBellCubit = TestAttentionBellCubit();
+      attentionBannerSessionCubit = AttentionBannerSessionCubit();
+      getIt.registerSingleton<AttentionBellCubit>(attentionBellCubit);
+      getIt.registerSingleton<AttentionBannerSessionCubit>(
+        attentionBannerSessionCubit,
+      );
     });
 
     tearDown(() async {
+      await attentionBellCubit.close();
+      await attentionBannerSessionCubit.close();
       await getIt.reset();
     });
 
@@ -99,7 +118,7 @@ void main() {
         );
       },
       timeout: const Duration(seconds: 10),
-      tags: 'integration',
+      tags: 'widget',
     );
   });
 }

@@ -1,7 +1,7 @@
 # Phase 04 — Subtle Priority Encoding (UI-D004)
 
 Created at: 2026-01-16T02:30:06Z
-Last updated at: 2026-01-16T02:30:06Z
+Last updated at: 2026-01-16T06:24:19.2555476Z
 
 ## Goal
 Implement subtle priority encoding (or explicitly choose none) without reintroducing dashboard-like “status noise”.
@@ -30,3 +30,10 @@ USM tile actions alignment (guardrail)
 - Ensure any `flutter analyze` errors/warnings caused by this phase’s changes are fixed by the end of the phase.
 - Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
 - When the phase is complete, update this file immediately (same day) with summary + completion date (UTC).
+
+## Completion
+Completed at: 2026-01-16T06:24:19.2555476Z
+
+Summary:
+- Added `AgendaPriorityEncodingV1` and implemented subtle priority encodings for agenda cards.
+- Default encoding for Scheduled/agendaV2 is a subtle dot with tooltip; explicit `P#` remains available via `explicitPill`.

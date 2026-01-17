@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/domain/core/model/project.dart';
 import 'package:taskly_bloc/domain/core/model/value.dart';
 import 'package:taskly_bloc/domain/queries/task_query.dart';
@@ -11,15 +11,25 @@ import 'package:taskly_bloc/domain/screens/templates/params/attention_banner_sec
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
+import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
-import '../../helpers/pump_app.dart';
+
+import '../../helpers/test_imports.dart';
 
 Widget _wrapSliver(Widget sliver) {
-  return Scaffold(body: CustomScrollView(slivers: [sliver]));
+  return RepositoryProvider<SectionRendererRegistry>(
+    create: (_) => const DefaultSectionRendererRegistry(),
+    child: Scaffold(body: CustomScrollView(slivers: [sliver])),
+  );
 }
 
 void main() {
-  testWidgets('attentionBannerV2 uses section.title override', (tester) async {
+  setUpAll(setUpAllTestEnvironment);
+  setUp(setUpTestEnvironment);
+
+  testWidgetsSafe('attentionBannerV2 uses section.title override', (
+    tester,
+  ) async {
     const section = SectionVm.attentionBannerV2(
       index: 0,
       title: 'My Issues',
@@ -39,13 +49,15 @@ void main() {
       tester,
       home: _wrapSliver(SectionWidget(section: section)),
     );
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
 
     expect(find.text('My Issues'), findsOneWidget);
     expect(find.text('Open inbox'), findsOneWidget);
   });
 
-  testWidgets('templateId guards prevent mismatched rendering', (tester) async {
+  testWidgetsSafe('templateId guards prevent mismatched rendering', (
+    tester,
+  ) async {
     final section = SectionVm.taskListV2(
       index: 0,
       entityStyle: const EntityStyleV1(),
@@ -67,7 +79,7 @@ void main() {
       tester,
       home: _wrapSliver(SectionWidget(section: section)),
     );
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
 
     expect(
       find.text('Unsupported section data: ${SectionTemplateId.taskListV2}'),
@@ -75,7 +87,7 @@ void main() {
     );
   });
 
-  testWidgets('entity_header showMetadata=false hides value chips', (
+  testWidgetsSafe('entity_header showMetadata=false hides value chips', (
     tester,
   ) async {
     final value = Value(
@@ -113,7 +125,7 @@ void main() {
       tester,
       home: _wrapSliver(SectionWidget(section: section)),
     );
-    await tester.pumpAndSettle();
+    await tester.pumpForStream();
 
     expect(find.text('Project A'), findsOneWidget);
     expect(find.text('Health'), findsNothing);

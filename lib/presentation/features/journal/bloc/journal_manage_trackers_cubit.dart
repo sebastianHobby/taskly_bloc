@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:taskly_bloc/domain/interfaces/journal_repository_contract.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
+import 'package:taskly_bloc/domain/journal/model/tracker_definition_choice.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_preference.dart';
 
 sealed class JournalManageTrackersStatus {
@@ -40,6 +41,19 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
       super(JournalManageTrackersState.initial());
 
   final JournalRepositoryContract _repository;
+
+  Future<List<TrackerDefinitionChoice>> getChoices(String trackerId) async {
+    final trimmed = trackerId.trim();
+    if (trimmed.isEmpty) return const <TrackerDefinitionChoice>[];
+    try {
+      final all = await _repository
+          .watchTrackerDefinitionChoices(trackerId: trimmed)
+          .first;
+      return all;
+    } catch (_) {
+      return const <TrackerDefinitionChoice>[];
+    }
+  }
 
   Future<void> createTracker({
     required String name,
@@ -91,6 +105,133 @@ class JournalManageTrackersCubit extends Cubit<JournalManageTrackersState> {
           status: JournalManageTrackersError('Failed to create tracker: $e'),
         ),
       );
+    }
+  }
+
+  Future<void> upsertTrackerDefinition(
+    TrackerDefinition definition,
+  ) async {
+    if (definition.systemKey != null) return;
+
+    emit(state.copyWith(status: const JournalManageTrackersSaving()));
+    try {
+      await _repository.saveTrackerDefinition(definition);
+      emit(state.copyWith(status: const JournalManageTrackersIdle()));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: JournalManageTrackersError('Failed to save tracker: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<void> upsertTrackerFromEditor({
+    required TrackerDefinition definition,
+    required bool pinned,
+    required bool showInQuickAdd,
+    required List<TrackerDefinitionChoice> choices,
+    TrackerPreference? existingPreference,
+  }) async {
+    if (definition.systemKey != null) return;
+
+    emit(state.copyWith(status: const JournalManageTrackersSaving()));
+
+    try {
+      await _repository.saveTrackerDefinition(definition);
+
+      final trackerId = definition.id.isNotEmpty
+          ? definition.id
+          : await _resolveTrackerIdByName(definition.name);
+
+      if (trackerId == null || trackerId.trim().isEmpty) {
+        throw StateError('Failed to resolve tracker ID after save.');
+      }
+
+      final definitionWithId = definition.copyWith(id: trackerId);
+
+      final existingChoices = await getChoices(trackerId);
+      await _saveChoices(
+        trackerId: trackerId,
+        existing: existingChoices,
+        desired: choices,
+      );
+
+      await _savePreference(
+        definition: definitionWithId,
+        existing: existingPreference,
+        pinned: pinned,
+        showInQuickAdd: showInQuickAdd,
+      );
+
+      emit(state.copyWith(status: const JournalManageTrackersIdle()));
+    } catch (e) {
+      emit(
+        state.copyWith(
+          status: JournalManageTrackersError('Failed to save tracker: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<String?> _resolveTrackerIdByName(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return null;
+
+    final defs = await _repository.watchTrackerDefinitions().first;
+    final match = defs
+        .where((d) => d.systemKey == null)
+        .where((d) => d.deletedAt == null)
+        .where((d) => d.name.trim() == trimmed)
+        .toList(growable: false);
+
+    if (match.isEmpty) return null;
+    // Deterministic IDs make name collisions resolve to the same ID.
+    return match.first.id;
+  }
+
+  Future<void> _saveChoices({
+    required String trackerId,
+    required List<TrackerDefinitionChoice> existing,
+    required List<TrackerDefinitionChoice> desired,
+  }) async {
+    final nowUtc = DateTime.now().toUtc();
+    final existingByKey = {
+      for (final c in existing) c.choiceKey: c,
+    };
+
+    var sort = 100;
+    for (final c in desired) {
+      final choiceKey = c.choiceKey.trim();
+      if (choiceKey.isEmpty) continue;
+      final label = c.label.trim();
+      if (label.isEmpty) continue;
+
+      final prev = existingByKey[choiceKey];
+
+      await _repository.saveTrackerDefinitionChoice(
+        TrackerDefinitionChoice(
+          id: prev?.id ?? '',
+          trackerId: trackerId,
+          choiceKey: choiceKey,
+          label: label,
+          createdAt: prev?.createdAt ?? nowUtc,
+          updatedAt: nowUtc,
+          sortOrder: sort,
+          isActive: true,
+          userId: prev?.userId,
+        ),
+      );
+      sort += 10;
+    }
+
+    final desiredKeys = desired.map((c) => c.choiceKey).toSet();
+    for (final prev in existing) {
+      if (!desiredKeys.contains(prev.choiceKey) && prev.isActive) {
+        await _repository.saveTrackerDefinitionChoice(
+          prev.copyWith(isActive: false, updatedAt: nowUtc),
+        );
+      }
     }
   }
 

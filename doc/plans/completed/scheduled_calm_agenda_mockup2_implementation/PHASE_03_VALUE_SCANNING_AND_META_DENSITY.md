@@ -1,7 +1,7 @@
 # Phase 03 — Value Scanning + Meta Density (UI-D002, UI-D003)
 
 Created at: 2026-01-16T02:30:06Z
-Last updated at: 2026-01-16T02:30:06Z
+Last updated at: 2026-01-16T06:24:19.2555476Z
 
 ## Goal
 Implement the calm, mockup-2-aligned presentation while preserving Taskly’s “values-first” scanning.
@@ -31,6 +31,14 @@ USM tile actions alignment (important):
 ## Acceptance criteria
 - Scheduled rows feel calmer at default density (less wrapping, fewer tokens).
 - Primary value remains the easiest non-title signal to scan.
+
+## Completion
+Completed at: 2026-01-16T06:24:19.2555476Z
+
+Summary:
+- Implemented calm agenda defaults through `EntityStyleV1` knobs (no renderer forks).
+- Primary value uses icon-only filled chip; secondary values are capped and summarized as `+N` when needed.
+- Meta density uses `minimalExpandable` with an explicit “More details/Less details” affordance.
 
 ## AI instructions (required)
 - Run `flutter analyze` for the phase.

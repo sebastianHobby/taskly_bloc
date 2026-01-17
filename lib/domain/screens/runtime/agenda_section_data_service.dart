@@ -22,7 +22,7 @@ import 'package:taskly_bloc/domain/queries/project_query.dart';
 ///
 /// Supports the Scheduled agenda (day cards feed) with:
 /// - Date-grouped items with semantic labels
-/// - Date tags (Starts/In Progress/Due)
+/// - Date tags (Starts/Ongoing/Due)
 /// - Hybrid empty day handling (show near-term, skip distant empty days)
 /// - On-demand loading for the loaded horizon
 class AgendaSectionDataService {
@@ -598,7 +598,7 @@ class AgendaSectionDataService {
       dates.putIfAbsent(_normalizeDate(start), () => AgendaDateTag.starts);
     }
 
-    // Add "In Progress" entries for days between start and deadline
+    // Add "Ongoing" entries for days between start and deadline
     if (!hasSameStartAndDeadline && start != null && deadline != null) {
       var current = start.add(const Duration(days: 1));
       while (current.isBefore(deadline)) {
@@ -662,7 +662,7 @@ class AgendaSectionDataService {
       dates.putIfAbsent(_normalizeDate(start), () => AgendaDateTag.starts);
     }
 
-    // Add "In Progress" entries for days between start and deadline
+    // Add "Ongoing" entries for days between start and deadline
     if (!hasSameStartAndDeadline && start != null && deadline != null) {
       var current = start.add(const Duration(days: 1));
       while (current.isBefore(deadline)) {
@@ -695,10 +695,11 @@ class AgendaSectionDataService {
             (project?.repeatFromCompletion ?? false));
 
     if (task != null) {
+      final safeName = task.name.trim().isEmpty ? 'Untitled task' : task.name;
       return AgendaItem(
         entityType: EntityType.task,
         entityId: task.id,
-        name: task.name,
+        name: safeName,
         tag: tag,
         tileCapabilities: EntityTileCapabilitiesResolver.forTask(task),
         task: task,
@@ -707,10 +708,14 @@ class AgendaSectionDataService {
       );
     }
 
+    final safeName = project!.name.trim().isEmpty
+        ? 'Untitled project'
+        : project.name;
+
     return AgendaItem(
       entityType: EntityType.project,
-      entityId: project!.id,
-      name: project.name,
+      entityId: project.id,
+      name: safeName,
       tag: tag,
       tileCapabilities: EntityTileCapabilitiesResolver.forProject(project),
       project: project,

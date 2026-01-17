@@ -4,6 +4,7 @@ import 'package:taskly_bloc/core/di/dependency_injection.dart';
 import 'package:taskly_bloc/domain/journal/model/mood_rating.dart';
 import 'package:taskly_bloc/domain/journal/model/tracker_definition.dart';
 import 'package:taskly_bloc/presentation/features/journal/bloc/add_log_cubit.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 class AddLogSheet extends StatefulWidget {
   const AddLogSheet._({required this.preselectedTrackerIds});
@@ -98,23 +99,16 @@ class _AddLogSheetState extends State<AddLogSheet> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                DropdownButtonFormField<MoodRating>(
+                Text(
+                  'Mood',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                _MoodScalePicker(
                   value: state.mood,
-                  decoration: const InputDecoration(
-                    labelText: 'Mood',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: [
-                    for (final rating in MoodRating.values)
-                      DropdownMenuItem(
-                        value: rating,
-                        child: Text(rating.label),
-                      ),
-                  ],
-                  onChanged: isSaving
-                      ? null
-                      : (value) =>
-                            context.read<AddLogCubit>().moodChanged(value),
+                  enabled: !isSaving,
+                  onChanged: (value) =>
+                      context.read<AddLogCubit>().moodChanged(value),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -178,9 +172,60 @@ class _QuickAddChips extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (trackers.isEmpty) {
-      return Text(
-        'No quick-add trackers yet. Enable some in Trackers.',
-        style: Theme.of(context).textTheme.bodyMedium,
+      final theme = Theme.of(context);
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: theme.dividerColor),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.tune,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No quick-add trackers yet',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Enable a few to make logging faster.',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            OutlinedButton(
+              onPressed: isSaving
+                  ? null
+                  : () => Routing.pushScreenKey(
+                      context,
+                      'journal_manage_trackers',
+                    ),
+              child: const Text('Manage'),
+            ),
+          ],
+        ),
       );
     }
 
@@ -199,4 +244,111 @@ class _QuickAddChips extends StatelessWidget {
       ],
     );
   }
+}
+
+class _MoodScalePicker extends StatelessWidget {
+  const _MoodScalePicker({
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final MoodRating? value;
+  final bool enabled;
+  final ValueChanged<MoodRating?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final mood in MoodRating.values)
+          _MoodOptionButton(
+            mood: mood,
+            enabled: enabled,
+            selected: value == mood,
+            onTap: () => onChanged(mood),
+          ),
+      ],
+    );
+  }
+}
+
+class _MoodOptionButton extends StatelessWidget {
+  const _MoodOptionButton({
+    required this.mood,
+    required this.enabled,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final MoodRating mood;
+  final bool enabled;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final moodColor = _getMoodColor(mood, theme.colorScheme);
+    final bg = selected
+        ? moodColor.withValues(alpha: 0.18)
+        : theme.colorScheme.surface;
+    final border = selected
+        ? BorderSide(color: moodColor, width: 2)
+        : BorderSide(color: theme.dividerColor);
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      enabled: enabled,
+      label: 'Mood: ${mood.label}',
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: 64,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.fromBorderSide(border),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                mood.emoji,
+                style: TextStyle(
+                  fontSize: 26,
+                  color: enabled ? null : theme.disabledColor,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${mood.value}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: selected
+                      ? moodColor
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _getMoodColor(MoodRating mood, ColorScheme colorScheme) {
+  return switch (mood) {
+    MoodRating.veryLow => Colors.red.shade600,
+    MoodRating.low => Colors.orange.shade700,
+    MoodRating.neutral => colorScheme.primary,
+    MoodRating.good => Colors.teal.shade600,
+    MoodRating.excellent => Colors.green.shade700,
+  };
 }
