@@ -1,10 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
-import 'package:taskly_domain/domain/core/model/project.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
-import 'package:taskly_domain/domain/core/model/task.dart';
-import 'package:taskly_domain/domain/core/model/value.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
 
 /// Single source of truth for navigation conventions and screen building.
@@ -16,7 +14,8 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 ///
 /// The app uses convention-based routing with a small set of patterns:
 ///
-/// - **Unified screens**: `/:segment` ? handled by [buildScreen]
+/// - **System screens (explicit)**: concrete paths like `/my-day`, `/anytime`,
+///   `/scheduled`, etc. → handled by [buildScreen]
 ///   - URL segments use hyphens (`my_day` ? `/my-day`).
 ///   - The canonical Anytime URL segment is `anytime`, which maps to the
 ///     legacy system screen key `someday`.
@@ -53,6 +52,13 @@ abstract final class Routing {
     if (segment == 'anytime') return 'someday';
     return segment.replaceAll('-', '_');
   }
+
+  /// Returns true when [screenKey] maps to a known typed system screen.
+  ///
+  /// This is used by the authenticated app shell to decide whether a location
+  /// should count as an active navigation destination.
+  static bool isSystemScreenKey(String screenKey) =>
+      SystemScreenSpecs.isSystemScreen(screenKey);
 
   /// Entity route prefixes supported by the router.
   static const entityTypes = {'task', 'project', 'value'};
@@ -157,6 +163,10 @@ abstract final class Routing {
 
   static void toProjectEdit(BuildContext context, String projectId) =>
       GoRouter.of(context).push('/project/$projectId/edit');
+
+  /// Navigate to the global Inbox feed.
+  static void toInbox(BuildContext context) =>
+      GoRouter.of(context).go('/inbox');
 
   static void toValueNew(BuildContext context) =>
       GoRouter.of(context).push('/value/new');

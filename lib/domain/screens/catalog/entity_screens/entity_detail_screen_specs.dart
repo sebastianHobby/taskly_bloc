@@ -1,6 +1,5 @@
-import 'package:taskly_domain/domain/core/model/project.dart';
-import 'package:taskly_domain/domain/core/model/value.dart';
-import 'package:taskly_domain/domain/queries/task_query.dart';
+import 'package:taskly_domain/core.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_spec.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';

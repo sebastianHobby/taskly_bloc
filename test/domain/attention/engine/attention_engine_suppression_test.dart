@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
+import 'package:taskly_data/repositories.dart';
 
 import '../../../helpers/test_db.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 class _MockTaskRepository extends Mock implements TaskRepositoryContract {}
 
 class _MockProjectRepository extends Mock

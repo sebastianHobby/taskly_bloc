@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
-import 'package:taskly_domain/domain/core/model/entity_operation.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
+import 'package:taskly_bloc/presentation/routing/routing.dart';
 
 void showEditorErrorSnackBar(BuildContext context, Object error) {
   final message = friendlyErrorMessageForUi(error, context.l10n);
@@ -32,5 +34,21 @@ Future<void> handleEditorOperationSuccess(
 }
 
 Future<void> closeEditor(BuildContext context) {
-  return Navigator.of(context).maybePop();
+  return _closeEditorWithFallback(context);
+}
+
+Future<void> _closeEditorWithFallback(BuildContext context) async {
+  final navigator = Navigator.of(context);
+  final router = GoRouter.maybeOf(context);
+
+  final didPop = await navigator.maybePop();
+  if (didPop) return;
+  if (router == null) return;
+
+  if (router.canPop()) {
+    router.pop();
+    return;
+  }
+
+  router.go(Routing.screenPath('my_day'));
 }

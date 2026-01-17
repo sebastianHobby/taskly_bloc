@@ -3,12 +3,70 @@ import 'package:drift_sqlite_async/drift_sqlite_async.dart';
 import 'package:powersync/powersync.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_core/logging.dart';
-import 'package:taskly_data/data/id/id_generator.dart';
-import 'package:taskly_data/data/infrastructure/drift/drift_database.dart';
-import 'package:taskly_data/data/infrastructure/powersync/api_connector.dart';
-import 'package:taskly_data/data/infrastructure/supabase/supabase.dart';
-import 'package:taskly_data/data/repositories/auth_repository.dart';
 import 'package:taskly_domain/taskly_domain.dart';
+
+import 'package:taskly_data/src/allocation/repositories/allocation_snapshot_repository.dart';
+import 'package:taskly_data/src/attention/repositories/attention_repository_v2.dart'
+    as attention_repo_v2_impl;
+import 'package:taskly_data/src/features/analytics/repositories/analytics_repository_impl.dart';
+import 'package:taskly_data/src/features/analytics/services/analytics_service_impl.dart';
+import 'package:taskly_data/src/features/journal/repositories/journal_repository_impl.dart';
+import 'package:taskly_data/src/features/notifications/repositories/pending_notifications_repository_impl.dart';
+import 'package:taskly_data/src/features/notifications/services/logging_notification_presenter.dart';
+import 'package:taskly_data/src/id/id_generator.dart';
+import 'package:taskly_data/src/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/src/infrastructure/powersync/api_connector.dart';
+import 'package:taskly_data/src/infrastructure/supabase/supabase.dart';
+import 'package:taskly_data/src/repositories/auth_repository.dart';
+import 'package:taskly_data/src/repositories/project_repository.dart';
+import 'package:taskly_data/src/repositories/settings_repository.dart';
+import 'package:taskly_data/src/repositories/task_repository.dart';
+import 'package:taskly_data/src/repositories/value_repository.dart';
+
+/// Strongly-typed bindings for Taskly's day-1 data stack.
+///
+/// The app composition root can register these into its DI container without
+/// importing `taskly_data` implementation classes.
+final class TasklyDataBindings {
+  const TasklyDataBindings({
+    required this.driftDb,
+    required this.idGenerator,
+    required this.authRepository,
+    required this.localDataMaintenanceService,
+    required this.projectRepository,
+    required this.taskRepository,
+    required this.valueRepository,
+    required this.settingsRepository,
+    required this.allocationSnapshotRepository,
+    required this.attentionRepository,
+    required this.analyticsRepository,
+    required this.journalRepository,
+    required this.analyticsService,
+    required this.notificationPresenter,
+    required this.pendingNotificationsRepository,
+    required this.pendingNotificationsProcessor,
+  });
+
+  final AppDatabase driftDb;
+  final IdGenerator idGenerator;
+  final AuthRepositoryContract authRepository;
+  final LocalDataMaintenanceService localDataMaintenanceService;
+
+  final ProjectRepositoryContract projectRepository;
+  final TaskRepositoryContract taskRepository;
+  final ValueRepositoryContract valueRepository;
+  final SettingsRepositoryContract settingsRepository;
+  final AllocationSnapshotRepositoryContract allocationSnapshotRepository;
+  final AttentionRepositoryContract attentionRepository;
+
+  final AnalyticsRepositoryContract analyticsRepository;
+  final JournalRepositoryContract journalRepository;
+  final AnalyticsService analyticsService;
+
+  final NotificationPresenter notificationPresenter;
+  final PendingNotificationsRepositoryContract pendingNotificationsRepository;
+  final PendingNotificationsProcessor pendingNotificationsProcessor;
+}
 
 /// Strongly-typed handles for the day-1 data stack.
 ///
@@ -122,6 +180,87 @@ final class TasklyDataStack {
     } catch (_) {}
 
     await driftDb.close();
+  }
+
+  /// Creates the app-facing `taskly_domain` contract implementations for this
+  /// stack.
+  ///
+  /// The stack itself owns the wiring between infra + repositories. The app
+  /// provides occurrence services (still owned outside of `taskly_data` today).
+  TasklyDataBindings createBindings({
+    required OccurrenceStreamExpanderContract occurrenceExpander,
+    required OccurrenceWriteHelperContract occurrenceWriteHelper,
+  }) {
+    final projectRepository = ProjectRepository(
+      driftDb: driftDb,
+      occurrenceExpander: occurrenceExpander,
+      occurrenceWriteHelper: occurrenceWriteHelper,
+      idGenerator: idGenerator,
+    );
+
+    final taskRepository = TaskRepository(
+      driftDb: driftDb,
+      occurrenceExpander: occurrenceExpander,
+      occurrenceWriteHelper: occurrenceWriteHelper,
+      idGenerator: idGenerator,
+    );
+
+    final valueRepository = ValueRepository(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
+    );
+
+    final settingsRepository = SettingsRepository(driftDb: driftDb);
+
+    final allocationSnapshotRepository = AllocationSnapshotRepository(
+      db: driftDb,
+    );
+
+    final attentionRepository = attention_repo_v2_impl.AttentionRepositoryV2(
+      db: driftDb,
+    );
+
+    final analyticsRepository = AnalyticsRepositoryImpl(driftDb, idGenerator);
+
+    final journalRepository = JournalRepositoryImpl(driftDb, idGenerator);
+
+    final analyticsService = AnalyticsServiceImpl(
+      taskRepo: taskRepository,
+      projectRepo: projectRepository,
+      valueRepo: valueRepository,
+      journalRepo: journalRepository,
+      analyticsRepo: analyticsRepository,
+    );
+
+    final notificationPresenter = LoggingNotificationPresenter().call;
+
+    final pendingNotificationsRepository = PendingNotificationsRepositoryImpl(
+      driftDb,
+    );
+
+    final pendingNotificationsProcessor = PendingNotificationsProcessor(
+      repository: pendingNotificationsRepository,
+      presenter: notificationPresenter,
+    );
+
+    return TasklyDataBindings(
+      driftDb: driftDb,
+      idGenerator: idGenerator,
+      authRepository: authRepository,
+      localDataMaintenanceService: localDataMaintenanceService,
+      projectRepository: projectRepository,
+      taskRepository: taskRepository,
+      valueRepository: valueRepository,
+      settingsRepository: settingsRepository,
+      allocationSnapshotRepository: allocationSnapshotRepository,
+      attentionRepository: attentionRepository,
+      analyticsRepository: analyticsRepository,
+      journalRepository: journalRepository,
+      analyticsService: analyticsService,
+      notificationPresenter: notificationPresenter,
+      pendingNotificationsRepository: pendingNotificationsRepository,
+      pendingNotificationsProcessor: pendingNotificationsProcessor,
+    );
   }
 }
 

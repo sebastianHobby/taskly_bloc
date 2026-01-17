@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/domain.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 
 enum ValuesAlignmentMode {

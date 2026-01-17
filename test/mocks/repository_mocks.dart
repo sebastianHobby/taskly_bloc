@@ -1,5 +1,5 @@
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_data/id.dart';
 import 'package:taskly_bloc/domain/interfaces/screen_catalog_repository_contract.dart';
 
 /// Shared mock implementations for repository contracts.

@@ -2,13 +2,9 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
-import 'package:taskly_domain/domain/journal/model/mood_rating.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_event.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_preference.dart';
-import 'package:taskly_domain/domain/time/date_only.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/journal.dart';
+import 'package:taskly_domain/time.dart';
 
 sealed class JournalEntryEditorStatus {
   const JournalEntryEditorStatus();

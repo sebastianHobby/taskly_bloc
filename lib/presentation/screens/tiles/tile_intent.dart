@@ -1,5 +1,5 @@
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 
 sealed class TileIntent {
   const TileIntent();
@@ -41,11 +41,18 @@ final class TileIntentRequestDelete extends TileIntent {
     required this.entityType,
     required this.entityId,
     required this.entityName,
+    this.popOnSuccess = false,
   });
 
   final EntityType entityType;
   final String entityId;
   final String entityName;
+
+  /// When true, the dispatcher will attempt to pop the current route after the
+  /// delete mutation completes successfully.
+  ///
+  /// This is intended for entity detail pages.
+  final bool popOnSuccess;
 }
 
 final class TileIntentOpenEditor extends TileIntent {

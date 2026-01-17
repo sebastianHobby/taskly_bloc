@@ -16,7 +16,7 @@ import 'package:taskly_bloc/domain/screens/runtime/screen_spec_data_interpreter.
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/agenda_section_params_v2.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
 import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.dart';
@@ -24,6 +24,7 @@ import 'package:taskly_bloc/presentation/screens/view/unified_screen_spec_page.d
 import '../../../../helpers/test_imports.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 class MockScreenSpecDataInterpreter extends Mock
     implements ScreenSpecDataInterpreter {}
 

@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 import 'package:taskly_bloc/presentation/shared/bloc/detail_bloc_error.dart';
-import 'package:taskly_domain/domain/core/model/entity_operation.dart';
+import 'package:taskly_domain/core.dart';
 
 /// A mixin that provides common CRUD operation patterns for detail BLoCs.
 ///

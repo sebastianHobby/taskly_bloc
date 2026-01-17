@@ -9,4 +9,7 @@
 library;
 
 export 'data_stack.dart';
-export 'module.dart';
+export 'db.dart';
+export 'id.dart';
+export 'repository_exceptions.dart';
+export 'sync.dart';

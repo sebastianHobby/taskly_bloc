@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/allocation/model/focus_mode.dart';
+import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/widgets/taskly/widgets.dart';
 

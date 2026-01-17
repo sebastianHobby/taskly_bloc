@@ -17,7 +17,7 @@ import 'package:taskly_bloc/domain/screens/language/models/data_config.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_header_section_params.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/list_section_params_v2.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/section_renderer_registry.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
@@ -28,6 +28,7 @@ import '../fixtures/test_data.dart';
 import '../helpers/test_helpers.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   setUpAll(initializeLoggingForTest);
   group('SectionWidget task checkbox completion', () {

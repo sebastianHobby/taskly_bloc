@@ -4,17 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
-import 'package:taskly_domain/domain/domain.dart';
+import 'package:taskly_domain/analytics.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/domain/screens/templates/params/entity_style_v1.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
-import 'package:taskly_domain/domain/services/values/effective_values.dart';
+import 'package:taskly_domain/services.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 import 'package:taskly_bloc/presentation/shared/formatters/date_label_formatter.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/tile_intent_dispatcher.dart';
+import 'package:taskly_bloc/presentation/screens/tiles/tile_overflow_action_catalog.dart';
 import 'package:taskly_bloc/presentation/theme/app_colors.dart';
 import 'package:taskly_bloc/presentation/widgets/widgets.dart';
+import 'package:taskly_core/logging.dart';
 
 enum TaskViewVariant {
   /// Default list-row style used across most list templates.
@@ -1108,14 +1110,6 @@ class _CountPill extends StatelessWidget {
   }
 }
 
-enum _TaskOverflowAction {
-  togglePinnedToMyDay,
-  edit,
-  moveToProject,
-  alignValues,
-  delete,
-}
-
 class _TaskTodayStatusMenuButton extends StatelessWidget {
   const _TaskTodayStatusMenuButton({
     required this.taskId,
@@ -1165,21 +1159,19 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
             ),
           );
 
-    final availableActions = <_TaskOverflowAction>[
-      if (tileCapabilities.canTogglePinned)
-        _TaskOverflowAction.togglePinnedToMyDay,
-      if (tileCapabilities.canOpenEditor) _TaskOverflowAction.edit,
-      if (tileCapabilities.canOpenMoveToProject)
-        _TaskOverflowAction.moveToProject,
-      if (tileCapabilities.canAlignValues) _TaskOverflowAction.alignValues,
-      if (tileCapabilities.canDelete) _TaskOverflowAction.delete,
-    ];
+    final actions = TileOverflowActionCatalog.forTask(
+      taskId: taskId,
+      taskName: taskName,
+      isPinnedToMyDay: isPinnedToMyDay,
+      tileCapabilities: tileCapabilities,
+    );
 
-    if (availableActions.isEmpty) {
+    final hasAnyEnabledAction = actions.any((a) => a.enabled);
+    if (!hasAnyEnabledAction) {
       return statusWidget ?? const SizedBox.shrink();
     }
 
-    return PopupMenuButton<_TaskOverflowAction>(
+    return PopupMenuButton<TileOverflowActionId>(
       tooltip: 'More',
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -1198,113 +1190,39 @@ class _TaskTodayStatusMenuButton extends StatelessWidget {
           ],
         ),
       ),
-      onSelected: (action) async {
+      onSelected: (actionId) async {
         final dispatcher = context.read<TileIntentDispatcher>();
-        switch (action) {
-          case _TaskOverflowAction.togglePinnedToMyDay:
-            return dispatcher.dispatch(
-              context,
-              TileIntentSetPinned(
-                entityType: EntityType.task,
-                entityId: taskId,
-                isPinned: !isPinnedToMyDay,
-              ),
-            );
-          case _TaskOverflowAction.edit:
-            return dispatcher.dispatch(
-              context,
-              TileIntentOpenEditor(
-                entityType: EntityType.task,
-                entityId: taskId,
-              ),
-            );
-          case _TaskOverflowAction.moveToProject:
-            return dispatcher.dispatch(
-              context,
-              TileIntentOpenMoveToProject(
-                taskId: taskId,
-                taskName: taskName,
-                allowOpenEditor: tileCapabilities.canOpenEditor,
-                allowQuickMove: tileCapabilities.canQuickMoveToProject,
-              ),
-            );
-          case _TaskOverflowAction.alignValues:
-            return dispatcher.dispatch(
-              context,
-              TileIntentOpenEditor(
-                entityType: EntityType.task,
-                entityId: taskId,
-                openToValues: true,
-              ),
-            );
-          case _TaskOverflowAction.delete:
-            return dispatcher.dispatch(
-              context,
-              TileIntentRequestDelete(
-                entityType: EntityType.task,
-                entityId: taskId,
-                entityName: taskName,
-              ),
-            );
-        }
+        final action = actions.firstWhere((a) => a.id == actionId);
+
+        AppLog.routineThrottledStructured(
+          'tile_overflow.task.${actionId.name}.$taskId',
+          const Duration(seconds: 2),
+          'tile_overflow',
+          'selected',
+          fields: {
+            'entityType': 'task',
+            'entityId': taskId,
+            'action': actionId.name,
+          },
+        );
+
+        return dispatcher.dispatch(context, action.intent);
       },
       itemBuilder: (context) {
-        final pinLabel = isPinnedToMyDay
-            ? 'Unpin from My Day'
-            : 'Pin to My Day';
+        final items = <PopupMenuEntry<TileOverflowActionId>>[];
+        TileOverflowActionGroup? lastGroup;
 
-        final items = <PopupMenuEntry<_TaskOverflowAction>>[];
+        for (final action in actions) {
+          if (lastGroup != null && action.group != lastGroup) {
+            if (items.isNotEmpty) items.add(const PopupMenuDivider());
+          }
+          lastGroup = action.group;
 
-        if (tileCapabilities.canTogglePinned) {
           items.add(
-            PopupMenuItem(
-              value: _TaskOverflowAction.togglePinnedToMyDay,
-              child: Text(pinLabel),
-            ),
-          );
-        }
-
-        final hasEditGroup =
-            tileCapabilities.canOpenEditor ||
-            tileCapabilities.canOpenMoveToProject ||
-            tileCapabilities.canAlignValues;
-        if (items.isNotEmpty && hasEditGroup) {
-          items.add(const PopupMenuDivider());
-        }
-
-        if (tileCapabilities.canOpenEditor) {
-          items.add(
-            const PopupMenuItem(
-              value: _TaskOverflowAction.edit,
-              child: Text('Edit'),
-            ),
-          );
-        }
-
-        if (tileCapabilities.canOpenMoveToProject) {
-          items.add(
-            const PopupMenuItem(
-              value: _TaskOverflowAction.moveToProject,
-              child: Text('Move to project…'),
-            ),
-          );
-        }
-
-        if (tileCapabilities.canAlignValues) {
-          items.add(
-            const PopupMenuItem(
-              value: _TaskOverflowAction.alignValues,
-              child: Text('Align values…'),
-            ),
-          );
-        }
-
-        if (tileCapabilities.canDelete) {
-          if (items.isNotEmpty) items.add(const PopupMenuDivider());
-          items.add(
-            const PopupMenuItem(
-              value: _TaskOverflowAction.delete,
-              child: Text('Delete'),
+            PopupMenuItem<TileOverflowActionId>(
+              value: action.id,
+              enabled: action.enabled,
+              child: Text(action.label),
             ),
           );
         }

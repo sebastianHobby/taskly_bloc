@@ -1,9 +1,7 @@
 import 'package:rrule/rrule.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_domain/domain/interfaces/occurrence_stream_expander_contract.dart';
-import 'package:taskly_domain/domain/core/model/occurrence_data.dart';
-import 'package:taskly_domain/domain/core/model/project.dart';
-import 'package:taskly_domain/domain/core/model/task.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 
 /// Implementation of [OccurrenceStreamExpanderContract].
 ///

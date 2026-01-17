@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:taskly_domain/domain/core/editing/validation_error.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/shared/validation/validation_error_message.dart';
 
 /// Mixin for handling common form submission patterns in detail views.

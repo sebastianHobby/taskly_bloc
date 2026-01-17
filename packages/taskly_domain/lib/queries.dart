@@ -1,6 +1,6 @@
 /// Query, filtering, and predicate models.
 library;
 
-export 'domain/filtering/filtering.dart' hide RelativeComparison;
-export 'domain/queries/operators/operators.dart';
-export 'domain/queries/queries.dart';
+export 'src/filtering/filtering.dart' hide RelativeComparison;
+export 'src/queries/operators/operators.dart';
+export 'src/queries/queries.dart';

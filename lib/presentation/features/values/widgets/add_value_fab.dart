@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
+import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 
 /// A FAB that opens a value creation modal sheet.

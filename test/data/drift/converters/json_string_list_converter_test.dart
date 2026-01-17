@@ -1,5 +1,5 @@
-﻿import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/converters/json_converters.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:taskly_data/drift_converters.dart';
 
 void main() {
   group('JsonStringListConverter', () {

@@ -1,12 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/settings_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
+import 'package:taskly_data/repositories.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/attention_banner_section_interpreter_v2.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
-import 'package:taskly_bloc/data/attention/repositories/attention_repository_v2.dart';
 import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/domain/screens/runtime/entity_style_resolver.dart';
 import 'package:taskly_bloc/domain/screens/runtime/screen_module_interpreter_registry.dart';
@@ -36,6 +31,7 @@ import '../mocks/feature_mocks.dart';
 import '../mocks/repository_mocks.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 class _NoopAttentionEngine implements AttentionEngineContract {
   @override
   Stream<List<AttentionItem>> watch(AttentionQuery query) {

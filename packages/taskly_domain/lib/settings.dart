@@ -1,4 +1,4 @@
 /// Settings models.
 library;
 
-export 'domain/settings/settings.dart';
+export 'src/settings/settings.dart';

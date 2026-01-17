@@ -3,7 +3,7 @@ import 'dart:async';
 import '../../../../helpers/test_imports.dart';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_data/id.dart';
 import 'package:taskly_bloc/presentation/features/attention/bloc/attention_inbox_bloc.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';

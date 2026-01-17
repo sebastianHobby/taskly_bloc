@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../fixtures/test_data.dart';
 import '../../../helpers/fallback_values.dart';
 
-import 'package:taskly_domain/taskly_domain.dart';
+import 'package:taskly_domain/task_rules.dart' show RelativeComparison;
+import 'package:taskly_domain/taskly_domain.dart' hide RelativeComparison;
+
 void main() {
   setUpAll(registerAllFallbackValues);
 

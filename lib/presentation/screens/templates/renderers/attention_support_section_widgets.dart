@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/attention/model/attention_item.dart';
-import 'package:taskly_domain/domain/attention/model/attention_resolution.dart';
-import 'package:taskly_domain/domain/attention/model/attention_rule.dart';
+import 'package:taskly_domain/attention.dart';
 
 class SupportSectionCard extends StatelessWidget {
   const SupportSectionCard({

@@ -77,38 +77,6 @@ void main() {
         },
       );
 
-      test('taskValueId generates based on task and value', () {
-        final id = idGenerator.taskValueId(
-          taskId: 'task-1',
-          valueId: 'value-1',
-        );
-        expect(id, 'task-value-task-1-value-1');
-      });
-
-      test('projectValueId generates based on project and value', () {
-        final id = idGenerator.projectValueId(
-          projectId: 'project-1',
-          valueId: 'value-1',
-        );
-        expect(id, 'project-value-project-1-value-1');
-      });
-
-      test('taskValueId generates based on task and value', () {
-        final id = idGenerator.taskValueId(
-          taskId: 'task-1',
-          valueId: 'value-1',
-        );
-        expect(id, 'task-value-task-1-value-1');
-      });
-
-      test('projectValueId generates based on project and value', () {
-        final id = idGenerator.projectValueId(
-          projectId: 'project-1',
-          valueId: 'value-1',
-        );
-        expect(id, 'project-value-project-1-value-1');
-      });
-
       test('taskCompletionId with null date', () {
         final id = idGenerator.taskCompletionId(
           taskId: 'task-1',

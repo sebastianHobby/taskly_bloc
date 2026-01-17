@@ -2,8 +2,8 @@ import '../../helpers/test_imports.dart';
 import '../../helpers/test_db.dart';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:taskly_bloc/data/id/id_generator.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart';
+import 'package:taskly_data/id.dart';
+import 'package:taskly_data/db.dart';
 import 'package:taskly_bloc/data/services/occurrence_write_helper.dart';
 
 void main() {

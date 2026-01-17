@@ -1,7 +1,5 @@
 import '../../helpers/test_imports.dart';
-import 'package:taskly_bloc/data/repositories/project_repository.dart';
-import 'package:taskly_bloc/data/repositories/task_repository.dart';
-import 'package:taskly_bloc/data/repositories/value_repository.dart';
+import 'package:taskly_data/repositories.dart';
 
 import '../../helpers/base_repository_helpers.dart';
 import '../../mocks/fake_id_generator.dart';

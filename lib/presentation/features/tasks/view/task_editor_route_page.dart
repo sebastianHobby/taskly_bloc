@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
-import 'package:taskly_bloc/presentation/routing/routing.dart';
+import 'package:taskly_bloc/core/di/dependency_injection.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_bloc/presentation/features/editors/editor_host_page.dart';
+import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
+import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';
 
 /// Route-backed entry point for the task editor.
 ///
@@ -13,7 +17,7 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 ///
 /// When opened, this page launches the task editor modal and then returns to
 /// the previous route when the modal is dismissed.
-class TaskEditorRoutePage extends StatefulWidget {
+class TaskEditorRoutePage extends StatelessWidget {
   const TaskEditorRoutePage({
     required this.taskId,
     this.defaultProjectId,
@@ -26,49 +30,55 @@ class TaskEditorRoutePage extends StatefulWidget {
   final List<String>? defaultValueIds;
 
   @override
-  State<TaskEditorRoutePage> createState() => _TaskEditorRoutePageState();
+  Widget build(BuildContext context) {
+    return EditorHostPage(
+      openModal: (context) => EditorLauncher.fromGetIt().openTaskEditor(
+        context,
+        taskId: taskId,
+        defaultProjectId: defaultProjectId,
+        defaultValueIds: defaultValueIds,
+        showDragHandle: true,
+      ),
+      fullPageBuilder: (_) => _TaskEditorFullPage(
+        taskId: taskId,
+        defaultProjectId: defaultProjectId,
+        defaultValueIds: defaultValueIds,
+      ),
+    );
+  }
 }
 
-class _TaskEditorRoutePageState extends State<TaskEditorRoutePage> {
-  var _opened = false;
+class _TaskEditorFullPage extends StatelessWidget {
+  const _TaskEditorFullPage({
+    required this.taskId,
+    required this.defaultProjectId,
+    required this.defaultValueIds,
+  });
 
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _openEditor();
-    });
-  }
-
-  Future<void> _openEditor() async {
-    if (_opened) return;
-    _opened = true;
-
-    final launcher = EditorLauncher.fromGetIt();
-    await launcher.openTaskEditor(
-      context,
-      taskId: widget.taskId,
-      defaultProjectId: widget.defaultProjectId,
-      defaultValueIds: widget.defaultValueIds,
-      showDragHandle: true,
-    );
-
-    if (!mounted) return;
-
-    final router = GoRouter.of(context);
-    if (router.canPop()) {
-      router.pop();
-    } else {
-      router.go(Routing.screenPath('my_day'));
-    }
-  }
+  final String? taskId;
+  final String? defaultProjectId;
+  final List<String>? defaultValueIds;
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
+    final taskRepository = getIt<TaskRepositoryContract>();
+    final projectRepository = getIt<ProjectRepositoryContract>();
+    final valueRepository = getIt<ValueRepositoryContract>();
+
+    return Scaffold(
+      body: SafeArea(
+        child: BlocProvider(
+          create: (_) => TaskDetailBloc(
+            taskId: taskId,
+            taskRepository: taskRepository,
+            projectRepository: projectRepository,
+            valueRepository: valueRepository,
+          ),
+          child: TaskDetailSheet(
+            defaultProjectId: defaultProjectId,
+            defaultValueIds: defaultValueIds,
+          ),
+        ),
       ),
     );
   }

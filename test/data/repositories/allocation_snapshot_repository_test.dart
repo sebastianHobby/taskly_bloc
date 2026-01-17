@@ -1,10 +1,11 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:taskly_bloc/data/allocation/repositories/allocation_snapshot_repository.dart';
+import 'package:taskly_data/repositories.dart';
 
 import '../../helpers/test_db.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   group('AllocationSnapshotRepository', () {
     test('persists first snapshot with version 1', () async {

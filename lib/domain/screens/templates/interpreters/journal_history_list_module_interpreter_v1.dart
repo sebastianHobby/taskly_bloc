@@ -1,5 +1,5 @@
-import 'package:taskly_domain/domain/interfaces/journal_repository_contract.dart';
-import 'package:taskly_domain/domain/queries/journal_query.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/queries.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 
 final class JournalHistoryListModuleInterpreterV1 {

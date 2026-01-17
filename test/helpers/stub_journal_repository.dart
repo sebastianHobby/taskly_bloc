@@ -1,7 +1,7 @@
+import 'package:taskly_domain/taskly_domain.dart';
 
 /// Simple no-op implementation for tests that need a [JournalRepositoryContract]
 /// instance but don't exercise journal behavior.
-import 'package:taskly_domain/taskly_domain.dart';
 class StubJournalRepository implements JournalRepositoryContract {
   const StubJournalRepository();
 

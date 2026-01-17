@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:taskly_bloc/core/di/dependency_injection.dart';
-import 'package:taskly_domain/domain/interfaces/project_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/task_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_domain/domain/core/editing/value/value_draft.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/core.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_create_edit_view.dart';
 import 'package:taskly_bloc/presentation/features/tasks/bloc/task_detail_bloc.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_detail_view.dart';

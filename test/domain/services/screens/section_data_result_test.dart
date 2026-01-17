@@ -2,11 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:taskly_bloc/domain/screens/language/models/agenda_data.dart';
 import 'package:taskly_bloc/domain/screens/language/models/screen_item.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
-import 'package:taskly_bloc/domain/screens/templates/params/entity_tile_capabilities.dart';
+import 'package:taskly_bloc/presentation/entity_views/tile_capabilities/entity_tile_capabilities.dart';
 
 import '../../../fixtures/test_data.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
+
 void main() {
   group('SectionDataResult', () {
     group('DataSectionResult', () {

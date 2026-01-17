@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:taskly_domain/domain/journal/model/journal_entry.dart';
-import 'package:taskly_domain/domain/journal/model/mood_rating.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_definition.dart';
-import 'package:taskly_domain/domain/journal/model/tracker_event.dart';
+import 'package:taskly_domain/journal.dart';
 
 class JournalTodayComposer extends StatelessWidget {
   const JournalTodayComposer({

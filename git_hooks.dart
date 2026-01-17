@@ -32,25 +32,31 @@ Future<bool> prePush() async {
     return false;
   }
 
-  // 3. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
+  // 3. Block external deep imports into taskly_domain internals (lib/src)
+  if (!await _checkNoTasklyDomainSrcDeepImports()) {
+    _printFailure();
+    return false;
+  }
+
+  // 4. Enforce USM tile action guardrails (no DI/mutations/SnackBars in tiles)
   if (!await _runUsmTileActionGuardrail()) {
     _printFailure();
     return false;
   }
 
-  // 4. Run flutter analyze (no warnings allowed)
+  // 5. Run flutter analyze (no warnings allowed)
   if (!await _runAnalyze()) {
     _printFailure();
     return false;
   }
 
-  // 5. Validate IdGenerator table registration
+  // 6. Validate IdGenerator table registration
   if (!await _validateTableRegistration()) {
     _printFailure();
     return false;
   }
 
-  // 6. Run tests with coverage (staged gate; filtered lcov)
+  // 7. Run tests with coverage (staged gate; filtered lcov)
   if (!await _runTestsWithCoverage()) {
     _printFailure();
     return false;
@@ -58,6 +64,41 @@ Future<bool> prePush() async {
 
   print('\n✅ All pre-push checks passed!');
   return true;
+}
+
+Future<bool> _checkNoTasklyDomainSrcDeepImports() async {
+  print('🛡️  Checking for taskly_domain src deep imports...');
+
+  try {
+    final result = await Process.run(
+      'dart',
+      ['run', 'tool/no_taskly_domain_src_imports.dart'],
+      runInShell: true,
+    );
+
+    final stdout = (result.stdout as String).trim();
+    final stderr = (result.stderr as String).trim();
+
+    if (result.exitCode != 0) {
+      print('   ❌ taskly_domain deep-import check failed:\n');
+      if (stdout.isNotEmpty) {
+        final indented = stdout.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      if (stderr.isNotEmpty) {
+        final indented = stderr.split('\n').map((l) => '   $l').join('\n');
+        print(indented);
+      }
+      print('');
+      return false;
+    }
+
+    print('   ✓ No taskly_domain src deep imports found.');
+    return true;
+  } catch (e) {
+    print('   ⚠️  Could not run deep-import check: $e');
+    return false;
+  }
 }
 
 Future<bool> _runUsmTileActionGuardrail() async {

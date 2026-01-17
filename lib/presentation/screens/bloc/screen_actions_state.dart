@@ -1,4 +1,4 @@
-import 'package:taskly_domain/domain/analytics/model/entity_type.dart';
+import 'package:taskly_domain/analytics.dart';
 
 sealed class ScreenActionsState {
   const ScreenActionsState();

@@ -1,4 +1,4 @@
 /// Domain error types.
 library;
 
-export 'domain/errors/not_found_entity.dart';
+export 'src/errors/not_found_entity.dart';

@@ -1,8 +1,8 @@
 import 'package:drift/drift.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_bloc/data/infrastructure/drift/drift_database.dart'
+import 'package:taskly_data/db.dart'
     as db;
-import 'package:taskly_bloc/data/infrastructure/powersync/api_connector.dart'
+import 'package:taskly_data/sync.dart'
     show isLoggedIn;
 import 'package:taskly_bloc/domain/screens/catalog/model/screen_preferences.dart';
 

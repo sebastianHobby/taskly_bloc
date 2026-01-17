@@ -4,11 +4,9 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_domain/domain/interfaces/settings_repository_contract.dart';
-import 'package:taskly_domain/domain/interfaces/value_repository_contract.dart';
-import 'package:taskly_domain/domain/allocation/model/allocation_config.dart';
-import 'package:taskly_domain/domain/allocation/model/focus_mode.dart';
-import 'package:taskly_domain/domain/preferences/model/settings_key.dart';
+import 'package:taskly_domain/allocation.dart';
+import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_domain/preferences.dart';
 
 part 'focus_setup_bloc.freezed.dart';
 

@@ -11,6 +11,7 @@ export 'contracts.dart';
 export 'core.dart';
 export 'errors.dart';
 export 'journal.dart';
+export 'notifications.dart';
 export 'preferences.dart';
 export 'queries.dart';
 export 'services.dart';

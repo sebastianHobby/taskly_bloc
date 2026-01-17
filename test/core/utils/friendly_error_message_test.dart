@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:taskly_bloc/l10n/gen/app_localizations.dart';
 import 'package:taskly_bloc/presentation/shared/errors/friendly_error_message.dart';
-import 'package:taskly_bloc/data/repositories/repository_exceptions.dart';
+import 'package:taskly_data/repository_exceptions.dart';
 
 import 'package:taskly_domain/taskly_domain.dart';
 class MockAppLocalizations extends Mock implements AppLocalizations {}

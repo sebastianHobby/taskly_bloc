@@ -1,6 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/analytics/model/trend_data.dart';
+import 'package:taskly_domain/analytics.dart';
 
 class TrendChart extends StatelessWidget {
   const TrendChart({

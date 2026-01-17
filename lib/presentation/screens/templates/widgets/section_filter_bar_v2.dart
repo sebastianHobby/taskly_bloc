@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:taskly_domain/domain/core/model/value.dart';
+import 'package:taskly_domain/core.dart';
 
 enum SectionEntityViewModeV2 {
   all,

@@ -1,4 +1,4 @@
-import 'package:taskly_bloc/data/id/id_generator.dart';
+import 'package:taskly_data/id.dart';
 
 /// Fake IdGenerator for predictable ID generation in tests.
 ///
@@ -88,14 +88,6 @@ class FakeIdGenerator implements IdGenerator {
     required String trackerId,
     required String choiceKey,
   }) => 'tracker-choice-$trackerId-$choiceKey';
-
-  @override
-  String taskValueId({required String taskId, required String valueId}) =>
-      'task-value-$taskId-$valueId';
-
-  @override
-  String projectValueId({required String projectId, required String valueId}) =>
-      'project-value-$projectId-$valueId';
 
   @override
   String taskCompletionId({

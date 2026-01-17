@@ -5,7 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:taskly_bloc/core/logging/talker_service.dart';
-import 'package:taskly_domain/domain/interfaces/auth_repository_contract.dart';
+import 'package:taskly_domain/contracts.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';

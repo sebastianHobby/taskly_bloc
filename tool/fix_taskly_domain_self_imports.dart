@@ -55,6 +55,7 @@ String _rewritePackageSelfUris({
 }) {
   final fileDir = p.dirname(filePath);
   final lines = original.split('\n');
+  final libRootNormalized = p.normalize(libRoot);
 
   String rewriteLine(String line) {
     // Skip commented-out lines.
@@ -76,21 +77,42 @@ String _rewritePackageSelfUris({
     if (secondQuote < 0) return line;
 
     final uri = line.substring(firstQuote + 1, secondQuote);
+
+    // Normalize Windows separators before doing anything else.
     // If a URI uses Windows separators, normalize it first.
     // Backslashes in Dart string literals are escape introducers (e.g. "\t"),
     // so leaving them will produce invalid URIs.
-    if (uri.contains('\\')) {
-      final normalized = p.posix.normalize(uri.replaceAll('\\', '/'));
-      return line.replaceRange(firstQuote + 1, secondQuote, normalized);
+    final normalizedUri = uri.contains(r'\')
+        ? p.posix.normalize(uri.replaceAll(r'\', '/'))
+        : uri;
+
+    // Convert relative URIs that resolve within this package's lib/ folder into
+    // package: URIs to satisfy always_use_package_imports.
+    final isRelative = !normalizedUri.contains(':');
+    if (isRelative) {
+      final targetAbs = p.normalize(p.join(fileDir, normalizedUri));
+      if (p.isWithin(libRootNormalized, targetAbs)) {
+        final packageSuffix = p.posix.normalize(
+          p.relative(targetAbs, from: libRootNormalized).replaceAll(r'\', '/'),
+        );
+        final packageUri = 'package:taskly_domain/$packageSuffix';
+        return line.replaceRange(firstQuote + 1, secondQuote, packageUri);
+      }
+
+      // If it's relative but outside lib/, keep it as-is (after normalization).
+      if (normalizedUri != uri) {
+        return line.replaceRange(firstQuote + 1, secondQuote, normalizedUri);
+      }
+      return line;
     }
 
     const prefix = 'package:taskly_domain/';
-    if (!uri.startsWith(prefix)) return line;
+    if (!normalizedUri.startsWith(prefix)) return line;
 
-    final suffix = uri.substring(prefix.length);
+    final suffix = normalizedUri.substring(prefix.length);
     final targetAbs = p.join(libRoot, suffix);
     final relative = p.posix.normalize(
-      p.relative(targetAbs, from: fileDir).replaceAll('\\', '/'),
+      p.relative(targetAbs, from: fileDir).replaceAll(r'\', '/'),
     );
 
     return line.replaceRange(firstQuote + 1, secondQuote, relative);
