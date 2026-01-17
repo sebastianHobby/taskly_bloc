@@ -1,6 +1,5 @@
-import 'dart:async';
-
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/templates/interpreters/my_day_ranked_tasks_v1_module_interpreter.dart';
 
@@ -37,55 +36,40 @@ final class MyDayMvpBloc extends Bloc<MyDayMvpEvent, MyDayMvpState> {
   MyDayMvpBloc({required MyDayRankedTasksV1ModuleInterpreter interpreter})
     : _interpreter = interpreter,
       super(const MyDayMvpLoading()) {
-    on<MyDayMvpStarted>((event, emit) => _subscribe(emit));
+    on<MyDayMvpStarted>(_onStarted, transformer: restartable());
     add(const MyDayMvpStarted());
   }
 
   final MyDayRankedTasksV1ModuleInterpreter _interpreter;
 
-  StreamSubscription<SectionDataResult>? _sub;
-
-  bool _isSubscribed = false;
-
-  @override
-  Future<void> close() async {
-    await _sub?.cancel();
-    _sub = null;
-    return super.close();
-  }
-
-  void _subscribe(Emitter<MyDayMvpState> emit) {
-    if (_isSubscribed) return;
-    _isSubscribed = true;
-
-    _sub = _interpreter.watch().listen(
-      (result) {
+  Future<void> _onStarted(
+    MyDayMvpStarted event,
+    Emitter<MyDayMvpState> emit,
+  ) async {
+    await emit.forEach<SectionDataResult>(
+      _interpreter.watch(),
+      onData: (result) {
         if (result is! HierarchyValueProjectTaskV2SectionResult) {
-          emit(
-            MyDayMvpError(
-              'Unexpected My Day result type: ${result.runtimeType}',
-            ),
+          return MyDayMvpError(
+            'Unexpected My Day result type: ${result.runtimeType}',
           );
-          return;
         }
 
         final tasks = result.allTasks;
         final totalCount = tasks.length;
         final doneCount = tasks.where((t) => t.completed).length;
 
-        emit(
-          MyDayMvpLoaded(
-            hero: MyDayHeroV1SectionResult(
-              doneCount: doneCount,
-              totalCount: totalCount,
-            ),
-            rankedTasks: result,
+        return MyDayMvpLoaded(
+          hero: MyDayHeroV1SectionResult(
+            doneCount: doneCount,
+            totalCount: totalCount,
           ),
+          rankedTasks: result,
         );
       },
-      onError: (Object e) {
-        emit(MyDayMvpError('Failed to load My Day data: $e'));
-      },
+      onError: (error, stackTrace) => MyDayMvpError(
+        'Failed to load My Day data: $error',
+      ),
     );
   }
 }

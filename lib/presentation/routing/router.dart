@@ -17,6 +17,8 @@ import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_sc
 import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
+import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
+import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_route_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -29,8 +31,7 @@ import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
 /// - **Journal entry editor**: `/journal/entry/new` and `/journal/entry/:id/edit`
 ///
 /// All screen/entity builders are registered in [Routing] at bootstrap.
-/// Note: a small number of legacy aliases/redirects still exist for backwards
-/// compatibility.
+/// Note: legacy USM entrypoints should be removed as features migrate.
 final router = GoRouter(
   initialLocation: Routing.screenPath('my_day'),
   observers: [
@@ -385,16 +386,14 @@ final router = GoRouter(
           builder: (_, __) => Routing.buildScreen('trackers'),
         ),
         GoRoute(
-          path: Routing.screenPath('allocation_settings'),
-          builder: (_, __) => Routing.buildScreen('allocation_settings'),
-        ),
-        GoRoute(
           path: Routing.screenPath('focus_setup'),
-          builder: (_, __) => Routing.buildScreen('focus_setup'),
+          builder: (_, state) => FocusSetupWizardRoutePage(
+            initialStep: FocusSetupWizardRoutePage.parseInitialStep(state.uri),
+          ),
         ),
         GoRoute(
           path: Routing.screenPath('attention_rules'),
-          builder: (_, __) => Routing.buildScreen('attention_rules'),
+          builder: (_, __) => const AttentionRulesSettingsPage(),
         ),
       ],
     ),
