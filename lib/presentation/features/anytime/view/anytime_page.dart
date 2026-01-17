@@ -11,11 +11,10 @@ import 'package:taskly_bloc/presentation/features/scope_context/view/scope_heade
 import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/theme/taskly_typography.dart';
-import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_domain/contracts.dart';
 import 'package:taskly_domain/services.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_feed_bloc.dart';
 import 'package:taskly_bloc/presentation/features/anytime/bloc/anytime_screen_bloc.dart';
@@ -158,25 +157,25 @@ class _AnytimeView extends StatelessWidget {
               child: BlocBuilder<AnytimeFeedBloc, AnytimeFeedState>(
                 builder: (context, state) {
                   return switch (state) {
-                    AnytimeFeedLoading() => const Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    AnytimeFeedError(:final message) => ErrorStateWidget(
+                    AnytimeFeedLoading() => const FeedBody.loading(),
+                    AnytimeFeedError(:final message) => FeedBody.error(
                       message: message,
                       onRetry: () => context.read<AnytimeFeedBloc>().add(
                         const AnytimeFeedRetryRequested(),
                       ),
                     ),
                     AnytimeFeedLoaded(:final rows) when rows.isEmpty =>
-                      EmptyStateWidget.noTasks(
-                        title: 'No tasks',
-                        description: 'Create a task to start planning.',
-                        actionLabel: 'Create task',
-                        onAction: () => context.read<AnytimeScreenBloc>().add(
-                          const AnytimeCreateTaskRequested(),
+                      FeedBody.empty(
+                        child: EmptyStateWidget.noTasks(
+                          title: 'No tasks',
+                          description: 'Create a task to start planning.',
+                          actionLabel: 'Create task',
+                          onAction: () => context.read<AnytimeScreenBloc>().add(
+                            const AnytimeCreateTaskRequested(),
+                          ),
                         ),
                       ),
-                    AnytimeFeedLoaded(:final rows) => ListView.builder(
+                    AnytimeFeedLoaded(:final rows) => FeedBody.list(
                       itemCount: rows.length,
                       itemBuilder: (context, index) {
                         final row = rows[index];

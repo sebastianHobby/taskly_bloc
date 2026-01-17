@@ -9,8 +9,7 @@ import 'package:taskly_bloc/presentation/features/scheduled/bloc/scheduled_feed_
 import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 class ScheduledPage extends StatelessWidget {
   const ScheduledPage({super.key, this.scope = const GlobalScheduledScope()});
@@ -40,21 +39,22 @@ class _ScheduledView extends StatelessWidget {
       body: BlocBuilder<ScheduledFeedBloc, ScheduledFeedState>(
         builder: (context, state) {
           return switch (state) {
-            ScheduledFeedLoading() => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            ScheduledFeedError(:final message) => ErrorStateWidget(
+            ScheduledFeedLoading() => const FeedBody.loading(),
+            ScheduledFeedError(:final message) => FeedBody.error(
               message: message,
               onRetry: () => context.read<ScheduledFeedBloc>().add(
                 const ScheduledFeedRetryRequested(),
               ),
             ),
             ScheduledFeedLoaded(:final rows) when rows.isEmpty =>
-              EmptyStateWidget.noTasks(
-                title: 'Nothing scheduled',
-                description: 'Add start dates or deadlines to see items here.',
+              FeedBody.empty(
+                child: EmptyStateWidget.noTasks(
+                  title: 'Nothing scheduled',
+                  description:
+                      'Add start dates or deadlines to see items here.',
+                ),
               ),
-            ScheduledFeedLoaded(:final rows) => ListView.builder(
+            ScheduledFeedLoaded(:final rows) => FeedBody.list(
               itemCount: rows.length,
               itemBuilder: (context, index) {
                 final row = rows[index];

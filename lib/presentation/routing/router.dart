@@ -9,16 +9,21 @@ import 'package:taskly_bloc/presentation/routing/not_found_route_page.dart';
 import 'package:taskly_bloc/presentation/routing/route_codec.dart';
 import 'package:taskly_bloc/presentation/features/projects/view/project_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_entry_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
 import 'package:taskly_bloc/presentation/features/tasks/view/task_editor_route_page.dart';
 import 'package:taskly_bloc/presentation/features/values/view/value_editor_route_page.dart';
+import 'package:taskly_bloc/presentation/features/values/view/values_page.dart';
 import 'package:taskly_bloc/presentation/features/inbox/view/inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/anytime/view/anytime_page.dart';
 import 'package:taskly_bloc/presentation/features/scope_context/model/anytime_scope.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/model/scheduled_scope.dart';
 import 'package:taskly_bloc/presentation/features/scheduled/view/scheduled_page.dart';
 import 'package:taskly_bloc/presentation/screens/view/my_day_mvp_page.dart';
+import 'package:taskly_bloc/presentation/features/attention/view/attention_inbox_page.dart';
 import 'package:taskly_bloc/presentation/features/attention/view/attention_rules_settings_page.dart';
 import 'package:taskly_bloc/presentation/features/focus_setup/view/focus_setup_wizard_route_page.dart';
+import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
+import 'package:taskly_bloc/presentation/features/trackers/view/trackers_page.dart';
 
 /// Router for authenticated app shell.
 ///
@@ -355,35 +360,31 @@ final router = GoRouter(
         // === OTHER SYSTEM SCREENS (explicit; no catch-all) ===
         GoRoute(
           path: Routing.screenPath('journal'),
-          builder: (_, __) => Routing.buildScreen('journal'),
+          builder: (_, __) => const JournalHubPage(),
         ),
         GoRoute(
           path: Routing.screenPath('values'),
-          builder: (_, __) => Routing.buildScreen('values'),
-        ),
-        GoRoute(
-          path: Routing.screenPath('statistics'),
-          builder: (_, __) => Routing.buildScreen('statistics'),
+          builder: (_, __) => const ValuesPage(),
         ),
         GoRoute(
           path: Routing.screenPath('review_inbox'),
-          builder: (_, __) => Routing.buildScreen('review_inbox'),
+          builder: (_, __) => const AttentionInboxPage(),
         ),
         GoRoute(
           path: Routing.screenPath('settings'),
-          builder: (_, __) => Routing.buildScreen('settings'),
+          builder: (_, __) => const SettingsScreen(),
         ),
         GoRoute(
           path: Routing.screenPath('journal_history'),
-          builder: (_, __) => Routing.buildScreen('journal_history'),
+          builder: (_, __) => const JournalHubPage(initialTabIndex: 1),
         ),
         GoRoute(
           path: Routing.screenPath('journal_manage_trackers'),
-          builder: (_, __) => Routing.buildScreen('journal_manage_trackers'),
+          builder: (_, __) => const JournalHubPage(initialTabIndex: 2),
         ),
         GoRoute(
           path: Routing.screenPath('trackers'),
-          builder: (_, __) => Routing.buildScreen('trackers'),
+          builder: (_, __) => const TrackersPage(),
         ),
         GoRoute(
           path: Routing.screenPath('focus_setup'),

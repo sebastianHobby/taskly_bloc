@@ -8,8 +8,8 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/screens/bloc/my_day_ranked_tasks_v1_bloc.dart';
 import 'package:taskly_bloc/presentation/shared/utils/color_utils.dart';
 import 'package:taskly_bloc/presentation/screens/tiles/screen_item_tile_builder.dart';
-import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/values_footer.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 class MyDayRankedTasksV1Section extends StatefulWidget {
   const MyDayRankedTasksV1Section({

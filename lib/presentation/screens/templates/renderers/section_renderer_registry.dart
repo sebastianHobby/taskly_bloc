@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:taskly_domain/allocation.dart';
 import 'package:taskly_bloc/domain/screens/language/models/display_config.dart';
-import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/presentation/screens/templates/renderers/agenda_section_renderer.dart';
@@ -53,15 +52,6 @@ final class DefaultSectionRendererRegistry implements SectionRendererRegistry {
     required void Function(dynamic entity)? onEntityTap,
     required VoidCallback? onEntityHeaderTap,
   }) {
-    if (section.templateId == SectionTemplateId.statisticsDashboard) {
-      return const SliverPadding(
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        sliver: SliverToBoxAdapter(
-          child: Text('Statistics dashboard not implemented yet.'),
-        ),
-      );
-    }
-
     if (section.isLoading) {
       return const SliverPadding(
         padding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),

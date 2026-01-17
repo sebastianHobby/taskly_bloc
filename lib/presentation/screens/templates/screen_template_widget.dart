@@ -14,7 +14,6 @@ import 'package:taskly_bloc/domain/screens/runtime/section_data_result.dart';
 import 'package:taskly_bloc/domain/screens/runtime/section_vm.dart';
 import 'package:taskly_bloc/domain/screens/language/models/section_template_id.dart';
 import 'package:taskly_bloc/presentation/features/journal/view/journal_hub_page.dart';
-import 'package:taskly_bloc/presentation/features/settings/view/settings_screen.dart';
 import 'package:taskly_bloc/l10n/l10n.dart';
 import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/features/projects/widgets/project_add_fab.dart';
@@ -32,9 +31,9 @@ import 'package:taskly_bloc/presentation/features/attention/bloc/attention_banne
 import 'package:taskly_bloc/presentation/features/attention/model/attention_session_banner_vm.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_session_banner.dart';
 import 'package:taskly_bloc/presentation/widgets/content_constraint.dart';
-import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
 import 'package:taskly_bloc/presentation/widgets/section_widget.dart';
 import 'package:taskly_core/logging.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 /// Switchboard for rendering a typed [ScreenTemplateSpec].
 class ScreenTemplateWidget extends StatelessWidget {
@@ -55,37 +54,8 @@ class ScreenTemplateWidget extends StatelessWidget {
         attentionSessionBanner: attentionSessionBanner,
       ),
       entityDetailScaffoldV1: () => _EntityDetailScaffoldV1Template(data: data),
-      settingsMenu: () => const SettingsScreen(),
-      trackerManagement: () => const _PlaceholderTemplate(
-        title: 'Trackers',
-        message: 'Tracker management is being rebuilt.',
-      ),
-      statisticsDashboard: () => const _StatisticsDashboardPlaceholder(),
       journalHub: () => const JournalHubPage(),
       myDayFocusModeRequired: () => const MyDayFocusModeRequiredPage(),
-    );
-  }
-}
-
-class _StatisticsDashboardPlaceholder extends StatelessWidget {
-  const _StatisticsDashboardPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-        actions: [
-          IconButton(
-            tooltip: 'Attention',
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => Routing.toScreenKey(context, 'review_inbox'),
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Text('Statistics dashboard not implemented yet.'),
-      ),
     );
   }
 }
@@ -488,29 +458,6 @@ class _EntityDetailModuleSliver extends StatelessWidget {
           Routing.toEntity(context, EntityType.value, entity.id);
         }
       },
-    );
-  }
-}
-
-class _PlaceholderTemplate extends StatelessWidget {
-  const _PlaceholderTemplate({required this.title, required this.message});
-
-  final String title;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            message,
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
     );
   }
 }

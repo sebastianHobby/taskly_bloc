@@ -8,9 +8,8 @@ import 'package:taskly_bloc/presentation/features/editors/editor_launcher.dart';
 import 'package:taskly_bloc/presentation/feeds/rows/list_row_ui_model.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
 import 'package:taskly_bloc/presentation/routing/routing.dart';
-import 'package:taskly_bloc/presentation/widgets/empty_state_widget.dart';
-import 'package:taskly_bloc/presentation/widgets/error_state_widget.dart';
 import 'package:taskly_domain/contracts.dart';
+import 'package:taskly_ui/taskly_ui.dart';
 
 import 'package:taskly_bloc/presentation/features/inbox/bloc/inbox_feed_bloc.dart';
 
@@ -67,23 +66,22 @@ class InboxView extends StatelessWidget {
       body: BlocBuilder<InboxFeedBloc, InboxFeedState>(
         builder: (context, state) {
           return switch (state) {
-            InboxFeedLoading() => const Center(
-              child: CircularProgressIndicator(),
-            ),
-            InboxFeedError(:final message) => ErrorStateWidget(
+            InboxFeedLoading() => const FeedBody.loading(),
+            InboxFeedError(:final message) => FeedBody.error(
               message: message,
               onRetry: () => context.read<InboxFeedBloc>().add(
                 const InboxFeedRetryRequested(),
               ),
             ),
-            InboxFeedLoaded(:final rows) when rows.isEmpty =>
-              EmptyStateWidget.noTasks(
+            InboxFeedLoaded(:final rows) when rows.isEmpty => FeedBody.empty(
+              child: EmptyStateWidget.noTasks(
                 title: 'Inbox is empty',
                 description: 'Create a task to start capturing things.',
                 actionLabel: 'Create task',
                 onAction: () => _openNewTaskEditor(context),
               ),
-            InboxFeedLoaded(:final rows) => ListView.builder(
+            ),
+            InboxFeedLoaded(:final rows) => FeedBody.list(
               itemCount: rows.length,
               itemBuilder: (context, index) {
                 final row = rows[index];

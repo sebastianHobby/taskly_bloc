@@ -6,7 +6,9 @@ import 'package:taskly_bloc/presentation/routing/routing.dart';
 import 'package:taskly_bloc/presentation/features/attention/widgets/attention_bell_icon_button.dart';
 
 class JournalHubPage extends StatefulWidget {
-  const JournalHubPage({super.key});
+  const JournalHubPage({super.key, this.initialTabIndex = 0});
+
+  final int initialTabIndex;
 
   @override
   State<JournalHubPage> createState() => _JournalHubPageState();
@@ -19,7 +21,12 @@ class _JournalHubPageState extends State<JournalHubPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    final safeInitialIndex = widget.initialTabIndex.clamp(0, 2);
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: safeInitialIndex,
+    );
   }
 
   @override

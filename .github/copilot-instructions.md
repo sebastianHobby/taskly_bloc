@@ -35,21 +35,9 @@ mobile platforms.
 * Use that architecture context to guide recommendations, naming, layering, and where new code should live.
 * When changes affect architecture (new module boundaries, responsibilities, data flow, storage/sync behavior, cross-feature patterns), update the relevant files under `doc/architecture/` in the same PR.
 * If a change introduces a new architectural pattern or approach get explicit confirmation from user before implementing.
-
-### UI/UX work (strict — align to Unified Screen Model)
-
-* For UI/UX design tasks, always align changes to the Unified Screen Model (USM). Prefer expressing changes via `ScreenSpec`/module specs, section VMs, and template/section widgets per `doc/architecture/UNIFIED_SCREEN_MODEL_ARCHITECTURE.md`.
-* Explicitly mention impacts on:
-  * Other screens/routes that reuse the same templates/sections
-  * Shared section widgets/renderers and shared components
-  * Design tokens/theme extensions and any cross-feature styling conventions
-* Always consider future reuse of anything being changed: prefer configurable, composable primitives over screen-specific forks.
-* Suggestions must be in small, prioritized batches (max 3–5 items). Each suggestion must have a unique ID (e.g., `UX-001`) and include 2–3 design options (e.g., A/B/C) plus a recommended option.
-* Do not implement UI/UX changes without explicit user approval. If approval is not yet given, either:
-  * Provide the proposal/plan in chat (non-persisted), or
-  * Write a design decision log entry under `doc/plans/ui_decisions/` (this is not a full plan).
-* When approval is given, restate the approved IDs/options and scope before making code changes.
-
+* Architecture invariants are **strict**: review `doc/architecture/ARCHITECTURE_INVARIANTS.md` and obey them.
+  * If a change would break an invariant, get **explicit user confirmation** and add a **documented architecture exception** (under `doc/architecture/`) before implementing.
+* Always review relevant architecture docs when making changes to ensure compliance with architecture rules/design patterns. Try to keep architecture clean and consistent wherever possible.
 ### Testing (preferred workflow)
 
 
@@ -62,47 +50,7 @@ mobile platforms.
 
 * Always run `flutter analyze` (command line) before working on failing tests.
 * Do not attempt to "fix tests to make them pass" while `flutter analyze` is reporting problems.
-* When implementing a multi-phase plan (with plan files/folder), only fix `flutter analyze` errors/warnings that are caused by the current plan phase changes.
-  * Exception: in the **last phase** of the plan, fix **any** `flutter analyze` error or warning (regardless of whether it is related to the plan).
-
-### Planning docs (required)
-
-* These rules apply **only if** the user explicitly asks you to create a persisted plan (a plan file/folder under `doc/plans/`).
-  * If the user asks for a plan but is not explicit about persistence, ask whether they want the plan **in chat** or as **plan files/folder**.
-
-#### Plan lifecycle (required)
-
-* **Create plans in backlog:** persisted plans must be created under `doc/plans/backlog/`.
-* **Move to WIP when implementation starts:** before the first implementation step, move the entire plan folder from `doc/plans/backlog/<plan-name>/` to `doc/plans/wip/<plan-name>/`.
-  * “Move” means the folder path changes and the old location no longer exists (do not copy).
-* **Keep plans up to date at phase boundaries:** at the end of each phase, immediately update that phase file with:
-  * `Last updated at:` (UTC)
-  * a short summary of what was done in the phase
-  * the phase completion timestamp (UTC)
-
-#### Plan structure (required)
-
-* Create a new plan folder (with a meaningful plan name) under `doc/plans/backlog/`.
-* Inside that folder, create **one file per phase** (split plans into manageable phases).
-* Every plan phase file must include:
-  * `Created at:` (UTC)
-  * `Last updated at:` (UTC)
-* Every phase file must include an **AI instructions** section that includes:
-  * Run `flutter analyze` for the phase.
-  * Ensure any `flutter analyze` errors/warnings **caused by that phase’s changes** are fixed by the end of the phase.
-  * Exception: in the **last phase**, fix **any** `flutter analyze` error or warning.
-  * Review `doc/architecture/` before implementing the phase, and keep architecture docs updated if the phase changes architecture.
-  * When a phase is complete, update the file immediately (same day) with summary + completion date (UTC).
-
-### Plan completion workflow (required)
-
-* When a plan is fully implemented, move its plan folder from `doc/plans/wip/` to `doc/plans/completed/<plan-name>/`.
-  * “Move” means the folder path changes and the old location no longer exists (do not copy).
-  * If the plan was never started, it stays in `doc/plans/backlog/`.
-* Add a summary document in that completed folder (e.g. `SUMMARY.md`) stating:
-  * Implementation date (UTC)
-  * What shipped (high-level)
-  * Any known issues/gaps and follow-ups
+* When working on failing tests, only fix `flutter analyze` errors/warnings that are caused by your current changes.
 
 ### Freezed troubleshooting
 

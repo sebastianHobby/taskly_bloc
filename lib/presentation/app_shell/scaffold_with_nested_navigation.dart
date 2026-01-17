@@ -7,7 +7,6 @@ import 'package:taskly_bloc/presentation/app_shell/navigation_rail_scaffold.dart
 import 'package:taskly_bloc/presentation/app_shell/more_destinations_sheet.dart';
 import 'package:taskly_bloc/core/logging/app_log.dart';
 import 'package:taskly_bloc/presentation/shared/responsive/responsive.dart';
-import 'package:taskly_bloc/domain/screens/catalog/system_screens/system_screen_specs.dart';
 import 'package:taskly_bloc/presentation/features/navigation/models/navigation_destination.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_badge_service.dart';
 import 'package:taskly_bloc/presentation/features/navigation/services/navigation_icon_resolver.dart';
@@ -34,27 +33,57 @@ class ScaffoldWithNestedNavigation extends StatelessWidget {
     final badgeService = context.read<NavigationBadgeService>();
     const iconResolver = NavigationIconResolver();
 
-    final systemDestinations = SystemScreenSpecs.navigationScreens
-        .map(
-          (screen) {
-            final iconSet = iconResolver.resolve(
-              screenId: screen.screenKey,
-              iconName: screen.chrome.iconName,
-            );
-            return NavigationDestinationVm(
-              id: screen.id,
-              screenId: screen.screenKey,
-              label: screen.name,
-              icon: iconSet.icon,
-              selectedIcon: iconSet.selectedIcon,
-              route: Routing.screenPath(screen.screenKey),
-              badgeStream: badgeService.badgeStreamFor(screen),
-              sortOrder: SystemScreenSpecs.getDefaultSortOrder(
-                screen.screenKey,
-              ),
-            );
-          },
-        )
+    const primaryNavigationKeys = <String>[
+      'my_day',
+      'inbox',
+      'scheduled',
+      'someday',
+      'journal',
+      'values',
+      'review_inbox',
+      'settings',
+    ];
+
+    const labels = <String, String>{
+      'my_day': 'My Day',
+      'inbox': 'Inbox',
+      'scheduled': 'Scheduled',
+      'someday': 'Anytime',
+      'journal': 'Journal',
+      'values': 'Values',
+      'review_inbox': 'Attention',
+      'settings': 'Settings',
+    };
+
+    const sortOrders = <String, int>{
+      'my_day': 0,
+      'inbox': 1,
+      'scheduled': 2,
+      'someday': 3,
+      'journal': 4,
+      'values': 5,
+      'review_inbox': 9,
+      'settings': 100,
+    };
+
+    final systemDestinations = primaryNavigationKeys
+        .map((screenKey) {
+          final iconSet = iconResolver.resolve(
+            screenId: screenKey,
+            iconName: null,
+          );
+
+          return NavigationDestinationVm(
+            id: screenKey,
+            screenId: screenKey,
+            label: labels[screenKey] ?? screenKey,
+            icon: iconSet.icon,
+            selectedIcon: iconSet.selectedIcon,
+            route: Routing.screenPath(screenKey),
+            badgeStream: badgeService.badgeStreamForScreenKey(screenKey),
+            sortOrder: sortOrders[screenKey] ?? 999,
+          );
+        })
         .toList(growable: false);
 
     return LayoutBuilder(

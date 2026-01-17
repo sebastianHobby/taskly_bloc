@@ -47,10 +47,6 @@ class NavigationIconResolver {
         icon: Icons.list_alt_outlined,
         selectedIcon: Icons.list_alt,
       ),
-      'statistics' => (
-        icon: Icons.bar_chart_outlined,
-        selectedIcon: Icons.bar_chart,
-      ),
       'review_inbox' || 'review-inbox' => (
         icon: Icons.notifications_outlined,
         selectedIcon: Icons.notifications,
